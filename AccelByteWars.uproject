@@ -1,0 +1,22 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "{CAF74BCD-44A8-A5C4-3E01-3EA88C087A5D}",
+	"Category": "",
+	"Description": "",
+	"Modules": [
+		{
+			"Name": "AccelByteWars",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "ModelingToolsEditorMode",
+			"Enabled": true,
+			"TargetAllowList": [
+				"Editor"
+			]
+		}
+	]
+}
