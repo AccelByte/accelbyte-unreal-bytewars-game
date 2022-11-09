@@ -9,7 +9,7 @@
 /**
  * 
  */
-UCLASS()
+UCLASS(Abstract, BlueprintType, Blueprintable)
 class ACCELBYTEWARS_API UAccelByteWarsButtonBase : public UCommonButtonBase
 {
 	GENERATED_BODY()
