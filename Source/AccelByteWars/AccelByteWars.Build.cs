@@ -7,7 +7,16 @@ public class AccelByteWars : ModuleRules
 	public AccelByteWars(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-	
+
+
+
+		PublicIncludePaths.AddRange(
+			new string[] {
+				"AccelByteWars"
+			}
+		);
+
+
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "CommonUI" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {
