@@ -8,9 +8,25 @@ public class AccelByteWars : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "CommonUI" });
 
-		PrivateDependencyModuleNames.AddRange(new string[] {  });
+		PrivateDependencyModuleNames.AddRange(new string[] {
+				"InputCore",
+				"Slate",
+				"SlateCore",
+				"RenderCore",
+				"DeveloperSettings",
+				"EnhancedInput",
+				"NetCore",
+				"RHI",
+				"Projects",
+				"Gauntlet",
+				"UMG",
+				"CommonUI",
+				"AudioMixer",
+				"NetworkReplayStreaming",
+				"AudioModulation",
+			});
 
 		// Uncomment if you are using Slate UI
 		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
