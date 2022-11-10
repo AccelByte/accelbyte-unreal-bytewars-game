@@ -23,7 +23,7 @@ class ACCELBYTEWARS_API UAccelByteWarsActivatableWidget : public UCommonActivata
 
 public:
 	UAccelByteWarsActivatableWidget(const FObjectInitializer& ObjectInitializer);
-
+	
 public:
 
 	//~UCommonActivatableWidget interface

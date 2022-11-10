@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "AccelByteWarsActivatableWidget.h"
+#include "UI/AccelByteWarsActivatableWidget.h"
 
 #include "Editor/WidgetCompilerLog.h"
 #include "Input/CommonInputMode.h"
