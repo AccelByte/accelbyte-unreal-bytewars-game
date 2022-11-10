@@ -22,6 +22,9 @@ class ACCELBYTEWARS_API UAccelByteWarsGameInstance : public UGameInstance
 
 public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Attributes)
+	UAccelByteWarsActivatableWidget* BaseUIWidget;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Attributes)
 	UAccelByteWarsActivatableWidget* MainMenuWidget;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Attributes)
@@ -32,8 +35,4 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Attributes)
 	UAccelByteWarsActivatableWidget* FreeForAllWidget;
-
-
-
-
 };
