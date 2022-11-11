@@ -21,6 +21,11 @@ class ACCELBYTEWARS_API UAccelByteWarsGameInstance : public UGameInstance
 
 
 public:
+
+	/** Init base UI. */
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Push Prompt Widget"))
+	void InitBaseUI(APlayerController* OwningPlayer);
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Attributes)
 	UAccelByteWarsActivatableWidget* BaseUIWidget;
 	
