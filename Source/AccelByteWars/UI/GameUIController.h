@@ -7,6 +7,7 @@
 #include "GameUIController.generated.h"
 
 class ULocalPlayer;
+class UCommonLocalPlayer;
 class UAccelByteWarsBaseUI;
 class UGameUIManagerSubsystem;
 
@@ -56,31 +57,31 @@ class ACCELBYTEWARS_API UGameUIController : public UObject
 
 public:
 	template <typename GameUIControllerClass = UGameUIController>
-	static GameUIControllerClass* GetGameUIPolicyAs(const UObject* WorldContextObject)
+	static GameUIControllerClass* GetGameUIControllerAs(const UObject* WorldContextObject)
 	{
-		return Cast<GameUIControllerClass>(GetGameUIPolicy(WorldContextObject));
+		return Cast<GameUIControllerClass>(GetGameUIController(WorldContextObject));
 	}
 
-	static UGameUIController* GetGameUIPolicy(const UObject* WorldContextObject);
+	static UGameUIController* GetGameUIController(const UObject* WorldContextObject);
 
 	virtual UWorld* GetWorld() const override;
 	UGameUIManagerSubsystem* GetOwningUIManager() const;
-	UAccelByteWarsBaseUI* GetRootLayout(const ULocalPlayer* LocalPlayer) const;
+	UAccelByteWarsBaseUI* GetRootLayout(const UCommonLocalPlayer* LocalPlayer) const;
 
 	ELocalMultiplayerInteractionMode GetLocalMultiplayerInteractionMode() const { return LocalMultiplayerInteractionMode; }
 
 	void RequestPrimaryControl(UAccelByteWarsBaseUI* Layout);
 
 protected:
-	void AddLayoutToViewport(ULocalPlayer* LocalPlayer, UAccelByteWarsBaseUI* Layout);
-	void RemoveLayoutFromViewport(ULocalPlayer* LocalPlayer, UAccelByteWarsBaseUI* Layout);
+	void AddLayoutToViewport(UCommonLocalPlayer* LocalPlayer, UAccelByteWarsBaseUI* Layout);
+	void RemoveLayoutFromViewport(UCommonLocalPlayer* LocalPlayer, UAccelByteWarsBaseUI* Layout);
 
-	virtual void OnRootLayoutAddedToViewport(ULocalPlayer* LocalPlayer, UAccelByteWarsBaseUI* Layout);
-	virtual void OnRootLayoutRemovedFromViewport(ULocalPlayer* LocalPlayer, UAccelByteWarsBaseUI* Layout);
-	virtual void OnRootLayoutReleased(ULocalPlayer* LocalPlayer, UAccelByteWarsBaseUI* Layout);
+	virtual void OnRootLayoutAddedToViewport(UCommonLocalPlayer* LocalPlayer, UAccelByteWarsBaseUI* Layout);
+	virtual void OnRootLayoutRemovedFromViewport(UCommonLocalPlayer* LocalPlayer, UAccelByteWarsBaseUI* Layout);
+	virtual void OnRootLayoutReleased(UCommonLocalPlayer* LocalPlayer, UAccelByteWarsBaseUI* Layout);
 
-	void CreateLayoutWidget(ULocalPlayer* LocalPlayer);
-	TSubclassOf<UAccelByteWarsBaseUI> GetLayoutWidgetClass(ULocalPlayer* LocalPlayer);
+	void CreateLayoutWidget(UCommonLocalPlayer* LocalPlayer);
+	TSubclassOf<UAccelByteWarsBaseUI> GetLayoutWidgetClass(UCommonLocalPlayer* LocalPlayer);
 	
 private:
 
@@ -92,9 +93,9 @@ private:
 	UPROPERTY(Transient)
 	TArray<FRootViewportLayoutInfo> RootViewportLayouts;
 	
-	void NotifyPlayerAdded(ULocalPlayer* LocalPlayer);
-	void NotifyPlayerRemoved(ULocalPlayer* LocalPlayer);
-	void NotifyPlayerDestroyed(ULocalPlayer* LocalPlayer);
+	void NotifyPlayerAdded(UCommonLocalPlayer* LocalPlayer);
+	void NotifyPlayerRemoved(UCommonLocalPlayer* LocalPlayer);
+	void NotifyPlayerDestroyed(UCommonLocalPlayer* LocalPlayer);
 
 	friend class UGameUIManagerSubsystem;
 };

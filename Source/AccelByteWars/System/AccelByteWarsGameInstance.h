@@ -4,12 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
-
 #include "Settings/GlobalSettingsDataAsset.h"
 #include "UI/AccelByteWarsActivatableWidget.h"
-
-
 #include "AccelByteWarsGameInstance.generated.h"
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLocalPlayerChanged, ULocalPlayer*, LocalPlayer);
 
 UCLASS(BlueprintType)
 class ACCELBYTEWARS_API UAccelByteWarsPlayerSetup : public UObject
@@ -20,6 +19,9 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Attributes)
 	FString Name;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Attributes)
+	int32 ControllerId;
 };
 
 UCLASS(BlueprintType)
@@ -59,9 +61,7 @@ UCLASS()
 class ACCELBYTEWARS_API UAccelByteWarsGameInstance : public UGameInstance
 {
 	GENERATED_BODY()
-
-
-
+	
 public:
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Attributes)
@@ -85,6 +85,10 @@ public:
 	virtual int32 AddLocalPlayer(ULocalPlayer* NewPlayer, int32 ControllerId) override;
 	virtual bool RemoveLocalPlayer(ULocalPlayer* ExistingPlayer) override;
 
+	UPROPERTY(BlueprintAssignable)
+	FOnLocalPlayerChanged OnLocalPlayerAdded;
+	FOnLocalPlayerChanged OnLocalPlayerRemoved;
+	
 private:
 	/** This is the primary player*/
 	TWeakObjectPtr<ULocalPlayer> PrimaryPlayer;

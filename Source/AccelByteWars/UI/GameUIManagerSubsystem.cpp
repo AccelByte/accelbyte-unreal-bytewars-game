@@ -3,6 +3,7 @@
 
 #include "UI/GameUIManagerSubsystem.h"
 #include "UI/GameUIController.h"
+#include "Player/CommonLocalPlayer.h"
 
 void UGameUIManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -36,7 +37,7 @@ bool UGameUIManagerSubsystem::ShouldCreateSubsystem(UObject* Outer) const
 	return false;
 }
 
-void UGameUIManagerSubsystem::NotifyPlayerAdded(ULocalPlayer* LocalPlayer)
+void UGameUIManagerSubsystem::NotifyPlayerAdded(UCommonLocalPlayer* LocalPlayer)
 {
 	UE_LOG(LogTemp, Log, TEXT("[%s] is adding player [%s]'s to the viewport"), *GetName(), *GetNameSafe(LocalPlayer));
 	
@@ -46,9 +47,9 @@ void UGameUIManagerSubsystem::NotifyPlayerAdded(ULocalPlayer* LocalPlayer)
 	}
 }
 
-void UGameUIManagerSubsystem::NotifyPlayerRemoved(ULocalPlayer* LocalPlayer)
+void UGameUIManagerSubsystem::NotifyPlayerRemoved(UCommonLocalPlayer* LocalPlayer)
 {
-	UE_LOG(LogTemp, Log, TEXT("[%s] is adding player [%s]'s to the viewport"), *GetName(), *GetNameSafe(LocalPlayer));
+	UE_LOG(LogTemp, Log, TEXT("[%s] is removing player [%s]'s to the viewport"), *GetName(), *GetNameSafe(LocalPlayer));
 	
 	if (LocalPlayer && CurrentUIController)
 	{
@@ -56,9 +57,9 @@ void UGameUIManagerSubsystem::NotifyPlayerRemoved(ULocalPlayer* LocalPlayer)
 	}
 }
 
-void UGameUIManagerSubsystem::NotifyPlayerDestroyed(ULocalPlayer* LocalPlayer)
+void UGameUIManagerSubsystem::NotifyPlayerDestroyed(UCommonLocalPlayer* LocalPlayer)
 {
-	UE_LOG(LogTemp, Log, TEXT("[%s] is adding player [%s]'s to the viewport"), *GetName(), *GetNameSafe(LocalPlayer));
+	UE_LOG(LogTemp, Log, TEXT("[%s] is destroying player [%s]'s to the viewport"), *GetName(), *GetNameSafe(LocalPlayer));
 	
 	if (LocalPlayer && CurrentUIController)
 	{

@@ -8,7 +8,7 @@
 
 class ULocalPlayer;
 class UGameUIController;
-class ULocalPlayer; // TODO @afif change this to UAccelByteWarsLocalPlayer
+class UCommonLocalPlayer; // TODO @afif change this to UAccelByteWarsLocalPlayer
 
 /**
  * This class managing the UI flow by getting the events from game flow
@@ -29,9 +29,9 @@ public:
 	const UGameUIController* GetCurrentUIController() const { return CurrentUIController; }
 	UGameUIController* GetCurrentUIController() { return CurrentUIController; }
 
-	virtual void NotifyPlayerAdded(ULocalPlayer* LocalPlayer);
-	virtual void NotifyPlayerRemoved(ULocalPlayer* LocalPlayer);
-	virtual void NotifyPlayerDestroyed(ULocalPlayer* LocalPlayer);
+	virtual void NotifyPlayerAdded(UCommonLocalPlayer* LocalPlayer);
+	virtual void NotifyPlayerRemoved(UCommonLocalPlayer* LocalPlayer);
+	virtual void NotifyPlayerDestroyed(UCommonLocalPlayer* LocalPlayer);
 
 protected:
 	void SwitchToUIController(UGameUIController* InUIController);

@@ -3,6 +3,7 @@
 
 #include "System/AccelByteWarsGameInstance.h"
 #include "UI/GameUIManagerSubsystem.h"
+#include "Player/CommonLocalPlayer.h"
 
 int32 UAccelByteWarsGameInstance::AddLocalPlayer(ULocalPlayer* NewPlayer, int32 ControllerId)
 {
@@ -15,7 +16,13 @@ int32 UAccelByteWarsGameInstance::AddLocalPlayer(ULocalPlayer* NewPlayer, int32 
 			PrimaryPlayer = NewPlayer;
 		}
 		
-		GetSubsystem<UGameUIManagerSubsystem>()->NotifyPlayerAdded(Cast<ULocalPlayer>(NewPlayer));
+		UE_LOG(LogTemp, Log, TEXT("AddLocalPlayer: New player %s is set to ControllerId: %i"), *NewPlayer->GetName(), ControllerId);
+		GetSubsystem<UGameUIManagerSubsystem>()->NotifyPlayerAdded(Cast<UCommonLocalPlayer>(NewPlayer));
+
+		if(OnLocalPlayerAdded.IsBound())
+		{
+			OnLocalPlayerAdded.Broadcast(NewPlayer);
+		}
 	}
 	
 	return ReturnVal;
@@ -29,7 +36,12 @@ bool UAccelByteWarsGameInstance::RemoveLocalPlayer(ULocalPlayer* ExistingPlayer)
 		PrimaryPlayer.Reset();
 		UE_LOG(LogTemp, Log, TEXT("RemoveLocalPlayer: Unsetting Primary Player from %s"), *ExistingPlayer->GetName());
 	}
-	GetSubsystem<UGameUIManagerSubsystem>()->NotifyPlayerDestroyed(Cast<ULocalPlayer>(ExistingPlayer));
+	GetSubsystem<UGameUIManagerSubsystem>()->NotifyPlayerDestroyed(Cast<UCommonLocalPlayer>(ExistingPlayer));
 
+	if(OnLocalPlayerRemoved.IsBound())
+	{
+		OnLocalPlayerRemoved.Broadcast(ExistingPlayer);
+	}
+	
 	return Super::RemoveLocalPlayer(ExistingPlayer);
 }

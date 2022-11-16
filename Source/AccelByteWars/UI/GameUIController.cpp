@@ -3,11 +3,12 @@
 
 #include "UI/GameUIController.h"
 #include "Engine/LocalPlayer.h"
+#include "Player/CommonLocalPlayer.h"
 #include "GameUIManagerSubsystem.h"
 #include "UI/AccelByteWarsBaseUI.h"
 
 // Static
-UGameUIController* UGameUIController::GetGameUIPolicy(const UObject* WorldContextObject)
+UGameUIController* UGameUIController::GetGameUIController(const UObject* WorldContextObject)
 {
 	if (UWorld* World = GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::LogAndReturnNull))
 	{
@@ -33,16 +34,16 @@ UWorld* UGameUIController::GetWorld() const
 	return GetOwningUIManager()->GetGameInstance()->GetWorld();
 }
 
-UAccelByteWarsBaseUI* UGameUIController::GetRootLayout(const ULocalPlayer* LocalPlayer) const
+UAccelByteWarsBaseUI* UGameUIController::GetRootLayout(const UCommonLocalPlayer* LocalPlayer) const
 {
 	const FRootViewportLayoutInfo* LayoutInfo = RootViewportLayouts.FindByKey(LocalPlayer);
 	return LayoutInfo ? LayoutInfo->RootLayout : nullptr;
 }
 
-void UGameUIController::NotifyPlayerAdded(ULocalPlayer* LocalPlayer)
+void UGameUIController::NotifyPlayerAdded(UCommonLocalPlayer* LocalPlayer)
 {
 	// TODO @afif on player added then add BaseUI / Layout for this local player from viewport
-	/*LocalPlayer->OnPlayerControllerSet.AddWeakLambda(this, [this](ULocalPlayer* LocalPlayer, APlayerController* PlayerController)
+	/*LocalPlayer->OnPlayerControllerSet.AddWeakLambda(this, [this](UCommonLocalPlayer* LocalPlayer, APlayerController* PlayerController)
 	{
 		NotifyPlayerRemoved(LocalPlayer);
 
@@ -68,7 +69,7 @@ void UGameUIController::NotifyPlayerAdded(ULocalPlayer* LocalPlayer)
 	}*/
 }
 
-void UGameUIController::NotifyPlayerRemoved(ULocalPlayer* LocalPlayer)
+void UGameUIController::NotifyPlayerRemoved(UCommonLocalPlayer* LocalPlayer)
 {
 	// TODO @afif on player removed then remove BaseUI / Layout for this local player from viewport
 	/*if (FRootViewportLayoutInfo* LayoutInfo = RootViewportLayouts.FindByKey(LocalPlayer))
@@ -98,7 +99,7 @@ void UGameUIController::NotifyPlayerRemoved(ULocalPlayer* LocalPlayer)
 	}*/
 }
 
-void UGameUIController::NotifyPlayerDestroyed(ULocalPlayer* LocalPlayer)
+void UGameUIController::NotifyPlayerDestroyed(UCommonLocalPlayer* LocalPlayer)
 {
 	/*NotifyPlayerRemoved(LocalPlayer);
 	LocalPlayer->OnPlayerControllerSet.RemoveAll(this);
@@ -114,7 +115,7 @@ void UGameUIController::NotifyPlayerDestroyed(ULocalPlayer* LocalPlayer)
 	}*/
 }
 
-void UGameUIController::AddLayoutToViewport(ULocalPlayer* LocalPlayer, UAccelByteWarsBaseUI* Layout)
+void UGameUIController::AddLayoutToViewport(UCommonLocalPlayer* LocalPlayer, UAccelByteWarsBaseUI* Layout)
 {
 	UE_LOG(LogTemp, Log, TEXT("[%s] is adding player [%s]'s root layout [%s] to the viewport"), *GetName(), *GetNameSafe(LocalPlayer), *GetNameSafe(Layout));
 
@@ -124,7 +125,7 @@ void UGameUIController::AddLayoutToViewport(ULocalPlayer* LocalPlayer, UAccelByt
 	OnRootLayoutAddedToViewport(LocalPlayer, Layout);
 }
 
-void UGameUIController::RemoveLayoutFromViewport(ULocalPlayer* LocalPlayer, UAccelByteWarsBaseUI* Layout)
+void UGameUIController::RemoveLayoutFromViewport(UCommonLocalPlayer* LocalPlayer, UAccelByteWarsBaseUI* Layout)
 {
 	TWeakPtr<SWidget> LayoutSlateWidget = Layout->GetCachedWidget();
 	if (LayoutSlateWidget.IsValid())
@@ -141,7 +142,7 @@ void UGameUIController::RemoveLayoutFromViewport(ULocalPlayer* LocalPlayer, UAcc
 	}
 }
 
-void UGameUIController::OnRootLayoutAddedToViewport(ULocalPlayer* LocalPlayer, UAccelByteWarsBaseUI* Layout)
+void UGameUIController::OnRootLayoutAddedToViewport(UCommonLocalPlayer* LocalPlayer, UAccelByteWarsBaseUI* Layout)
 {
 #if WITH_EDITOR
 	if (GIsEditor && LocalPlayer->IsPrimaryPlayer())
@@ -152,12 +153,12 @@ void UGameUIController::OnRootLayoutAddedToViewport(ULocalPlayer* LocalPlayer, U
 #endif
 }
 
-void UGameUIController::OnRootLayoutRemovedFromViewport(ULocalPlayer* LocalPlayer, UAccelByteWarsBaseUI* Layout)
+void UGameUIController::OnRootLayoutRemovedFromViewport(UCommonLocalPlayer* LocalPlayer, UAccelByteWarsBaseUI* Layout)
 {
 	
 }
 
-void UGameUIController::OnRootLayoutReleased(ULocalPlayer* LocalPlayer, UAccelByteWarsBaseUI* Layout)
+void UGameUIController::OnRootLayoutReleased(UCommonLocalPlayer* LocalPlayer, UAccelByteWarsBaseUI* Layout)
 {
 	
 }
@@ -179,7 +180,7 @@ void UGameUIController::RequestPrimaryControl(UAccelByteWarsBaseUI* Layout)
 	}*/
 }
 
-void UGameUIController::CreateLayoutWidget(ULocalPlayer* LocalPlayer)
+void UGameUIController::CreateLayoutWidget(UCommonLocalPlayer* LocalPlayer)
 {
 	if (APlayerController* PlayerController = LocalPlayer->GetPlayerController(GetWorld()))
 	{
@@ -194,7 +195,7 @@ void UGameUIController::CreateLayoutWidget(ULocalPlayer* LocalPlayer)
 	}
 }
 
-TSubclassOf<UAccelByteWarsBaseUI> UGameUIController::GetLayoutWidgetClass(ULocalPlayer* LocalPlayer)
+TSubclassOf<UAccelByteWarsBaseUI> UGameUIController::GetLayoutWidgetClass(UCommonLocalPlayer* LocalPlayer)
 {
 	return LayoutClass.LoadSynchronous();
 }

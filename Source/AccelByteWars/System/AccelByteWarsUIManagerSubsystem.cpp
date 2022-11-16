@@ -5,6 +5,7 @@
 #include "UI/GameUIController.h"
 #include "UI/AccelByteWarsBaseUI.h"
 #include "GameFramework/HUD.h"
+#include "Player/CommonLocalPlayer.h"
 
 UAccelByteWarsUIManagerSubsystem::UAccelByteWarsUIManagerSubsystem()
 {
@@ -50,7 +51,7 @@ void UAccelByteWarsUIManagerSubsystem::SyncRootLayoutVisibilityToShowHUD()
 				}
 			}
 
-			if (UAccelByteWarsBaseUI* RootLayout = Policy->GetRootLayout(CastChecked<ULocalPlayer>(LocalPlayer)))
+			if (UAccelByteWarsBaseUI* RootLayout = Policy->GetRootLayout(CastChecked<UCommonLocalPlayer>(LocalPlayer)))
 			{
 				const ESlateVisibility DesiredVisibility = bShouldShowUI ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed;
 				if (DesiredVisibility != RootLayout->GetVisibility())
