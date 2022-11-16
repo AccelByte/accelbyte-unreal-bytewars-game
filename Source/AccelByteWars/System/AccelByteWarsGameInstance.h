@@ -81,4 +81,11 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Attributes)
 	UAccelByteWarsGameSetup* GameSetup;
+
+	virtual int32 AddLocalPlayer(ULocalPlayer* NewPlayer, int32 ControllerId) override;
+	virtual bool RemoveLocalPlayer(ULocalPlayer* ExistingPlayer) override;
+
+private:
+	/** This is the primary player*/
+	TWeakObjectPtr<ULocalPlayer> PrimaryPlayer;
 };
