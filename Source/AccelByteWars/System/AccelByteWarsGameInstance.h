@@ -6,9 +6,22 @@
 #include "Engine/GameInstance.h"
 #include "Settings/GlobalSettingsDataAsset.h"
 #include "UI/AccelByteWarsActivatableWidget.h"
+#include "Settings/GlobalSettingsDataAsset.h"
 #include "AccelByteWarsGameInstance.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLocalPlayerChanged, ULocalPlayer*, LocalPlayer);
+
+USTRUCT(BlueprintType)
+struct FSelectedGameMode {
+
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	EGameModeType SelectedGameModeType = EGameModeType::LocalFFA;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 PlayerCount = 1; 
+};
 
 UCLASS(BlueprintType)
 class ACCELBYTEWARS_API UAccelByteWarsPlayerSetup : public UObject
@@ -17,10 +30,10 @@ class ACCELBYTEWARS_API UAccelByteWarsPlayerSetup : public UObject
 
 public:
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Attributes)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attributes)
 	FString Name;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Attributes)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attributes)
 	int32 ControllerId;
 };
 
@@ -31,13 +44,13 @@ class ACCELBYTEWARS_API UAccelByteWarsTeamSetup : public UObject
 
 public:
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Attributes)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attributes)
 	FLinearColor TeamColour;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Attributes)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attributes)
 	int TeamId;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Attributes)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attributes)
 	TArray<UAccelByteWarsPlayerSetup*> PlayerSetups;
 };
 
@@ -49,7 +62,7 @@ class ACCELBYTEWARS_API UAccelByteWarsGameSetup : public UObject
 
 public:
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Attributes)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attributes)
 	TArray<UAccelByteWarsTeamSetup*> TeamSetups;
 };
 
@@ -66,20 +79,11 @@ public:
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Attributes)
 	UAccelByteWarsActivatableWidget* BaseUIWidget;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Attributes)
-	UAccelByteWarsActivatableWidget* MainMenuWidget;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Attributes)
-	UAccelByteWarsActivatableWidget* HelpWidget;
+	UPROPERTY(Transient, EditAnywhere, BlueprintReadWrite, Category = Attributes)
+	FSelectedGameMode SelectedGameMode;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Attributes)
-	UAccelByteWarsActivatableWidget* LocalMutiplayerWidget;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Attributes)
-	UAccelByteWarsActivatableWidget* FreeForAllWidget;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Attributes)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attributes)
 	UAccelByteWarsGameSetup* GameSetup;
 
 	virtual int32 AddLocalPlayer(ULocalPlayer* NewPlayer, int32 ControllerId) override;

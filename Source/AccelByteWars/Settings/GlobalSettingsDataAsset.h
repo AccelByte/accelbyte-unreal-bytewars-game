@@ -6,6 +6,14 @@
 #include "Engine/DataAsset.h"
 #include "GlobalSettingsDataAsset.generated.h"
 
+class UGameModeDataAssets;
+
+// Game mode enum
+UENUM(BlueprintType)
+enum class EGameModeType : uint8 {
+    LocalFFA,
+    LocalTDM
+};
 
 USTRUCT(BlueprintType)
 struct FGlobalTeamSetup {
@@ -14,6 +22,15 @@ struct FGlobalTeamSetup {
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     FLinearColor itemColor;
+};
+
+USTRUCT(BlueprintType)
+struct FGlobalGameModes {
+
+    GENERATED_USTRUCT_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    TMap<EGameModeType, TObjectPtr<UGameModeDataAssets>> GameModes;
 };
 
 /**
@@ -28,4 +45,7 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     TArray<FGlobalTeamSetup> GlobalTeamSetup;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    FGlobalGameModes GlobalGameModes;
 };

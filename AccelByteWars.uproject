@@ -10,7 +10,8 @@
 			"LoadingPhase": "Default",
 			"AdditionalDependencies": [
 				"CommonUI",
-				"Engine"
+				"Engine",
+				"CoreUObject"
 			]
 		}
 	],
