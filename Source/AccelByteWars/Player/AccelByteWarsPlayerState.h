@@ -13,5 +13,9 @@ UCLASS()
 class ACCELBYTEWARS_API AAccelByteWarsPlayerState : public APlayerState
 {
 	GENERATED_BODY()
-	
+
+public:
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Attributes)
+	FLinearColor TeamColour;
 };
