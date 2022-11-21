@@ -17,18 +17,28 @@ class ACCELBYTEWARS_API UAccelByteWarsGlobals : public UObject
 
 // Game Mode Data
 public:
-
-	//UFUNCTION(BlueprintCallable, meta = (DisplayName = "Get All Game Modes"))
+	
 	TArray<FGameModeData*> GetAllGameModes() const;
 
-	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Get All Game Mode CodeName"))
-	TArray<FString> GetAllGameModeCodeName() const;
+	UFUNCTION(BlueprintPure, meta = (DisplayName = "Get All Game Mode CodeNames"))
+	TArray<FString> GetAllGameModeCodeNames() const;
+
+	UFUNCTION(BlueprintPure, meta = (DisplayName = "Get Game Mode by Id"))
+	bool GetGameModeDataById(int32 GameModeId, UPARAM(ref) FGameModeData& OutGameModeData) const;
+
+	UFUNCTION(BlueprintPure, meta = (DisplayName = "Get Game Mode Code Names by type"))
+	TArray<FString> GetGameModeDataByType(EGameModeType GameModeType) const;
 	
-	FGameModeData* GetGameModeDataById(int32 ID) const;
+	UFUNCTION(BlueprintPure, meta = (DisplayName = "Get Game Mode by CodeName"))
+	bool GetGameModeDataByCodeName(const FString& CodeName, UPARAM(ref) FGameModeData& OutGameModeData) const;
 	
-	FGameModeData* GetGameModeDataByCodeName(const FString& CodeName) const;
 	TArray<FGameModeTypeData*> GetAllGameModeTypes() const;
-	FGameModeTypeData* GetGameModeTypeData(const EGameModeType Type) const;
+
+	UFUNCTION(BlueprintPure, meta = (DisplayName = "Get All Game Mode Type Enums"))
+	TArray<EGameModeType> GetAllGameModeTypesEnum() const;
+	
+	UFUNCTION(BlueprintPure, meta = (DisplayName = "Get Game Mode Type Data"))
+	bool GetGameModeTypeData(const EGameModeType Type, UPARAM(ref) FGameModeTypeData& OutGameModeTypeData) const;
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Game)

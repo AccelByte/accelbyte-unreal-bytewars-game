@@ -16,7 +16,7 @@ TArray<FGameModeData*> UAccelByteWarsGlobals::GetAllGameModes() const
 	return GameModeDataArray;
 }
 
-TArray<FString> UAccelByteWarsGlobals::GetAllGameModeCodeName() const
+TArray<FString> UAccelByteWarsGlobals::GetAllGameModeCodeNames() const
 {
 	TArray<FString> CodeNames;
 
@@ -30,28 +30,50 @@ TArray<FString> UAccelByteWarsGlobals::GetAllGameModeCodeName() const
 	return CodeNames;
 }
 
-FGameModeData* UAccelByteWarsGlobals::GetGameModeDataById(int32 GameModeId) const
+//FGameModeData* UAccelByteWarsGlobals::GetGameModeDataById(int32 GameModeId) const
+bool UAccelByteWarsGlobals::GetGameModeDataById(int32 GameModeId, UPARAM(ref) FGameModeData& OutGameModeData) const
 {
 	if (ensure(GameModes))
 	{
-		return GameModes->FindRow<FGameModeData>(*FString::FromInt(GameModeId), "UAccelByteWarsGlobals::GetGameModeDataById", false);
+		GameModes->FindRow<FGameModeData>(*FString::FromInt(GameModeId), "UAccelByteWarsGlobals::GetGameModeDataById", false);
+		return true;
 	}
 
-	return nullptr;
+	return false;
 }
 
-FGameModeData* UAccelByteWarsGlobals::GetGameModeDataByCodeName(const FString& CodeName) const
+TArray<FString> UAccelByteWarsGlobals::GetGameModeDataByType(EGameModeType GameModeType) const
+{
+	TArray<FString> CodeNames;
+
+	TArray<FGameModeData*> GameModeDataArray = GetAllGameModes();
+	for (FGameModeData* GameModeData : GameModeDataArray)
+	{
+		if (!GameModeData) continue;
+		if(GameModeData->GameModeType == GameModeType)
+		{
+			CodeNames.Add(GameModeData->CodeName);
+		}
+	}
+	
+	return CodeNames;
+}
+
+//FGameModeData* UAccelByteWarsGlobals::GetGameModeDataByCodeName(const FString& CodeName) const
+bool UAccelByteWarsGlobals::GetGameModeDataByCodeName(const FString& CodeName, UPARAM(ref) FGameModeData& OutGameModeData) const
 {
 	TArray<FGameModeData*> ModeDataArray = GetAllGameModes();
 	for (FGameModeData* ModeData : ModeDataArray)
 	{
 		if (ModeData && ModeData->CodeName == CodeName)
 		{
-			return ModeData;
+			//return ModeData;
+			OutGameModeData = *ModeData;
+			return true;
 		}
 	}
 
-	return nullptr;
+	return false;
 }
 
 TArray<FGameModeTypeData*> UAccelByteWarsGlobals::GetAllGameModeTypes() const
@@ -66,17 +88,33 @@ TArray<FGameModeTypeData*> UAccelByteWarsGlobals::GetAllGameModeTypes() const
 	return GameModeTypeDatas;
 }
 
-FGameModeTypeData* UAccelByteWarsGlobals::GetGameModeTypeData(const EGameModeType Type) const
+//FGameModeTypeData* UAccelByteWarsGlobals::GetGameModeTypeData(const EGameModeType Type) const
+bool UAccelByteWarsGlobals::GetGameModeTypeData(const EGameModeType Type, UPARAM(ref) FGameModeTypeData& OutGameModeTypeData) const
 {
 	TArray<FGameModeTypeData*> TypeDataArray = GetAllGameModeTypes();
 	for (FGameModeTypeData* TypeData : TypeDataArray)
 	{
 		if (TypeData && TypeData->Type == Type)
 		{
-			return TypeData;
+			OutGameModeTypeData = *TypeData;
+			return true;
 		}
 	}
 
-	return nullptr;
+	return false;
+}
+
+TArray<EGameModeType> UAccelByteWarsGlobals::GetAllGameModeTypesEnum() const
+{
+	TArray<EGameModeType> GameModeEnums;
+
+	TArray<FGameModeTypeData*> TypeDataArray = GetAllGameModeTypes();
+	for (FGameModeTypeData* TypeData : TypeDataArray)
+	{
+		if (!TypeData) continue;
+		GameModeEnums.Add(TypeData->Type);
+	}
+
+	return GameModeEnums;
 }
 

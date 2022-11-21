@@ -20,10 +20,13 @@ struct FGameModeTypeData : public FTableRowBase
 	GENERATED_USTRUCT_BODY()
 	
 public:
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	EGameModeType Type = EGameModeType::FFA;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FString DisplayName = TEXT("Free For All");
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FText Description; // What is the description of this game mode
 };
 
@@ -37,15 +40,19 @@ struct FGameModeData : public FTableRowBase
 
 public:
 	UPROPERTY(EditAnywhere, AssetRegistrySearchable)
-	TSoftClassPtr<class AGameMode> DefaultClass;
+	TSoftClassPtr<class AAccelByteWarsGameModeBase> DefaultClass;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	EGameModeType GameModeType = EGameModeType::FFA;
 	
 	// Game mode alias; Used for online integration.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FString CodeName;
 
+	// Game mode alias; Used for online integration.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FString DisplayName;
+	
 	// Either local multiplayer game or not
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bIsLocalGame;
