@@ -4,9 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
+#include "Settings/GameModeDataAssets.h"
 #include "Settings/GlobalSettingsDataAsset.h"
 #include "UI/AccelByteWarsActivatableWidget.h"
-#include "Settings/GlobalSettingsDataAsset.h"
 #include "AccelByteWarsGameInstance.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLocalPlayerChanged, ULocalPlayer*, LocalPlayer);
@@ -17,7 +17,7 @@ struct FSelectedGameMode {
 	GENERATED_USTRUCT_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	EGameModeType SelectedGameModeType = EGameModeType::LocalFFA;
+	FGameModeData SelectedGameModeType;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 PlayerCount = 1; 
@@ -91,6 +91,8 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 	FOnLocalPlayerChanged OnLocalPlayerAdded;
+
+	UPROPERTY(BlueprintAssignable)
 	FOnLocalPlayerChanged OnLocalPlayerRemoved;
 	
 private:

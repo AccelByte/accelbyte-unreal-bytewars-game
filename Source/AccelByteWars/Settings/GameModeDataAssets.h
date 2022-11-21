@@ -3,29 +3,53 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Engine/DataAsset.h"
-#include "Settings/GlobalSettingsDataAsset.h"
+#include "Engine/DataTable.h"
 #include "GameModeDataAssets.generated.h"
+
+// Game mode enum
+UENUM(BlueprintType)
+enum class EGameModeType : uint8
+{
+	FFA,
+	TDM
+};
+
+USTRUCT(BlueprintType)
+struct FGameModeTypeData : public FTableRowBase
+{
+	GENERATED_USTRUCT_BODY()
+	
+public:
+	UPROPERTY(EditAnywhere)
+	EGameModeType Type = EGameModeType::FFA;
+
+	UPROPERTY(EditAnywhere)
+	FText Description; // What is the description of this game mode
+};
 
 /**
  * 
  */
-UCLASS(BlueprintType)
-class ACCELBYTEWARS_API UGameModeDataAssets : public UDataAsset
+USTRUCT(BlueprintType)
+struct FGameModeData : public FTableRowBase
 {
-	GENERATED_BODY()
+	GENERATED_USTRUCT_BODY()
 
 public:
 	UPROPERTY(EditAnywhere, AssetRegistrySearchable)
 	TSoftClassPtr<class AGameMode> DefaultClass;
 
 	UPROPERTY(EditAnywhere)
-	EGameModeType GameModeType = EGameModeType::LocalFFA;
+	EGameModeType GameModeType = EGameModeType::FFA;
 	
 	// Game mode alias; Used for online integration.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	FString Alias;
+	FString CodeName;
 
+	// Either local multiplayer game or not
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	bool bIsLocalGame;
+	
 	// Either team game or not; If FFA then should be false.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bIsTeamGame;
