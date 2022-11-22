@@ -17,10 +17,10 @@ struct FSelectedGameMode {
 	GENERATED_USTRUCT_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FGameModeData SelectedGameModeType;
+	FGameModeData SelectedGameMode;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int32 PlayerCount = 1; 
+	int32 RegisteredPlayerCount = 1; 
 };
 
 UCLASS(BlueprintType)
@@ -64,6 +64,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attributes)
 	TArray<UAccelByteWarsTeamSetup*> TeamSetups;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attributes)
+	FSelectedGameMode SelectedGameMode;
 };
 
 
