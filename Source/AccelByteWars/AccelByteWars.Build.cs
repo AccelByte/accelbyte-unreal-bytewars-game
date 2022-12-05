@@ -17,7 +17,7 @@ public class AccelByteWars : ModuleRules
 		);
 
 
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "CommonUI" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "CommonUI", "CommonInput"});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {
 				"InputCore",
@@ -32,6 +32,7 @@ public class AccelByteWars : ModuleRules
 				"Gauntlet",
 				"UMG",
 				"CommonUI",
+				"CommonInput",
 				"AudioMixer",
 				"NetworkReplayStreaming",
 				"AudioModulation",
