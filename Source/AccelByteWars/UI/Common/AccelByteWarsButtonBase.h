@@ -30,15 +30,15 @@ protected:
 	void RefreshButtonText();
 
 	UFUNCTION(BlueprintImplementableEvent)
-		void UpdateButtonText(const FText& InText);
+	void UpdateButtonText(const FText& InText);
 
 	UFUNCTION(BlueprintImplementableEvent)
-		void UpdateButtonStyle();
-
+	void UpdateButtonStyle();
+	
 private:
 	UPROPERTY(EditAnywhere, Category = "Button", meta = (InlineEditConditionToggle))
-		uint8 bOverride_ButtonText : 1;
+	uint8 bOverride_ButtonText : 1;
 
 	UPROPERTY(EditAnywhere, Category = "Button", meta = (editcondition = "bOverride_ButtonText"))
-		FText ButtonText;
+	FText ButtonText;
 };
