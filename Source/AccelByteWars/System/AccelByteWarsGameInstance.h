@@ -79,7 +79,6 @@ class ACCELBYTEWARS_API UAccelByteWarsGameInstance : public UGameInstance
 	GENERATED_BODY()
 	
 public:
-	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Attributes)
 	UAccelByteWarsActivatableWidget* BaseUIWidget;
 
@@ -88,9 +87,6 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attributes)
 	UAccelByteWarsGameSetup* GameSetup;
-
-	virtual int32 AddLocalPlayer(ULocalPlayer* NewPlayer, int32 ControllerId) override;
-	virtual bool RemoveLocalPlayer(ULocalPlayer* ExistingPlayer) override;
 
 	UPROPERTY(BlueprintAssignable)
 	FOnLocalPlayerChanged OnLocalPlayerAdded;
@@ -101,4 +97,26 @@ public:
 private:
 	/** This is the primary player*/
 	TWeakObjectPtr<ULocalPlayer> PrimaryPlayer;
+
+public:
+	virtual int32 AddLocalPlayer(ULocalPlayer* NewPlayer, int32 ControllerId) override;
+	virtual bool RemoveLocalPlayer(ULocalPlayer* ExistingPlayer) override;
+
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = Sounds)
+	float GetMusicVolume();
+
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = Sounds)
+	void SetMusicVolume(float InVolume);
+
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = Sounds)
+	float GetSFXVolume();
+
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = Sounds)
+	void SetSFXVolume(float InVolume);
+
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = GameSettings)
+	void LoadGameSettings();
+
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = GameSettings)
+	void SaveGameSettings();
 };

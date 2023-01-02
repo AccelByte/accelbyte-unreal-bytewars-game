@@ -10,6 +10,7 @@
 
 class UAnalogSlider;
 class USlider;
+class UImage;
 class UCommonTextBlock;
 class UCommonButtonBase;
 class UCommonRotator;
@@ -69,49 +70,46 @@ protected:
 //////////////////////////////////////////////////////////////////////////
 // USettingsListEntry_Scalar
 //////////////////////////////////////////////////////////////////////////
-///
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnScalarValueChangedDelegate, float, Value);
+
 UCLASS(Abstract, Blueprintable)
 class ACCELBYTEWARS_API USettingsListEntry_Scalar : public USettingsListEntryBase
 {
 	GENERATED_BODY()
 
 public:
-	virtual void SetDisplayName(const FText& InName) override;
+	UFUNCTION(BlueprintCallable)
+	void InitSetting(const FText& InName, const float InValue);
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (ExposeOnSpawn = true))
-	float ScalarSetting;
+	void SetDisplayName(const FText& InName) override;
+
+	UFUNCTION(BlueprintCallable)
+	void SetScalarValue(const float InValue);
+
+	UFUNCTION(BlueprintPure)
+	float GetScalarValue();
+
+	FOnScalarValueChangedDelegate OnScalarValueChangedDelegate;
 	
 protected:
-	UFUNCTION(BlueprintCallable)
-	void Refresh();
-	
-	virtual void NativeOnInitialized() override;
-	virtual void NativeOnEntryReleased() override;
+	void NativeOnInitialized() override;
 
 	UFUNCTION()
-	void HandleSliderValueChanged(float Value);
-
-	UFUNCTION(BlueprintImplementableEvent)
-	void OnValueChanged(float Value);
-
-	UFUNCTION(BlueprintImplementableEvent)
-	void OnDefaultValueChanged(float DefaultValue);
-
-	UFUNCTION(BlueprintImplementableEvent)
-	void OnDisplayNameChanged(const FText& InName);
+	void OnScalarValueChanged(float Value);
 
 private:	// Bound Widgets
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UPanelWidget* Panel_Value;
+	UImage* Img_ProgressBar;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UAnalogSlider* Slider_SettingValue;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UCommonTextBlock* Text_SettingValue;
+	UCommonTextBlock* Txt_SettingValue;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UCommonTextBlock* Text_SettingName;
+	UCommonTextBlock* Txt_SettingName;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -156,5 +154,5 @@ private:	// Bound Widgets
 	UCommonButtonBase* Button_Increase;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UCommonTextBlock* Text_SettingName;
+	UCommonTextBlock* Txt_SettingName;
 };

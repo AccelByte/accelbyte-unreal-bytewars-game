@@ -8,6 +8,7 @@
 #include "CommonRotator.h"
 #include "CommonInputBaseTypes.h"
 #include "CommonInputSubsystem.h"
+#include "Components/Image.h"
 
 void USettingsListEntryBase::NativeOnEntryReleased()
 {
@@ -44,48 +45,37 @@ void USettingsListEntryBase::SetDisplayName(const FText& InName)
 void USettingsListEntry_Scalar::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
+	Slider_SettingValue->OnValueChanged.AddDynamic(this, &ThisClass::OnScalarValueChanged);
+}
 
-	Slider_SettingValue->OnValueChanged.AddDynamic(this, &ThisClass::HandleSliderValueChanged);
+void USettingsListEntry_Scalar::InitSetting(const FText& InName, const float InValue)
+{
+	SetDisplayName(InName);
+	SetScalarValue(InValue);
 }
 
 void USettingsListEntry_Scalar::SetDisplayName(const FText& InName)
 {
 	Super::SetDisplayName(InName);
-	
-	OnDisplayNameChanged(DisplayName);
+	Txt_SettingName->SetText(InName);
 }
 
-void USettingsListEntry_Scalar::NativeOnEntryReleased()
+void USettingsListEntry_Scalar::SetScalarValue(const float InValue)
 {
-	Super::NativeOnEntryReleased();
-
-	ScalarSetting = 0.f;
+	Slider_SettingValue->SetValue(InValue);
+	Img_ProgressBar->GetDynamicMaterial()->SetScalarParameterValue(TEXT("ScalarValue"), InValue);
+	Txt_SettingValue->SetText(FText::FromString(FString::Printf(TEXT("%.2f"), InValue)));
 }
 
-void USettingsListEntry_Scalar::HandleSliderValueChanged(float Value)
+float USettingsListEntry_Scalar::GetScalarValue()
 {
-	ScalarSetting = Value;
-
-	Slider_SettingValue->SetValue(Value);
-	Text_SettingValue->SetText(FText::FromString(FString::SanitizeFloat(Value)));
-
-	OnValueChanged(Value);
+	return Slider_SettingValue->GetValue();
 }
 
-void USettingsListEntry_Scalar::Refresh()
+void USettingsListEntry_Scalar::OnScalarValueChanged(float Value)
 {
-	Slider_SettingValue->SetValue(ScalarSetting);
-	Slider_SettingValue->SetStepSize(0.1f);
-	Text_SettingValue->SetText(FText::FromString(FString::SanitizeFloat(ScalarSetting)));
-
-	Text_SettingName->SetText(DisplayName);
-	OnDisplayNameChanged(DisplayName);
-
-	TOptional<double> DefaultValue = ScalarSetting;
-	OnDefaultValueChanged(DefaultValue.IsSet() ? DefaultValue.GetValue() : -1.0);
-
-	OnValueChanged(ScalarSetting);
-
+	SetScalarValue(Value);
+	OnScalarValueChangedDelegate.Broadcast(Value);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -101,7 +91,7 @@ void USettingsListEntry_Discrete::Refresh()
 	}
 	ensure(Options.Num() > 0);
 
-	Text_SettingName->SetText(!DisplayName.IsEmpty() ? DisplayName : FText::FromString(TEXT("Settings Name Here")));
+	Txt_SettingName->SetText(!DisplayName.IsEmpty() ? DisplayName : FText::FromString(TEXT("Settings Name Here")));
 	
 	Rotator_SettingValue->PopulateTextLabels(Options);
 	Rotator_SettingValue->SetSelectedItem(0);

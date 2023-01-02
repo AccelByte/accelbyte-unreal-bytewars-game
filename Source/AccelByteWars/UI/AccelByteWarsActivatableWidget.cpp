@@ -1,4 +1,6 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
 
 
 #include "UI/AccelByteWarsActivatableWidget.h"
@@ -6,6 +8,8 @@
 #include "Editor/WidgetCompilerLog.h"
 #include "Input/CommonInputMode.h"
 #include "Input/UIActionBindingHandle.h"
+#include "Kismet/GameplayStatics.h"
+#include "Camera/CameraActor.h"
 
 #define LOCTEXT_NAMESPACE "AccelByteWars"
 
@@ -51,5 +55,19 @@ void UAccelByteWarsActivatableWidget::ValidateCompiledWidgetTree(const UWidgetTr
 }
 
 #endif
+
+void UAccelByteWarsActivatableWidget::MoveCameraToTargetLocation(const float DeltaTime, const FVector TargetLocation, const float InterpSpeed)
+{
+	AActor* Camera = UGameplayStatics::GetActorOfClass(GetWorld(), ACameraActor::StaticClass());
+	if (Camera == nullptr) 
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cannot move the camera to active menu. Camera is not found."));
+		return;
+	}
+
+	const FVector CurrentLocation = Camera->GetActorLocation();
+	const FVector DesiredLocation = FMath::VInterpTo(CurrentLocation, TargetLocation, DeltaTime, InterpSpeed);
+	Camera->SetActorLocation(DesiredLocation);
+}
 
 #undef LOCTEXT_NAMESPACE
