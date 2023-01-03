@@ -2,7 +2,7 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-#include "UI/MainMenu/Credits/CreditsRoleGroupWidget.h"
+#include "UI/MainMenu/Credits/Components/CreditsRoleGroupWidget.h"
 #include "CommonTextBlock.h"
 #include "Components/VerticalBox.h"
 

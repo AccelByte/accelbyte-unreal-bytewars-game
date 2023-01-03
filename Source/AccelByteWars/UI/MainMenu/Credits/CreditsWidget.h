@@ -6,7 +6,7 @@
 
 #include "CoreMinimal.h"
 #include "UI/AccelByteWarsActivatableWidget.h"
-#include "UI/MainMenu/Credits/CreditsDataModel.h"
+#include "UI/MainMenu/Credits/Components/CreditsDataModel.h"
 #include "CreditsWidget.generated.h"
 
 class UScrollBox;

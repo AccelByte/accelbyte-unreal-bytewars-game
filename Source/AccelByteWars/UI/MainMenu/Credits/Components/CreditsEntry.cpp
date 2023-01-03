@@ -2,7 +2,7 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-#include "UI/MainMenu/Credits/CreditsEntry.h"
+#include "UI/MainMenu/Credits/Components/CreditsEntry.h"
 #include "CommonTextBlock.h"
 
 void UCreditsEntry::InitData(const FCreditsData& CreditData)

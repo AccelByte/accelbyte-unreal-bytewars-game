@@ -6,7 +6,7 @@
 
 #include "CoreMinimal.h"
 #include "CommonUserWidget.h"
-#include "UI/MainMenu/Credits/CreditsDataModel.h"
+#include "UI/MainMenu/Credits/Components/CreditsDataModel.h"
 #include "CreditsEntry.generated.h"
 
 class UCommonTextBlock;

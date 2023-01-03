@@ -2,8 +2,8 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-#include "UI/Settings/SettingsWidget.h"
-#include "UI/Settings/SettingsListEntryBase.h"
+#include "UI/MainMenu/Settings/SettingsWidget.h"
+#include "UI/MainMenu/Settings/Components/SettingsListEntryBase.h"
 #include "System/AccelByteWarsGameInstance.h"
 
 #define LOCTEXT_NAMESPACE "AccelByteWars"

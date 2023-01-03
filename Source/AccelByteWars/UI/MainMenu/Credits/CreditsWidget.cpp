@@ -3,8 +3,8 @@
 // and restrictions contact your company contract manager.
 
 #include "UI/MainMenu/Credits/CreditsWidget.h"
-#include "UI/MainMenu/Credits/CreditsRoleGroupWidget.h"
-#include "UI/MainMenu/Credits/CreditsEntry.h"
+#include "UI/MainMenu/Credits/Components/CreditsRoleGroupWidget.h"
+#include "UI/MainMenu/Credits/Components/CreditsEntry.h"
 #include "Components/ScrollBox.h"
 
 void UCreditsWidget::NativeOnActivated()
