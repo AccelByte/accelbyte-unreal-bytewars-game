@@ -73,7 +73,7 @@ protected:
 // USettingsListEntry_Scalar
 //////////////////////////////////////////////////////////////////////////
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnScalarValueChangedDelegate, float, Value);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnScalarValueChangedDelegate, float /*Value*/);
 
 UCLASS(Abstract, Blueprintable)
 class ACCELBYTEWARS_API USettingsListEntry_Scalar : public USettingsListEntryBase

@@ -49,12 +49,12 @@ void USettingsWidget::InitSettings()
 	// Init music volume setting.
 	float MusicVolume = GameInstance->GetMusicVolume();
 	W_SettingMusicVolumeScalar->InitSetting(LOCTEXT("Music Setting", "Music"), MusicVolume);
-	W_SettingMusicVolumeScalar->OnScalarValueChangedDelegate.AddUniqueDynamic(GameInstance, &UAccelByteWarsGameInstance::SetMusicVolume);
+	W_SettingMusicVolumeScalar->OnScalarValueChangedDelegate.AddUObject(GameInstance, &UAccelByteWarsGameInstance::SetMusicVolume);
 
 	// Init SFX volume setting.
 	float SFXVolume = GameInstance->GetSFXVolume();
 	W_SettingSFXVolumeScalar->InitSetting(LOCTEXT("SFX Setting", "SFX"), SFXVolume);
-	W_SettingSFXVolumeScalar->OnScalarValueChangedDelegate.AddUniqueDynamic(GameInstance, &UAccelByteWarsGameInstance::SetSFXVolume);
+	W_SettingSFXVolumeScalar->OnScalarValueChangedDelegate.AddUObject(GameInstance, &UAccelByteWarsGameInstance::SetSFXVolume);
 }
 
 void USettingsWidget::FinalizeSettings()
@@ -64,6 +64,9 @@ void USettingsWidget::FinalizeSettings()
 		UE_LOG(LogTemp, Warning, TEXT("Cannot finalize and save game settings. The game instance is not found."));
 		return;
 	}
+
+	W_SettingMusicVolumeScalar->OnScalarValueChangedDelegate.RemoveAll(GameInstance);
+	W_SettingSFXVolumeScalar->OnScalarValueChangedDelegate.RemoveAll(GameInstance);
 
 	GameInstance->SaveGameSettings();
 }
