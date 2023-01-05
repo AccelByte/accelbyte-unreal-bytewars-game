@@ -1,22 +1,33 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
 
 
 #include "UI/AccelByteWarsBaseUI.h"
 
-void UAccelByteWarsBaseUI::PushToStackMenu(TSubclassOf<UAccelByteWarsActivatableWidget> MenuClass)
+UAccelByteWarsActivatableWidget* UAccelByteWarsBaseUI::PushWidgetToStack(EBaseUIStackType TargetStack, TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass)
 {
-	// bind menu stack and push here
-	if(MenuStack)
-	{
-		MenuStack->AddWidget(MenuClass);
-	}
-}
+	ensure(MenuStack != nullptr);
+	ensure(PromptStack != nullptr);
+	ensure(InGameMenuStack != nullptr);
+	ensure(InGameHUDStack != nullptr);
 
-void UAccelByteWarsBaseUI::PushToStackPrompt(TSubclassOf<UAccelByteWarsActivatableWidget> PromptClass)
-{
-	// bind prompt stack and push here
-	if(PromptStack)
+	UAccelByteWarsActivatableWidget* NewWidget = nullptr;
+	switch (TargetStack) 
 	{
-		PromptStack->AddWidget(PromptClass);
+		case EBaseUIStackType::Menu:
+			NewWidget = Cast<UAccelByteWarsActivatableWidget>(MenuStack->AddWidget(WidgetClass));
+			break;
+		case EBaseUIStackType::Prompt:
+			NewWidget = Cast<UAccelByteWarsActivatableWidget>(PromptStack->AddWidget(WidgetClass));
+			break;
+		case EBaseUIStackType::InGameMenu:
+			NewWidget = Cast<UAccelByteWarsActivatableWidget>(InGameMenuStack->AddWidget(WidgetClass));
+			break;
+		case EBaseUIStackType::InGameHUD:
+			NewWidget = Cast<UAccelByteWarsActivatableWidget>(InGameHUDStack->AddWidget(WidgetClass));
+			break;
 	}
+
+	return NewWidget;
 }
