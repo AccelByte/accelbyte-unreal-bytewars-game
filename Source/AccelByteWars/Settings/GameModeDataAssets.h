@@ -24,7 +24,10 @@ public:
 	EGameModeType Type = EGameModeType::FFA;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	FString DisplayName = TEXT("Free For All");
+	FPrimaryAssetId GameModeType;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FText DisplayName = FText::FromString(TEXT("Free For All"));
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FText Description; // What is the description of this game mode
@@ -44,6 +47,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	EGameModeType GameModeType = EGameModeType::FFA;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FString GameModeTypeString;
 	
 	// Game mode alias; Used for online integration.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
@@ -51,7 +57,7 @@ public:
 
 	// Game mode alias; Used for online integration.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	FString DisplayName;
+	FText DisplayName;
 	
 	// Either local multiplayer game or not
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
