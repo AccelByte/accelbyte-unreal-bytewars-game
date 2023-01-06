@@ -70,4 +70,40 @@ void UAccelByteWarsActivatableWidget::MoveCameraToTargetLocation(const float Del
 	Camera->SetActorLocation(DesiredLocation);
 }
 
+void UAccelByteWarsActivatableWidget::SetInputModeToUIOnly()
+{
+	APlayerController* Controller = GetOwningPlayer();
+	if (!Controller)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Failed to change input mode. Player controller is not valid or already destroyed."));
+		return;
+	}
+
+	// Set input mode to UI only mode.
+	UWidget* InitialFocus = GetDesiredFocusTarget();
+	FInputModeUIOnly InputMode;
+	if (InitialFocus)
+	{
+		InputMode.SetWidgetToFocus(InitialFocus->TakeWidget());
+	}
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	Controller->SetInputMode(InputMode);
+	Controller->bShowMouseCursor = true;
+}
+
+void UAccelByteWarsActivatableWidget::SetInputModeToGameOnly()
+{
+	APlayerController* Controller = GetOwningPlayer();
+	if (!Controller)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Failed to change input mode. Player controller is not valid or already destroyed."));
+		return;
+	}
+
+	// Set input mode to game only mode.
+	FInputModeGameOnly InputMode;
+	Controller->SetInputMode(InputMode);
+	Controller->bShowMouseCursor = false;
+}
+
 #undef LOCTEXT_NAMESPACE

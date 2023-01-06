@@ -47,4 +47,12 @@ protected:
 protected:
 	UFUNCTION(BlueprintCallable)
 	void MoveCameraToTargetLocation(const float DeltaTime, const FVector TargetLocation = FVector(60.0f, 300.0f, 160.0f), const float InterpSpeed = 5.0f);
+
+	/** Change the owning player controller input mode to UI only and also show the mouse cursor */
+	UFUNCTION(BlueprintCallable)
+	void SetInputModeToUIOnly();
+
+	/** Change the owning player controller input mode to game only and also hide the mouse cursor */
+	UFUNCTION(BlueprintCallable)
+	void SetInputModeToGameOnly();
 };
