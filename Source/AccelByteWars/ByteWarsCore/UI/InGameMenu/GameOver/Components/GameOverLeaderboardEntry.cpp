@@ -2,7 +2,7 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-#include "UI/InGameMenu/GameOver/Components/GameOverLeaderboardEntry.h"
+#include "ByteWarsCore/UI/InGameMenu/GameOver/Components/GameOverLeaderboardEntry.h"
 #include "Components/TextBlock.h"
 
 void UGameOverLeaderboardEntry::InitData(const FText& PlayerName, const int32 PlayerScore, const int32 PlayerKills, const FLinearColor& PlayerColor)

@@ -5,7 +5,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UI/AccelByteWarsActivatableWidget.h"
+#include "ByteWarsCore/UI/AccelByteWarsActivatableWidget.h"
 #include "GameOverWidget.generated.h"
 
 class UCommonButtonBase;

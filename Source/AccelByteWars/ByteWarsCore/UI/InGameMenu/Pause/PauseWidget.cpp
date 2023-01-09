@@ -2,7 +2,7 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-#include "UI/InGameMenu/Pause/PauseWidget.h"
+#include "ByteWarsCore/UI/InGameMenu/Pause/PauseWidget.h"
 #include "Kismet/GameplayStatics.h"
 #include "CommonButtonBase.h"
 

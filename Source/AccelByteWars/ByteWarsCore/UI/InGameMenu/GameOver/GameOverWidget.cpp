@@ -2,8 +2,8 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-#include "UI/InGameMenu/GameOver/GameOverWidget.h"
-#include "UI/InGameMenu/GameOver/Components/GameOverLeaderboardEntry.h"
+#include "ByteWarsCore/UI/InGameMenu/GameOver/GameOverWidget.h"
+#include "ByteWarsCore/UI/InGameMenu/GameOver/Components/GameOverLeaderboardEntry.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
