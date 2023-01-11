@@ -29,7 +29,7 @@ public class AccelByteWars : ModuleRules
             "OnlineSubsystem",
             "OnlineSubsystemUtils",
             "Json",
-			"Http"
+            "HTTP"
         });
 
 
