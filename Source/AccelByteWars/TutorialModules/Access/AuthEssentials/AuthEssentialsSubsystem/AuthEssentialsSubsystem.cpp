@@ -18,6 +18,18 @@ void UAuthEssentialsSubsystem::Login(EAccelByteLoginType LoginMethod, const APla
     Credentials.LoginType = LoginMethod;
     Credentials.Type = FAccelByteUtilities::GetUEnumValueAsString(LoginMethod);
 
+    switch (LoginMethod) 
+    {
+        case EAccelByteLoginType::DeviceId:
+            // Login with device id doesn't requires auth credentials.
+            ResetAuthCredentials();
+            break;
+        case EAccelByteLoginType::Steam:
+            // Login with steam requires token from Steam.
+            SetPlatformCredentials(LocalUserNum, Credentials.Type);
+            break;
+    }
+
     LoginCompleteDelegate = IdentityInterface->AddOnLoginCompleteDelegate_Handle(LocalUserNum, FOnLoginCompleteDelegate::CreateUObject(this, &UAuthEssentialsSubsystem::OnLoginComplete, OnLoginComplete));
     IdentityInterface->Login(LocalUserNum, Credentials);
 }
@@ -56,20 +68,23 @@ void UAuthEssentialsSubsystem::SetAuthCredentials(const FString& Id, const FStri
     Credentials.Token = Token;
 }
 
-void UAuthEssentialsSubsystem::SetPlatformAuthCredentials(const APlayerController* PC)
+void UAuthEssentialsSubsystem::ResetAuthCredentials()
 {
-    const IOnlineSubsystem* NativeSubsystem = IOnlineSubsystem::GetByPlatform();
-    ensure(NativeSubsystem != nullptr);
+    Credentials.Id = TEXT("");
+    Credentials.Token = TEXT("");
+}
 
-    const IOnlineIdentityPtr NativeIdentityInterface = NativeSubsystem->GetIdentityInterface();
-    ensure(NativeIdentityInterface.IsValid());
+void UAuthEssentialsSubsystem::SetPlatformCredentials(const int32 LocalUserNum, const FString& PlatformName)
+{
+    const IOnlineSubsystem* PlatformOSS = IOnlineSubsystem::Get(FName(PlatformName));
+    ensure(PlatformOSS != nullptr);
 
-    const ULocalPlayer* LocalUser = PC->GetLocalPlayer();
-    ensure(LocalUser != nullptr);
+    const IOnlineIdentityPtr PlatformIdentityInterface = PlatformOSS->GetIdentityInterface();
+    ensure(PlatformIdentityInterface.IsValid());
 
-    const int32 LocalUserNum = LocalUser->GetControllerId();
+    ResetAuthCredentials();
 
-    Credentials.Token = FGenericPlatformHttp::UrlEncode(NativeIdentityInterface->GetAuthToken(LocalUserNum));
+    Credentials.Token = FGenericPlatformHttp::UrlEncode(PlatformIdentityInterface->GetAuthToken(LocalUserNum));
 }
 
 FOnlineIdentityAccelBytePtr UAuthEssentialsSubsystem::GetIdentityInterface() const

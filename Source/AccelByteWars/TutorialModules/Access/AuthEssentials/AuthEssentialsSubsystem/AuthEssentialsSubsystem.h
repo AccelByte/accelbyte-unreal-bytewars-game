@@ -23,6 +23,7 @@ protected:
 	FOnlineAccountCredentialsAccelByte Credentials { EAccelByteLoginType::None, TEXT(""), TEXT("") };
 
 public:
+	/** Login user using specified login method */
 	UFUNCTION(BlueprintCallable)
 	void Login(EAccelByteLoginType LoginMethod, const APlayerController* PC, const FOnLoginComplete& OnLoginComplete);
 
@@ -32,13 +33,18 @@ public:
 	UFUNCTION(BlueprintCallable)
 	bool IsLoggedIn(const APlayerController* PC);
 
+	/** Set auth credentials for id/username and token/password. It meant to be used for AccelByte login method. */
 	UFUNCTION(BlueprintCallable)
 	void SetAuthCredentials(const FString& Id, const FString& Token);
 
+	/** Clear auth credentials for id/username and token/password. */
 	UFUNCTION(BlueprintCallable)
-	void SetPlatformAuthCredentials(const APlayerController* PC);
+	void ResetAuthCredentials();
 
 protected:
+	/** Set auth token credentials for specified platform. It meant to be used for third-party login, such as Steam, EOS, etc. */
+	void SetPlatformCredentials(const int32 LocalUserNum, const FString& PlatformName);
+
 	FOnlineIdentityAccelBytePtr GetIdentityInterface() const;
 
 	FDelegateHandle LoginCompleteDelegate;
