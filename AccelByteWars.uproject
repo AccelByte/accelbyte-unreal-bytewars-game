@@ -31,6 +31,22 @@
 		{
 			"Name": "Metasound",
 			"Enabled": true
+		},
+		{
+			"Name": "AccelByteUe4Sdk",
+			"Enabled": true
+		},
+		{
+			"Name": "OnlineSubsystemAccelByte",
+			"Enabled": true
+		},
+		{
+			"Name": "AccelByteNetworkUtilities",
+			"Enabled": true
+		},
+		{
+			"Name": "OnlineSubsystemSteam",
+			"Enabled": true
 		}
 	]
 }
