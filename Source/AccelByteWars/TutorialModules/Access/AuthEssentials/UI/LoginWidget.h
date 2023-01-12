@@ -6,10 +6,10 @@
 
 #include "CoreMinimal.h"
 #include "ByteWarsCore/UI/AccelByteWarsActivatableWidget.h"
-#include "AuthWidget.generated.h"
+#include "LoginWidget.generated.h"
 
 UENUM(BlueprintType)
-enum EAuthState 
+enum ELoginState 
 {
 	Default,
 	InProgress,
@@ -17,7 +17,7 @@ enum EAuthState
 };
 
 UCLASS()
-class ACCELBYTEWARS_API UAuthWidget : public UAccelByteWarsActivatableWidget
+class ACCELBYTEWARS_API ULoginWidget : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
 };

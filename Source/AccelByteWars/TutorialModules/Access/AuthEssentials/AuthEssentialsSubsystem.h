@@ -9,8 +9,6 @@
 #include "OnlineIdentityInterfaceAccelByte.h"
 #include "AuthEssentialsSubsystem.generated.h"
 
-class FOnlineAccountCredentialsAccelByte;
-
 UCLASS()
 class ACCELBYTEWARS_API UAuthEssentialsSubsystem : public UGameInstanceSubsystem
 {
@@ -20,9 +18,13 @@ class ACCELBYTEWARS_API UAuthEssentialsSubsystem : public UGameInstanceSubsystem
 	DECLARE_DYNAMIC_DELEGATE_OneParam(FOnLogoutComplete, bool, bWasSuccessful);
 
 protected:
-	FOnlineAccountCredentialsAccelByte Credentials { EAccelByteLoginType::None, TEXT(""), TEXT("") };
+	FOnlineIdentityAccelBytePtr IdentityInterface;
+	FOnlineAccountCredentials Credentials;
 
 public:
+	void Initialize(FSubsystemCollectionBase& Collection) override;
+	void Deinitialize() override;
+
 	/** Login user using specified login method */
 	UFUNCTION(BlueprintCallable)
 	void Login(EAccelByteLoginType LoginMethod, const APlayerController* PC, const FOnLoginComplete& OnLoginComplete);
@@ -30,26 +32,21 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void Logout(const APlayerController* PC, const FOnLogoutComplete& OnLogoutComplete);
 
-	UFUNCTION(BlueprintCallable)
-	bool IsLoggedIn(const APlayerController* PC);
-
 	/** Set auth credentials for id/username and token/password. It meant to be used for AccelByte login method. */
 	UFUNCTION(BlueprintCallable)
 	void SetAuthCredentials(const FString& Id, const FString& Token);
 
-	/** Clear auth credentials for id/username and token/password. */
+	/**
+	 * Clear auth credentials. It will clear id/username and token/password credentials.
+	 * @param bAlsoResetType will clear the auth's login type if it sets to true.
+	 */
+	void ClearAuthCredentials(bool bAlsoResetType = false);
+
 	UFUNCTION(BlueprintCallable)
-	void ResetAuthCredentials();
+	bool IsLoggedIn(const APlayerController* PC);
 
 protected:
-	/** Set auth token credentials for specified platform. It meant to be used for third-party login, such as Steam, EOS, etc. */
-	void SetPlatformCredentials(const int32 LocalUserNum, const FString& PlatformName);
-
-	FOnlineIdentityAccelBytePtr GetIdentityInterface() const;
-
-	FDelegateHandle LoginCompleteDelegate;
+	int32 GetLocalUserNum(const APlayerController* PC);
 	void OnLoginComplete(int32 LocalUserNum, bool bLoginWasSuccessful, const FUniqueNetId& UserId, const FString& LoginError, const FOnLoginComplete OnLoginComplete);
-
-	FDelegateHandle LogoutCompleteDelegate;
 	void OnLogoutComplete(int32 LocalUserNum, bool bLogoutWasSuccessful, const FOnLogoutComplete OnLogoutComplete);
 };
