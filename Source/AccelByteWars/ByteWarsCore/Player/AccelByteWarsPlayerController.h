@@ -13,5 +13,12 @@ UCLASS()
 class ACCELBYTEWARS_API AAccelByteWarsPlayerController : public APlayerController
 {
 	GENERATED_BODY()
-	
+
+public:
+	UFUNCTION(BlueprintCallable)
+	void TriggerServerTravel(TSoftObjectPtr<UWorld> Level);
+
+protected:
+	UFUNCTION(Reliable, Server, meta=(WorldContext="WorldContextObject"))
+	void ServerTravel(const FString& Url);
 };

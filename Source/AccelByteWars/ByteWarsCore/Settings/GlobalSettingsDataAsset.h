@@ -14,7 +14,7 @@ struct FGlobalTeamSetup {
     GENERATED_USTRUCT_BODY()
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    FLinearColor itemColor;
+    FLinearColor itemColor = FLinearColor::White;
 };
 
 /**

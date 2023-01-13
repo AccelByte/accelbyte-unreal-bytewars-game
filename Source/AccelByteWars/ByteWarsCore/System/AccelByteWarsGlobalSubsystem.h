@@ -21,7 +21,8 @@ class ACCELBYTEWARS_API UAccelByteWarsGlobalSubsystem : public UGameInstanceSubs
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
-	
+
+public:
 	const UAccelByteWarsGlobals* GetCurrentGlobals() const { return CurrentGlobals; }
 
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Get Globals"))

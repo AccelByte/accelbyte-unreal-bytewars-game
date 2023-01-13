@@ -24,14 +24,9 @@ void UAccelByteWarsGlobalSubsystem::Deinitialize()
 
 bool UAccelByteWarsGlobalSubsystem::ShouldCreateSubsystem(UObject* Outer) const
 {
-	if (!CastChecked<UGameInstance>(Outer)->IsDedicatedServerInstance())
-	{
-		TArray<UClass*> ChildClasses;
-		GetDerivedClasses(GetClass(), ChildClasses, false);
+	TArray<UClass*> ChildClasses;
+	GetDerivedClasses(GetClass(), ChildClasses, false);
 
-		// Only create an instance if there is no override implementation defined elsewhere
-		return ChildClasses.Num() == 0;
-	}
-
-	return false;
+	// Only create an instance if there is no override implementation defined elsewhere
+	return ChildClasses.Num() == 0;
 }

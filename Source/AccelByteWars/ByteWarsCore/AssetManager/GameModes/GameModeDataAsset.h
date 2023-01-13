@@ -29,27 +29,27 @@ public:
 	
 	// Either local multiplayer game or not
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	bool bIsLocalGame;
+	bool bIsLocalGame = false;
 	
 	// Either team game or not; If FFA then should be false.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	bool bIsTeamGame;
+	bool bIsTeamGame = false;
 
 	// Default team count
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	int32 TeamNum;
+	int32 TeamNum = INDEX_NONE;
 
 	// Default maximum supported player
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	int32 MaxPlayers;
+	int32 MaxPlayers = INDEX_NONE;
 
 	// Default match time
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	int32 MatchTime;
+	int32 MatchTime = INDEX_NONE;
 	
 	// Default score limit
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	int32 ScoreLimit;
+	int32 ScoreLimit = INDEX_NONE;
 	
 };
 

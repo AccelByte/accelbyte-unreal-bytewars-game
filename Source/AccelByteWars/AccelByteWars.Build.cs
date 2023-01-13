@@ -36,6 +36,7 @@ public class AccelByteWars : ModuleRules
 				"AudioMixer",
 				"NetworkReplayStreaming",
 				"AudioModulation",
+				"Niagara"
 			});
 
 		// Uncomment if you are using Slate UI
