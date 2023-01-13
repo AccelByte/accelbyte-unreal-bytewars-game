@@ -5,17 +5,29 @@
 #include "TutorialModules/Access/AuthEssentials/AuthEssentialsSubsystem.h"
 #include "OnlineSubsystemUtils.h"
 
+DECLARE_LOG_CATEGORY_EXTERN(LogAuthEssentials, Log, All);
+DEFINE_LOG_CATEGORY(LogAuthEssentials);
+
 void UAuthEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
 
+    ClearAuthCredentials(true);
+
     // Get AccelByte Identity Interface from OSS.
     const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
-    ensure(Subsystem != nullptr);
-    IdentityInterface = StaticCastSharedPtr<FOnlineIdentityAccelByte>(Subsystem->GetIdentityInterface());
-    ensure(IdentityInterface.IsValid());
+    if (!ensure(Subsystem)) 
+    {
+        UE_LOG(LogAuthEssentials, Warning, TEXT("AccelByte OSS is not valid. Make sure you have set up AccelByte OSS and its credentials properly."));
+        return;
+    }
 
-    ClearAuthCredentials(true);
+    IdentityInterface = StaticCastSharedPtr<FOnlineIdentityAccelByte>(Subsystem->GetIdentityInterface());
+    if (!ensure(IdentityInterface.IsValid()))
+    {
+        UE_LOG(LogAuthEssentials, Warning, TEXT("Cannot login. Identity interface is not valid. Make sure you have set up AccelByte OSS and its credentials properly."));
+        return;
+    }
 }
 
 void UAuthEssentialsSubsystem::Deinitialize()
@@ -27,6 +39,14 @@ void UAuthEssentialsSubsystem::Deinitialize()
 
 void UAuthEssentialsSubsystem::Login(EAccelByteLoginType LoginMethod, const APlayerController* PC, const FOnLoginComplete& OnLoginComplete)
 {
+    if (!ensure(IdentityInterface.IsValid()))
+    {
+        FString Message = TEXT("Cannot login. Identity interface is not valid. Make sure you have set up AccelByte OSS and its credentials properly.");
+        UE_LOG(LogAuthEssentials, Warning, TEXT("%s"), *Message);
+        OnLoginComplete.ExecuteIfBound(false, *Message);
+        return;
+    }
+
     Credentials.Type = FAccelByteUtilities::GetUEnumValueAsString(LoginMethod);
 
     switch (LoginMethod)
@@ -49,6 +69,13 @@ void UAuthEssentialsSubsystem::Login(EAccelByteLoginType LoginMethod, const APla
 
 void UAuthEssentialsSubsystem::Logout(const APlayerController* PC, const FOnLogoutComplete& OnLogoutComplete)
 {
+    if (!ensure(IdentityInterface.IsValid())) 
+    {
+        UE_LOG(LogAuthEssentials, Warning, TEXT("Cannot logout. Identity interface is not valid. Make sure you have set up AccelByte OSS and its credentials properly."));
+        OnLogoutComplete.ExecuteIfBound(false);
+        return;
+    }
+
     int32 LocalUserNum = GetLocalUserNum(PC);
     IdentityInterface->AddOnLogoutCompleteDelegate_Handle(LocalUserNum, FOnLogoutCompleteDelegate::CreateUObject(this, &UAuthEssentialsSubsystem::OnLogoutComplete, OnLogoutComplete));
     IdentityInterface->Logout(LocalUserNum);
@@ -73,6 +100,12 @@ void UAuthEssentialsSubsystem::ClearAuthCredentials(bool bAlsoResetType)
 
 bool UAuthEssentialsSubsystem::IsLoggedIn(const APlayerController* PC)
 {
+    if (!ensure(IdentityInterface.IsValid())) 
+    {
+        UE_LOG(LogAuthEssentials, Warning, TEXT("Cannot get login status. Identity interface is not valid. Make sure you have set up AccelByte OSS and its credentials properly."));
+        return ELoginStatus::Type::NotLoggedIn;
+    }
+
     ELoginStatus::Type Status = IdentityInterface->GetLoginStatus(GetLocalUserNum(PC));
     return Status == ELoginStatus::Type::LoggedIn;
 }
@@ -89,11 +122,11 @@ void UAuthEssentialsSubsystem::OnLoginComplete(int32 LocalUserNum, bool bLoginWa
 {
     if (bLoginWasSuccessful)
     {
-        UE_LOG(LogTemp, Log, TEXT("Login user is successful."));
+        UE_LOG(LogAuthEssentials, Log, TEXT("Login user is successful."));
     }
     else
     {
-        UE_LOG(LogTemp, Warning, TEXT("Login user failed. Message: %s"), *LoginError);
+        UE_LOG(LogAuthEssentials, Warning, TEXT("Login user failed. Message: %s"), *LoginError);
     }
 
     IdentityInterface->ClearOnLoginCompleteDelegates(LocalUserNum, this);
@@ -104,11 +137,11 @@ void UAuthEssentialsSubsystem::OnLogoutComplete(int32 LocalUserNum, bool bLogout
 {
     if (bLogoutWasSuccessful)
     {
-        UE_LOG(LogTemp, Log, TEXT("Logout user is successful."));
+        UE_LOG(LogAuthEssentials, Log, TEXT("Logout user is successful."));
     }
     else
     {
-        UE_LOG(LogTemp, Warning, TEXT("Logout user failed."));
+        UE_LOG(LogAuthEssentials, Warning, TEXT("Logout user failed."));
     }
 
     IdentityInterface->ClearOnLogoutCompleteDelegates(LocalUserNum, this);
