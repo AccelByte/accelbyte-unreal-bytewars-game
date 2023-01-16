@@ -17,7 +17,7 @@ public class AccelByteWars : ModuleRules
 		);
 
 
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "CommonUI", "CommonInput"});
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "CommonUI", "CommonInput", "Niagara"});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {
 				"InputCore",
@@ -35,8 +35,7 @@ public class AccelByteWars : ModuleRules
 				"CommonInput",
 				"AudioMixer",
 				"NetworkReplayStreaming",
-				"AudioModulation",
-				"Niagara"
+				"AudioModulation"
 			});
 
 		// Uncomment if you are using Slate UI
