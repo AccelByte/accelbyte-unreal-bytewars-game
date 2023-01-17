@@ -14,7 +14,6 @@ AAccelByteWarsFxActor::AAccelByteWarsFxActor()
 
 	ParticleSystem = CreateDefaultSubobject<UNiagaraComponent>(TEXT("ParticleSystem"));
 	ParticleSystem->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
-	SetReplicates()
 }
 
 // Called when the game starts or when spawned
