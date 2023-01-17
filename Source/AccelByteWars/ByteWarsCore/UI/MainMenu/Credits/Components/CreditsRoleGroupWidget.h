@@ -16,15 +16,15 @@ class ACCELBYTEWARS_API UCreditsRoleGroupWidget : public UCommonUserWidget
 {
 	GENERATED_BODY()
 
+public:
+	void InitData(const FText& RoleName);
+	void AddChild(UCommonUserWidget* InWidget);
+	void ClearChildren();
+
 private:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonTextBlock* Txt_RoleName;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UVerticalBox* Vb_CreditRoleGroup;
-
-public:
-	void InitData(const FText& RoleName);
-	void AddChild(UCommonUserWidget* InWidget);
-	void ClearChildren();
 };

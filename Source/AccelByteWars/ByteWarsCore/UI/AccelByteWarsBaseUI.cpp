@@ -2,32 +2,57 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-
 #include "ByteWarsCore/UI/AccelByteWarsBaseUI.h"
+
+void UAccelByteWarsBaseUI::NativeOnInitialized()
+{
+	Super::NativeOnInitialized();
+
+	if (!IsDesignTime())
+	{
+		UCommonActivatableWidgetStack* Stack;
+		for (int i = EBaseUIStackType::Prompt; i != EBaseUIStackType::InGameHUD; i++)
+		{
+			Stack = Stacks[static_cast<EBaseUIStackType>(i)];
+			ensure(Stack);
+
+			Stack->OnTransitioningChanged.AddUObject(this, &UAccelByteWarsBaseUI::OnWidgetTransitionChanged);
+		}
+	}
+}
 
 UAccelByteWarsActivatableWidget* UAccelByteWarsBaseUI::PushWidgetToStack(EBaseUIStackType TargetStack, TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass)
 {
-	ensure(MenuStack != nullptr);
-	ensure(PromptStack != nullptr);
-	ensure(InGameMenuStack != nullptr);
-	ensure(InGameHUDStack != nullptr);
+	return PushWidgetToStack(TargetStack, WidgetClass, [](UCommonActivatableWidget&) {});
+}
 
-	UAccelByteWarsActivatableWidget* NewWidget = nullptr;
-	switch (TargetStack) 
+UAccelByteWarsActivatableWidget* UAccelByteWarsBaseUI::PushWidgetToStack(EBaseUIStackType TargetStack, TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass, TFunctionRef<void(UAccelByteWarsActivatableWidget&)> InitFunc)
+{
+	UCommonActivatableWidgetStack* Stack = Stacks[TargetStack];
+	ensure(Stack);
+
+	return Cast<UAccelByteWarsActivatableWidget>(Stack->AddWidget(WidgetClass, InitFunc));
+}
+
+void UAccelByteWarsBaseUI::OnWidgetTransitionChanged(UCommonActivatableWidgetContainerBase* Widget, bool bIsTransitioning)
+{
+	// Set auto focus to top most stack widget.
+	EBaseUIStackType StackType;
+	UCommonActivatableWidgetStack* Stack;
+	bool bIsTopMostStackFound = false;
+
+	for (int i = EBaseUIStackType::Prompt; i <= EBaseUIStackType::InGameHUD; i++)
 	{
-		case EBaseUIStackType::Menu:
-			NewWidget = Cast<UAccelByteWarsActivatableWidget>(MenuStack->AddWidget(WidgetClass));
-			break;
-		case EBaseUIStackType::Prompt:
-			NewWidget = Cast<UAccelByteWarsActivatableWidget>(PromptStack->AddWidget(WidgetClass));
-			break;
-		case EBaseUIStackType::InGameMenu:
-			NewWidget = Cast<UAccelByteWarsActivatableWidget>(InGameMenuStack->AddWidget(WidgetClass));
-			break;
-		case EBaseUIStackType::InGameHUD:
-			NewWidget = Cast<UAccelByteWarsActivatableWidget>(InGameHUDStack->AddWidget(WidgetClass));
-			break;
-	}
+		StackType = static_cast<EBaseUIStackType>(i);
+		Stack = Stacks[StackType];
 
-	return NewWidget;
+		if (!bIsTopMostStackFound && Stack->GetActiveWidget())
+		{
+			Stack->SetVisibility(ESlateVisibility::Visible);
+			bIsTopMostStackFound = true;
+			continue;
+		}
+
+		Stack->SetVisibility(ESlateVisibility::HitTestInvisible);
+	}
 }

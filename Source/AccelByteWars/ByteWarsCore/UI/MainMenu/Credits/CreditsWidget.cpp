@@ -7,33 +7,11 @@
 #include "ByteWarsCore/UI/MainMenu/Credits/Components/CreditsEntry.h"
 #include "Components/ScrollBox.h"
 
-void UCreditsWidget::NativeOnActivated()
-{
-	Super::NativeOnActivated();
-
-	InitCredits();
-}
-
-void UCreditsWidget::NativeOnDeactivated()
-{
-	Super::NativeOnDeactivated();
-
-	ResetCreditsList();
-}
-
-void UCreditsWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
-{
-	Super::NativeTick(MyGeometry, InDeltaTime);
-
-	MoveCameraToTargetLocation(InDeltaTime);
-	ScrollCreditsToEnd(InDeltaTime, AutoScrollSpeed);
-}
-
 void UCreditsWidget::InitCredits()
 {
 	TMap<ECreditsRoleType, TWeakObjectPtr<UCreditsRoleGroupWidget>> RoleGroupMap;
 
-	for (FCreditsData Credit : CreditsData) 
+	for (FCreditsData Credit : CreditsData)
 	{
 		// Initialize the role group if it is not yet.
 		if (!RoleGroupMap.Contains(Credit.RoleType))
@@ -58,7 +36,7 @@ void UCreditsWidget::InitCredits()
 
 void UCreditsWidget::ScrollCreditsToEnd(const float DeltaTime, const float ScrollSpeed)
 {
-	if (!bIsCreditsListInitialized) 
+	if (!bIsCreditsListInitialized)
 	{
 		return;
 	}
@@ -74,4 +52,26 @@ void UCreditsWidget::ResetCreditsList()
 	Scb_CreditsList->ClearChildren();
 	Scb_CreditsList->SetScrollOffset(0.0f);
 	bIsCreditsListInitialized = false;
+}
+
+void UCreditsWidget::NativeOnActivated()
+{
+	Super::NativeOnActivated();
+
+	InitCredits();
+}
+
+void UCreditsWidget::NativeOnDeactivated()
+{
+	Super::NativeOnDeactivated();
+
+	ResetCreditsList();
+}
+
+void UCreditsWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+{
+	Super::NativeTick(MyGeometry, InDeltaTime);
+
+	MoveCameraToTargetLocation(InDeltaTime);
+	ScrollCreditsToEnd(InDeltaTime, AutoScrollSpeed);
 }

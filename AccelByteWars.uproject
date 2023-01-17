@@ -12,7 +12,9 @@
 				"CommonUI",
 				"Engine",
 				"CoreUObject",
-				"UMG"
+				"UMG",
+				"UMG",
+				"DeveloperSettings"
 			]
 		}
 	],
@@ -42,10 +44,6 @@
 		},
 		{
 			"Name": "AccelByteNetworkUtilities",
-			"Enabled": true
-		},
-		{
-			"Name": "OnlineSubsystemSteam",
 			"Enabled": true
 		}
 	]

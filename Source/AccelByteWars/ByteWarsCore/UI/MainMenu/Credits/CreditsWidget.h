@@ -18,11 +18,17 @@ class ACCELBYTEWARS_API UCreditsWidget : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
 
-private:
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UScrollBox* Scb_CreditsList;
+public:
+	void InitCredits();
+	void ScrollCreditsToEnd(const float DeltaTime, const float ScrollSpeed = 0.05f);
+	void ResetCreditsList();
 
 protected:
+	void NativeOnActivated() override;
+	void NativeOnDeactivated() override;
+	void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
+
+private:
 	bool bIsCreditsListInitialized = false;
 
 	UPROPERTY(EditAnywhere, Category = Credits)
@@ -40,18 +46,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = Credits)
 	TSubclassOf<UCreditsEntry> CreditsEntryClass;
 
-protected:
-	void NativeOnActivated() override;
-	void NativeOnDeactivated() override;
-	void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
-
-public:
-	UFUNCTION(BlueprintCallable)
-	void InitCredits();
-
-	UFUNCTION(BlueprintCallable)
-	void ScrollCreditsToEnd(const float DeltaTime, const float ScrollSpeed = 0.05f);
-
-	UFUNCTION(BlueprintCallable)
-	void ResetCreditsList();
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UScrollBox* Scb_CreditsList;
 };

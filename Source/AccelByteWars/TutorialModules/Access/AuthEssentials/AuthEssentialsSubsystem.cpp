@@ -3,10 +3,8 @@
 // and restrictions contact your company contract manager.
 
 #include "TutorialModules/Access/AuthEssentials/AuthEssentialsSubsystem.h"
+#include "Core/AccelByteRegistry.h"
 #include "OnlineSubsystemUtils.h"
-
-DECLARE_LOG_CATEGORY_EXTERN(LogAuthEssentials, Log, All);
-DEFINE_LOG_CATEGORY(LogAuthEssentials);
 
 void UAuthEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -18,14 +16,14 @@ void UAuthEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
     const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
     if (!ensure(Subsystem)) 
     {
-        UE_LOG(LogAuthEssentials, Warning, TEXT("AccelByte OSS is not valid. Make sure you have set up AccelByte OSS and its credentials properly."));
+        UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("AccelByte SDK and OSS is not valid."));
         return;
     }
 
     IdentityInterface = StaticCastSharedPtr<FOnlineIdentityAccelByte>(Subsystem->GetIdentityInterface());
     if (!ensure(IdentityInterface.IsValid()))
     {
-        UE_LOG(LogAuthEssentials, Warning, TEXT("Cannot login. Identity interface is not valid. Make sure you have set up AccelByte OSS and its credentials properly."));
+        UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("Identiy interface is not valid."));
         return;
     }
 }
@@ -37,28 +35,25 @@ void UAuthEssentialsSubsystem::Deinitialize()
     ClearAuthCredentials(true);
 }
 
-void UAuthEssentialsSubsystem::Login(EAccelByteLoginType LoginMethod, const APlayerController* PC, const FOnLoginComplete& OnLoginComplete)
+void UAuthEssentialsSubsystem::Login(EAccelByteLoginType LoginMethod, const APlayerController* PC, const FAuthOnLoginComplete& OnLoginComplete)
 {
     if (!ensure(IdentityInterface.IsValid()))
     {
-        FString Message = TEXT("Cannot login. Identity interface is not valid. Make sure you have set up AccelByte OSS and its credentials properly.");
-        UE_LOG(LogAuthEssentials, Warning, TEXT("%s"), *Message);
+        FString Message = TEXT("Cannot login. Identiy interface is not valid.");
+        UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("%s"), *Message);
         OnLoginComplete.ExecuteIfBound(false, *Message);
         return;
     }
 
+    // Set login type.
     Credentials.Type = FAccelByteUtilities::GetUEnumValueAsString(LoginMethod);
 
+    // Set login credentials based on login type.
     switch (LoginMethod)
     {
         case EAccelByteLoginType::DeviceId:
             // Login with device id doesn't requires id and token credentials.
             ClearAuthCredentials();
-            break;
-        case EAccelByteLoginType::Steam:
-            // Steam is one of single auth platform. 
-            // Single auth platform method doesn't requires id, token, and type credentials.
-            ClearAuthCredentials(true);
             break;
     }
 
@@ -67,11 +62,11 @@ void UAuthEssentialsSubsystem::Login(EAccelByteLoginType LoginMethod, const APla
     IdentityInterface->Login(LocalUserNum, Credentials);
 }
 
-void UAuthEssentialsSubsystem::Logout(const APlayerController* PC, const FOnLogoutComplete& OnLogoutComplete)
+void UAuthEssentialsSubsystem::Logout(const APlayerController* PC, const FAuthOnLogoutComplete& OnLogoutComplete)
 {
     if (!ensure(IdentityInterface.IsValid())) 
     {
-        UE_LOG(LogAuthEssentials, Warning, TEXT("Cannot logout. Identity interface is not valid. Make sure you have set up AccelByte OSS and its credentials properly."));
+        UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("Cannot logout. Identiy interface is not valid."));
         OnLogoutComplete.ExecuteIfBound(false);
         return;
     }
@@ -79,6 +74,18 @@ void UAuthEssentialsSubsystem::Logout(const APlayerController* PC, const FOnLogo
     int32 LocalUserNum = GetLocalUserNum(PC);
     IdentityInterface->AddOnLogoutCompleteDelegate_Handle(LocalUserNum, FOnLogoutCompleteDelegate::CreateUObject(this, &UAuthEssentialsSubsystem::OnLogoutComplete, OnLogoutComplete));
     IdentityInterface->Logout(LocalUserNum);
+}
+
+bool UAuthEssentialsSubsystem::IsLoggedIn(const APlayerController* PC)
+{
+    if (!ensure(IdentityInterface.IsValid()))
+    {
+        UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("Cannot get login status. Identiy interface is not valid."));
+        return ELoginStatus::Type::NotLoggedIn;
+    }
+
+    ELoginStatus::Type Status = IdentityInterface->GetLoginStatus(GetLocalUserNum(PC));
+    return Status == ELoginStatus::Type::LoggedIn;
 }
 
 void UAuthEssentialsSubsystem::SetAuthCredentials(const FString& Id, const FString& Token) 
@@ -98,16 +105,68 @@ void UAuthEssentialsSubsystem::ClearAuthCredentials(bool bAlsoResetType)
     }
 }
 
-bool UAuthEssentialsSubsystem::IsLoggedIn(const APlayerController* PC)
+bool UAuthEssentialsSubsystem::IsAccelByteSDKInitialized()
 {
-    if (!ensure(IdentityInterface.IsValid())) 
+    bool IsOSSEnabled = true;
+    bool IsSDKCredsEmpty = false;
+
+    // Check AccelByte Subsystem.
+    const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+    if (!ensure(Subsystem) && !Subsystem->IsEnabled())
     {
-        UE_LOG(LogAuthEssentials, Warning, TEXT("Cannot get login status. Identity interface is not valid. Make sure you have set up AccelByte OSS and its credentials properly."));
-        return ELoginStatus::Type::NotLoggedIn;
+        UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("AccelByte SDK and OSS is not valid."));
+        IsOSSEnabled = false;
     }
 
-    ELoginStatus::Type Status = IdentityInterface->GetLoginStatus(GetLocalUserNum(PC));
-    return Status == ELoginStatus::Type::LoggedIn;
+    // Check server credentials.
+    ServerSettings ServerCreds = FRegistry::ServerSettings;
+    if (ServerCreds.ClientId.IsEmpty() && ServerCreds.ClientSecret.IsEmpty() &&
+        ServerCreds.Namespace.IsEmpty() && ServerCreds.PublisherNamespace.IsEmpty() && ServerCreds.BaseUrl.IsEmpty())
+    {
+        UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("Server creds are empty or not filled properly. Please check your AccelByte SDK settings configuration."));
+        IsSDKCredsEmpty = true;
+    }
+
+    // Check client credentials.
+    Settings ClientCreds = FRegistry::Settings;
+    if (ClientCreds.ClientId.IsEmpty() && ClientCreds.Namespace.IsEmpty() &&
+        ClientCreds.PublisherNamespace.IsEmpty() && ClientCreds.BaseUrl.IsEmpty())
+    {
+        UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("Client creds are empty or not filled properly. Please check your AccelByte SDK settings configuration."));
+        IsSDKCredsEmpty = true;
+    }
+
+    return IsOSSEnabled && !IsSDKCredsEmpty;
+}
+
+void UAuthEssentialsSubsystem::OnLoginComplete(int32 LocalUserNum, bool bLoginWasSuccessful, const FUniqueNetId& UserId, const FString& LoginError, const FAuthOnLoginComplete OnLoginComplete)
+{
+    if (bLoginWasSuccessful)
+    {
+        UE_LOG_AUTH_ESSENTIALS(Log, TEXT("Login user successful."));
+    }
+    else
+    {
+        UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("Login user failed. Message: %s"), *LoginError);
+    }
+
+    IdentityInterface->ClearOnLoginCompleteDelegates(LocalUserNum, this);
+    OnLoginComplete.ExecuteIfBound(bLoginWasSuccessful, LoginError);
+}
+
+void UAuthEssentialsSubsystem::OnLogoutComplete(int32 LocalUserNum, bool bLogoutWasSuccessful, const FAuthOnLogoutComplete OnLogoutComplete)
+{
+    if (bLogoutWasSuccessful)
+    {
+        UE_LOG_AUTH_ESSENTIALS(Log, TEXT("Logout user is successful."));
+    }
+    else
+    {
+        UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("Logout user failed."));
+    }
+
+    IdentityInterface->ClearOnLogoutCompleteDelegates(LocalUserNum, this);
+    OnLogoutComplete.ExecuteIfBound(bLogoutWasSuccessful);
 }
 
 int32 UAuthEssentialsSubsystem::GetLocalUserNum(const APlayerController* PC)
@@ -116,34 +175,4 @@ int32 UAuthEssentialsSubsystem::GetLocalUserNum(const APlayerController* PC)
     ensure(LocalPlayer != nullptr);
 
     return LocalPlayer->GetControllerId();
-}
-
-void UAuthEssentialsSubsystem::OnLoginComplete(int32 LocalUserNum, bool bLoginWasSuccessful, const FUniqueNetId& UserId, const FString& LoginError, const FOnLoginComplete OnLoginComplete)
-{
-    if (bLoginWasSuccessful)
-    {
-        UE_LOG(LogAuthEssentials, Log, TEXT("Login user is successful."));
-    }
-    else
-    {
-        UE_LOG(LogAuthEssentials, Warning, TEXT("Login user failed. Message: %s"), *LoginError);
-    }
-
-    IdentityInterface->ClearOnLoginCompleteDelegates(LocalUserNum, this);
-    OnLoginComplete.ExecuteIfBound(bLoginWasSuccessful, LoginError);
-}
-
-void UAuthEssentialsSubsystem::OnLogoutComplete(int32 LocalUserNum, bool bLogoutWasSuccessful, const FOnLogoutComplete OnLogoutComplete)
-{
-    if (bLogoutWasSuccessful)
-    {
-        UE_LOG(LogAuthEssentials, Log, TEXT("Logout user is successful."));
-    }
-    else
-    {
-        UE_LOG(LogAuthEssentials, Warning, TEXT("Logout user failed."));
-    }
-
-    IdentityInterface->ClearOnLogoutCompleteDelegates(LocalUserNum, this);
-    OnLogoutComplete.ExecuteIfBound(bLogoutWasSuccessful);
 }

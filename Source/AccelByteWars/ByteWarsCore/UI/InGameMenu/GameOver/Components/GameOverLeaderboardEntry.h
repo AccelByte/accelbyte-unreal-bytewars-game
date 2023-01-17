@@ -14,7 +14,11 @@ UCLASS()
 class ACCELBYTEWARS_API UGameOverLeaderboardEntry : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
-	
+
+public:
+	UFUNCTION(BlueprintCallable)
+	void InitData(const FText& PlayerName, const int32 PlayerScore, const int32 PlayerKills, const FLinearColor& PlayerColor);
+
 private:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Txt_PlayerName;
@@ -24,8 +28,4 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Txt_PlayerScore;
-
-public:
-	UFUNCTION(BlueprintCallable)
-	void InitData(const FText& PlayerName, const int32 PlayerScore, const int32 PlayerKills, const FLinearColor& PlayerColor);
 };

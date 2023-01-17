@@ -10,7 +10,6 @@ void UPauseWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
-	// Bind buttons click event.
 	Btn_Resume->OnClicked().AddUObject(this, &UPauseWidget::ResumeGame);
 	Btn_Restart->OnClicked().AddUObject(this, &UPauseWidget::RestartGame);
 	Btn_Quit->OnClicked().AddUObject(this, &UPauseWidget::QuitGame);
@@ -22,7 +21,6 @@ void UPauseWidget::NativeOnDeactivated()
 {
 	Super::NativeOnDeactivated();
 
-	// Unbind buttons click event.
 	Btn_Resume->OnClicked().RemoveAll(this);
 	Btn_Restart->OnClicked().RemoveAll(this);
 	Btn_Quit->OnClicked().RemoveAll(this);

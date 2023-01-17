@@ -18,7 +18,30 @@ class ACCELBYTEWARS_API UGameOverWidget : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
 	
+public:
+	UFUNCTION(BlueprintCallable)
+	void SetWinner(const FText& PlayerName, const FLinearColor& Color);
+
+	UFUNCTION(BlueprintCallable)
+	void AddLeaderboardEntry(const FText& PlayerName, const int32 PlayerScore, const int32 PlayerKills, const FLinearColor& PlayerColor);
+
+protected:
+	void NativeOnActivated() override;
+	void NativeOnDeactivated() override;
+
+	/** NOTE: Since the InGameGameMode is a Blueprint class, therefore it is impossible to call it's ExitLevel event from C++.
+	  * Therefore, this function acts as helper to call InGameGameMode's ExitLevel event from Blueprint.
+	  * TODO: Might need to change this after the InGameGameMode is converted to C++. */
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
+	void OnExitLevel();
+
 private:
+	void PlayGameAgain();
+	void QuitGame();
+
+	UPROPERTY(EditDefaultsOnly, Category = GameOver)
+	TSubclassOf<UGameOverLeaderboardEntry> LeaderboardEntryClass;
+
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_PlayAgain;
 
@@ -30,28 +53,4 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UVerticalBox* Vb_Leaderboard;
-
-protected:
-	UPROPERTY(EditDefaultsOnly, Category = GameOver)
-	TSubclassOf<UGameOverLeaderboardEntry> LeaderboardEntryClass;
-
-protected:
-	void NativeOnActivated() override;
-	void NativeOnDeactivated() override;
-
-	void PlayGameAgain();
-	void QuitGame();
-
-	/** NOTE: Since the InGameGameMode is a Blueprint class, therefore it is impossible to call it's ExitLevel event from C++.
-	  * Therefore, this function acts as helper to call InGameGameMode's ExitLevel event from Blueprint.
-	  * TODO: Might need to change this after the InGameGameMode is converted to C++. */
-	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
-	void OnExitLevel();
-
-public:
-	UFUNCTION(BlueprintCallable)
-	void SetWinner(const FText& PlayerName, const FLinearColor& Color);
-
-	UFUNCTION(BlueprintCallable)
-	void AddLeaderboardEntry(const FText& PlayerName, const int32 PlayerScore, const int32 PlayerKills, const FLinearColor& PlayerColor);
 };

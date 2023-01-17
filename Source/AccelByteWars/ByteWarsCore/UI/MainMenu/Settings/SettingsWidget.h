@@ -16,22 +16,21 @@ class ACCELBYTEWARS_API USettingsWidget : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
 	
-private:
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	USettingsListEntry_Scalar* W_SettingMusicVolumeScalar;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	USettingsListEntry_Scalar* W_SettingSFXVolumeScalar;
-
-protected:
-	UAccelByteWarsGameInstance* GameInstance;
-
 protected:
 	void NativeConstruct() override;
 	void NativeOnActivated() override;
 	void NativeOnDeactivated() override;
 	void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
+private:
 	void InitSettings();
 	void FinalizeSettings();
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	USettingsListEntry_Scalar* W_SettingMusicVolumeScalar;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	USettingsListEntry_Scalar* W_SettingSFXVolumeScalar;
+
+	UAccelByteWarsGameInstance* GameInstance;
 };
