@@ -35,7 +35,7 @@ void UAuthEssentialsSubsystem::Deinitialize()
     ClearAuthCredentials(true);
 }
 
-void UAuthEssentialsSubsystem::Login(EAccelByteLoginType LoginMethod, const APlayerController* PC, const FAuthOnLoginComplete& OnLoginComplete)
+void UAuthEssentialsSubsystem::Login(EAccelByteLoginType LoginMethod, const APlayerController* PC, const FAuthOnLoginCompleteDelegate& OnLoginComplete)
 {
     if (!ensure(IdentityInterface.IsValid()))
     {
@@ -62,7 +62,7 @@ void UAuthEssentialsSubsystem::Login(EAccelByteLoginType LoginMethod, const APla
     IdentityInterface->Login(LocalUserNum, Credentials);
 }
 
-void UAuthEssentialsSubsystem::Logout(const APlayerController* PC, const FAuthOnLogoutComplete& OnLogoutComplete)
+void UAuthEssentialsSubsystem::Logout(const APlayerController* PC, const FAuthOnLogoutCompleteDelegate& OnLogoutComplete)
 {
     if (!ensure(IdentityInterface.IsValid())) 
     {
@@ -105,41 +105,7 @@ void UAuthEssentialsSubsystem::ClearAuthCredentials(bool bAlsoResetType)
     }
 }
 
-bool UAuthEssentialsSubsystem::IsAccelByteSDKInitialized()
-{
-    bool IsOSSEnabled = true;
-    bool IsSDKCredsEmpty = false;
-
-    // Check AccelByte Subsystem.
-    const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
-    if (!ensure(Subsystem) && !Subsystem->IsEnabled())
-    {
-        UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("AccelByte SDK and OSS is not valid."));
-        IsOSSEnabled = false;
-    }
-
-    // Check server credentials.
-    ServerSettings ServerCreds = FRegistry::ServerSettings;
-    if (ServerCreds.ClientId.IsEmpty() && ServerCreds.ClientSecret.IsEmpty() &&
-        ServerCreds.Namespace.IsEmpty() && ServerCreds.PublisherNamespace.IsEmpty() && ServerCreds.BaseUrl.IsEmpty())
-    {
-        UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("Server creds are empty or not filled properly. Please check your AccelByte SDK settings configuration."));
-        IsSDKCredsEmpty = true;
-    }
-
-    // Check client credentials.
-    Settings ClientCreds = FRegistry::Settings;
-    if (ClientCreds.ClientId.IsEmpty() && ClientCreds.Namespace.IsEmpty() &&
-        ClientCreds.PublisherNamespace.IsEmpty() && ClientCreds.BaseUrl.IsEmpty())
-    {
-        UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("Client creds are empty or not filled properly. Please check your AccelByte SDK settings configuration."));
-        IsSDKCredsEmpty = true;
-    }
-
-    return IsOSSEnabled && !IsSDKCredsEmpty;
-}
-
-void UAuthEssentialsSubsystem::OnLoginComplete(int32 LocalUserNum, bool bLoginWasSuccessful, const FUniqueNetId& UserId, const FString& LoginError, const FAuthOnLoginComplete OnLoginComplete)
+void UAuthEssentialsSubsystem::OnLoginComplete(int32 LocalUserNum, bool bLoginWasSuccessful, const FUniqueNetId& UserId, const FString& LoginError, const FAuthOnLoginCompleteDelegate OnLoginComplete)
 {
     if (bLoginWasSuccessful)
     {
@@ -154,7 +120,7 @@ void UAuthEssentialsSubsystem::OnLoginComplete(int32 LocalUserNum, bool bLoginWa
     OnLoginComplete.ExecuteIfBound(bLoginWasSuccessful, LoginError);
 }
 
-void UAuthEssentialsSubsystem::OnLogoutComplete(int32 LocalUserNum, bool bLogoutWasSuccessful, const FAuthOnLogoutComplete OnLogoutComplete)
+void UAuthEssentialsSubsystem::OnLogoutComplete(int32 LocalUserNum, bool bLogoutWasSuccessful, const FAuthOnLogoutCompleteDelegate OnLogoutComplete)
 {
     if (bLogoutWasSuccessful)
     {

@@ -26,7 +26,10 @@ enum EPopUpType
 	MessageOk
 };
 
-DECLARE_DYNAMIC_DELEGATE_OneParam(FPopUpResultDelegate, EPopUpResult, Result);
+DECLARE_DYNAMIC_DELEGATE_OneParam(FPopUpResultDynamicDelegate, EPopUpResult, Result);
+
+DECLARE_MULTICAST_DELEGATE_OneParam(FPopUpResult, EPopUpResult /* Result */);
+typedef FPopUpResult::FDelegate FPopUpResultDelegate;
 
 UCLASS()
 class ACCELBYTEWARS_API UPopUpWidget : public UAccelByteWarsActivatableWidget
@@ -36,6 +39,7 @@ class ACCELBYTEWARS_API UPopUpWidget : public UAccelByteWarsActivatableWidget
 public:
 	void SetPopUpText(const FText& Header, const FText& Body);
 	void SetPopUpType(const EPopUpType Type);
+	void SetDynamicCallback(FPopUpResultDynamicDelegate ResultCallback);
 	void SetCallback(FPopUpResultDelegate ResultCallback);
 
 protected:
@@ -57,5 +61,6 @@ private:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UAccelByteWarsButtonBase* Btn_Decline;
 
+	FPopUpResultDynamicDelegate DynamicCallback;
 	FPopUpResultDelegate Callback;
 };

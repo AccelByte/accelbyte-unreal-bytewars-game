@@ -24,7 +24,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pop Up Prompt")
 	void ShowMessagePopUp(const FText Header, const FText Body);
 
+	/** Show dialogue pop-up with dynamic delegate. It is intended for Blueprint binding. */
 	UFUNCTION(BlueprintCallable, Category = "Pop Up Prompt")
+	void ShowDialoguePopUp(const FText Header, const FText Body, const EPopUpType Type, FPopUpResultDynamicDelegate Callback);
+
+	/** Show dialogue pop-up with non-dynamic delegate. It is intended for binding C++ function. */
 	void ShowDialoguePopUp(const FText Header, const FText Body, const EPopUpType Type, FPopUpResultDelegate Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "Loading Prompt")

@@ -33,6 +33,20 @@ void UPromptSubsystem::ShowMessagePopUp(const FText Header, const FText Body)
 	});
 }
 
+void UPromptSubsystem::ShowDialoguePopUp(const FText Header, const FText Body, const EPopUpType Type, FPopUpResultDynamicDelegate Callback)
+{
+	UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->BaseUIWidget);
+	ensure(BaseUIWidget);
+
+	BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Prompt, BaseUIWidget->DefaultPopUpWidgetClass, [Header, Body, Type, Callback](UAccelByteWarsActivatableWidget& Widget)
+	{
+		UPopUpWidget* PopUp = Cast<UPopUpWidget>(&Widget);
+		PopUp->SetPopUpText(Header, Body);
+		PopUp->SetPopUpType(Type);
+		PopUp->SetDynamicCallback(Callback);
+	});
+}
+
 void UPromptSubsystem::ShowDialoguePopUp(const FText Header, const FText Body, const EPopUpType Type, FPopUpResultDelegate Callback)
 {
 	UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->BaseUIWidget);

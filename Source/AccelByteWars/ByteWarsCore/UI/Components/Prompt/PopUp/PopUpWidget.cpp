@@ -42,6 +42,11 @@ void UPopUpWidget::SetPopUpType(const EPopUpType Type)
 	}
 }
 
+void UPopUpWidget::SetDynamicCallback(FPopUpResultDynamicDelegate ResultCallback)
+{
+	DynamicCallback = ResultCallback;
+}
+
 void UPopUpWidget::SetCallback(FPopUpResultDelegate ResultCallback)
 {
 	Callback = ResultCallback;
@@ -66,8 +71,12 @@ void UPopUpWidget::NativeOnDeactivated()
 void UPopUpWidget::SubmitResult(EPopUpResult Result)
 {
 	DeactivateWidget();
+
+	DynamicCallback.ExecuteIfBound(Result);
+	DynamicCallback.Clear();
+
 	Callback.ExecuteIfBound(Result);
-	Callback.Clear();
+	Callback.Unbind();
 }
 
 #undef LOCTEXT_NAMESPACE
