@@ -19,6 +19,7 @@ UENUM(BlueprintType)
 enum ELoginState 
 {
 	Default,
+	LoggingIn,
 	Failed
 };
 

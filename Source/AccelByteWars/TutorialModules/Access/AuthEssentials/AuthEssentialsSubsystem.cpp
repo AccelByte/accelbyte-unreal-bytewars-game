@@ -3,7 +3,6 @@
 // and restrictions contact your company contract manager.
 
 #include "TutorialModules/Access/AuthEssentials/AuthEssentialsSubsystem.h"
-#include "Core/AccelByteRegistry.h"
 #include "OnlineSubsystemUtils.h"
 
 void UAuthEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collection)

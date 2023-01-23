@@ -6,15 +6,10 @@
 
 #include "CoreMinimal.h"
 #include "ByteWarsCore/UI/AccelByteWarsActivatableWidget.h"
-#include "TutorialModules/Access/AuthEssentials/AuthEssentialsLog.h"
 #include "StartupWidget.generated.h"
 
 UCLASS()
 class ACCELBYTEWARS_API UStartupWidget : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
-	
-protected:
-	UFUNCTION(BlueprintCallable)
-	bool IsAccelByteSDKInitialized();
 };

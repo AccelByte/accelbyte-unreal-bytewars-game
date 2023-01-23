@@ -51,8 +51,7 @@ void ULoginWidget::NativeOnDeactivated()
 
 void ULoginWidget::Login(EAccelByteLoginType LoginMethod)
 {
-	ensure(PromptSubsystem);
-	PromptSubsystem->ShowLoading(LOCTEXT("Logging In", "Logging In"));
+	SetLoginState(ELoginState::LoggingIn);
 
 	APlayerController* PC = GetWorld()->GetFirstPlayerController();
 	ensure(PC);
@@ -87,9 +86,6 @@ void ULoginWidget::SetLoginState(const ELoginState NewState)
 
 void ULoginWidget::OnLoginComplete(bool bWasSuccessful, const FString& ErrorMessage)
 {
-	ensure(PromptSubsystem);
-	PromptSubsystem->HideLoading();
-
 	if (bWasSuccessful) 
 	{
 		// When login success, open Main Menu widget.
