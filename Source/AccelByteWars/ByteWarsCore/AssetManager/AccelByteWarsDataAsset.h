@@ -15,11 +15,6 @@ class ACCELBYTEWARS_API UAccelByteWarsDataAsset : public UPrimaryDataAsset
 {
 	GENERATED_BODY()
 
-protected:
-	/** Type of this asset */
-	UPROPERTY()
-	FPrimaryAssetType AssetType;
-
 public:
 	// Human Readable Display Name for this Asset
 	UPROPERTY(EditAnywhere, Category = "UI", AssetRegistrySearchable)
@@ -40,7 +35,8 @@ public:
 
 public:
 	template <typename ValueType>
-	static ValueType GetMetadataForAsset(const FPrimaryAssetId& AssetId, const FName& Tag) {
+	static ValueType GetMetadataForAsset(const FPrimaryAssetId& AssetId, const FName& Tag)
+	{
 		FAssetData AssetData;
 		UAccelByteWarsAssetManager::Get().GetPrimaryAssetData(AssetId, AssetData);
 
@@ -49,4 +45,9 @@ public:
 
 		return ToReturn;
 	}
+	
+protected:
+	/** Type of this asset */
+	UPROPERTY()
+	FPrimaryAssetType AssetType;
 };

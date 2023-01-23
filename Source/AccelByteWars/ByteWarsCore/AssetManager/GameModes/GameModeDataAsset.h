@@ -7,52 +7,6 @@
 #include "ByteWarsCore/Settings/GameModeDataAssets.h"
 #include "GameModeDataAsset.generated.h"
 
-USTRUCT(BlueprintType)
-struct FGameModeData_AssetRegistry
-{
-	GENERATED_USTRUCT_BODY()
-
-public:
-	UPROPERTY(EditAnywhere, AssetRegistrySearchable)
-	TSoftClassPtr<class AAccelByteWarsGameModeBase> DefaultClass;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	EGameModeType GameModeType = EGameModeType::FFA;
-	
-	// Game mode alias; Used for online integration.
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	FString CodeName;
-
-	// Game mode alias; Used for online integration.
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	FString DisplayName;
-	
-	// Either local multiplayer game or not
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	bool bIsLocalGame;
-	
-	// Either team game or not; If FFA then should be false.
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	bool bIsTeamGame;
-
-	// Default team count
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	int32 TeamNum;
-
-	// Default maximum supported player
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	int32 MaxPlayers;
-
-	// Default match time
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	int32 MatchTime;
-	
-	// Default score limit
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	int32 ScoreLimit;
-	
-};
-
 /**
  * 
  */
@@ -62,8 +16,20 @@ class ACCELBYTEWARS_API UGameModeDataAsset : public UAccelByteWarsDataAsset
 	GENERATED_BODY()
 
 public:
-	UGameModeDataAsset() {
+	UGameModeDataAsset()
+	{
 		AssetType = UGameModeDataAsset::GameModeAssetType;
+	}
+
+	virtual FPrimaryAssetId GetPrimaryAssetId() const override
+	{
+		if (CodeName.IsEmpty())
+		{
+			return Super::GetPrimaryAssetId();
+		}
+
+		// Use Alias for Game Mode AssetId for easy lookup
+		return UGameModeDataAsset::GenerateAssetIdFromCodeName(CodeName);
 	}
 	
 public:
@@ -76,40 +42,43 @@ public:
 
 public:
 	// Base Class to use for this mode
-	UPROPERTY(EditAnywhere, AssetRegistrySearchable)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, AssetRegistrySearchable)
 	TSoftClassPtr<class AAccelByteWarsGameModeBase> DefaultClass;
 
 	// Alias to set for this mode (needs to be unique)
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FString CodeName;
 
 	// String representation of GameModeType PrimaryAssetId
 	// Stored as string so it is asset registry searchable
-	UPROPERTY(AssetRegistrySearchable)
-	FString GameModeType;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, AssetRegistrySearchable)
+	FString GameModeTypeString;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	EGameModeType GameModeType = EGameModeType::FFA;
 	
 	// Either local multiplayer game or not
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bIsLocalGame;
 	
 	// Either team game or not; If FFA then should be false.
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bIsTeamGame;
 
 	// Default team count
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 TeamNum;
 
 	// Default maximum supported player
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 MaxPlayers;
 
 	// Default match time
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 MatchTime;
 	
 	// Default score limit
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 ScoreLimit;
 	
 public:

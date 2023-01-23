@@ -4,6 +4,7 @@
 #include "ByteWarsCore/AssetManager/AccelByteWarsAssetManager.h"
 #include "GameModes/GameModeDataAsset.h"
 #include "GameModes/GameModeTypeDataAsset.h"
+#include "TutorialModules/TutorialModuleDataAsset.h"
 
 UAccelByteWarsAssetManager::UAccelByteWarsAssetManager() {
 
@@ -15,47 +16,45 @@ void UAccelByteWarsAssetManager::StartInitialLoading() {
 	// This does all of the scanning, need to do this now even if loads are deferred
 	Super::StartInitialLoading();
 
-	// Can do synchronous calls here since this is in boot up
-
 	// Populate game mode Cache on boot up
+	PopulateAssetCache();
 }
 
 UAccelByteWarsAssetManager& UAccelByteWarsAssetManager::Get() {
 	check(GEngine);
 
-	if (UAccelByteWarsAssetManager* Singleton = Cast<UAccelByteWarsAssetManager>(GEngine->AssetManager)) {
+	if (UAccelByteWarsAssetManager* Singleton = Cast<UAccelByteWarsAssetManager>(GEngine->AssetManager))
+	{
 		return *Singleton;
 	}
 
-	UE_LOG(LogTemp, Fatal, TEXT("Invalid AssetManagerClassName in DefaultEngine.ini.  It must be set to PortalWarsAssetManager!"));
+	UE_LOG(LogTemp, Fatal, TEXT("Invalid AssetManagerClassName in DefaultEngine.ini.  It must be set to AccelByteWarsAssetManager!"));
 
 	// Fatal error above prevents this from being called.
 	return *NewObject<UAccelByteWarsAssetManager>();
 }
 
-#if WITH_EDITOR
-// void UAccelByteWarsAssetManager::PreBeginPIE(bool bStartSimulate) {
-// 	Super::PreBeginPIE(bStartSimulate);
-//
-// 	{
-// 		FScopedSlowTask SlowTask(0, NSLOCTEXT("PortalWarsEditor", "BeginLoadingPIEData", "Loading Asset Manager Data"));
-// 		const bool bShowCancelButton = false;
-// 		const bool bAllowInPIE = true;
-// 		SlowTask.MakeDialog(bShowCancelButton, bAllowInPIE);
-//
-// 		// Intentionally after Loading to avoid counting time in this timer
-// 		SCOPE_LOG_TIME_IN_SECONDS(TEXT("PreBeginPIE asset preloading complete"), nullptr);
-//
-// 		// You could add preloading of anything else needed for the experience we'll be using here
-// 		// (e.g., by grabbing the default experience from the world settings + the experience override in developer settings)
-// 		
-// 		// Populate game mode Cache before playing in editor
-// 	}
-// }
-#endif
+void UAccelByteWarsAssetManager::PopulateAssetCache()
+{
+	TArray<FPrimaryAssetType> AssetTypesToLoad;
 
-//////////////////////////////////////////////////////////////////////////
-/// GameModes
+	// Load tutorial module assets
+	AssetTypesToLoad.Add(UTutorialModuleDataAsset::TutorialModuleAssetType);
+	LoadAssetsOfType(AssetTypesToLoad);
+}
+
+#if WITH_EDITOR
+void UAccelByteWarsAssetManager::PreBeginPIE(bool bStartSimulate)
+{
+	Super::PreBeginPIE(bStartSimulate);
+	{
+		// Do preloading here
+		
+		// Populate Asset Cache before playing in editor
+		PopulateAssetCache();
+	}
+}
+#endif
 
 TArray<FGameModeData> UAccelByteWarsAssetManager::GetAllGameModes()
 {
@@ -64,14 +63,16 @@ TArray<FGameModeData> UAccelByteWarsAssetManager::GetAllGameModes()
 	TArray<FPrimaryAssetId> PrimaryAssetIdList;
 	Get().GetPrimaryAssetIdList(UGameModeDataAsset::GameModeAssetType, PrimaryAssetIdList);
 
-	for (const FPrimaryAssetId& PrimaryAssetId : PrimaryAssetIdList) {
+	for (const FPrimaryAssetId& PrimaryAssetId : PrimaryAssetIdList)
+	{
 		const FString CodeName = UGameModeDataAsset::GetCodeNameFromAssetId(PrimaryAssetId);
 		
 		FGameModeData ModeData = UGameModeDataAsset::GetGameModeDataByCodeName(CodeName);
 		ToReturn.Add(ModeData);
 	}
 
-	ToReturn.Sort([](const FGameModeData& LHS, const FGameModeData& RHS) {
+	ToReturn.Sort([](const FGameModeData& LHS, const FGameModeData& RHS)
+	{
 		return LHS.DisplayName.ToString() < RHS.DisplayName.ToString();
 	});
 
@@ -85,14 +86,110 @@ TArray<FGameModeTypeData> UAccelByteWarsAssetManager::GetAllGameModeTypes()
 	TArray<FPrimaryAssetId> PrimaryAssetIdList;
 	Get().GetPrimaryAssetIdList(UGameModeTypeDataAsset::GameModeTypeAssetType, PrimaryAssetIdList);
 
-	for (const FPrimaryAssetId& PrimaryAssetId : PrimaryAssetIdList) {
+	for (const FPrimaryAssetId& PrimaryAssetId : PrimaryAssetIdList)
+	{
 		FGameModeTypeData TypeData = UGameModeTypeDataAsset::GetGameModeTypeDataForType(PrimaryAssetId);
 		ToReturn.Add(TypeData);
 	}
 
-	ToReturn.Sort([](const FGameModeTypeData& LHS, const FGameModeTypeData& RHS) {
+	ToReturn.Sort([](const FGameModeTypeData& LHS, const FGameModeTypeData& RHS)
+	{
 		return LHS.DisplayName.ToString() < RHS.DisplayName.ToString();
 	});
 
 	return ToReturn;
+}
+
+TArray<FTutorialModuleData> UAccelByteWarsAssetManager::GetAllTutorialModules()
+{
+	TArray<FTutorialModuleData> ToReturn;
+
+	TArray<FPrimaryAssetId> PrimaryAssetIdList;
+	Get().GetPrimaryAssetIdList(UTutorialModuleDataAsset::TutorialModuleAssetType, PrimaryAssetIdList);
+
+	for (const FPrimaryAssetId& PrimaryAssetId : PrimaryAssetIdList)
+	{
+		const FString CodeName = UTutorialModuleDataAsset::GetCodeNameFromAssetId(PrimaryAssetId);
+		
+		FTutorialModuleData ModuleData = UTutorialModuleDataAsset::GetTutorialModuleDataByCodeName(CodeName);
+		
+		ToReturn.Add(ModuleData);
+		
+	}
+
+	ToReturn.Sort([](const FTutorialModuleData& LHS, const FTutorialModuleData& RHS)
+	{
+		return LHS.DisplayName.ToString() < RHS.DisplayName.ToString();
+	});
+
+	return ToReturn;
+}
+
+TArray<UAccelByteWarsDataAsset*> UAccelByteWarsAssetManager::GetAllAssetsForTypeFromCache(FPrimaryAssetType AssetType) const
+{
+	TArray<UAccelByteWarsDataAsset*> ToReturn;
+	if (PrimaryAssetCache.Contains(AssetType))
+	{
+		const FPrimaryAssetCache& CacheForType = PrimaryAssetCache.FindChecked(AssetType);
+		CacheForType.AssetMap.GenerateValueArray(ToReturn);
+	}
+
+	return ToReturn;
+}
+
+UAccelByteWarsDataAsset* UAccelByteWarsAssetManager::GetAssetFromCache(FPrimaryAssetId AssetId) const
+{
+	if (PrimaryAssetCache.Contains(AssetId.PrimaryAssetType))
+	{
+		const FPrimaryAssetCache& CacheForType = PrimaryAssetCache.FindChecked(AssetId.PrimaryAssetType);
+		return CacheForType.AssetMap.FindRef(AssetId);
+	}
+
+	return nullptr;
+}
+
+void UAccelByteWarsAssetManager::LoadAssetsOfType(const TArray<FPrimaryAssetType>& AssetTypes)
+{
+	for (const FPrimaryAssetType& AssetType : AssetTypes)
+	{
+		TSharedPtr<FStreamableHandle> Handle = LoadPrimaryAssetsWithType(AssetType);
+		if (Handle.IsValid())
+		{
+			Handle->WaitUntilComplete(0.0f, false);
+			
+			TArray<UObject*> LoadedAssets;
+			Handle->GetLoadedAssets(LoadedAssets);
+
+			PrimaryAssetCache.Remove(AssetType);
+			for (UObject* LoadedAsset : LoadedAssets)
+			{
+				AddAssetToCache(Cast<UAccelByteWarsDataAsset>(LoadedAsset));
+			}
+		}
+	}
+}
+
+void UAccelByteWarsAssetManager::UnloadAssetsOfType(const TArray<FPrimaryAssetType>& AssetTypes)
+{
+	for (const FPrimaryAssetType& AssetType : AssetTypes)
+	{
+		PrimaryAssetCache.Remove(AssetType);
+		UnloadPrimaryAssetsWithType(AssetType);
+	}
+}
+
+void UAccelByteWarsAssetManager::AddAssetToCache(UAccelByteWarsDataAsset* Asset)
+{
+	if (Asset)
+	{
+		PrimaryAssetCache.FindOrAdd(Asset->GetPrimaryAssetId().PrimaryAssetType).AssetMap.Add(Asset->GetPrimaryAssetId(), Asset);
+	}
+}
+
+void UAccelByteWarsAssetManager::RemoveAssetFromCache(const FPrimaryAssetId& AssetId)
+{
+	if (PrimaryAssetCache.Contains(AssetId.PrimaryAssetType))
+	{
+		PrimaryAssetCache.FindChecked(AssetId.PrimaryAssetType).AssetMap.Remove(AssetId);
+	}
 }
