@@ -42,7 +42,7 @@ public:
 public:
 	// The UI class that used as the entrypoint from main menu to the tutorial module
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, AssetRegistrySearchable)
-	TSoftClassPtr<class UAccelByteWarsActivatableWidget> DefaultUIClass;
+	TSubclassOf<class UAccelByteWarsActivatableWidget> DefaultUIClass;
 
 	// Alias to set for this mode (needs to be unique)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)

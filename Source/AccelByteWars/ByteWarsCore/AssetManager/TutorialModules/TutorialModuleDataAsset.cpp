@@ -3,6 +3,8 @@
 
 #include "ByteWarsCore/AssetManager/TutorialModules/TutorialModuleDataAsset.h"
 
+#include "ByteWarsCore/UI/AccelByteWarsActivatableWidget.h"
+
 const FPrimaryAssetType	UTutorialModuleDataAsset::TutorialModuleAssetType = TEXT("TutorialModule");
 
 FTutorialModuleData UTutorialModuleDataAsset::GetTutorialModuleDataByCodeName(const FString& InCodeName)
@@ -16,7 +18,8 @@ FTutorialModuleData UTutorialModuleDataAsset::GetTutorialModuleDataByCodeName(co
 	TutorialModuleData.Description = UAccelByteWarsDataAsset::GetDescriptionForAsset(TutorialModuleAssetId);
 
 	FString DefaultClassString = UAccelByteWarsDataAsset::GetMetadataForAsset<FString>(TutorialModuleAssetId, GET_MEMBER_NAME_CHECKED(UTutorialModuleDataAsset, DefaultUIClass));
-	TutorialModuleData.DefaultUIClass = TSoftClassPtr<UAccelByteWarsActivatableWidget>(DefaultClassString);
+	TSoftClassPtr<UAccelByteWarsActivatableWidget> DefaultClassPtr = TSoftClassPtr<UAccelByteWarsActivatableWidget>(DefaultClassString);
+	TutorialModuleData.DefaultUIClass = UAccelByteWarsActivatableWidget::StaticClass();
 
 	TutorialModuleData.bIsActive = UAccelByteWarsDataAsset::GetMetadataForAsset<bool>(GenerateAssetIdFromCodeName(InCodeName), GET_MEMBER_NAME_CHECKED(UTutorialModuleDataAsset, bIsActive));
 

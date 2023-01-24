@@ -19,7 +19,7 @@ public:
 	FText Description;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, AssetRegistrySearchable)
-	TSoftClassPtr<class UAccelByteWarsActivatableWidget> DefaultUIClass;
+	TSubclassOf<class UAccelByteWarsActivatableWidget> DefaultUIClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FString CodeName;
