@@ -6,7 +6,7 @@
 
 #include "CoreMinimal.h"
 #include "ByteWarsCore/UI/AccelByteWarsActivatableWidget.h"
-#include "ByteWarsCore/UI/MainMenu/Credits/Components/CreditsDataModel.h"
+#include "ByteWarsCore/UI/MainMenu/HelpOptions/Credits/Components/CreditsDataModel.h"
 #include "CreditsWidget.generated.h"
 
 class UScrollBox;
@@ -30,6 +30,7 @@ protected:
 
 private:
 	bool bIsCreditsListInitialized = false;
+	FTimerHandle TimerHandle;
 
 	UPROPERTY(EditAnywhere, Category = Credits)
 	float AutoScrollDelay = 2.0f;

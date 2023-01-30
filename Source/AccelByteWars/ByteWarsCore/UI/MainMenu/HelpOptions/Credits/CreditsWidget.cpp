@@ -2,9 +2,9 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-#include "ByteWarsCore/UI/MainMenu/Credits/CreditsWidget.h"
-#include "ByteWarsCore/UI/MainMenu/Credits/Components/CreditsRoleGroupWidget.h"
-#include "ByteWarsCore/UI/MainMenu/Credits/Components/CreditsEntry.h"
+#include "ByteWarsCore/UI/MainMenu/HelpOptions/Credits/CreditsWidget.h"
+#include "ByteWarsCore/UI/MainMenu/HelpOptions/Credits/Components/CreditsRoleGroupWidget.h"
+#include "ByteWarsCore/UI/MainMenu/HelpOptions/Credits/Components/CreditsEntry.h"
 #include "Components/ScrollBox.h"
 
 void UCreditsWidget::InitCredits()
@@ -30,7 +30,6 @@ void UCreditsWidget::InitCredits()
 		RoleGroupMap[Credit.RoleType]->AddChild(NewCredit.Get());
 	}
 
-	FTimerHandle TimerHandle;
 	GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this]() { bIsCreditsListInitialized = true; }, AutoScrollDelay, false);
 }
 
@@ -51,6 +50,7 @@ void UCreditsWidget::ResetCreditsList()
 {
 	Scb_CreditsList->ClearChildren();
 	Scb_CreditsList->SetScrollOffset(0.0f);
+	GetWorld()->GetTimerManager().ClearTimer(TimerHandle);
 	bIsCreditsListInitialized = false;
 }
 
@@ -72,6 +72,6 @@ void UCreditsWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
 
-	MoveCameraToTargetLocation(InDeltaTime);
+	MoveCameraToTargetLocation(InDeltaTime, FVector(60.0f, 600.0f, 160.0f));
 	ScrollCreditsToEnd(InDeltaTime, AutoScrollSpeed);
 }

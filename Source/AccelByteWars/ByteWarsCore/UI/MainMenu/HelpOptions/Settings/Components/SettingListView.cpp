@@ -2,7 +2,7 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-#include "ByteWarsCore/UI/MainMenu/Settings/Components/SettingListView.h"
+#include "ByteWarsCore/UI/MainMenu/HelpOptions/Settings/Components/SettingListView.h"
 
 void USettingListView::AddNameOverride(const FName& DevName, const FText& OverrideName)
 {
