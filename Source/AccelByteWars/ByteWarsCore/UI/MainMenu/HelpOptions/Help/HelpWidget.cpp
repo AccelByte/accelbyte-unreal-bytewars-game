@@ -2,11 +2,11 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-#include "ByteWarsCore/UI/MainMenu/Help/HelpWidget.h"
+#include "ByteWarsCore/UI/MainMenu/HelpOptions/Help/HelpWidget.h"
 
 void UHelpWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
 
-	MoveCameraToTargetLocation(InDeltaTime);
+	MoveCameraToTargetLocation(InDeltaTime, FVector(60.0f, 600.0f, 160.0f));
 }

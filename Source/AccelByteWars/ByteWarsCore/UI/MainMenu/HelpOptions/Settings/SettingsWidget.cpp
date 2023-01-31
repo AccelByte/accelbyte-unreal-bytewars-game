@@ -2,8 +2,8 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-#include "ByteWarsCore/UI/MainMenu/Settings/SettingsWidget.h"
-#include "ByteWarsCore/UI/MainMenu/Settings/Components/SettingsListEntryBase.h"
+#include "ByteWarsCore/UI/MainMenu/HelpOptions/Settings/SettingsWidget.h"
+#include "ByteWarsCore/UI/MainMenu/HelpOptions/Settings/Components/SettingsListEntryBase.h"
 #include "ByteWarsCore/System/AccelByteWarsGameInstance.h"
 
 #define LOCTEXT_NAMESPACE "AccelByteWars"
@@ -33,7 +33,7 @@ void USettingsWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
 
-	MoveCameraToTargetLocation(InDeltaTime);
+	MoveCameraToTargetLocation(InDeltaTime, FVector(60.0f, 600.0f, 160.0f));
 }
 
 void USettingsWidget::InitSettings()

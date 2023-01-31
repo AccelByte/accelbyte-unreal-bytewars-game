@@ -2,4 +2,4 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-#include "ByteWarsCore/UI/MainMenu/Credits/Components/CreditsDataModel.h"
+#include "ByteWarsCore/UI/MainMenu/HelpOptions/Credits/Components/CreditsDataModel.h"

@@ -6,7 +6,7 @@
 
 #include "CoreMinimal.h"
 #include "CommonUserWidget.h"
-#include "ByteWarsCore/UI/MainMenu/Credits/Components/CreditsDataModel.h"
+#include "ByteWarsCore/UI/MainMenu/HelpOptions/Credits/Components/CreditsDataModel.h"
 #include "CreditsEntry.generated.h"
 
 class UCommonTextBlock;

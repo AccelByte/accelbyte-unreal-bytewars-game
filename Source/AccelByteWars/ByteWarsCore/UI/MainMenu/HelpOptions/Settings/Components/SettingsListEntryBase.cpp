@@ -2,7 +2,7 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-#include "ByteWarsCore/UI/MainMenu/Settings/Components/SettingsListEntryBase.h"
+#include "ByteWarsCore/UI/MainMenu/HelpOptions/Settings/Components/SettingsListEntryBase.h"
 
 #include "CommonTextBlock.h"
 #include "AnalogSlider.h"
