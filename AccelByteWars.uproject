@@ -35,16 +35,16 @@
 			"Enabled": true
 		},
 		{
-			"Name": "AccelByteUe4Sdk",
-			"Enabled": true
-		},
-		{
 			"Name": "OnlineSubsystemAccelByte",
-			"Enabled": true
+			"Enabled": false
 		},
 		{
 			"Name": "AccelByteNetworkUtilities",
-			"Enabled": true
+			"Enabled": false
+		},
+		{
+			"Name": "AccelByteUe4Sdk",
+			"Enabled": false
 		}
 	]
 }
