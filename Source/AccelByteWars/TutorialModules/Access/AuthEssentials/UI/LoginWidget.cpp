@@ -56,6 +56,7 @@ void ULoginWidget::Login(EAccelByteLoginType LoginMethod)
 	APlayerController* PC = GetWorld()->GetFirstPlayerController();
 	ensure(PC);
 	
+	// Cached last login method for the UI login retry functionality later. 
 	LastLoginMethod = LoginMethod;
 
 	ensure(AuthSubsystem);

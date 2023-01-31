@@ -9,16 +9,15 @@ void UAuthEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
 
-    ClearAuthCredentials(true);
-
-    // Get AccelByte Identity Interface from OSS.
+    // Get Online Subsystem and make sure it's valid.
     const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
     if (!ensure(Subsystem)) 
     {
-        UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("AccelByte SDK and OSS is not valid."));
+        UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and DefaultPlatformService under [OnlineSubsystem] in the Engine.ini set to AccelByte."));
         return;
     }
 
+    // Grab the reference of AccelByte Identity Interface and make sure it's valid.
     IdentityInterface = StaticCastSharedPtr<FOnlineIdentityAccelByte>(Subsystem->GetIdentityInterface());
     if (!ensure(IdentityInterface.IsValid()))
     {
