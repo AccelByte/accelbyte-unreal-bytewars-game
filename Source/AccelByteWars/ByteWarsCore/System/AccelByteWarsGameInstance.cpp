@@ -5,23 +5,23 @@
 #include "ByteWarsCore/UI/GameUIManagerSubsystem.h"
 #include "ByteWarsCore/Player/CommonLocalPlayer.h"
 
-int32 UAccelByteWarsGameInstance::AddLocalPlayer(ULocalPlayer* NewPlayer, int32 ControllerId)
+int32 UAccelByteWarsGameInstance::AddLocalPlayer(ULocalPlayer* NewLocalPlayer, FPlatformUserId UserId)
 {
-	int32 ReturnVal = Super::AddLocalPlayer(NewPlayer, ControllerId);
+	int32 ReturnVal = Super::AddLocalPlayer(NewLocalPlayer, UserId);
 	if (ReturnVal != INDEX_NONE)
 	{
 		if (!PrimaryPlayer.IsValid())
 		{
-			UE_LOG(LogTemp, Log, TEXT("AddLocalPlayer: Set %s to Primary Player"), *NewPlayer->GetName());
-			PrimaryPlayer = NewPlayer;
+			UE_LOG(LogTemp, Log, TEXT("AddLocalPlayer: Set %s to Primary Player"), *NewLocalPlayer->GetName());
+			PrimaryPlayer = NewLocalPlayer;
 		}
 		
-		UE_LOG(LogTemp, Log, TEXT("AddLocalPlayer: New player %s is set to ControllerId: %i"), *NewPlayer->GetName(), ControllerId);
-		GetSubsystem<UGameUIManagerSubsystem>()->NotifyPlayerAdded(Cast<UCommonLocalPlayer>(NewPlayer));
+		UE_LOG(LogTemp, Log, TEXT("AddLocalPlayer: New player %s is set to ControllerId: %i"), *NewLocalPlayer->GetName(), UserId.GetInternalId());
+		GetSubsystem<UGameUIManagerSubsystem>()->NotifyPlayerAdded(Cast<UCommonLocalPlayer>(NewLocalPlayer));
 
 		if(OnLocalPlayerAdded.IsBound())
 		{
-			OnLocalPlayerAdded.Broadcast(NewPlayer);
+			OnLocalPlayerAdded.Broadcast(NewLocalPlayer);
 		}
 	}
 	

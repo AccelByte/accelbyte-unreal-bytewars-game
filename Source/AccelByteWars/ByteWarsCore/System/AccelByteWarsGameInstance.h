@@ -99,7 +99,7 @@ private:
 	TWeakObjectPtr<ULocalPlayer> PrimaryPlayer;
 
 public:
-	virtual int32 AddLocalPlayer(ULocalPlayer* NewPlayer, int32 ControllerId) override;
+	virtual int32 AddLocalPlayer(ULocalPlayer* NewLocalPlayer, FPlatformUserId UserId) override;
 	virtual bool RemoveLocalPlayer(ULocalPlayer* ExistingPlayer) override;
 
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = Sounds)

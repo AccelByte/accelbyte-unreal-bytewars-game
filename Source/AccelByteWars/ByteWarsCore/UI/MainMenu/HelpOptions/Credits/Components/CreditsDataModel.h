@@ -26,13 +26,13 @@ struct FCreditsData
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		ECreditsRoleType RoleType;
+	ECreditsRoleType RoleType;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		FText Name;
+	FText Name;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		FText AdditionalDescription;
+	FText AdditionalDescription;
 };
 
 #define LOCTEXT_NAMESPACE "AccelByteWars"
