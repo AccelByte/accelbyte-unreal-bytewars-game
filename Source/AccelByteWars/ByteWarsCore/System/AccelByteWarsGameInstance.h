@@ -5,12 +5,12 @@
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
 #include "ByteWarsCore/Settings/GameModeDataAssets.h"
-#include "ByteWarsCore/Settings/GlobalSettingsDataAsset.h"
 #include "ByteWarsCore/UI/AccelByteWarsActivatableWidget.h"
 #include "AccelByteWarsGameInstance.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLocalPlayerChanged, ULocalPlayer*, LocalPlayer);
 
+#pragma region "Structs and data-oriented classes declaration"
 USTRUCT(BlueprintType)
 struct FSelectedGameMode {
 
@@ -20,7 +20,7 @@ struct FSelectedGameMode {
 	FGameModeData SelectedGameMode;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int32 RegisteredPlayerCount = 1; 
+	int32 RegisteredPlayerCount = 0;
 };
 
 UCLASS(BlueprintType)
@@ -31,10 +31,10 @@ class ACCELBYTEWARS_API UAccelByteWarsPlayerSetup : public UObject
 public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attributes)
-	FString Name;
+	FName Name;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attributes)
-	int32 ControllerId;
+	UPROPERTY(BlueprintReadWrite)
+	FUniqueNetIdRepl UniqueNetId;
 };
 
 UCLASS(BlueprintType)
@@ -47,6 +47,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attributes)
 	FLinearColor TeamColour;
 
+	/**
+	 * @brief Based on array index in AccelByteWarsGameSetup
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attributes)
 	int TeamId;
 
@@ -68,6 +71,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attributes)
 	FSelectedGameMode SelectedGameMode;
 };
+#pragma endregion 
 
 
 /**
@@ -81,9 +85,6 @@ class ACCELBYTEWARS_API UAccelByteWarsGameInstance : public UGameInstance
 public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Attributes)
 	UAccelByteWarsActivatableWidget* BaseUIWidget;
-
-	UPROPERTY(Transient, EditAnywhere, BlueprintReadWrite, Category = Attributes)
-	FSelectedGameMode SelectedGameMode;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attributes)
 	UAccelByteWarsGameSetup* GameSetup;

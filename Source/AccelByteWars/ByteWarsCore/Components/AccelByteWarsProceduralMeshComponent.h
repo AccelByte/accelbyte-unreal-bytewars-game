@@ -14,6 +14,8 @@ class ACCELBYTEWARS_API UAccelByteWarsProceduralMeshComponent : public UProcedur
 {
 	GENERATED_BODY()
 
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 public:
 	/**
 	 * @brief Call in ConstructionScript to apply the procedural mesh
@@ -26,7 +28,7 @@ public:
 	 * @param InColor
 	 */
 	UFUNCTION(BlueprintCallable)
-	void UpdateColor(FLinearColor InColor);
+	void UpdateColor(const FLinearColor InColor);
 
 protected:
 	TArray<int32> Triangles;
@@ -35,7 +37,7 @@ protected:
 	UPROPERTY()
 	UMaterialInstanceDynamic* Material;
 
-	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (ExposeOnSpawn))
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (ExposeOnSpawn), Replicated)
 	FLinearColor Color = {1.0f, 1.0f, 1.0f, 0.0f};
 
 	UPROPERTY(EditAnywhere)

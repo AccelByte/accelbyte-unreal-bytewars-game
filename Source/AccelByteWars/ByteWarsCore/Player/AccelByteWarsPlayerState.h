@@ -14,8 +14,22 @@ class ACCELBYTEWARS_API AAccelByteWarsPlayerState : public APlayerState
 {
 	GENERATED_BODY()
 
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 public:
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Attributes)
-	FLinearColor TeamColour;
+	UPROPERTY(BlueprintReadWrite, Category = Attributes, Replicated)
+	FLinearColor TeamColor = FLinearColor::White;
+
+	UPROPERTY(BlueprintReadWrite, Category = Attributes, Replicated)
+	int32 TeamId = INDEX_NONE;
+
+	UPROPERTY(BlueprintReadWrite, Category = Attributes, Replicated)
+	int32 MissilesFired = 0;
+
+	UPROPERTY(BlueprintReadWrite, Category = Attributes, Replicated)
+	int32 KillCount = 0;
+
+	UPROPERTY(BlueprintReadWrite, Category = Attributes, Replicated)
+	int32 NumLivesLeft = INDEX_NONE;
 };

@@ -69,7 +69,7 @@ public:
 
 	// Default team count
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	int32 TeamNum = INDEX_NONE;
+	int32 MaxTeamNum = 4;
 
 	// Default maximum supported player
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
@@ -82,5 +82,12 @@ public:
 	// Default score limit
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 ScoreLimit = INDEX_NONE;
-	
+
+	// Default fired missiles limit at a time per player
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 FiredMissilesLimit = 1;
+
+	// Default starting lives for each player
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 StartingLives = 1;
 };

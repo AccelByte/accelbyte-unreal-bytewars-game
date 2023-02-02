@@ -4,6 +4,15 @@
 #include "ByteWarsCore/Components/AccelByteWarsProceduralMeshComponent.h"
 
 #include "Kismet/KismetMathLibrary.h"
+#include "Net/UnrealNetwork.h"
+
+void UAccelByteWarsProceduralMeshComponent::GetLifetimeReplicatedProps(
+	TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(UAccelByteWarsProceduralMeshComponent, Color);
+}
 
 void UAccelByteWarsProceduralMeshComponent::MeshSetup()
 {
@@ -63,5 +72,6 @@ void UAccelByteWarsProceduralMeshComponent::MeshSetup()
 void UAccelByteWarsProceduralMeshComponent::UpdateColor(const FLinearColor InColor)
 {
 	Color = InColor;
+
 	Material->SetVectorParameterValue(FName("EmissiveColour"), InColor);
 }
