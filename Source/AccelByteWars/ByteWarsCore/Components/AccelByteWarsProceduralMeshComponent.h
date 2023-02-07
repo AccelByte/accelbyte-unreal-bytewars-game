@@ -7,16 +7,19 @@
 #include "AccelByteWarsProceduralMeshComponent.generated.h"
 
 /**
- * 
+ * Custom ProceduralMesh component
  */
 UCLASS(BlueprintType, Blueprintable, ClassGroup = Rendering, meta = (BlueprintSpawnableComponent))
 class ACCELBYTEWARS_API UAccelByteWarsProceduralMeshComponent : public UProceduralMeshComponent
 {
 	GENERATED_BODY()
 
+	//~UObject overridden functions
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	//~End of UObject overridden functions
 
 public:
+
 	/**
 	 * @brief Call in ConstructionScript to apply the procedural mesh
 	 */

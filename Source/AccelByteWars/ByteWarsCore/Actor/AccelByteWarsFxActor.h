@@ -7,6 +7,9 @@
 #include "NiagaraComponent.h"
 #include "AccelByteWarsFxActor.generated.h"
 
+/**
+ * @brief FX purpose actor. Will destroy it self upon Particle System finished.
+ */
 UCLASS()
 class ACCELBYTEWARS_API AAccelByteWarsFxActor : public AActor
 {
@@ -14,14 +17,15 @@ class ACCELBYTEWARS_API AAccelByteWarsFxActor : public AActor
 
 	AAccelByteWarsFxActor();
 
-protected:
-	// Called when the game starts or when spawned
+	//~AActor overridden functions
 	virtual void BeginPlay() override;
+	//~End of AActor overridden functions
 
-	UFUNCTION()
+protected:
+
+	UFUNCTION(Reliable, Server)
 	void DestroySelfOnParticleSystemFinished(UNiagaraComponent* Component);
 
-protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components")
 	UNiagaraComponent* ParticleSystem;
 

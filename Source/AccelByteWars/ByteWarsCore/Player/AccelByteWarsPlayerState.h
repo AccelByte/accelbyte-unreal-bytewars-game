@@ -6,15 +6,14 @@
 #include "GameFramework/PlayerState.h"
 #include "AccelByteWarsPlayerState.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class ACCELBYTEWARS_API AAccelByteWarsPlayerState : public APlayerState
 {
 	GENERATED_BODY()
 
+	//~AActor overriden functions
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	//~End of AActor overriden functions
 
 public:
 
@@ -32,4 +31,6 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, Category = Attributes, Replicated)
 	int32 NumLivesLeft = INDEX_NONE;
+
+	bool bShouldKick = false;
 };

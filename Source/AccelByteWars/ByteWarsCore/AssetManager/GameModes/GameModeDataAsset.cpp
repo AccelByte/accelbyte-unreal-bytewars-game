@@ -21,7 +21,6 @@ FGameModeData UGameModeDataAsset::GetGameModeDataByCodeName(const FString& InCod
 	GameModeData.GameModeTypeString = GetGameModeTypeForCodeName(InCodeName).ToString();
 
 	GameModeData.bIsLocalGame = UAccelByteWarsDataAsset::GetMetadataForAsset<bool>(GenerateAssetIdFromCodeName(InCodeName), GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, bIsLocalGame));
-	GameModeData.bIsTeamGame = UAccelByteWarsDataAsset::GetMetadataForAsset<bool>(GenerateAssetIdFromCodeName(InCodeName), GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, bIsTeamGame));
 
 	GameModeData.MaxTeamNum = UAccelByteWarsDataAsset::GetMetadataForAsset<int32>(GenerateAssetIdFromCodeName(InCodeName), GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, TeamNum));
 

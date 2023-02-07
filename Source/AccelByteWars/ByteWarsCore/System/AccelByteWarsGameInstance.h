@@ -3,80 +3,99 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Engine/GameInstance.h"
 #include "ByteWarsCore/Settings/GameModeDataAssets.h"
+#include "ByteWarsCore/Settings/GlobalSettingsDataAsset.h"
+#include "Engine/GameInstance.h"
 #include "ByteWarsCore/UI/AccelByteWarsActivatableWidget.h"
 #include "AccelByteWarsGameInstance.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLocalPlayerChanged, ULocalPlayer*, LocalPlayer);
-
-#pragma region "Structs and data-oriented classes declaration"
+#pragma region "Structs and data storing purpose UObject declaration"
 USTRUCT(BlueprintType)
-struct FSelectedGameMode {
-
-	GENERATED_USTRUCT_BODY()
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FGameModeData SelectedGameMode;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int32 RegisteredPlayerCount = 0;
-};
-
-UCLASS(BlueprintType)
-class ACCELBYTEWARS_API UAccelByteWarsPlayerSetup : public UObject
+struct FGameplayPlayerData
 {
 	GENERATED_BODY()
 
 public:
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attributes)
-	FName Name;
-
 	UPROPERTY(BlueprintReadWrite)
 	FUniqueNetIdRepl UniqueNetId;
-};
-
-UCLASS(BlueprintType)
-class ACCELBYTEWARS_API UAccelByteWarsTeamSetup : public UObject
-{
-	GENERATED_BODY()
-
-public:
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attributes)
-	FLinearColor TeamColour;
 
 	/**
-	 * @brief Based on array index in AccelByteWarsGameSetup
+	 * @brief Used for local game, since LocalPlayer does not have UniqueNetId (UE 5.1.0)
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attributes)
-	int TeamId;
+	UPROPERTY(BlueprintReadWrite)
+	int32 ControllerId = 0;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attributes)
-	TArray<UAccelByteWarsPlayerSetup*> PlayerSetups;
+	UPROPERTY(BlueprintReadWrite)
+	int32 TeamId = INDEX_NONE;
+
+	UPROPERTY(BlueprintReadWrite)
+	float Score = 0.0f;
+
+	UPROPERTY(BlueprintReadWrite)
+	int32 KillCount = 0;
+
+	UPROPERTY(BlueprintReadWrite)
+	int32 NumLivesLeft = 1;
+
+	bool operator==(const FGameplayPlayerData& Other) const
+	{
+		return UniqueNetId.IsValid() ? UniqueNetId == Other.UniqueNetId : ControllerId == Other.ControllerId;
+	}
 };
 
-
-UCLASS(BlueprintType)
-class ACCELBYTEWARS_API UAccelByteWarsGameSetup : public UObject
+USTRUCT(BlueprintType)
+struct FGameplayTeamData
 {
 	GENERATED_BODY()
 
 public:
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attributes)
-	TArray<UAccelByteWarsTeamSetup*> TeamSetups;
+	UPROPERTY(BlueprintReadWrite)
+	int32 TeamId = INDEX_NONE;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attributes)
-	FSelectedGameMode SelectedGameMode;
+	UPROPERTY(BlueprintReadWrite)
+	TArray<FGameplayPlayerData> TeamMembers;
+
+	float GetTeamScore() const
+	{
+		float TotalScore = 0.0f;
+		for (const FGameplayPlayerData& Player : TeamMembers)
+		{
+			TotalScore += Player.Score;
+		}
+		return TotalScore;
+	}
+
+	int32 GetTeamLivesLeft() const
+	{
+		int32 TotalLives = 0;
+		for (const FGameplayPlayerData& Player : TeamMembers)
+		{
+			TotalLives += Player.NumLivesLeft;
+		}
+		return TotalLives;
+	}
+
+	int32 GetTeamKillCount() const
+	{
+		int32 TotalKillCount = 0;
+		for (const FGameplayPlayerData& Player : TeamMembers)
+		{
+			TotalKillCount += Player.KillCount;
+		}
+		return TotalKillCount;
+	}
+
+	bool operator==(const FGameplayTeamData& Other) const
+	{
+		return TeamId == Other.TeamId && TeamMembers == Other.TeamMembers;
+	}
 };
 #pragma endregion 
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLocalPlayerChanged, ULocalPlayer*, LocalPlayer);
+DECLARE_LOG_CATEGORY_CLASS(LogByteWarsGameInstance, Log, All);
 
-/**
- * 
- */
 UCLASS()
 class ACCELBYTEWARS_API UAccelByteWarsGameInstance : public UGameInstance
 {
@@ -87,7 +106,12 @@ public:
 	UAccelByteWarsActivatableWidget* BaseUIWidget;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attributes)
-	UAccelByteWarsGameSetup* GameSetup;
+	FGameModeData GameSetup;
+
+	/**
+	 * @brief Transferring data between data - purpose. Do not use this directly. Use the one in GameState instead.
+	 */
+	TArray<FGameplayTeamData> Teams;
 
 	UPROPERTY(BlueprintAssignable)
 	FOnLocalPlayerChanged OnLocalPlayerAdded;
@@ -120,4 +144,35 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = GameSettings)
 	void SaveGameSettings();
+
+	/**
+	 * @brief Get the currently set GameSetup GameModeType
+	 * @return Game Mode type
+	 */
+	UFUNCTION(BlueprintCallable)
+	EGameModeType GetCurrentGameModeType() const;
+
+	/**
+	 * @brief Assign game mode to GameSetup based on it's code name | will use the first GameMode in data table if not found
+	 * @param CodeName Target GameMode code name
+	 */
+	UFUNCTION(BlueprintCallable)
+	void AssignGameMode(FString CodeName);
+
+	/**
+	 * @brief Get team color specified in GlobalSettingsDataAsset
+	 * @param TeamId Target TeamId
+	 * @return Configured team color
+	 */
+	UFUNCTION(BlueprintCallable)
+	FLinearColor GetTeamColor(uint8 TeamId) const;
+
+protected:
+	UPROPERTY(EditAnywhere)
+	UGlobalSettingsDataAsset* GlobalSettingsDataAsset;
+
+	UPROPERTY(EditAnywhere)
+	UDataTable* GameModeDataTable;
+
+	FGameModeData GetGameModeDataByCodeName(const FString CodeName) const;
 };

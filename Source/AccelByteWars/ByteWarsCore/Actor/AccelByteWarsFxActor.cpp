@@ -16,18 +16,17 @@ AAccelByteWarsFxActor::AAccelByteWarsFxActor()
 	ParticleSystem->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 }
 
-// Called when the game starts or when spawned
 void AAccelByteWarsFxActor::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (bDestroyOnParticleSystemFinished)
+	if (bDestroyOnParticleSystemFinished && !IsRunningDedicatedServer())
 	{
 		ParticleSystem->OnSystemFinished.AddUniqueDynamic(this, &ThisClass::DestroySelfOnParticleSystemFinished);
 	}
 }
 
-void AAccelByteWarsFxActor::DestroySelfOnParticleSystemFinished(UNiagaraComponent* Component)
+void AAccelByteWarsFxActor::DestroySelfOnParticleSystemFinished_Implementation(UNiagaraComponent* Component)
 {
 	Destroy();
 }

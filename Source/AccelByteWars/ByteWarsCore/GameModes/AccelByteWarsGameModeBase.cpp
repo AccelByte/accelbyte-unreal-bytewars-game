@@ -16,32 +16,29 @@ void AAccelByteWarsGameModeBase::InitGameState()
 {
 	Super::InitGameState();
 
-	AccelByteWarsGameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
-	AccelByteWarsGameState = GetGameState<AAccelByteWarsGameStateBase>();
+	ByteWarsGameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+	ByteWarsGameState = GetGameState<AAccelByteWarsGameStateBase>();
 
-	if (!ensure(AccelByteWarsGameInstance)) return;
-	if (!ensure(AccelByteWarsGameState)) return;
+	if (!ensure(ByteWarsGameInstance)) return;
+	if (!ensure(ByteWarsGameState)) return;
 }
 
 void AAccelByteWarsGameModeBase::BeginPlay()
 {
 	// Check if GameSetup have already been set up or not
-	if (!AccelByteWarsGameInstance->GameSetup)
+	if (!ByteWarsGameInstance->GameSetup)
 	{
 		// have not yet set up, set GameSetup based on launch argument
 		FString CodeName;
 		FParse::Value(FCommandLine::Get(), TEXT("-GameMode="), CodeName);
-		AssignGameMode(CodeName);
-		AccelByteWarsGameInstance->GameSetup = AccelByteWarsGameState->GameSetup;
+		ByteWarsGameInstance->AssignGameMode(CodeName);
 	}
 
-	// Setup GameState variables if in GameplayLevel
-	if (bIsGameplayLevel)
+	// Setup GameState variables if in GameplayLevel or if DedicatedServer
+	if (bIsGameplayLevel || IsRunningDedicatedServer())
 	{
 		// GameState setup
-		AccelByteWarsGameState->GameSetup = AccelByteWarsGameInstance->GameSetup;
-		const FGameModeData& GameModeData = AccelByteWarsGameState->GameSetup->SelectedGameMode.SelectedGameMode;
-		AccelByteWarsGameState->TimeLeft = GameModeData.MatchTime;
+		ByteWarsGameState->TimeLeft = ByteWarsGameInstance->GameSetup.MatchTime;
 
 		// setup existing players
 		for(FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
@@ -64,12 +61,26 @@ APlayerController* AAccelByteWarsGameModeBase::Login(
 	APlayerController* PlayerController = Super::Login(NewPlayer, InRemoteRole, Portal, Options, UniqueId, ErrorMessage);
 
 	// setup player if in GameplayLevel and game started
-	if (bIsGameplayLevel && HasMatchStarted())
+	if ((bIsGameplayLevel || IsRunningDedicatedServer()) && HasMatchStarted())
 	{
 		PlayerSetup(PlayerController);
 	}
 
 	return PlayerController;
+}
+
+void AAccelByteWarsGameModeBase::PostLogin(APlayerController* NewPlayer)
+{
+	Super::PostLogin(NewPlayer);
+
+	if (const AAccelByteWarsPlayerState* PlayerState = static_cast<AAccelByteWarsPlayerState*>(NewPlayer->PlayerState))
+	{
+		if (PlayerState->bShouldKick)
+		{
+			GameSession->KickPlayer(NewPlayer, FText::FromString("Max player reached"));
+			GAMEMODE_LOG("Player did not registered in Teams data. Max registered players reached. Kicking this player");
+		}
+	}
 }
 
 int32 AAccelByteWarsGameModeBase::AddPlayerScore(APlayerState* PlayerState, const float InScore, const bool bAddKillCount)
@@ -82,18 +93,16 @@ int32 AAccelByteWarsGameModeBase::AddPlayerScore(APlayerState* PlayerState, cons
 	}
 
 	FGameplayPlayerData* PlayerData =
-		AccelByteWarsGameState->PlayerDatas.FindByKey(PlayerState->GetUniqueId());
+		ByteWarsGameState->GetPlayerDataById(PlayerState->GetUniqueId(),GetControllerId(PlayerState));
 	if (!PlayerData)
 	{
-		GAMEMODE_LOG("Player is not in PlayerDatas. Add player to team via AddToTeam. Operation cancelled")
+		GAMEMODE_LOG("Player is not in Teams data. Add player to team via AddToTeam. Operation cancelled")
 		return INDEX_NONE;
 	}
 
-	// set score in PlayerState
+	// set score in PlayerState and GameState
 	const float FinalScore = AccelByteWarsPlayerState->GetScore() + InScore;
 	AccelByteWarsPlayerState->SetScore(FinalScore);
-
-	// set score in GameState
 	PlayerData->Score = FinalScore;
 
 	// increase kill count
@@ -115,10 +124,11 @@ int32 AAccelByteWarsGameModeBase::DecreasePlayerLife(APlayerState* PlayerState, 
 		return INDEX_NONE;
 	}
 
-	FGameplayPlayerData* PlayerData = AccelByteWarsGameState->PlayerDatas.FindByKey(PlayerState->GetUniqueId());
+	FGameplayPlayerData* PlayerData =
+		ByteWarsGameState->GetPlayerDataById(PlayerState->GetUniqueId(),GetControllerId(PlayerState));
 	if (!PlayerData)
 	{
-		GAMEMODE_LOG("Player is not in PlayerDatas. Add player to team via AddToTeam. Operation cancelled")
+		GAMEMODE_LOG("Player is not in Teams data. Add player to team via AddToTeam. Operation cancelled")
 		return INDEX_NONE;
 	}
 
@@ -131,7 +141,17 @@ int32 AAccelByteWarsGameModeBase::DecreasePlayerLife(APlayerState* PlayerState, 
 	return AccelByteWarsPlayerState->NumLivesLeft;
 }
 
-#pragma region "GameSetup related"
+void AAccelByteWarsGameModeBase::ResetGameData()
+{
+	ByteWarsGameState->Teams.Empty();
+}
+
+void AAccelByteWarsGameModeBase::TriggerServerTravel(TSoftObjectPtr<UWorld> Level)
+{
+	const FString Url = Level.GetLongPackageName();
+	GetWorld()->ServerTravel(Url);
+}
+
 void AAccelByteWarsGameModeBase::PlayerSetup(APlayerController* PlayerController) const
 {
 	// failsafe
@@ -142,19 +162,19 @@ void AAccelByteWarsGameModeBase::PlayerSetup(APlayerController* PlayerController
 
 	int32 TeamId = INDEX_NONE;
 	const FUniqueNetIdRepl PlayerUniqueId = GetPlayerUniqueNetId(PlayerController);
+	const int32 ControllerId = GetControllerId(PlayerState);
 
-	// check for a match in GameState's PlayerDatas | restoring data for disconnected player
-	bool bFoundInPlayerDatas = false;
-	if (const FGameplayPlayerData* PlayerData = AccelByteWarsGameState->PlayerDatas.FindByKey(PlayerUniqueId))
+	// check for a match in GameState's Teams data
+	if (const FGameplayPlayerData* PlayerData =
+		ByteWarsGameState->GetPlayerDataById(PlayerState->GetUniqueId(), ControllerId))
 	{
 		// found, restore data
-		bFoundInPlayerDatas = true;
 		TeamId = PlayerData->TeamId;
 		PlayerState->SetScore(PlayerData->Score);
 		PlayerState->TeamId = TeamId;
 		PlayerState->NumLivesLeft = PlayerData->NumLivesLeft;
 		PlayerState->KillCount = PlayerData->KillCount;
-		PlayerState->TeamColor = AccelByteWarsGameState->GetTeamColor(TeamId);
+		PlayerState->TeamColor = ByteWarsGameInstance->GetTeamColor(TeamId);
 
 #if UE_BUILD_DEVELOPMENT
 		const FString Identity = PlayerUniqueId.GetUniqueNetId().IsValid() ?
@@ -162,38 +182,13 @@ void AAccelByteWarsGameModeBase::PlayerSetup(APlayerController* PlayerController
 		GAMEMODE_LOG("Found player's (%s) data in existing PlayerDatas. Assigning team: %d", *Identity, TeamId);
 #endif
 	}
-
-	// check for a match in GameState's GameSetup
-	bool bFoundInGameSetup = false;
-	for (const UAccelByteWarsTeamSetup* TeamSetup : AccelByteWarsGameState->GameSetup->TeamSetups)
+	// flag to kick player if player's data was not found and max players reached (based on registered players)
+	else
 	{
-		for (const UAccelByteWarsPlayerSetup* PlayerSetup : TeamSetup->PlayerSetups)
+		if (ByteWarsGameState->GetRegisteredPlayersNum() >= ByteWarsGameInstance->GameSetup.MaxPlayers)
 		{
-			if (PlayerSetup->UniqueNetId == PlayerUniqueId)
-			{
-				// found restore data
-				bFoundInGameSetup = true;
-				TeamId = TeamSetup->TeamId;
-				PlayerState->TeamId = TeamId;
-				PlayerState->TeamColor = TeamSetup->TeamColour;
-
-#if UE_BUILD_DEVELOPMENT
-				const FString Identity = PlayerUniqueId.GetUniqueNetId().IsValid() ?
-					PlayerUniqueId.GetUniqueNetId()->ToDebugString() : PlayerController->PlayerState->GetPlayerName();
-				GAMEMODE_LOG("Found player's (%s) data in existing TeamSetup. Assigning team: %d", *Identity, TeamId);
-#endif
-				break;
-			}
-		}
-		if (bFoundInGameSetup) break;
-	}
-
-	// kick player if player's data was not found and max players reached (based on registered players)
-	if (!bFoundInGameSetup && !bFoundInPlayerDatas)
-	{
-		if (AccelByteWarsGameState->GameSetup->SelectedGameMode.RegisteredPlayerCount >= AccelByteWarsGameState->GameSetup->SelectedGameMode.SelectedGameMode.MaxPlayers)
-		{
-			GameSession->KickPlayer(PlayerController, FText::FromString("Max players reached"));
+			// kick can happen as early as PostLogin
+			PlayerState->bShouldKick = true;
 			return;
 		}
 	}
@@ -201,32 +196,32 @@ void AAccelByteWarsGameModeBase::PlayerSetup(APlayerController* PlayerController
 	// if no match found, assign player to a new team or least populated team
 	if (TeamId == INDEX_NONE)
 	{
-		switch (AccelByteWarsGameState->GameSetup->SelectedGameMode.SelectedGameMode.GameModeType)
+		switch (ByteWarsGameInstance->GameSetup.GameModeType)
 		{
 		case EGameModeType::FFA:
 			// assign to a new team
-			TeamId = AccelByteWarsGameState->GameSetup->TeamSetups.Num();
+			TeamId = ByteWarsGameState->Teams.Num();
 			break;
 		case EGameModeType::TDM:
 			// check if max team reached
-			if (AccelByteWarsGameState->GameSetup->TeamSetups.Num() >= AccelByteWarsGameState->GameSetup->SelectedGameMode.SelectedGameMode.MaxTeamNum)
+			if (ByteWarsGameState->Teams.Num() >= ByteWarsGameInstance->GameSetup.MaxTeamNum)
 			{
 				// assign to the least populated team
 				uint8 CurrentTeamMemberNum = UINT8_MAX;
 				TeamId = 0;
-				for (const UAccelByteWarsTeamSetup* TeamSetup : AccelByteWarsGameState->GameSetup->TeamSetups)
+				for (const FGameplayTeamData& Team : ByteWarsGameState->Teams)
 				{
-					if (TeamSetup->PlayerSetups.Num() < CurrentTeamMemberNum)
+					if (Team.TeamMembers.Num() < CurrentTeamMemberNum)
 					{
-						CurrentTeamMemberNum = TeamSetup->PlayerSetups.Num();
-						TeamId = TeamSetup->TeamId;
+						CurrentTeamMemberNum = Team.TeamMembers.Num();
+						TeamId = Team.TeamId;
 					}
 				}
 			}
 			else
 			{
 				// assign to a new team
-				TeamId = AccelByteWarsGameState->GameSetup->TeamSetups.Num();
+				TeamId = ByteWarsGameState->Teams.Num();
 			}
 			break;
 		default: ;
@@ -234,7 +229,10 @@ void AAccelByteWarsGameModeBase::PlayerSetup(APlayerController* PlayerController
 
 		// set player's state data
 		PlayerState->TeamId = TeamId;
-		PlayerState->TeamColor = AccelByteWarsGameState->GetTeamColor(TeamId);
+		PlayerState->TeamColor = ByteWarsGameInstance->GetTeamColor(TeamId);
+		PlayerState->SetScore(0.0f);
+        PlayerState->NumLivesLeft = INDEX_NONE;
+        PlayerState->KillCount = 0;
 
 #if UE_BUILD_DEVELOPMENT
 		const FString Identity = PlayerUniqueId.GetUniqueNetId().IsValid() ?
@@ -244,67 +242,14 @@ void AAccelByteWarsGameModeBase::PlayerSetup(APlayerController* PlayerController
 	}
 
 	// add player to team
-	AccelByteWarsGameState->AddPlayerToTeam(
+	ByteWarsGameState->AddPlayerToTeam(
 		TeamId,
 		PlayerUniqueId,
-		FName(PlayerController->PlayerState->GetPlayerName()),
-		PlayerState->GetScore(),
 		PlayerState->NumLivesLeft,
-		PlayerState->KillCount,
-		!bFoundInGameSetup,
-		!bFoundInPlayerDatas
-	);
-
-	// update team-related PlayerState
-	AAccelByteWarsPlayerState* AccelByteWarsPlayerState = Cast<AAccelByteWarsPlayerState>(PlayerController->PlayerState);
-	if (!ensure(AccelByteWarsPlayerState)) return;
-	AccelByteWarsPlayerState->TeamColor = AccelByteWarsGameState->GameSetup->TeamSetups[TeamId]->TeamColour;
-	AccelByteWarsPlayerState->TeamId = TeamId;
+		ControllerId,
+		PlayerState->GetScore(),
+		PlayerState->KillCount);
 }
-
-void AAccelByteWarsGameModeBase::AssignGameMode(FString CodeName) const
-{
-	// reset GameData
-	AccelByteWarsGameState->GameSetup = nullptr;
-	AccelByteWarsGameState->PlayerDatas.Empty();
-
-	const FGameModeData GameModeData = GetGameModeDataByCodeName(CodeName);
-
-	// set GameSetup
-	FSelectedGameMode SelectedGameMode = FSelectedGameMode{GameModeData};
-	UAccelByteWarsGameSetup* GameSetup = NewObject<UAccelByteWarsGameSetup>();
-	GameSetup->SelectedGameMode = SelectedGameMode;
-	AccelByteWarsGameState->GameSetup = GameSetup;
-
-	GAMEMODE_LOG("Game mode set to GameState: %s", *GameModeData.CodeName);
-}
-
-FGameModeData AAccelByteWarsGameModeBase::GetGameModeDataByCodeName(const FString CodeName) const
-{
-	FGameModeData Data;
-	if (ensure(GameModeDataTable))
-	{
-		TArray<FGameModeData*> GameModeDatas;
-		GameModeDataTable->GetAllRows("GetGameModeDataByCodeName", GameModeDatas);
-
-		if (GameModeDatas.Num() > 0)
-		{
-			for (const FGameModeData* GameModeData : GameModeDatas)
-			{
-				if (GameModeData->CodeName.Equals(CodeName))
-				{
-					Data = *GameModeData;
-					break;
-				}
-			}
-
-			// fallback
-			Data = *GameModeDatas[0];
-		}
-	}
-	return Data;
-}
-#pragma endregion
 
 FUniqueNetIdRepl AAccelByteWarsGameModeBase::GetPlayerUniqueNetId(const APlayerController* PlayerController)
 {
@@ -323,4 +268,17 @@ FUniqueNetIdRepl AAccelByteWarsGameModeBase::GetPlayerUniqueNetId(const APlayerC
 	}
 
 	return NetId;
+}
+
+int32 AAccelByteWarsGameModeBase::GetControllerId(const APlayerState* PlayerState)
+{
+	int32 ControllerId = 0;
+	if (const APlayerController* PC = PlayerState->GetPlayerController())
+	{
+		if (const ULocalPlayer* LP = PC->GetLocalPlayer())
+		{
+			ControllerId = LP->GetLocalPlayerIndex();
+		}
+	}
+	return ControllerId;
 }

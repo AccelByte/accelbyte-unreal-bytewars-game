@@ -13,169 +13,146 @@ void AAccelByteWarsGameStateBase::GetLifetimeReplicatedProps(TArray<FLifetimePro
 
 	DOREPLIFETIME(AAccelByteWarsGameStateBase, TimeLeft);
 	DOREPLIFETIME(AAccelByteWarsGameStateBase, bIsGameOver);
-	DOREPLIFETIME(AAccelByteWarsGameStateBase, PlayerDatas);
+	DOREPLIFETIME(AAccelByteWarsGameStateBase, Teams);
 }
 
-#pragma region "GameData related"
-EGameModeType AAccelByteWarsGameStateBase::GetCurrentGameModeType() const
+void AAccelByteWarsGameStateBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	return GameSetup->SelectedGameMode.SelectedGameMode.GameModeType;
+	Super::EndPlay(EndPlayReason);
+
+	// backup Teams data to GameInstance
+	if (bAutoBackupTeamsData)
+	{
+		ByteWarsGameInstance->Teams = Teams;
+	}
+}
+
+void AAccelByteWarsGameStateBase::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	UGameInstance* GameInstance = GetGameInstance();
+	ByteWarsGameInstance = Cast<UAccelByteWarsGameInstance>(GameInstance);
+	if (!ensure(ByteWarsGameInstance)) return;
+
+	// restore Teams data from GameInstance
+	if (bAutoRestoreTeamsData) Teams = ByteWarsGameInstance->Teams;
+}
+
+void AAccelByteWarsGameStateBase::BeginPlay()
+{
+	Super::BeginPlay();
 }
 
 TArray<int32> AAccelByteWarsGameStateBase::GetRemainingTeams() const
 {
 	TArray<int32> RemainingTeams;
-	for (const FGameplayPlayerData& PlayerData : PlayerDatas)
+	for (const FGameplayTeamData& Team : Teams)
 	{
-		if (PlayerData.NumLivesLeft > 0)
+		if (Team.GetTeamLivesLeft() > 0)
 		{
-			RemainingTeams.AddUnique(PlayerData.TeamId);
+			RemainingTeams.AddUnique(Team.TeamId);
 		}
 	}
 	return RemainingTeams;
 }
 
-UAccelByteWarsTeamSetup* AAccelByteWarsGameStateBase::GetTeamInfoByTeamId(
+bool AAccelByteWarsGameStateBase::GetTeamDataByTeamId(
 	const int32 TeamId,
+	FGameplayTeamData& OutTeamData,
 	float& OutTeamScore,
 	int32& OutTeamLivesLeft,
-	TArray<FGameplayPlayerData>& OutTeamMemberDatas)
+	int32& OutTeamKillCount)
 {
-	UAccelByteWarsTeamSetup* TeamSetup = nullptr;
-	OutTeamScore = 0.0f;
-	OutTeamLivesLeft = 0;
-
-	if (GameSetup->TeamSetups.IsValidIndex(TeamId))
+	if (Teams.IsValidIndex(TeamId))
 	{
-		// Get team setup info
-		TeamSetup = GameSetup->TeamSetups[TeamId];
+		OutTeamData = Teams[TeamId];
+		OutTeamScore = OutTeamData.GetTeamScore();
+		OutTeamLivesLeft = OutTeamData.GetTeamLivesLeft();
+		OutTeamKillCount = OutTeamData.GetTeamKillCount();
 
-		// get team member data and calculate team's total score
-		for (const FGameplayPlayerData& PlayerData : PlayerDatas)
+		return true;
+	}
+	return false;
+}
+
+bool AAccelByteWarsGameStateBase::GetPlayerDataById(
+	const FUniqueNetIdRepl UniqueNetId,
+	FGameplayPlayerData& OutPlayerData,
+	const int32 ControllerId)
+{
+	if (const FGameplayPlayerData* PlayerData = GetPlayerDataById(UniqueNetId, ControllerId))
+	{
+		OutPlayerData = *PlayerData;
+		return true;
+	}
+	return false;
+}
+
+FGameplayPlayerData* AAccelByteWarsGameStateBase::GetPlayerDataById(
+	const FUniqueNetIdRepl UniqueNetId,
+	const int32 ControllerId)
+{
+	FGameplayPlayerData* PlayerData = nullptr;
+	for (FGameplayTeamData& Team : Teams)
+	{
+		PlayerData = Team.TeamMembers.FindByKey(FGameplayPlayerData{UniqueNetId, ControllerId});
+		if (PlayerData)
 		{
-			if (PlayerData.TeamId == TeamId)
-			{
-				OutTeamMemberDatas.Add(PlayerData);
-				OutTeamScore += PlayerData.Score;
-				OutTeamLivesLeft += PlayerData.NumLivesLeft;
-			}
+			break;
 		}
 	}
+	return PlayerData;
+}
 
-	return TeamSetup;
+int32 AAccelByteWarsGameStateBase::GetRegisteredPlayersNum() const
+{
+	int32 Num = 0;
+	for (const FGameplayTeamData& Team : Teams)
+	{
+		Num += Team.TeamMembers.Num();
+	}
+	return Num;
 }
 
 bool AAccelByteWarsGameStateBase::AddPlayerToTeam(
-	uint8 TeamId,
+	const uint8 TeamId,
 	const FUniqueNetIdRepl UniqueNetId,
-	const FName PlayerName,
+	int32& OutLives,
+	const int32 ControllerId,
 	const float Score,
-	const int32 Lives,
 	const int32 KillCount,
-	const bool bAddToGameSetup,
-	const bool bAddToPlayerData)
+	const bool bForce)
 {
-	if (!bAddToGameSetup && !bAddToPlayerData) return true;
+	// check if player have been added to any team
+	FGameplayPlayerData PlayerDataTemp;
+	if (!bForce && GetPlayerDataById(UniqueNetId,PlayerDataTemp, ControllerId)) return false;
 
-	// if team not found, add new team
-	if (TeamId >= GameSetup->TeamSetups.Num())
-	{
-		// check if DataAsset have been assigned
-		if (!ensure(GlobalSettingsDataAsset))
-		{
-			GAMESTATE_LOG("GlobalSettingsDataAsset have not been set. Please set the value in the editor")
-			return false;
-		}
+	// if team not found, add until index matched TeamId. By design, TeamId represent Index in the array
+	while (!Teams.IsValidIndex(TeamId)) Teams.Add(FGameplayTeamData{Teams.Num()});
 
-		// add new team
-		UAccelByteWarsTeamSetup* TeamSetup = NewObject<UAccelByteWarsTeamSetup>();
-		TeamSetup->TeamColour = GetTeamColor(TeamId);
-		TeamSetup->TeamId = TeamId;
-		GameSetup->TeamSetups.Add(TeamSetup);
-	}
-
-	// add to GameSetup.TeamSetup.PlayerSetup
-	if (bAddToGameSetup)
-	{
-		UAccelByteWarsPlayerSetup* PlayerSetup = NewObject<UAccelByteWarsPlayerSetup>();
-		PlayerSetup->Name = PlayerName;
-		PlayerSetup->UniqueNetId = UniqueNetId;
-		GameSetup->TeamSetups[TeamId]->PlayerSetups.AddUnique(PlayerSetup);
-	}
-
-	// add to PlayerDatas
-	if (bAddToPlayerData)
-	{
-		const int32 LivesLeft = Lives == INDEX_NONE ? GameSetup->SelectedGameMode.SelectedGameMode.StartingLives : Lives;
-		PlayerDatas.AddUnique(FGameplayPlayerData{
-			UniqueNetId,
-			TeamId,
-			Score,
-			KillCount,
-			LivesLeft
-		});
-	}
-
-	// add registered player num
-	if (bAddToGameSetup && bAddToPlayerData) GameSetup->SelectedGameMode.RegisteredPlayerCount++;
+	// add player's data
+	OutLives = OutLives == INDEX_NONE ? ByteWarsGameInstance->GameSetup.StartingLives : OutLives;
+	Teams[TeamId].TeamMembers.Add(FGameplayPlayerData{
+		UniqueNetId,
+		ControllerId,
+		TeamId,
+		Score,
+		KillCount,
+		OutLives
+	});
 
 	return true;
 }
 
-bool AAccelByteWarsGameStateBase::RemovePlayerFromTeam(const FUniqueNetIdRepl UniqueNetId)
+bool AAccelByteWarsGameStateBase::RemovePlayerFromTeam(const FUniqueNetIdRepl UniqueNetId, const int32 ControllerId)
 {
-	// remove player from TeamSetup
-	bool bSuccessRemoveFromTeamSetup = false;
-
-	for (UAccelByteWarsTeamSetup* TeamSetup : GameSetup->TeamSetups)
+	if (UniqueNetId.IsValid())
 	{
-		for (auto Iterator = TeamSetup->PlayerSetups.CreateIterator(); Iterator; ++Iterator)
+		for (FGameplayTeamData& Team : Teams)
 		{
-			if ((*Iterator)->UniqueNetId == UniqueNetId)
-			{
-				Iterator.RemoveCurrent();
-				bSuccessRemoveFromTeamSetup = true;
-				break;
-			}
+			return Team.TeamMembers.Remove(FGameplayPlayerData{UniqueNetId, ControllerId}) > 0;
 		}
 	}
-
-	if (!bSuccessRemoveFromTeamSetup) return false;
-
-	// remove player from PlayerDatas
-	return PlayerDatas.Remove(FGameplayPlayerData{UniqueNetId.GetUniqueNetId()}) > 0;
+	return false;
 }
-
-bool AAccelByteWarsGameStateBase::RemovePlayerFromTeamByTeamId(const int32 TeamId, const FUniqueNetIdRepl UniqueNetId)
-{
-	// remove player from TeamSetup
-	bool bSuccessRemoveFromTeamSetup = false;
-	if (!GameSetup->TeamSetups.IsValidIndex(TeamId)) return false;
-
-	for (auto Iterator = GameSetup->TeamSetups[TeamId]->PlayerSetups.CreateIterator(); Iterator; ++Iterator)
-	{
-		if ((*Iterator)->UniqueNetId == UniqueNetId)
-		{
-			Iterator.RemoveCurrent();
-			bSuccessRemoveFromTeamSetup = true;
-			break;
-		}
-	}
-
-	if (!bSuccessRemoveFromTeamSetup) return false;
-
-	// remove player from PlayerDatas
-	return PlayerDatas.Remove(FGameplayPlayerData{UniqueNetId.GetUniqueNetId()}) > 0;
-}
-
-FLinearColor AAccelByteWarsGameStateBase::GetTeamColor(uint8 TeamId) const
-{
-	const uint8 GlobalTeamSetupNum = GlobalSettingsDataAsset->GlobalTeamSetup.Num();
-	if (TeamId >= GlobalTeamSetupNum)
-	{
-		// fallback: use modulo
-		TeamId %= GlobalTeamSetupNum;
-	}
-	return GlobalSettingsDataAsset->GlobalTeamSetup[TeamId].itemColor;
-}
-#pragma endregion 

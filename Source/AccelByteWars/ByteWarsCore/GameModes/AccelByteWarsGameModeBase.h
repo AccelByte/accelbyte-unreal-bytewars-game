@@ -9,15 +9,12 @@
 
 DECLARE_LOG_CATEGORY_CLASS(LogByteWarsGameMode, Log, All);
 
-/**
- * 
- */
 UCLASS()
 class ACCELBYTEWARS_API AAccelByteWarsGameModeBase : public AGameModeBase
 {
 	GENERATED_BODY()
 
-	//~AGameModeBase interface
+	//~AGameModeBase overridden functions
 	virtual void InitGameState() override;
 	virtual void BeginPlay() override;
 	virtual APlayerController* Login(
@@ -27,20 +24,38 @@ class ACCELBYTEWARS_API AAccelByteWarsGameModeBase : public AGameModeBase
 		const FString& Options,
 		const FUniqueNetIdRepl& UniqueId,
 		FString& ErrorMessage) override;
-	//~End of AGameModeBase interface
+	virtual void PostLogin(APlayerController* NewPlayer) override;
+	//~End of AGameModeBase overridden functions
 
+	/**
+	 * @brief Add player's score in GameState and PlayerState
+	 * @param PlayerState Target PlayerState
+	 * @param InScore Value to be added to player's score
+	 * @param bAddKillCount Should increase player's kill count
+	 * @return Player's new score
+	 */
 	UFUNCTION(BlueprintCallable) UPARAM(DisplayName = "CurrentScore")
 	int32 AddPlayerScore(APlayerState* PlayerState, float InScore, bool bAddKillCount = true);
 
+	/**
+	 * @brief 
+	 * @param PlayerState Target PlayerState
+	 * @param Decrement Value to be subtracted from player's life count
+	 * @return Player's new life count
+	 */
 	UFUNCTION(BlueprintCallable) UPARAM(DisplayName = "CurrentLifes")
 	int32 DecreasePlayerLife(APlayerState* PlayerState, uint8 Decrement = 1);
 
-#pragma region "GameSetup related"
+	/**
+	 * @brief Reset stored game data in GameState
+	 */
 	UFUNCTION(BlueprintCallable)
-	void AssignGameMode(FString CodeName) const;
+	void ResetGameData();
+
+	UFUNCTION(BlueprintCallable)
+	void TriggerServerTravel(TSoftObjectPtr<UWorld> Level);
 
 protected:
-	FGameModeData GetGameModeDataByCodeName(const FString CodeName) const;
 
 	UFUNCTION(BlueprintCallable)
 	void PlayerSetup(APlayerController* PlayerController) const;
@@ -48,17 +63,15 @@ protected:
 	UPROPERTY(EditAnywhere)
 	bool bIsGameplayLevel = false;
 
-	UPROPERTY(EditAnywhere)
-	UDataTable* GameModeDataTable;
-#pragma endregion
-
 private:
 
 	UPROPERTY()
-	AAccelByteWarsGameStateBase* AccelByteWarsGameState = nullptr;
+	AAccelByteWarsGameStateBase* ByteWarsGameState = nullptr;
 
 	UPROPERTY()
-	UAccelByteWarsGameInstance* AccelByteWarsGameInstance = nullptr;
+	UAccelByteWarsGameInstance* ByteWarsGameInstance = nullptr;
 
 	static FUniqueNetIdRepl GetPlayerUniqueNetId(const APlayerController* PlayerController);
+
+	static int32 GetControllerId(const APlayerState* PlayerState);
 };

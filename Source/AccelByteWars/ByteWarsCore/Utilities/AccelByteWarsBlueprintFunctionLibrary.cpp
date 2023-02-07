@@ -7,3 +7,8 @@ EBPNetMode UAccelByteWarsBlueprintFunctionLibrary::GetNetMode(AActor* Actor)
 {
 	return static_cast<EBPNetMode>(Actor->GetNetMode());
 }
+
+bool UAccelByteWarsBlueprintFunctionLibrary::IsUniqueNetIdValid(const FUniqueNetIdRepl UniqueNetId)
+{
+	return UniqueNetId.IsValid();
+}

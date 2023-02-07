@@ -3,70 +3,34 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "ByteWarsCore/Settings/GlobalSettingsDataAsset.h"
 #include "ByteWarsCore/System/AccelByteWarsGameInstance.h"
 #include "GameFramework/GameStateBase.h"
 #include "AccelByteWarsGameStateBase.generated.h"
 
 DECLARE_LOG_CATEGORY_CLASS(LogByteWarsGameState, Log, All);
 
-#pragma region "Structs and data storing purpose UObject declaration"
-/**
- * @brief Data that needs to be persistent throughout the gameplay even when player logged out
- */
-USTRUCT(BlueprintType)
-struct FGameplayPlayerData
-{
-	GENERATED_BODY()
-
-public:
-	UPROPERTY(BlueprintReadWrite)
-	FUniqueNetIdRepl UniqueNetId;
-
-	UPROPERTY(BlueprintReadWrite)
-	int32 TeamId = INDEX_NONE;
-
-	UPROPERTY(BlueprintReadWrite)
-	float Score = 0.0f;
-
-	UPROPERTY(BlueprintReadWrite)
-	int32 KillCount = 0;
-
-	UPROPERTY(BlueprintReadWrite)
-	int32 NumLivesLeft = 1;
-
-	bool operator==(const FGameplayPlayerData& Other) const
-	{
-		return UniqueNetId == Other.UniqueNetId;
-	}
-	
-	bool operator==(const FUniqueNetIdRepl& Other) const
-	{
-		return UniqueNetId == Other;
-	}
-};
-#pragma endregion 
-
-/**
- * 
- */
 UCLASS()
 class ACCELBYTEWARS_API AAccelByteWarsGameStateBase : public AGameStateBase
 {
 	GENERATED_BODY()
 
+	//~AActor overriden functions
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	virtual void PostInitializeComponents() override;
+	virtual void BeginPlay() override;
+	//~End of AActor overriden functions
 
 public:
 
-	UPROPERTY(BlueprintReadWrite)
-	UAccelByteWarsGameSetup* GameSetup = nullptr;
-
-	UPROPERTY(BlueprintReadWrite, ReplicatedUsing = OnNotify_PlayerDatas, Replicated)
-	TArray<FGameplayPlayerData> PlayerDatas;
+	/**
+	 * @brief Teams info and data
+	 */
+	UPROPERTY(BlueprintReadWrite, Replicated, ReplicatedUsing = OnNotify_Teams)
+	TArray<FGameplayTeamData> Teams;
 
 	UFUNCTION(BlueprintImplementableEvent)
-	void OnNotify_PlayerDatas();
+	void OnNotify_Teams();
 
 	UPROPERTY(BlueprintReadWrite, Replicated)
 	float TimeLeft = INDEX_NONE;
@@ -74,41 +38,77 @@ public:
 	UPROPERTY(BlueprintReadWrite, Replicated)
 	bool bIsGameOver = false;
 
-	UFUNCTION(BlueprintCallable)
-	EGameModeType GetCurrentGameModeType() const;
-
+	/**
+	 * @brief Get teams with at least one member have life count more than 1
+	 * @return TeamIds
+	 */
 	UFUNCTION(BlueprintCallable)
 	TArray<int32> GetRemainingTeams() const;
 
-	UFUNCTION(BlueprintCallable)
-	UAccelByteWarsTeamSetup* GetTeamInfoByTeamId(
+	/**
+	 * @brief Get Team info and data by Team Id
+	 * @param TeamId Target TeamId
+	 * @param OutTeamData Output: Team info and data
+	 * @param OutTeamScore Output: Total team score
+	 * @param OutTeamLivesLeft Output: Total team lives count
+	 * @param OutTeamKillCount Output: Total team kill count
+	 * @return True if team found
+	 */
+	UFUNCTION(BlueprintCallable, meta = (ExpandBoolAsExecs = "ReturnValue"))
+	bool GetTeamDataByTeamId(
 		const int32 TeamId,
+		FGameplayTeamData& OutTeamData,
 		float& OutTeamScore,
 		int32& OutTeamLivesLeft,
-		TArray<FGameplayPlayerData>& OutTeamMemberDatas);
+		int32& OutTeamKillCount);
+
+	/**
+	 * @brief Get player's data by unique net id or controller id
+	 * @param UniqueNetId Target player's unique net id
+	 * @param OutPlayerData Output: Player data
+	 * @param ControllerId Target player's controller id | will only be used if unique net id is not valid
+	 * @return True if player found
+	 */
+	UFUNCTION(BlueprintCallable, meta = (ExpandBoolAsExecs = "ReturnValue"))
+	bool GetPlayerDataById(
+		const FUniqueNetIdRepl UniqueNetId,
+		FGameplayPlayerData& OutPlayerData,
+		const int32 ControllerId = 0);
+
+	/**
+	 * @brief Get player's data by unique net id or controller id
+	 * @param UniqueNetId Target player's unique net id
+	 * @param ControllerId Target player's controller id | will only be used if unique net id is not valid
+	 * @return Player data | nullptr if not found
+	 */
+	FGameplayPlayerData* GetPlayerDataById(const FUniqueNetIdRepl UniqueNetId, const int32 ControllerId = 0);
+
+	/**
+	 * @brief Get player count registered in GameState's game data
+	 * @return Registered players count
+	 */
+	UFUNCTION(BlueprintCallable)
+	int32 GetRegisteredPlayersNum() const;
 
 	/**
 	 * @brief Add player to GameSetup.TeamSetup and to PlayerDatas. Will add new team if team does not exist
 	 * @param TeamId Target Team id to add to
 	 * @param UniqueNetId Player's unique net id
-	 * @param PlayerName Player's name
 	 * @param Score Specify player's score
-	 * @param Lives Specify player's lives num | set -1 to use GameState.GameData.GameSetup's value
+	 * @param OutLives Specify player's lives num | set -1 to use GameState.GameData.GameSetup's value | will change the referenced value
+	 * @param ControllerId Player's controller id
 	 * @param KillCount Specify player's kill count
-	 * @param bAddToGameSetup Whether to add this data to GameData.GameSetup.TeamSetup.PlayerSetup
-	 * @param bAddToPlayerData Whether to add this data to GameData.PlayerDatas
+	 * @param bForce Force add player even if the player data already exist
 	 * @return true if operation successful
 	 */
 	UFUNCTION(BlueprintCallable, meta = (ExpandBoolAsExecs = "ReturnValue"))
 	bool AddPlayerToTeam(
 		uint8 TeamId,
 		FUniqueNetIdRepl UniqueNetId,
-		FName PlayerName,
+		UPARAM(ref) int32& OutLives,
+		const int32 ControllerId = 0,
 		const float Score = 0.0f,
-		const int32 Lives = -1,
-		const int32 KillCount = 0,
-		const bool bAddToGameSetup = true,
-		const bool bAddToPlayerData = true);
+		const int32 KillCount = 0, const bool bForce = false);
 
 	/**
 	 * @brief Remove Player from a team
@@ -116,22 +116,16 @@ public:
 	 * @return true if operation successful
 	 */
 	UFUNCTION(BlueprintCallable, meta = (ExpandBoolAsExecs = "ReturnValue"))
-	bool RemovePlayerFromTeam(FUniqueNetIdRepl UniqueNetId);
-
-	/**
-	 * @brief Remove Player from a team, more efficient than RemovePlayerFromTeam
-	 * @param TeamId TeamId to remove player from
-	 * @param UniqueNetId Player's unique net id
-	 * @return true if operation successful
-	 */
-	UFUNCTION(BlueprintCallable, meta = (ExpandBoolAsExecs = "ReturnValue"))
-	bool RemovePlayerFromTeamByTeamId(int32 TeamId, FUniqueNetIdRepl UniqueNetId);
-
-	UFUNCTION(BlueprintCallable)
-	FLinearColor GetTeamColor(uint8 TeamId) const;
+	bool RemovePlayerFromTeam(FUniqueNetIdRepl UniqueNetId, const int32 ControllerId = 0);
 
 private:
 
+	UPROPERTY()
+	UAccelByteWarsGameInstance* ByteWarsGameInstance = nullptr;
+
 	UPROPERTY(EditAnywhere)
-	UGlobalSettingsDataAsset* GlobalSettingsDataAsset;
+	bool bAutoBackupTeamsData = true;
+
+	UPROPERTY(EditAnywhere)
+	bool bAutoRestoreTeamsData = true;
 };

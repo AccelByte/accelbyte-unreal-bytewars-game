@@ -62,10 +62,6 @@ public:
 	// Either local multiplayer game or not
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bIsLocalGame = false;
-	
-	// Either team game or not; If FFA then should be false.
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	bool bIsTeamGame = false;
 
 	// Default team count
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
@@ -90,4 +86,9 @@ public:
 	// Default starting lives for each player
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 StartingLives = 1;
+
+	bool operator!() const
+	{
+		return CodeName.IsEmpty();
+	}
 };
