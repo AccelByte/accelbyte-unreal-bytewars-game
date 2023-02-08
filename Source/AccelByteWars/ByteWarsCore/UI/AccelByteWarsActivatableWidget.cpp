@@ -6,7 +6,7 @@
 #include "ByteWarsCore/UI/AccelByteWarsActivatableWidget.h"
 
 #include "Editor/WidgetCompilerLog.h"
-#include "Input/CommonInputMode.h"
+#include "CommonInputModeTypes.h"
 #include "Input/UIActionBindingHandle.h"
 #include "Kismet/GameplayStatics.h"
 #include "Camera/CameraActor.h"

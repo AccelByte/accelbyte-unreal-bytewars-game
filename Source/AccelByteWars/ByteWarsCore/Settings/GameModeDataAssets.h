@@ -42,7 +42,7 @@ struct FGameModeData : public FTableRowBase
 	GENERATED_USTRUCT_BODY()
 
 public:
-	UPROPERTY(EditAnywhere, AssetRegistrySearchable)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, AssetRegistrySearchable)
 	TSoftClassPtr<class AAccelByteWarsGameModeBase> DefaultClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)

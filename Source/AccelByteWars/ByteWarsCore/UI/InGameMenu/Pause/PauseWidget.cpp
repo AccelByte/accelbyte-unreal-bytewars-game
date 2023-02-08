@@ -10,7 +10,10 @@ void UPauseWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
-	// Bind buttons click event.
+	// if on server, disable restart button
+	Btn_Restart->SetVisibility(
+		GetOwningPlayer()->HasAuthority() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+
 	Btn_Resume->OnClicked().AddUObject(this, &UPauseWidget::ResumeGame);
 	Btn_Restart->OnClicked().AddUObject(this, &UPauseWidget::RestartGame);
 	Btn_Quit->OnClicked().AddUObject(this, &UPauseWidget::QuitGame);
@@ -21,10 +24,6 @@ void UPauseWidget::NativeOnActivated()
 void UPauseWidget::NativeOnDeactivated()
 {
 	Super::NativeOnDeactivated();
-
-	// if on server, disable restart button
-	Btn_Restart->SetVisibility(
-		GetOwningPlayer()->HasAuthority() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 
 	// Unbind buttons click event.
 	Btn_Resume->OnClicked().RemoveAll(this);

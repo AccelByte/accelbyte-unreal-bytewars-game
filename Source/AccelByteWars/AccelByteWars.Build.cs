@@ -9,36 +9,51 @@ public class AccelByteWars : ModuleRules
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
 
-
-		PublicIncludePaths.AddRange(
-			new string[] {
-				"AccelByteWars"
-			}
-		);
+		PublicIncludePaths.AddRange(new string[] 
+		{
+			"AccelByteWars"
+		});
 
 
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "CommonUI", "CommonInput"});
+		PublicDependencyModuleNames.AddRange(new string[] 
+		{ 
+			"Core", 
+			"CoreUObject", 
+			"Engine", 
+			"InputCore", 
+			"CommonUI", 
+			"CommonInput", 
+			"AccelByteUe4Sdk", 
+			"AccelByteNetworkUtilities", 
+			"OnlineSubsystemAccelByte",
+            "OnlineSubsystem",
+            "OnlineSubsystemUtils",
+            "Json",
+            "HTTP"
+        });
 
-		PrivateDependencyModuleNames.AddRange(new string[] {
-				"InputCore",
-				"Slate",
-				"SlateCore",
-				"RenderCore",
-				"DeveloperSettings",
-				"EnhancedInput",
-				"NetCore",
-				"RHI",
-				"Projects",
-				"Gauntlet",
-				"UMG",
-				"CommonUI",
-				"CommonInput",
-				"AudioMixer",
-				"NetworkReplayStreaming",
-				"AudioModulation",
-				"Niagara",
-				"ProceduralMeshComponent"
-			});
+
+	PrivateDependencyModuleNames.AddRange(new string[] 
+		{
+			"InputCore",
+			"Slate",
+			"SlateCore",
+			"RenderCore",
+			"DeveloperSettings",
+			"EnhancedInput",
+			"NetCore",
+			"RHI",
+			"Projects",
+			"Gauntlet",
+			"UMG",
+			"CommonUI",
+			"CommonInput",
+			"AudioMixer",
+			"NetworkReplayStreaming",
+			"AudioModulation",
+			"Niagara",
+			"ProceduralMeshComponent"
+		});
 
 		// Uncomment if you are using Slate UI
 		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });

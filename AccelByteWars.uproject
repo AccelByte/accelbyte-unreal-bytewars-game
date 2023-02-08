@@ -1,6 +1,6 @@
 {
 	"FileVersion": 3,
-	"EngineAssociation": "5.0",
+	"EngineAssociation": "5.1.0",
 	"Category": "",
 	"Description": "",
 	"Modules": [
@@ -13,7 +13,8 @@
 				"Engine",
 				"CoreUObject",
 				"UMG",
-				"ProceduralMeshComponent"
+				"ProceduralMeshComponent",
+				"DeveloperSettings"
 			]
 		}
 	],
@@ -32,6 +33,18 @@
 		{
 			"Name": "Metasound",
 			"Enabled": true
+		},
+		{
+			"Name": "OnlineSubsystemAccelByte",
+			"Enabled": false
+		},
+		{
+			"Name": "AccelByteNetworkUtilities",
+			"Enabled": false
+		},
+		{
+			"Name": "AccelByteUe4Sdk",
+			"Enabled": false
 		}
 	]
 }

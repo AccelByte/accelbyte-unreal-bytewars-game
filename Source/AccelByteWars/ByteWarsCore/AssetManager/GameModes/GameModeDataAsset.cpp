@@ -16,6 +16,9 @@ FGameModeData UGameModeDataAsset::GetGameModeDataByCodeName(const FString& InCod
 
 	FString DefaultClassString = UAccelByteWarsDataAsset::GetMetadataForAsset<FString>(GameModeAssetId, GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, DefaultClass));
 	GameModeData.DefaultClass = TSoftClassPtr<AAccelByteWarsGameModeBase>(DefaultClassString);
+	
+	//GameModeData.GameModeType = GetGameModeTypeForCodeName(InCodeName).ToString();
+	GameModeData.GameModeTypeString = GetGameModeTypeForCodeName(InCodeName).ToString();
 
 	GameModeData.bIsLocalGame = UAccelByteWarsDataAsset::GetMetadataForAsset<bool>(GenerateAssetIdFromCodeName(InCodeName), GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, bIsLocalGame));
 
@@ -27,12 +30,6 @@ FGameModeData UGameModeDataAsset::GetGameModeDataByCodeName(const FString& InCod
 	GameModeData.ScoreLimit = UAccelByteWarsDataAsset::GetMetadataForAsset<int32>(GenerateAssetIdFromCodeName(InCodeName), GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, ScoreLimit));
 
 	return GameModeData;
-}
-
-FPrimaryAssetId UGameModeDataAsset::GetGameModeTypeForCodeName(const FString& InCodeName)
-{
-	const FString GameModeType = UAccelByteWarsDataAsset::GetMetadataForAsset<FString>(GenerateAssetIdFromCodeName(InCodeName), GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, GameModeType));
-	return FPrimaryAssetId(GameModeType);
 }
 
 FPrimaryAssetId UGameModeDataAsset::GenerateAssetIdFromCodeName(const FString& InCodeName)
@@ -49,4 +46,10 @@ FString UGameModeDataAsset::GetCodeNameFromAssetId(const FPrimaryAssetId& AssetI
 FText UGameModeDataAsset::GetDisplayNameByCodeName(const FString& InCodeName)
 {
 	return UAccelByteWarsDataAsset::GetDisplayNameForAsset(GenerateAssetIdFromCodeName(InCodeName));
+}
+
+FPrimaryAssetId UGameModeDataAsset::GetGameModeTypeForCodeName(const FString& InCodeName)
+{
+	const FString GameModeType = UAccelByteWarsDataAsset::GetMetadataForAsset<FString>(GenerateAssetIdFromCodeName(InCodeName), GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, GameModeTypeString));
+	return FPrimaryAssetId(GameModeType);
 }

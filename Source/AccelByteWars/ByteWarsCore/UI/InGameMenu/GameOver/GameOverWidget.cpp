@@ -9,6 +9,19 @@
 #include "Components/VerticalBox.h"
 #include "CommonButtonBase.h"
 
+void UGameOverWidget::SetWinner(const FText& PlayerName, const FLinearColor& Color)
+{
+	Txt_Winner->SetText(PlayerName);
+	Txt_Winner->SetColorAndOpacity(Color);
+}
+
+void UGameOverWidget::AddLeaderboardEntry(const FText& PlayerName, const int32 PlayerScore, const int32 PlayerKills, const FLinearColor& PlayerColor)
+{
+	const TWeakObjectPtr<UGameOverLeaderboardEntry> NewEntry = MakeWeakObjectPtr<UGameOverLeaderboardEntry>(CreateWidget<UGameOverLeaderboardEntry>(this, LeaderboardEntryClass.Get()));
+	NewEntry->InitData(PlayerName, PlayerScore, PlayerKills, PlayerColor);
+	Vb_Leaderboard->AddChild(NewEntry.Get());
+}
+
 void UGameOverWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
@@ -28,7 +41,6 @@ void UGameOverWidget::NativeOnDeactivated()
 {
 	Super::NativeOnDeactivated();
 
-	// Bind buttons click event.
 	Btn_PlayAgain->OnClicked().RemoveAll(this);
 	Btn_Quit->OnClicked().RemoveAll(this);
 
@@ -44,17 +56,4 @@ void UGameOverWidget::QuitGame()
 {
 	OnExitLevel();
 	UGameplayStatics::OpenLevel(GetWorld(), TEXT("MainMenu"));
-}
-
-void UGameOverWidget::SetWinner(const FText& PlayerName, const FLinearColor& Color)
-{
-	Txt_Winner->SetText(PlayerName);
-	Txt_Winner->SetColorAndOpacity(Color);
-}
-
-void UGameOverWidget::AddLeaderboardEntry(const FText& PlayerName, const int32 PlayerScore, const int32 PlayerKills, const FLinearColor& PlayerColor)
-{
-	const TWeakObjectPtr<UGameOverLeaderboardEntry> NewEntry = MakeWeakObjectPtr<UGameOverLeaderboardEntry>(CreateWidget<UGameOverLeaderboardEntry>(this, LeaderboardEntryClass.Get()));
-	NewEntry->InitData(PlayerName, PlayerScore, PlayerKills, PlayerColor);
-	Vb_Leaderboard->AddChild(NewEntry.Get());
 }

@@ -9,13 +9,15 @@
 #include "Widgets/CommonActivatableWidgetContainer.h"
 #include "AccelByteWarsBaseUI.generated.h"
 
+class UPopUpWidget;
+
 UENUM()
 enum EBaseUIStackType
 {
-	Menu,
-	Prompt,
-	InGameMenu,
-	InGameHUD
+	Prompt UMETA(DisplayName = "Prompt"),
+	Menu UMETA(DisplayName = "Menu"),
+	InGameMenu UMETA(DisplayName = "In-Game Menu"),
+	InGameHUD UMETA(DisplayName = "In-Game HUD")
 };
 
 UCLASS()
@@ -24,23 +26,24 @@ class ACCELBYTEWARS_API UAccelByteWarsBaseUI : public UAccelByteWarsActivatableW
 	GENERATED_BODY()
 
 public:
+	void NativeOnInitialized() override;
+
 	/** Push widget to target stack. */
-	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Push Widget to Stack"))
+	UFUNCTION(BlueprintCallable)
 	UAccelByteWarsActivatableWidget* PushWidgetToStack(EBaseUIStackType TargetStack, TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass);
 
-	/** Menu stack. */
-	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
-	UCommonActivatableWidgetStack* MenuStack;
+	/** Push widget to target stack with init function. */
+	UAccelByteWarsActivatableWidget* PushWidgetToStack(EBaseUIStackType TargetStack, TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass, TFunctionRef<void(UAccelByteWarsActivatableWidget&)> InitFunc);
 
-	/** Prompt stack. */
-	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
-	UCommonActivatableWidgetStack* PromptStack;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Base UI Settings")
+	TMap<TEnumAsByte<EBaseUIStackType>, UCommonActivatableWidgetStack*> Stacks;
 
-	/** In game menu stack. */
-	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
-	UCommonActivatableWidgetStack* InGameMenuStack;
+	UPROPERTY(EditDefaultsOnly, Category = "Prompt Settings")
+	TSubclassOf<UPopUpWidget> DefaultPopUpWidgetClass;
 
-	/** In game HUD stack. */
-	UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
-	UCommonActivatableWidgetStack* InGameHUDStack;
+	UPROPERTY(EditDefaultsOnly, Category = "Prompt Settings")
+	TSubclassOf<UAccelByteWarsActivatableWidget> DefaultLoadingWidgetClass;
+
+private:
+	void OnWidgetTransitionChanged(UCommonActivatableWidgetContainerBase* Widget, bool bIsTransitioning);
 };
