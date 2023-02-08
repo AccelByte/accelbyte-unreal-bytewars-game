@@ -12,7 +12,8 @@
 				"CommonUI",
 				"Engine",
 				"CoreUObject",
-				"UMG"
+				"UMG",
+				"ProceduralMeshComponent"
 			]
 		}
 	],
