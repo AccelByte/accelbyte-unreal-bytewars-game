@@ -18,7 +18,6 @@ class ACCELBYTEWARS_API AAccelByteWarsGameStateBase : public AGameStateBase
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void PostInitializeComponents() override;
-	virtual void BeginPlay() override;
 	//~End of AActor overriden functions
 
 public:

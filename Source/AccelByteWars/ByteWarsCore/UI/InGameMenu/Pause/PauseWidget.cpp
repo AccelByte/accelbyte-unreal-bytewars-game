@@ -22,6 +22,10 @@ void UPauseWidget::NativeOnDeactivated()
 {
 	Super::NativeOnDeactivated();
 
+	// if on server, disable restart button
+	Btn_Restart->SetVisibility(
+		GetOwningPlayer()->HasAuthority() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+
 	// Unbind buttons click event.
 	Btn_Resume->OnClicked().RemoveAll(this);
 	Btn_Restart->OnClicked().RemoveAll(this);

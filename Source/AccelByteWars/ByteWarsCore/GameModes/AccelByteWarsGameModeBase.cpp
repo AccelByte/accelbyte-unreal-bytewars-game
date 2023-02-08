@@ -21,6 +21,8 @@ void AAccelByteWarsGameModeBase::InitGameState()
 
 	if (!ensure(ByteWarsGameInstance)) return;
 	if (!ensure(ByteWarsGameState)) return;
+
+	ByteWarsGameInstance->bServerCurrentlyTravelling = false;
 }
 
 void AAccelByteWarsGameModeBase::BeginPlay()
@@ -80,6 +82,17 @@ void AAccelByteWarsGameModeBase::PostLogin(APlayerController* NewPlayer)
 			GameSession->KickPlayer(NewPlayer, FText::FromString("Max player reached"));
 			GAMEMODE_LOG("Player did not registered in Teams data. Max registered players reached. Kicking this player");
 		}
+	}
+}
+
+void AAccelByteWarsGameModeBase::Logout(AController* Exiting)
+{
+	Super::Logout(Exiting);
+
+	if (bShouldRemovePlayerOnLogoutImmediately && !ByteWarsGameInstance->bServerCurrentlyTravelling)
+	{
+		const bool bSucceeded = RemovePlayer(Cast<APlayerController>(Exiting));
+		GAMEMODE_LOG("Removing player from GameState data. Succeeded: %s", *FString(bSucceeded ? "TRUE" : "FALSE"));
 	}
 }
 
@@ -144,12 +157,6 @@ int32 AAccelByteWarsGameModeBase::DecreasePlayerLife(APlayerState* PlayerState, 
 void AAccelByteWarsGameModeBase::ResetGameData()
 {
 	ByteWarsGameState->Teams.Empty();
-}
-
-void AAccelByteWarsGameModeBase::TriggerServerTravel(TSoftObjectPtr<UWorld> Level)
-{
-	const FString Url = Level.GetLongPackageName();
-	GetWorld()->ServerTravel(Url);
 }
 
 void AAccelByteWarsGameModeBase::PlayerSetup(APlayerController* PlayerController) const
@@ -249,6 +256,20 @@ void AAccelByteWarsGameModeBase::PlayerSetup(APlayerController* PlayerController
 		ControllerId,
 		PlayerState->GetScore(),
 		PlayerState->KillCount);
+}
+
+bool AAccelByteWarsGameModeBase::RemovePlayer(const APlayerController* PlayerController) const
+{
+	// failsafe
+	if (!PlayerController) return false;
+
+	const AAccelByteWarsPlayerState* PlayerState = static_cast<AAccelByteWarsPlayerState*>(PlayerController->PlayerState);
+	if (!PlayerState) return false;
+
+	const FUniqueNetIdRepl PlayerUniqueId = GetPlayerUniqueNetId(PlayerController);
+	const int32 ControllerId = GetControllerId(PlayerState);
+
+	return ByteWarsGameState->RemovePlayerFromTeam(PlayerUniqueId, ControllerId);
 }
 
 FUniqueNetIdRepl AAccelByteWarsGameModeBase::GetPlayerUniqueNetId(const APlayerController* PlayerController)

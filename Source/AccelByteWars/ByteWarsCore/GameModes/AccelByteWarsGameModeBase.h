@@ -25,6 +25,7 @@ class ACCELBYTEWARS_API AAccelByteWarsGameModeBase : public AGameModeBase
 		const FUniqueNetIdRepl& UniqueId,
 		FString& ErrorMessage) override;
 	virtual void PostLogin(APlayerController* NewPlayer) override;
+	virtual void Logout(AController* Exiting) override;
 	//~End of AGameModeBase overridden functions
 
 	/**
@@ -52,16 +53,18 @@ class ACCELBYTEWARS_API AAccelByteWarsGameModeBase : public AGameModeBase
 	UFUNCTION(BlueprintCallable)
 	void ResetGameData();
 
-	UFUNCTION(BlueprintCallable)
-	void TriggerServerTravel(TSoftObjectPtr<UWorld> Level);
-
 protected:
 
 	UFUNCTION(BlueprintCallable)
 	void PlayerSetup(APlayerController* PlayerController) const;
 
+	bool RemovePlayer(const APlayerController* PlayerController) const;
+
 	UPROPERTY(EditAnywhere)
 	bool bIsGameplayLevel = false;
+
+	UPROPERTY(EditAnywhere)
+	bool bShouldRemovePlayerOnLogoutImmediately = false;
 
 private:
 

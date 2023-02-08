@@ -124,6 +124,12 @@ private:
 	TWeakObjectPtr<ULocalPlayer> PrimaryPlayer;
 
 public:
+	/**
+	 * @brief flag to indicate if this machine currently loading a map.
+	 * Used to differentiate between normal player logout or logout due to non-seamless server travel.
+	 */
+	bool bServerCurrentlyTravelling = false;
+
 	virtual int32 AddLocalPlayer(ULocalPlayer* NewPlayer, int32 ControllerId) override;
 	virtual bool RemoveLocalPlayer(ULocalPlayer* ExistingPlayer) override;
 

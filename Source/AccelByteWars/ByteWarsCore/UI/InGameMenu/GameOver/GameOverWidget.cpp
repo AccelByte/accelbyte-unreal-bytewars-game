@@ -13,6 +13,10 @@ void UGameOverWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
+	// if on server, disable play again button
+	Btn_PlayAgain->SetVisibility(
+		GetOwningPlayer()->HasAuthority() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+
 	// Bind buttons click event.
 	Btn_PlayAgain->OnClicked().AddUObject(this, &UGameOverWidget::PlayGameAgain);
 	Btn_Quit->OnClicked().AddUObject(this, &UGameOverWidget::QuitGame);

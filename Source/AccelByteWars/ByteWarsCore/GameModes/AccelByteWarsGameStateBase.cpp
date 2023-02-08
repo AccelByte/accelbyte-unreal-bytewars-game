@@ -39,11 +39,6 @@ void AAccelByteWarsGameStateBase::PostInitializeComponents()
 	if (bAutoRestoreTeamsData) Teams = ByteWarsGameInstance->Teams;
 }
 
-void AAccelByteWarsGameStateBase::BeginPlay()
-{
-	Super::BeginPlay();
-}
-
 TArray<int32> AAccelByteWarsGameStateBase::GetRemainingTeams() const
 {
 	TArray<int32> RemainingTeams;
@@ -147,12 +142,14 @@ bool AAccelByteWarsGameStateBase::AddPlayerToTeam(
 
 bool AAccelByteWarsGameStateBase::RemovePlayerFromTeam(const FUniqueNetIdRepl UniqueNetId, const int32 ControllerId)
 {
+	bool bStatus = false;
 	if (UniqueNetId.IsValid())
 	{
 		for (FGameplayTeamData& Team : Teams)
 		{
-			return Team.TeamMembers.Remove(FGameplayPlayerData{UniqueNetId, ControllerId}) > 0;
+			bStatus = Team.TeamMembers.Remove(FGameplayPlayerData{UniqueNetId, ControllerId}) > 0;
+			if (bStatus) break;
 		}
 	}
-	return false;
+	return bStatus;
 }

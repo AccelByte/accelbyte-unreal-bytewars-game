@@ -47,9 +47,6 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	EGameModeType GameModeType = EGameModeType::FFA;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	FString GameModeTypeString;
 	
 	// Game mode alias; Used for online integration.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
