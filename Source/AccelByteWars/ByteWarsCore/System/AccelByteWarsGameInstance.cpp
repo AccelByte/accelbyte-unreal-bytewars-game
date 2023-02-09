@@ -5,7 +5,7 @@
 #include "ByteWarsCore/UI/GameUIManagerSubsystem.h"
 #include "ByteWarsCore/Player/CommonLocalPlayer.h"
 
-#define GAMEINSTANCE_LOG(FormatString, ...) UE_LOG(LogByteWarsGameInstance, Log, TEXT(FormatString), __VA_ARGS__);
+#define GAMEINSTANCE_LOG(FormatString, ...) UE_LOG(LogAccelByteWarsGameInstance, Log, TEXT(FormatString), __VA_ARGS__);
 
 int32 UAccelByteWarsGameInstance::AddLocalPlayer(ULocalPlayer* NewLocalPlayer, FPlatformUserId UserId)
 {
@@ -14,11 +14,11 @@ int32 UAccelByteWarsGameInstance::AddLocalPlayer(ULocalPlayer* NewLocalPlayer, F
 	{
 		if (!PrimaryPlayer.IsValid())
 		{
-			UE_LOG(LogTemp, Log, TEXT("AddLocalPlayer: Set %s to Primary Player"), *NewLocalPlayer->GetName());
+			GAMEINSTANCE_LOG("AddLocalPlayer: Set %s to Primary Player", *NewLocalPlayer->GetName());
 			PrimaryPlayer = NewLocalPlayer;
 		}
-		
-		UE_LOG(LogTemp, Log, TEXT("AddLocalPlayer: New player %s is set to ControllerId: %i"), *NewLocalPlayer->GetName(), UserId.GetInternalId());
+
+		GAMEINSTANCE_LOG("AddLocalPlayer: New player %s is set to ControllerId: %i", *NewLocalPlayer->GetName(), UserId.GetInternalId());
 		GetSubsystem<UGameUIManagerSubsystem>()->NotifyPlayerAdded(Cast<UCommonLocalPlayer>(NewLocalPlayer));
 
 		if(OnLocalPlayerAdded.IsBound())
@@ -36,7 +36,7 @@ bool UAccelByteWarsGameInstance::RemoveLocalPlayer(ULocalPlayer* ExistingPlayer)
 	{
 		//TODO: do we want to fall back to another player?
 		PrimaryPlayer.Reset();
-		UE_LOG(LogTemp, Log, TEXT("RemoveLocalPlayer: Unsetting Primary Player from %s"), *ExistingPlayer->GetName());
+		GAMEINSTANCE_LOG("RemoveLocalPlayer: Unsetting Primary Player from %s", *ExistingPlayer->GetName());
 	}
 	GetSubsystem<UGameUIManagerSubsystem>()->NotifyPlayerDestroyed(Cast<UCommonLocalPlayer>(ExistingPlayer));
 

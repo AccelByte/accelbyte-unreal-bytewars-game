@@ -26,7 +26,7 @@ struct FCreditsData
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	ECreditsRoleType RoleType;
+	ECreditsRoleType RoleType = ECreditsRoleType::Fonts;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FText Name;

@@ -5,7 +5,7 @@
 
 #include "Net/UnrealNetwork.h"
 
-#define GAMESTATE_LOG(FormatString, ...) UE_LOG(LogByteWarsGameState, Log, TEXT(FormatString), __VA_ARGS__);
+#define GAMESTATE_LOG(FormatString, ...) UE_LOG(LogAccelByteWarsGameState, Log, TEXT(FormatString), __VA_ARGS__);
 
 void AAccelByteWarsGameStateBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {

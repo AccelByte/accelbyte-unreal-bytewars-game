@@ -16,9 +16,6 @@ FGameModeData UGameModeDataAsset::GetGameModeDataByCodeName(const FString& InCod
 
 	FString DefaultClassString = UAccelByteWarsDataAsset::GetMetadataForAsset<FString>(GameModeAssetId, GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, DefaultClass));
 	GameModeData.DefaultClass = TSoftClassPtr<AAccelByteWarsGameModeBase>(DefaultClassString);
-	
-	//GameModeData.GameModeType = GetGameModeTypeForCodeName(InCodeName).ToString();
-	GameModeData.GameModeTypeString = GetGameModeTypeForCodeName(InCodeName).ToString();
 
 	GameModeData.bIsLocalGame = UAccelByteWarsDataAsset::GetMetadataForAsset<bool>(GenerateAssetIdFromCodeName(InCodeName), GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, bIsLocalGame));
 

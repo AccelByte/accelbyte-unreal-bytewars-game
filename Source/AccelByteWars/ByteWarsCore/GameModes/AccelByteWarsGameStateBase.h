@@ -7,7 +7,7 @@
 #include "GameFramework/GameStateBase.h"
 #include "AccelByteWarsGameStateBase.generated.h"
 
-DECLARE_LOG_CATEGORY_CLASS(LogByteWarsGameState, Log, All);
+DECLARE_LOG_CATEGORY_CLASS(LogAccelByteWarsGameState, Log, All);
 
 UCLASS()
 class ACCELBYTEWARS_API AAccelByteWarsGameStateBase : public AGameStateBase
@@ -100,7 +100,6 @@ public:
 	 * @param bForce Force add player even if the player data already exist
 	 * @return true if operation successful
 	 */
-	UFUNCTION(BlueprintCallable, meta = (ExpandBoolAsExecs = "ReturnValue"))
 	bool AddPlayerToTeam(
 		uint8 TeamId,
 		FUniqueNetIdRepl UniqueNetId,
@@ -114,7 +113,6 @@ public:
 	 * @param UniqueNetId Player's unique net id
 	 * @return true if operation successful
 	 */
-	UFUNCTION(BlueprintCallable, meta = (ExpandBoolAsExecs = "ReturnValue"))
 	bool RemovePlayerFromTeam(FUniqueNetIdRepl UniqueNetId, const int32 ControllerId = 0);
 
 private:

@@ -94,7 +94,7 @@ public:
 #pragma endregion 
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLocalPlayerChanged, ULocalPlayer*, LocalPlayer);
-DECLARE_LOG_CATEGORY_CLASS(LogByteWarsGameInstance, Log, All);
+DECLARE_LOG_CATEGORY_CLASS(LogAccelByteWarsGameInstance, Log, All);
 
 UCLASS()
 class ACCELBYTEWARS_API UAccelByteWarsGameInstance : public UGameInstance

@@ -7,7 +7,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "AccelByteWarsGameModeBase.generated.h"
 
-DECLARE_LOG_CATEGORY_CLASS(LogByteWarsGameMode, Log, All);
+DECLARE_LOG_CATEGORY_CLASS(LogAccelByteWarsGameMode, Log, All);
 
 UCLASS()
 class ACCELBYTEWARS_API AAccelByteWarsGameModeBase : public AGameModeBase
@@ -56,7 +56,16 @@ class ACCELBYTEWARS_API AAccelByteWarsGameModeBase : public AGameModeBase
 protected:
 
 	UFUNCTION(BlueprintCallable)
-	void PlayerSetup(APlayerController* PlayerController) const;
+	void PlayerTeamSetup(APlayerController* PlayerController) const;
+
+	/**
+	 * @brief Add player to specific team. Use this instead of AAccelByteWarsGameStateBase::AddPlayerToTeam due to how
+	 * UE handle UniqueNetId in Blueprint.
+	 * @param PlayerController PlayerController to be added
+	 * @param TeamId Target TeamId, if doesn't exist, it'll be created
+	 */
+	UFUNCTION(BlueprintCallable)
+	void AddPlayerToTeam(APlayerController* PlayerController, const int32 TeamId);
 
 	bool RemovePlayer(const APlayerController* PlayerController) const;
 
