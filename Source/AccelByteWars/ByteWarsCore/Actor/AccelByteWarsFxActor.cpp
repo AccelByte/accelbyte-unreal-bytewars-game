@@ -20,7 +20,8 @@ void AAccelByteWarsFxActor::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (bDestroyOnParticleSystemFinished && !IsRunningDedicatedServer())
+	// actor tick not running on DS, this need to be called from the owning client
+	if (bDestroyOnParticleSystemFinished && HasLocalNetOwner() && !IsRunningDedicatedServer())
 	{
 		ParticleSystem->OnSystemFinished.AddUniqueDynamic(this, &ThisClass::DestroySelfOnParticleSystemFinished);
 	}
