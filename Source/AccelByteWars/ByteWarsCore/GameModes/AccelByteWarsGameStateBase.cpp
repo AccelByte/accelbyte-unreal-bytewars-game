@@ -33,7 +33,11 @@ void AAccelByteWarsGameStateBase::PostInitializeComponents()
 
 	UGameInstance* GameInstance = GetGameInstance();
 	ByteWarsGameInstance = Cast<UAccelByteWarsGameInstance>(GameInstance);
-	if (!ensure(ByteWarsGameInstance)) return;
+	if (!ensure(ByteWarsGameInstance))
+	{
+		GAMESTATE_LOG("Game Instance is not (derived from) UAccelByteWarsGameInstance");
+		return;
+	}
 
 	// restore Teams data from GameInstance
 	if (bAutoRestoreTeamsData) Teams = ByteWarsGameInstance->Teams;
@@ -121,10 +125,17 @@ bool AAccelByteWarsGameStateBase::AddPlayerToTeam(
 {
 	// check if player have been added to any team
 	FGameplayPlayerData PlayerDataTemp;
-	if (!bForce && GetPlayerDataById(UniqueNetId,PlayerDataTemp, ControllerId)) return false;
+	if (!bForce && GetPlayerDataById(UniqueNetId,PlayerDataTemp, ControllerId))
+	{
+		GAMESTATE_LOG("AddPlayerToTeam: Player data not found. Cancelling operation")
+		return false;
+	}
 
 	// if team not found, add until index matched TeamId. By design, TeamId represent Index in the array
-	while (!Teams.IsValidIndex(TeamId)) Teams.Add(FGameplayTeamData{Teams.Num()});
+	while (!Teams.IsValidIndex(TeamId))
+	{
+		Teams.Add(FGameplayTeamData{Teams.Num()});
+	}
 
 	// add player's data
 	OutLives = OutLives == INDEX_NONE ? ByteWarsGameInstance->GameSetup.StartingLives : OutLives;

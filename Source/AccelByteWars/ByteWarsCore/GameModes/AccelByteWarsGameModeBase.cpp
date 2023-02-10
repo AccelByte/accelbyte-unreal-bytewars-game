@@ -19,8 +19,16 @@ void AAccelByteWarsGameModeBase::InitGameState()
 	ByteWarsGameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
 	ByteWarsGameState = GetGameState<AAccelByteWarsGameStateBase>();
 
-	if (!ensure(ByteWarsGameInstance)) return;
-	if (!ensure(ByteWarsGameState)) return;
+	if (!ensure(ByteWarsGameInstance))
+	{
+		GAMEMODE_LOG("Game Instance is not (derived from) UAccelByteWarsGameInstance");
+		return;
+	}
+	if (!ensure(ByteWarsGameState))
+	{
+		GAMEMODE_LOG("Game State is not (derived from) AAccelByteWarsGameStateBase");
+		return;
+	}
 
 	ByteWarsGameInstance->bServerCurrentlyTravelling = false;
 }
@@ -166,10 +174,18 @@ void AAccelByteWarsGameModeBase::ResetGameData()
 void AAccelByteWarsGameModeBase::PlayerTeamSetup(APlayerController* PlayerController) const
 {
 	// failsafe
-	if (!PlayerController) return;
+	if (!PlayerController)
+	{
+		GAMEMODE_LOG("PlayerTeamSetup: PlayerController null. Cancelling operation");
+		return;
+	}
 
 	AAccelByteWarsPlayerState* PlayerState = static_cast<AAccelByteWarsPlayerState*>(PlayerController->PlayerState);
-	if (!PlayerState) return;
+	if (!PlayerState)
+	{
+		GAMEMODE_LOG("PlayerTeamSetup: PlayerState is not (derived from) AAccelByteWarsPlayerState. Cancelling operation");
+		return;
+	}
 
 	int32 TeamId = INDEX_NONE;
 	const FUniqueNetIdRepl PlayerUniqueId = GetPlayerUniqueNetId(PlayerController);
@@ -275,10 +291,18 @@ void AAccelByteWarsGameModeBase::PlayerTeamSetup(APlayerController* PlayerContro
 void AAccelByteWarsGameModeBase::AddPlayerToTeam(APlayerController* PlayerController, const int32 TeamId)
 {
 	// failsafe
-	if (!PlayerController) return;
+	if (!PlayerController)
+	{
+		GAMEMODE_LOG("AddPlayerToTeam: PlayerController null. Cancelling operation");
+		return;
+	}
 
 	AAccelByteWarsPlayerState* PlayerState = static_cast<AAccelByteWarsPlayerState*>(PlayerController->PlayerState);
-	if (!PlayerState) return;
+	if (!PlayerState)
+	{
+		GAMEMODE_LOG("AddPlayerToTeam: PlayerState is not (derived from) AAccelByteWarsPlayerState. Cancelling operation");
+		return;
+	}
 
 	const FUniqueNetIdRepl PlayerUniqueId = GetPlayerUniqueNetId(PlayerController);
 	const int32 ControllerId = GetControllerId(PlayerState);
@@ -303,10 +327,18 @@ void AAccelByteWarsGameModeBase::AddPlayerToTeam(APlayerController* PlayerContro
 bool AAccelByteWarsGameModeBase::RemovePlayer(const APlayerController* PlayerController) const
 {
 	// failsafe
-	if (!PlayerController) return false;
+	if (!PlayerController)
+	{
+		GAMEMODE_LOG("RemovePlayer: PlayerController null. Cancelling operation");
+		return false;
+	}
 
 	const AAccelByteWarsPlayerState* PlayerState = static_cast<AAccelByteWarsPlayerState*>(PlayerController->PlayerState);
-	if (!PlayerState) return false;
+	if (!PlayerState)
+	{
+		GAMEMODE_LOG("RemovePlayer: PlayerState is not (derived from) AAccelByteWarsPlayerState. Cancelling operation");
+		return false;
+	}
 
 	const FUniqueNetIdRepl PlayerUniqueId = GetPlayerUniqueNetId(PlayerController);
 	const int32 ControllerId = GetControllerId(PlayerState);
