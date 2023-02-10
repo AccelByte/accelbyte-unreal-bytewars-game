@@ -9,7 +9,7 @@
 
 int32 UAccelByteWarsGameInstance::AddLocalPlayer(ULocalPlayer* NewLocalPlayer, FPlatformUserId UserId)
 {
-	int32 ReturnVal = Super::AddLocalPlayer(NewLocalPlayer, UserId);
+	const int32 ReturnVal = Super::AddLocalPlayer(NewLocalPlayer, UserId);
 	if (ReturnVal != INDEX_NONE)
 	{
 		if (!PrimaryPlayer.IsValid())
@@ -80,17 +80,13 @@ FGameModeData UAccelByteWarsGameInstance::GetGameModeDataByCodeName(const FStrin
 
 		if (GameModeDatas.Num() > 0)
 		{
-			// fallback
-			Data = *GameModeDatas[0];
-
-			for (const FGameModeData* GameModeData : GameModeDatas)
+			FGameModeData** DataPtr = GameModeDatas.FindByPredicate([CodeName](const FGameModeData* GameModeData)
 			{
-				if (GameModeData->CodeName.Equals(CodeName))
-				{
-					Data = *GameModeData;
-					break;
-				}
-			}
+				return GameModeData->CodeName.Equals(CodeName);
+			});
+
+			// if not found, use the first entry
+			Data = DataPtr ? **DataPtr : *GameModeDatas[0];
 		}
 	}
 	return Data;
