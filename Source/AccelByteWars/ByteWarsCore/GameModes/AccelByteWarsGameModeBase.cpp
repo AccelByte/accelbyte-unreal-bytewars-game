@@ -12,6 +12,12 @@
 
 #define GAMEMODE_LOG(FormatString, ...) UE_LOG(LogAccelByteWarsGameMode, Log, TEXT(FormatString), __VA_ARGS__);
 
+AAccelByteWarsGameModeBase::AAccelByteWarsGameModeBase()
+{
+	PrimaryActorTick.bStartWithTickEnabled = true;
+	PrimaryActorTick.bCanEverTick = true;
+}
+
 void AAccelByteWarsGameModeBase::InitGameState()
 {
 	Super::InitGameState();
@@ -57,7 +63,96 @@ void AAccelByteWarsGameModeBase::BeginPlay()
 		}
 	}
 
+#pragma region "Server Shutdown Implementation"
+#if UE_SERVER || UE_EDITOR
+	if (IsRunningDedicatedServer() && bIsGameplayLevel)
+	{
+		// get specified ShutdownOnFinishedDelay timer value
+		FString ShutdownOnFinishedDelayString = "30";
+		FParse::Value(FCommandLine::Get(), TEXT("-ShutdownOnFinishedDelay="), ShutdownOnFinishedDelayString);
+		ShutdownOnFinishedDelay = FCString::Atoi(*ShutdownOnFinishedDelayString);
+
+		// get specified ShutdownOnOneTeamOrLessDelay timer value
+		FString ShutdownOnOneTeamOrLessDelayString = "30";
+		FParse::Value(FCommandLine::Get(), TEXT("-ShutdownOnOneTeamOrLessDelay="), ShutdownOnOneTeamOrLessDelayString);
+		ShutdownOnOneTeamOrLessDelay = FCString::Atoi(*ShutdownOnOneTeamOrLessDelayString);
+
+		ShutdownDelegate = FTimerDelegate::CreateWeakLambda(this, []()
+		{
+			FGenericPlatformMisc::RequestExit(false);
+		});
+	}
+#endif
+#pragma endregion 
+
 	Super::BeginPlay();
+}
+
+void AAccelByteWarsGameModeBase::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+#pragma region "Server Shutdown Implementation"
+#if UE_SERVER || UE_EDITOR
+	if (IsRunningDedicatedServer() && bIsGameplayLevel)
+	{
+		// OnFinished
+		if (!GetWorldTimerManager().IsTimerActive(OnFinishedTimer))
+		{
+			if (ByteWarsGameState->bIsGameOver)
+			{
+				GetWorldTimerManager().SetTimer(
+					OnFinishedTimer,
+					ShutdownDelegate,
+					ShutdownOnFinishedDelay,
+					false,
+					ShutdownOnFinishedDelay);
+				GAMEMODE_LOG("OnFinishedTimer started. Game will close in %d seconds", ShutdownOnFinishedDelay);
+			}
+		}
+
+		// OnOneTeamOrLess
+		if (!GetWorldTimerManager().IsTimerActive(OnOneTeamOrLessTimer))
+		{
+			// check currently connected player TeamId
+			int32 TeamId = INDEX_NONE;
+			bool bOneTeamConnected = true;
+
+			// check if all player in the same team or if there's no player at all
+			for (const TObjectPtr<APlayerState> Player : GameState->PlayerArray)
+			{
+				if (const AAccelByteWarsPlayerState* ByteWarsPlayerState =
+					static_cast<const AAccelByteWarsPlayerState*>(Player))
+				{
+					if (TeamId == INDEX_NONE)
+					{
+						TeamId = ByteWarsPlayerState->TeamId;
+						continue;
+					}
+					if (TeamId != ByteWarsPlayerState->TeamId)
+					{
+						bOneTeamConnected = false;
+						break;
+					}
+				}
+			}
+
+			// trigger timer based on above condition
+			if (bOneTeamConnected)
+			{
+				GetWorldTimerManager().SetTimer(
+					OnOneTeamOrLessTimer,
+					ShutdownDelegate,
+					ShutdownOnOneTeamOrLessDelay,
+					false,
+					ShutdownOnOneTeamOrLessDelay);
+				GAMEMODE_LOG("OnOnTeamOrLessTimer started. Game will close in %d seconds unless new player logs in",
+					ShutdownOnOneTeamOrLessDelay);
+			}
+		}
+	}
+#endif
+#pragma endregion 
 }
 
 APlayerController* AAccelByteWarsGameModeBase::Login(
@@ -75,6 +170,19 @@ APlayerController* AAccelByteWarsGameModeBase::Login(
 	{
 		PlayerTeamSetup(PlayerController);
 	}
+
+#pragma region "Server Shutdown Implementation"
+#if UE_SERVER || UE_EDITOR
+	if (IsRunningDedicatedServer() && bIsGameplayLevel)
+	{
+		if (GetWorldTimerManager().IsTimerActive(OnOneTeamOrLessTimer))
+		{
+			GetWorldTimerManager().ClearTimer(OnOneTeamOrLessTimer);
+			GAMEMODE_LOG("Player logs in, OnOneTeamOrLessTimer cleared");
+		}
+	}
+#endif
+#pragma endregion 
 
 	return PlayerController;
 }

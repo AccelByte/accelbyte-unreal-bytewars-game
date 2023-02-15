@@ -14,9 +14,12 @@ class ACCELBYTEWARS_API AAccelByteWarsGameModeBase : public AGameModeBase
 {
 	GENERATED_BODY()
 
+	AAccelByteWarsGameModeBase();
+
 	//~AGameModeBase overridden functions
 	virtual void InitGameState() override;
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
 	virtual APlayerController* Login(
 		UPlayer* NewPlayer,
 		ENetRole InRemoteRole,
@@ -86,4 +89,12 @@ private:
 	static FUniqueNetIdRepl GetPlayerUniqueNetId(const APlayerController* PlayerController);
 
 	static int32 GetControllerId(const APlayerState* PlayerState);
+
+	int ShutdownOnFinishedDelay;
+	int ShutdownOnOneTeamOrLessDelay;
+
+	FTimerHandle OnFinishedTimer;
+	FTimerHandle OnOneTeamOrLessTimer;
+
+	FTimerDelegate ShutdownDelegate;
 };
