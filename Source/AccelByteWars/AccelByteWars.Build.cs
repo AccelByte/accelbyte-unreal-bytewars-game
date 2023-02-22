@@ -22,12 +22,7 @@ public class AccelByteWars : ModuleRules
 			"Engine", 
 			"InputCore", 
 			"CommonUI", 
-			"CommonInput", 
-			"AccelByteUe4Sdk", 
-			"AccelByteNetworkUtilities", 
-			"OnlineSubsystemAccelByte",
-            "OnlineSubsystem",
-            "OnlineSubsystemUtils",
+			"CommonInput",
             "Json",
             "HTTP"
         });

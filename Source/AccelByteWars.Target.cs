@@ -9,6 +9,6 @@ public class AccelByteWarsTarget : TargetRules
 	{
 		Type = TargetType.Game;
 		DefaultBuildSettings = BuildSettingsVersion.V2;
-		ExtraModuleNames.AddRange( new string[] { "AccelByteWars", "AccelByteUe4Sdk", "OnlineSubsystemAccelByte", "AccelByteNetworkUtilities" } );
+		ExtraModuleNames.AddRange( new string[] { "AccelByteWars" } );
 	}
 }
