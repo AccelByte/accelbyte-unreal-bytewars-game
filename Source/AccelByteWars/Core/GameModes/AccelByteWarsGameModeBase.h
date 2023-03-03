@@ -7,7 +7,14 @@
 #include "GameFramework/GameModeBase.h"
 #include "AccelByteWarsGameModeBase.generated.h"
 
-DECLARE_LOG_CATEGORY_CLASS(LogAccelByteWarsGameMode, Log, All);
+ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogAccelByteWarsGameMode, Log, All);
+
+#define GAMEMODE_LOG(Verbosity, Format, ...) \
+{ \
+	UE_LOG(LogAccelByteWarsGameMode, Verbosity, TEXT("%s"), *FString::Printf(Format, ##__VA_ARGS__)); \
+}
+
+DECLARE_DELEGATE_RetVal_OneParam(int32, FOnGetTeamIdFromSession, APlayerController* /*PlayerController*/)
 
 UCLASS()
 class ACCELBYTEWARS_API AAccelByteWarsGameModeBase : public AGameModeBase
@@ -30,6 +37,8 @@ class ACCELBYTEWARS_API AAccelByteWarsGameModeBase : public AGameModeBase
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 	virtual void Logout(AController* Exiting) override;
 	//~End of AGameModeBase overridden functions
+
+public:
 
 	/**
 	 * @brief Add player's score in GameState and PlayerState
@@ -55,6 +64,14 @@ class ACCELBYTEWARS_API AAccelByteWarsGameModeBase : public AGameModeBase
 	 */
 	UFUNCTION(BlueprintCallable)
 	void ResetGameData();
+
+	/**
+	 * @brief Executed after Pre-game countdown finished
+	 */
+	UFUNCTION(BlueprintImplementableEvent)
+	void StartGame();
+
+	inline static FOnGetTeamIdFromSession OnGetTeamIdFromSessionDelegate;
 
 protected:
 

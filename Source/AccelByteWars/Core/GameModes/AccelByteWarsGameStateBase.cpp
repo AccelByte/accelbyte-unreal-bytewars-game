@@ -3,17 +3,22 @@
 
 #include "Core/GameModes/AccelByteWarsGameStateBase.h"
 
+#include "Core/System/AccelByteWarsGameInstance.h"
 #include "Net/UnrealNetwork.h"
 
-#define GAMESTATE_LOG(FormatString, ...) UE_LOG(LogAccelByteWarsGameState, Log, TEXT(FormatString), __VA_ARGS__);
+DEFINE_LOG_CATEGORY(LogAccelByteWarsGameState);
 
 void AAccelByteWarsGameStateBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
+	DOREPLIFETIME(AAccelByteWarsGameStateBase, LobbyStatus);
+	DOREPLIFETIME(AAccelByteWarsGameStateBase, LobbyCountdown);
+
 	DOREPLIFETIME(AAccelByteWarsGameStateBase, TimeLeft);
-	DOREPLIFETIME(AAccelByteWarsGameStateBase, bIsGameOver);
+	DOREPLIFETIME(AAccelByteWarsGameStateBase, GameStatus);
 	DOREPLIFETIME(AAccelByteWarsGameStateBase, Teams);
+	DOREPLIFETIME(AAccelByteWarsGameStateBase, PreGameCountdown);
 }
 
 void AAccelByteWarsGameStateBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -35,7 +40,7 @@ void AAccelByteWarsGameStateBase::PostInitializeComponents()
 	ByteWarsGameInstance = Cast<UAccelByteWarsGameInstance>(GameInstance);
 	if (!ensure(ByteWarsGameInstance))
 	{
-		GAMESTATE_LOG("Game Instance is not (derived from) UAccelByteWarsGameInstance");
+		GAMESTATE_LOG(Warning, TEXT("Game Instance is not (derived from) UAccelByteWarsGameInstance"));
 		return;
 	}
 
@@ -127,7 +132,7 @@ bool AAccelByteWarsGameStateBase::AddPlayerToTeam(
 	FGameplayPlayerData PlayerDataTemp;
 	if (!bForce && GetPlayerDataById(UniqueNetId,PlayerDataTemp, ControllerId))
 	{
-		GAMESTATE_LOG("AddPlayerToTeam: Player data not found. Cancelling operation")
+		GAMESTATE_LOG(Warning, TEXT("AddPlayerToTeam: Player data not found. Cancelling operation"));
 		return false;
 	}
 

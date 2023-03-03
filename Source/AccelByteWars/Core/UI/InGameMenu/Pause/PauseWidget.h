@@ -10,11 +10,17 @@
 
 class UCommonButtonBase;
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnQuitGame, APlayerController* /*PlayerController*/);
+typedef FOnQuitGame::FDelegate FOnQuitGameDelegate;
+
 UCLASS()
 class ACCELBYTEWARS_API UPauseWidget : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
 	
+public:
+	inline static FOnQuitGameDelegate OnQuitGameDelegate;
+
 protected:
 	void NativeOnActivated() override;
 	void NativeOnDeactivated() override;

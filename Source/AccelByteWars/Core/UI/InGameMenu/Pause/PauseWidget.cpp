@@ -3,6 +3,8 @@
 // and restrictions contact your company contract manager.
 
 #include "Core/UI/InGameMenu/Pause/PauseWidget.h"
+#include "Core/System/AccelByteWarsGameInstance.h"
+
 #include "Kismet/GameplayStatics.h"
 #include "CommonButtonBase.h"
 
@@ -45,6 +47,8 @@ void UPauseWidget::RestartGame()
 
 void UPauseWidget::QuitGame()
 {
+	OnQuitGameDelegate.ExecuteIfBound(GetOwningPlayer());
 	OnExitLevel();
+
 	UGameplayStatics::OpenLevel(GetWorld(), TEXT("MainMenu"));
 }

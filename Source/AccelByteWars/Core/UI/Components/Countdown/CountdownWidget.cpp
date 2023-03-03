@@ -1,0 +1,101 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "Core/UI/Components/Countdown/CountdownWidget.h"
+
+#include "Core/GameModes/AccelByteWarsGameStateBase.h"
+
+UCountdownWidget::UCountdownWidget(const FObjectInitializer& ObjectInitializer) : UAccelByteWarsActivatableWidget(ObjectInitializer)
+{
+	bAutoActivate = true;
+	bClosing = false;
+	bHasFinished = false;
+	ClosingElapsed = 0.0f;
+}
+
+void UCountdownWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+{
+	Super::NativeTick(MyGeometry, InDeltaTime);
+
+	if (!bHasFinished)
+	{
+		if (!CheckCountdownStateDelegate.IsBound())
+		{
+			return;
+		}
+
+		switch (CheckCountdownStateDelegate.Execute())
+		{
+		case ECountdownState::PRE:
+			WidgetSwitcher_Root->SetActiveWidget(Text_PreCountdown);
+			break;
+		case ECountdownState::COUNTING:
+			WidgetSwitcher_Root->SetActiveWidget(Panel_Countdown);
+			if (UpdateCountdownValueDelegate.IsBound())
+			{
+				int CountdownValue = UpdateCountdownValueDelegate.Execute();
+				CountdownValue = CountdownValue < 0 ? 0 : CountdownValue;
+				Text_CountdownValue->SetText(FText::FromString(FString::FromInt(CountdownValue)));
+			}
+			break;
+		case ECountdownState::POST:
+			bHasFinished = true;
+			WidgetSwitcher_Root->SetActiveWidget(Text_PostCountdown);
+			OnCountdownFinishedDelegate.Broadcast();
+			CollapseWidgetWithTimer();
+			break;
+		default: ;
+		}
+	}
+	else
+	{
+		if (bClosing)
+		{
+			// fade out
+			ClosingElapsed += InDeltaTime;
+			SetRenderOpacity(1 - (ClosingElapsed / ClosingDuration));
+			if (ClosingElapsed >= ClosingDuration)
+			{
+				// tick wont be executed on a collapsed widget
+				SetVisibility(ESlateVisibility::Collapsed);
+			}
+		}
+	}
+}
+
+void UCountdownWidget::NativeOnActivated()
+{
+	Super::NativeOnActivated();
+
+	ByteWarsGameState = Cast<AAccelByteWarsGameStateBase>(GetWorld()->GetGameState());
+}
+
+void UCountdownWidget::SetupWidget(
+	const FText PreCountdownText,
+	const FText PostCountdownText,
+	const FText CountdownText) const
+{
+	Text_PreCountdown->SetText(PreCountdownText);
+	Text_PostCountdown->SetText(PostCountdownText);
+	Text_CountdownDescription->SetText(CountdownText);
+
+	Text_CountdownDescription->SetVisibility(
+		CountdownText.IsEmpty() ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
+}
+
+void UCountdownWidget::CollapseWidgetWithTimer()
+{
+	// start delay to collapsed this widget
+	if (!GetWorld()->GetTimerManager().IsTimerActive(CollapseWidgetTimer))
+	{
+		GetWorld()->GetTimerManager().SetTimer(
+			CollapseWidgetTimer,
+			FTimerDelegate::CreateWeakLambda(this, [this]()
+			{
+				bClosing = true;
+			}),
+			1.0f,
+			false,
+			1.0f);
+	}
+}

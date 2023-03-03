@@ -7,10 +7,11 @@
 #include "Core/Player/AccelByteWarsPlayerState.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/System/AccelByteWarsGlobals.h"
+#include "Core/System/AccelByteWarsGameSession.h"
 #include "GameFramework/GameSession.h"
 #include "GameFramework/PlayerState.h"
 
-#define GAMEMODE_LOG(FormatString, ...) UE_LOG(LogAccelByteWarsGameMode, Log, TEXT(FormatString), __VA_ARGS__);
+DEFINE_LOG_CATEGORY(LogAccelByteWarsGameMode);
 
 AAccelByteWarsGameModeBase::AAccelByteWarsGameModeBase()
 {
@@ -27,12 +28,12 @@ void AAccelByteWarsGameModeBase::InitGameState()
 
 	if (!ensure(ByteWarsGameInstance))
 	{
-		GAMEMODE_LOG("Game Instance is not (derived from) UAccelByteWarsGameInstance");
+		GAMEMODE_LOG(Warning, TEXT("Game Instance is not (derived from) UAccelByteWarsGameInstance"));
 		return;
 	}
 	if (!ensure(ByteWarsGameState))
 	{
-		GAMEMODE_LOG("Game State is not (derived from) AAccelByteWarsGameStateBase");
+		GAMEMODE_LOG(Warning, TEXT("Game State is not (derived from) AAccelByteWarsGameStateBase"));
 		return;
 	}
 
@@ -63,6 +64,9 @@ void AAccelByteWarsGameModeBase::BeginPlay()
 		}
 	}
 
+	// Update game status
+	ByteWarsGameState->GameStatus = EGameStatus::AWAITING_PLAYERS;
+
 #pragma region "Server Shutdown Implementation"
 #if UE_SERVER || UE_EDITOR
 	if (IsRunningDedicatedServer() && bIsGameplayLevel)
@@ -77,9 +81,20 @@ void AAccelByteWarsGameModeBase::BeginPlay()
 		FParse::Value(FCommandLine::Get(), TEXT("-ShutdownOnOneTeamOrLessDelay="), ShutdownOnOneTeamOrLessDelayString);
 		ShutdownOnOneTeamOrLessDelay = FCString::Atoi(*ShutdownOnOneTeamOrLessDelayString);
 
-		ShutdownDelegate = FTimerDelegate::CreateWeakLambda(this, []()
+		ShutdownDelegate = FTimerDelegate::CreateWeakLambda(this, [this]()
 		{
-			FGenericPlatformMisc::RequestExit(false);
+			GAMEMODE_LOG(Warning, TEXT("Unregistering server from AccelByte Multiplayer Servers (AMS)."));
+
+			AAccelByteWarsGameSession* Session = Cast<AAccelByteWarsGameSession>(GameSession);
+			if (!Session)
+			{
+				GAMEMODE_LOG(Warning, TEXT("Cannot unregister server from AccelByte Multiplayer Servers (AMS), the game session is null."));
+				FPlatformMisc::RequestExit(false);
+				return;
+			}
+
+			// Unregister the server from AccelByte Multiplayer Servers (AMS).
+			Session->UnregisterServer();
 		});
 	}
 #endif
@@ -92,6 +107,60 @@ void AAccelByteWarsGameModeBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
+#pragma region "Lobby Countdown Implementation"
+	if (IsRunningDedicatedServer() && !bIsGameplayLevel) 
+	{
+		// Update countdown
+		if (ByteWarsGameState->LobbyStatus == ELobbyStatus::LOBBY_COUNTDOWN_STARTED) 
+		{
+			if (ByteWarsGameState->LobbyCountdown <= 0)
+			{
+				ByteWarsGameState->LobbyStatus = ELobbyStatus::GAME_STARTED;
+			}
+			else
+			{
+				ByteWarsGameState->LobbyCountdown -= DeltaSeconds;
+			}
+		}
+		// Start server travel
+		else if (ByteWarsGameState->LobbyStatus == ELobbyStatus::GAME_STARTED && !ByteWarsGameInstance->bServerCurrentlyTravelling)
+		{
+			ByteWarsGameInstance->bServerCurrentlyTravelling = true;
+
+			// Delay server travel to let the game clients informed that the game is about to start.
+			FTimerHandle TimerHandle;
+			GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this]()
+			{
+				GetWorld()->ServerTravel("/Game/ByteWars/Maps/GalaxyWorld/GalaxyWorld");
+			}, 1.0f, false);
+		}
+	}
+#pragma endregion
+
+#pragma region "Pre-game countdown implementation"
+	if (ByteWarsGameState->GameStatus <= EGameStatus::AWAITING_PLAYERS)
+	{
+		// check whether all players have logged in or not
+		if (GameState->PlayerArray.Num() == ByteWarsGameState->GetRegisteredPlayersNum())
+		{
+			// start countdown
+			ByteWarsGameState->GameStatus = EGameStatus::PRE_GAME_COUNTDOWN_STARTED;
+		}
+	}
+	else if (ByteWarsGameState->GameStatus == EGameStatus::PRE_GAME_COUNTDOWN_STARTED)
+	{
+		// check if countdown finished
+		if (ByteWarsGameState->PreGameCountdown <= 0)
+		{
+			// finish countdown
+			StartGame();
+			ByteWarsGameState->GameStatus = EGameStatus::GAME_STARTED;
+		}
+		// update countdown
+		ByteWarsGameState->PreGameCountdown -= DeltaSeconds;
+	}
+#pragma endregion 
+
 #pragma region "Server Shutdown Implementation"
 #if UE_SERVER || UE_EDITOR
 	if (IsRunningDedicatedServer() && bIsGameplayLevel)
@@ -99,7 +168,7 @@ void AAccelByteWarsGameModeBase::Tick(float DeltaSeconds)
 		// OnFinished
 		if (!GetWorldTimerManager().IsTimerActive(OnFinishedTimer))
 		{
-			if (ByteWarsGameState->bIsGameOver)
+			if (ByteWarsGameState->GameStatus == EGameStatus::GAME_ENDS)
 			{
 				GetWorldTimerManager().SetTimer(
 					OnFinishedTimer,
@@ -107,7 +176,7 @@ void AAccelByteWarsGameModeBase::Tick(float DeltaSeconds)
 					ShutdownOnFinishedDelay,
 					false,
 					ShutdownOnFinishedDelay);
-				GAMEMODE_LOG("OnFinishedTimer started. Game will close in %d seconds", ShutdownOnFinishedDelay);
+				GAMEMODE_LOG(Log, TEXT("OnFinishedTimer started. Game will close in %d seconds"), ShutdownOnFinishedDelay);
 			}
 		}
 
@@ -146,7 +215,7 @@ void AAccelByteWarsGameModeBase::Tick(float DeltaSeconds)
 					ShutdownOnOneTeamOrLessDelay,
 					false,
 					ShutdownOnOneTeamOrLessDelay);
-				GAMEMODE_LOG("OnOnTeamOrLessTimer started. Game will close in %d seconds unless new player logs in",
+				GAMEMODE_LOG(Log, TEXT("OnOnTeamOrLessTimer started. Game will close in %d seconds unless new player logs in"),
 					ShutdownOnOneTeamOrLessDelay);
 			}
 		}
@@ -173,12 +242,17 @@ APlayerController* AAccelByteWarsGameModeBase::Login(
 
 #pragma region "Server Shutdown Implementation"
 #if UE_SERVER || UE_EDITOR
-	if (IsRunningDedicatedServer() && bIsGameplayLevel)
+	if (IsRunningDedicatedServer())
 	{
-		if (GetWorldTimerManager().IsTimerActive(OnOneTeamOrLessTimer))
+		if (bIsGameplayLevel && GetWorldTimerManager().IsTimerActive(OnOneTeamOrLessTimer))
 		{
 			GetWorldTimerManager().ClearTimer(OnOneTeamOrLessTimer);
-			GAMEMODE_LOG("Player logs in, OnOneTeamOrLessTimer cleared");
+			GAMEMODE_LOG(Log, TEXT("Player logs in, OnOneTeamOrLessTimer cleared"));
+		}
+		// Start lobby countdown.
+		else if (!bIsGameplayLevel && ByteWarsGameState->LobbyStatus == ELobbyStatus::IDLE)
+		{
+			ByteWarsGameState->LobbyStatus = ELobbyStatus::LOBBY_COUNTDOWN_STARTED;
 		}
 	}
 #endif
@@ -196,7 +270,8 @@ void AAccelByteWarsGameModeBase::PostLogin(APlayerController* NewPlayer)
 		if (PlayerState->bShouldKick)
 		{
 			GameSession->KickPlayer(NewPlayer, FText::FromString("Max player reached"));
-			GAMEMODE_LOG("Player did not registered in Teams data. Max registered players reached. Kicking this player");
+
+			GAMEMODE_LOG(Warning, TEXT("Player did not registered in Teams data. Max registered players reached. Kicking this player"));
 		}
 	}
 }
@@ -204,16 +279,16 @@ void AAccelByteWarsGameModeBase::PostLogin(APlayerController* NewPlayer)
 void AAccelByteWarsGameModeBase::Logout(AController* Exiting)
 {
 	Super::Logout(Exiting);
-
-	// only run this logic on DS
+#if UE_SERVER || UE_EDITOR
 	if (IsRunningDedicatedServer())
 	{
 		if (bShouldRemovePlayerOnLogoutImmediately && !ByteWarsGameInstance->bServerCurrentlyTravelling)
 		{
 			const bool bSucceeded = RemovePlayer(Cast<APlayerController>(Exiting));
-			GAMEMODE_LOG("Removing player from GameState data. Succeeded: %s", *FString(bSucceeded ? "TRUE" : "FALSE"));
+			GAMEMODE_LOG(Warning, TEXT("Removing player from GameState data. Succeeded: %s"), *FString(bSucceeded ? "TRUE" : "FALSE"));
 		}
 	}
+#endif
 }
 
 int32 AAccelByteWarsGameModeBase::AddPlayerScore(APlayerState* PlayerState, const float InScore, const bool bAddKillCount)
@@ -221,7 +296,7 @@ int32 AAccelByteWarsGameModeBase::AddPlayerScore(APlayerState* PlayerState, cons
 	AAccelByteWarsPlayerState* AccelByteWarsPlayerState = static_cast<AAccelByteWarsPlayerState*>(PlayerState);
 	if (!AccelByteWarsPlayerState)
 	{
-		GAMEMODE_LOG("PlayerState is not derived from AAccelByteWarsPlayerState. Operation cancelled")
+		GAMEMODE_LOG(Warning, TEXT("PlayerState is not derived from AAccelByteWarsPlayerState. Operation cancelled"));
 		return INDEX_NONE;
 	}
 
@@ -229,7 +304,7 @@ int32 AAccelByteWarsGameModeBase::AddPlayerScore(APlayerState* PlayerState, cons
 		ByteWarsGameState->GetPlayerDataById(PlayerState->GetUniqueId(),GetControllerId(PlayerState));
 	if (!PlayerData)
 	{
-		GAMEMODE_LOG("Player is not in Teams data. Add player to team via AddToTeam. Operation cancelled")
+		GAMEMODE_LOG(Warning, TEXT("Player is not in Teams data. Add player to team via AddToTeam. Operation cancelled"));
 		return INDEX_NONE;
 	}
 
@@ -253,7 +328,7 @@ int32 AAccelByteWarsGameModeBase::DecreasePlayerLife(APlayerState* PlayerState, 
 	AAccelByteWarsPlayerState* AccelByteWarsPlayerState = static_cast<AAccelByteWarsPlayerState*>(PlayerState);
 	if (!AccelByteWarsPlayerState)
 	{
-		GAMEMODE_LOG("PlayerState is not derived from AAccelByteWarsPlayerState. Operation cancelled")
+		GAMEMODE_LOG(Warning, TEXT("PlayerState is not derived from AAccelByteWarsPlayerState. Operation cancelled"));
 		return INDEX_NONE;
 	}
 
@@ -261,7 +336,7 @@ int32 AAccelByteWarsGameModeBase::DecreasePlayerLife(APlayerState* PlayerState, 
 		ByteWarsGameState->GetPlayerDataById(PlayerState->GetUniqueId(),GetControllerId(PlayerState));
 	if (!PlayerData)
 	{
-		GAMEMODE_LOG("Player is not in Teams data. Add player to team via AddToTeam. Operation cancelled")
+		GAMEMODE_LOG(Warning, TEXT("Player is not in Teams data. Add player to team via AddToTeam. Operation cancelled"));
 		return INDEX_NONE;
 	}
 
@@ -284,14 +359,14 @@ void AAccelByteWarsGameModeBase::PlayerTeamSetup(APlayerController* PlayerContro
 	// failsafe
 	if (!PlayerController)
 	{
-		GAMEMODE_LOG("PlayerTeamSetup: PlayerController null. Cancelling operation");
+		GAMEMODE_LOG(Warning, TEXT("PlayerTeamSetup: PlayerController null. Cancelling operation"));
 		return;
 	}
 
 	AAccelByteWarsPlayerState* PlayerState = static_cast<AAccelByteWarsPlayerState*>(PlayerController->PlayerState);
 	if (!PlayerState)
 	{
-		GAMEMODE_LOG("PlayerTeamSetup: PlayerState is not (derived from) AAccelByteWarsPlayerState. Cancelling operation");
+		GAMEMODE_LOG(Warning, TEXT("PlayerTeamSetup: PlayerState is not (derived from) AAccelByteWarsPlayerState. Cancelling operation"));
 		return;
 	}
 
@@ -316,7 +391,8 @@ void AAccelByteWarsGameModeBase::PlayerTeamSetup(APlayerController* PlayerContro
 		const FString Identity = bUniqueIdValid ?
 			PlayerUniqueId.GetUniqueNetId()->ToDebugString() : PlayerController->PlayerState->GetPlayerName();
 		GAMEMODE_LOG(
-			"Found player's (%s [UniqueId: %s]) data in existing PlayerDatas. Assigning team: %d",
+			Warning,
+			TEXT("Found player's (%s [UniqueId: %s]) data in existing PlayerDatas. Assigning team: %d"),
 			*Identity,
 			*FString(bUniqueIdValid ? "TRUE" : "FALSE"),
 			TeamId);
@@ -336,35 +412,55 @@ void AAccelByteWarsGameModeBase::PlayerTeamSetup(APlayerController* PlayerContro
 	// if no match found, assign player to a new team or least populated team
 	if (TeamId == INDEX_NONE)
 	{
-		switch (ByteWarsGameInstance->GameSetup.GameModeType)
+		// If running on DS, get team assignment from Session Info instead.
+		if (IsRunningDedicatedServer())
 		{
-		case EGameModeType::FFA:
-			// assign to a new team
-			TeamId = ByteWarsGameState->Teams.Num();
-			break;
-		case EGameModeType::TDM:
-			// check if max team reached
-			if (ByteWarsGameState->Teams.Num() >= ByteWarsGameInstance->GameSetup.MaxTeamNum)
+			if (OnGetTeamIdFromSessionDelegate.IsBound()) 
 			{
-				// assign to the least populated team
-				uint8 CurrentTeamMemberNum = UINT8_MAX;
-				TeamId = 0;
-				for (const FGameplayTeamData& Team : ByteWarsGameState->Teams)
-				{
-					if (Team.TeamMembers.Num() < CurrentTeamMemberNum)
+				TeamId = OnGetTeamIdFromSessionDelegate.Execute(PlayerController);
+			}
+			else 
+			{
+				GAMEMODE_LOG(Warning, TEXT("PlayerTeamSetup: Cannot assign team. Delegate to get team id from game session is not bound."));
+			}
+
+			// Kick if the player doesn't belong to any team based on Session Info.
+			PlayerState->bShouldKick = (TeamId == INDEX_NONE);
+		}
+		// If running locally, set team assignment manually.
+		else 
+		{
+			switch (ByteWarsGameInstance->GameSetup.GameModeType)
+			{
+				case EGameModeType::FFA:
+					// assign to a new team
+					TeamId = ByteWarsGameState->Teams.Num();
+					break;
+				case EGameModeType::TDM:
+					// check if max team reached
+					if (ByteWarsGameState->Teams.Num() >= ByteWarsGameInstance->GameSetup.MaxTeamNum)
 					{
-						CurrentTeamMemberNum = Team.TeamMembers.Num();
-						TeamId = Team.TeamId;
+						// assign to the least populated team
+						uint8 CurrentTeamMemberNum = UINT8_MAX;
+						TeamId = 0;
+						for (const FGameplayTeamData& Team : ByteWarsGameState->Teams)
+						{
+							if (Team.TeamMembers.Num() < CurrentTeamMemberNum)
+							{
+								CurrentTeamMemberNum = Team.TeamMembers.Num();
+								TeamId = Team.TeamId;
+							}
+						}
 					}
-				}
+					else
+					{
+						// assign to a new team
+						TeamId = ByteWarsGameState->Teams.Num();
+					}
+					break;
+				default:
+					break;
 			}
-			else
-			{
-				// assign to a new team
-				TeamId = ByteWarsGameState->Teams.Num();
-			}
-			break;
-		default: ;
 		}
 
 		// reset player's state data
@@ -379,7 +475,8 @@ void AAccelByteWarsGameModeBase::PlayerTeamSetup(APlayerController* PlayerContro
 		const FString Identity = bUniqueIdValid ?
 			PlayerUniqueId.GetUniqueNetId()->ToDebugString() : PlayerController->PlayerState->GetPlayerName();
 		GAMEMODE_LOG(
-			"No player's (%s [UniqueId: %s]) data found. Assigning team: %d",
+			Warning,
+			TEXT("No player's (%s [UniqueId: %s]) data found. Assigning team: %d"),
 			*Identity,
 			*FString(bUniqueIdValid ? "TRUE" : "FALSE"),
 			TeamId);
@@ -401,14 +498,14 @@ void AAccelByteWarsGameModeBase::AddPlayerToTeam(APlayerController* PlayerContro
 	// failsafe
 	if (!PlayerController)
 	{
-		GAMEMODE_LOG("AddPlayerToTeam: PlayerController null. Cancelling operation");
+		GAMEMODE_LOG(Warning, TEXT("AddPlayerToTeam: PlayerController null. Cancelling operation"));
 		return;
 	}
 
 	AAccelByteWarsPlayerState* PlayerState = static_cast<AAccelByteWarsPlayerState*>(PlayerController->PlayerState);
 	if (!PlayerState)
 	{
-		GAMEMODE_LOG("AddPlayerToTeam: PlayerState is not (derived from) AAccelByteWarsPlayerState. Cancelling operation");
+		GAMEMODE_LOG(Warning, TEXT("AddPlayerToTeam: PlayerState is not (derived from) AAccelByteWarsPlayerState. Cancelling operation"));
 		return;
 	}
 
@@ -437,14 +534,14 @@ bool AAccelByteWarsGameModeBase::RemovePlayer(const APlayerController* PlayerCon
 	// failsafe
 	if (!PlayerController)
 	{
-		GAMEMODE_LOG("RemovePlayer: PlayerController null. Cancelling operation");
+		GAMEMODE_LOG(Warning, TEXT("RemovePlayer: PlayerController null. Cancelling operation"));
 		return false;
 	}
 
 	const AAccelByteWarsPlayerState* PlayerState = static_cast<AAccelByteWarsPlayerState*>(PlayerController->PlayerState);
 	if (!PlayerState)
 	{
-		GAMEMODE_LOG("RemovePlayer: PlayerState is not (derived from) AAccelByteWarsPlayerState. Cancelling operation");
+		GAMEMODE_LOG(Warning, TEXT("RemovePlayer: PlayerState is not (derived from) AAccelByteWarsPlayerState. Cancelling operation"));
 		return false;
 	}
 

@@ -7,7 +7,31 @@
 #include "GameFramework/GameStateBase.h"
 #include "AccelByteWarsGameStateBase.generated.h"
 
-DECLARE_LOG_CATEGORY_CLASS(LogAccelByteWarsGameState, Log, All);
+ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogAccelByteWarsGameState, Log, All);
+
+#define GAMESTATE_LOG(Verbosity, Format, ...) \
+{ \
+	UE_LOG(LogAccelByteWarsGameState, Verbosity, TEXT("%s"), *FString::Printf(Format, ##__VA_ARGS__)); \
+}
+
+UENUM(BlueprintType)
+enum class EGameStatus : uint8
+{
+	IDLE = 0,
+	AWAITING_PLAYERS,
+	PRE_GAME_COUNTDOWN_STARTED,
+	GAME_STARTED,
+	GAME_ENDS,
+	INVALID
+};
+
+UENUM(BlueprintType)
+enum class ELobbyStatus : uint8
+{
+	IDLE = 0,
+	LOBBY_COUNTDOWN_STARTED,
+	GAME_STARTED
+};
 
 UCLASS()
 class ACCELBYTEWARS_API AAccelByteWarsGameStateBase : public AGameStateBase
@@ -31,11 +55,28 @@ public:
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnNotify_Teams();
 
+	// Current lobby status.
+	UPROPERTY(BlueprintReadWrite, Replicated)
+	ELobbyStatus LobbyStatus = ELobbyStatus::IDLE;
+
+	// Lobby countdown before starting the game.
+	UPROPERTY(BlueprintReadWrite, Replicated)
+	float LobbyCountdown = 30.f;
+
+	/**
+	 * @brief Pre-game (already in gameplay map) countdown duration
+	 */
+	UPROPERTY(BlueprintReadWrite, Replicated)
+	float PreGameCountdown = 5.0f;
+
 	UPROPERTY(BlueprintReadWrite, Replicated)
 	float TimeLeft = INDEX_NONE;
 
+	/**
+	 * @brief Current gameplay state
+	 */
 	UPROPERTY(BlueprintReadWrite, Replicated)
-	bool bIsGameOver = false;
+	EGameStatus GameStatus = EGameStatus::IDLE;
 
 	/**
 	 * @brief Get teams with at least one member have life count more than 1
@@ -51,8 +92,7 @@ public:
 	 * @param OutTeamScore Output: Total team score
 	 * @param OutTeamLivesLeft Output: Total team lives count
 	 * @param OutTeamKillCount Output: Total team kill count
-	 * @return True if team found
-	 */
+	 * @return True if team found	 */
 	UFUNCTION(BlueprintCallable, meta = (ExpandBoolAsExecs = "ReturnValue"))
 	bool GetTeamDataByTeamId(
 		const int32 TeamId,
