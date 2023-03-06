@@ -412,55 +412,28 @@ void AAccelByteWarsGameModeBase::PlayerTeamSetup(APlayerController* PlayerContro
 	// if no match found, assign player to a new team or least populated team
 	if (TeamId == INDEX_NONE)
 	{
-		// If running on DS, get team assignment from Session Info instead.
 		if (IsRunningDedicatedServer())
 		{
+			// Running online, assign team from session info
 			if (OnGetTeamIdFromSessionDelegate.IsBound()) 
 			{
 				TeamId = OnGetTeamIdFromSessionDelegate.Execute(PlayerController);
+
+				// Kick if the player doesn't belong to any team based on Session Info.
+				PlayerState->bShouldKick = (TeamId == INDEX_NONE);
 			}
+			// Running offline, set team assignment manually
 			else 
 			{
-				GAMEMODE_LOG(Warning, TEXT("PlayerTeamSetup: Cannot assign team. Delegate to get team id from game session is not bound."));
-			}
+				GAMEMODE_LOG(Warning, TEXT("PlayerTeamSetup: Delegate to get team id from game session is not bound. Cannot retrieve session info, reverting to offline DS flow"));
 
-			// Kick if the player doesn't belong to any team based on Session Info.
-			PlayerState->bShouldKick = (TeamId == INDEX_NONE);
+				AssignTeamManually(TeamId);
+			}
 		}
-		// If running locally, set team assignment manually.
+		// If running locally, set team assignment manually
 		else 
 		{
-			switch (ByteWarsGameInstance->GameSetup.GameModeType)
-			{
-				case EGameModeType::FFA:
-					// assign to a new team
-					TeamId = ByteWarsGameState->Teams.Num();
-					break;
-				case EGameModeType::TDM:
-					// check if max team reached
-					if (ByteWarsGameState->Teams.Num() >= ByteWarsGameInstance->GameSetup.MaxTeamNum)
-					{
-						// assign to the least populated team
-						uint8 CurrentTeamMemberNum = UINT8_MAX;
-						TeamId = 0;
-						for (const FGameplayTeamData& Team : ByteWarsGameState->Teams)
-						{
-							if (Team.TeamMembers.Num() < CurrentTeamMemberNum)
-							{
-								CurrentTeamMemberNum = Team.TeamMembers.Num();
-								TeamId = Team.TeamId;
-							}
-						}
-					}
-					else
-					{
-						// assign to a new team
-						TeamId = ByteWarsGameState->Teams.Num();
-					}
-					break;
-				default:
-					break;
-			}
+			AssignTeamManually(TeamId);
 		}
 
 		// reset player's state data
@@ -549,6 +522,41 @@ bool AAccelByteWarsGameModeBase::RemovePlayer(const APlayerController* PlayerCon
 	const int32 ControllerId = GetControllerId(PlayerState);
 
 	return ByteWarsGameState->RemovePlayerFromTeam(PlayerUniqueId, ControllerId);
+}
+
+void AAccelByteWarsGameModeBase::AssignTeamManually(int32& InOutTeamId) const
+{
+	switch (ByteWarsGameInstance->GameSetup.GameModeType)
+	{
+	case EGameModeType::FFA:
+		// assign to a new team
+		InOutTeamId = ByteWarsGameState->Teams.Num();
+		break;
+	case EGameModeType::TDM:
+		// check if max team reached
+		if (ByteWarsGameState->Teams.Num() >= ByteWarsGameInstance->GameSetup.MaxTeamNum)
+		{
+			// assign to the least populated team
+			uint8 CurrentTeamMemberNum = UINT8_MAX;
+			InOutTeamId = 0;
+			for (const FGameplayTeamData& Team : ByteWarsGameState->Teams)
+			{
+				if (Team.TeamMembers.Num() < CurrentTeamMemberNum)
+				{
+					CurrentTeamMemberNum = Team.TeamMembers.Num();
+					InOutTeamId = Team.TeamId;
+				}
+			}
+		}
+		else
+		{
+			// assign to a new team
+			InOutTeamId = ByteWarsGameState->Teams.Num();
+		}
+		break;
+	default:
+		break;
+	}
 }
 
 FUniqueNetIdRepl AAccelByteWarsGameModeBase::GetPlayerUniqueNetId(const APlayerController* PlayerController)

@@ -97,6 +97,8 @@ protected:
 
 private:
 
+	void AssignTeamManually(int32& InOutTeamId) const;
+
 	UPROPERTY()
 	AAccelByteWarsGameStateBase* ByteWarsGameState = nullptr;
 
