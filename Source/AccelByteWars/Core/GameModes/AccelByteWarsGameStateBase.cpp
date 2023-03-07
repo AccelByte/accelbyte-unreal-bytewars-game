@@ -132,7 +132,7 @@ bool AAccelByteWarsGameStateBase::AddPlayerToTeam(
 	FGameplayPlayerData PlayerDataTemp;
 	if (!bForce && GetPlayerDataById(UniqueNetId,PlayerDataTemp, ControllerId))
 	{
-		GAMESTATE_LOG(Warning, TEXT("AddPlayerToTeam: Player data not found. Cancelling operation"));
+		GAMESTATE_LOG(Warning, TEXT("AddPlayerToTeam: Player data found. Cancelling operation"));
 		return false;
 	}
 

@@ -18,7 +18,7 @@ void AAccelByteWarsGameSession::UnregisterServer()
 	{
 		OnUnregisterServerDelegate.ExecuteIfBound(SessionName);
 	}
-	// Shut down server immediatelly without unregistering the server. Used for non-AMS DS.
+	// Shut down server immediately without unregistering the server. Used for non-AMS DS.
 	else 
 	{
 		FPlatformMisc::RequestExit(false);
