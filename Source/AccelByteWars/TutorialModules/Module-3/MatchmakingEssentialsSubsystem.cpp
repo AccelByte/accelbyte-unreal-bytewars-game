@@ -10,6 +10,10 @@
 #include "Core/AccelByteRegistry.h"
 #include "Api/AccelByteUserApi.h"
 
+#include "Core/AssetManager/AssetManagementSubsystem.h"
+#include "Core/AssetManager/AccelByteWarsDataAsset.h"
+#include "Core/AssetManager/TutorialModules/TutorialModuleDataAsset.h"
+
 #include "Core/GameModes/AccelByteWarsGameModeBase.h"
 #include "Core/System/AccelByteWarsGameSession.h"
 #include "Core/UI/MainMenu/MatchLobby/MatchLobbyWidget.h"
@@ -38,18 +42,34 @@ void UMatchmakingEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Colle
 		return;
 	}
 
-	// Bind delegates to game events.
-	AAccelByteWarsGameSession::OnRegisterServerDelegate.BindUObject(this, &UMatchmakingEssentialsSubsystem::RegisterServer);
-	AAccelByteWarsGameModeBase::OnGetTeamIdFromSessionDelegate.BindUObject(this, &UMatchmakingEssentialsSubsystem::GetTeamIdFromSession);
-	AAccelByteWarsGameSession::OnUnregisterServerDelegate.BindUObject(this, &UMatchmakingEssentialsSubsystem::UnregisterServer);
-	UMatchLobbyWidget::OnGenerateOnlineTeamEntries.BindUObject(this, &UMatchmakingEssentialsSubsystem::GenerateOnlineTeamEntries);
-	UMatchLobbyWidget::OnQuitLobbyDelegate.BindUObject(this, &UMatchmakingEssentialsSubsystem::LeaveSession);
-	UPauseWidget::OnQuitGameDelegate.BindUObject(this, &UMatchmakingEssentialsSubsystem::LeaveSession);
-
 	// Listen to backfill proposal. Run it only on game server.
 	if (IsRunningDedicatedServer())
 	{
 		SessionInterface->AddOnBackfillProposalReceivedDelegate_Handle(FOnBackfillProposalReceivedDelegate::CreateUObject(this, &UMatchmakingEssentialsSubsystem::OnBackfillProposalReceived));
+	}
+
+	// Bind delegates to game events if the matchmaking module is active.
+	if (UAssetManagementSubsystem* AssetManagement = GetGameInstance()->GetSubsystem<UAssetManagementSubsystem>()) 
+	{
+		UAccelByteWarsDataAsset* DataAsset = AssetManagement->GetByteWarsAssetManager()->GetAssetFromCache(FPrimaryAssetId{ "TutorialModule:MATCHMAKINGESSENTIALS" });
+		if (!DataAsset) 
+		{
+			return;
+		}
+
+		UTutorialModuleDataAsset* TutorialModule = Cast<UTutorialModuleDataAsset>(DataAsset);
+		if (!TutorialModule || !TutorialModule->bIsActive) 
+		{
+			return;
+		}
+
+		// Bind delegates to game events.
+		AAccelByteWarsGameSession::OnRegisterServerDelegate.BindUObject(this, &UMatchmakingEssentialsSubsystem::RegisterServer);
+		AAccelByteWarsGameModeBase::OnGetTeamIdFromSessionDelegate.BindUObject(this, &UMatchmakingEssentialsSubsystem::GetTeamIdFromSession);
+		AAccelByteWarsGameSession::OnUnregisterServerDelegate.BindUObject(this, &UMatchmakingEssentialsSubsystem::UnregisterServer);
+		UMatchLobbyWidget::OnGenerateOnlineTeamEntries.BindUObject(this, &UMatchmakingEssentialsSubsystem::GenerateOnlineTeamEntries);
+		UMatchLobbyWidget::OnQuitLobbyDelegate.BindUObject(this, &UMatchmakingEssentialsSubsystem::LeaveSession);
+		UPauseWidget::OnQuitGameDelegate.BindUObject(this, &UMatchmakingEssentialsSubsystem::LeaveSession);
 	}
 }
 
@@ -217,6 +237,12 @@ void UMatchmakingEssentialsSubsystem::JoinSession(const FOnlineSessionSearchResu
 
 void UMatchmakingEssentialsSubsystem::LeaveSession(APlayerController* PC)
 {
+	// If running on local gameplay, player doesn't need to leave game session.
+	if (PC->GetNetMode() == ENetMode::NM_Standalone) 
+	{
+		return;
+	}
+
 	if (!ensure(SessionInterface.IsValid()))
 	{
 		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot leave game session. Session Interface is not valid."));
