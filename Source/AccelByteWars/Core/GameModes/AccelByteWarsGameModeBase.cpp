@@ -83,17 +83,17 @@ void AAccelByteWarsGameModeBase::BeginPlay()
 
 		ShutdownDelegate = FTimerDelegate::CreateWeakLambda(this, [this]()
 		{
-			GAMEMODE_LOG(Warning, TEXT("Unregistering server from AccelByte Multiplayer Servers (AMS)."));
+			GAMEMODE_LOG(Log, TEXT("Unregistering server."));
 
 			AAccelByteWarsGameSession* Session = Cast<AAccelByteWarsGameSession>(GameSession);
 			if (!Session)
 			{
-				GAMEMODE_LOG(Warning, TEXT("Cannot unregister server from AccelByte Multiplayer Servers (AMS), the game session is null."));
+				GAMEMODE_LOG(Warning, TEXT("Cannot unregister server, the game session is null."));
 				FPlatformMisc::RequestExit(false);
 				return;
 			}
 
-			// Unregister the server from AccelByte Multiplayer Servers (AMS).
+			// Unregister the server.
 			Session->UnregisterServer();
 		});
 	}
