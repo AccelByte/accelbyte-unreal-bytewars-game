@@ -86,6 +86,13 @@ void UMatchLobbyWidget::LeaveMatch()
 void UMatchLobbyWidget::SetMatchLobbyState(const EMatchLobbyState NewState)
 {
 	Ws_MatchLobby->SetActiveWidgetIndex((int)NewState);
+
+	switch (NewState)
+	{
+		case EMatchLobbyState::Default:
+			Btn_Start->SetUserFocus(GetOwningPlayer());
+			break;
+	}
 }
 
 void UMatchLobbyWidget::ResetTeamEntries()

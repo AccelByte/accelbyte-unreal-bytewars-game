@@ -8,6 +8,11 @@ AAccelByteWarsFxActor::AAccelByteWarsFxActor()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.TickInterval = 0.05f;
+
+	// Lower the net update frequency since this is only an FX actor
+	NetUpdateFrequency = 5.0f;
+	MinNetUpdateFrequency = 1.0f;
 
 	NewRoot = CreateDefaultSubobject<USceneComponent>(TEXT("DefaultSceneRoot"));
 	RootComponent = NewRoot;
