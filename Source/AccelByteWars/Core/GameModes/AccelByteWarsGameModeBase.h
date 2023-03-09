@@ -89,15 +89,23 @@ protected:
 
 	bool RemovePlayer(const APlayerController* PlayerController) const;
 
+	UFUNCTION(BlueprintCallable)
+	void EndGame(const FString Reason = "");
+
 	UPROPERTY(EditAnywhere)
 	bool bIsGameplayLevel = false;
 
 	UPROPERTY(EditAnywhere)
 	bool bShouldRemovePlayerOnLogoutImmediately = false;
 
+	UPROPERTY(BlueprintReadOnly)
+	float GameEndedTime = 0.0f;
+
 private:
 
 	void AssignTeamManually(int32& InOutTeamId) const;
+
+	void NotEnoughPlayerCountdownCounting(const float& DeltaSeconds) const;
 
 	UPROPERTY()
 	AAccelByteWarsGameStateBase* ByteWarsGameState = nullptr;
@@ -109,11 +117,7 @@ private:
 
 	static int32 GetControllerId(const APlayerState* PlayerState);
 
-	int ShutdownOnFinishedDelay;
-	int ShutdownOnOneTeamOrLessDelay;
-
-	FTimerHandle OnFinishedTimer;
-	FTimerHandle OnOneTeamOrLessTimer;
-
-	FTimerDelegate ShutdownDelegate;
+	bool CheckIfAllPlayersIsInOneTeam() const;
+	void SetupShutdownCountdownsValue() const;
+	void CloseGame(const FString& Reason) const;
 };

@@ -11,6 +11,8 @@
 #include "Components/VerticalBox.h"
 #include "Components/WidgetSwitcher.h"
 #include "CommonButtonBase.h"
+#include "Core/GameModes/AccelByteWarsGameStateBase.h"
+#include "Kismet/KismetMathLibrary.h"
 
 void UGameOverWidget::SetWinner(const FText& PlayerName, const FLinearColor& Color)
 {
@@ -43,8 +45,17 @@ void UGameOverWidget::NativeOnActivated()
 	Super::NativeOnActivated();
 
 	// if on server, disable play again button
-	Btn_PlayAgain->SetVisibility(
-		GetOwningPlayer()->HasAuthority() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	if (GetOwningPlayer()->HasAuthority())
+	{
+		Btn_PlayAgain->SetVisibility(ESlateVisibility::Visible);
+		Widget_Countdown->SetVisibility(ESlateVisibility::Hidden);
+	}
+	else
+	{
+		// on server
+		Btn_PlayAgain->SetVisibility(ESlateVisibility::Collapsed);
+		Widget_Countdown->SetVisibility(ESlateVisibility::Visible);
+	}
 
 	// Bind buttons click event.
 	Btn_PlayAgain->OnClicked().AddUObject(this, &UGameOverWidget::PlayGameAgain);
@@ -53,6 +64,15 @@ void UGameOverWidget::NativeOnActivated()
 	SetupLeaderboard();
 
 	SetInputModeToUIOnly();
+
+	// countdown setup
+	Widget_Countdown->SetupWidget(
+		FText::FromString(""),
+		FText::FromString(""),
+		FText::FromString("Quitting in:"));
+	Widget_Countdown->CheckCountdownStateDelegate.BindUObject(this, &UGameOverWidget::GetCountdownState);
+	Widget_Countdown->UpdateCountdownValueDelegate.BindUObject(this, &UGameOverWidget::GetCountdownValue);
+	Widget_Countdown->OnCountdownFinishedDelegate.AddUObject(this, &UGameOverWidget::OnCountdownFinished);
 }
 
 void UGameOverWidget::NativeOnDeactivated()
@@ -72,7 +92,7 @@ void UGameOverWidget::SetupLeaderboard()
 
 	TArray<FUniqueNetIdPtr> PlayerNetIds;
 	TArray<UGameOverLeaderboardEntry*> LeaderboardEntries;
-	for (FGameplayTeamData Team : GameState->Teams) 
+	for (const FGameplayTeamData& Team : GameState->Teams) 
 	{
 		// Get team with highest score.
 		if (Team.GetTeamScore() > HighestScore) 
@@ -89,7 +109,7 @@ void UGameOverWidget::SetupLeaderboard()
 		const FLinearColor TeamColor = GameInstance->GetTeamColor(Team.TeamId);
 
 		// Generate team members entry.
-		for (FGameplayPlayerData Member : Team.TeamMembers) 
+		for (const FGameplayPlayerData& Member : Team.TeamMembers) 
 		{
 			// Save player net id. It will be used to get player's information (username, etc) from backend.
 			const FUniqueNetIdPtr PlayerNetId = Member.UniqueNetId.GetUniqueNetId();
@@ -145,4 +165,30 @@ void UGameOverWidget::QuitGame()
 {
 	OnExitLevel();
 	UGameplayStatics::OpenLevel(GetWorld(), TEXT("MainMenu"));
+}
+
+ECountdownState UGameOverWidget::GetCountdownState()
+{
+	ECountdownState CountdownState;
+	switch (GameState->GameStatus)
+	{
+	case EGameStatus::GAME_ENDS:
+		CountdownState = ECountdownState::COUNTING;
+		break;
+	case EGameStatus::INVALID:
+		CountdownState = ECountdownState::POST;
+		break;
+	default:
+		CountdownState = ECountdownState::PRE;;
+	}
+	return CountdownState;
+}
+
+int UGameOverWidget::GetCountdownValue()
+{
+	return UKismetMathLibrary::FFloor(GameState->PostGameCountdown);
+}
+
+void UGameOverWidget::OnCountdownFinished()
+{
 }
