@@ -33,9 +33,9 @@ void ULoginWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
-	Btn_LoginWithDeviceId->OnClicked().AddUObject(this, &ULoginWidget::Login, EAccelByteLoginType::DeviceId);
-	Btn_RetryLogin->OnClicked().AddWeakLambda(this, [this]() { Login(LastLoginMethod); });
-	Btn_QuitGame->OnClicked().AddUObject(this, &ULoginWidget::QuitGame);
+	Btn_LoginWithDeviceId->OnClicked().AddUObject(this, &ULoginWidget::OnLoginWithDeviceIdButtonClicked);
+	Btn_RetryLogin->OnClicked().AddUObject(this, &ULoginWidget::OnRetryLoginButtonClicked);
+	Btn_QuitGame->OnClicked().AddUObject(this, &ULoginWidget::OnQuitGameButtonClicked);
 
 	SetLoginState(ELoginState::Default);
 
@@ -51,6 +51,36 @@ void ULoginWidget::NativeOnDeactivated()
 	Btn_QuitGame->OnClicked().RemoveAll(this);
 }
 
+void ULoginWidget::SetLoginState(const ELoginState NewState)
+{
+	Ws_LoginState->SetActiveWidgetIndex((int)NewState);
+
+	switch (NewState)
+	{
+		case ELoginState::Default:
+			Btn_LoginWithDeviceId->SetUserFocus(GetOwningPlayer());
+			break;
+		case ELoginState::Failed:
+			Btn_RetryLogin->SetUserFocus(GetOwningPlayer());
+			break;
+	}
+}
+
+void ULoginWidget::OnLoginWithDeviceIdButtonClicked()
+{
+	Login(EAccelByteLoginType::DeviceId);
+}
+
+void ULoginWidget::OnRetryLoginButtonClicked()
+{
+	Login(LastLoginMethod);
+}
+
+void ULoginWidget::OnQuitGameButtonClicked()
+{
+	QuitGame();
+}
+
 void ULoginWidget::Login(EAccelByteLoginType LoginMethod)
 {
 	SetLoginState(ELoginState::LoggingIn);
@@ -63,28 +93,6 @@ void ULoginWidget::Login(EAccelByteLoginType LoginMethod)
 
 	ensure(AuthSubsystem);
 	AuthSubsystem->Login(LoginMethod, PC, FAuthOnLoginCompleteDelegate::CreateUObject(this, &ULoginWidget::OnLoginComplete));
-}
-
-void ULoginWidget::SetLoginState(const ELoginState NewState)
-{
-	Ws_LoginState->SetActiveWidgetIndex((int)NewState);
-
-	switch (NewState)
-	{
-		case ELoginState::Default:
-			if (B_DesktopLogin->IsVisible()) 
-			{
-				Btn_LoginWithDeviceId->SetUserFocus(GetOwningPlayer());
-			}
-			else
-			{
-				Btn_LoginWithConsole->SetUserFocus(GetOwningPlayer());
-			}
-			break;
-		case ELoginState::Failed:
-			Btn_RetryLogin->SetUserFocus(GetOwningPlayer());
-			break;
-	}
 }
 
 void ULoginWidget::OnLoginComplete(bool bWasSuccessful, const FString& ErrorMessage)
