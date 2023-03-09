@@ -18,9 +18,11 @@ UENUM(BlueprintType)
 enum class EGameStatus : uint8
 {
 	IDLE = 0,
+	AWAITING_PLAYERS_DS,
 	AWAITING_PLAYERS,
 	PRE_GAME_COUNTDOWN_STARTED,
 	GAME_STARTED,
+	AWAITING_PLAYERS_MID_GAME,
 	GAME_ENDS,
 	INVALID
 };
@@ -62,6 +64,13 @@ public:
 	// Lobby countdown before starting the game.
 	UPROPERTY(BlueprintReadWrite, Replicated)
 	float LobbyCountdown = 30.f;
+
+	// Countdown when the game is over
+	UPROPERTY(Replicated)
+	float PostGameCountdown = INDEX_NONE;
+
+	UPROPERTY(Replicated)
+	float NotEnoughPlayerCountdown = INDEX_NONE;
 
 	/**
 	 * @brief Pre-game (already in gameplay map) countdown duration
