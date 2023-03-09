@@ -8,7 +8,7 @@
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
 #include "TutorialModules/Module-2/AuthEssentialsSubsystem.h"
 #include "TutorialModules/Module-2/AuthEssentialsModels.h"
-#include "LoginWidget.generated.h"
+#include "LoginWidget_ModuleStart.generated.h"
 
 class UWidgetSwitcher;
 class UCommonButtonBase;
@@ -17,7 +17,7 @@ class UAccelByteWarsGameInstance;
 class UPromptSubsystem;
 
 UCLASS()
-class ACCELBYTEWARS_API ULoginWidget : public UAccelByteWarsActivatableWidget
+class ACCELBYTEWARS_API ULoginWidget_ModuleStart : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
 			
@@ -32,15 +32,10 @@ protected:
 	void OnRetryLoginButtonClicked();
 	void OnQuitGameButtonClicked();
 	
-	void Login(EAccelByteLoginType LoginMethod);
-	void OnLoginComplete(bool bWasSuccessful, const FString& ErrorMessage);
-	
-	void AutoLoginCmd();
 	void QuitGame();
 
 private:
 	UAccelByteWarsGameInstance* GameInstance;
-	UAuthEssentialsSubsystem* AuthSubsystem;
 	UPromptSubsystem* PromptSubsystem;
 
 	EAccelByteLoginType LastLoginMethod;
