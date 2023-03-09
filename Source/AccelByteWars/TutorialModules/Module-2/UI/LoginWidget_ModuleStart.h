@@ -38,8 +38,6 @@ private:
 	UAccelByteWarsGameInstance* GameInstance;
 	UPromptSubsystem* PromptSubsystem;
 
-	EAccelByteLoginType LastLoginMethod;
-
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UWidgetSwitcher* Ws_LoginState;
 
