@@ -52,12 +52,15 @@ void ULoginWidget_ModuleStart::SetLoginState(const ELoginState NewState)
 
 	switch (NewState)
 	{
-	case ELoginState::Default:
-		Btn_LoginWithDeviceId->SetUserFocus(GetOwningPlayer());
-		break;
-	case ELoginState::Failed:
-		Btn_RetryLogin->SetUserFocus(GetOwningPlayer());
-		break;
+		case ELoginState::Default:
+			Btn_LoginWithDeviceId->SetUserFocus(GetOwningPlayer());
+			break;
+		case ELoginState::Failed:
+			Btn_RetryLogin->SetUserFocus(GetOwningPlayer());
+			break;
+		default:
+			Btn_LoginWithDeviceId->SetUserFocus(GetOwningPlayer());
+			break;
 	}
 }
 
