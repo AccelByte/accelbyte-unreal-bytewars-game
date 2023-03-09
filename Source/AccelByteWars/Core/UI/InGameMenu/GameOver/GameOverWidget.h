@@ -12,7 +12,12 @@
 class UCommonButtonBase;
 class UTextBlock;
 class UVerticalBox;
+class UWidgetSwitcher;
 class UGameOverLeaderboardEntry;
+class UAccelByteWarsGameInstance;
+class AAccelByteWarsGameStateBase;
+
+DECLARE_DELEGATE_TwoParams(FOnGenerateGameOverLeaderboard, TArray<FUniqueNetIdPtr> /*PlayerUniqueNetIds*/, TArray<UGameOverLeaderboardEntry*> /*PlayerLeaderboardWidgets*/);
 
 UCLASS()
 class ACCELBYTEWARS_API UGameOverWidget : public UAccelByteWarsActivatableWidget
@@ -24,11 +29,13 @@ public:
 	void SetWinner(const FText& PlayerName, const FLinearColor& Color);
 
 	UFUNCTION(BlueprintCallable)
-	void AddLeaderboardEntry(const FText& PlayerName, const int32 PlayerScore, const int32 PlayerKills, const FLinearColor& PlayerColor);
+	UGameOverLeaderboardEntry* AddLeaderboardEntry(const FText& PlayerName, const int32 PlayerScore, const int32 PlayerKills, const FLinearColor& PlayerColor);
+
+	inline static FOnGenerateGameOverLeaderboard OnGenerateGameOverLeaderboard;
 
 protected:
-
 	//~UUserWidget overriden functions
+	void NativeConstruct() override;
 	void NativeOnActivated() override;
 	void NativeOnDeactivated() override;
 	//~End of UUserWidget overriden function
@@ -40,6 +47,7 @@ protected:
 	void OnExitLevel();
 
 private:
+	void SetupLeaderboard();
 	void PlayGameAgain();
 	void QuitGame();
 
@@ -51,6 +59,9 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_Quit;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UWidgetSwitcher* Ws_Winner;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Txt_Winner;
@@ -71,5 +82,6 @@ private:
 	void OnCountdownFinished();
 
 	UPROPERTY()
-	AAccelByteWarsGameStateBase* ByteWarsGameState;
+	UAccelByteWarsGameInstance* GameInstance;
+	AAccelByteWarsGameStateBase* GameState;
 };
