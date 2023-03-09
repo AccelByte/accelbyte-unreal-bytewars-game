@@ -15,3 +15,8 @@ void UGameOverLeaderboardEntry::InitData(const FText& PlayerName, const int32 Pl
 	Txt_PlayerScore->SetColorAndOpacity(PlayerColor);
 	Txt_PlayerKills->SetColorAndOpacity(PlayerColor);
 }
+
+void UGameOverLeaderboardEntry::SetPlayerName(const FText& PlayerName)
+{
+	Txt_PlayerName->SetText(PlayerName);
+}
