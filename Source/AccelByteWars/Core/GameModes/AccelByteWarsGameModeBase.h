@@ -105,6 +105,8 @@ private:
 
 	void AssignTeamManually(int32& InOutTeamId) const;
 
+	void NotEnoughPlayerCountdownCounting(const float& DeltaSeconds) const;
+
 	UPROPERTY()
 	AAccelByteWarsGameStateBase* ByteWarsGameState = nullptr;
 

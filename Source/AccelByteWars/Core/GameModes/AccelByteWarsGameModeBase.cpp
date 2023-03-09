@@ -114,38 +114,37 @@ void AAccelByteWarsGameModeBase::Tick(float DeltaSeconds)
 	}
 #pragma endregion
 
-#pragma region "Pre-game countdown and server shutdown implementation"
+#pragma region "Countdowns and server shutdown implementation"
 	if (bIsGameplayLevel)
 	{
 		switch (ByteWarsGameState->GameStatus)
 		{
 		case EGameStatus::IDLE:
-		case EGameStatus::AWAITING_PLAYERS:
-			if (CheckIfAllPlayersIsInOneTeam())
+		case EGameStatus::AWAITING_PLAYERS_DS:
+			// if on DS, execute NotEnoughPlayer shutdown countdown logic
+			if (IsRunningDedicatedServer())
 			{
-				if (IsRunningDedicatedServer())
+				if (CheckIfAllPlayersIsInOneTeam())
 				{
-					// start NotEnoughPlayerCountdown to trigger server shutdown
-					ByteWarsGameState->NotEnoughPlayerCountdown -= DeltaSeconds;
-					if (ByteWarsGameState->NotEnoughPlayerCountdown <= 0)
-					{
-						CloseGame("Not enough player");
-					}
+					NotEnoughPlayerCountdownCounting(DeltaSeconds);
 				}
-			}
-			else
-			{
-				if (IsRunningDedicatedServer())
+				else
 				{
 					// reset NotEnoughPlayerCountdown
 					SetupShutdownCountdownsValue();
 				}
-
-				// check if all registered players have re-enter the server
-				if (ByteWarsGameState->PlayerArray.Num() == ByteWarsGameState->GetRegisteredPlayersNum())
-				{
-					ByteWarsGameState->GameStatus = EGameStatus::PRE_GAME_COUNTDOWN_STARTED;
-				}
+			}
+			// if not, just wait until all registered users logs in to server
+			else
+			{
+				ByteWarsGameState->GameStatus = EGameStatus::AWAITING_PLAYERS;
+				break;
+			}
+		case EGameStatus::AWAITING_PLAYERS:
+			// check if all registered players have re-enter the server
+			if (ByteWarsGameState->PlayerArray.Num() == ByteWarsGameState->GetRegisteredPlayersNum())
+			{
+				ByteWarsGameState->GameStatus = EGameStatus::PRE_GAME_COUNTDOWN_STARTED;
 			}
 			break;
 		case EGameStatus::PRE_GAME_COUNTDOWN_STARTED:
@@ -161,12 +160,7 @@ void AAccelByteWarsGameModeBase::Tick(float DeltaSeconds)
 			{
 				if (CheckIfAllPlayersIsInOneTeam())
 				{
-					// start NotEnoughPlayerCountdown to trigger server shutdown
-					ByteWarsGameState->NotEnoughPlayerCountdown -= DeltaSeconds;
-					if (ByteWarsGameState->NotEnoughPlayerCountdown <= 0)
-					{
-						CloseGame("Not enough player");
-					}
+					NotEnoughPlayerCountdownCounting(DeltaSeconds);
 				}
 				else
 				{
@@ -539,6 +533,16 @@ void AAccelByteWarsGameModeBase::AssignTeamManually(int32& InOutTeamId) const
 	}
 }
 
+void AAccelByteWarsGameModeBase::NotEnoughPlayerCountdownCounting(const float& DeltaSeconds) const
+{
+	// start NotEnoughPlayerCountdown to trigger server shutdown
+	ByteWarsGameState->NotEnoughPlayerCountdown -= DeltaSeconds;
+	if (ByteWarsGameState->NotEnoughPlayerCountdown <= 0)
+	{
+		CloseGame("Not enough player");
+	}
+}
+
 FUniqueNetIdRepl AAccelByteWarsGameModeBase::GetPlayerUniqueNetId(const APlayerController* PlayerController)
 {
 	FUniqueNetIdRepl NetId;
@@ -614,7 +618,7 @@ void AAccelByteWarsGameModeBase::SetupShutdownCountdownsValue() const
 
 void AAccelByteWarsGameModeBase::CloseGame(const FString& Reason) const
 {
-	GAMEMODE_LOG(Log, TEXT("Unregistering or shutting down server with reason: %s."), *Reason);
+	GAMEMODE_LOG(Warning, TEXT("Unregistering or shutting down server with reason: %s."), *Reason);
 
 	AAccelByteWarsGameSession* Session = Cast<AAccelByteWarsGameSession>(GameSession);
 	if (!Session)

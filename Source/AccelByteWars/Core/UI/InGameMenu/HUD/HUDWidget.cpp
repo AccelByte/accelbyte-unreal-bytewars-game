@@ -18,7 +18,7 @@ void UHUDWidget::NativeConstruct()
 	// setup pre game countdown
 	Widget_PreGameCountdown->SetupWidget(
 		FText::FromString("Waiting for all players"),
-		FText::FromString("Starting Game"));
+		FText::FromString("Game Started"));
 	Widget_PreGameCountdown->CheckCountdownStateDelegate.BindUObject(this, &ThisClass::SetPreGameCountdownState);
 	Widget_PreGameCountdown->UpdateCountdownValueDelegate.BindUObject(this, &ThisClass::UpdatePreGameCountdownValue);
 	OnPreGameCountdownFinishedDelegateHandle =
@@ -28,7 +28,7 @@ void UHUDWidget::NativeConstruct()
 	Widget_NotEnoughPlayerCountdown->SetupWidget(
 		FText::FromString(""),
 		FText::FromString(""),
-		FText::FromString("Not enough players | Shutting down in: "),
+		FText::FromString("Not enough players | Shutting down DS in: "),
 		true);
 	Widget_NotEnoughPlayerCountdown->CheckCountdownStateDelegate.BindUObject(this, &ThisClass::SetNotEnoughPlayerCountdownState);
 	Widget_NotEnoughPlayerCountdown->UpdateCountdownValueDelegate.BindUObject(this, &ThisClass::UpdateNotEnoughPlayerCountdownValue);
@@ -152,14 +152,8 @@ ECountdownState UHUDWidget::SetPreGameCountdownState() const
 	case EGameStatus::GAME_STARTED:
 		State = ECountdownState::POST;
 		break;
-	case EGameStatus::GAME_ENDS:
-		State = ECountdownState::POST;
-		break;
-	case EGameStatus::INVALID:
-		State = ECountdownState::POST;
-		break;
 	default:
-		State = ECountdownState::POST;
+		State = ECountdownState::INVALID;
 	}
 	return State;
 }
