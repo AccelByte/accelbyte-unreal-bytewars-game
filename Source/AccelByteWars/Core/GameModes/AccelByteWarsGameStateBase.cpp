@@ -19,6 +19,8 @@ void AAccelByteWarsGameStateBase::GetLifetimeReplicatedProps(TArray<FLifetimePro
 	DOREPLIFETIME(AAccelByteWarsGameStateBase, GameStatus);
 	DOREPLIFETIME(AAccelByteWarsGameStateBase, Teams);
 	DOREPLIFETIME(AAccelByteWarsGameStateBase, PreGameCountdown);
+	DOREPLIFETIME(AAccelByteWarsGameStateBase, PostGameCountdown);
+	DOREPLIFETIME(AAccelByteWarsGameStateBase, NotEnoughPlayerCountdown);
 }
 
 void AAccelByteWarsGameStateBase::EndPlay(const EEndPlayReason::Type EndPlayReason)

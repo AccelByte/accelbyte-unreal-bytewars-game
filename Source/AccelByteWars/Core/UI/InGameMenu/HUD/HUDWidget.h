@@ -17,6 +17,7 @@ class ACCELBYTEWARS_API UHUDWidget : public UAccelByteWarsActivatableWidget
 	GENERATED_BODY()
 
 	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 
 public:
 	/**
@@ -60,17 +61,32 @@ private:
 	UHUDWidgetEntry* Widget_HUDNameValueTimer;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UCountdownWidget* Widget_Countdown;
+	UCountdownWidget* Widget_PreGameCountdown;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UCountdownWidget* Widget_NotEnoughPlayerCountdown;
 
 	UPROPERTY()
 	AAccelByteWarsGameStateBase* ByteWarsGameState;
 
 	UFUNCTION()
-	ECountdownState SetCountdownState();
+	ECountdownState SetPreGameCountdownState() const;
 
 	UFUNCTION()
-	int UpdateCountdownValue();
+	int UpdatePreGameCountdownValue() const;
 
 	UFUNCTION()
-	void OnCountdownFinished();
+	void OnPreGameCountdownFinished();
+
+	UFUNCTION()
+	ECountdownState SetNotEnoughPlayerCountdownState() const;
+
+	UFUNCTION()
+	int UpdateNotEnoughPlayerCountdownValue() const;
+
+	UFUNCTION()
+	void OnNotEnoughPlayerCountdownFinished();
+
+	FDelegateHandle OnPreGameCountdownFinishedDelegateHandle;
+	FDelegateHandle OnNotEnoughPlayerCountdownFinishedDelegateHandle;
 };

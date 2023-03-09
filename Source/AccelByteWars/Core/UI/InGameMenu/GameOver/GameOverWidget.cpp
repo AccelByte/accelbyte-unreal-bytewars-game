@@ -8,6 +8,8 @@
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "CommonButtonBase.h"
+#include "Core/GameModes/AccelByteWarsGameStateBase.h"
+#include "Kismet/KismetMathLibrary.h"
 
 void UGameOverWidget::SetWinner(const FText& PlayerName, const FLinearColor& Color)
 {
@@ -26,15 +28,35 @@ void UGameOverWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
+	ByteWarsGameState = GetWorld()->GetGameState<AAccelByteWarsGameStateBase>();
+
 	// if on server, disable play again button
-	Btn_PlayAgain->SetVisibility(
-		GetOwningPlayer()->HasAuthority() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	if (GetOwningPlayer()->HasAuthority())
+	{
+		Btn_PlayAgain->SetVisibility(ESlateVisibility::Visible);
+		Widget_Countdown->SetVisibility(ESlateVisibility::Hidden);
+	}
+	else
+	{
+		// on server
+		Btn_PlayAgain->SetVisibility(ESlateVisibility::Collapsed);
+		Widget_Countdown->SetVisibility(ESlateVisibility::Visible);
+	}
 
 	// Bind buttons click event.
 	Btn_PlayAgain->OnClicked().AddUObject(this, &UGameOverWidget::PlayGameAgain);
 	Btn_Quit->OnClicked().AddUObject(this, &UGameOverWidget::QuitGame);
 
 	SetInputModeToUIOnly();
+
+	// countdown setup
+	Widget_Countdown->SetupWidget(
+		FText::FromString(""),
+		FText::FromString(""),
+		FText::FromString("Quitting in:"));
+	Widget_Countdown->CheckCountdownStateDelegate.BindUObject(this, &ThisClass::GetCountdownState);
+	Widget_Countdown->UpdateCountdownValueDelegate.BindUObject(this, &ThisClass::GetCountdownValue);
+	Widget_Countdown->OnCountdownFinishedDelegate.AddUObject(this, &ThisClass::OnCountdownFinished);
 }
 
 void UGameOverWidget::NativeOnDeactivated()
@@ -56,4 +78,30 @@ void UGameOverWidget::QuitGame()
 {
 	OnExitLevel();
 	UGameplayStatics::OpenLevel(GetWorld(), TEXT("MainMenu"));
+}
+
+ECountdownState UGameOverWidget::GetCountdownState()
+{
+	ECountdownState CountdownState;
+	switch (ByteWarsGameState->GameStatus)
+	{
+	case EGameStatus::GAME_ENDS:
+		CountdownState = ECountdownState::COUNTING;
+		break;
+	case EGameStatus::INVALID:
+		CountdownState = ECountdownState::POST;
+		break;
+	default:
+		CountdownState = ECountdownState::PRE;;
+	}
+	return CountdownState;
+}
+
+int UGameOverWidget::GetCountdownValue()
+{
+	return UKismetMathLibrary::FFloor(ByteWarsGameState->PostGameCountdown);
+}
+
+void UGameOverWidget::OnCountdownFinished()
+{
 }

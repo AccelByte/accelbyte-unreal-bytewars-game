@@ -30,6 +30,7 @@ void UCountdownWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 			WidgetSwitcher_Root->SetActiveWidget(Text_PreCountdown);
 			break;
 		case ECountdownState::COUNTING:
+			ChangeWidgetVisibility(true);
 			WidgetSwitcher_Root->SetActiveWidget(Panel_Countdown);
 			if (UpdateCountdownValueDelegate.IsBound())
 			{
@@ -44,6 +45,9 @@ void UCountdownWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 			OnCountdownFinishedDelegate.Broadcast();
 			CollapseWidgetWithTimer();
 			break;
+		case ECountdownState::INVALID:
+			ChangeWidgetVisibility(false);
+			break;
 		default: ;
 		}
 	}
@@ -57,7 +61,7 @@ void UCountdownWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 			if (ClosingElapsed >= ClosingDuration)
 			{
 				// tick wont be executed on a collapsed widget
-				SetVisibility(ESlateVisibility::Collapsed);
+				ChangeWidgetVisibility(false);
 			}
 		}
 	}
@@ -73,8 +77,11 @@ void UCountdownWidget::NativeOnActivated()
 void UCountdownWidget::SetupWidget(
 	const FText PreCountdownText,
 	const FText PostCountdownText,
-	const FText CountdownText) const
+	const FText CountdownText,
+	const bool bInForceTick)
 {
+	bForceTick = bInForceTick;
+
 	Text_PreCountdown->SetText(PreCountdownText);
 	Text_PostCountdown->SetText(PostCountdownText);
 	Text_CountdownDescription->SetText(CountdownText);
@@ -97,5 +104,18 @@ void UCountdownWidget::CollapseWidgetWithTimer()
 			1.0f,
 			false,
 			1.0f);
+	}
+}
+
+void UCountdownWidget::ChangeWidgetVisibility(const bool bVisible)
+{
+	const ESlateVisibility TargetVisibility = bVisible ? ESlateVisibility::Visible : ESlateVisibility::Collapsed;
+	if (bForceTick)
+	{
+		Widget_Outer->SetVisibility(TargetVisibility);
+	}
+	else
+	{
+		SetVisibility(TargetVisibility);
 	}
 }

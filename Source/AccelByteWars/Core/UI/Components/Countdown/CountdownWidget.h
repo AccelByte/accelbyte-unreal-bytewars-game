@@ -13,7 +13,8 @@ enum class ECountdownState : uint8
 {
 	PRE = 0,
 	COUNTING,
-	POST
+	POST,
+	INVALID
 };
 
 DECLARE_DELEGATE_RetVal(ECountdownState, FCheckCountdownState);
@@ -42,8 +43,13 @@ public:
 	 * @param PreCountdownText Text displayed before the counting happened
 	 * @param PostCountdownText Text displayed after the counting finished
 	 * @param CountdownText Text displayed when the counting happened | set this to empty will collapsed this text
+	 * @param bInForceTick If true, tick will still be called even when counting state is POST.
 	 */
-	void SetupWidget(const FText PreCountdownText, const FText PostCountdownText, const FText CountdownText = FText()) const;
+	void SetupWidget(
+		const FText PreCountdownText,
+		const FText PostCountdownText,
+		const FText CountdownText = FText(),
+		const bool bInForceTick = false);
 
 	/**
 	 * @brief Called on tick to determine current countdown state
@@ -63,6 +69,9 @@ public:
 	FOnCountdownFinished OnCountdownFinishedDelegate;
 
 private:
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UWidget* Widget_Outer;
+
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UWidgetSwitcher* WidgetSwitcher_Root;
 
@@ -85,10 +94,12 @@ private:
 	AAccelByteWarsGameStateBase* ByteWarsGameState;
 
 	void CollapseWidgetWithTimer();
+	void ChangeWidgetVisibility(const bool bVisible);
 
 	FTimerHandle CollapseWidgetTimer;
 	const float ClosingDuration = 1.0f;
 	float ClosingElapsed = 0.0f;
 	bool bHasFinished = false;
 	bool bClosing = false;
+	bool bForceTick = false;
 };

@@ -10,6 +10,7 @@
 #include "Core/System/AccelByteWarsGameSession.h"
 #include "GameFramework/GameSession.h"
 #include "GameFramework/PlayerState.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 DEFINE_LOG_CATEGORY(LogAccelByteWarsGameMode);
 
@@ -71,31 +72,7 @@ void AAccelByteWarsGameModeBase::BeginPlay()
 #if UE_SERVER || UE_EDITOR
 	if (IsRunningDedicatedServer() && bIsGameplayLevel)
 	{
-		// get specified ShutdownOnFinishedDelay timer value
-		FString ShutdownOnFinishedDelayString = "30";
-		FParse::Value(FCommandLine::Get(), TEXT("-ShutdownOnFinishedDelay="), ShutdownOnFinishedDelayString);
-		ShutdownOnFinishedDelay = FCString::Atoi(*ShutdownOnFinishedDelayString);
-
-		// get specified ShutdownOnOneTeamOrLessDelay timer value
-		FString ShutdownOnOneTeamOrLessDelayString = "30";
-		FParse::Value(FCommandLine::Get(), TEXT("-ShutdownOnOneTeamOrLessDelay="), ShutdownOnOneTeamOrLessDelayString);
-		ShutdownOnOneTeamOrLessDelay = FCString::Atoi(*ShutdownOnOneTeamOrLessDelayString);
-
-		ShutdownDelegate = FTimerDelegate::CreateWeakLambda(this, [this]()
-		{
-			GAMEMODE_LOG(Log, TEXT("Unregistering server."));
-
-			AAccelByteWarsGameSession* Session = Cast<AAccelByteWarsGameSession>(GameSession);
-			if (!Session)
-			{
-				GAMEMODE_LOG(Warning, TEXT("Cannot unregister server, the game session is null."));
-				FPlatformMisc::RequestExit(false);
-				return;
-			}
-
-			// Unregister the server.
-			Session->UnregisterServer();
-		});
+		SetupShutdownCountdownsValue();
 	}
 #endif
 #pragma endregion 
@@ -137,90 +114,92 @@ void AAccelByteWarsGameModeBase::Tick(float DeltaSeconds)
 	}
 #pragma endregion
 
-#pragma region "Pre-game countdown implementation"
-	if (ByteWarsGameState->GameStatus <= EGameStatus::AWAITING_PLAYERS)
+#pragma region "Pre-game countdown and server shutdown implementation"
+	if (bIsGameplayLevel)
 	{
-		// check whether all players have logged in or not
-		if (GameState->PlayerArray.Num() == ByteWarsGameState->GetRegisteredPlayersNum())
+		switch (ByteWarsGameState->GameStatus)
 		{
-			// start countdown
-			ByteWarsGameState->GameStatus = EGameStatus::PRE_GAME_COUNTDOWN_STARTED;
-		}
-	}
-	else if (ByteWarsGameState->GameStatus == EGameStatus::PRE_GAME_COUNTDOWN_STARTED)
-	{
-		// check if countdown finished
-		if (ByteWarsGameState->PreGameCountdown <= 0)
-		{
-			// finish countdown
-			StartGame();
-			ByteWarsGameState->GameStatus = EGameStatus::GAME_STARTED;
-		}
-		// update countdown
-		ByteWarsGameState->PreGameCountdown -= DeltaSeconds;
-	}
-#pragma endregion 
-
-#pragma region "Server Shutdown Implementation"
-#if UE_SERVER || UE_EDITOR
-	if (IsRunningDedicatedServer() && bIsGameplayLevel)
-	{
-		// OnFinished
-		if (!GetWorldTimerManager().IsTimerActive(OnFinishedTimer))
-		{
-			if (ByteWarsGameState->GameStatus == EGameStatus::GAME_ENDS)
+		case EGameStatus::IDLE:
+		case EGameStatus::AWAITING_PLAYERS:
+			if (CheckIfAllPlayersIsInOneTeam())
 			{
-				GetWorldTimerManager().SetTimer(
-					OnFinishedTimer,
-					ShutdownDelegate,
-					ShutdownOnFinishedDelay,
-					false,
-					ShutdownOnFinishedDelay);
-				GAMEMODE_LOG(Log, TEXT("OnFinishedTimer started. Game will close in %d seconds"), ShutdownOnFinishedDelay);
-			}
-		}
-
-		// OnOneTeamOrLess
-		if (!GetWorldTimerManager().IsTimerActive(OnOneTeamOrLessTimer))
-		{
-			// check currently connected player TeamId
-			int32 TeamId = INDEX_NONE;
-			bool bOneTeamConnected = true;
-
-			// check if all player in the same team or if there's no player at all
-			for (const TObjectPtr<APlayerState> Player : GameState->PlayerArray)
-			{
-				if (const AAccelByteWarsPlayerState* ByteWarsPlayerState =
-					static_cast<const AAccelByteWarsPlayerState*>(Player))
+				if (IsRunningDedicatedServer())
 				{
-					if (TeamId == INDEX_NONE)
+					// start NotEnoughPlayerCountdown to trigger server shutdown
+					ByteWarsGameState->NotEnoughPlayerCountdown -= DeltaSeconds;
+					if (ByteWarsGameState->NotEnoughPlayerCountdown <= 0)
 					{
-						TeamId = ByteWarsPlayerState->TeamId;
-						continue;
-					}
-					if (TeamId != ByteWarsPlayerState->TeamId)
-					{
-						bOneTeamConnected = false;
-						break;
+						CloseGame("Not enough player");
 					}
 				}
 			}
-
-			// trigger timer based on above condition
-			if (bOneTeamConnected)
+			else
 			{
-				GetWorldTimerManager().SetTimer(
-					OnOneTeamOrLessTimer,
-					ShutdownDelegate,
-					ShutdownOnOneTeamOrLessDelay,
-					false,
-					ShutdownOnOneTeamOrLessDelay);
-				GAMEMODE_LOG(Log, TEXT("OnOnTeamOrLessTimer started. Game will close in %d seconds unless new player logs in"),
-					ShutdownOnOneTeamOrLessDelay);
+				if (IsRunningDedicatedServer())
+				{
+					// reset NotEnoughPlayerCountdown
+					SetupShutdownCountdownsValue();
+				}
+
+				// check if all registered players have re-enter the server
+				if (ByteWarsGameState->PlayerArray.Num() == ByteWarsGameState->GetRegisteredPlayersNum())
+				{
+					ByteWarsGameState->GameStatus = EGameStatus::PRE_GAME_COUNTDOWN_STARTED;
+				}
 			}
+			break;
+		case EGameStatus::PRE_GAME_COUNTDOWN_STARTED:
+			ByteWarsGameState->PreGameCountdown -= DeltaSeconds;
+			if (ByteWarsGameState->PreGameCountdown <= 0)
+			{
+				ByteWarsGameState->GameStatus = EGameStatus::GAME_STARTED;
+				StartGame();
+			}
+			break;
+		case EGameStatus::AWAITING_PLAYERS_MID_GAME:
+			if (IsRunningDedicatedServer())
+			{
+				if (CheckIfAllPlayersIsInOneTeam())
+				{
+					// start NotEnoughPlayerCountdown to trigger server shutdown
+					ByteWarsGameState->NotEnoughPlayerCountdown -= DeltaSeconds;
+					if (ByteWarsGameState->NotEnoughPlayerCountdown <= 0)
+					{
+						CloseGame("Not enough player");
+					}
+				}
+				else
+				{
+					ByteWarsGameState->GameStatus = EGameStatus::GAME_STARTED;
+					SetupShutdownCountdownsValue();
+				}
+			}
+			break;
+		case EGameStatus::GAME_STARTED:
+			if (IsRunningDedicatedServer())
+			{
+				if (CheckIfAllPlayersIsInOneTeam())
+				{
+					ByteWarsGameState->GameStatus = EGameStatus::AWAITING_PLAYERS_MID_GAME;
+				}
+			}
+			break;
+		case EGameStatus::GAME_ENDS:
+			if (IsRunningDedicatedServer())
+			{
+				ByteWarsGameState->PostGameCountdown -= DeltaSeconds;
+				if (ByteWarsGameState->PostGameCountdown <= 0)
+				{
+					ByteWarsGameState->GameStatus = EGameStatus::INVALID;
+					CloseGame("Game finished");
+				}
+			}
+			break;
+		case EGameStatus::INVALID:
+			break;
+		default: ;
 		}
 	}
-#endif
 #pragma endregion 
 }
 
@@ -244,13 +223,8 @@ APlayerController* AAccelByteWarsGameModeBase::Login(
 #if UE_SERVER || UE_EDITOR
 	if (IsRunningDedicatedServer())
 	{
-		if (bIsGameplayLevel && GetWorldTimerManager().IsTimerActive(OnOneTeamOrLessTimer))
-		{
-			GetWorldTimerManager().ClearTimer(OnOneTeamOrLessTimer);
-			GAMEMODE_LOG(Log, TEXT("Player logs in, OnOneTeamOrLessTimer cleared"));
-		}
 		// Start lobby countdown.
-		else if (!bIsGameplayLevel && ByteWarsGameState->LobbyStatus == ELobbyStatus::IDLE)
+		if (!bIsGameplayLevel && ByteWarsGameState->LobbyStatus == ELobbyStatus::IDLE)
 		{
 			ByteWarsGameState->LobbyStatus = ELobbyStatus::LOBBY_COUNTDOWN_STARTED;
 		}
@@ -270,7 +244,6 @@ void AAccelByteWarsGameModeBase::PostLogin(APlayerController* NewPlayer)
 		if (PlayerState->bShouldKick)
 		{
 			GameSession->KickPlayer(NewPlayer, FText::FromString("Max player reached"));
-
 			GAMEMODE_LOG(Warning, TEXT("Player did not registered in Teams data. Max registered players reached. Kicking this player"));
 		}
 	}
@@ -524,6 +497,13 @@ bool AAccelByteWarsGameModeBase::RemovePlayer(const APlayerController* PlayerCon
 	return ByteWarsGameState->RemovePlayerFromTeam(PlayerUniqueId, ControllerId);
 }
 
+void AAccelByteWarsGameModeBase::EndGame(const FString Reason)
+{
+	GameEndedTime = UKismetSystemLibrary::GetGameTimeInSeconds(GetWorld());
+	ByteWarsGameState->GameStatus = EGameStatus::GAME_ENDS;
+	GAMEMODE_LOG(Log, TEXT("Game ends with reason: %s."), *Reason);
+}
+
 void AAccelByteWarsGameModeBase::AssignTeamManually(int32& InOutTeamId) const
 {
 	switch (ByteWarsGameInstance->GameSetup.GameModeType)
@@ -589,4 +569,61 @@ int32 AAccelByteWarsGameModeBase::GetControllerId(const APlayerState* PlayerStat
 		}
 	}
 	return ControllerId;
+}
+
+bool AAccelByteWarsGameModeBase::CheckIfAllPlayersIsInOneTeam() const
+{
+	// check currently connected player TeamId
+	int32 TeamId = INDEX_NONE;
+	bool bOneTeamConnected = true;
+
+	// check if all player in the same team or if there's no player at all
+	for (const TObjectPtr<APlayerState> Player : GameState->PlayerArray)
+	{
+		if (const AAccelByteWarsPlayerState* ByteWarsPlayerState =
+			static_cast<const AAccelByteWarsPlayerState*>(Player))
+		{
+			if (TeamId == INDEX_NONE)
+			{
+				TeamId = ByteWarsPlayerState->TeamId;
+				continue;
+			}
+			if (TeamId != ByteWarsPlayerState->TeamId)
+			{
+				bOneTeamConnected = false;
+				break;
+			}
+		}
+	}
+
+	return bOneTeamConnected;
+}
+
+void AAccelByteWarsGameModeBase::SetupShutdownCountdownsValue() const
+{
+	// get specified ShutdownOnFinishedDelay timer value
+	FString ShutdownOnFinishedDelayString = "30";
+	FParse::Value(FCommandLine::Get(), TEXT("-ShutdownOnFinishedDelay="), ShutdownOnFinishedDelayString);
+	ByteWarsGameState->PostGameCountdown = FCString::Atoi(*ShutdownOnFinishedDelayString);
+
+	// get specified ShutdownOnOneTeamOrLessDelay timer value
+	FString ShutdownOnOneTeamOrLessDelayString = "30";
+	FParse::Value(FCommandLine::Get(), TEXT("-ShutdownOnOneTeamOrLessDelay="), ShutdownOnOneTeamOrLessDelayString);
+	ByteWarsGameState->NotEnoughPlayerCountdown = FCString::Atoi(*ShutdownOnOneTeamOrLessDelayString);
+}
+
+void AAccelByteWarsGameModeBase::CloseGame(const FString& Reason) const
+{
+	GAMEMODE_LOG(Log, TEXT("Unregistering or shutting down server with reason: %s."), *Reason);
+
+	AAccelByteWarsGameSession* Session = Cast<AAccelByteWarsGameSession>(GameSession);
+	if (!Session)
+	{
+		GAMEMODE_LOG(Warning, TEXT("Cannot unregister server, the game session is null. Shutting down immediately."));
+		FPlatformMisc::RequestExit(false);
+		return;
+	}
+
+	// Unregister the server.
+	Session->UnregisterServer();
 }

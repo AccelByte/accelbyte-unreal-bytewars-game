@@ -6,6 +6,7 @@
 
 #include "CoreMinimal.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
+#include "Core/UI/Components/Countdown/CountdownWidget.h"
 #include "GameOverWidget.generated.h"
 
 class UCommonButtonBase;
@@ -26,8 +27,11 @@ public:
 	void AddLeaderboardEntry(const FText& PlayerName, const int32 PlayerScore, const int32 PlayerKills, const FLinearColor& PlayerColor);
 
 protected:
+
+	//~UUserWidget overriden functions
 	void NativeOnActivated() override;
 	void NativeOnDeactivated() override;
+	//~End of UUserWidget overriden function
 
 	/** NOTE: Since the InGameGameMode is a Blueprint class, therefore it is impossible to call it's ExitLevel event from C++.
 	  * Therefore, this function acts as helper to call InGameGameMode's ExitLevel event from Blueprint.
@@ -53,4 +57,19 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UVerticalBox* Vb_Leaderboard;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UCountdownWidget* Widget_Countdown;
+
+	UFUNCTION()
+	ECountdownState GetCountdownState();
+
+	UFUNCTION()
+	int GetCountdownValue();
+
+	UFUNCTION()
+	void OnCountdownFinished();
+
+	UPROPERTY()
+	AAccelByteWarsGameStateBase* ByteWarsGameState;
 };

@@ -15,13 +15,33 @@ void UHUDWidget::NativeConstruct()
 
 	ByteWarsGameState = GetWorld()->GetGameState<AAccelByteWarsGameStateBase>();
 
-	// setup countdown
-	Widget_Countdown->SetupWidget(
+	// setup pre game countdown
+	Widget_PreGameCountdown->SetupWidget(
 		FText::FromString("Waiting for all players"),
 		FText::FromString("Starting Game"));
-	Widget_Countdown->CheckCountdownStateDelegate.BindUObject(this, &ThisClass::SetCountdownState);
-	Widget_Countdown->UpdateCountdownValueDelegate.BindUObject(this, &ThisClass::UpdateCountdownValue);
-	Widget_Countdown->OnCountdownFinishedDelegate.AddUObject(this, &ThisClass::OnCountdownFinished);
+	Widget_PreGameCountdown->CheckCountdownStateDelegate.BindUObject(this, &ThisClass::SetPreGameCountdownState);
+	Widget_PreGameCountdown->UpdateCountdownValueDelegate.BindUObject(this, &ThisClass::UpdatePreGameCountdownValue);
+	OnPreGameCountdownFinishedDelegateHandle =
+		Widget_PreGameCountdown->OnCountdownFinishedDelegate.AddUObject(this, &ThisClass::OnPreGameCountdownFinished);
+
+	// setup not enough player countdown
+	Widget_NotEnoughPlayerCountdown->SetupWidget(
+		FText::FromString(""),
+		FText::FromString(""),
+		FText::FromString("Not enough players | Shutting down in: "),
+		true);
+	Widget_NotEnoughPlayerCountdown->CheckCountdownStateDelegate.BindUObject(this, &ThisClass::SetNotEnoughPlayerCountdownState);
+	Widget_NotEnoughPlayerCountdown->UpdateCountdownValueDelegate.BindUObject(this, &ThisClass::UpdateNotEnoughPlayerCountdownValue);
+	OnNotEnoughPlayerCountdownFinishedDelegateHandle =
+		Widget_NotEnoughPlayerCountdown->OnCountdownFinishedDelegate.AddUObject(this, &ThisClass::OnNotEnoughPlayerCountdownFinished);
+}
+
+void UHUDWidget::NativeDestruct()
+{
+	Super::NativeDestruct();
+
+	Widget_PreGameCountdown->OnCountdownFinishedDelegate.Remove(OnPreGameCountdownFinishedDelegateHandle);
+	Widget_NotEnoughPlayerCountdown->OnCountdownFinishedDelegate.Remove(OnNotEnoughPlayerCountdownFinishedDelegateHandle);
 }
 
 void UHUDWidget::SetValue(const FString Value, const int32 Index, const int32 BoxIndex)
@@ -115,7 +135,7 @@ void UHUDWidget::SetTimerValue(const float TimeLeft)
 	Widget_HUDNameValueTimer->Text_Value_Middle->SetText(Text);
 }
 
-ECountdownState UHUDWidget::SetCountdownState()
+ECountdownState UHUDWidget::SetPreGameCountdownState() const
 {
 	ECountdownState State;
 	switch (ByteWarsGameState->GameStatus)
@@ -144,11 +164,35 @@ ECountdownState UHUDWidget::SetCountdownState()
 	return State;
 }
 
-int UHUDWidget::UpdateCountdownValue()
+int UHUDWidget::UpdatePreGameCountdownValue() const
 {
 	return UKismetMathLibrary::FFloor(ByteWarsGameState->PreGameCountdown);
 }
 
-void UHUDWidget::OnCountdownFinished()
+void UHUDWidget::OnPreGameCountdownFinished()
+{
+}
+
+ECountdownState UHUDWidget::SetNotEnoughPlayerCountdownState() const
+{
+	ECountdownState State;
+	switch (ByteWarsGameState->GameStatus)
+	{
+	case EGameStatus::AWAITING_PLAYERS:
+	case EGameStatus::AWAITING_PLAYERS_MID_GAME:
+		State = ECountdownState::COUNTING;
+		break;
+	default:
+		State = ECountdownState::INVALID;
+	}
+	return State;
+}
+
+int UHUDWidget::UpdateNotEnoughPlayerCountdownValue() const
+{
+	return UKismetMathLibrary::FFloor(ByteWarsGameState->NotEnoughPlayerCountdown);
+}
+
+void UHUDWidget::OnNotEnoughPlayerCountdownFinished()
 {
 }
