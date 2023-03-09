@@ -63,6 +63,9 @@ void ULoginWidget::SetLoginState(const ELoginState NewState)
 		case ELoginState::Failed:
 			Btn_RetryLogin->SetUserFocus(GetOwningPlayer());
 			break;
+		default:
+			Btn_LoginWithDeviceId->SetUserFocus(GetOwningPlayer());
+			break;
 	}
 }
 
