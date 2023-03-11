@@ -8,22 +8,19 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "OnlineIdentityInterfaceAccelByte.h"
 #include "AuthEssentialsLog.h"
-#include "AuthEssentialsSubsystem.generated.h"
+#include "AuthEssentialsSubsystem_ModuleStarter.generated.h"
 
-DECLARE_MULTICAST_DELEGATE_TwoParams(FAuthOnLoginComplete, bool /*bWasSuccessful*/, const FString& /*ErrorMessage*/);
-typedef FAuthOnLoginComplete::FDelegate FAuthOnLoginCompleteDelegate;
+DECLARE_MULTICAST_DELEGATE_TwoParams(FAuthOnLoginComplete_ModuleStarter, bool /*bWasSuccessful*/, const FString& /*ErrorMessage*/);
+typedef FAuthOnLoginComplete_ModuleStarter::FDelegate FAuthOnLoginCompleteDelegate_ModuleStarter;
 
 UCLASS()
-class ACCELBYTEWARS_API UAuthEssentialsSubsystem : public UGameInstanceSubsystem
+class ACCELBYTEWARS_API UAuthEssentialsSubsystem_ModuleStarter : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
 
 public:
 	void Initialize(FSubsystemCollectionBase& Collection) override;
 	void Deinitialize() override;
-
-	/** Login user using specified login method */
-	void Login(EAccelByteLoginType LoginMethod, const APlayerController* PC, const FAuthOnLoginCompleteDelegate& OnLoginComplete);
 
 	/** Set auth credentials for id/username and token/password. It meant to be used for AccelByte login method.
 	 * @param Id Identity of the user logging in (email, display name, facebook id, etc).
@@ -38,8 +35,6 @@ public:
 	void ClearAuthCredentials(bool bAlsoResetType = false);
 
 protected:
-	void OnLoginComplete(int32 LocalUserNum, bool bLoginWasSuccessful, const FUniqueNetId& UserId, const FString& LoginError, const FAuthOnLoginCompleteDelegate OnLoginComplete);
-
 	FOnlineIdentityAccelBytePtr IdentityInterface;
 	FOnlineAccountCredentials Credentials;
 };

@@ -2,7 +2,7 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-#include "TutorialModules/Module-2/UI/LoginWidget_ModuleStart.h"
+#include "TutorialModules/Module-2/UI/LoginWidget_ModuleStarter.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
@@ -15,7 +15,7 @@
 
 #define LOCTEXT_NAMESPACE "AccelByteWars"
 
-void ULoginWidget_ModuleStart::NativeConstruct()
+void ULoginWidget_ModuleStarter::NativeConstruct()
 {
 	Super::NativeConstruct();
 
@@ -26,18 +26,18 @@ void ULoginWidget_ModuleStart::NativeConstruct()
 	ensure(PromptSubsystem);
 }
 
-void ULoginWidget_ModuleStart::NativeOnActivated()
+void ULoginWidget_ModuleStarter::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
-	Btn_LoginWithDeviceId->OnClicked().AddUObject(this, &ULoginWidget_ModuleStart::OnLoginWithDeviceIdButtonClicked);
-	Btn_RetryLogin->OnClicked().AddUObject(this, &ULoginWidget_ModuleStart::OnRetryLoginButtonClicked);
-	Btn_QuitGame->OnClicked().AddUObject(this, &ULoginWidget_ModuleStart::OnQuitGameButtonClicked);
+	Btn_LoginWithDeviceId->OnClicked().AddUObject(this, &ULoginWidget_ModuleStarter::OnLoginWithDeviceIdButtonClicked);
+	Btn_RetryLogin->OnClicked().AddUObject(this, &ULoginWidget_ModuleStarter::OnRetryLoginButtonClicked);
+	Btn_QuitGame->OnClicked().AddUObject(this, &ULoginWidget_ModuleStarter::OnQuitGameButtonClicked);
 
 	SetLoginState(ELoginState::Default);
 }
 
-void ULoginWidget_ModuleStart::NativeOnDeactivated()
+void ULoginWidget_ModuleStarter::NativeOnDeactivated()
 {
 	Super::NativeOnDeactivated();
 
@@ -46,7 +46,7 @@ void ULoginWidget_ModuleStart::NativeOnDeactivated()
 	Btn_QuitGame->OnClicked().RemoveAll(this);
 }
 
-void ULoginWidget_ModuleStart::SetLoginState(const ELoginState NewState)
+void ULoginWidget_ModuleStarter::SetLoginState(const ELoginState NewState)
 {
 	Ws_LoginState->SetActiveWidgetIndex((int)NewState);
 
@@ -64,24 +64,26 @@ void ULoginWidget_ModuleStart::SetLoginState(const ELoginState NewState)
 	}
 }
 
-void ULoginWidget_ModuleStart::OnLoginWithDeviceIdButtonClicked()
+void ULoginWidget_ModuleStarter::OnLoginWithDeviceIdButtonClicked()
 {
 	// TODO (TutorialModule): call login with device id.
 	
 	UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("Please integrate AcceByte Online Subsystem to access AccelByte Game Services."));
 }
 
-void ULoginWidget_ModuleStart::OnRetryLoginButtonClicked()
+void ULoginWidget_ModuleStarter::OnRetryLoginButtonClicked()
 {
 	// TODO (TutorialModule): call login with latest login method used
+
+	UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("Please integrate AcceByte Online Subsystem to access AccelByte Game Services."));
 }
 
-void ULoginWidget_ModuleStart::OnQuitGameButtonClicked()
+void ULoginWidget_ModuleStarter::OnQuitGameButtonClicked()
 {
 	QuitGame();
 }
 
-void ULoginWidget_ModuleStart::QuitGame()
+void ULoginWidget_ModuleStarter::QuitGame()
 {
 	ensure(PromptSubsystem);
 

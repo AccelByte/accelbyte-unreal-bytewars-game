@@ -55,35 +55,12 @@ void UAuthEssentialsSubsystem::Login(EAccelByteLoginType LoginMethod, const APla
             break;
     }
 
-    int32 LocalUserNum = GetLocalUserNum(PC);
+    const ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
+    ensure(LocalPlayer != nullptr);
+    int32 LocalUserNum = LocalPlayer->GetControllerId();
+    
     IdentityInterface->AddOnLoginCompleteDelegate_Handle(LocalUserNum, FOnLoginCompleteDelegate::CreateUObject(this, &UAuthEssentialsSubsystem::OnLoginComplete, OnLoginComplete));
     IdentityInterface->Login(LocalUserNum, Credentials);
-}
-
-void UAuthEssentialsSubsystem::Logout(const APlayerController* PC, const FAuthOnLogoutCompleteDelegate& OnLogoutComplete)
-{
-    if (!ensure(IdentityInterface.IsValid())) 
-    {
-        UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("Cannot logout. Identiy interface is not valid."));
-        OnLogoutComplete.ExecuteIfBound(false);
-        return;
-    }
-
-    int32 LocalUserNum = GetLocalUserNum(PC);
-    IdentityInterface->AddOnLogoutCompleteDelegate_Handle(LocalUserNum, FOnLogoutCompleteDelegate::CreateUObject(this, &UAuthEssentialsSubsystem::OnLogoutComplete, OnLogoutComplete));
-    IdentityInterface->Logout(LocalUserNum);
-}
-
-bool UAuthEssentialsSubsystem::IsLoggedIn(const APlayerController* PC)
-{
-    if (!ensure(IdentityInterface.IsValid()))
-    {
-        UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("Cannot get login status. Identiy interface is not valid."));
-        return ELoginStatus::Type::NotLoggedIn;
-    }
-
-    ELoginStatus::Type Status = IdentityInterface->GetLoginStatus(GetLocalUserNum(PC));
-    return Status == ELoginStatus::Type::LoggedIn;
 }
 
 void UAuthEssentialsSubsystem::SetAuthCredentials(const FString& Id, const FString& Token) 
@@ -116,27 +93,4 @@ void UAuthEssentialsSubsystem::OnLoginComplete(int32 LocalUserNum, bool bLoginWa
 
     IdentityInterface->ClearOnLoginCompleteDelegates(LocalUserNum, this);
     OnLoginComplete.ExecuteIfBound(bLoginWasSuccessful, LoginError);
-}
-
-void UAuthEssentialsSubsystem::OnLogoutComplete(int32 LocalUserNum, bool bLogoutWasSuccessful, const FAuthOnLogoutCompleteDelegate OnLogoutComplete)
-{
-    if (bLogoutWasSuccessful)
-    {
-        UE_LOG_AUTH_ESSENTIALS(Log, TEXT("Logout user is successful."));
-    }
-    else
-    {
-        UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("Logout user failed."));
-    }
-
-    IdentityInterface->ClearOnLogoutCompleteDelegates(LocalUserNum, this);
-    OnLogoutComplete.ExecuteIfBound(bLogoutWasSuccessful);
-}
-
-int32 UAuthEssentialsSubsystem::GetLocalUserNum(const APlayerController* PC)
-{
-    const ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
-    ensure(LocalPlayer != nullptr);
-
-    return LocalPlayer->GetControllerId();
 }
