@@ -8,7 +8,7 @@
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
 #include "TutorialModules/Module-2/AuthEssentialsSubsystem.h"
 #include "TutorialModules/Module-2/AuthEssentialsModels.h"
-#include "LoginWidget_ModuleStart.generated.h"
+#include "LoginWidget_ModuleStarter.generated.h"
 
 class UWidgetSwitcher;
 class UCommonButtonBase;
@@ -17,7 +17,7 @@ class UAccelByteWarsGameInstance;
 class UPromptSubsystem;
 
 UCLASS()
-class ACCELBYTEWARS_API ULoginWidget_ModuleStart : public UAccelByteWarsActivatableWidget
+class ACCELBYTEWARS_API ULoginWidget_ModuleStarter : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
 			
