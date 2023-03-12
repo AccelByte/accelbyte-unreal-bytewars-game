@@ -8,7 +8,10 @@ void AAccelByteWarsGameSession::RegisterServer()
 {
 	Super::RegisterServer();
 
-	OnRegisterServerDelegate.ExecuteIfBound(SessionName);
+	if (OnRegisterServerDelegate.IsBound())
+	{
+		OnRegisterServerDelegate.Broadcast(SessionName);
+	}
 }
 
 void AAccelByteWarsGameSession::UnregisterServer()
@@ -16,7 +19,7 @@ void AAccelByteWarsGameSession::UnregisterServer()
 	// Gracefully unregister and shut down server. Used for AMS DS.
 	if (OnUnregisterServerDelegate.IsBound()) 
 	{
-		OnUnregisterServerDelegate.ExecuteIfBound(SessionName);
+		OnUnregisterServerDelegate.Broadcast(SessionName);
 	}
 	// Shut down server immediately without unregistering the server. Used for non-AMS DS.
 	else 

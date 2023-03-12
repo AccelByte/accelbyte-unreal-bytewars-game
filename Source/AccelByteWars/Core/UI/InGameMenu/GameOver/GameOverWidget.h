@@ -17,7 +17,7 @@ class UGameOverLeaderboardEntry;
 class UAccelByteWarsGameInstance;
 class AAccelByteWarsGameStateBase;
 
-DECLARE_DELEGATE_TwoParams(FOnGenerateGameOverLeaderboard, TArray<FUniqueNetIdPtr> /*PlayerUniqueNetIds*/, TArray<UGameOverLeaderboardEntry*> /*PlayerLeaderboardWidgets*/);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnQuitGame, APlayerController* /*PlayerController*/);
 
 UCLASS()
 class ACCELBYTEWARS_API UGameOverWidget : public UAccelByteWarsActivatableWidget
@@ -31,7 +31,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	UGameOverLeaderboardEntry* AddLeaderboardEntry(const FText& PlayerName, const int32 PlayerScore, const int32 PlayerKills, const FLinearColor& PlayerColor);
 
-	inline static FOnGenerateGameOverLeaderboard OnGenerateGameOverLeaderboard;
+	inline static FOnQuitGame OnQuitGameDelegate;
 
 protected:
 	//~UUserWidget overriden functions

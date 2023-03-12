@@ -16,6 +16,8 @@ class ACCELBYTEWARS_API AAccelByteWarsPlayerState : public APlayerState
 	//~End of AActor overriden functions
 
 public:
+	UPROPERTY(BlueprintReadWrite, Category = Attributes, Replicated)
+	FString AvatarURL;
 
 	UPROPERTY(BlueprintReadWrite, Category = Attributes, Replicated)
 	FLinearColor TeamColor = FLinearColor::White;
