@@ -6,6 +6,8 @@
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/GameModes/AccelByteWarsGameStateBase.h"
 #include "Core/Player/AccelByteWarsPlayerController.h"
+#include "Core/Player/AccelByteWarsPlayerState.h"
+#include "Core/Utilities/AccelByteWarsUtility.h"
 
 #include "Core/UI/Components/MultiplayerEntries/TeamEntryWidget.h"
 #include "Core/UI/Components/MultiplayerEntries/PlayerEntryWidget.h"
@@ -79,7 +81,11 @@ void UMatchLobbyWidget::StartMatch()
 
 void UMatchLobbyWidget::LeaveMatch()
 {
-	OnQuitLobbyDelegate.ExecuteIfBound(GetOwningPlayer());
+	if (OnQuitLobbyDelegate.IsBound()) 
+	{
+		OnQuitLobbyDelegate.Broadcast(GetOwningPlayer());
+	}
+	
 	UGameplayStatics::OpenLevel(GetWorld(), TEXT("MainMenu"));
 }
 
@@ -101,7 +107,7 @@ void UMatchLobbyWidget::ResetTeamEntries()
 	Panel_TeamList->ClearChildren();
 }
 
-void UMatchLobbyWidget::GenerateMultiplayerTeamEntries(const bool bIsOnline)
+void UMatchLobbyWidget::GenerateMultiplayerTeamEntries()
 {
 	// Generate team entries only on game clients.
 	ENetMode NetMode = GetOwningPlayer()->GetNetMode();
@@ -119,7 +125,6 @@ void UMatchLobbyWidget::GenerateMultiplayerTeamEntries(const bool bIsOnline)
 	ResetTeamEntries();
 
 	// Spawn team and player entry widgets.
-	TArray<FUniqueNetIdPtr> PlayerNetIds;
 	for (FGameplayTeamData Team : GameState->Teams) 
 	{
 		const TWeakObjectPtr<UTeamEntryWidget> TeamEntry = MakeWeakObjectPtr<UTeamEntryWidget>(CreateWidget<UTeamEntryWidget>(this, TeamEntryWidget.Get()));
@@ -131,31 +136,45 @@ void UMatchLobbyWidget::GenerateMultiplayerTeamEntries(const bool bIsOnline)
 		// Spawn team entry widget.
 		for (FGameplayPlayerData Member : Team.TeamMembers)
 		{
-			// Save player net id. It will be used to get player's information (username, avatar URL, etc) from backend.
-			const FUniqueNetIdPtr PlayerNetId = Member.UniqueNetId.GetUniqueNetId();
-			if (!ensure(PlayerNetId.IsValid()))
+			const AAccelByteWarsPlayerState* PlayerState = static_cast<AAccelByteWarsPlayerState*>(UGameplayStatics::GetPlayerStateFromUniqueNetId(GetWorld(), Member.UniqueNetId.GetUniqueNetId()));
+			if (!PlayerState) 
 			{
-				UE_LOG(LogTemp, Warning, TEXT("Player net id us not valid."));
 				continue;
 			}
-			PlayerNetIds.Add(PlayerNetId);
 
 			// Spawn player entry and set the default username.
 			const TWeakObjectPtr<UPlayerEntryWidget> PlayerEntry = MakeWeakObjectPtr<UPlayerEntryWidget>(CreateWidget<UPlayerEntryWidget>(this, PlayerEntryWidget.Get()));
-			const FText DefaultUsername = FText::FromString(FString::Printf(TEXT("Player %d"), PlayerEntries.Num() + 1));
-			PlayerEntry->SetUsername(DefaultUsername);
+			PlayerEntry->SetUsername(FText::FromString(PlayerState->GetPlayerName()));
 			TeamEntry->AddPlayerEntry(PlayerEntry.Get());
 			PlayerEntry->SetAvatarTint(TeamColor);
 			PlayerEntry->SetTextColor(TeamColor);
-			
+
+			const FString AvatarUrl = PlayerState->AvatarURL;
+			const FString AvatarId = FBase64::Encode(AvatarUrl);
+
+			// Try to set avatar image from cache.
+			FCacheBrush CacheAvatarBrush = AccelByteWarsUtility::GetImageFromCache(AvatarId);
+			if (CacheAvatarBrush.IsValid())
+			{
+				PlayerEntry->SetAvatarTint(FLinearColor::White);
+				PlayerEntry->SetAvatar(*CacheAvatarBrush.Get());
+			}
+			// Set avatar image from URL if it is not exists in cache.
+			else if (!AvatarUrl.IsEmpty()) 
+			{
+				AccelByteWarsUtility::GetImageFromURL(
+					AvatarUrl,
+					AvatarId,
+					FOnImageReceived::CreateLambda([PlayerEntry](const FCacheBrush ImageResult)
+					{
+						PlayerEntry->SetAvatarTint(FLinearColor::White);
+						PlayerEntry->SetAvatar(*ImageResult.Get());
+					})
+				);
+			}
+
 			PlayerEntries.Add(PlayerEntry.Get());
 		}
-	}
-
-	// Update players username and avatars. Fetch it from AccelByte backend.
-	if (bIsOnline) 
-	{
-		OnGenerateOnlineTeamEntries.ExecuteIfBound(PlayerNetIds, PlayerEntries);
 	}
 }
 

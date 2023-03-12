@@ -8,7 +8,6 @@
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
 #include "MatchLobbyWidget.generated.h"
 
-class UUtilitiesSubsystem;
 class UAccelByteWarsGameInstance;
 class AAccelByteWarsGameStateBase;
 class UPanelWidget;
@@ -24,10 +23,7 @@ enum class EMatchLobbyState
 	GameStarted
 };
 
-DECLARE_DELEGATE_TwoParams(FOnGenerateOnlineTeamEntries, TArray<FUniqueNetIdPtr> /*PlayerUniqueNetIds*/, TArray<UPlayerEntryWidget*> /*PlayerEntryWidgets*/);
-
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnQuitLobby, APlayerController* /*PlayerController*/);
-typedef FOnQuitLobby::FDelegate FOnQuitLobbyDelegate;
 
 UCLASS()
 class ACCELBYTEWARS_API UMatchLobbyWidget : public UAccelByteWarsActivatableWidget
@@ -36,7 +32,7 @@ class ACCELBYTEWARS_API UMatchLobbyWidget : public UAccelByteWarsActivatableWidg
 	
 public:
 	UFUNCTION(BlueprintCallable)
-	void GenerateMultiplayerTeamEntries(const bool bIsOnline = false);
+	void GenerateMultiplayerTeamEntries();
 
 	UFUNCTION(BlueprintCallable)
 	void StartMatch();
@@ -44,8 +40,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void LeaveMatch();
 
-	inline static FOnGenerateOnlineTeamEntries OnGenerateOnlineTeamEntries;
-	inline static FOnQuitLobbyDelegate OnQuitLobbyDelegate;
+	inline static FOnQuitLobby OnQuitLobbyDelegate;
 
 protected:
 	void NativeConstruct() override;
