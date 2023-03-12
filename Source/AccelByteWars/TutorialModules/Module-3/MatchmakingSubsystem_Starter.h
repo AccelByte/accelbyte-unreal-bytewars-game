@@ -9,42 +9,37 @@
 #include "OnlineSessionInterfaceV2AccelByte.h"
 #include "MatchmakingEssentialsModels.h"
 #include "MatchmakingEssentialsLog.h"
-#include "MatchmakingEssentialsSubsystem.generated.h"
+#include "MatchmakingSubsystem_Starter.generated.h"
 
 UCLASS()
-class ACCELBYTEWARS_API UMatchmakingEssentialsSubsystem : public UGameInstanceSubsystem
+class ACCELBYTEWARS_API UMatchmakingSubsystem_Starter : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
-	
+
 #pragma region Module.3a Function Declarations
+
 public:
-	void StartMatchmaking(APlayerController* PC, const FString& MatchPool, const FOnMatchmakingDelegate& OnMatchmaking);
-	void CancelMatchmaking(APlayerController* PC);
+	// TODO: Add your public Module.3a function declarations here.
 
 private:
-	void OnDestroyToRematchmakingComplete(FName SessionName, bool bWasSuccessful, APlayerController* PC, const FString LastMatchPool);
-	void OnStartMatchmakingComplete(FName SessionName, const FOnlineError& ErrorDetails, const FSessionMatchmakingResults& Results);
-	void OnMatchmakingComplete(FName SessionName, bool bWasSuccessful, APlayerController* PC);
-	void OnCancelMatchmakingComplete(FName SessionName, bool bWasSuccessful);
+	// TODO: Add your private Module.3a function declarations here.
+
 #pragma endregion
 
 
 #pragma region Module.3b Function Declarations
+
 private:
-	void RegisterServer(FName SessionName);
-	void GetTeamIdFromSession(APlayerController* PC, int32& OutTeamId);
-	void UnregisterServer(FName SessionName);
-	void OnBackfillProposalReceived(FAccelByteModelsV2MatchmakingBackfillProposalNotif Proposal);
+	// TODO: Add your private Module.3b function declarations here.
+
 #pragma endregion
 
 
 #pragma region Module.3c Function Declarations
+
 private:
-	void JoinSession(const FOnlineSessionSearchResult& Session, APlayerController* PC);
-	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result, APlayerController* PC);
-	void TravelClient(FName SessionName, APlayerController* PC);
-	void OnSessionServerUpdate(FName SessionName, APlayerController* PC);
-	void LeaveSession(APlayerController* PC);
+	// TODO: Add your private Module.3c function declarations here.
+
 #pragma endregion
 
 
