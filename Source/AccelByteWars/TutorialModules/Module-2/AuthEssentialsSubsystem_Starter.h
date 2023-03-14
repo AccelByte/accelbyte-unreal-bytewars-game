@@ -8,13 +8,13 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "OnlineIdentityInterfaceAccelByte.h"
 #include "AuthEssentialsLog.h"
-#include "AuthEssentialsSubsystem_ModuleStarter.generated.h"
+#include "AuthEssentialsSubsystem_Starter.generated.h"
 
-DECLARE_MULTICAST_DELEGATE_TwoParams(FAuthOnLoginComplete_ModuleStarter, bool /*bWasSuccessful*/, const FString& /*ErrorMessage*/);
-typedef FAuthOnLoginComplete_ModuleStarter::FDelegate FAuthOnLoginCompleteDelegate_ModuleStarter;
+DECLARE_MULTICAST_DELEGATE_TwoParams(FAuthOnLoginComplete_Starter, bool /*bWasSuccessful*/, const FString& /*ErrorMessage*/);
+typedef FAuthOnLoginComplete_Starter::FDelegate FAuthOnLoginCompleteDelegate_Starter;
 
 UCLASS()
-class ACCELBYTEWARS_API UAuthEssentialsSubsystem_ModuleStarter : public UGameInstanceSubsystem
+class ACCELBYTEWARS_API UAuthEssentialsSubsystem_Starter : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
 
