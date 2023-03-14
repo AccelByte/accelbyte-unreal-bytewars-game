@@ -2,10 +2,10 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-#include "TutorialModules/Module-2/AuthEssentialsSubsystem_ModuleStarter.h"
+#include "TutorialModules/Module-2/AuthEssentialsSubsystem_Starter.h"
 #include "OnlineSubsystemUtils.h"
 
-void UAuthEssentialsSubsystem_ModuleStarter::Initialize(FSubsystemCollectionBase& Collection)
+void UAuthEssentialsSubsystem_Starter::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
 
@@ -26,20 +26,20 @@ void UAuthEssentialsSubsystem_ModuleStarter::Initialize(FSubsystemCollectionBase
     }
 }
 
-void UAuthEssentialsSubsystem_ModuleStarter::Deinitialize()
+void UAuthEssentialsSubsystem_Starter::Deinitialize()
 {
     Super::Deinitialize();
 
     ClearAuthCredentials(true);
 }
 
-void UAuthEssentialsSubsystem_ModuleStarter::SetAuthCredentials(const FString& Id, const FString& Token) 
+void UAuthEssentialsSubsystem_Starter::SetAuthCredentials(const FString& Id, const FString& Token) 
 {
     Credentials.Id = Id;
     Credentials.Token = Token;
 }
 
-void UAuthEssentialsSubsystem_ModuleStarter::ClearAuthCredentials(bool bAlsoResetType)
+void UAuthEssentialsSubsystem_Starter::ClearAuthCredentials(bool bAlsoResetType)
 {
     Credentials.Id = TEXT("");
     Credentials.Token = TEXT("");
