@@ -9,6 +9,7 @@ void AAccelByteWarsPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimePrope
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
+	DOREPLIFETIME(AAccelByteWarsPlayerState, AvatarURL);
 	DOREPLIFETIME(AAccelByteWarsPlayerState, TeamColor);
 	DOREPLIFETIME(AAccelByteWarsPlayerState, TeamId);
 	DOREPLIFETIME(AAccelByteWarsPlayerState, MissilesFired);

@@ -384,7 +384,7 @@ void AAccelByteWarsGameModeBase::PlayerTeamSetup(APlayerController* PlayerContro
 			// Running online, assign team from session info
 			if (OnGetTeamIdFromSessionDelegate.IsBound()) 
 			{
-				TeamId = OnGetTeamIdFromSessionDelegate.Execute(PlayerController);
+				OnGetTeamIdFromSessionDelegate.Broadcast(PlayerController, TeamId);
 
 				// Kick if the player doesn't belong to any team based on Session Info.
 				PlayerState->bShouldKick = (TeamId == INDEX_NONE);
@@ -423,14 +423,39 @@ void AAccelByteWarsGameModeBase::PlayerTeamSetup(APlayerController* PlayerContro
 #endif
 	}
 
-	// add player to team
-	ByteWarsGameState->AddPlayerToTeam(
-		TeamId,
-		PlayerUniqueId,
-		PlayerState->NumLivesLeft,
-		ControllerId,
-		PlayerState->GetScore(),
-		PlayerState->KillCount);
+	// Set default username for player.
+	const FString DefaultUsername = FString::Printf(TEXT("Player %d"), ByteWarsGameState->GetRegisteredPlayersNum() + 1);
+	PlayerState->SetPlayerName(DefaultUsername);
+
+	// If running online, refresh player's data based on AccelByte's data.
+	if (PlayerController->GetNetMode() != ENetMode::NM_Standalone && OnAddOnlineMemberDelegate.IsBound())
+	{
+		// Wait for response first, then add player to team.
+		OnAddOnlineMemberDelegate.Broadcast(
+			PlayerController,
+			TDelegate<void(bool)>::CreateWeakLambda(this, [this, TeamId, PlayerUniqueId, ControllerId, PlayerState](bool bIsSuccessful)
+			{
+				ByteWarsGameState->AddPlayerToTeam(
+					TeamId,
+					PlayerUniqueId,
+					PlayerState->NumLivesLeft,
+					ControllerId,
+					PlayerState->GetScore(),
+					PlayerState->KillCount);
+			}
+		));
+	}
+	// If running offline, directly add player to team.
+	else 
+	{
+		ByteWarsGameState->AddPlayerToTeam(
+			TeamId,
+			PlayerUniqueId,
+			PlayerState->NumLivesLeft,
+			ControllerId,
+			PlayerState->GetScore(),
+			PlayerState->KillCount);
+	}
 }
 
 void AAccelByteWarsGameModeBase::AddPlayerToTeam(APlayerController* PlayerController, const int32 TeamId)

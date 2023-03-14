@@ -4,14 +4,17 @@
 
 #include "Core/UI/InGameMenu/GameOver/GameOverWidget.h"
 #include "Core/UI/InGameMenu/GameOver/Components/GameOverLeaderboardEntry.h"
+
+#include "Core/GameModes/AccelByteWarsGameStateBase.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/GameModes/AccelByteWarsGameStateBase.h"
+#include "Core/Player/AccelByteWarsPlayerState.h"
+
 #include "Kismet/GameplayStatics.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Components/WidgetSwitcher.h"
 #include "CommonButtonBase.h"
-#include "Core/GameModes/AccelByteWarsGameStateBase.h"
 #include "Kismet/KismetMathLibrary.h"
 
 void UGameOverWidget::SetWinner(const FText& PlayerName, const FLinearColor& Color)
@@ -90,8 +93,7 @@ void UGameOverWidget::SetupLeaderboard()
 	int HighestScore = 0;
 	int WinnerTeamId = INDEX_NONE;
 
-	TArray<FUniqueNetIdPtr> PlayerNetIds;
-	TArray<UGameOverLeaderboardEntry*> LeaderboardEntries;
+	// Generate leaderboard entries.
 	for (const FGameplayTeamData& Team : GameState->Teams) 
 	{
 		// Get team with highest score.
@@ -111,27 +113,14 @@ void UGameOverWidget::SetupLeaderboard()
 		// Generate team members entry.
 		for (const FGameplayPlayerData& Member : Team.TeamMembers) 
 		{
-			// Save player net id. It will be used to get player's information (username, etc) from backend.
-			const FUniqueNetIdPtr PlayerNetId = Member.UniqueNetId.GetUniqueNetId();
-			if (PlayerNetId.IsValid()) 
+			const AAccelByteWarsPlayerState* PlayerState = static_cast<AAccelByteWarsPlayerState*>(UGameplayStatics::GetPlayerStateFromUniqueNetId(GetWorld(), Member.UniqueNetId.GetUniqueNetId()));
+			if (!PlayerState)
 			{
-				PlayerNetIds.Add(PlayerNetId);
+				continue;
 			}
 
-			UGameOverLeaderboardEntry* NewEntry = AddLeaderboardEntry(
-				FText::FromString(FString::Printf(TEXT("Player %d"), LeaderboardEntries.Num() + 1)),
-				Member.Score,
-				Member.KillCount,
-				TeamColor);
-
-			LeaderboardEntries.Add(NewEntry);
+			AddLeaderboardEntry(FText::FromString(PlayerState->GetPlayerName()), Member.Score, Member.KillCount, TeamColor);
 		}
-	}
-
-	// Check if game running online, if yes then update the leaderboard.
-	if (GetOwningPlayer()->GetNetMode() != ENetMode::NM_Standalone) 
-	{
-		OnGenerateGameOverLeaderboard.ExecuteIfBound(PlayerNetIds, LeaderboardEntries);
 	}
 
 	// If single player, the first team always wins.
@@ -163,6 +152,11 @@ void UGameOverWidget::PlayGameAgain()
 
 void UGameOverWidget::QuitGame()
 {
+	if (OnQuitGameDelegate.IsBound())
+	{
+		OnQuitGameDelegate.Broadcast(GetOwningPlayer());
+	}
+
 	OnExitLevel();
 	UGameplayStatics::OpenLevel(GetWorld(), TEXT("MainMenu"));
 }

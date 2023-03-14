@@ -8,8 +8,9 @@
 #include "GameFramework/GameSession.h"
 #include "AccelByteWarsGameSession.generated.h"
 
-DECLARE_DELEGATE_OneParam(FOnRegisterServer, FName /*SessionName*/);
-DECLARE_DELEGATE_OneParam(FOnUnregisterServer, FName /*SessionName*/);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnRegisterServer, FName /*SessionName*/);
+
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnUnregisterServer, FName /*SessionName*/);
 
 UCLASS()
 class ACCELBYTEWARS_API AAccelByteWarsGameSession : public AGameSession

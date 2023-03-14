@@ -47,7 +47,11 @@ void UPauseWidget::RestartGame()
 
 void UPauseWidget::QuitGame()
 {
-	OnQuitGameDelegate.ExecuteIfBound(GetOwningPlayer());
+	if (OnQuitGameDelegate.IsBound()) 
+	{
+		OnQuitGameDelegate.Broadcast(GetOwningPlayer());
+	}
+	
 	OnExitLevel();
 
 	UGameplayStatics::OpenLevel(GetWorld(), TEXT("MainMenu"));

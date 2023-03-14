@@ -14,7 +14,11 @@ ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogAccelByteWarsGameMode, Log, All
 	UE_LOG(LogAccelByteWarsGameMode, Verbosity, TEXT("%s"), *FString::Printf(Format, ##__VA_ARGS__)); \
 }
 
-DECLARE_DELEGATE_RetVal_OneParam(int32, FOnGetTeamIdFromSession, APlayerController* /*PlayerController*/)
+class AAccelByteWarsPlayerState;
+
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnGetTeamIdFromSession, APlayerController* /*PlayerController*/, int32& OutTeamId);
+
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnAddOnlineMember, APlayerController* /* PlayerController */, TDelegate<void(bool /*bIsSuccessful*/)> OnComplete);
 
 UCLASS()
 class ACCELBYTEWARS_API AAccelByteWarsGameModeBase : public AGameModeBase
@@ -72,6 +76,7 @@ public:
 	void StartGame();
 
 	inline static FOnGetTeamIdFromSession OnGetTeamIdFromSessionDelegate;
+	inline static FOnAddOnlineMember OnAddOnlineMemberDelegate;
 
 protected:
 
