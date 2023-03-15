@@ -517,55 +517,65 @@ void UMatchmakingEssentialsSubsystem::OnJoinSessionComplete(FName SessionName, E
 	{
 		UE_LOG_MATCHMAKING_ESSENTIALS(Log, TEXT("Success to join session. Session Name: %s"), *SessionName.ToString());
 
-		// Bind delegate to listen when the server is ready to travel.
-		SessionServerUpdateDelegateHandle = SessionInterface->AddOnSessionServerUpdateDelegate_Handle(FOnSessionServerUpdateDelegate::CreateUObject(this, &ThisClass::OnSessionServerUpdate, PC));
+		// When the player success to join the game session, it is possible that the game sesison already has server info.
+		// Therefore, try to travel the client to the server using the information available in the current game session first.
+		// If it fails, then bind a delegate to listen when the server is ready to travel.
+		if (!TravelClient(SessionName, PC))
+		{
+			SessionServerUpdateDelegateHandle = SessionInterface->AddOnSessionServerUpdateDelegate_Handle(FOnSessionServerUpdateDelegate::CreateUObject(this, &ThisClass::OnSessionServerUpdate, PC));
+		}
+		else 
+		{
+			// The game client success to travel to the server. The whole matchmaking process is complete.
+			OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::MatchFound);
+		}
 	}
 }
 
-void UMatchmakingEssentialsSubsystem::TravelClient(FName SessionName, APlayerController* PC)
+bool UMatchmakingEssentialsSubsystem::TravelClient(FName SessionName, APlayerController* PC)
 {
 	if (!IsGameSessionValid(SessionName))
 	{
-		return;
+		return false;
 	}
 
 	if (!ensure(SessionInterface.IsValid()))
 	{
 		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot travel the client to the game server. Session Interface is not valid."));
-		return;
+		return false;
 	}
 
 	FNamedOnlineSession* Session = SessionInterface->GetNamedSession(SessionName);
 	if (!ensure(Session))
 	{
 		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot travel the client to the game server. Session is not null."));
-		return;
+		return false;
 	}
 
 	TSharedPtr<FOnlineSessionInfoAccelByteV2> SessionInfo = StaticCastSharedPtr<FOnlineSessionInfoAccelByteV2>(Session->SessionInfo);
 	if (!ensure(SessionInfo.IsValid()))
 	{
 		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot travel the client to the game server. Session Info is not valid."));
-		return;
+		return false;
 	}
 
 	if (!ensure(PC))
 	{
 		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot travel the client to the game server. PlayerController is not valid."));
-		return;
+		return false;
 	}
 
 	// Travel the client to the server via URL.
 	FString TravelUrl{};
 	if (SessionInterface->GetResolvedConnectString(SessionName, TravelUrl) && !TravelUrl.IsEmpty())
 	{
-		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::MatchFound);
 		PC->ClientTravel(TravelUrl, TRAVEL_Absolute);
+		return true;
 	}
 	else
 	{
 		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot travel the client to the game server. Travel URL is not valid."));
-		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed);
+		return false;
 	}
 }
 
@@ -579,8 +589,17 @@ void UMatchmakingEssentialsSubsystem::OnSessionServerUpdate(FName SessionName, A
 	ensure(SessionInterface.IsValid());
 	SessionInterface->ClearOnSessionServerUpdateDelegate_Handle(SessionServerUpdateDelegateHandle);
 
-	// The server is ready. Travel the game clients to the server.
-	TravelClient(SessionName, PC);
+	// The server is ready. Try to travel the game clients to the server.
+	if (TravelClient(SessionName, PC)) 
+	{
+		// The game client success to travel to the server. The whole matchmaking process is complete.
+		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::MatchFound);
+	}
+	else 
+	{
+		// The game client failed to travel to the server.
+		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed);
+	}
 }
 
 void UMatchmakingEssentialsSubsystem::LeaveSession(APlayerController* PC)

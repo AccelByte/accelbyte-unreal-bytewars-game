@@ -42,7 +42,7 @@ private:
 private:
 	void JoinSession(const FOnlineSessionSearchResult& Session, APlayerController* PC);
 	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result, APlayerController* PC);
-	void TravelClient(FName SessionName, APlayerController* PC);
+	bool TravelClient(FName SessionName, APlayerController* PC);
 	void OnSessionServerUpdate(FName SessionName, APlayerController* PC);
 	void LeaveSession(APlayerController* PC);
 #pragma endregion
