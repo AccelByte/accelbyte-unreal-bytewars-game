@@ -179,7 +179,7 @@ void UMatchmakingEssentialsSubsystem::SetTeamMemberAccelByteInformation(APlayerC
 
 
 #pragma region Module.3a Function Definitions
-void UMatchmakingEssentialsSubsystem::StartMatchmaking(APlayerController* PC, const FString& MatchPool, const FOnMatchmakingDelegate& OnMatchmaking)
+void UMatchmakingEssentialsSubsystem::StartMatchmaking(APlayerController* PC, const FString& MatchPool, const FOnMatchmakingStateChangedDelegate& OnMatchmaking)
 {
 	// Save the matchmaking callback delegate. It will be used to inform the matchmaking states back to the player.
 	OnMatchmakingHandle = OnMatchmaking;

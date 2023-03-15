@@ -6,7 +6,7 @@
 
 #include "CoreMinimal.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
-#include "TutorialModules/Module-3/MatchmakingEssentialsSubsystem.h"
+#include "TutorialModules/Module-3/MatchmakingSubsystem_Starter.h"
 #include "TutorialModules/Module-3/MatchmakingEssentialsModels.h"
 #include "QuickPlayWidget_Starter.generated.h"
 
@@ -48,7 +48,7 @@ private:
 	void OnCancelMatchmakingClicked();
 
 	UAccelByteWarsGameInstance* GameInstance;
-	UMatchmakingEssentialsSubsystem* MatchmakingSubsystem;
+	UMatchmakingSubsystem_Starter* MatchmakingSubsystem;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UWidgetSwitcher* Ws_QuickPlayState;

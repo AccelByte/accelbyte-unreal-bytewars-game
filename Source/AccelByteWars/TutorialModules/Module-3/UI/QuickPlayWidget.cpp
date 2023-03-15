@@ -94,7 +94,7 @@ void UQuickPlayWidget::StartMatchmaking(const FString MatchPool)
 	SetQuickPlayState(EMatchmakingState::FindingMatch);
 
 	ensure(MatchmakingSubsystem);
-	MatchmakingSubsystem->StartMatchmaking(GetOwningPlayer(), MatchPool, FOnMatchmakingDelegate::CreateUObject(this, &ThisClass::OnMatchmaking));
+	MatchmakingSubsystem->StartMatchmaking(GetOwningPlayer(), MatchPool, FOnMatchmakingStateChangedDelegate::CreateUObject(this, &ThisClass::OnMatchmaking));
 }
 
 void UQuickPlayWidget::CancelMatchmaking()
