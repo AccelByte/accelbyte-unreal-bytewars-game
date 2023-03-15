@@ -16,5 +16,5 @@ enum class EMatchmakingState
 	MatchFound
 };
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnMatchmaking, EMatchmakingState /*MatchmakingState*/);
-typedef FOnMatchmaking::FDelegate FOnMatchmakingDelegate;
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnMatchmakingStateChanged, EMatchmakingState /*MatchmakingState*/);
+typedef FOnMatchmakingStateChanged::FDelegate FOnMatchmakingStateChangedDelegate;

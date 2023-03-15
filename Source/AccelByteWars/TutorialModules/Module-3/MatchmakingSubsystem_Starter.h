@@ -64,6 +64,6 @@ private:
 	FDelegateHandle SessionServerUpdateDelegateHandle;
 	FDelegateHandle BackfillProposalReceivedDelegateHandle;
 
-	FOnMatchmakingDelegate OnMatchmakingHandle;
+	FOnMatchmakingStateChangedDelegate OnMatchmakingHandle;
 	FOnlineSessionAccelBytePtr SessionInterface;
 };

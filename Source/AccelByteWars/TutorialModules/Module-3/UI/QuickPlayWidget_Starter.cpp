@@ -14,7 +14,7 @@ void UQuickPlayWidget_Starter::NativeConstruct()
 	GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
 	ensure(GameInstance);
 
-	MatchmakingSubsystem = GameInstance->GetSubsystem<UMatchmakingEssentialsSubsystem>();
+	MatchmakingSubsystem = GameInstance->GetSubsystem<UMatchmakingSubsystem_Starter>();
 	ensure(MatchmakingSubsystem);
 }
 
@@ -56,16 +56,16 @@ void UQuickPlayWidget_Starter::SetQuickPlayState(const EMatchmakingState NewStat
 	// Set user focus to certain button based on the new state.
 	switch (NewState)
 	{
-	case EMatchmakingState::Default:
-		bIsBackHandler = true;
-		Btn_Elimination->SetUserFocus(GetOwningPlayer());
-		break;
-	case EMatchmakingState::FindingMatch:
-		Btn_Cancel->SetUserFocus(GetOwningPlayer());
-		break;
-	case EMatchmakingState::FindMatchFailed:
-		Btn_Ok->SetUserFocus(GetOwningPlayer());
-		break;
+		case EMatchmakingState::Default:
+			bIsBackHandler = true;
+			Btn_Elimination->SetUserFocus(GetOwningPlayer());
+			break;
+		case EMatchmakingState::FindingMatch:
+			Btn_Cancel->SetUserFocus(GetOwningPlayer());
+			break;
+		case EMatchmakingState::FindMatchFailed:
+			Btn_Ok->SetUserFocus(GetOwningPlayer());
+			break;
 	}
 }
 

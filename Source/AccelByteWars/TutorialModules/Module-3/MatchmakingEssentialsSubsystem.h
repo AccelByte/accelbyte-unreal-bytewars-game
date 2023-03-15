@@ -18,7 +18,7 @@ class ACCELBYTEWARS_API UMatchmakingEssentialsSubsystem : public UGameInstanceSu
 	
 #pragma region Module.3a Function Declarations
 public:
-	void StartMatchmaking(APlayerController* PC, const FString& MatchPool, const FOnMatchmakingDelegate& OnMatchmaking);
+	void StartMatchmaking(APlayerController* PC, const FString& MatchPool, const FOnMatchmakingStateChangedDelegate& OnMatchmaking);
 	void CancelMatchmaking(APlayerController* PC);
 
 private:
@@ -69,6 +69,6 @@ private:
 	FDelegateHandle SessionServerUpdateDelegateHandle;
 	FDelegateHandle BackfillProposalReceivedDelegateHandle;
 
-	FOnMatchmakingDelegate OnMatchmakingHandle;
+	FOnMatchmakingStateChangedDelegate OnMatchmakingHandle;
 	FOnlineSessionAccelBytePtr SessionInterface;
 };
