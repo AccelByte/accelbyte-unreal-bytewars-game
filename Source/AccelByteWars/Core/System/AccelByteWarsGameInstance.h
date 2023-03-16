@@ -94,12 +94,15 @@ public:
 #pragma endregion 
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLocalPlayerChanged, ULocalPlayer*, LocalPlayer);
+DECLARE_MULTICAST_DELEGATE(FOnGameInstanceShutdown);
 DECLARE_LOG_CATEGORY_CLASS(LogAccelByteWarsGameInstance, Log, All);
 
 UCLASS()
 class ACCELBYTEWARS_API UAccelByteWarsGameInstance : public UGameInstance
 {
 	GENERATED_BODY()
+
+	virtual void Shutdown() override;
 	
 public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Attributes)
@@ -118,6 +121,11 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 	FOnLocalPlayerChanged OnLocalPlayerRemoved;
+
+	/**
+	 * @brief Called on GameInstance::Shutdown | Just before the actual game exit. Will also be called on exit PIE.
+	 */
+	FOnGameInstanceShutdown OnGameInstanceShutdownDelegate;
 	
 private:
 	/** This is the primary player*/

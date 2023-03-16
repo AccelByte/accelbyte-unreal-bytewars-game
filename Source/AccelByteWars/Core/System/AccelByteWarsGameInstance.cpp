@@ -7,6 +7,13 @@
 
 #define GAMEINSTANCE_LOG(FormatString, ...) UE_LOG(LogAccelByteWarsGameInstance, Log, TEXT(FormatString), __VA_ARGS__);
 
+void UAccelByteWarsGameInstance::Shutdown()
+{
+	OnGameInstanceShutdownDelegate.Broadcast();
+
+	Super::Shutdown();
+}
+
 int32 UAccelByteWarsGameInstance::AddLocalPlayer(ULocalPlayer* NewLocalPlayer, FPlatformUserId UserId)
 {
 	const int32 ReturnVal = Super::AddLocalPlayer(NewLocalPlayer, UserId);
