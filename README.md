@@ -12,28 +12,29 @@ Byte Wars is the official tutorial game for AccelByte Gaming Services (AGS). It 
 ## Clone Byte Wars
 
 This repository has two main branches, master and online.
-* **Master branch** is the vanila version game source code without any submodule.
-* **Online branch** is the branch that has the AccelByte Online Subsystem submodule, which is used by another repository for Byte Wars tutorial.
+* **Main branch** is the vanila version game source code without any submodule.
+* **Online branch** is the branch that has the AccelByte's Plugins, which are used by the Byte Wars Tutorial Module 1.
+* **tutorial/online-module.2** is the branch based on `online` branch and also has the required resources for user to learn Byte Wars Tutorial Module 2.
+* **tutorial/online-module.3** is the branch based on `module 2` branch and also has the required resources for user to learn Byte Wars Tutorial Module 3.
 
-### Master Branch
+### Main Branch
 
 Just run the following git command to clone the game.
 ```batch
-git clone git@bitbucket.org:accelbyte/accelbyte-unreal-bytewars-game.git
+git clone git@github.com:AccelByte/accelbyte-unreal-bytewars-game.git
 ```
-### Online Branch
+### Online and Tutorial Module Branches
 
-This online branch has a submodule to [justice-ue4-oss](https://bitbucket.org/accelbyte/justice-ue4-oss/src/master/) at `Plugins/AccelByte`. To clone the repository and checkout the submodule at the same time, run the following command:
+The online branch, the tutorial module 2 branch, and the tutorial module 3 branch, they have several plugins set as submodules:
+* [AccelByte Unreal Online Subsystem](https://github.com/AccelByte/accelbyte-unreal-oss) under `Plugins/AccelByte/OnlineSubsystemAccelByte`.
+* [AccelByte Unreal SDK](https://github.com/AccelByte/accelbyte-unreal-sdk-plugin) under `Plugins/AccelByte/AccelByteUe4Sdk`.
+* [AccelByte Network Utilities](https://github.com/AccelByte/accelbyte-unreal-network-utilities) under `Plugins/AccelByte/AccelByteNetworkUtilities`.
+
+To clone the repository and checkout the submodule at the same time, run the following command:
+
 ```batch
-    git clone --branch online --recurse-submodules --remote-submodules git@bitbucket.org:accelbyte/accelbyte-unreal-bytewars-game.git
+    git clone --branch <branch-name> --recursive git@github.com:AccelByte/accelbyte-unreal-bytewars-game.git
 ```
-The `--recurse-submodules` flag will clone the submodule at the revision that was previously pushed to this repository. Adding `--remote-submodules` will then update the submodules to the latest of their tracked branch, in this case the `master` branch. This is important as while under development, not all submodule updates will result in an updated commit SHA for the submodule tracking. Using the remote flag will ensure that you are on the latest OSS plugin version.
-
-Note: that since the OSS plugin module is set to track the `master` branch and will change a lot as a result, it would be helpful to make your `git pull` automatically check in changes from submodules. You can do this with the following config command:
-```batch
-    git config submodule.recurse true
-```    
-This will then try and update all submodules when you run `git pull`, keeping everything up to date with the single root pull command.
 
 ## Compile Byte Wars
 
@@ -41,7 +42,7 @@ This will then try and update all submodules when you run `git pull`, keeping ev
 2. Open AccelByteWars.sln generated from step number 1, using your prefered IDE.
 3. Compile the game project using Development Editor - Win64.
 
-## Run Byte Wars
+## Run Byte Wars (from Main branch)
 
 ### Game Client
 
