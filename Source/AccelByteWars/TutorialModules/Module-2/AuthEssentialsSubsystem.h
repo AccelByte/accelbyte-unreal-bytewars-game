@@ -25,6 +25,10 @@ public:
 	/** Login user using specified login method */
 	void Login(EAccelByteLoginType LoginMethod, const APlayerController* PC, const FAuthOnLoginCompleteDelegate& OnLoginComplete);
 
+	/**
+	 * @brief Log out player from online services
+	 * @param LocalUserNum Local user num to be logged out
+	 */
 	void Logout(const int32 LocalUserNum);
 
 	/** Set auth credentials for id/username and token/password. It meant to be used for AccelByte login method.
@@ -41,7 +45,6 @@ public:
 
 protected:
 	void OnLoginComplete(int32 LocalUserNum, bool bLoginWasSuccessful, const FUniqueNetId& UserId, const FString& LoginError, const FAuthOnLoginCompleteDelegate OnLoginComplete);
-	void OnShutdown();
 
 	FOnlineIdentityAccelBytePtr IdentityInterface;
 	FOnlineAccountCredentials Credentials;
