@@ -25,6 +25,8 @@ public:
 	/** Login user using specified login method */
 	void Login(EAccelByteLoginType LoginMethod, const APlayerController* PC, const FAuthOnLoginCompleteDelegate& OnLoginComplete);
 
+	void Logout(const int32 LocalUserNum);
+
 	/** Set auth credentials for id/username and token/password. It meant to be used for AccelByte login method.
 	 * @param Id Identity of the user logging in (email, display name, facebook id, etc).
 	 * @param Token Credentials of the user logging in (password or auth token).
@@ -39,6 +41,7 @@ public:
 
 protected:
 	void OnLoginComplete(int32 LocalUserNum, bool bLoginWasSuccessful, const FUniqueNetId& UserId, const FString& LoginError, const FAuthOnLoginCompleteDelegate OnLoginComplete);
+	void OnShutdown();
 
 	FOnlineIdentityAccelBytePtr IdentityInterface;
 	FOnlineAccountCredentials Credentials;
