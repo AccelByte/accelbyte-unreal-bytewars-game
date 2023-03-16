@@ -4,6 +4,7 @@
 
 #include "TutorialModules/Module-2/AuthEssentialsSubsystem.h"
 #include "OnlineSubsystemUtils.h"
+#include "Core/System/AccelByteWarsGameInstance.h"
 
 void UAuthEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -61,6 +62,22 @@ void UAuthEssentialsSubsystem::Login(EAccelByteLoginType LoginMethod, const APla
     
     IdentityInterface->AddOnLoginCompleteDelegate_Handle(LocalUserNum, FOnLoginCompleteDelegate::CreateUObject(this, &UAuthEssentialsSubsystem::OnLoginComplete, OnLoginComplete));
     IdentityInterface->Login(LocalUserNum, Credentials);
+
+    // Logout On Game Exit
+    if (UAccelByteWarsGameInstance* ByteWarsGameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance()); ensure(ByteWarsGameInstance))
+    {
+        ByteWarsGameInstance->OnGameInstanceShutdownDelegate.AddWeakLambda(this, [this, LocalUserNum]()
+        {
+            Logout(LocalUserNum);
+        });
+    }
+}
+
+void UAuthEssentialsSubsystem::Logout(const int32 LocalUserNum)
+{
+    IdentityInterface->Logout(LocalUserNum);
+    
+    UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("Logging out local player %d"), LocalUserNum);
 }
 
 void UAuthEssentialsSubsystem::SetAuthCredentials(const FString& Id, const FString& Token) 
@@ -93,4 +110,9 @@ void UAuthEssentialsSubsystem::OnLoginComplete(int32 LocalUserNum, bool bLoginWa
 
     IdentityInterface->ClearOnLoginCompleteDelegates(LocalUserNum, this);
     OnLoginComplete.ExecuteIfBound(bLoginWasSuccessful, LoginError);
+}
+
+void UAuthEssentialsSubsystem::OnShutdown()
+{
+    
 }
