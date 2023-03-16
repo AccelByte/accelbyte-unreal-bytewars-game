@@ -111,8 +111,3 @@ void UAuthEssentialsSubsystem::OnLoginComplete(int32 LocalUserNum, bool bLoginWa
     IdentityInterface->ClearOnLoginCompleteDelegates(LocalUserNum, this);
     OnLoginComplete.ExecuteIfBound(bLoginWasSuccessful, LoginError);
 }
-
-void UAuthEssentialsSubsystem::OnShutdown()
-{
-    
-}
