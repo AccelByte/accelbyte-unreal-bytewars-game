@@ -63,21 +63,19 @@ void UAuthEssentialsSubsystem::Login(EAccelByteLoginType LoginMethod, const APla
     IdentityInterface->AddOnLoginCompleteDelegate_Handle(LocalUserNum, FOnLoginCompleteDelegate::CreateUObject(this, &UAuthEssentialsSubsystem::OnLoginComplete, OnLoginComplete));
     IdentityInterface->Login(LocalUserNum, Credentials);
 
-    // Logout On Game Exit
+    /*
+     * Logout On Game Exit
+     * Workaround for the lobby not properly disconnect upon closing PIE game.
+     */
     if (UAccelByteWarsGameInstance* ByteWarsGameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance()); ensure(ByteWarsGameInstance))
     {
         ByteWarsGameInstance->OnGameInstanceShutdownDelegate.AddWeakLambda(this, [this, LocalUserNum]()
         {
-            Logout(LocalUserNum);
+            IdentityInterface->Logout(LocalUserNum);
+
+            UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("Logging out local player %d"), LocalUserNum);
         });
     }
-}
-
-void UAuthEssentialsSubsystem::Logout(const int32 LocalUserNum)
-{
-    IdentityInterface->Logout(LocalUserNum);
-    
-    UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("Logging out local player %d"), LocalUserNum);
 }
 
 void UAuthEssentialsSubsystem::SetAuthCredentials(const FString& Id, const FString& Token) 
