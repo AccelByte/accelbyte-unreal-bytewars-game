@@ -123,27 +123,6 @@ int32 AAccelByteWarsGameStateBase::GetRegisteredPlayersNum() const
 	return Num;
 }
 
-FString AAccelByteWarsGameStateBase::GetPlayerDefaultUsername(const FUniqueNetIdRepl UniqueNetId, const int32 ControllerId)
-{
-	// Check if the player is already registered. Then, return the player's default username.
-	int32 PlayerIndex = 0;
-	for (FGameplayTeamData& Team : Teams)
-	{
-		for (FGameplayPlayerData& Member : Team.TeamMembers) 
-		{
-			PlayerIndex++;
-
-			if (Member.UniqueNetId == UniqueNetId && Member.ControllerId == ControllerId) 
-			{
-				return FString::Printf(TEXT("Player %d"), PlayerIndex);
-			}
-		}
-	}
-
-	// Return next default username.
-	return FString::Printf(TEXT("Player %d"), GetRegisteredPlayersNum() + 1);
-}
-
 bool AAccelByteWarsGameStateBase::AddPlayerToTeam(
 	const uint8 TeamId,
 	const FUniqueNetIdRepl UniqueNetId,
@@ -172,6 +151,8 @@ bool AAccelByteWarsGameStateBase::AddPlayerToTeam(
 	Teams[TeamId].TeamMembers.Add(FGameplayPlayerData{
 		UniqueNetId,
 		ControllerId,
+		FString::Printf(TEXT("Player %d"), GetRegisteredPlayersNum() + 1), // Default player's name.
+		TEXT(""), // Default player's avatar URL.
 		TeamId,
 		Score,
 		KillCount,

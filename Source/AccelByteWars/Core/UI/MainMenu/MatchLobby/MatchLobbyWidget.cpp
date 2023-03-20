@@ -6,7 +6,6 @@
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/GameModes/AccelByteWarsGameStateBase.h"
 #include "Core/Player/AccelByteWarsPlayerController.h"
-#include "Core/Player/AccelByteWarsPlayerState.h"
 #include "Core/Utilities/AccelByteWarsUtility.h"
 
 #include "Core/UI/Components/MultiplayerEntries/TeamEntryWidget.h"
@@ -68,7 +67,6 @@ void UMatchLobbyWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTim
 	Super::NativeTick(MyGeometry, InDeltaTime);
 
 	MoveCameraToTargetLocation(InDeltaTime);
-	GenerateMultiplayerTeamEntries();
 }
 
 void UMatchLobbyWidget::StartMatch() 
@@ -103,7 +101,6 @@ void UMatchLobbyWidget::SetMatchLobbyState(const EMatchLobbyState NewState)
 
 void UMatchLobbyWidget::ResetTeamEntries()
 {
-	PlayerEntries.Empty();
 	Panel_TeamList->ClearChildren();
 }
 
@@ -112,12 +109,6 @@ void UMatchLobbyWidget::GenerateMultiplayerTeamEntries()
 	// Generate team entries only on game clients.
 	ENetMode NetMode = GetOwningPlayer()->GetNetMode();
 	if (NetMode != ENetMode::NM_Client && NetMode != ENetMode::NM_ListenServer) 
-	{
-		return;
-	}
-
-	// Don't generate new player entries if it already generated.
-	if (PlayerEntries.Num() == GameState->GetRegisteredPlayersNum())
 	{
 		return;
 	}
@@ -136,20 +127,14 @@ void UMatchLobbyWidget::GenerateMultiplayerTeamEntries()
 		// Spawn team entry widget.
 		for (FGameplayPlayerData Member : Team.TeamMembers)
 		{
-			const AAccelByteWarsPlayerState* PlayerState = StaticCast<AAccelByteWarsPlayerState*>(UGameplayStatics::GetPlayerStateFromUniqueNetId(GetWorld(), Member.UniqueNetId));
-			if (!PlayerState) 
-			{
-				continue;
-			}
-
 			// Spawn player entry and set the default username.
 			const TWeakObjectPtr<UPlayerEntryWidget> PlayerEntry = MakeWeakObjectPtr<UPlayerEntryWidget>(CreateWidget<UPlayerEntryWidget>(this, PlayerEntryWidget.Get()));
-			PlayerEntry->SetUsername(FText::FromString(PlayerState->GetPlayerName()));
+			PlayerEntry->SetUsername(FText::FromString(Member.PlayerName));
 			TeamEntry->AddPlayerEntry(PlayerEntry.Get());
 			PlayerEntry->SetAvatarTint(TeamColor);
 			PlayerEntry->SetTextColor(TeamColor);
 
-			const FString AvatarUrl = PlayerState->AvatarURL;
+			const FString AvatarUrl = Member.AvatarURL;
 			const FString AvatarId = FBase64::Encode(AvatarUrl);
 
 			// Try to set avatar image from cache.
@@ -172,8 +157,6 @@ void UMatchLobbyWidget::GenerateMultiplayerTeamEntries()
 					})
 				);
 			}
-
-			PlayerEntries.Add(PlayerEntry.Get());
 		}
 	}
 }

@@ -47,6 +47,9 @@ class ACCELBYTEWARS_API AAccelByteWarsGameStateBase : public AGameStateBase
 	//~End of AActor overriden functions
 
 public:
+	/**
+	 * @brief Store current game mode.
+	 */
 	UPROPERTY(BlueprintReadWrite, Replicated)
 	EGameModeType GameModeType = EGameModeType::FFA;
 
@@ -139,13 +142,6 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable)
 	int32 GetRegisteredPlayersNum() const;
-
-	/**
-	 * @brief Get player's default username (e.g. Player 1, Player 2, etc.)
-	 * @return Default player username.
-	*/
-	UFUNCTION(BlueprintCallable)
-	FString GetPlayerDefaultUsername(const FUniqueNetIdRepl UniqueNetId, const int32 ControllerId);
 
 	/**
 	 * @brief Add player to GameSetup.TeamSetup and to PlayerDatas. Will add new team if team does not exist

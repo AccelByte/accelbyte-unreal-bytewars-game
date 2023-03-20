@@ -240,6 +240,16 @@ void AAccelByteWarsGameModeBase::PostLogin(APlayerController* NewPlayer)
 		{
 			GameSession->KickPlayer(NewPlayer, FText::FromString("Max player reached"));
 			GAMEMODE_LOG(Warning, TEXT("Player did not registered in Teams data. Max registered players reached. Kicking this player"));
+			return;
+		}
+
+		// If running online, refresh player's data based on AccelByte's data.
+		if (NewPlayer->GetNetMode() != ENetMode::NM_Standalone && OnAddOnlineMemberDelegate.IsBound())
+		{
+			OnAddOnlineMemberDelegate.Broadcast(NewPlayer, TDelegate<void(bool)>::CreateWeakLambda(this, [this, NewPlayer](bool bIsSuccessful)
+			{
+				UpdatePlayerInformation(NewPlayer);
+			}));
 		}
 	}
 }
@@ -341,13 +351,15 @@ void AAccelByteWarsGameModeBase::PlayerTeamSetup(APlayerController* PlayerContro
 	int32 TeamId = INDEX_NONE;
 	const FUniqueNetIdRepl PlayerUniqueId = GetPlayerUniqueNetId(PlayerController);
 	const int32 ControllerId = GetControllerId(PlayerState);
-
+	
 	// check for a match in GameState's Teams data
 	if (const FGameplayPlayerData* PlayerData =
 		ByteWarsGameState->GetPlayerDataById(PlayerState->GetUniqueId(), ControllerId))
 	{
 		// found, restore data
 		TeamId = PlayerData->TeamId;
+		PlayerState->SetPlayerName(PlayerData->PlayerName);
+		PlayerState->AvatarURL = PlayerData->AvatarURL;
 		PlayerState->SetScore(PlayerData->Score);
 		PlayerState->TeamId = TeamId;
 		PlayerState->NumLivesLeft = PlayerData->NumLivesLeft;
@@ -405,6 +417,8 @@ void AAccelByteWarsGameModeBase::PlayerTeamSetup(APlayerController* PlayerContro
 		}
 
 		// reset player's state data
+		PlayerState->SetPlayerName(TEXT(""));
+		PlayerState->AvatarURL = TEXT("");
 		PlayerState->TeamId = TeamId;
 		PlayerState->TeamColor = ByteWarsGameInstance->GetTeamColor(TeamId);
 		PlayerState->SetScore(0.0f);
@@ -424,44 +438,13 @@ void AAccelByteWarsGameModeBase::PlayerTeamSetup(APlayerController* PlayerContro
 #endif
 	}
 
-	// If running online, refresh player's data based on AccelByte's data.
-	if (PlayerController->GetNetMode() != ENetMode::NM_Standalone && OnAddOnlineMemberDelegate.IsBound())
-	{
-		// Wait for response first, then add player to team.
-		OnAddOnlineMemberDelegate.Broadcast(
-			PlayerController,
-			TDelegate<void(bool)>::CreateWeakLambda(this, [this, TeamId, PlayerUniqueId, ControllerId, PlayerState](bool bIsSuccessful)
-			{
-				// If failed to get AccelByte data, fallback to default data.
-				if (!bIsSuccessful || PlayerState->GetPlayerName().IsEmpty()) 
-				{
-					PlayerState->SetPlayerName(ByteWarsGameState->GetPlayerDefaultUsername(PlayerUniqueId, ControllerId));
-				}
-				
-				ByteWarsGameState->AddPlayerToTeam(
-					TeamId,
-					PlayerUniqueId,
-					PlayerState->NumLivesLeft,
-					ControllerId,
-					PlayerState->GetScore(),
-					PlayerState->KillCount);
-			}
-		));
-	}
-	// If running offline, directly add player to team.
-	else 
-	{
-		// Always set to default username if the game runs offline.
-		PlayerState->SetPlayerName(ByteWarsGameState->GetPlayerDefaultUsername(PlayerUniqueId, ControllerId));
-
-		ByteWarsGameState->AddPlayerToTeam(
-			TeamId,
-			PlayerUniqueId,
-			PlayerState->NumLivesLeft,
-			ControllerId,
-			PlayerState->GetScore(),
-			PlayerState->KillCount);
-	}
+	ByteWarsGameState->AddPlayerToTeam(
+		TeamId,
+		PlayerUniqueId,
+		PlayerState->NumLivesLeft,
+		ControllerId,
+		PlayerState->GetScore(),
+		PlayerState->KillCount);
 }
 
 void AAccelByteWarsGameModeBase::AddPlayerToTeam(APlayerController* PlayerController, const int32 TeamId)
@@ -571,6 +554,24 @@ void AAccelByteWarsGameModeBase::NotEnoughPlayerCountdownCounting(const float& D
 	if (ByteWarsGameState->NotEnoughPlayerCountdown <= 0)
 	{
 		CloseGame("Not enough player");
+	}
+}
+
+void AAccelByteWarsGameModeBase::UpdatePlayerInformation(const APlayerController* PlayerController) const
+{
+	if (const AAccelByteWarsPlayerState* PlayerState = static_cast<AAccelByteWarsPlayerState*>(PlayerController->PlayerState))
+	{
+		FGameplayPlayerData* PlayerData = ByteWarsGameState->GetPlayerDataById(GetPlayerUniqueNetId(PlayerController), GetControllerId(PlayerState));
+		if (!PlayerData)
+		{
+			return;
+		}
+
+		if (!PlayerState->GetPlayerName().IsEmpty())
+		{
+			PlayerData->PlayerName = PlayerState->GetPlayerName();
+		}
+		PlayerData->AvatarURL = PlayerState->AvatarURL;
 	}
 }
 

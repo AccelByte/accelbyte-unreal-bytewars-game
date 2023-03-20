@@ -8,7 +8,6 @@
 #include "Core/GameModes/AccelByteWarsGameStateBase.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/GameModes/AccelByteWarsGameStateBase.h"
-#include "Core/Player/AccelByteWarsPlayerState.h"
 
 #include "Kismet/GameplayStatics.h"
 #include "Components/TextBlock.h"
@@ -113,13 +112,7 @@ void UGameOverWidget::SetupLeaderboard()
 		// Generate team members entry.
 		for (const FGameplayPlayerData& Member : Team.TeamMembers) 
 		{
-			const AAccelByteWarsPlayerState* PlayerState = StaticCast<AAccelByteWarsPlayerState*>(UGameplayStatics::GetPlayerStateFromUniqueNetId(GetWorld(), Member.UniqueNetId));
-			if (!PlayerState)
-			{
-				continue;
-			}
-
-			AddLeaderboardEntry(FText::FromString(PlayerState->GetPlayerName()), Member.Score, Member.KillCount, TeamColor);
+			AddLeaderboardEntry(FText::FromString(Member.PlayerName), Member.Score, Member.KillCount, TeamColor);
 		}
 	}
 
@@ -141,7 +134,7 @@ void UGameOverWidget::SetupLeaderboard()
 
 		const FString WinnerName = (GameState->GameModeType == EGameModeType::TDM) ?
 			FString::Printf(TEXT("Team %d"), WinnerTeamId + 1) :
-			FString::Printf(TEXT("Player %d"), WinnerTeamId + 1);
+			GameState->Teams[WinnerTeamId].TeamMembers[0].PlayerName;
 
 		SetWinner(FText::FromString(WinnerName), GameInstance->GetTeamColor(WinnerTeamId));
 	}

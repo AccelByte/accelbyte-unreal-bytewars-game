@@ -84,5 +84,4 @@ private:
 
 	UAccelByteWarsGameInstance* GameInstance;
 	AAccelByteWarsGameStateBase* GameState;
-	TArray<UPlayerEntryWidget*> PlayerEntries;
 };

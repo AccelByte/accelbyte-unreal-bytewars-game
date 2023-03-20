@@ -26,6 +26,12 @@ public:
 	int32 ControllerId = 0;
 
 	UPROPERTY(BlueprintReadWrite)
+	FString PlayerName;
+
+	UPROPERTY(BlueprintReadWrite)
+	FString AvatarURL;
+
+	UPROPERTY(BlueprintReadWrite)
 	int32 TeamId = INDEX_NONE;
 
 	UPROPERTY(BlueprintReadWrite)
