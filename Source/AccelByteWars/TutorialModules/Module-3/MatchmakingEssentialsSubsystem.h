@@ -56,6 +56,7 @@ private:
 	void BindDelegates();
 	void UnbindDelegates();
 
+	void OnServerReceivedSession(FName SessionName);
 	void OnQuitGameButtonsClicked(APlayerController* PC);
 
 	bool IsGameSessionValid(FName SessionName);
@@ -68,6 +69,7 @@ private:
 	FDelegateHandle JoinSessionCompleteDelegateHandle;
 	FDelegateHandle SessionServerUpdateDelegateHandle;
 	FDelegateHandle BackfillProposalReceivedDelegateHandle;
+	FDelegateHandle OnServerReceivedSessionDelegateHandle;
 
 	FOnMatchmakingStateChangedDelegate OnMatchmakingHandle;
 	FOnlineSessionAccelBytePtr SessionInterface;
