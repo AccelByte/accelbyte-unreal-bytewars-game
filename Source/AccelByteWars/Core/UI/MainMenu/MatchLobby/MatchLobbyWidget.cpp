@@ -136,7 +136,7 @@ void UMatchLobbyWidget::GenerateMultiplayerTeamEntries()
 		// Spawn team entry widget.
 		for (FGameplayPlayerData Member : Team.TeamMembers)
 		{
-			const AAccelByteWarsPlayerState* PlayerState = static_cast<AAccelByteWarsPlayerState*>(UGameplayStatics::GetPlayerStateFromUniqueNetId(GetWorld(), Member.UniqueNetId.GetUniqueNetId()));
+			const AAccelByteWarsPlayerState* PlayerState = StaticCast<AAccelByteWarsPlayerState*>(UGameplayStatics::GetPlayerStateFromUniqueNetId(GetWorld(), Member.UniqueNetId));
 			if (!PlayerState) 
 			{
 				continue;

@@ -56,6 +56,7 @@ void AAccelByteWarsGameModeBase::BeginPlay()
 	if (bIsGameplayLevel || IsRunningDedicatedServer())
 	{
 		// GameState setup
+		ByteWarsGameState->GameModeType = ByteWarsGameInstance->GameSetup.GameModeType;
 		ByteWarsGameState->TimeLeft = ByteWarsGameInstance->GameSetup.MatchTime;
 
 		// setup existing players
@@ -423,10 +424,6 @@ void AAccelByteWarsGameModeBase::PlayerTeamSetup(APlayerController* PlayerContro
 #endif
 	}
 
-	// Set default username for player.
-	const FString DefaultUsername = FString::Printf(TEXT("Player %d"), ByteWarsGameState->GetRegisteredPlayersNum() + 1);
-	PlayerState->SetPlayerName(DefaultUsername);
-
 	// If running online, refresh player's data based on AccelByte's data.
 	if (PlayerController->GetNetMode() != ENetMode::NM_Standalone && OnAddOnlineMemberDelegate.IsBound())
 	{
@@ -435,6 +432,12 @@ void AAccelByteWarsGameModeBase::PlayerTeamSetup(APlayerController* PlayerContro
 			PlayerController,
 			TDelegate<void(bool)>::CreateWeakLambda(this, [this, TeamId, PlayerUniqueId, ControllerId, PlayerState](bool bIsSuccessful)
 			{
+				// If failed to get AccelByte data, fallback to default data.
+				if (!bIsSuccessful || PlayerState->GetPlayerName().IsEmpty()) 
+				{
+					PlayerState->SetPlayerName(ByteWarsGameState->GetPlayerDefaultUsername(PlayerUniqueId, ControllerId));
+				}
+				
 				ByteWarsGameState->AddPlayerToTeam(
 					TeamId,
 					PlayerUniqueId,
@@ -448,6 +451,9 @@ void AAccelByteWarsGameModeBase::PlayerTeamSetup(APlayerController* PlayerContro
 	// If running offline, directly add player to team.
 	else 
 	{
+		// Always set to default username if the game runs offline.
+		PlayerState->SetPlayerName(ByteWarsGameState->GetPlayerDefaultUsername(PlayerUniqueId, ControllerId));
+
 		ByteWarsGameState->AddPlayerToTeam(
 			TeamId,
 			PlayerUniqueId,

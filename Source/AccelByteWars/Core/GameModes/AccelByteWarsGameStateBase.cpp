@@ -12,6 +12,8 @@ void AAccelByteWarsGameStateBase::GetLifetimeReplicatedProps(TArray<FLifetimePro
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
+	DOREPLIFETIME(AAccelByteWarsGameStateBase, GameModeType);
+	
 	DOREPLIFETIME(AAccelByteWarsGameStateBase, LobbyStatus);
 	DOREPLIFETIME(AAccelByteWarsGameStateBase, LobbyCountdown);
 
@@ -119,6 +121,27 @@ int32 AAccelByteWarsGameStateBase::GetRegisteredPlayersNum() const
 		Num += Team.TeamMembers.Num();
 	}
 	return Num;
+}
+
+FString AAccelByteWarsGameStateBase::GetPlayerDefaultUsername(const FUniqueNetIdRepl UniqueNetId, const int32 ControllerId)
+{
+	// Check if the player is already registered. Then, return the player's default username.
+	int32 PlayerIndex = 0;
+	for (FGameplayTeamData& Team : Teams)
+	{
+		for (FGameplayPlayerData& Member : Team.TeamMembers) 
+		{
+			PlayerIndex++;
+
+			if (Member.UniqueNetId == UniqueNetId && Member.ControllerId == ControllerId) 
+			{
+				return FString::Printf(TEXT("Player %d"), PlayerIndex);
+			}
+		}
+	}
+
+	// Return next default username.
+	return FString::Printf(TEXT("Player %d"), GetRegisteredPlayersNum() + 1);
 }
 
 bool AAccelByteWarsGameStateBase::AddPlayerToTeam(

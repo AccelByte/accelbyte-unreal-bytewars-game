@@ -90,8 +90,8 @@ void UGameOverWidget::NativeOnDeactivated()
 
 void UGameOverWidget::SetupLeaderboard()
 {
-	int HighestScore = 0;
-	int WinnerTeamId = INDEX_NONE;
+	int32 HighestScore = 0;
+	int32 WinnerTeamId = INDEX_NONE;
 
 	// Generate leaderboard entries.
 	for (const FGameplayTeamData& Team : GameState->Teams) 
@@ -113,7 +113,7 @@ void UGameOverWidget::SetupLeaderboard()
 		// Generate team members entry.
 		for (const FGameplayPlayerData& Member : Team.TeamMembers) 
 		{
-			const AAccelByteWarsPlayerState* PlayerState = static_cast<AAccelByteWarsPlayerState*>(UGameplayStatics::GetPlayerStateFromUniqueNetId(GetWorld(), Member.UniqueNetId.GetUniqueNetId()));
+			const AAccelByteWarsPlayerState* PlayerState = StaticCast<AAccelByteWarsPlayerState*>(UGameplayStatics::GetPlayerStateFromUniqueNetId(GetWorld(), Member.UniqueNetId));
 			if (!PlayerState)
 			{
 				continue;
@@ -123,7 +123,7 @@ void UGameOverWidget::SetupLeaderboard()
 		}
 	}
 
-	// If single player, the first team always wins.
+	// If single player, the first team/player always wins.
 	if (GameState->Teams.Num() == 1) 
 	{
 		WinnerTeamId = 0;
@@ -138,10 +138,12 @@ void UGameOverWidget::SetupLeaderboard()
 	else 
 	{
 		Ws_Winner->SetActiveWidgetIndex(0);
-		SetWinner(
-			FText::FromString(FString::Printf(TEXT("Team %d"), WinnerTeamId + 1)),
-			GameInstance->GetTeamColor(WinnerTeamId)
-		);
+
+		const FString WinnerName = (GameState->GameModeType == EGameModeType::TDM) ?
+			FString::Printf(TEXT("Team %d"), WinnerTeamId + 1) :
+			FString::Printf(TEXT("Player %d"), WinnerTeamId + 1);
+
+		SetWinner(FText::FromString(WinnerName), GameInstance->GetTeamColor(WinnerTeamId));
 	}
 }
 
