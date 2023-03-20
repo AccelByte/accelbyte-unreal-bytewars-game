@@ -12,6 +12,7 @@
 #include "Core/AssetManager/TutorialModules/TutorialModuleDataAsset.h"
 
 #include "Core/GameModes/AccelByteWarsGameModeBase.h"
+#include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/System/AccelByteWarsGameSession.h"
 #include "Core/Player/AccelByteWarsPlayerState.h"
 
@@ -60,6 +61,11 @@ void UMatchmakingEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Colle
 		UPauseWidget::OnQuitGameDelegate.AddUObject(this, &ThisClass::OnQuitGameButtonsClicked);
 		UGameOverWidget::OnQuitGameDelegate.AddUObject(this, &ThisClass::OnQuitGameButtonsClicked);
 
+		if (IsRunningDedicatedServer())
+		{
+			OnServerReceivedSessionDelegateHandle = SessionInterface->AddOnServerReceivedSessionDelegate_Handle(FOnServerReceivedSessionDelegate::CreateUObject(this, &ThisClass::OnServerReceivedSession));
+		}
+
 		BindDelegates();
 	}
 }
@@ -73,40 +79,12 @@ void UMatchmakingEssentialsSubsystem::Deinitialize()
 	UPauseWidget::OnQuitGameDelegate.Clear();
 	UGameOverWidget::OnQuitGameDelegate.Clear();
 
+	if (IsRunningDedicatedServer())
+	{
+		SessionInterface->ClearOnServerReceivedSessionDelegate_Handle(OnServerReceivedSessionDelegateHandle);
+	}
+
 	UnbindDelegates();
-}
-
-void UMatchmakingEssentialsSubsystem::BindDelegates()
-{
-	// Bind delegates to game events.
-	AAccelByteWarsGameSession::OnRegisterServerDelegate.AddUObject(this, &ThisClass::RegisterServer);
-	AAccelByteWarsGameModeBase::OnGetTeamIdFromSessionDelegate.AddUObject(this, &ThisClass::GetTeamIdFromSession);
-	AAccelByteWarsGameSession::OnUnregisterServerDelegate.AddUObject(this, &ThisClass::UnregisterServer);
-
-	// Listen to backfill proposal. Run it only on game server.
-	if (IsRunningDedicatedServer())
-	{
-		SessionInterface->AddOnBackfillProposalReceivedDelegate_Handle(FOnBackfillProposalReceivedDelegate::CreateUObject(this, &ThisClass::OnBackfillProposalReceived));
-	}
-}
-
-void UMatchmakingEssentialsSubsystem::UnbindDelegates()
-{
-	// Unbind delegates from game events.
-	AAccelByteWarsGameSession::OnRegisterServerDelegate.Clear();
-	AAccelByteWarsGameModeBase::OnGetTeamIdFromSessionDelegate.Clear();
-	AAccelByteWarsGameSession::OnUnregisterServerDelegate.Clear();
-
-	// Unbind backfill proposal listener. Run it only on game server.
-	if (IsRunningDedicatedServer())
-	{
-		SessionInterface->ClearOnBackfillProposalReceivedDelegate_Handle(BackfillProposalReceivedDelegateHandle);
-	}
-}
-
-void UMatchmakingEssentialsSubsystem::OnQuitGameButtonsClicked(APlayerController* PC)
-{
-	LeaveSession(PC);
 }
 
 bool UMatchmakingEssentialsSubsystem::IsGameSessionValid(FName SessionName)
@@ -130,6 +108,43 @@ FUniqueNetIdPtr UMatchmakingEssentialsSubsystem::GetPlayerUniqueNetId(APlayerCon
 	return LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId();
 }
 
+void UMatchmakingEssentialsSubsystem::OnServerReceivedSession(FName SessionName)
+{
+	if (!IsGameSessionValid(SessionName))
+	{
+		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Server cannot handle received game session. Game Session is invalid."));
+		return;
+	}
+
+	FNamedOnlineSession* Session = SessionInterface->GetNamedSession(SessionName);
+	if (!ensure(Session))
+	{
+		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Server cannot handle received game session. Session in null."));
+		return;
+	}
+
+	TSharedPtr<FOnlineSessionInfoAccelByteV2> SessionInfo = StaticCastSharedPtr<FOnlineSessionInfoAccelByteV2>(Session->SessionInfo);
+	if (!ensure(SessionInfo.IsValid()))
+	{
+		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Server cannot handle received game session. Session Info is not valid."));
+		return;
+	}
+
+	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+	if (!ensure(GameInstance)) 
+	{
+		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Server cannot handle received game session. Game Instance is null."));
+		return;
+	}
+
+	// Set server's game mode.
+	const FString GameMode = SessionInfo->GetBackendSessionData()->Configuration.Name;
+	if (!GameMode.IsEmpty())
+	{
+		GameInstance->AssignGameMode(GameMode.ToUpper());
+	}
+}
+
 void UMatchmakingEssentialsSubsystem::SetTeamMemberAccelByteInformation(APlayerController* PC, TDelegate<void(bool /*bIsSuccessful*/)> OnComplete)
 {
 	const FUniqueNetIdPtr PlayerNetId = PC->PlayerState->GetUniqueId().GetUniqueNetId();
@@ -148,7 +163,7 @@ void UMatchmakingEssentialsSubsystem::SetTeamMemberAccelByteInformation(APlayerC
 		return;
 	}
 
-	AAccelByteWarsPlayerState* PlayerState = static_cast<AAccelByteWarsPlayerState*>(PC->PlayerState);
+	AAccelByteWarsPlayerState* PlayerState = StaticCast<AAccelByteWarsPlayerState*>(PC->PlayerState);
 	if (!PlayerState)
 	{
 		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Player State is null. Cannot get player's AccelByte information."));
@@ -161,11 +176,7 @@ void UMatchmakingEssentialsSubsystem::SetTeamMemberAccelByteInformation(APlayerC
 		THandler<FListBulkUserInfo>::CreateWeakLambda(this, [PlayerState, OnComplete](const FListBulkUserInfo& Result)
 		{
 			const FBaseUserInfo PlayerInfo = Result.Data[0];
-			if (!PlayerInfo.Username.IsEmpty()) 
-			{
-				PlayerState->SetPlayerName(PlayerInfo.Username);
-			}
-
+			PlayerState->SetPlayerName(PlayerInfo.DisplayName);
 			PlayerState->AvatarURL = PlayerInfo.AvatarUrl;
 
 			OnComplete.ExecuteIfBound(true);
@@ -176,6 +187,42 @@ void UMatchmakingEssentialsSubsystem::SetTeamMemberAccelByteInformation(APlayerC
 		})
 	);
 }
+
+
+#pragma region Module.3 General Function Definitions
+void UMatchmakingEssentialsSubsystem::BindDelegates()
+{
+	// Bind delegates to game events.
+	AAccelByteWarsGameSession::OnRegisterServerDelegate.AddUObject(this, &ThisClass::RegisterServer);
+	AAccelByteWarsGameModeBase::OnGetTeamIdFromSessionDelegate.AddUObject(this, &ThisClass::GetTeamIdFromSession);
+	AAccelByteWarsGameSession::OnUnregisterServerDelegate.AddUObject(this, &ThisClass::UnregisterServer);
+
+	// Listen to backfill proposal. Run it only on game server.
+	if (IsRunningDedicatedServer())
+	{
+		BackfillProposalReceivedDelegateHandle = SessionInterface->AddOnBackfillProposalReceivedDelegate_Handle(FOnBackfillProposalReceivedDelegate::CreateUObject(this, &ThisClass::OnBackfillProposalReceived));
+	}
+}
+
+void UMatchmakingEssentialsSubsystem::UnbindDelegates()
+{
+	// Unbind delegates from game events.
+	AAccelByteWarsGameSession::OnRegisterServerDelegate.Clear();
+	AAccelByteWarsGameModeBase::OnGetTeamIdFromSessionDelegate.Clear();
+	AAccelByteWarsGameSession::OnUnregisterServerDelegate.Clear();
+
+	// Unbind backfill proposal listener. Run it only on game server.
+	if (IsRunningDedicatedServer())
+	{
+		SessionInterface->ClearOnBackfillProposalReceivedDelegate_Handle(BackfillProposalReceivedDelegateHandle);
+	}
+}
+
+void UMatchmakingEssentialsSubsystem::OnQuitGameButtonsClicked(APlayerController* PC)
+{
+	LeaveSession(PC);
+}
+#pragma endregion
 
 
 #pragma region Module.3a Function Definitions
@@ -203,7 +250,7 @@ void UMatchmakingEssentialsSubsystem::StartMatchmaking(APlayerController* PC, co
 
 	const FUniqueNetIdPtr LocalPlayerId = GetPlayerUniqueNetId(PC);
 	ensure(LocalPlayerId.IsValid());
-
+	
 	// Setup matchmaking search handle, it will be used to store session search results.
 	TSharedRef<FOnlineSessionSearch> MatchmakingSearchHandle = MakeShared<FOnlineSessionSearch>();
 	MatchmakingSearchHandle->QuerySettings.Set(SETTING_SESSION_MATCHPOOL, MatchPool, EOnlineComparisonOp::Equals);
