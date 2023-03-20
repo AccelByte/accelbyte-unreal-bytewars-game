@@ -176,7 +176,10 @@ void UMatchmakingEssentialsSubsystem::SetTeamMemberAccelByteInformation(APlayerC
 		THandler<FListBulkUserInfo>::CreateWeakLambda(this, [PlayerState, OnComplete](const FListBulkUserInfo& Result)
 		{
 			const FBaseUserInfo PlayerInfo = Result.Data[0];
-			PlayerState->SetPlayerName(PlayerInfo.DisplayName);
+			if (!PlayerInfo.DisplayName.IsEmpty())
+			{
+				PlayerState->SetPlayerName(PlayerInfo.DisplayName);
+			}
 			PlayerState->AvatarURL = PlayerInfo.AvatarUrl;
 
 			OnComplete.ExecuteIfBound(true);
