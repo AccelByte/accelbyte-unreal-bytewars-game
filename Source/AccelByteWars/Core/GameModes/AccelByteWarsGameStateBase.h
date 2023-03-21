@@ -160,7 +160,10 @@ public:
 		UPARAM(ref) int32& OutLives,
 		const int32 ControllerId = 0,
 		const float Score = 0.0f,
-		const int32 KillCount = 0, const bool bForce = false);
+		const int32 KillCount = 0,
+		const FString PlayerName = TEXT(""),
+		const FString AvatarURL = TEXT(""),
+		const bool bForce = false);
 
 	/**
 	 * @brief Remove Player from a team

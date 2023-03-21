@@ -116,6 +116,7 @@ void UMatchLobbyWidget::GenerateMultiplayerTeamEntries()
 	ResetTeamEntries();
 
 	// Spawn team and player entry widgets.
+	int32 PlayerIndex = 0;
 	for (FGameplayTeamData Team : GameState->Teams) 
 	{
 		const TWeakObjectPtr<UTeamEntryWidget> TeamEntry = MakeWeakObjectPtr<UTeamEntryWidget>(CreateWidget<UTeamEntryWidget>(this, TeamEntryWidget.Get()));
@@ -127,9 +128,12 @@ void UMatchLobbyWidget::GenerateMultiplayerTeamEntries()
 		// Spawn team entry widget.
 		for (FGameplayPlayerData Member : Team.TeamMembers)
 		{
+			PlayerIndex++;
+			const FString PlayerName = Member.PlayerName.IsEmpty() ? FString::Printf(TEXT("Player %d"), PlayerIndex) : Member.PlayerName;
+
 			// Spawn player entry and set the default username.
 			const TWeakObjectPtr<UPlayerEntryWidget> PlayerEntry = MakeWeakObjectPtr<UPlayerEntryWidget>(CreateWidget<UPlayerEntryWidget>(this, PlayerEntryWidget.Get()));
-			PlayerEntry->SetUsername(FText::FromString(Member.PlayerName));
+			PlayerEntry->SetUsername(FText::FromString(PlayerName));
 			TeamEntry->AddPlayerEntry(PlayerEntry.Get());
 			PlayerEntry->SetAvatarTint(TeamColor);
 			PlayerEntry->SetTextColor(TeamColor);

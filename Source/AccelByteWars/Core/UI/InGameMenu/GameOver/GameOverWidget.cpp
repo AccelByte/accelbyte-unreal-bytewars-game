@@ -5,7 +5,6 @@
 #include "Core/UI/InGameMenu/GameOver/GameOverWidget.h"
 #include "Core/UI/InGameMenu/GameOver/Components/GameOverLeaderboardEntry.h"
 
-#include "Core/GameModes/AccelByteWarsGameStateBase.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/GameModes/AccelByteWarsGameStateBase.h"
 
@@ -89,10 +88,12 @@ void UGameOverWidget::NativeOnDeactivated()
 
 void UGameOverWidget::SetupLeaderboard()
 {
-	int32 HighestScore = 0;
+	int32 HighestScore = INDEX_NONE;
 	int32 WinnerTeamId = INDEX_NONE;
+	FString WinnerPlayerName = TEXT("");
 
 	// Generate leaderboard entries.
+	int32 PlayerIndex = 0;
 	for (const FGameplayTeamData& Team : GameState->Teams) 
 	{
 		// Get team with highest score.
@@ -105,6 +106,7 @@ void UGameOverWidget::SetupLeaderboard()
 		else if (Team.GetTeamScore() == HighestScore)
 		{
 			WinnerTeamId = INDEX_NONE;
+			WinnerPlayerName = TEXT("");
 		}
 
 		const FLinearColor TeamColor = GameInstance->GetTeamColor(Team.TeamId);
@@ -112,14 +114,15 @@ void UGameOverWidget::SetupLeaderboard()
 		// Generate team members entry.
 		for (const FGameplayPlayerData& Member : Team.TeamMembers) 
 		{
-			AddLeaderboardEntry(FText::FromString(Member.PlayerName), Member.Score, Member.KillCount, TeamColor);
-		}
-	}
+			PlayerIndex++;
+			const FString PlayerName = Member.PlayerName.IsEmpty() ? FString::Printf(TEXT("Player %d"), PlayerIndex) : Member.PlayerName;
+			if (Team.TeamId == WinnerTeamId) 
+			{
+				WinnerPlayerName = PlayerName;
+			}
 
-	// If single player, the first team/player always wins.
-	if (GameState->Teams.Num() == 1) 
-	{
-		WinnerTeamId = 0;
+			AddLeaderboardEntry(FText::FromString(PlayerName), Member.Score, Member.KillCount, TeamColor);
+		}
 	}
 
 	// Display draw game.
@@ -132,10 +135,7 @@ void UGameOverWidget::SetupLeaderboard()
 	{
 		Ws_Winner->SetActiveWidgetIndex(0);
 
-		const FString WinnerName = (GameState->GameModeType == EGameModeType::TDM) ?
-			FString::Printf(TEXT("Team %d"), WinnerTeamId + 1) :
-			GameState->Teams[WinnerTeamId].TeamMembers[0].PlayerName;
-
+		const FString WinnerName = (GameState->GameModeType == EGameModeType::TDM) ? FString::Printf(TEXT("Team %d"), WinnerTeamId + 1) : WinnerPlayerName;
 		SetWinner(FText::FromString(WinnerName), GameInstance->GetTeamColor(WinnerTeamId));
 	}
 }

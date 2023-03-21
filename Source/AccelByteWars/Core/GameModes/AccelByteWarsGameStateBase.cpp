@@ -130,6 +130,8 @@ bool AAccelByteWarsGameStateBase::AddPlayerToTeam(
 	const int32 ControllerId,
 	const float Score,
 	const int32 KillCount,
+	const FString PlayerName,
+	const FString AvatarURL,
 	const bool bForce)
 {
 	// check if player have been added to any team
@@ -151,8 +153,8 @@ bool AAccelByteWarsGameStateBase::AddPlayerToTeam(
 	Teams[TeamId].TeamMembers.Add(FGameplayPlayerData{
 		UniqueNetId,
 		ControllerId,
-		FString::Printf(TEXT("Player %d"), GetRegisteredPlayersNum() + 1), // Default player's name.
-		TEXT(""), // Default player's avatar URL.
+		PlayerName,
+		AvatarURL,
 		TeamId,
 		Score,
 		KillCount,
