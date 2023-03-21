@@ -1,9 +1,11 @@
+Byte Wars - Sample Code License
+--------
 
 This software is licensed to you by AccelByte, Inc. for the sole purpose of developing interoperability with AccelByte's proprietary products and services. You may not use it for any other purpose. This code is provided "as is" and we make no guarantees about its functionality or usefulness.
 
---------
 
 AccelByte Development Code License
+--------
 
 This proprietary license agreement (“Agreement”) is between you and AccelByte, Inc. ("AccelByte"), and governs your use of the SDK, sample code or other software licensed that is accompanied by this license (the "Licensed Software"). By using the Licensed Software, you agree to be bound by the terms of this Agreement. If you do not agree to the terms of this Agreement, do not use the Licensed Software.
 
