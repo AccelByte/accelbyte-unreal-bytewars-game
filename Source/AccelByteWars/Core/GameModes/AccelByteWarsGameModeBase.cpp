@@ -121,31 +121,24 @@ void AAccelByteWarsGameModeBase::Tick(float DeltaSeconds)
 		switch (ByteWarsGameState->GameStatus)
 		{
 		case EGameStatus::IDLE:
-		case EGameStatus::AWAITING_PLAYERS_DS:
-			// if on DS, execute NotEnoughPlayer shutdown countdown logic
-			if (IsRunningDedicatedServer())
-			{
-				if (CheckIfAllPlayersIsInOneTeam())
-				{
-					NotEnoughPlayerCountdownCounting(DeltaSeconds);
-				}
-				else
-				{
-					// reset NotEnoughPlayerCountdown
-					SetupShutdownCountdownsValue();
-				}
-			}
-			// if not, just wait until all registered users logs in to server
-			else
-			{
-				ByteWarsGameState->GameStatus = EGameStatus::AWAITING_PLAYERS;
-				break;
-			}
 		case EGameStatus::AWAITING_PLAYERS:
 			// check if all registered players have re-enter the server
 			if (ByteWarsGameState->PlayerArray.Num() == ByteWarsGameState->GetRegisteredPlayersNum())
 			{
 				ByteWarsGameState->GameStatus = EGameStatus::PRE_GAME_COUNTDOWN_STARTED;
+				if (IsRunningDedicatedServer())
+				{
+					// reset NotEnoughPlayerCountdown
+					SetupShutdownCountdownsValue();
+				}
+			}
+			else
+			{
+				// use NotEnoughPlayerCountdown as a countdown to wait all registered player to reconnect to the DS
+				if (IsRunningDedicatedServer())
+				{
+					NotEnoughPlayerCountdownCounting(DeltaSeconds);
+				}
 			}
 			break;
 		case EGameStatus::PRE_GAME_COUNTDOWN_STARTED:
