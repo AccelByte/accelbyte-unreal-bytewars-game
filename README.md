@@ -76,3 +76,27 @@ To clone the repository and checkout the submodule at the same time, run the fol
    ```batch
    open 127.0.0.1:7777/Game/ByteWars/Maps/MainMenu/MainMenu
    ``` 
+
+## Byte Wars Launch Arguments
+
+### Game Server
+
+1. Specify game mode to be used
+   ```batch
+   -GameMode=<game_mode_code_name>
+   ```
+   By default, Game server will use the first index of DT_GameModes.
+
+2. Specify Game Dedicated Server's shutdown delay upon game finished.
+   ```batch
+   -ShutdownOnFinishedDelay=<delay_in_secs>
+   ```
+   Triggered on Dedicated Server only, right after game ends, when the Game Over UI shown in client.
+   Default: 30.
+
+3. Specify Game Dedicated Server's shutdown delay upon game finished.
+   ```batch
+   -ShutdownOnOneTeamOrLessDelay=<delay_in_secs>
+   ```
+   Triggered on Dedicated Server only, whenever there's one or less team.
+   Default: 30.
