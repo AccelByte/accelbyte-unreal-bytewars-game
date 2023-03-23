@@ -119,6 +119,8 @@ void UMatchLobbyWidget::GenerateMultiplayerTeamEntries()
 	int32 PlayerIndex = 0;
 	for (FGameplayTeamData Team : GameState->Teams) 
 	{
+		if (Team.TeamMembers.IsEmpty()) continue;
+
 		const TWeakObjectPtr<UTeamEntryWidget> TeamEntry = MakeWeakObjectPtr<UTeamEntryWidget>(CreateWidget<UTeamEntryWidget>(this, TeamEntryWidget.Get()));
 		Panel_TeamList->AddChild(TeamEntry.Get());
 

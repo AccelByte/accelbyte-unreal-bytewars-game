@@ -96,6 +96,8 @@ void UGameOverWidget::SetupLeaderboard()
 	int32 PlayerIndex = 0;
 	for (const FGameplayTeamData& Team : GameState->Teams) 
 	{
+		if (Team.TeamMembers.IsEmpty()) continue;
+
 		// Get team with highest score.
 		if (Team.GetTeamScore() > HighestScore) 
 		{
