@@ -85,6 +85,12 @@ public:
 	UPROPERTY(BlueprintReadWrite, Replicated)
 	float TimeLeft = INDEX_NONE;
 
+	UPROPERTY(BlueprintReadWrite, Replicated)
+	FVector2D MinGameBound = {-1500.0, -1300.0};
+
+	UPROPERTY(BlueprintReadWrite, Replicated)
+	FVector2D MaxGameBound = {1500.0, 1300.0};
+
 	/**
 	 * @brief Current gameplay state
 	 */
