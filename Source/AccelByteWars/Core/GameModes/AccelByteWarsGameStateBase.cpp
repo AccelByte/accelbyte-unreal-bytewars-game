@@ -12,6 +12,8 @@ void AAccelByteWarsGameStateBase::GetLifetimeReplicatedProps(TArray<FLifetimePro
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
+	DOREPLIFETIME(AAccelByteWarsGameStateBase, GameModeType);
+	
 	DOREPLIFETIME(AAccelByteWarsGameStateBase, LobbyStatus);
 	DOREPLIFETIME(AAccelByteWarsGameStateBase, LobbyCountdown);
 
@@ -128,6 +130,8 @@ bool AAccelByteWarsGameStateBase::AddPlayerToTeam(
 	const int32 ControllerId,
 	const float Score,
 	const int32 KillCount,
+	const FString PlayerName,
+	const FString AvatarURL,
 	const bool bForce)
 {
 	// check if player have been added to any team
@@ -149,6 +153,8 @@ bool AAccelByteWarsGameStateBase::AddPlayerToTeam(
 	Teams[TeamId].TeamMembers.Add(FGameplayPlayerData{
 		UniqueNetId,
 		ControllerId,
+		PlayerName,
+		AvatarURL,
 		TeamId,
 		Score,
 		KillCount,

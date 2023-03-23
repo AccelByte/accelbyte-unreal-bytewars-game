@@ -6,7 +6,6 @@
 
 #include "CoreMinimal.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
-#include "Core/UI/Components/Countdown/CountdownWidget.h"
 #include "MatchLobbyWidget.generated.h"
 
 class UAccelByteWarsGameInstance;
@@ -85,5 +84,4 @@ private:
 
 	UAccelByteWarsGameInstance* GameInstance;
 	AAccelByteWarsGameStateBase* GameState;
-	TArray<UPlayerEntryWidget*> PlayerEntries;
 };

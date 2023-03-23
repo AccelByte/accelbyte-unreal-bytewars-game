@@ -112,6 +112,8 @@ private:
 
 	void NotEnoughPlayerCountdownCounting(const float& DeltaSeconds) const;
 
+	void UpdatePlayerInformation(const APlayerController* PlayerController) const;
+
 	UPROPERTY()
 	AAccelByteWarsGameStateBase* ByteWarsGameState = nullptr;
 

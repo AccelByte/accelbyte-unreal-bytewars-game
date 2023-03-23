@@ -46,6 +46,11 @@ class ACCELBYTEWARS_API AAccelByteWarsGameStateBase : public AGameStateBase
 	//~End of AActor overriden functions
 
 public:
+	/**
+	 * @brief Store current game mode.
+	 */
+	UPROPERTY(BlueprintReadWrite, Replicated)
+	EGameModeType GameModeType = EGameModeType::FFA;
 
 	/**
 	 * @brief Teams info and data
@@ -154,7 +159,10 @@ public:
 		UPARAM(ref) int32& OutLives,
 		const int32 ControllerId = 0,
 		const float Score = 0.0f,
-		const int32 KillCount = 0, const bool bForce = false);
+		const int32 KillCount = 0,
+		const FString PlayerName = TEXT(""),
+		const FString AvatarURL = TEXT(""),
+		const bool bForce = false);
 
 	/**
 	 * @brief Remove Player from a team

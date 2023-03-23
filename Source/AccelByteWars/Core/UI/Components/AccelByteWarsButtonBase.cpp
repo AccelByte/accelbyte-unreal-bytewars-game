@@ -29,7 +29,7 @@ void UAccelByteWarsButtonBase::SetButtonText(const FText& InText)
 
 void UAccelByteWarsButtonBase::RefreshButtonText()
 {
-	if (bOverride_ButtonText || ButtonText.IsEmpty())
+	if (!bOverride_ButtonText || ButtonText.IsEmpty())
 	{
 		if (InputActionWidget)
 		{
