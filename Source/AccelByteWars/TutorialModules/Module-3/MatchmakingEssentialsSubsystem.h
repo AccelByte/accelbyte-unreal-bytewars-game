@@ -32,7 +32,7 @@ private:
 #pragma region Module.3b Function Declarations
 private:
 	void RegisterServer(FName SessionName);
-	void GetTeamIdFromSession(APlayerController* PC, int32& OutTeamId);
+	void GetTeamIdFromSession(FName SessionName, const FUniqueNetIdRepl& UniqueNetId, int32& OutTeamId);
 	void UnregisterServer(FName SessionName);
 	void OnBackfillProposalReceived(FAccelByteModelsV2MatchmakingBackfillProposalNotif Proposal);
 #pragma endregion
@@ -44,6 +44,7 @@ private:
 	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result, APlayerController* PC);
 	bool TravelClient(FName SessionName, APlayerController* PC);
 	void OnSessionServerUpdate(FName SessionName, APlayerController* PC);
+	void OnSessionServerError(FName SessionName, const FString& ErrorMessage);
 	void LeaveSession(APlayerController* PC);
 #pragma endregion
 
@@ -68,6 +69,7 @@ private:
 	FDelegateHandle CancelMatchmakingCompleteDelegateHandle;
 	FDelegateHandle JoinSessionCompleteDelegateHandle;
 	FDelegateHandle SessionServerUpdateDelegateHandle;
+	FDelegateHandle SessionServerErrorDelegateHandle;
 	FDelegateHandle BackfillProposalReceivedDelegateHandle;
 	FDelegateHandle OnServerReceivedSessionDelegateHandle;
 

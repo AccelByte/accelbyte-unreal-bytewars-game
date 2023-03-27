@@ -79,6 +79,12 @@ void UMatchmakingEssentialsSubsystem::Deinitialize()
 	UPauseWidget::OnQuitGameDelegate.Clear();
 	UGameOverWidget::OnQuitGameDelegate.Clear();
 
+	if (!SessionInterface.IsValid())
+	{
+		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Session Interface is not valid."));
+		return;
+	}
+
 	if (IsRunningDedicatedServer())
 	{
 		SessionInterface->ClearOnServerReceivedSessionDelegate_Handle(OnServerReceivedSessionDelegateHandle);
@@ -404,25 +410,23 @@ void UMatchmakingEssentialsSubsystem::RegisterServer(FName SessionName)
 	SessionInterface->RegisterServer(SessionName);
 }
 
-void UMatchmakingEssentialsSubsystem::GetTeamIdFromSession(APlayerController* PC, int32& OutTeamId)
+void UMatchmakingEssentialsSubsystem::GetTeamIdFromSession(FName SessionName, const FUniqueNetIdRepl& UniqueNetId, int32& OutTeamId)
 {
 	OutTeamId = INDEX_NONE;
 
-	// Ensure the player is valid.
-	if (!ensure(PC))
+	if (!IsGameSessionValid(SessionName)) 
 	{
-		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot get team assignment. PlayerController is null."));
+		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot get team assignment. Game session is not valid."));
 		return;
 	}
 
-	const FUniqueNetIdPtr RawNetId = PC->PlayerState->GetUniqueId().GetUniqueNetId();
-	if (!ensure(RawNetId.IsValid()))
+	if (!UniqueNetId.IsValid()) 
 	{
 		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot get team assignment. Player's UniqueNetId is null."));
 		return;
 	}
 
-	const FUniqueNetIdAccelByteUserPtr PlayerNetId = StaticCastSharedPtr<const FUniqueNetIdAccelByteUser>(RawNetId);
+	const FUniqueNetIdAccelByteUserPtr PlayerNetId = StaticCastSharedPtr<const FUniqueNetIdAccelByteUser>(UniqueNetId.GetUniqueNetId());
 	if (!ensure(PlayerNetId))
 	{
 		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot get team assignment. Player's AccelByte UniqueNetId is not valid."));
@@ -436,7 +440,7 @@ void UMatchmakingEssentialsSubsystem::GetTeamIdFromSession(APlayerController* PC
 		return;
 	}
 
-	FNamedOnlineSession* Session = SessionInterface->GetNamedSession(NAME_GameSession);
+	FNamedOnlineSession* Session = SessionInterface->GetNamedSession(SessionName);
 	if (!ensure(Session))
 	{
 		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot get team assignment. Session in null."));
@@ -508,7 +512,7 @@ void UMatchmakingEssentialsSubsystem::OnBackfillProposalReceived(FAccelByteModel
 	}
 
 	// Accept backfill proposal.
-	SessionInterface->AcceptBackfillProposal(NAME_GameSession, Proposal, false, FOnAcceptBackfillProposalComplete::CreateWeakLambda(this, [](bool bWasSuccessful)
+	SessionInterface->AcceptBackfillProposal(NAME_GameSession, Proposal, false, FOnAcceptBackfillProposalComplete::CreateWeakLambda(this, [this](bool bWasSuccessful)
 	{
 		if (bWasSuccessful)
 		{
@@ -517,6 +521,7 @@ void UMatchmakingEssentialsSubsystem::OnBackfillProposalReceived(FAccelByteModel
 		else
 		{
 			UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Failed to accept backfill."));
+			OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed);
 		}
 	}));
 }
@@ -570,6 +575,7 @@ void UMatchmakingEssentialsSubsystem::OnJoinSessionComplete(FName SessionName, E
 		if (!TravelClient(SessionName, PC))
 		{
 			SessionServerUpdateDelegateHandle = SessionInterface->AddOnSessionServerUpdateDelegate_Handle(FOnSessionServerUpdateDelegate::CreateUObject(this, &ThisClass::OnSessionServerUpdate, PC));
+			SessionServerErrorDelegateHandle = SessionInterface->AddOnSessionServerErrorDelegate_Handle(FOnSessionServerErrorDelegate::CreateUObject(this, &ThisClass::OnSessionServerError));
 		}
 		else 
 		{
@@ -647,6 +653,20 @@ void UMatchmakingEssentialsSubsystem::OnSessionServerUpdate(FName SessionName, A
 		// The game client failed to travel to the server.
 		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed);
 	}
+}
+
+void UMatchmakingEssentialsSubsystem::OnSessionServerError(FName SessionName, const FString& ErrorMessage)
+{
+	if (!IsGameSessionValid(SessionName))
+	{
+		return;
+	}
+
+	UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Failed to travel to the game server. Error: %s"), *ErrorMessage);
+	OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed);
+
+	ensure(SessionInterface.IsValid());
+	SessionInterface->ClearOnSessionServerErrorDelegate_Handle(SessionServerErrorDelegateHandle);
 }
 
 void UMatchmakingEssentialsSubsystem::LeaveSession(APlayerController* PC)
