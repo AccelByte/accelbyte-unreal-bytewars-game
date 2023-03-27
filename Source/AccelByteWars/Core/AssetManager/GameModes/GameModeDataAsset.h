@@ -42,6 +42,7 @@ public:
 	static FPrimaryAssetId GetGameModeTypeForCodeName(const FString& InCodeName);
 
 public:
+	// Game mode type: FFA, TDM, or etc
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	EGameModeType GameModeType = EGameModeType::FFA;
 
@@ -62,7 +63,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bIsTeamGame;
 
-	// Default team count
+	// Default max team count
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 MaxTeamNum;
 
@@ -78,27 +79,35 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 ScoreLimit;
 
+	// How many missiles per player can be fired at once
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 FiredMissilesLimit;
 
+	// How many lives player will start with
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 StartingLives;
 
+	// Base missile score for killing an enemy
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 BaseScoreForKill;
 
+	// Missile score increment based on time
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 TimeScoreIncrement;
 
+	// Missile score delta time
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	float TimeScoreDeltaTime;
 
+	// Base missile score for skimming (hovering close to planets / ships)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 SkimInitialScore;
 
+	// Missile skim score delta time
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	float SkimScoreDeltaTime;
 
+	// Missile skim score multiplier
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	float SkimScoreAdditionalMultiplier;
 	

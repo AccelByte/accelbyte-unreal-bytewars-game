@@ -60,7 +60,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bIsTeamGame = false;
 
-	// Default team count
+	// Default max team count
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 MaxTeamNum = 4;
 
@@ -76,29 +76,35 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 ScoreLimit = INDEX_NONE;
 
-	// Default fired missiles limit at a time per player
+	// How many missiles per player can be fired at once
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 FiredMissilesLimit = 1;
 
-	// Default starting lives for each player
+	// How many lives player will start with
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 StartingLives = 1;
 
+	// Base missile score for killing an enemy
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 BaseScoreForKill = 500;
 
+	// Missile score increment based on time
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 TimeScoreIncrement = 100;
 
+	// Missile score delta time
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	float TimeScoreDeltaTime = 0.1f;
 
+	// Base missile score for skimming (hovering close to planets / ships)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 SkimInitialScore = 100;
 
+	// Missile skim score delta time
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	float SkimScoreDeltaTime = 0.25f;
 
+	// Missile skim score multiplier
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	float SkimScoreAdditionalMultiplier = 2.0f;
 
