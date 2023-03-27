@@ -124,7 +124,7 @@ int32 AAccelByteWarsGameStateBase::GetRegisteredPlayersNum() const
 }
 
 bool AAccelByteWarsGameStateBase::AddPlayerToTeam(
-	const uint8 TeamId,
+	const int8 TeamId,
 	const FUniqueNetIdRepl UniqueNetId,
 	int32& OutLives,
 	const int32 ControllerId,
@@ -134,6 +134,12 @@ bool AAccelByteWarsGameStateBase::AddPlayerToTeam(
 	const FString AvatarURL,
 	const bool bForce)
 {
+	if (TeamId <= INDEX_NONE) 
+	{
+		GAMESTATE_LOG(Warning, TEXT("AddPlayerToTeam: Team Index is invalid. Cancelling operation"));
+		return false;
+	}
+
 	// check if player have been added to any team
 	FGameplayPlayerData PlayerDataTemp;
 	if (!bForce && GetPlayerDataById(UniqueNetId,PlayerDataTemp, ControllerId))
@@ -166,14 +172,26 @@ bool AAccelByteWarsGameStateBase::AddPlayerToTeam(
 
 bool AAccelByteWarsGameStateBase::RemovePlayerFromTeam(const FUniqueNetIdRepl UniqueNetId, const int32 ControllerId)
 {
+	int AssignedTeamIndex = INDEX_NONE;
 	bool bStatus = false;
 	if (UniqueNetId.IsValid())
 	{
 		for (FGameplayTeamData& Team : Teams)
 		{
 			bStatus = Team.TeamMembers.Remove(FGameplayPlayerData{UniqueNetId, ControllerId}) > 0;
-			if (bStatus) break;
+			if (bStatus) 
+			{
+				AssignedTeamIndex = Teams.Find(Team);
+				break;
+			}
 		}
 	}
+
+	// Remove the team if it is empty.
+	if (AssignedTeamIndex != INDEX_NONE && Teams[AssignedTeamIndex].TeamMembers.IsEmpty())
+	{
+		Teams.RemoveAt(AssignedTeamIndex);
+	}
+
 	return bStatus;
 }
