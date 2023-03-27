@@ -79,6 +79,12 @@ void UMatchmakingSubsystem_Starter::Deinitialize()
 	UPauseWidget::OnQuitGameDelegate.Clear();
 	UGameOverWidget::OnQuitGameDelegate.Clear();
 
+	if (!SessionInterface.IsValid())
+	{
+		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Session Interface is not valid."));
+		return;
+	}
+
 	if (IsRunningDedicatedServer())
 	{
 		SessionInterface->ClearOnServerReceivedSessionDelegate_Handle(OnServerReceivedSessionDelegateHandle);
