@@ -56,7 +56,7 @@ void AAccelByteWarsGameModeBase::BeginPlay()
 	if (bIsGameplayLevel || IsRunningDedicatedServer())
 	{
 		// GameState setup
-		ByteWarsGameState->GameModeType = ByteWarsGameInstance->GameSetup.GameModeType;
+		ByteWarsGameState->GameSetup = ByteWarsGameInstance->GameSetup;
 		ByteWarsGameState->TimeLeft = ByteWarsGameInstance->GameSetup.MatchTime;
 
 		// setup existing players

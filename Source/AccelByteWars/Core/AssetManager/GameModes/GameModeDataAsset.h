@@ -42,9 +42,8 @@ public:
 	static FPrimaryAssetId GetGameModeTypeForCodeName(const FString& InCodeName);
 
 public:
-	// Base Class to use for this mode
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, AssetRegistrySearchable)
-	TSoftClassPtr<class AAccelByteWarsGameModeBase> DefaultClass;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	EGameModeType GameModeType = EGameModeType::FFA;
 
 	// Alias to set for this mode (needs to be unique)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
@@ -54,9 +53,6 @@ public:
 	// Stored as string so it is asset registry searchable
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, AssetRegistrySearchable)
 	FString GameModeTypeString;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	EGameModeType GameModeType = EGameModeType::FFA;
 	
 	// Either local multiplayer game or not
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
@@ -68,7 +64,7 @@ public:
 
 	// Default team count
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	int32 TeamNum;
+	int32 MaxTeamNum;
 
 	// Default maximum supported player
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
@@ -81,6 +77,30 @@ public:
 	// Default score limit
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 ScoreLimit;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 FiredMissilesLimit;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 StartingLives;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 BaseScoreForKill;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 TimeScoreIncrement;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float TimeScoreDeltaTime;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 SkimInitialScore;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float SkimScoreDeltaTime;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float SkimScoreAdditionalMultiplier;
 	
 public:
 	static const FPrimaryAssetType GameModeAssetType;

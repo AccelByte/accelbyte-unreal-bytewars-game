@@ -42,9 +42,6 @@ struct FGameModeData : public FTableRowBase
 	GENERATED_USTRUCT_BODY()
 
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, AssetRegistrySearchable)
-	TSoftClassPtr<class AAccelByteWarsGameModeBase> DefaultClass;
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	EGameModeType GameModeType = EGameModeType::FFA;
 	
@@ -59,6 +56,9 @@ public:
 	// Either local multiplayer game or not
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bIsLocalGame = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	bool bIsTeamGame = false;
 
 	// Default team count
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
@@ -83,6 +83,24 @@ public:
 	// Default starting lives for each player
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 StartingLives = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 BaseScoreForKill = 500;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 TimeScoreIncrement = 100;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float TimeScoreDeltaTime = 0.1f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 SkimInitialScore = 100;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float SkimScoreDeltaTime = 0.25f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float SkimScoreAdditionalMultiplier = 2.0f;
 
 	bool operator!() const
 	{
