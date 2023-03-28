@@ -7,24 +7,33 @@ const FPrimaryAssetType	UGameModeDataAsset::GameModeAssetType = TEXT("GameMode")
 
 FGameModeData UGameModeDataAsset::GetGameModeDataByCodeName(const FString& InCodeName)
 {
-	FPrimaryAssetId GameModeAssetId = GenerateAssetIdFromCodeName(InCodeName);
+	const FPrimaryAssetId GameModeAssetId = GenerateAssetIdFromCodeName(InCodeName);
 
 	FGameModeData GameModeData;
-	GameModeData.CodeName = InCodeName;
 
+	GameModeData.GameModeType = static_cast<EGameModeType>(UAccelByteWarsDataAsset::GetMetadataForAsset<BYTE>(GameModeAssetId, GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, GameModeType)));
+	GameModeData.CodeName = InCodeName;
 	GameModeData.DisplayName = UAccelByteWarsDataAsset::GetDisplayNameForAsset(GameModeAssetId);
 
-	FString DefaultClassString = UAccelByteWarsDataAsset::GetMetadataForAsset<FString>(GameModeAssetId, GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, DefaultClass));
-	GameModeData.DefaultClass = TSoftClassPtr<AAccelByteWarsGameModeBase>(DefaultClassString);
+	GameModeData.bIsLocalGame = UAccelByteWarsDataAsset::GetMetadataForAsset<bool>(GameModeAssetId, GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, bIsLocalGame));
+	GameModeData.bIsTeamGame = UAccelByteWarsDataAsset::GetMetadataForAsset<bool>(GameModeAssetId, GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, bIsTeamGame));
 
-	GameModeData.bIsLocalGame = UAccelByteWarsDataAsset::GetMetadataForAsset<bool>(GenerateAssetIdFromCodeName(InCodeName), GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, bIsLocalGame));
+	GameModeData.MaxTeamNum = UAccelByteWarsDataAsset::GetMetadataForAsset<int32>(GameModeAssetId, GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, MaxTeamNum));
+	GameModeData.MaxPlayers = UAccelByteWarsDataAsset::GetMetadataForAsset<int32>(GameModeAssetId, GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, MaxPlayers));
 
-	GameModeData.MaxTeamNum = UAccelByteWarsDataAsset::GetMetadataForAsset<int32>(GenerateAssetIdFromCodeName(InCodeName), GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, TeamNum));
+	GameModeData.MatchTime = UAccelByteWarsDataAsset::GetMetadataForAsset<int32>(GameModeAssetId, GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, MatchTime));
+	GameModeData.ScoreLimit = UAccelByteWarsDataAsset::GetMetadataForAsset<int32>(GameModeAssetId, GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, ScoreLimit));
+	GameModeData.FiredMissilesLimit = UAccelByteWarsDataAsset::GetMetadataForAsset<int32>(GameModeAssetId, GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, FiredMissilesLimit));
+	GameModeData.StartingLives = UAccelByteWarsDataAsset::GetMetadataForAsset<int32>(GameModeAssetId, GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, StartingLives));
+	GameModeData.BaseScoreForKill = UAccelByteWarsDataAsset::GetMetadataForAsset<int32>(GameModeAssetId, GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, BaseScoreForKill));
+	GameModeData.TimeScoreIncrement = UAccelByteWarsDataAsset::GetMetadataForAsset<int32>(GameModeAssetId, GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, TimeScoreIncrement));
 
-	GameModeData.MatchTime = UAccelByteWarsDataAsset::GetMetadataForAsset<int32>(GenerateAssetIdFromCodeName(InCodeName), GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, MatchTime));
-	GameModeData.MaxPlayers = UAccelByteWarsDataAsset::GetMetadataForAsset<int32>(GenerateAssetIdFromCodeName(InCodeName), GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, MaxPlayers));
+	GameModeData.TimeScoreDeltaTime = UAccelByteWarsDataAsset::GetMetadataForAsset<float>(GameModeAssetId, GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, TimeScoreDeltaTime));
 
-	GameModeData.ScoreLimit = UAccelByteWarsDataAsset::GetMetadataForAsset<int32>(GenerateAssetIdFromCodeName(InCodeName), GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, ScoreLimit));
+	GameModeData.SkimInitialScore = UAccelByteWarsDataAsset::GetMetadataForAsset<int32>(GameModeAssetId, GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, SkimInitialScore));
+
+	GameModeData.SkimScoreDeltaTime = UAccelByteWarsDataAsset::GetMetadataForAsset<float>(GameModeAssetId, GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, SkimScoreDeltaTime));
+	GameModeData.SkimScoreAdditionalMultiplier = UAccelByteWarsDataAsset::GetMetadataForAsset<float>(GameModeAssetId, GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, SkimScoreAdditionalMultiplier));
 
 	return GameModeData;
 }

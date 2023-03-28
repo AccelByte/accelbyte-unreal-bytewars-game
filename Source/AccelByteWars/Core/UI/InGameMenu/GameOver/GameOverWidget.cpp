@@ -137,7 +137,7 @@ void UGameOverWidget::SetupLeaderboard()
 	{
 		Ws_Winner->SetActiveWidgetIndex(0);
 
-		const FString WinnerName = (GameState->GameModeType == EGameModeType::TDM) ? FString::Printf(TEXT("Team %d"), WinnerTeamId + 1) : WinnerPlayerName;
+		const FString WinnerName = GameState->GameSetup.bIsTeamGame ? FString::Printf(TEXT("Team %d"), WinnerTeamId + 1) : WinnerPlayerName;
 		SetWinner(FText::FromString(WinnerName), GameInstance->GetTeamColor(WinnerTeamId));
 	}
 }

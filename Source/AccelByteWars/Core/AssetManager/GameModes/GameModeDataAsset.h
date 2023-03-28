@@ -42,9 +42,9 @@ public:
 	static FPrimaryAssetId GetGameModeTypeForCodeName(const FString& InCodeName);
 
 public:
-	// Base Class to use for this mode
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, AssetRegistrySearchable)
-	TSoftClassPtr<class AAccelByteWarsGameModeBase> DefaultClass;
+	// Game mode type: FFA, TDM, or etc
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	EGameModeType GameModeType = EGameModeType::FFA;
 
 	// Alias to set for this mode (needs to be unique)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
@@ -54,9 +54,6 @@ public:
 	// Stored as string so it is asset registry searchable
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, AssetRegistrySearchable)
 	FString GameModeTypeString;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	EGameModeType GameModeType = EGameModeType::FFA;
 	
 	// Either local multiplayer game or not
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
@@ -66,9 +63,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bIsTeamGame;
 
-	// Default team count
+	// Default max team count
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	int32 TeamNum;
+	int32 MaxTeamNum;
 
 	// Default maximum supported player
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
@@ -81,6 +78,38 @@ public:
 	// Default score limit
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 ScoreLimit;
+
+	// How many missiles per player can be fired at once
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 FiredMissilesLimit;
+
+	// How many lives player will start with
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 StartingLives;
+
+	// Base missile score for killing an enemy
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 BaseScoreForKill;
+
+	// Missile score increment based on time
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 TimeScoreIncrement;
+
+	// Missile score delta time
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float TimeScoreDeltaTime;
+
+	// Base missile score for skimming (hovering close to planets / ships)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 SkimInitialScore;
+
+	// Missile skim score delta time
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float SkimScoreDeltaTime;
+
+	// Missile skim score multiplier
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float SkimScoreAdditionalMultiplier;
 	
 public:
 	static const FPrimaryAssetType GameModeAssetType;

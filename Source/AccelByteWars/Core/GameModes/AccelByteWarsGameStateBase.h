@@ -47,10 +47,12 @@ class ACCELBYTEWARS_API AAccelByteWarsGameStateBase : public AGameStateBase
 
 public:
 	/**
-	 * @brief Store current game mode.
+	 * @brief Replicated purpose. Set on AAccelByteWarsGameModeBase::BeginPlay if current level is set as GameplayLevel. By design, GameSetup will not be change during game play.
+	 * To set the GameSetup, use UAccelByteWarsGameInstance::AssignGameMode.
+	 * To get the 'latest' GameSetup, use UAccelByteWarsGameInstance::GameSetup.
 	 */
-	UPROPERTY(BlueprintReadWrite, Replicated)
-	EGameModeType GameModeType = EGameModeType::FFA;
+	UPROPERTY(BlueprintReadOnly, Replicated)
+	FGameModeData GameSetup;
 
 	/**
 	 * @brief Teams info and data
