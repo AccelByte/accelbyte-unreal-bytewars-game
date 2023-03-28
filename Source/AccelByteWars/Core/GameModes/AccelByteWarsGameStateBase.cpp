@@ -12,6 +12,9 @@ void AAccelByteWarsGameStateBase::GetLifetimeReplicatedProps(TArray<FLifetimePro
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
+	DOREPLIFETIME(AAccelByteWarsGameStateBase, MinGameBound);
+	DOREPLIFETIME(AAccelByteWarsGameStateBase, MaxGameBound);
+
 	DOREPLIFETIME(AAccelByteWarsGameStateBase, GameModeType);
 	
 	DOREPLIFETIME(AAccelByteWarsGameStateBase, LobbyStatus);
