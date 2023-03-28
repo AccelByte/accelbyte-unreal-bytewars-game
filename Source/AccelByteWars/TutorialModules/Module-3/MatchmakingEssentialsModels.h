@@ -6,6 +6,12 @@
 
 #include "CoreMinimal.h"
 
+#define FAILED_MESSAGE_NONE FString(TEXT("No error on matchmaking process."))
+#define FAILED_FIND_MATCH FString(TEXT("Failed to find a match. Please try again."))
+#define FAILED_CANCEL_MATCH FString(TEXT("Failed to cancel matchmaking."))
+#define FAILED_JOIN_MATCH FString(TEXT("Failed to join the match. Please try again."))
+#define FAILED_FIND_SERVER FString(TEXT("Failed to travel to the game server. Game server not found. Please try again."))
+
 enum class EMatchmakingState
 {
 	Default,
@@ -16,5 +22,5 @@ enum class EMatchmakingState
 	MatchFound
 };
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnMatchmakingStateChanged, EMatchmakingState /*MatchmakingState*/);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnMatchmakingStateChanged, EMatchmakingState /*MatchmakingState*/, FString /* ErrorMessage */);
 typedef FOnMatchmakingStateChanged::FDelegate FOnMatchmakingStateChangedDelegate;
