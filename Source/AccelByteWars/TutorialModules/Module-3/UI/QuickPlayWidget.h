@@ -12,6 +12,7 @@
 
 class UAccelByteWarsGameInstance;
 class UWidgetSwitcher;
+class UTextBlock;
 class UCommonButtonBase;
 
 UCLASS()
@@ -28,7 +29,7 @@ protected:
 #pragma region Module.3c Function Declarations
 
 protected:
-	void OnMatchmaking(EMatchmakingState MatchmakingState);
+	void OnMatchmaking(EMatchmakingState MatchmakingState, FString ErrorMessage);
 
 #pragma endregion
 
@@ -49,6 +50,9 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UWidgetSwitcher* Ws_QuickPlayState;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UTextBlock* Tb_FailedMessage;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_Elimination;

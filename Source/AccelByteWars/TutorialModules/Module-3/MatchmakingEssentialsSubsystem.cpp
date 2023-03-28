@@ -237,12 +237,12 @@ void UMatchmakingEssentialsSubsystem::StartMatchmaking(APlayerController* PC, co
 	// Save the matchmaking callback delegate. It will be used to inform the matchmaking states back to the player.
 	OnMatchmakingHandle = OnMatchmaking;
 
-	OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindingMatch);
+	OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindingMatch, FAILED_MESSAGE_NONE);
 
 	if (!ensure(SessionInterface.IsValid()))
 	{
 		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot start matchmaking. Session Interface is not valid."));
-		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed);
+		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed, FAILED_FIND_MATCH);
 		return;
 	}
 
@@ -284,7 +284,7 @@ void UMatchmakingEssentialsSubsystem::StartMatchmaking(APlayerController* PC, co
 	{
 		// Failed to start matchmaking.
 		SessionInterface->ClearOnMatchmakingCompleteDelegate_Handle(MatchmakingCompleteDelegateHandle);
-		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed);
+		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed, FAILED_FIND_MATCH);
 	}
 }
 
@@ -296,7 +296,7 @@ void UMatchmakingEssentialsSubsystem::OnDestroyToRematchmakingComplete(FName Ses
 		if (!ensure(PC))
 		{
 			UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Failed to rematchmaking. Player Controller is null."));
-			OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed);
+			OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed, FAILED_FIND_MATCH);
 			return;
 		}
 
@@ -304,7 +304,7 @@ void UMatchmakingEssentialsSubsystem::OnDestroyToRematchmakingComplete(FName Ses
 	}
 	else
 	{
-		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed);
+		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed, FAILED_FIND_MATCH);
 	}
 }
 
@@ -314,7 +314,7 @@ void UMatchmakingEssentialsSubsystem::OnStartMatchmakingComplete(FName SessionNa
 	{
 		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Start matchmaking failed %s: %s"), *ErrorDetails.ErrorCode, *ErrorDetails.ErrorMessage.ToString());
 		CurrentMatchmakingSearchHandle.Reset();
-		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed);
+		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed, FAILED_FIND_MATCH);
 
 		// Unbind on-matchmaking completed delegate.
 		ensure(SessionInterface.IsValid());
@@ -326,7 +326,7 @@ void UMatchmakingEssentialsSubsystem::OnMatchmakingComplete(FName SessionName, b
 {
 	if (!IsGameSessionValid(SessionName))
 	{
-		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed);
+		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed, FAILED_FIND_MATCH);
 		return;
 	}
 
@@ -340,7 +340,7 @@ void UMatchmakingEssentialsSubsystem::OnMatchmakingComplete(FName SessionName, b
 	{
 		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Matchmaking is failed or there is no match result returned."));
 		CurrentMatchmakingSearchHandle.Reset();
-		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed);
+		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed, FAILED_FIND_MATCH);
 		return;
 	}
 
@@ -368,7 +368,7 @@ void UMatchmakingEssentialsSubsystem::CancelMatchmaking(APlayerController* PC)
 	CurrentMatchmakingSearchHandle.Reset();
 
 	// Bind on-cancel matchmaking completed and start matchmaking cancelation process.
-	OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::CancelingMatch);
+	OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::CancelingMatch, FAILED_MESSAGE_NONE);
 	CancelMatchmakingCompleteDelegateHandle = SessionInterface->AddOnCancelMatchmakingCompleteDelegate_Handle(FOnCancelMatchmakingCompleteDelegate::CreateUObject(this, &ThisClass::OnCancelMatchmakingComplete));
 	SessionInterface->CancelMatchmaking(LocalPlayerId.ToSharedRef().Get(), NAME_GameSession);
 }
@@ -387,12 +387,12 @@ void UMatchmakingEssentialsSubsystem::OnCancelMatchmakingComplete(FName SessionN
 	if (bWasSuccessful)
 	{
 		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Success to cancel matchmaking."));
-		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::Default);
+		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::Default, FAILED_MESSAGE_NONE);
 	}
 	else
 	{
 		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Failed to cancel matchmaking."));
-		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed);
+		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed, FAILED_CANCEL_MATCH);
 	}
 }
 #pragma endregion 
@@ -521,7 +521,7 @@ void UMatchmakingEssentialsSubsystem::OnBackfillProposalReceived(FAccelByteModel
 		else
 		{
 			UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Failed to accept backfill."));
-			OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed);
+			OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed, FAILED_FIND_MATCH);
 		}
 	}));
 }
@@ -534,14 +534,14 @@ void UMatchmakingEssentialsSubsystem::JoinSession(const FOnlineSessionSearchResu
 	if (!ensure(SessionInterface.IsValid()))
 	{
 		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot join game session. Session Interface is not valid."));
-		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed);
+		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed, FAILED_JOIN_MATCH);
 		return;
 	}
 
 	const FUniqueNetIdPtr LocalPlayerId = GetPlayerUniqueNetId(PC);
 	ensure(LocalPlayerId.IsValid());
 
-	OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::JoiningMatch);
+	OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::JoiningMatch , FAILED_MESSAGE_NONE);
 
 	// Bind on-join session completed and start join session process.
 	JoinSessionCompleteDelegateHandle = SessionInterface->AddOnJoinSessionCompleteDelegate_Handle(FOnJoinSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnJoinSessionComplete, PC));
@@ -552,7 +552,7 @@ void UMatchmakingEssentialsSubsystem::OnJoinSessionComplete(FName SessionName, E
 {
 	if (!IsGameSessionValid(SessionName))
 	{
-		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed);
+		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed, FAILED_JOIN_MATCH);
 		return;
 	}
 
@@ -563,7 +563,7 @@ void UMatchmakingEssentialsSubsystem::OnJoinSessionComplete(FName SessionName, E
 	if (Result != EOnJoinSessionCompleteResult::Success)
 	{
 		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Failed to join the session."));
-		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed);
+		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed, FAILED_JOIN_MATCH);
 	}
 	else
 	{
@@ -580,7 +580,7 @@ void UMatchmakingEssentialsSubsystem::OnJoinSessionComplete(FName SessionName, E
 		else 
 		{
 			// The game client success to travel to the server. The whole matchmaking process is complete.
-			OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::MatchFound);
+			OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::MatchFound, FAILED_MESSAGE_NONE);
 		}
 	}
 }
@@ -646,12 +646,12 @@ void UMatchmakingEssentialsSubsystem::OnSessionServerUpdate(FName SessionName, A
 	if (TravelClient(SessionName, PC)) 
 	{
 		// The game client success to travel to the server. The whole matchmaking process is complete.
-		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::MatchFound);
+		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::MatchFound, FAILED_MESSAGE_NONE);
 	}
 	else 
 	{
 		// The game client failed to travel to the server.
-		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed);
+		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed, FAILED_FIND_SERVER);
 	}
 }
 
@@ -663,7 +663,7 @@ void UMatchmakingEssentialsSubsystem::OnSessionServerError(FName SessionName, co
 	}
 
 	UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Failed to travel to the game server. Error: %s"), *ErrorMessage);
-	OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed);
+	OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed, FAILED_FIND_SERVER);
 
 	ensure(SessionInterface.IsValid());
 	SessionInterface->ClearOnSessionServerErrorDelegate_Handle(SessionServerErrorDelegateHandle);

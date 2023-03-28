@@ -5,6 +5,7 @@
 #include "TutorialModules/Module-3/UI/QuickPlayWidget.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Components/WidgetSwitcher.h"
+#include "Components/TextBlock.h"
 #include "CommonButtonBase.h"
 
 void UQuickPlayWidget::NativeConstruct()
@@ -108,12 +109,16 @@ void UQuickPlayWidget::CancelMatchmaking()
 
 
 #pragma region Module.3c Function Definitions
-void UQuickPlayWidget::OnMatchmaking(EMatchmakingState MatchmakingState)
+void UQuickPlayWidget::OnMatchmaking(EMatchmakingState MatchmakingState, FString ErrorMessage)
 {
 	if (MatchmakingState == EMatchmakingState::MatchFound)
 	{
 		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Match found and success to join the game session."));
 		return;
+	}
+	else if (MatchmakingState == EMatchmakingState::FindMatchFailed)
+	{
+		Tb_FailedMessage->SetText(FText::FromString(ErrorMessage));
 	}
 
 	// Display widget based on matchmaking state.

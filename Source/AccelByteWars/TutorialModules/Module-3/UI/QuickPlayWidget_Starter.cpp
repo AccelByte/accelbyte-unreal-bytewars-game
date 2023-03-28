@@ -5,6 +5,7 @@
 #include "TutorialModules/Module-3/UI/QuickPlayWidget_Starter.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Components/WidgetSwitcher.h"
+#include "Components/TextBlock.h"
 #include "CommonButtonBase.h"
 
 void UQuickPlayWidget_Starter::NativeConstruct()
