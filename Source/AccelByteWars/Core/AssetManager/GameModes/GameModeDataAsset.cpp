@@ -11,7 +11,7 @@ FGameModeData UGameModeDataAsset::GetGameModeDataByCodeName(const FString& InCod
 
 	FGameModeData GameModeData;
 
-	GameModeData.GameModeType = static_cast<EGameModeType>(UAccelByteWarsDataAsset::GetMetadataForAsset<BYTE>(GameModeAssetId, GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, GameModeType)));
+	GameModeData.GameModeType = static_cast<EGameModeType>(UAccelByteWarsDataAsset::GetMetadataForAsset<int32>(GameModeAssetId, GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, GameModeType)));
 	GameModeData.CodeName = InCodeName;
 	GameModeData.DisplayName = UAccelByteWarsDataAsset::GetDisplayNameForAsset(GameModeAssetId);
 
