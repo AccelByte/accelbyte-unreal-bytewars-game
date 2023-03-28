@@ -162,7 +162,7 @@ public:
 	 * @return true if operation successful
 	 */
 	bool AddPlayerToTeam(
-		uint8 TeamId,
+		int8 TeamId,
 		FUniqueNetIdRepl UniqueNetId,
 		UPARAM(ref) int32& OutLives,
 		const int32 ControllerId = 0,
@@ -178,7 +178,7 @@ public:
 	 * @return true if operation successful
 	 */
 	bool RemovePlayerFromTeam(FUniqueNetIdRepl UniqueNetId, const int32 ControllerId = 0);
-
+	
 private:
 
 	UPROPERTY()

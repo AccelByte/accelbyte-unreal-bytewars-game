@@ -390,10 +390,7 @@ void AAccelByteWarsGameModeBase::PlayerTeamSetup(APlayerController* PlayerContro
 			// Running online, assign team from session info
 			if (OnGetTeamIdFromSessionDelegate.IsBound()) 
 			{
-				OnGetTeamIdFromSessionDelegate.Broadcast(PlayerController, TeamId);
-
-				// Kick if the player doesn't belong to any team based on Session Info.
-				PlayerState->bShouldKick = (TeamId == INDEX_NONE);
+				OnGetTeamIdFromSessionDelegate.Broadcast(GameSession->SessionName, PlayerUniqueId, TeamId);
 			}
 			// Running offline, set team assignment manually
 			else 
@@ -430,6 +427,10 @@ void AAccelByteWarsGameModeBase::PlayerTeamSetup(APlayerController* PlayerContro
 			TeamId);
 #endif
 	}
+
+	// Kick if the player doesn't belong to any team.
+	PlayerState->bShouldKick = (TeamId == INDEX_NONE);
+	if (PlayerState->bShouldKick) return;
 
 	ByteWarsGameState->AddPlayerToTeam(
 		TeamId,
@@ -510,16 +511,33 @@ void AAccelByteWarsGameModeBase::AssignTeamManually(int32& InOutTeamId) const
 	switch (ByteWarsGameInstance->GameSetup.GameModeType)
 	{
 	case EGameModeType::FFA:
-		// assign to a new team
-		InOutTeamId = ByteWarsGameState->Teams.Num();
-		break;
-	case EGameModeType::TDM:
-		// check if max team reached
+		// Try to assign to an empty team first.
 		if (ByteWarsGameState->Teams.Num() >= ByteWarsGameInstance->GameSetup.MaxTeamNum)
 		{
-			// assign to the least populated team
-			uint8 CurrentTeamMemberNum = UINT8_MAX;
-			InOutTeamId = 0;
+			// Assign to empty team.
+			InOutTeamId = INDEX_NONE;
+			for (const FGameplayTeamData& Team : ByteWarsGameState->Teams)
+			{
+				if (Team.TeamMembers.IsEmpty())
+				{
+					InOutTeamId = Team.TeamId;
+					break;
+				}
+			}
+		}
+		// Assign to a new team
+		else
+		{
+			InOutTeamId = ByteWarsGameState->Teams.Num();
+		}
+		break;
+	case EGameModeType::TDM:
+		// Try to assign to least populated team.
+		if (ByteWarsGameState->Teams.Num() >= ByteWarsGameInstance->GameSetup.MaxTeamNum)
+		{
+			// The least populated team should less than the maximum players per team.
+			uint8 CurrentTeamMemberNum = ByteWarsGameInstance->GameSetup.MaxPlayers / ByteWarsGameInstance->GameSetup.MaxTeamNum;
+			InOutTeamId = INDEX_NONE;
 			for (const FGameplayTeamData& Team : ByteWarsGameState->Teams)
 			{
 				if (Team.TeamMembers.Num() < CurrentTeamMemberNum)
@@ -529,9 +547,9 @@ void AAccelByteWarsGameModeBase::AssignTeamManually(int32& InOutTeamId) const
 				}
 			}
 		}
+		// Assign to a new team
 		else
 		{
-			// assign to a new team
 			InOutTeamId = ByteWarsGameState->Teams.Num();
 		}
 		break;

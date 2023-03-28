@@ -16,9 +16,9 @@ ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogAccelByteWarsGameMode, Log, All
 
 class AAccelByteWarsPlayerState;
 
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnGetTeamIdFromSession, APlayerController* /*PlayerController*/, int32& OutTeamId);
+DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnGetTeamIdFromSession, FName /* SessioName */, const FUniqueNetIdRepl& /* UniqueNetId */, int32& /* OutTeamId */);
 
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnAddOnlineMember, APlayerController* /* PlayerController */, TDelegate<void(bool /*bIsSuccessful*/)> OnComplete);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnAddOnlineMember, APlayerController* /* PlayerController */, TDelegate<void(bool /*bIsSuccessful*/)> /* OnComplete */);
 
 UCLASS()
 class ACCELBYTEWARS_API AAccelByteWarsGameModeBase : public AGameModeBase
