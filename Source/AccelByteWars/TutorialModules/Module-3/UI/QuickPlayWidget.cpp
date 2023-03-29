@@ -50,23 +50,40 @@ void UQuickPlayWidget::NativeOnDeactivated()
 
 void UQuickPlayWidget::SetQuickPlayState(const EMatchmakingState NewState)
 {
-	// Switch widget based on the new state.
 	bIsBackHandler = false;
-	Ws_QuickPlayState->SetActiveWidgetIndex((int)NewState);
+	uint8 StateIndex = (uint8)NewState;
+
+	// Enable cancel matchmaking button only when start matchmaking is successful/finished.
+	Btn_Cancel->SetIsEnabled(NewState == EMatchmakingState::FindingMatch);
+
+	// Start match and find match should use the same UI.
+	if (NewState >= EMatchmakingState::StartMatchmaking && NewState <= EMatchmakingState::FindingMatch)
+	{
+		StateIndex = (int8)EMatchmakingState::StartMatchmaking;
+	}
+	/* Since start match and find match state is considered as one,
+	 * we need to substract any state that is greater than find match state. */
+	else if (NewState > EMatchmakingState::FindingMatch)
+	{
+		StateIndex--;
+	}
+
+	// Switch widget based on the new state.
+	Ws_QuickPlayState->SetActiveWidgetIndex(StateIndex);
 
 	// Set user focus to certain button based on the new state.
 	switch (NewState)
 	{
-		case EMatchmakingState::Default:
-			bIsBackHandler = true;
-			Btn_Elimination->SetUserFocus(GetOwningPlayer());
-			break;
-		case EMatchmakingState::FindingMatch:
-			Btn_Cancel->SetUserFocus(GetOwningPlayer());
-			break;
-		case EMatchmakingState::FindMatchFailed:
-			Btn_Ok->SetUserFocus(GetOwningPlayer());
-			break;
+	case EMatchmakingState::Default:
+		bIsBackHandler = true;
+		Btn_Elimination->SetUserFocus(GetOwningPlayer());
+		break;
+	case EMatchmakingState::FindingMatch:
+		Btn_Cancel->SetUserFocus(GetOwningPlayer());
+		break;
+	case EMatchmakingState::FindMatchFailed:
+		Btn_Ok->SetUserFocus(GetOwningPlayer());
+		break;
 	}
 }
 
