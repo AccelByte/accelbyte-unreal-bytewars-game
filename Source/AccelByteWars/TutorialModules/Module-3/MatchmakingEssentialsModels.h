@@ -12,9 +12,10 @@
 #define FAILED_JOIN_MATCH FString(TEXT("Failed to join the match. Please try again."))
 #define FAILED_FIND_SERVER FString(TEXT("Failed to travel to the game server. Game server not found. Please try again."))
 
-enum class EMatchmakingState
+enum class EMatchmakingState : uint8
 {
-	Default,
+	Default = 0,
+	StartMatchmaking,
 	FindingMatch,
 	JoiningMatch,
 	CancelingMatch,
