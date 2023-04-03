@@ -14,6 +14,26 @@ void UAccelByteWarsGameInstance::Shutdown()
 	Super::Shutdown();
 }
 
+void UAccelByteWarsGameInstance::Init()
+{
+	Super::Init();
+
+#if UE_BUILD_DEVELOPMENT
+	IConsoleManager::Get().RegisterConsoleCommand(
+		TEXT("AssignGameMode"),
+		TEXT("Assign game mode by code name"),
+		FConsoleCommandWithArgsDelegate::CreateWeakLambda(this, [this](const TArray<FString>& Args)
+		{
+			if (Args.Num() < 1)
+			{
+				return;
+			}
+
+			AssignGameMode(Args[0]);
+		}));
+#endif
+}
+
 int32 UAccelByteWarsGameInstance::AddLocalPlayer(ULocalPlayer* NewLocalPlayer, FPlatformUserId UserId)
 {
 	const int32 ReturnVal = Super::AddLocalPlayer(NewLocalPlayer, UserId);
@@ -53,11 +73,6 @@ bool UAccelByteWarsGameInstance::RemoveLocalPlayer(ULocalPlayer* ExistingPlayer)
 	}
 	
 	return Super::RemoveLocalPlayer(ExistingPlayer);
-}
-
-EGameModeType UAccelByteWarsGameInstance::GetCurrentGameModeType() const
-{
-	return GameSetup.GameModeType;
 }
 
 void UAccelByteWarsGameInstance::AssignGameMode(FString CodeName)

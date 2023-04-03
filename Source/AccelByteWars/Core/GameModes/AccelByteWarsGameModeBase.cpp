@@ -38,7 +38,8 @@ void AAccelByteWarsGameModeBase::InitGameState()
 		return;
 	}
 
-	ByteWarsGameInstance->bServerCurrentlyTravelling = false;
+	ByteWarsGameState->bIsServerTravelling = false;
+	ByteWarsGameState->OnNotify_IsServerTravelling();
 }
 
 void AAccelByteWarsGameModeBase::BeginPlay()
@@ -53,7 +54,7 @@ void AAccelByteWarsGameModeBase::BeginPlay()
 	}
 
 	// Setup GameState variables if in GameplayLevel or if DedicatedServer
-	if (bIsGameplayLevel || IsRunningDedicatedServer())
+	if (bIsGameplayLevel || IsServer())
 	{
 		// GameState setup
 		ByteWarsGameState->GameSetup = ByteWarsGameInstance->GameSetup;
@@ -86,10 +87,10 @@ void AAccelByteWarsGameModeBase::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 #pragma region "Lobby Countdown Implementation"
-	if (IsRunningDedicatedServer() && !bIsGameplayLevel) 
+	if (!bIsGameplayLevel && IsServer()) 
 	{
 		// Update countdown
-		if (ByteWarsGameState->LobbyStatus == ELobbyStatus::LOBBY_COUNTDOWN_STARTED) 
+		if (ByteWarsGameState->LobbyStatus == ELobbyStatus::LOBBY_COUNTDOWN_STARTED && IsRunningDedicatedServer()) 
 		{
 			if (ByteWarsGameState->LobbyCountdown <= 0)
 			{
@@ -101,9 +102,10 @@ void AAccelByteWarsGameModeBase::Tick(float DeltaSeconds)
 			}
 		}
 		// Start server travel
-		else if (ByteWarsGameState->LobbyStatus == ELobbyStatus::GAME_STARTED && !ByteWarsGameInstance->bServerCurrentlyTravelling)
+		else if (ByteWarsGameState->LobbyStatus == ELobbyStatus::GAME_STARTED && !ByteWarsGameState->bIsServerTravelling)
 		{
-			ByteWarsGameInstance->bServerCurrentlyTravelling = true;
+			ByteWarsGameState->bIsServerTravelling = true;
+			ByteWarsGameState->OnNotify_IsServerTravelling();
 
 			// Delay server travel to let the game clients informed that the game is about to start.
 			FTimerHandle TimerHandle;
@@ -202,14 +204,14 @@ APlayerController* AAccelByteWarsGameModeBase::Login(
 	APlayerController* PlayerController = Super::Login(NewPlayer, InRemoteRole, Portal, Options, UniqueId, ErrorMessage);
 
 	// setup player if in GameplayLevel and game started
-	if ((bIsGameplayLevel || IsRunningDedicatedServer()) && HasMatchStarted())
+	if (bIsGameplayLevel || IsServer())
 	{
 		PlayerTeamSetup(PlayerController);
 	}
 
-#pragma region "Server Shutdown Implementation"
+#pragma region "Lobby Countdown Implementation"
 #if UE_SERVER || UE_EDITOR
-	if (IsRunningDedicatedServer())
+	if (IsServer())
 	{
 		// Start lobby countdown.
 		if (!bIsGameplayLevel && ByteWarsGameState->LobbyStatus == ELobbyStatus::IDLE)
@@ -253,7 +255,7 @@ void AAccelByteWarsGameModeBase::Logout(AController* Exiting)
 #if UE_SERVER || UE_EDITOR
 	if (IsRunningDedicatedServer())
 	{
-		if (bShouldRemovePlayerOnLogoutImmediately && !ByteWarsGameInstance->bServerCurrentlyTravelling)
+		if (bShouldRemovePlayerOnLogoutImmediately && !ByteWarsGameState->bIsServerTravelling)
 		{
 			const bool bSucceeded = RemovePlayer(Cast<APlayerController>(Exiting));
 			GAMEMODE_LOG(Warning, TEXT("Removing player from GameState data. Succeeded: %s"), *FString(bSucceeded ? "TRUE" : "FALSE"));
@@ -322,7 +324,7 @@ int32 AAccelByteWarsGameModeBase::DecreasePlayerLife(APlayerState* PlayerState, 
 
 void AAccelByteWarsGameModeBase::ResetGameData()
 {
-	ByteWarsGameState->Teams.Empty();
+	ByteWarsGameState->EmptyTeams();
 }
 
 void AAccelByteWarsGameModeBase::PlayerTeamSetup(APlayerController* PlayerController) const
@@ -342,14 +344,24 @@ void AAccelByteWarsGameModeBase::PlayerTeamSetup(APlayerController* PlayerContro
 	}
 
 	int32 TeamId = INDEX_NONE;
-	const FUniqueNetIdRepl PlayerUniqueId = GetPlayerUniqueNetId(PlayerController);
+	const FUniqueNetIdRepl PlayerUniqueId = PlayerState->GetUniqueId();
 	const int32 ControllerId = GetControllerId(PlayerState);
 	
 	// check for a match in GameState's Teams data
-	if (const FGameplayPlayerData* PlayerData =
-		ByteWarsGameState->GetPlayerDataById(PlayerState->GetUniqueId(), ControllerId))
+	if (FGameplayPlayerData* PlayerData =
+		ByteWarsGameState->GetPlayerDataById(PlayerUniqueId, ControllerId))
 	{
-		// found, restore data
+		// found
+		// stored data doesn't have UniqueNetId while the given data has. Overwrite stored data
+		if (PlayerState->GetUniqueId().IsValid() && !PlayerData->UniqueNetId.IsValid())
+		{
+			PlayerData->UniqueNetId = PlayerUniqueId;
+
+			// notify local
+			ByteWarsGameState->OnNotify_Teams();
+		}
+
+		// restore data
 		TeamId = PlayerData->TeamId;
 		PlayerState->SetPlayerName(PlayerData->PlayerName);
 		PlayerState->AvatarURL = PlayerData->AvatarURL;
@@ -457,7 +469,7 @@ void AAccelByteWarsGameModeBase::AddPlayerToTeam(APlayerController* PlayerContro
 		return;
 	}
 
-	const FUniqueNetIdRepl PlayerUniqueId = GetPlayerUniqueNetId(PlayerController);
+	const FUniqueNetIdRepl PlayerUniqueId = PlayerState->GetUniqueId();
 	const int32 ControllerId = GetControllerId(PlayerState);
 
 	// reset player's state data
@@ -493,7 +505,7 @@ bool AAccelByteWarsGameModeBase::RemovePlayer(const APlayerController* PlayerCon
 		return false;
 	}
 
-	const FUniqueNetIdRepl PlayerUniqueId = GetPlayerUniqueNetId(PlayerController);
+	const FUniqueNetIdRepl PlayerUniqueId = PlayerState->GetUniqueId();
 	const int32 ControllerId = GetControllerId(PlayerState);
 
 	return ByteWarsGameState->RemovePlayerFromTeam(PlayerUniqueId, ControllerId);
@@ -572,7 +584,8 @@ void AAccelByteWarsGameModeBase::UpdatePlayerInformation(const APlayerController
 {
 	if (const AAccelByteWarsPlayerState* PlayerState = static_cast<AAccelByteWarsPlayerState*>(PlayerController->PlayerState))
 	{
-		FGameplayPlayerData* PlayerData = ByteWarsGameState->GetPlayerDataById(GetPlayerUniqueNetId(PlayerController), GetControllerId(PlayerState));
+		FGameplayPlayerData* PlayerData =
+			ByteWarsGameState->GetPlayerDataById(PlayerState->GetUniqueId(), GetControllerId(PlayerState));
 		if (!PlayerData)
 		{
 			return;
@@ -583,26 +596,10 @@ void AAccelByteWarsGameModeBase::UpdatePlayerInformation(const APlayerController
 			PlayerData->PlayerName = PlayerState->GetPlayerName();
 		}
 		PlayerData->AvatarURL = PlayerState->AvatarURL;
-	}
-}
 
-FUniqueNetIdRepl AAccelByteWarsGameModeBase::GetPlayerUniqueNetId(const APlayerController* PlayerController)
-{
-	FUniqueNetIdRepl NetId;
-
-	if (PlayerController->IsLocalController())
-	{
-		if (const ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer())
-		{
-			NetId = LocalPlayer->GetPreferredUniqueNetId();
-		}
+		// notify local
+		ByteWarsGameState->OnNotify_Teams();
 	}
-	else
-	{
-		NetId = PlayerController->PlayerState->GetUniqueId();
-	}
-
-	return NetId;
 }
 
 int32 AAccelByteWarsGameModeBase::GetControllerId(const APlayerState* PlayerState)
@@ -673,4 +670,10 @@ void AAccelByteWarsGameModeBase::CloseGame(const FString& Reason) const
 
 	// Unregister the server.
 	Session->UnregisterServer();
+}
+
+bool AAccelByteWarsGameModeBase::IsServer() const
+{
+	const ENetMode NetMode = GetNetMode();
+	return NetMode == ENetMode::NM_DedicatedServer || NetMode == ENetMode::NM_ListenServer;
 }

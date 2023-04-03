@@ -14,6 +14,15 @@ enum class EGameModeType : uint8
 	TDM
 };
 
+// Game mode networking mode
+UENUM(BlueprintType)
+enum class EGameModeNetworkType : uint8
+{
+	DS,
+	P2P,
+	LOCAL
+};
+
 USTRUCT(BlueprintType)
 struct FGameModeTypeData : public FTableRowBase
 {
@@ -53,9 +62,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FText DisplayName;
 	
-	// Either local multiplayer game or not
+	// Network type
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	bool bIsLocalGame = false;
+	EGameModeNetworkType NetworkType = EGameModeNetworkType::LOCAL;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bIsTeamGame = false;
@@ -70,7 +79,7 @@ public:
 
 	// Default match time
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	int32 MatchTime = INDEX_NONE;
+	int32 MatchTime = 180;
 	
 	// Default score limit
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)

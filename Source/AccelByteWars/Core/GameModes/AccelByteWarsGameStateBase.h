@@ -14,6 +14,8 @@ ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogAccelByteWarsGameState, Log, Al
 	UE_LOG(LogAccelByteWarsGameState, Verbosity, TEXT("%s"), *FString::Printf(Format, ##__VA_ARGS__)); \
 }
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGameStateVoidDelegate);
+
 UENUM(BlueprintType)
 enum class EGameStatus : uint8
 {
@@ -46,6 +48,15 @@ class ACCELBYTEWARS_API AAccelByteWarsGameStateBase : public AGameStateBase
 	//~End of AActor overriden functions
 
 public:
+	UPROPERTY(Replicated, ReplicatedUsing = OnNotify_IsServerTravelling)
+	bool bIsServerTravelling = false;
+
+	UFUNCTION()
+	void OnNotify_IsServerTravelling() const;
+
+	UPROPERTY(BlueprintAssignable)
+	FGameStateVoidDelegate OnServerTravelStartDelegate;
+
 	/**
 	 * @brief Replicated purpose. Set on AAccelByteWarsGameModeBase::BeginPlay if current level is set as GameplayLevel. By design, GameSetup will not be change during game play.
 	 * To set the GameSetup, use UAccelByteWarsGameInstance::AssignGameMode.
@@ -59,6 +70,9 @@ public:
 	 */
 	UPROPERTY(BlueprintReadWrite, Replicated, ReplicatedUsing = OnNotify_Teams)
 	TArray<FGameplayTeamData> Teams;
+
+	UFUNCTION(BlueprintCallable)
+	void EmptyTeams();
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnNotify_Teams();

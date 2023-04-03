@@ -28,24 +28,42 @@ void UMatchLobbyWidget::NativeConstruct()
 	GameState = Cast<AAccelByteWarsGameStateBase>(GetWorld()->GetGameState());
 	ensure(GameState);
 
-	// Setup Countdown
-	CountdownWidget->SetupWidget(
-		FText::FromString("Starting Countdown"), 
-		FText::FromString("Starting Match"), 
-		FText::FromString("Match Starts In: "));
-	CountdownWidget->CheckCountdownStateDelegate.BindUObject(this, &UMatchLobbyWidget::SetCountdownState);
-	CountdownWidget->UpdateCountdownValueDelegate.BindUObject(this, &UMatchLobbyWidget::UpdateCountdownValue);
-	CountdownWidget->OnCountdownFinishedDelegate.AddUObject(this, &UMatchLobbyWidget::OnCountdownFinished);
+	// show loading screen on server start travel
+	GameState->OnServerTravelStartDelegate.AddDynamic(this, &ThisClass::ShowLoading);
+
+	if (GameState->GameSetup.NetworkType == EGameModeNetworkType::DS)
+	{
+		// Setup Countdown
+		CountdownWidget->SetupWidget(
+			FText::FromString("Starting Countdown"), 
+			FText::FromString("Starting Match"), 
+			FText::FromString("Match Starts In: "));
+		CountdownWidget->CheckCountdownStateDelegate.BindUObject(this, &UMatchLobbyWidget::SetCountdownState);
+		CountdownWidget->UpdateCountdownValueDelegate.BindUObject(this, &UMatchLobbyWidget::UpdateCountdownValue);
+		CountdownWidget->OnCountdownFinishedDelegate.AddUObject(this, &UMatchLobbyWidget::OnCountdownFinished);
+	}
+	else
+	{
+		CountdownWidget->SetVisibility(ESlateVisibility::Collapsed);
+	}
 }
 
 void UMatchLobbyWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
+	GenerateMultiplayerTeamEntries();
+
 	SetMatchLobbyState(EMatchLobbyState::Default);
 
 	Btn_Start->OnClicked().AddUObject(this, &UMatchLobbyWidget::StartMatch);
 	Btn_Quit->OnClicked().AddUObject(this, &UMatchLobbyWidget::LeaveMatch);
+
+	// if on P2P game, only enable Btn_Start for host
+	if (GameState->GameSetup.NetworkType == EGameModeNetworkType::P2P)
+	{
+		Btn_Start->SetVisibility(GetOwningPlayer()->HasAuthority() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	}
 }
 
 void UMatchLobbyWidget::NativeOnDeactivated()
@@ -67,6 +85,11 @@ void UMatchLobbyWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTim
 	Super::NativeTick(MyGeometry, InDeltaTime);
 
 	MoveCameraToTargetLocation(InDeltaTime);
+}
+
+void UMatchLobbyWidget::ShowLoading()
+{
+	SetMatchLobbyState(EMatchLobbyState::GameStarted);
 }
 
 void UMatchLobbyWidget::StartMatch() 
@@ -193,5 +216,4 @@ int UMatchLobbyWidget::UpdateCountdownValue()
 
 void UMatchLobbyWidget::OnCountdownFinished()
 {
-	SetMatchLobbyState(EMatchLobbyState::GameStarted);
 }

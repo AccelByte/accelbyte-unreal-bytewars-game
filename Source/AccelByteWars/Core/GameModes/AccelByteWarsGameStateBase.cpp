@@ -20,6 +20,7 @@ void AAccelByteWarsGameStateBase::GetLifetimeReplicatedProps(TArray<FLifetimePro
 	DOREPLIFETIME(AAccelByteWarsGameStateBase, LobbyStatus);
 	DOREPLIFETIME(AAccelByteWarsGameStateBase, LobbyCountdown);
 
+	DOREPLIFETIME(AAccelByteWarsGameStateBase, bIsServerTravelling);
 	DOREPLIFETIME(AAccelByteWarsGameStateBase, TimeLeft);
 	DOREPLIFETIME(AAccelByteWarsGameStateBase, GameStatus);
 	DOREPLIFETIME(AAccelByteWarsGameStateBase, Teams);
@@ -52,7 +53,31 @@ void AAccelByteWarsGameStateBase::PostInitializeComponents()
 	}
 
 	// restore Teams data from GameInstance
-	if (bAutoRestoreTeamsData) Teams = ByteWarsGameInstance->Teams;
+	if (bAutoRestoreTeamsData)
+	{
+		Teams = ByteWarsGameInstance->Teams;
+		if (HasAuthority())
+		{
+			OnNotify_Teams();
+		}
+	}
+}
+
+void AAccelByteWarsGameStateBase::OnNotify_IsServerTravelling() const
+{
+	if (bIsServerTravelling)
+	{
+		OnServerTravelStartDelegate.Broadcast();
+	}
+}
+
+void AAccelByteWarsGameStateBase::EmptyTeams()
+{
+	Teams.Empty();
+	if (HasAuthority())
+	{
+		OnNotify_Teams();
+	}
 }
 
 TArray<int32> AAccelByteWarsGameStateBase::GetRemainingTeams() const
@@ -155,6 +180,10 @@ bool AAccelByteWarsGameStateBase::AddPlayerToTeam(
 	while (!Teams.IsValidIndex(TeamId))
 	{
 		Teams.Add(FGameplayTeamData{Teams.Num()});
+		if (HasAuthority())
+		{
+			OnNotify_Teams();
+		}
 	}
 
 	// add player's data
@@ -169,6 +198,11 @@ bool AAccelByteWarsGameStateBase::AddPlayerToTeam(
 		KillCount,
 		OutLives
 	});
+
+	if (HasAuthority())
+	{
+		OnNotify_Teams();
+	}
 
 	return true;
 }
@@ -194,6 +228,10 @@ bool AAccelByteWarsGameStateBase::RemovePlayerFromTeam(const FUniqueNetIdRepl Un
 	if (AssignedTeamIndex != INDEX_NONE && Teams[AssignedTeamIndex].TeamMembers.IsEmpty())
 	{
 		Teams.RemoveAt(AssignedTeamIndex);
+		if (HasAuthority())
+		{
+			OnNotify_Teams();
+		}
 	}
 
 	return bStatus;

@@ -109,6 +109,7 @@ class ACCELBYTEWARS_API UAccelByteWarsGameInstance : public UGameInstance
 	GENERATED_BODY()
 
 	virtual void Shutdown() override;
+	virtual void Init() override;
 	
 public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Attributes)
@@ -140,12 +141,6 @@ private:
 public:
 	virtual int32 AddLocalPlayer(ULocalPlayer* NewLocalPlayer, FPlatformUserId UserId) override;
 
-	/**
-	 * @brief flag to indicate if this machine currently loading a map.
-	 * Used to differentiate between normal player logout or logout due to non-seamless server travel.
-	 */
-	bool bServerCurrentlyTravelling = false;
-
 	virtual bool RemoveLocalPlayer(ULocalPlayer* ExistingPlayer) override;
 
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = Sounds)
@@ -165,13 +160,6 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = GameSettings)
 	void SaveGameSettings();
-
-	/**
-	 * @brief Get the currently set GameSetup GameModeType
-	 * @return Game Mode type
-	 */
-	UFUNCTION(BlueprintCallable)
-	EGameModeType GetCurrentGameModeType() const;
 
 	/**
 	 * @brief Assign game mode to GameSetup based on it's code name | will use the first GameMode in data table if not found

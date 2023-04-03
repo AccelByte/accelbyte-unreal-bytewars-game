@@ -67,13 +67,20 @@ void UGameOverWidget::NativeOnActivated()
 	SetInputModeToUIOnly();
 
 	// countdown setup
-	Widget_Countdown->SetupWidget(
-		FText::FromString(""),
-		FText::FromString(""),
-		FText::FromString("Quitting in:"));
-	Widget_Countdown->CheckCountdownStateDelegate.BindUObject(this, &UGameOverWidget::GetCountdownState);
-	Widget_Countdown->UpdateCountdownValueDelegate.BindUObject(this, &UGameOverWidget::GetCountdownValue);
-	Widget_Countdown->OnCountdownFinishedDelegate.AddUObject(this, &UGameOverWidget::OnCountdownFinished);
+	if (GameState->GameSetup.NetworkType == EGameModeNetworkType::DS)
+	{
+		Widget_Countdown->SetupWidget(
+			FText::FromString(""),
+			FText::FromString(""),
+			FText::FromString("Quitting in:"));
+		Widget_Countdown->CheckCountdownStateDelegate.BindUObject(this, &UGameOverWidget::GetCountdownState);
+		Widget_Countdown->UpdateCountdownValueDelegate.BindUObject(this, &UGameOverWidget::GetCountdownValue);
+		Widget_Countdown->OnCountdownFinishedDelegate.AddUObject(this, &UGameOverWidget::OnCountdownFinished);
+	}
+	else
+	{
+		Widget_Countdown->SetVisibility(ESlateVisibility::Collapsed);
+	}
 }
 
 void UGameOverWidget::NativeOnDeactivated()
@@ -144,7 +151,18 @@ void UGameOverWidget::SetupLeaderboard()
 
 void UGameOverWidget::PlayGameAgain()
 {
-	UGameplayStatics::OpenLevel(GetWorld(), TEXT("GalaxyWorld"));
+	if (GetOwningPlayer()->HasAuthority())
+	{
+		GameState->bIsServerTravelling = true;
+		GameState->OnNotify_IsServerTravelling();
+
+		// Waits for replication before travelling
+		FTimerHandle TimerHandle;
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this]()
+		{
+			GetWorld()->ServerTravel("/Game/ByteWars/Maps/GalaxyWorld/GalaxyWorld");
+		}, 1.0f, false);
+	}
 }
 
 void UGameOverWidget::QuitGame()

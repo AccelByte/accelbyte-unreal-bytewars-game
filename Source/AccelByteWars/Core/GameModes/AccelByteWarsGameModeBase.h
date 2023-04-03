@@ -120,11 +120,10 @@ private:
 	UPROPERTY()
 	UAccelByteWarsGameInstance* ByteWarsGameInstance = nullptr;
 
-	static FUniqueNetIdRepl GetPlayerUniqueNetId(const APlayerController* PlayerController);
-
 	static int32 GetControllerId(const APlayerState* PlayerState);
 
 	bool CheckIfAllPlayersIsInOneTeam() const;
 	void SetupShutdownCountdownsValue() const;
 	void CloseGame(const FString& Reason) const;
+	bool IsServer() const;
 };

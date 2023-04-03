@@ -24,16 +24,23 @@ void UHUDWidget::NativeConstruct()
 	OnPreGameCountdownFinishedDelegateHandle =
 		Widget_PreGameCountdown->OnCountdownFinishedDelegate.AddUObject(this, &ThisClass::OnPreGameCountdownFinished);
 
-	// setup not enough player countdown
-	Widget_NotEnoughPlayerCountdown->SetupWidget(
-		FText::FromString(""),
-		FText::FromString(""),
-		FText::FromString("Not enough players | Shutting down DS in: "),
-		true);
-	Widget_NotEnoughPlayerCountdown->CheckCountdownStateDelegate.BindUObject(this, &ThisClass::SetNotEnoughPlayerCountdownState);
-	Widget_NotEnoughPlayerCountdown->UpdateCountdownValueDelegate.BindUObject(this, &ThisClass::UpdateNotEnoughPlayerCountdownValue);
-	OnNotEnoughPlayerCountdownFinishedDelegateHandle =
-		Widget_NotEnoughPlayerCountdown->OnCountdownFinishedDelegate.AddUObject(this, &ThisClass::OnNotEnoughPlayerCountdownFinished);
+	if (ByteWarsGameState->GameSetup.NetworkType == EGameModeNetworkType::DS)
+	{
+		// setup not enough player countdown
+		Widget_NotEnoughPlayerCountdown->SetupWidget(
+			FText::FromString(""),
+			FText::FromString(""),
+			FText::FromString("Not enough players | Shutting down DS in: "),
+			true);
+		Widget_NotEnoughPlayerCountdown->CheckCountdownStateDelegate.BindUObject(this, &ThisClass::SetNotEnoughPlayerCountdownState);
+		Widget_NotEnoughPlayerCountdown->UpdateCountdownValueDelegate.BindUObject(this, &ThisClass::UpdateNotEnoughPlayerCountdownValue);
+		OnNotEnoughPlayerCountdownFinishedDelegateHandle =
+			Widget_NotEnoughPlayerCountdown->OnCountdownFinishedDelegate.AddUObject(this, &ThisClass::OnNotEnoughPlayerCountdownFinished);
+	}
+	else
+	{
+		Widget_NotEnoughPlayerCountdown->SetVisibility(ESlateVisibility::Collapsed);
+	}
 }
 
 void UHUDWidget::NativeDestruct()

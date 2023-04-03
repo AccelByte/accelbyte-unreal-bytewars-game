@@ -49,6 +49,9 @@ protected:
 	void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
 private:
+	UFUNCTION()
+	void ShowLoading();
+
 	void SetMatchLobbyState(const EMatchLobbyState NewState);
 	void ResetTeamEntries();
 

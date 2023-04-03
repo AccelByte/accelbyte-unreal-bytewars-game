@@ -16,6 +16,7 @@ class ACCELBYTEWARS_API ULoadingWidget : public UAccelByteWarsActivatableWidget
 	GENERATED_BODY()
 	
 public:
+	UFUNCTION(BlueprintCallable)
 	void SetLoadingMessage(const FText& LoadingMessage);
 
 private:
