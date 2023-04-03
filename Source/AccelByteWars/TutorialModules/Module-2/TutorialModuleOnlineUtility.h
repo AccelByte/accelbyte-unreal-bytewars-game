@@ -7,14 +7,14 @@
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "AuthEssentialsLog.h"
-#include "TutorialModuleUtility.generated.h"
+#include "TutorialModuleOnlineUtility.generated.h"
 
 UCLASS()
-class ACCELBYTEWARS_API UTutorialModuleUtility : public UBlueprintFunctionLibrary
+class ACCELBYTEWARS_API UTutorialModuleOnlineUtility : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 	
 public:
-	UFUNCTION(BlueprintCallable, Category = "Tutorial Module Utility", meta = (WorldContext = "WorldContextObject"))
+	UFUNCTION(BlueprintCallable, Category = "Tutorial Module Online Utility", meta = (WorldContext = "WorldContextObject"))
 	static bool IsAccelByteSDKInitialized(const UObject* Target);
 };

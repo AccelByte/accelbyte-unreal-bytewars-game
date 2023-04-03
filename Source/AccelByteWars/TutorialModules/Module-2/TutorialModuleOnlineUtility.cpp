@@ -2,12 +2,12 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-#include "TutorialModules/Module-2/TutorialModuleUtility.h"
+#include "TutorialModules/Module-2/TutorialModuleOnlineUtility.h"
 #include "Core/Utilities/AccelByteWarsBlueprintFunctionLibrary.h"
 #include "OnlineSubsystemUtils.h"
 #include "Core/AccelByteRegistry.h"
 
-bool UTutorialModuleUtility::IsAccelByteSDKInitialized(const UObject* Target)
+bool UTutorialModuleOnlineUtility::IsAccelByteSDKInitialized(const UObject* Target)
 {
     bool IsOSSEnabled = true;
     bool IsSDKCredsEmpty = false;
