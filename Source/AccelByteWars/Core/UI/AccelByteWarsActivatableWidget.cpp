@@ -18,6 +18,13 @@ UAccelByteWarsActivatableWidget::UAccelByteWarsActivatableWidget(const FObjectIn
 {
 }
 
+void UAccelByteWarsActivatableWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	UTutorialModuleUtility::ToggleWidgetBasedOnTutorialModuleDependency(TutorialModuleDependency, this);
+}
+
 TOptional<FUIInputConfig> UAccelByteWarsActivatableWidget::GetDesiredInputConfig() const
 {
 	switch (InputConfig)

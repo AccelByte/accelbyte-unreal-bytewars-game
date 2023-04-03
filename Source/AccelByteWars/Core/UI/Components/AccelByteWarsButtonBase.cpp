@@ -1,5 +1,6 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
 
 #include "AccelByteWarsButtonBase.h"
 #include "CommonActionWidget.h"
@@ -10,6 +11,19 @@ void UAccelByteWarsButtonBase::NativePreConstruct()
 
 	UpdateButtonStyle();
 	RefreshButtonText();
+}
+
+void UAccelByteWarsButtonBase::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	UTutorialModuleUtility::ToggleWidgetBasedOnTutorialModuleDependency(TutorialModuleDependency, this);
+
+	// Set on widget clicked to open associated tutorial module.
+	OnClicked().AddWeakLambda(this, [this]()
+	{
+		UTutorialModuleUtility::ActivateTutorialModuleWidget(TutorialModuleDependency.AssociateTutorialModule, this);
+	});
 }
 
 void UAccelByteWarsButtonBase::UpdateInputActionWidget()

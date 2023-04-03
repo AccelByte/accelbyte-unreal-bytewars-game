@@ -6,6 +6,7 @@
 
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
+#include "Core/AssetManager/TutorialModules/TutorialModuleUtility.h"
 #include "AccelByteWarsActivatableWidget.generated.h"
 
 
@@ -25,6 +26,10 @@ class ACCELBYTEWARS_API UAccelByteWarsActivatableWidget : public UCommonActivata
 
 public:
 	UAccelByteWarsActivatableWidget(const FObjectInitializer& ObjectInitializer);
+	virtual void NativeConstruct() override;
+
+	UPROPERTY(EditAnywhere, Category = "Tutorial Module Dependency")
+	FTutorialModuleDependency TutorialModuleDependency;
 	
 public:
 	//~UCommonActivatableWidget interface
