@@ -129,6 +129,35 @@ void UHUDWidget::SetColorChecked(const int32 Index, const FLinearColor Color)
 	TargetWidget->SetColorAndOpacity(Color);
 }
 
+void UHUDWidget::ToggleEntry(const int32 Index, const bool bActivate)
+{
+	if (Index < 0 || Index > 3)
+	{
+		return;
+	}
+
+	UHUDWidgetEntry* TargetWidget;
+	switch (Index)
+	{
+	case 0:
+		TargetWidget = Widget_HUDNameValueP1;
+		break;
+	case 1:
+		TargetWidget = Widget_HUDNameValueP2;
+		break;
+	case 2:
+		TargetWidget = Widget_HUDNameValueP3;
+		break;
+	case 3:
+		TargetWidget = Widget_HUDNameValueP4;
+		break;
+	default:
+		return;
+	}
+
+	TargetWidget->SetVisibility(bActivate ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+}
+
 void UHUDWidget::SetTimerValue(const float TimeLeft)
 {
 	const FText Text = UKismetTextLibrary::Conv_IntToText(UKismetMathLibrary::FFloor(TimeLeft));

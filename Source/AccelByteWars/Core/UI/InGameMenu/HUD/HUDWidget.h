@@ -38,6 +38,14 @@ public:
 	void SetColorChecked(const int32 Index, const FLinearColor Color);
 
 	/**
+	 * @brief Toggle activate or deactivate HUD entry.
+	 * @param Index Team's index. Currently, this HUD only supports 4 team (0 - 3)
+	 * @param bActivate Set it to true will activate the widget and vice versa.
+	 */
+	UFUNCTION(BlueprintCallable)
+	void ToggleEntry(const int32 Index, const bool bActivate);
+
+	/**
 	 * @brief Set Time Left value
 	 * @param TimeLeft Time Left
 	 */
