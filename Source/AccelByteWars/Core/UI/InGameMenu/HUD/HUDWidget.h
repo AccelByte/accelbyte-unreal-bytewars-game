@@ -8,9 +8,8 @@
 #include "HUDWidget.generated.h"
 
 class UHUDWidgetEntry;
-/**
- * 
- */
+class AAccelByteWarsInGameGameState;
+
 UCLASS()
 class ACCELBYTEWARS_API UHUDWidget : public UAccelByteWarsActivatableWidget
 {
@@ -75,7 +74,7 @@ private:
 	UCountdownWidget* Widget_NotEnoughPlayerCountdown;
 
 	UPROPERTY()
-	AAccelByteWarsGameStateBase* ByteWarsGameState;
+	AAccelByteWarsInGameGameState* ByteWarsGameState;
 
 	UFUNCTION()
 	ECountdownState SetPreGameCountdownState() const;

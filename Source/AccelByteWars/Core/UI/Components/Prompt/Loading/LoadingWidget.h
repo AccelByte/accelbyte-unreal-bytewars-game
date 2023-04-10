@@ -19,6 +19,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetLoadingMessage(const FText& LoadingMessage);
 
+protected:
+	virtual void NativePreConstruct() override;
+
 private:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Tb_LoadingMessage;

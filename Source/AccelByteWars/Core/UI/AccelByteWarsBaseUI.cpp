@@ -8,6 +8,12 @@ void UAccelByteWarsBaseUI::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
 
+	// Register stacks
+	Stacks.Add(EBaseUIStackType::Menu, MenuStack);
+	Stacks.Add(EBaseUIStackType::Prompt, PromptStack);
+	Stacks.Add(EBaseUIStackType::InGameMenu, InGameMenuStack);
+	Stacks.Add(EBaseUIStackType::InGameHUD, InGameHUDStack);
+
 	if (!IsDesignTime())
 	{
 		UCommonActivatableWidgetStack* Stack;
@@ -19,6 +25,11 @@ void UAccelByteWarsBaseUI::NativeOnInitialized()
 			Stack->OnTransitioningChanged.AddUObject(this, &UAccelByteWarsBaseUI::OnWidgetTransitionChanged);
 		}
 	}
+}
+
+void UAccelByteWarsBaseUI::ToggleBackgroundBlur(const bool bShow) const
+{
+	BackgroundBlur->SetVisibility(bShow ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 }
 
 UAccelByteWarsActivatableWidget* UAccelByteWarsBaseUI::PushWidgetToStack(EBaseUIStackType TargetStack, TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass)

@@ -5,7 +5,9 @@
 
 #include "HUDWidgetEntry.h"
 #include "Components/TextBlock.h"
-#include "Core/GameModes/AccelByteWarsGameStateBase.h"
+#include "Core/GameStates/AccelByteWarsInGameGameState.h"
+#include "Core/GameStates/AccelByteWarsGameState.h"
+#include "Core/Settings/GameModeDataAssets.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetTextLibrary.h"
 
@@ -13,7 +15,7 @@ void UHUDWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	ByteWarsGameState = GetWorld()->GetGameState<AAccelByteWarsGameStateBase>();
+	ByteWarsGameState = GetWorld()->GetGameState<AAccelByteWarsInGameGameState>();
 
 	// setup pre game countdown
 	Widget_PreGameCountdown->SetupWidget(

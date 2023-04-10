@@ -4,15 +4,14 @@
 
 #include "Core/UI/InGameMenu/GameOver/GameOverWidget.h"
 #include "Core/UI/InGameMenu/GameOver/Components/GameOverLeaderboardEntry.h"
-
 #include "Core/System/AccelByteWarsGameInstance.h"
-#include "Core/GameModes/AccelByteWarsGameStateBase.h"
-
 #include "Kismet/GameplayStatics.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Components/WidgetSwitcher.h"
 #include "CommonButtonBase.h"
+#include "Core/GameModes/AccelByteWarsGameMode.h"
+#include "Core/GameStates/AccelByteWarsInGameGameState.h"
 #include "Kismet/KismetMathLibrary.h"
 
 void UGameOverWidget::SetWinner(const FText& PlayerName, const FLinearColor& Color)
@@ -37,7 +36,7 @@ void UGameOverWidget::NativeConstruct()
 	GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
 	ensure(GameInstance);
 
-	GameState = Cast<AAccelByteWarsGameStateBase>(GetWorld()->GetGameState());
+	GameState = Cast<AAccelByteWarsInGameGameState>(GetWorld()->GetGameState());
 	ensure(GameState);
 }
 
@@ -151,17 +150,9 @@ void UGameOverWidget::SetupLeaderboard()
 
 void UGameOverWidget::PlayGameAgain()
 {
-	if (GetOwningPlayer()->HasAuthority())
+	if (const AAccelByteWarsGameMode* GameMode = Cast<AAccelByteWarsGameMode>(GetWorld()->GetAuthGameMode()))
 	{
-		GameState->bIsServerTravelling = true;
-		GameState->OnNotify_IsServerTravelling();
-
-		// Waits for replication before travelling
-		FTimerHandle TimerHandle;
-		GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this]()
-		{
-			GetWorld()->ServerTravel("/Game/ByteWars/Maps/GalaxyWorld/GalaxyWorld");
-		}, 1.0f, false);
+		GameMode->DelayedServerTravel("/Game/ByteWars/Maps/GalaxyWorld/GalaxyWorld");
 	}
 }
 

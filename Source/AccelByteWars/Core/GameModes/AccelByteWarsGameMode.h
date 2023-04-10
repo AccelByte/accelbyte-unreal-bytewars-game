@@ -1,11 +1,14 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
 
 #pragma once
 
 #include "CoreMinimal.h"
-#include "AccelByteWarsGameStateBase.h"
+#include "Core/GameStates/AccelByteWarsGameState.h"
+#include "Core/UI/AccelByteWarsBaseUI.h"
 #include "GameFramework/GameModeBase.h"
-#include "AccelByteWarsGameModeBase.generated.h"
+#include "AccelByteWarsGameMode.generated.h"
 
 ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogAccelByteWarsGameMode, Log, All);
 
@@ -16,21 +19,22 @@ ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogAccelByteWarsGameMode, Log, All
 
 class AAccelByteWarsPlayerState;
 
+#pragma region "Structs, Enums, and Delegates declaration"
 DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnGetTeamIdFromSession, FName /* SessioName */, const FUniqueNetIdRepl& /* UniqueNetId */, int32& /* OutTeamId */);
-
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnAddOnlineMember, APlayerController* /* PlayerController */, TDelegate<void(bool /*bIsSuccessful*/)> /* OnComplete */);
+#pragma endregion 
 
 UCLASS()
-class ACCELBYTEWARS_API AAccelByteWarsGameModeBase : public AGameModeBase
+class ACCELBYTEWARS_API AAccelByteWarsGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
 
-	AAccelByteWarsGameModeBase();
+public:
+	AAccelByteWarsGameMode();
 
 	//~AGameModeBase overridden functions
 	virtual void InitGameState() override;
 	virtual void BeginPlay() override;
-	virtual void Tick(float DeltaSeconds) override;
 	virtual APlayerController* Login(
 		UPlayer* NewPlayer,
 		ENetRole InRemoteRole,
@@ -40,28 +44,8 @@ class ACCELBYTEWARS_API AAccelByteWarsGameModeBase : public AGameModeBase
 		FString& ErrorMessage) override;
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 	virtual void Logout(AController* Exiting) override;
+	virtual APawn* SpawnDefaultPawnFor_Implementation(AController* NewPlayer, AActor* StartSpot) override;
 	//~End of AGameModeBase overridden functions
-
-public:
-
-	/**
-	 * @brief Add player's score in GameState and PlayerState
-	 * @param PlayerState Target PlayerState
-	 * @param InScore Value to be added to player's score
-	 * @param bAddKillCount Should increase player's kill count
-	 * @return Player's new score
-	 */
-	UFUNCTION(BlueprintCallable) UPARAM(DisplayName = "CurrentScore")
-	int32 AddPlayerScore(APlayerState* PlayerState, float InScore, bool bAddKillCount = true);
-
-	/**
-	 * @brief 
-	 * @param PlayerState Target PlayerState
-	 * @param Decrement Value to be subtracted from player's life count
-	 * @return Player's new life count
-	 */
-	UFUNCTION(BlueprintCallable) UPARAM(DisplayName = "CurrentLifes")
-	int32 DecreasePlayerLife(APlayerState* PlayerState, uint8 Decrement = 1);
 
 	/**
 	 * @brief Reset stored game data in GameState
@@ -69,20 +53,18 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ResetGameData();
 
-	/**
-	 * @brief Executed after Pre-game countdown finished
-	 */
-	UFUNCTION(BlueprintImplementableEvent)
-	void StartGame();
+	UFUNCTION(BlueprintCallable)
+	void PlayerTeamSetup(APlayerController* PlayerController) const;
+
+	UFUNCTION(BlueprintCallable)
+	void ServerTravel(TSoftObjectPtr<UWorld> Level);
+
+	void DelayedServerTravel(const FString& URL) const;
 
 	inline static FOnGetTeamIdFromSession OnGetTeamIdFromSessionDelegate;
 	inline static FOnAddOnlineMember OnAddOnlineMemberDelegate;
 
 protected:
-
-	UFUNCTION(BlueprintCallable)
-	void PlayerTeamSetup(APlayerController* PlayerController) const;
-
 	/**
 	 * @brief Add player to specific team. Use this instead of AAccelByteWarsGameStateBase::AddPlayerToTeam due to how
 	 * UE handle UniqueNetId in Blueprint.
@@ -94,36 +76,21 @@ protected:
 
 	bool RemovePlayer(const APlayerController* PlayerController) const;
 
-	UFUNCTION(BlueprintCallable)
-	void EndGame(const FString Reason = "");
-
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditDefaultsOnly)
 	bool bIsGameplayLevel = false;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditDefaultsOnly)
 	bool bShouldRemovePlayerOnLogoutImmediately = false;
 
-	UPROPERTY(BlueprintReadOnly)
-	float GameEndedTime = 0.0f;
+	void AssignTeamManually(int32& InOutTeamId) const;
+	void UpdatePlayerInformation(const APlayerController* PlayerController) const;
+	static int32 GetControllerId(const APlayerState* PlayerState);
+	bool IsServer() const;
+
+	UPROPERTY()
+	UAccelByteWarsGameInstance* GameInstance = nullptr;
 
 private:
-
-	void AssignTeamManually(int32& InOutTeamId) const;
-
-	void NotEnoughPlayerCountdownCounting(const float& DeltaSeconds) const;
-
-	void UpdatePlayerInformation(const APlayerController* PlayerController) const;
-
 	UPROPERTY()
-	AAccelByteWarsGameStateBase* ByteWarsGameState = nullptr;
-
-	UPROPERTY()
-	UAccelByteWarsGameInstance* ByteWarsGameInstance = nullptr;
-
-	static int32 GetControllerId(const APlayerState* PlayerState);
-
-	bool CheckIfAllPlayersIsInOneTeam() const;
-	void SetupShutdownCountdownsValue() const;
-	void CloseGame(const FString& Reason) const;
-	bool IsServer() const;
+	AAccelByteWarsGameState* ABGameState = nullptr;
 };

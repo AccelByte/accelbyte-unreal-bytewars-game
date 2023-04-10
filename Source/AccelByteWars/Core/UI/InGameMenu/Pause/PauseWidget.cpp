@@ -7,7 +7,8 @@
 
 #include "Kismet/GameplayStatics.h"
 #include "CommonButtonBase.h"
-#include "Core/GameModes/AccelByteWarsGameStateBase.h"
+#include "Core/GameModes/AccelByteWarsGameMode.h"
+#include "Core/GameStates/AccelByteWarsGameState.h"
 
 void UPauseWidget::NativeOnActivated()
 {
@@ -43,20 +44,9 @@ void UPauseWidget::ResumeGame()
 
 void UPauseWidget::RestartGame()
 {
-	if (GetOwningPlayer()->HasAuthority())
+	if (const AAccelByteWarsGameMode* GameMode = Cast<AAccelByteWarsGameMode>(GetWorld()->GetAuthGameMode()))
 	{
-		AAccelByteWarsGameStateBase* GameState = Cast<AAccelByteWarsGameStateBase>(GetWorld()->GetGameState());
-		ensure(GameState);
-
-		GameState->bIsServerTravelling = true;
-		GameState->OnNotify_IsServerTravelling();
-
-		// Waits for replication before travelling
-		FTimerHandle TimerHandle;
-		GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this]()
-		{
-			GetWorld()->ServerTravel("/Game/ByteWars/Maps/GalaxyWorld/GalaxyWorld");
-		}, 1.0f, false);
+		GameMode->DelayedServerTravel("/Game/ByteWars/Maps/GalaxyWorld/GalaxyWorld");
 	}
 }
 

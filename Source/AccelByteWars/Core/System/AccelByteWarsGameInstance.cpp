@@ -4,6 +4,8 @@
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/GameUIManagerSubsystem.h"
 #include "Core/Player/CommonLocalPlayer.h"
+#include "Core/UI/AccelByteWarsBaseUI.h"
+#include "Core/UI/Components/Prompt/Loading/LoadingWidget.h"
 
 #define GAMEINSTANCE_LOG(FormatString, ...) UE_LOG(LogAccelByteWarsGameInstance, Log, TEXT(FormatString), __VA_ARGS__);
 
@@ -14,24 +16,29 @@ void UAccelByteWarsGameInstance::Shutdown()
 	Super::Shutdown();
 }
 
-void UAccelByteWarsGameInstance::Init()
+UAccelByteWarsBaseUI* UAccelByteWarsGameInstance::GetBaseUIWidget()
 {
-	Super::Init();
+	if (IsRunningDedicatedServer())
+	{
+		return nullptr;
+	}
 
-#if UE_BUILD_DEVELOPMENT
-	IConsoleManager::Get().RegisterConsoleCommand(
-		TEXT("AssignGameMode"),
-		TEXT("Assign game mode by code name"),
-		FConsoleCommandWithArgsDelegate::CreateWeakLambda(this, [this](const TArray<FString>& Args)
-		{
-			if (Args.Num() < 1)
-			{
-				return;
-			}
+	if (!BaseUIWidget)
+	{
+		BaseUIWidget = Cast<UAccelByteWarsBaseUI>(CreateWidget(this, BaseUIMenuWidgetClass));
+	}
 
-			AssignGameMode(Args[0]);
-		}));
-#endif
+	if (!BaseUIWidget->IsActivated())
+	{
+		BaseUIWidget->ActivateWidget();
+	}
+
+	if (!BaseUIWidget->IsInViewport())
+	{
+		BaseUIWidget->AddToViewport(10);
+	}
+
+	return BaseUIWidget;
 }
 
 int32 UAccelByteWarsGameInstance::AddLocalPlayer(ULocalPlayer* NewLocalPlayer, FPlatformUserId UserId)
@@ -73,13 +80,6 @@ bool UAccelByteWarsGameInstance::RemoveLocalPlayer(ULocalPlayer* ExistingPlayer)
 	}
 	
 	return Super::RemoveLocalPlayer(ExistingPlayer);
-}
-
-void UAccelByteWarsGameInstance::AssignGameMode(FString CodeName)
-{
-	GameSetup = GetGameModeDataByCodeName(CodeName);
-
-	GAMEINSTANCE_LOG("Game mode set to GameState: %s", *GameSetup.CodeName);
 }
 
 FLinearColor UAccelByteWarsGameInstance::GetTeamColor(uint8 TeamId) const

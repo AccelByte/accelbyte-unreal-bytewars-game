@@ -3,13 +3,13 @@
 // and restrictions contact your company contract manager.
 
 #include "Core/Player/AccelByteWarsPlayerController.h"
+#include "Core/GameStates/AccelByteWarsMainMenuGameState.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
-#include "Core/GameModes/AccelByteWarsGameStateBase.h"
 #include "GameFramework/HUD.h"
 
 void AAccelByteWarsPlayerController::TriggerLobbyStart_Implementation()
 {
-	if (AAccelByteWarsGameStateBase* GameState = Cast<AAccelByteWarsGameStateBase>(GetWorld()->GetGameState()))
+	if (AAccelByteWarsMainMenuGameState* GameState = Cast<AAccelByteWarsMainMenuGameState>(GetWorld()->GetGameState()))
 	{
 		GameState->LobbyStatus = ELobbyStatus::GAME_STARTED;
 	}

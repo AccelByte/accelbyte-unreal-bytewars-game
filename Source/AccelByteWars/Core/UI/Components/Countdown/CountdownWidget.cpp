@@ -3,7 +3,7 @@
 
 #include "Core/UI/Components/Countdown/CountdownWidget.h"
 
-#include "Core/GameModes/AccelByteWarsGameStateBase.h"
+#include "Core/GameStates/AccelByteWarsGameState.h"
 
 UCountdownWidget::UCountdownWidget(const FObjectInitializer& ObjectInitializer) : UAccelByteWarsActivatableWidget(ObjectInitializer)
 {
@@ -71,7 +71,7 @@ void UCountdownWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
-	ByteWarsGameState = Cast<AAccelByteWarsGameStateBase>(GetWorld()->GetGameState());
+	ByteWarsGameState = Cast<AAccelByteWarsGameState>(GetWorld()->GetGameState());
 }
 
 void UCountdownWidget::SetupWidget(

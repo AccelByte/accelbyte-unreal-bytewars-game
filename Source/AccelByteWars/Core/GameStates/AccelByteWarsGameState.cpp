@@ -1,61 +1,49 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Core/GameModes/AccelByteWarsGameStateBase.h"
-
+#include "AccelByteWarsGameState.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Net/UnrealNetwork.h"
 
 DEFINE_LOG_CATEGORY(LogAccelByteWarsGameState);
 
-void AAccelByteWarsGameStateBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+void AAccelByteWarsGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(AAccelByteWarsGameStateBase, MinGameBound);
-	DOREPLIFETIME(AAccelByteWarsGameStateBase, MaxGameBound);
-
-	DOREPLIFETIME(AAccelByteWarsGameStateBase, GameSetup);
-	
-	DOREPLIFETIME(AAccelByteWarsGameStateBase, LobbyStatus);
-	DOREPLIFETIME(AAccelByteWarsGameStateBase, LobbyCountdown);
-
-	DOREPLIFETIME(AAccelByteWarsGameStateBase, bIsServerTravelling);
-	DOREPLIFETIME(AAccelByteWarsGameStateBase, TimeLeft);
-	DOREPLIFETIME(AAccelByteWarsGameStateBase, GameStatus);
-	DOREPLIFETIME(AAccelByteWarsGameStateBase, Teams);
-	DOREPLIFETIME(AAccelByteWarsGameStateBase, PreGameCountdown);
-	DOREPLIFETIME(AAccelByteWarsGameStateBase, PostGameCountdown);
-	DOREPLIFETIME(AAccelByteWarsGameStateBase, NotEnoughPlayerCountdown);
+	DOREPLIFETIME(ThisClass, GameSetup);
+	DOREPLIFETIME(ThisClass, bIsServerTravelling);
+	DOREPLIFETIME(ThisClass, Teams);
 }
 
-void AAccelByteWarsGameStateBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
+void AAccelByteWarsGameState::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	Super::EndPlay(EndPlayReason);
 
 	// backup Teams data to GameInstance
-	if (bAutoBackupTeamsData)
+	if (bAutoBackupData)
 	{
-		ByteWarsGameInstance->Teams = Teams;
+		GameInstance->Teams = Teams;
+		GameInstance->GameSetup = GameSetup;
 	}
 }
 
-void AAccelByteWarsGameStateBase::PostInitializeComponents()
+void AAccelByteWarsGameState::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 
-	UGameInstance* GameInstance = GetGameInstance();
-	ByteWarsGameInstance = Cast<UAccelByteWarsGameInstance>(GameInstance);
-	if (!ensure(ByteWarsGameInstance))
+	GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+	if (!GameInstance)
 	{
 		GAMESTATE_LOG(Warning, TEXT("Game Instance is not (derived from) UAccelByteWarsGameInstance"));
 		return;
 	}
 
-	// restore Teams data from GameInstance
-	if (bAutoRestoreTeamsData)
+	// restore data from GameInstance
+	if (bAutoRestoreData)
 	{
-		Teams = ByteWarsGameInstance->Teams;
+		Teams = GameInstance->Teams;
+		GameSetup = GameInstance->GameSetup;
 		if (HasAuthority())
 		{
 			OnNotify_Teams();
@@ -63,15 +51,17 @@ void AAccelByteWarsGameStateBase::PostInitializeComponents()
 	}
 }
 
-void AAccelByteWarsGameStateBase::OnNotify_IsServerTravelling() const
+void AAccelByteWarsGameState::OnNotify_IsServerTravelling() const
 {
-	if (bIsServerTravelling)
-	{
-		OnServerTravelStartDelegate.Broadcast();
-	}
+	OnIsServerTravellingChanged.Broadcast();
 }
 
-void AAccelByteWarsGameStateBase::EmptyTeams()
+void AAccelByteWarsGameState::OnNotify_Teams()
+{
+	OnTeamsChanged.Broadcast();
+}
+
+void AAccelByteWarsGameState::EmptyTeams()
 {
 	Teams.Empty();
 	if (HasAuthority())
@@ -80,7 +70,14 @@ void AAccelByteWarsGameStateBase::EmptyTeams()
 	}
 }
 
-TArray<int32> AAccelByteWarsGameStateBase::GetRemainingTeams() const
+void AAccelByteWarsGameState::AssignGameMode(const FString& CodeName)
+{
+	GameSetup = GameInstance->GetGameModeDataByCodeName(CodeName);
+
+	GAMESTATE_LOG(Log, TEXT("Game mode set to GameState: %s"), *GameSetup.CodeName);
+}
+
+TArray<int32> AAccelByteWarsGameState::GetRemainingTeams() const
 {
 	TArray<int32> RemainingTeams;
 	for (const FGameplayTeamData& Team : Teams)
@@ -93,7 +90,7 @@ TArray<int32> AAccelByteWarsGameStateBase::GetRemainingTeams() const
 	return RemainingTeams;
 }
 
-bool AAccelByteWarsGameStateBase::GetTeamDataByTeamId(
+bool AAccelByteWarsGameState::GetTeamDataByTeamId(
 	const int32 TeamId,
 	FGameplayTeamData& OutTeamData,
 	float& OutTeamScore,
@@ -112,7 +109,7 @@ bool AAccelByteWarsGameStateBase::GetTeamDataByTeamId(
 	return false;
 }
 
-bool AAccelByteWarsGameStateBase::GetPlayerDataById(
+bool AAccelByteWarsGameState::GetPlayerDataById(
 	const FUniqueNetIdRepl UniqueNetId,
 	FGameplayPlayerData& OutPlayerData,
 	const int32 ControllerId)
@@ -125,7 +122,7 @@ bool AAccelByteWarsGameStateBase::GetPlayerDataById(
 	return false;
 }
 
-FGameplayPlayerData* AAccelByteWarsGameStateBase::GetPlayerDataById(
+FGameplayPlayerData* AAccelByteWarsGameState::GetPlayerDataById(
 	const FUniqueNetIdRepl UniqueNetId,
 	const int32 ControllerId)
 {
@@ -141,7 +138,7 @@ FGameplayPlayerData* AAccelByteWarsGameStateBase::GetPlayerDataById(
 	return PlayerData;
 }
 
-int32 AAccelByteWarsGameStateBase::GetRegisteredPlayersNum() const
+int32 AAccelByteWarsGameState::GetRegisteredPlayersNum() const
 {
 	int32 Num = 0;
 	for (const FGameplayTeamData& Team : Teams)
@@ -151,7 +148,7 @@ int32 AAccelByteWarsGameStateBase::GetRegisteredPlayersNum() const
 	return Num;
 }
 
-bool AAccelByteWarsGameStateBase::AddPlayerToTeam(
+bool AAccelByteWarsGameState::AddPlayerToTeam(
 	const int8 TeamId,
 	const FUniqueNetIdRepl UniqueNetId,
 	int32& OutLives,
@@ -187,7 +184,7 @@ bool AAccelByteWarsGameStateBase::AddPlayerToTeam(
 	}
 
 	// add player's data
-	OutLives = OutLives == INDEX_NONE ? ByteWarsGameInstance->GameSetup.StartingLives : OutLives;
+	OutLives = OutLives == INDEX_NONE ? GameSetup.StartingLives : OutLives;
 	Teams[TeamId].TeamMembers.Add(FGameplayPlayerData{
 		UniqueNetId,
 		ControllerId,
@@ -207,7 +204,7 @@ bool AAccelByteWarsGameStateBase::AddPlayerToTeam(
 	return true;
 }
 
-bool AAccelByteWarsGameStateBase::RemovePlayerFromTeam(const FUniqueNetIdRepl UniqueNetId, const int32 ControllerId)
+bool AAccelByteWarsGameState::RemovePlayerFromTeam(const FUniqueNetIdRepl UniqueNetId, const int32 ControllerId)
 {
 	int AssignedTeamIndex = INDEX_NONE;
 	bool bStatus = false;

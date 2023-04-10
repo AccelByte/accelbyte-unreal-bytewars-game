@@ -1,66 +1,38 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "GameFramework/GameStateBase.h"
-#include "AccelByteWarsGameStateBase.generated.h"
+#include "AccelByteWarsGameState.generated.h"
 
 ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogAccelByteWarsGameState, Log, All);
-
 #define GAMESTATE_LOG(Verbosity, Format, ...) \
 { \
 	UE_LOG(LogAccelByteWarsGameState, Verbosity, TEXT("%s"), *FString::Printf(Format, ##__VA_ARGS__)); \
 }
 
+#pragma region "Structs, Enums, and Delegates declaration"
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGameStateVoidDelegate);
-
-UENUM(BlueprintType)
-enum class EGameStatus : uint8
-{
-	IDLE = 0,
-	AWAITING_PLAYERS,
-	PRE_GAME_COUNTDOWN_STARTED,
-	GAME_STARTED,
-	AWAITING_PLAYERS_MID_GAME,
-	GAME_ENDS,
-	INVALID
-};
-
-UENUM(BlueprintType)
-enum class ELobbyStatus : uint8
-{
-	IDLE = 0,
-	LOBBY_COUNTDOWN_STARTED,
-	GAME_STARTED
-};
+#pragma endregion 
 
 UCLASS()
-class ACCELBYTEWARS_API AAccelByteWarsGameStateBase : public AGameStateBase
+class ACCELBYTEWARS_API AAccelByteWarsGameState : public AGameStateBase
 {
 	GENERATED_BODY()
 
+public:
 	//~AActor overriden functions
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void PostInitializeComponents() override;
 	//~End of AActor overriden functions
 
-public:
-	UPROPERTY(Replicated, ReplicatedUsing = OnNotify_IsServerTravelling)
-	bool bIsServerTravelling = false;
-
-	UFUNCTION()
-	void OnNotify_IsServerTravelling() const;
-
-	UPROPERTY(BlueprintAssignable)
-	FGameStateVoidDelegate OnServerTravelStartDelegate;
-
 	/**
-	 * @brief Replicated purpose. Set on AAccelByteWarsGameModeBase::BeginPlay if current level is set as GameplayLevel. By design, GameSetup will not be change during game play.
-	 * To set the GameSetup, use UAccelByteWarsGameInstance::AssignGameMode.
-	 * To get the 'latest' GameSetup, use UAccelByteWarsGameInstance::GameSetup.
+	 * @brief Game setup info
 	 */
 	UPROPERTY(BlueprintReadOnly, Replicated)
 	FGameModeData GameSetup;
@@ -71,47 +43,26 @@ public:
 	UPROPERTY(BlueprintReadWrite, Replicated, ReplicatedUsing = OnNotify_Teams)
 	TArray<FGameplayTeamData> Teams;
 
+	UPROPERTY(Replicated, ReplicatedUsing = OnNotify_IsServerTravelling)
+	bool bIsServerTravelling = false;
+
+	UPROPERTY(BlueprintAssignable)
+	FGameStateVoidDelegate OnIsServerTravellingChanged;
+
+	UPROPERTY(BlueprintAssignable)
+	FGameStateVoidDelegate OnTeamsChanged;
+
+	UFUNCTION()
+	void OnNotify_IsServerTravelling() const;
+
+	UFUNCTION()
+	void OnNotify_Teams();
+
 	UFUNCTION(BlueprintCallable)
 	void EmptyTeams();
 
-	UFUNCTION(BlueprintImplementableEvent)
-	void OnNotify_Teams();
-
-	// Current lobby status.
-	UPROPERTY(BlueprintReadWrite, Replicated)
-	ELobbyStatus LobbyStatus = ELobbyStatus::IDLE;
-
-	// Lobby countdown before starting the game.
-	UPROPERTY(BlueprintReadWrite, Replicated)
-	float LobbyCountdown = 30.f;
-
-	// Countdown when the game is over
-	UPROPERTY(Replicated)
-	float PostGameCountdown = INDEX_NONE;
-
-	UPROPERTY(Replicated)
-	float NotEnoughPlayerCountdown = INDEX_NONE;
-
-	/**
-	 * @brief Pre-game (already in gameplay map) countdown duration
-	 */
-	UPROPERTY(BlueprintReadWrite, Replicated)
-	float PreGameCountdown = 5.0f;
-
-	UPROPERTY(BlueprintReadWrite, Replicated)
-	float TimeLeft = INDEX_NONE;
-
-	UPROPERTY(BlueprintReadWrite, Replicated)
-	FVector2D MinGameBound = {-1500.0, -1300.0};
-
-	UPROPERTY(BlueprintReadWrite, Replicated)
-	FVector2D MaxGameBound = {1500.0, 1300.0};
-
-	/**
-	 * @brief Current gameplay state
-	 */
-	UPROPERTY(BlueprintReadWrite, Replicated)
-	EGameStatus GameStatus = EGameStatus::IDLE;
+	UFUNCTION(BlueprintCallable)
+	void AssignGameMode(const FString& CodeName);
 
 	/**
 	 * @brief Get teams with at least one member have life count more than 1
@@ -165,13 +116,15 @@ public:
 	int32 GetRegisteredPlayersNum() const;
 
 	/**
-	 * @brief Add player to GameSetup.TeamSetup and to PlayerDatas. Will add new team if team does not exist
+	 * @brief Add player to GameSetup.TeamSetup. Will add new team if team does not exist
 	 * @param TeamId Target Team id to add to
 	 * @param UniqueNetId Player's unique net id
 	 * @param Score Specify player's score
 	 * @param OutLives Specify player's lives num | set -1 to use GameState.GameData.GameSetup's value | will change the referenced value
 	 * @param ControllerId Player's controller id
 	 * @param KillCount Specify player's kill count
+	 * @param PlayerName Specify player's name
+	 * @param AvatarURL Specify player's avatar's picture URL
 	 * @param bForce Force add player even if the player data already exist
 	 * @return true if operation successful
 	 */
@@ -189,6 +142,7 @@ public:
 	/**
 	 * @brief Remove Player from a team
 	 * @param UniqueNetId Player's unique net id
+	 * @param ControllerId Player's Local ControllerId
 	 * @return true if operation successful
 	 */
 	bool RemovePlayerFromTeam(FUniqueNetIdRepl UniqueNetId, const int32 ControllerId = 0);
@@ -196,11 +150,17 @@ public:
 private:
 
 	UPROPERTY()
-	UAccelByteWarsGameInstance* ByteWarsGameInstance = nullptr;
+	UAccelByteWarsGameInstance* GameInstance = nullptr;
 
+	/**
+	 * @brief If true, store Teams and GameSetup to GameInstance before travel
+	 */
 	UPROPERTY(EditAnywhere)
-	bool bAutoBackupTeamsData = true;
+	bool bAutoBackupData = true;
 
+	/**
+	 * @brief If true, restore Teams and GameSetup from GameInstance on PostInitializeComponent
+	 */
 	UPROPERTY(EditAnywhere)
-	bool bAutoRestoreTeamsData = true;
+	bool bAutoRestoreData = true;
 };

@@ -4,7 +4,6 @@
 
 #include "Core/UI/MainMenu/MatchLobby/MatchLobbyWidget.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
-#include "Core/GameModes/AccelByteWarsGameStateBase.h"
 #include "Core/Player/AccelByteWarsPlayerController.h"
 #include "Core/Utilities/AccelByteWarsUtility.h"
 
@@ -15,6 +14,7 @@
 #include "Components/PanelWidget.h"
 #include "Components/WidgetSwitcher.h"
 #include "CommonButtonBase.h"
+#include "Core/GameStates/AccelByteWarsMainMenuGameState.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -25,11 +25,11 @@ void UMatchLobbyWidget::NativeConstruct()
 	GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
 	ensure(GameInstance);
 
-	GameState = Cast<AAccelByteWarsGameStateBase>(GetWorld()->GetGameState());
+	GameState = Cast<AAccelByteWarsMainMenuGameState>(GetWorld()->GetGameState());
 	ensure(GameState);
 
 	// show loading screen on server start travel
-	GameState->OnServerTravelStartDelegate.AddDynamic(this, &ThisClass::ShowLoading);
+	GameState->OnIsServerTravellingChanged.AddDynamic(this, &ThisClass::ShowLoading);
 
 	if (GameState->GameSetup.NetworkType == EGameModeNetworkType::DS)
 	{
@@ -59,6 +59,8 @@ void UMatchLobbyWidget::NativeOnActivated()
 	Btn_Start->OnClicked().AddUObject(this, &UMatchLobbyWidget::StartMatch);
 	Btn_Quit->OnClicked().AddUObject(this, &UMatchLobbyWidget::LeaveMatch);
 
+	GameState->OnTeamsChanged.AddDynamic(this, &ThisClass::GenerateMultiplayerTeamEntries);
+
 	// if on P2P game, only enable Btn_Start for host
 	if (GameState->GameSetup.NetworkType == EGameModeNetworkType::P2P)
 	{
@@ -72,6 +74,8 @@ void UMatchLobbyWidget::NativeOnDeactivated()
 
 	Btn_Start->OnClicked().Clear();
 	Btn_Quit->OnClicked().Clear();
+
+	GameState->OnTeamsChanged.RemoveDynamic(this, &ThisClass::GenerateMultiplayerTeamEntries);
 
 	FTimerHandle TimerHandle;
 	GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this]() 
