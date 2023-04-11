@@ -25,32 +25,33 @@ void AAccelByteWarsMainMenuGameMode::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Remove additional local players
-	for (int i = 0; i < ABMainMenuGameState->PlayerArray.Num(); ++i)
+	/**
+	 * Remove additional local players
+	 * Removing player while iterating through PlayerArray ocasionally result in "Array has changed during ranged-for iteration"
+	 * Workaround: duplicate PlayerController ptr to be removed
+	 */
+	TArray<APlayerController*> PlayerToBeRemoved;
+	for (const APlayerState* PlayerState : ABMainMenuGameState->PlayerArray)
 	{
-		if (!ABMainMenuGameState->PlayerArray.IsValidIndex(i))
-		{
-			ABMainMenuGameState->PlayerArray.RemoveAt(i);
-			continue;
-		}
-		const APlayerState* PS = ABMainMenuGameState->PlayerArray[i];
-
-		APlayerController* PC = PS->GetPlayerController();
+		APlayerController* PC = PlayerState->GetPlayerController();
 		if (!PC)
 		{
 			continue;
 		}
 
 		// if first controller, skip
-		if (UGameplayStatics::GetPlayerControllerID(PC) == 0)
+		const int32 ControllerId = UGameplayStatics::GetPlayerControllerID(PC);
+		if (ControllerId == 0)
 		{
 			continue;
 		}
 
-		if (HasAuthority())
-		{
-			UGameplayStatics::RemovePlayer(PC, true);
-		}
+		PlayerToBeRemoved.Add(PC);
+	}
+	// remove players
+	for (APlayerController* PlayerController : PlayerToBeRemoved)
+	{
+		UGameplayStatics::RemovePlayer(PlayerController, true);
 	}
 }
 
