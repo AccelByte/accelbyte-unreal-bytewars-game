@@ -10,45 +10,9 @@
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "Blueprint/UserWidget.h"
 
-void UTutorialModuleUtility::ToggleWidgetBasedOnTutorialModuleDependency(const FTutorialModuleDependency& Dependency, UUserWidget* Widget)
+bool UTutorialModuleUtility::ActivateTutorialModuleWidget(const UTutorialModuleDataAsset* TutorialModule, const UObject* Context)
 {
-	if (!Dependency.bUseTutorialModuleDependency) return;
-
-	bool bIsSatisfied = true;
-
-	// If valid, associate Tutorial Module is always be a dependency.
-	if (Dependency.AssociateTutorialModule.IsValid() && !IsTutorialModuleActive(Dependency.AssociateTutorialModule, Widget))
-	{
-		bIsSatisfied = false;
-	}
-
-	// Check if Tutorial Module dependencies are satisfied or not.
-	for (const FPrimaryAssetId& ModuleCodeName : Dependency.TutorialModuleDependencies)
-	{
-		if (!IsTutorialModuleActive(ModuleCodeName, Widget))
-		{
-			bIsSatisfied = false;
-			break;
-		}
-	}
-
-	// Enable/disable widget based on module dependencies, only if there is any dependencies.
-	if (Dependency.AssociateTutorialModule.IsValid() || !Dependency.TutorialModuleDependencies.IsEmpty())
-	{
-		Widget->SetVisibility(bIsSatisfied ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-	}
-}
-
-bool UTutorialModuleUtility::ActivateTutorialModuleWidget(const FPrimaryAssetId TutorialModuleCodeName, const UObject* Context)
-{
-	if (!TutorialModuleCodeName.IsValid() || !Context)
-	{
-		return false;
-	}
-
-	// Get tutorial module data asset.
-	const UTutorialModuleDataAsset* TutorialModule = GetTutorialModuleDataAsset(TutorialModuleCodeName, Context);
-	if (!TutorialModule) 
+	if (!Context)
 	{
 		return false;
 	}
@@ -97,7 +61,7 @@ UTutorialModuleDataAsset* UTutorialModuleUtility::GetTutorialModuleDataAsset(con
 	}
 
 	UTutorialModuleDataAsset* TutorialModule = Cast<UTutorialModuleDataAsset>(DataAsset);
-	if (bEnsureIsActive && TutorialModule && !TutorialModule->bIsActive)
+	if (bEnsureIsActive && TutorialModule && !TutorialModule->IsActiveAndDependenciesChecked())
 	{
 		return nullptr;
 	}
@@ -112,6 +76,6 @@ bool UTutorialModuleUtility::IsTutorialModuleActive(const FPrimaryAssetId Tutori
 		return false;
 	}
 
-	const UTutorialModuleDataAsset* TutorialModule = GetTutorialModuleDataAsset(TutorialModuleCodeName, Context);
-	return (TutorialModule && TutorialModule->bIsActive);
+	UTutorialModuleDataAsset* TutorialModule = GetTutorialModuleDataAsset(TutorialModuleCodeName, Context);
+	return (TutorialModule && TutorialModule->IsActiveAndDependenciesChecked());
 }

@@ -1,9 +1,16 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
 
 #include "Core/AssetManager/TutorialModules/TutorialModuleDataAsset.h"
-
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
+#include "Widgets/SWidget.h"
+#include "Blueprint/UserWidget.h"
+#include "UObject/UObjectIterator.h"
+#include "UObject/PropertyPortFlags.h"
+#include "Components/PanelWidget.h"
+#include "Widgets/Notifications/SNotificationList.h"
+#include "Framework/Notifications/NotificationManager.h"
 
 const FPrimaryAssetType	UTutorialModuleDataAsset::TutorialModuleAssetType = TEXT("TutorialModule");
 
@@ -35,4 +42,130 @@ FString UTutorialModuleDataAsset::GetCodeNameFromAssetId(const FPrimaryAssetId& 
 {
 	check(AssetId.PrimaryAssetType == UTutorialModuleDataAsset::TutorialModuleAssetType);
 	return AssetId.PrimaryAssetName.ToString();
+}
+
+bool UTutorialModuleDataAsset::IsActiveAndDependenciesChecked()
+{
+	bool bIsDependencySatisfied = true;
+	for (const UTutorialModuleDataAsset* Dependency : TutorialModuleDependencies)
+	{
+		if (!Dependency) continue;
+
+		if (!Dependency->bIsActive)
+		{
+			bIsDependencySatisfied = false;
+			break;
+		}
+	}
+	
+	return !bIsDependencySatisfied ? false : bIsActive;
+}
+
+void UTutorialModuleDataAsset::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+	ValidateDataAssetProperties();
+	UpdateDataAssetProperties();
+}
+
+void UTutorialModuleDataAsset::PostDuplicate(EDuplicateMode::Type DuplicateMode)
+{
+	Super::PostDuplicate(DuplicateMode);
+	CodeName = TEXT("");
+	ValidateDataAssetProperties();
+}
+
+void UTutorialModuleDataAsset::PostLoad()
+{
+	Super::PostLoad();
+	UpdateDataAssetProperties();
+}
+
+void UTutorialModuleDataAsset::UpdateDataAssetProperties()
+{
+#pragma region "Connect Other Tutorial Module Widgets to This Tutorial Module"
+	// Refresh Default UI Class.
+	// This will make sure the Associated of that Default UI Class correctly points to this Tutorial Module.
+	if (LastDefaultUIClass.Get() && LastDefaultUIClass.GetDefaultObject() 
+		&& LastDefaultUIClass.GetDefaultObject()->AssociateTutorialModule == this)
+	{
+		LastDefaultUIClass.GetDefaultObject()->AssociateTutorialModule = nullptr;
+	}
+	if (DefaultUIClass.Get() && DefaultUIClass.GetDefaultObject())
+	{
+		DefaultUIClass.GetDefaultObject()->AssociateTutorialModule = this;
+	}
+	LastDefaultUIClass = DefaultUIClass;
+
+	// Refresh "Other Tutorial Module Widgets to This Tutorial Module" connections.
+	for (FTutorialModuleWidgetConnection& Connection : OtherModuleToThisModuleConnections)
+	{
+		Connection.bIsTargetUISelf = true;
+		Connection.TargetUIClass = DefaultUIClass;
+	}
+#pragma endregion
+
+#pragma region "Connect This Tutorial Module Widgets to Non Tutorial Module"
+	// Reset Target UI Class of "This Tutorial Module Widgets to Non Tutorial Module" connections.
+	// This will makes sure the DefaultObject of TargetUIClass corretly points to this Tutorial Module.
+	for (FTutorialModuleWidgetConnection& LastConnection : LastThisModuleToNonModuleConnections)
+	{
+		if (!LastConnection.TargetUIClass || !LastConnection.TargetUIClass.GetDefaultObject()) continue;
+		LastConnection.TargetUIClass.GetDefaultObject()->DissociateTutorialModuleWidgets.RemoveAll([this](const FTutorialModuleWidgetConnection& Temp)
+		{ 
+			return Temp.SourceTutorialModule == this; 
+		});
+	}
+	for (FTutorialModuleWidgetConnection& Connection : ThisModuleToNonModuleConnections)
+	{
+		if (!Connection.TargetUIClass || !Connection.TargetUIClass.GetDefaultObject()) continue;
+		Connection.TargetUIClass.GetDefaultObject()->DissociateTutorialModuleWidgets.RemoveAll([this](const FTutorialModuleWidgetConnection& Temp)
+		{
+			return Temp.SourceTutorialModule == this;
+		});
+	}
+
+	// Refresh "This Tutorial Module Widgets to Non Tutorial Module" connections.
+	for (FTutorialModuleWidgetConnection& Connection : ThisModuleToNonModuleConnections)
+	{
+		Connection.bIsTargetUISelf = false;
+		Connection.SourceTutorialModule = this;
+
+		if (Connection.TargetUIClass && Connection.TargetUIClass.GetDefaultObject())
+		{
+			Connection.TargetUIClass.GetDefaultObject()->DissociateTutorialModuleWidgets.Add(Connection);
+		}
+	}
+	LastThisModuleToNonModuleConnections = ThisModuleToNonModuleConnections;
+#pragma endregion
+}
+
+bool UTutorialModuleDataAsset::ValidateDataAssetProperties()
+{
+	if (DefaultUIClass.Get()) 
+	{
+		if (DefaultUIClass.GetDefaultObject()->AssociateTutorialModule != nullptr && 
+			DefaultUIClass.GetDefaultObject()->AssociateTutorialModule != this)
+		{
+			ShowPopupMessage(
+				FString::Printf(TEXT("Default UI Class %s is already being used by %s Tutorial Module"),
+				*DefaultUIClass.Get()->GetName(),
+				*DefaultUIClass.GetDefaultObject()->AssociateTutorialModule->GetName()));
+			DefaultUIClass = nullptr;	
+			return false;
+		}
+	}
+
+	return true;
+}
+
+void UTutorialModuleDataAsset::ShowPopupMessage(const FString& Message)
+{
+	FNotificationInfo Info(FText::FromString(Message));
+	Info.Image = FCoreStyle::Get().GetBrush("MessageLog.Error");
+	Info.ExpireDuration = 10.0f;
+	Info.FadeInDuration = 0.25f;
+	Info.FadeOutDuration = 0.5f;
+
+	FSlateNotificationManager::Get().AddNotification(Info);
 }

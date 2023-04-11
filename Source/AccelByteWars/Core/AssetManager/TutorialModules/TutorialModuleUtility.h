@@ -7,32 +7,47 @@
 #include "CoreMinimal.h"
 #include "TutorialModuleUtility.generated.h"
 
-class UUserWidget;
 class UTutorialModuleDataAsset;
+class UAccelByteWarsActivatableWidget;
+
+UENUM(BlueprintType)
+enum class ETutorialModuleWidgetType : uint8
+{
+	TUTORIAL_MODULE_ENTRY_BUTTON UMETA(DisplayName = "Tutorial Module Entry Button"),
+	TUTORIAL_MODULE_DEFAULT_UI UMETA(DisplayName = "Tutorial Module Default UI"),
+	OTHER_UI_ENTRY_BUTTON UMETA(DisplayName = "Other UI Entry Button"),
+	OTHER_UI UMETA(DisplayName = "Other UI")
+};
 
 USTRUCT(BlueprintType)
-struct FTutorialModuleDependency
+struct FTutorialModuleWidgetConnection
 {
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditAnywhere)
-	bool bUseTutorialModuleDependency = false;
+	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
+	bool bIsTargetUISelf = false;
 
-	/* @brief
-	 * Tutorial Module that acts as part of the owner of this struct.
-	 * Basically, if not null, this module will always be considered as dependency by the owner.
-	 * The owner should use this dependency to perform actions with the module data, such as activating the module widget, etc.
-	*/
-	UPROPERTY(EditAnywhere, meta = (EditCondition = bUseTutorialModuleDependency, DisplayThumbnail = false))
-	FPrimaryAssetId AssociateTutorialModule;
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (EditCondition = "!bIsTargetUISelf", EditConditionHides))
+	TSubclassOf<UAccelByteWarsActivatableWidget> TargetUIClass;
 
-	/* @brief
-	 * Tutorial Module dependencies that is not part of the owner of this struct.
-	 * The owner should not use these dependencies to access module data.
-	*/
-	UPROPERTY(EditAnywhere, meta = (EditCondition = bUseTutorialModuleDependency, DisplayThumbnail = false))
-	TArray<FPrimaryAssetId> TutorialModuleDependencies;
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (DisplayThumbnail = false, EditCondition = "bIsTargetUISelf", EditConditionHides))
+	UTutorialModuleDataAsset* SourceTutorialModule;
+
+	UPROPERTY(BlueprintReadOnly, EditAnywhere)
+	ETutorialModuleWidgetType WidgetType;
+
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (EditCondition = "WidgetType==ETutorialModuleWidgetType::TUTORIAL_MODULE_ENTRY_BUTTON||WidgetType==ETutorialModuleWidgetType::OTHER_UI_ENTRY_BUTTON", EditConditionHides))
+	FText EntryButtonText;
+
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (EditCondition = "WidgetType==ETutorialModuleWidgetType::OTHER_UI_ENTRY_BUTTON||WidgetType==ETutorialModuleWidgetType::OTHER_UI", EditConditionHides))
+	TSubclassOf<UAccelByteWarsActivatableWidget> OtherUIClass;
+
+	UPROPERTY(BlueprintReadOnly, EditAnywhere)
+	int32 TargetWidgetContainerIndex = 0;
+
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (EditCondition = "!bIsTargetUISelf", EditConditionHides))
+	int32 PriorityOrder = 0;
 };
 
 UCLASS()
@@ -42,22 +57,13 @@ class ACCELBYTEWARS_API UTutorialModuleUtility : public UBlueprintFunctionLibrar
 
 public:
 	/* @brief
-	 * Enable/disable widget based on Tutorial Module dependencies.
-	 * If the dependencies are satisfied, the widget will be enabled and vice versa.
-	 * @param Dependency Tutorial Module dependencies to check.
-	 * @param Widget The widget to toggle its visibility and enability.
-	*/
-	UFUNCTION(BlueprintCallable, Category = "Tutorial Module Utility")
-	static void ToggleWidgetBasedOnTutorialModuleDependency(const FTutorialModuleDependency& Dependency, UUserWidget* Widget);
-
-	/* @brief
 	 * Activate associated Tutorial Module widget UI.
 	 * Basically, it will display the widget UI to the menu.
 	 * @param Dependency Tutorial Module dependencies to check.
 	 * @param Context The context of the caller of this function.
 	*/
 	UFUNCTION(BlueprintCallable, Category = "Tutorial Module Utility")
-	static bool ActivateTutorialModuleWidget(const FPrimaryAssetId TutorialModuleCodeName, const UObject* Context);
+	static bool ActivateTutorialModuleWidget(const UTutorialModuleDataAsset* TutorialModule, const UObject* Context);
 
 	/* @brief
 	 * Get Tutorial Module data asset from its code name.

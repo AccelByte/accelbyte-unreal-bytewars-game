@@ -114,6 +114,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Attributes)
 	UAccelByteWarsActivatableWidget* BaseUIWidget;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Attributes)
+	TSubclassOf<class UAccelByteWarsButtonBase> DefaultButtonClass;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attributes)
 	FGameModeData GameSetup;
 

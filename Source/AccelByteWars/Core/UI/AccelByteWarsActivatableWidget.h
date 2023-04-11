@@ -19,6 +19,9 @@ enum class EAccelByteWarsWidgetInputMode : uint8
 	Menu
 };
 
+class UTutorialModuleDataAsset;
+class UPanelWidget;
+
 UCLASS(Abstract, Blueprintable)
 class ACCELBYTEWARS_API UAccelByteWarsActivatableWidget : public UCommonActivatableWidget
 {
@@ -26,15 +29,25 @@ class ACCELBYTEWARS_API UAccelByteWarsActivatableWidget : public UCommonActivata
 
 public:
 	UAccelByteWarsActivatableWidget(const FObjectInitializer& ObjectInitializer);
+	virtual void PostLoad() override;
+	virtual void NativePreConstruct() override;
 	virtual void NativeConstruct() override;
 
-	UPROPERTY(EditAnywhere, Category = "Tutorial Module Dependency")
-	FTutorialModuleDependency TutorialModuleDependency;
-	
-public:
 	//~UCommonActivatableWidget interface
 	virtual TOptional<FUIInputConfig> GetDesiredInputConfig() const override;
 	//~End of UCommonActivatableWidget interface
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Tutorial Module Connection")
+	void SetTutorialModuleWidgetContainers();
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tutorial Module Connection", meta = (DisplayThumbnail = false))
+	UTutorialModuleDataAsset* AssociateTutorialModule;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tutorial Module Connection", meta = (DisplayThumbnail = false))
+	TArray<FTutorialModuleWidgetConnection> DissociateTutorialModuleWidgets;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tutorial Module Connection", meta = (DisplayThumbnail = false))
+	TArray<UPanelWidget*> TutorialModuleWidgetContainers;
 
 #if WITH_EDITOR
 	virtual void ValidateCompiledWidgetTree(const UWidgetTree& BlueprintWidgetTree, class IWidgetCompilerLog& CompileLog) const override;
@@ -49,7 +62,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = Input)
 	EMouseCaptureMode GameMouseCaptureMode = EMouseCaptureMode::CapturePermanently;
 
-protected:
+	/** Change the owning player controller input mode to game only and also hide the mouse cursor */
 	UFUNCTION(BlueprintCallable)
 	void MoveCameraToTargetLocation(const float DeltaTime, const FVector TargetLocation = FVector(60.0f, 300.0f, 160.0f), const float InterpSpeed = 5.0f);
 
@@ -60,4 +73,9 @@ protected:
 	/** Change the owning player controller input mode to game only and also hide the mouse cursor */
 	UFUNCTION(BlueprintCallable)
 	void SetInputModeToGameOnly();
+
+private:
+	void LoadTutorialModuleWidgetConnection();
+	void InitializeTutorialModuleWidgets(TArray<FTutorialModuleWidgetConnection>& TutorialModuleWidgets);
+	bool bIsTutorialModuleWidgetsInitialized = false;
 };

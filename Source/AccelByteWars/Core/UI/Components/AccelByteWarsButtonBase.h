@@ -1,30 +1,25 @@
-// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
-// This is licensed software from AccelByte Inc, for limitations
-// and restrictions contact your company contract manager.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "CommonButtonBase.h"
-#include "Core/AssetManager/TutorialModules/TutorialModuleUtility.h"
 #include "AccelByteWarsButtonBase.generated.h"
 
+/**
+ * 
+ */
 UCLASS(Abstract, BlueprintType, Blueprintable)
 class ACCELBYTEWARS_API UAccelByteWarsButtonBase : public UCommonButtonBase
 {
 	GENERATED_BODY()
-
 public:
 	UFUNCTION(BlueprintCallable)
-	void SetButtonText(const FText& InText);
-
-	UPROPERTY(EditAnywhere, Category = "Tutorial Module Dependency")
-	FTutorialModuleDependency TutorialModuleDependency;
+		void SetButtonText(const FText& InText);
 
 protected:
 	// UUserWidget interface
 	virtual void NativePreConstruct() override;
-	virtual void NativeConstruct() override;
 	// End of UUserWidget interface
 
 	// UCommonButtonBase interface
