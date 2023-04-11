@@ -49,6 +49,9 @@ public:
 		APlayerController* SourcePlayerController);
 
 private:
+	UFUNCTION()
+	void RemoveFromActiveGameObjects(AActor* DestroyedActor);
+
 	// Gameplay logic
 	void CloseGame(const FString& Reason) const;
 	void StartGame();

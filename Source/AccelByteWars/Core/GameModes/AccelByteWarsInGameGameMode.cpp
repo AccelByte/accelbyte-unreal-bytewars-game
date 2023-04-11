@@ -284,6 +284,15 @@ void AAccelByteWarsInGameGameMode::OnShipDestroyed(
 	}
 }
 
+void AAccelByteWarsInGameGameMode::RemoveFromActiveGameObjects(AActor* DestroyedActor)
+{
+	if (UAccelByteWarsGameplayObjectComponent* Component =
+		DestroyedActor->FindComponentByClass<UAccelByteWarsGameplayObjectComponent>())
+	{
+		ABInGameGameState->ActiveGameObjects.Remove(Component);
+	}
+}
+
 #pragma region "Gameplay logic"
 void AAccelByteWarsInGameGameMode::CloseGame(const FString& Reason) const
 {
@@ -339,6 +348,8 @@ void AAccelByteWarsInGameGameMode::SetupGameplayObject(AActor* Object) const
 	{
 		ABInGameGameState->ActiveGameObjects.Add(Component);
 	}
+
+	Object->OnDestroyed.AddDynamic(this, &ThisClass::RemoveFromActiveGameObjects);
 }
 
 bool AAccelByteWarsInGameGameMode::CheckIfAllPlayersIsInOneTeam() const
@@ -408,6 +419,12 @@ TArray<FVector> AAccelByteWarsInGameGameMode::GetActiveGameObjectsPosition(
 
 	for (const UAccelByteWarsGameplayObjectComponent* ActiveGameObject : ABInGameGameState->ActiveGameObjects)
 	{
+		// failsafe
+		if (!ActiveGameObject)
+		{
+			continue;
+		}
+
 		const FVector& ActorLocation = ActiveGameObject->GetOwner()->GetActorLocation();
 		const float Z = ActiveGameObject->Radius * 100.0 *
 			(ActiveGameObject->ObjectType == EGameplayObjectType::SHIP ? ShipSeparationFactor : SeparationFactor);
