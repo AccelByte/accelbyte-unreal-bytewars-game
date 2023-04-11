@@ -33,9 +33,12 @@ public:
 		// Use Alias for Game Mode AssetId for easy lookup
 		return UTutorialModuleDataAsset::GenerateAssetIdFromCodeName(CodeName);
 	}
+
+#if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 	virtual void PostDuplicate(EDuplicateMode::Type DuplicateMode) override;
 	virtual void PostLoad() override;
+#endif
 
 	static FTutorialModuleData GetTutorialModuleDataByCodeName(const FString& InCodeName);
 	static FPrimaryAssetId GenerateAssetIdFromCodeName(const FString& InCodeName);
@@ -67,15 +70,19 @@ public:
 	TArray<FTutorialModuleWidgetConnection> OtherModuleToThisModuleConnections;
 #pragma endregion
 
+#if WITH_EDITORONLY_DATA
 #pragma region "Connect This Tutorial Module Widgets to Non Tutorial Module"
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Connect This Tutorial Module Widgets to Non Tutorial Module", meta = (ShowOnlyInnerProperties))
 	TArray<FTutorialModuleWidgetConnection> ThisModuleToNonModuleConnections;
 #pragma endregion
+#endif
 
+#if WITH_EDITOR
 private:
 	void UpdateDataAssetProperties();
 	bool ValidateDataAssetProperties();
 	void ShowPopupMessage(const FString& Message);
 	TSubclassOf<UAccelByteWarsActivatableWidget> LastDefaultUIClass;
 	TArray<FTutorialModuleWidgetConnection> LastThisModuleToNonModuleConnections;
+#endif
 };

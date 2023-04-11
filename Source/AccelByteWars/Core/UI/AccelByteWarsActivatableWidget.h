@@ -29,9 +29,11 @@ class ACCELBYTEWARS_API UAccelByteWarsActivatableWidget : public UCommonActivata
 
 public:
 	UAccelByteWarsActivatableWidget(const FObjectInitializer& ObjectInitializer);
-	virtual void PostLoad() override;
 	virtual void NativePreConstruct() override;
 	virtual void NativeConstruct() override;
+#if WITH_EDITOR
+	virtual void PostLoad() override;
+#endif
 
 	//~UCommonActivatableWidget interface
 	virtual TOptional<FUIInputConfig> GetDesiredInputConfig() const override;

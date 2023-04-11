@@ -25,29 +25,18 @@ UAccelByteWarsActivatableWidget::UAccelByteWarsActivatableWidget(const FObjectIn
 {
 }
 
-void UAccelByteWarsActivatableWidget::PostLoad()
-{
-	Super::PostLoad();
-	if (AssociateTutorialModule && AssociateTutorialModule->DefaultUIClass != GetClass()) 
-	{
-		AssociateTutorialModule = nullptr;
-	}
-	DissociateTutorialModuleWidgets.RemoveAll([](const FTutorialModuleWidgetConnection& Temp)
-	{
-		return Temp.SourceTutorialModule == nullptr;
-	});
-}
-
 void UAccelByteWarsActivatableWidget::NativePreConstruct()
 {
 	Super::NativePreConstruct();
 
+#if WITH_EDITOR
 	const UAccelByteWarsActivatableWidget* DefaultObj = Cast<UAccelByteWarsActivatableWidget>(GetClass()->GetDefaultObject());
 	if (DefaultObj)
 	{
 		AssociateTutorialModule = DefaultObj->AssociateTutorialModule;
 		DissociateTutorialModuleWidgets = DefaultObj->DissociateTutorialModuleWidgets;
 	}
+#endif
 }
 
 void UAccelByteWarsActivatableWidget::NativeConstruct()
@@ -96,6 +85,19 @@ void UAccelByteWarsActivatableWidget::ValidateCompiledWidgetTree(const UWidgetTr
 			CompileLog.Note(LOCTEXT("ValidateGetDesiredFocusTarget_Note", "GetDesiredFocusTarget wasn't implemented, you're going to have trouble using gamepads on this screen.  If it was implemented in the native base class you can ignore this message."));
 		}
 	}
+}
+
+void UAccelByteWarsActivatableWidget::PostLoad()
+{
+	Super::PostLoad();
+	if (AssociateTutorialModule && AssociateTutorialModule->DefaultUIClass != GetClass())
+	{
+		AssociateTutorialModule = nullptr;
+	}
+	DissociateTutorialModuleWidgets.RemoveAll([](const FTutorialModuleWidgetConnection& Temp)
+		{
+			return Temp.SourceTutorialModule == nullptr;
+		});
 }
 
 #endif

@@ -61,6 +61,7 @@ bool UTutorialModuleDataAsset::IsActiveAndDependenciesChecked()
 	return !bIsDependencySatisfied ? false : bIsActive;
 }
 
+#if WITH_EDITOR
 void UTutorialModuleDataAsset::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
@@ -169,3 +170,4 @@ void UTutorialModuleDataAsset::ShowPopupMessage(const FString& Message)
 
 	FSlateNotificationManager::Get().AddNotification(Info);
 }
+#endif
