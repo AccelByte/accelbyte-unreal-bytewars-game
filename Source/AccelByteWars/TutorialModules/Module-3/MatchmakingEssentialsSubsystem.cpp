@@ -7,10 +7,7 @@
 #include "OnlineSubsystemUtils.h"
 #include "OnlineSubsystemAccelByteSessionSettings.h"
 
-#include "Core/AssetManager/AssetManagementSubsystem.h"
-#include "Core/AssetManager/AccelByteWarsDataAsset.h"
-#include "Core/AssetManager/TutorialModules/TutorialModuleDataAsset.h"
-
+#include "Core/AssetManager/TutorialModules/TutorialModuleUtility.h"
 #include "Core/GameModes/AccelByteWarsGameModeBase.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/System/AccelByteWarsGameSession.h"
@@ -42,20 +39,8 @@ void UMatchmakingEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Colle
 	}
 
 	// Bind delegates to game events if the matchmaking module is active.
-	if (UAssetManagementSubsystem* AssetManagement = GetGameInstance()->GetSubsystem<UAssetManagementSubsystem>()) 
+	if (UTutorialModuleUtility::IsTutorialModuleActive(FPrimaryAssetId{ "TutorialModule:MATCHMAKINGESSENTIALS" }, this))
 	{
-		UAccelByteWarsDataAsset* DataAsset = AssetManagement->GetByteWarsAssetManager()->GetAssetFromCache(FPrimaryAssetId{ "TutorialModule:MATCHMAKINGESSENTIALS" });
-		if (!DataAsset) 
-		{
-			return;
-		}
-
-		UTutorialModuleDataAsset* TutorialModule = Cast<UTutorialModuleDataAsset>(DataAsset);
-		if (!TutorialModule || !TutorialModule->bIsActive) 
-		{
-			return;
-		}
-
 		AAccelByteWarsGameModeBase::OnAddOnlineMemberDelegate.AddUObject(this, &ThisClass::SetTeamMemberAccelByteInformation);
 		UMatchLobbyWidget::OnQuitLobbyDelegate.AddUObject(this, &ThisClass::OnQuitGameButtonsClicked);
 		UPauseWidget::OnQuitGameDelegate.AddUObject(this, &ThisClass::OnQuitGameButtonsClicked);
