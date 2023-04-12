@@ -249,6 +249,13 @@ void AAccelByteWarsInGameGameMode::OnShipDestroyed(
 		AddPlayerScore(SourcePlayerState, MissileScore);
 	}
 
+	/**
+	 * Respawn ship if there's still lives left
+	 * Respawn first before destroying previous pawn.
+	 * This way, the new pawn will be guaranteed spawn location that is not near the previous one
+	 */
+	SpawnAndPossesPawn(ShipPlayerState);
+
 	// Destroy ship and all of its attached actor
 	TArray<AActor*> Actors;
 	Ship->GetOwner()->GetAttachedActors(Actors);
@@ -257,9 +264,6 @@ void AAccelByteWarsInGameGameMode::OnShipDestroyed(
 		Actor->Destroy();
 	}
 	Ship->GetOwner()->Destroy();
-
-	// Respawn ship if there's still lives left
-	SpawnAndPossesPawn(ShipPlayerState);
 
 	// If only 1 team left, end game
 	if (CheckIfAllPlayersIsInOneTeam())
