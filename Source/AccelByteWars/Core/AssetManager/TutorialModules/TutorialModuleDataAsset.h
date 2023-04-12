@@ -65,15 +65,13 @@ public:
 	TArray<UTutorialModuleDataAsset*> TutorialModuleDependencies;
 #pragma endregion
 
-#pragma region "Connect Other Tutorial Module Widgets to This Tutorial Module"
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Connect Other Tutorial Module Widgets to This Tutorial Module", meta = (ShowOnlyInnerProperties))
-	TArray<FTutorialModuleWidgetConnection> OtherModuleToThisModuleConnections;
-#pragma endregion
+#pragma region "Tutorial Module Widgets"
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tutorial Module Widgets", meta = (ShowOnlyInnerProperties))
+	TArray<FTutorialModuleWidgetConnection> OtherTutorialModuleWidgetsToThisModuleWidgetConnections;
 
 #if WITH_EDITORONLY_DATA
-#pragma region "Connect This Tutorial Module Widgets to Non Tutorial Module"
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Connect This Tutorial Module Widgets to Non Tutorial Module", meta = (ShowOnlyInnerProperties))
-	TArray<FTutorialModuleWidgetConnection> ThisModuleToNonModuleConnections;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tutorial Module Widgets", meta = (ShowOnlyInnerProperties))
+	TArray<FTutorialModuleWidgetConnection> ThisTutorialModuleWidgetToNonTutorialModuleWidgetsConnections;
 #pragma endregion
 #endif
 
@@ -83,6 +81,6 @@ private:
 	bool ValidateDataAssetProperties();
 	void ShowPopupMessage(const FString& Message);
 	TSubclassOf<UAccelByteWarsActivatableWidget> LastDefaultUIClass;
-	TArray<FTutorialModuleWidgetConnection> LastThisModuleToNonModuleConnections;
+	TArray<FTutorialModuleWidgetConnection> LastThisTutorialModuleWidgetToNonModuleWidgetsConnections;
 #endif
 };

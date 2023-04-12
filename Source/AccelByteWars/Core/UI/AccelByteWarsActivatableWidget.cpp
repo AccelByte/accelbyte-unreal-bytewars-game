@@ -157,7 +157,7 @@ void UAccelByteWarsActivatableWidget::LoadTutorialModuleWidgetConnection()
 	// Connect Other Tutorial Module Widgets to This Tutorial Module.
 	if (AssociateTutorialModule)
 	{
-		InitializeTutorialModuleWidgets(AssociateTutorialModule->OtherModuleToThisModuleConnections);
+		InitializeTutorialModuleWidgets(AssociateTutorialModule->OtherTutorialModuleWidgetsToThisModuleWidgetConnections);
 	}
 
 	// Connect This Tutorial Module Widgets to Non-Tutorial Module.

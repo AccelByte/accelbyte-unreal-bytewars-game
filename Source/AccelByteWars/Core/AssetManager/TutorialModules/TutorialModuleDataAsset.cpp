@@ -99,7 +99,7 @@ void UTutorialModuleDataAsset::UpdateDataAssetProperties()
 	LastDefaultUIClass = DefaultUIClass;
 
 	// Refresh "Other Tutorial Module Widgets to This Tutorial Module" connections.
-	for (FTutorialModuleWidgetConnection& Connection : OtherModuleToThisModuleConnections)
+	for (FTutorialModuleWidgetConnection& Connection : OtherTutorialModuleWidgetsToThisModuleWidgetConnections)
 	{
 		Connection.bIsTargetUISelf = true;
 		Connection.TargetUIClass = DefaultUIClass;
@@ -109,7 +109,7 @@ void UTutorialModuleDataAsset::UpdateDataAssetProperties()
 #pragma region "Connect This Tutorial Module Widgets to Non Tutorial Module"
 	// Reset Target UI Class of "This Tutorial Module Widgets to Non Tutorial Module" connections.
 	// This will makes sure the DefaultObject of TargetUIClass corretly points to this Tutorial Module.
-	for (FTutorialModuleWidgetConnection& LastConnection : LastThisModuleToNonModuleConnections)
+	for (FTutorialModuleWidgetConnection& LastConnection : LastThisTutorialModuleWidgetToNonModuleWidgetsConnections)
 	{
 		if (!LastConnection.TargetUIClass || !LastConnection.TargetUIClass.GetDefaultObject()) continue;
 		LastConnection.TargetUIClass.GetDefaultObject()->DissociateTutorialModuleWidgets.RemoveAll([this](const FTutorialModuleWidgetConnection& Temp)
@@ -117,7 +117,7 @@ void UTutorialModuleDataAsset::UpdateDataAssetProperties()
 			return Temp.SourceTutorialModule == this; 
 		});
 	}
-	for (FTutorialModuleWidgetConnection& Connection : ThisModuleToNonModuleConnections)
+	for (FTutorialModuleWidgetConnection& Connection : ThisTutorialModuleWidgetToNonTutorialModuleWidgetsConnections)
 	{
 		if (!Connection.TargetUIClass || !Connection.TargetUIClass.GetDefaultObject()) continue;
 		Connection.TargetUIClass.GetDefaultObject()->DissociateTutorialModuleWidgets.RemoveAll([this](const FTutorialModuleWidgetConnection& Temp)
@@ -127,7 +127,7 @@ void UTutorialModuleDataAsset::UpdateDataAssetProperties()
 	}
 
 	// Refresh "This Tutorial Module Widgets to Non Tutorial Module" connections.
-	for (FTutorialModuleWidgetConnection& Connection : ThisModuleToNonModuleConnections)
+	for (FTutorialModuleWidgetConnection& Connection : ThisTutorialModuleWidgetToNonTutorialModuleWidgetsConnections)
 	{
 		Connection.bIsTargetUISelf = false;
 		Connection.SourceTutorialModule = this;
@@ -137,7 +137,7 @@ void UTutorialModuleDataAsset::UpdateDataAssetProperties()
 			Connection.TargetUIClass.GetDefaultObject()->DissociateTutorialModuleWidgets.Add(Connection);
 		}
 	}
-	LastThisModuleToNonModuleConnections = ThisModuleToNonModuleConnections;
+	LastThisTutorialModuleWidgetToNonModuleWidgetsConnections = ThisTutorialModuleWidgetToNonTutorialModuleWidgetsConnections;
 #pragma endregion
 }
 
