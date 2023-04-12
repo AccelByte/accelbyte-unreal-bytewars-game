@@ -162,6 +162,9 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintCosmetic)
 	UAccelByteWarsBaseUI* GetBaseUIWidget();
 
+	UFUNCTION(BlueprintPure)
+	TSubclassOf<UAccelByteWarsButtonBase> GetDefaultButtonClass() const { return DefaultButtonClass; }
+
 	FGameModeData GetGameModeDataByCodeName(const FString CodeName) const;
 
 	/**
@@ -172,15 +175,15 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FLinearColor GetTeamColor(uint8 TeamId) const;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Attributes)
-	TSubclassOf<UAccelByteWarsButtonBase> DefaultButtonClass;
-
 protected:
 	UPROPERTY()
 	UAccelByteWarsBaseUI* BaseUIWidget;
 
 	UPROPERTY(EditDefaultsOnly, NoClear)
 	TSubclassOf<UAccelByteWarsBaseUI> BaseUIMenuWidgetClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TSubclassOf<UAccelByteWarsButtonBase> DefaultButtonClass;
 
 	UPROPERTY(EditAnywhere)
 	UGlobalSettingsDataAsset* GlobalSettingsDataAsset;

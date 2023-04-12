@@ -170,13 +170,13 @@ void UAccelByteWarsActivatableWidget::LoadTutorialModuleWidgetConnection()
 
 void UAccelByteWarsActivatableWidget::InitializeTutorialModuleWidgets(TArray<FTutorialModuleWidgetConnection>& TutorialModuleWidgets)
 {
-	const UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetWorld()->GetGameInstance());
+	UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetWorld()->GetGameInstance());
 	ensure(GameInstance);
 
-	UAccelByteWarsBaseUI* BaseUIWidget = StaticCast<UAccelByteWarsBaseUI*>(GameInstance->BaseUIWidget);
+	UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget();
 	ensure(BaseUIWidget);
 
-	const TSubclassOf<UAccelByteWarsButtonBase> DefaultButtonClass = GameInstance->DefaultButtonClass;
+	const TSubclassOf<UAccelByteWarsButtonBase> DefaultButtonClass = GameInstance->GetDefaultButtonClass();
 	ensure(DefaultButtonClass.Get());
 
 	for (const FTutorialModuleWidgetConnection& Connection : TutorialModuleWidgets)

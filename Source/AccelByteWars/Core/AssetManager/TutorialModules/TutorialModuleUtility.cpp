@@ -18,13 +18,13 @@ bool UTutorialModuleUtility::ActivateTutorialModuleWidget(const UTutorialModuleD
 	}
 
 	// Push default UI class to the menu stack.
-	const UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(Context->GetWorld()->GetGameInstance());
+	UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(Context->GetWorld()->GetGameInstance());
 	if (!GameInstance)
 	{
 		return false;
 	}
 
-	UAccelByteWarsBaseUI* BaseUIWidget = StaticCast<UAccelByteWarsBaseUI*>(GameInstance->BaseUIWidget);
+	UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget();
 	if (!BaseUIWidget)
 	{
 		return false;
