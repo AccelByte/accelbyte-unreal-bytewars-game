@@ -22,7 +22,7 @@ void UPromptSubsystem::Deinitialize()
 
 void UPromptSubsystem::ShowMessagePopUp(const FText Header, const FText Body)
 {
-	UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->BaseUIWidget);
+	UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->GetBaseUIWidget());
 	ensure(BaseUIWidget);
 
 	BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Prompt, BaseUIWidget->DefaultPopUpWidgetClass, [Header, Body](UAccelByteWarsActivatableWidget& Widget)
@@ -35,7 +35,7 @@ void UPromptSubsystem::ShowMessagePopUp(const FText Header, const FText Body)
 
 void UPromptSubsystem::ShowDialoguePopUp(const FText Header, const FText Body, const EPopUpType Type, FPopUpResultDynamicDelegate Callback)
 {
-	UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->BaseUIWidget);
+	UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->GetBaseUIWidget());
 	ensure(BaseUIWidget);
 
 	BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Prompt, BaseUIWidget->DefaultPopUpWidgetClass, [Header, Body, Type, Callback](UAccelByteWarsActivatableWidget& Widget)
@@ -49,7 +49,7 @@ void UPromptSubsystem::ShowDialoguePopUp(const FText Header, const FText Body, c
 
 void UPromptSubsystem::ShowDialoguePopUp(const FText Header, const FText Body, const EPopUpType Type, FPopUpResultDelegate Callback)
 {
-	UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->BaseUIWidget);
+	UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->GetBaseUIWidget());
 	ensure(BaseUIWidget);
 
 	BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Prompt, BaseUIWidget->DefaultPopUpWidgetClass, [Header, Body, Type, Callback](UAccelByteWarsActivatableWidget& Widget)
@@ -68,10 +68,14 @@ void UPromptSubsystem::ShowLoading(const FText LoadingMessage)
 		return;
 	}
 	
-	UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->BaseUIWidget);
+	UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->GetBaseUIWidget());
 	ensure(BaseUIWidget);
 
 	LoadingWidget = Cast<ULoadingWidget>(BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Prompt, BaseUIWidget->DefaultLoadingWidgetClass));
+	LoadingWidget->OnDeactivated().AddWeakLambda(this, [this]()
+	{
+		LoadingWidget = nullptr;
+	});
 	LoadingWidget->SetLoadingMessage(LoadingMessage);
 }
 
@@ -83,5 +87,4 @@ void UPromptSubsystem::HideLoading()
 	}
 
 	LoadingWidget->DeactivateWidget();
-	LoadingWidget = nullptr;
 }

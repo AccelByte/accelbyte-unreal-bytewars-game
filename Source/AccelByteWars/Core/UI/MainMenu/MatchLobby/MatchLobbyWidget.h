@@ -6,10 +6,11 @@
 
 #include "CoreMinimal.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
+#include "Core/UI/Components/Countdown/CountdownWidget.h"
 #include "MatchLobbyWidget.generated.h"
 
 class UAccelByteWarsGameInstance;
-class AAccelByteWarsGameStateBase;
+class AAccelByteWarsMainMenuGameState;
 class UPanelWidget;
 class UCommonButtonBase;
 class UWidgetSwitcher;
@@ -49,6 +50,9 @@ protected:
 	void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
 private:
+	UFUNCTION()
+	void ShowLoading();
+
 	void SetMatchLobbyState(const EMatchLobbyState NewState);
 	void ResetTeamEntries();
 
@@ -83,5 +87,5 @@ private:
 	TSubclassOf<UPlayerEntryWidget> PlayerEntryWidget;
 
 	UAccelByteWarsGameInstance* GameInstance;
-	AAccelByteWarsGameStateBase* GameState;
+	AAccelByteWarsMainMenuGameState* GameState;
 };

@@ -7,6 +7,8 @@
 
 #include "Kismet/GameplayStatics.h"
 #include "CommonButtonBase.h"
+#include "Core/GameModes/AccelByteWarsGameMode.h"
+#include "Core/GameStates/AccelByteWarsGameState.h"
 
 void UPauseWidget::NativeOnActivated()
 {
@@ -42,7 +44,10 @@ void UPauseWidget::ResumeGame()
 
 void UPauseWidget::RestartGame()
 {
-	UGameplayStatics::OpenLevel(GetWorld(), TEXT("GalaxyWorld"), false);
+	if (const AAccelByteWarsGameMode* GameMode = Cast<AAccelByteWarsGameMode>(GetWorld()->GetAuthGameMode()))
+	{
+		GameMode->DelayedServerTravel("/Game/ByteWars/Maps/GalaxyWorld/GalaxyWorld");
+	}
 }
 
 void UPauseWidget::QuitGame()

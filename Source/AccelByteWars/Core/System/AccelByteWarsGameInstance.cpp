@@ -4,6 +4,8 @@
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/GameUIManagerSubsystem.h"
 #include "Core/Player/CommonLocalPlayer.h"
+#include "Core/UI/AccelByteWarsBaseUI.h"
+#include "Core/UI/Components/Prompt/Loading/LoadingWidget.h"
 
 #define GAMEINSTANCE_LOG(FormatString, ...) UE_LOG(LogAccelByteWarsGameInstance, Log, TEXT(FormatString), __VA_ARGS__);
 
@@ -12,6 +14,31 @@ void UAccelByteWarsGameInstance::Shutdown()
 	OnGameInstanceShutdownDelegate.Broadcast();
 
 	Super::Shutdown();
+}
+
+UAccelByteWarsBaseUI* UAccelByteWarsGameInstance::GetBaseUIWidget()
+{
+	if (IsRunningDedicatedServer())
+	{
+		return nullptr;
+	}
+
+	if (!BaseUIWidget)
+	{
+		BaseUIWidget = Cast<UAccelByteWarsBaseUI>(CreateWidget(this, BaseUIMenuWidgetClass));
+	}
+
+	if (!BaseUIWidget->IsActivated())
+	{
+		BaseUIWidget->ActivateWidget();
+	}
+
+	if (!BaseUIWidget->IsInViewport())
+	{
+		BaseUIWidget->AddToViewport(10);
+	}
+
+	return BaseUIWidget;
 }
 
 int32 UAccelByteWarsGameInstance::AddLocalPlayer(ULocalPlayer* NewLocalPlayer, FPlatformUserId UserId)
@@ -53,18 +80,6 @@ bool UAccelByteWarsGameInstance::RemoveLocalPlayer(ULocalPlayer* ExistingPlayer)
 	}
 	
 	return Super::RemoveLocalPlayer(ExistingPlayer);
-}
-
-EGameModeType UAccelByteWarsGameInstance::GetCurrentGameModeType() const
-{
-	return GameSetup.GameModeType;
-}
-
-void UAccelByteWarsGameInstance::AssignGameMode(FString CodeName)
-{
-	GameSetup = GetGameModeDataByCodeName(CodeName);
-
-	GAMEINSTANCE_LOG("Game mode set to GameState: %s", *GameSetup.CodeName);
 }
 
 FLinearColor UAccelByteWarsGameInstance::GetTeamColor(uint8 TeamId) const

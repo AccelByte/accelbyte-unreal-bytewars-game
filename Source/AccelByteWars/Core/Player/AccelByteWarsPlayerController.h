@@ -17,11 +17,4 @@ public:
 	// Trigger to start the game from game lobby.
 	UFUNCTION(Reliable, Server, meta = (WorldContext = "WorldContextObject"))
 	void TriggerLobbyStart();
-
-	UFUNCTION(BlueprintCallable)
-	void TriggerServerTravel(TSoftObjectPtr<UWorld> Level);
-
-protected:
-	UFUNCTION(Reliable, Server, meta = (WorldContext = "WorldContextObject"))
-	void ServerTravel(const FString& Url);
 };
