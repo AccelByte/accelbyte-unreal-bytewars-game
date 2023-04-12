@@ -5,6 +5,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Components/BackgroundBlur.h"
+#include "Components/Prompt/Loading/LoadingWidget.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
 #include "Widgets/CommonActivatableWidgetContainer.h"
 #include "AccelByteWarsBaseUI.generated.h"
@@ -28,6 +30,9 @@ class ACCELBYTEWARS_API UAccelByteWarsBaseUI : public UAccelByteWarsActivatableW
 public:
 	void NativeOnInitialized() override;
 
+	UFUNCTION(BlueprintCallable)
+	void ToggleBackgroundBlur(const bool bShow) const;
+
 	/** Push widget to target stack. */
 	UFUNCTION(BlueprintCallable)
 	UAccelByteWarsActivatableWidget* PushWidgetToStack(EBaseUIStackType TargetStack, TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass);
@@ -42,8 +47,23 @@ public:
 	TSubclassOf<UPopUpWidget> DefaultPopUpWidgetClass;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Prompt Settings")
-	TSubclassOf<UAccelByteWarsActivatableWidget> DefaultLoadingWidgetClass;
+	TSubclassOf<ULoadingWidget> DefaultLoadingWidgetClass;
 
 private:
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UBackgroundBlur* BackgroundBlur;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UCommonActivatableWidgetStack* InGameHUDStack;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UCommonActivatableWidgetStack* InGameMenuStack;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UCommonActivatableWidgetStack* MenuStack;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UCommonActivatableWidgetStack* PromptStack;
+
 	void OnWidgetTransitionChanged(UCommonActivatableWidgetContainerBase* Widget, bool bIsTransitioning);
 };

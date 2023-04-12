@@ -4,15 +4,14 @@
 
 #include "Core/UI/InGameMenu/GameOver/GameOverWidget.h"
 #include "Core/UI/InGameMenu/GameOver/Components/GameOverLeaderboardEntry.h"
-
 #include "Core/System/AccelByteWarsGameInstance.h"
-#include "Core/GameModes/AccelByteWarsGameStateBase.h"
-
 #include "Kismet/GameplayStatics.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Components/WidgetSwitcher.h"
 #include "CommonButtonBase.h"
+#include "Core/GameModes/AccelByteWarsGameMode.h"
+#include "Core/GameStates/AccelByteWarsInGameGameState.h"
 #include "Kismet/KismetMathLibrary.h"
 
 void UGameOverWidget::SetWinner(const FText& PlayerName, const FLinearColor& Color)
@@ -37,7 +36,7 @@ void UGameOverWidget::NativeConstruct()
 	GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
 	ensure(GameInstance);
 
-	GameState = Cast<AAccelByteWarsGameStateBase>(GetWorld()->GetGameState());
+	GameState = Cast<AAccelByteWarsInGameGameState>(GetWorld()->GetGameState());
 	ensure(GameState);
 }
 
@@ -67,13 +66,20 @@ void UGameOverWidget::NativeOnActivated()
 	SetInputModeToUIOnly();
 
 	// countdown setup
-	Widget_Countdown->SetupWidget(
-		FText::FromString(""),
-		FText::FromString(""),
-		FText::FromString("Quitting in:"));
-	Widget_Countdown->CheckCountdownStateDelegate.BindUObject(this, &UGameOverWidget::GetCountdownState);
-	Widget_Countdown->UpdateCountdownValueDelegate.BindUObject(this, &UGameOverWidget::GetCountdownValue);
-	Widget_Countdown->OnCountdownFinishedDelegate.AddUObject(this, &UGameOverWidget::OnCountdownFinished);
+	if (GameState->GameSetup.NetworkType == EGameModeNetworkType::DS)
+	{
+		Widget_Countdown->SetupWidget(
+			FText::FromString(""),
+			FText::FromString(""),
+			FText::FromString("Quitting in:"));
+		Widget_Countdown->CheckCountdownStateDelegate.BindUObject(this, &UGameOverWidget::GetCountdownState);
+		Widget_Countdown->UpdateCountdownValueDelegate.BindUObject(this, &UGameOverWidget::GetCountdownValue);
+		Widget_Countdown->OnCountdownFinishedDelegate.AddUObject(this, &UGameOverWidget::OnCountdownFinished);
+	}
+	else
+	{
+		Widget_Countdown->SetVisibility(ESlateVisibility::Collapsed);
+	}
 }
 
 void UGameOverWidget::NativeOnDeactivated()
@@ -144,7 +150,10 @@ void UGameOverWidget::SetupLeaderboard()
 
 void UGameOverWidget::PlayGameAgain()
 {
-	UGameplayStatics::OpenLevel(GetWorld(), TEXT("GalaxyWorld"));
+	if (const AAccelByteWarsGameMode* GameMode = Cast<AAccelByteWarsGameMode>(GetWorld()->GetAuthGameMode()))
+	{
+		GameMode->DelayedServerTravel("/Game/ByteWars/Maps/GalaxyWorld/GalaxyWorld");
+	}
 }
 
 void UGameOverWidget::QuitGame()

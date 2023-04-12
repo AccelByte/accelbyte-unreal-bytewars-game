@@ -9,3 +9,12 @@ void ULoadingWidget::SetLoadingMessage(const FText& LoadingMessage)
 {
 	Tb_LoadingMessage->SetText(LoadingMessage);
 }
+
+void ULoadingWidget::NativePreConstruct()
+{
+	Super::NativePreConstruct();
+
+	// disable back button, since this is a loading screen
+	bIsBackHandler = false;
+	GameMouseCaptureMode = EMouseCaptureMode::CapturePermanently_IncludingInitialMouseDown;
+}

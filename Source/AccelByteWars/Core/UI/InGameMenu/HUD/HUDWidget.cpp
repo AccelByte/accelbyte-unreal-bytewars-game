@@ -5,7 +5,9 @@
 
 #include "HUDWidgetEntry.h"
 #include "Components/TextBlock.h"
-#include "Core/GameModes/AccelByteWarsGameStateBase.h"
+#include "Core/GameStates/AccelByteWarsInGameGameState.h"
+#include "Core/GameStates/AccelByteWarsGameState.h"
+#include "Core/Settings/GameModeDataAssets.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetTextLibrary.h"
 
@@ -13,7 +15,7 @@ void UHUDWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	ByteWarsGameState = GetWorld()->GetGameState<AAccelByteWarsGameStateBase>();
+	ByteWarsGameState = GetWorld()->GetGameState<AAccelByteWarsInGameGameState>();
 
 	// setup pre game countdown
 	Widget_PreGameCountdown->SetupWidget(
@@ -24,16 +26,23 @@ void UHUDWidget::NativeConstruct()
 	OnPreGameCountdownFinishedDelegateHandle =
 		Widget_PreGameCountdown->OnCountdownFinishedDelegate.AddUObject(this, &ThisClass::OnPreGameCountdownFinished);
 
-	// setup not enough player countdown
-	Widget_NotEnoughPlayerCountdown->SetupWidget(
-		FText::FromString(""),
-		FText::FromString(""),
-		FText::FromString("Not enough players | Shutting down DS in: "),
-		true);
-	Widget_NotEnoughPlayerCountdown->CheckCountdownStateDelegate.BindUObject(this, &ThisClass::SetNotEnoughPlayerCountdownState);
-	Widget_NotEnoughPlayerCountdown->UpdateCountdownValueDelegate.BindUObject(this, &ThisClass::UpdateNotEnoughPlayerCountdownValue);
-	OnNotEnoughPlayerCountdownFinishedDelegateHandle =
-		Widget_NotEnoughPlayerCountdown->OnCountdownFinishedDelegate.AddUObject(this, &ThisClass::OnNotEnoughPlayerCountdownFinished);
+	if (ByteWarsGameState->GameSetup.NetworkType == EGameModeNetworkType::DS)
+	{
+		// setup not enough player countdown
+		Widget_NotEnoughPlayerCountdown->SetupWidget(
+			FText::FromString(""),
+			FText::FromString(""),
+			FText::FromString("Not enough players | Shutting down DS in: "),
+			true);
+		Widget_NotEnoughPlayerCountdown->CheckCountdownStateDelegate.BindUObject(this, &ThisClass::SetNotEnoughPlayerCountdownState);
+		Widget_NotEnoughPlayerCountdown->UpdateCountdownValueDelegate.BindUObject(this, &ThisClass::UpdateNotEnoughPlayerCountdownValue);
+		OnNotEnoughPlayerCountdownFinishedDelegateHandle =
+			Widget_NotEnoughPlayerCountdown->OnCountdownFinishedDelegate.AddUObject(this, &ThisClass::OnNotEnoughPlayerCountdownFinished);
+	}
+	else
+	{
+		Widget_NotEnoughPlayerCountdown->SetVisibility(ESlateVisibility::Collapsed);
+	}
 }
 
 void UHUDWidget::NativeDestruct()
@@ -127,6 +136,35 @@ void UHUDWidget::SetColorChecked(const int32 Index, const FLinearColor Color)
 	}
 
 	TargetWidget->SetColorAndOpacity(Color);
+}
+
+void UHUDWidget::ToggleEntry(const int32 Index, const bool bActivate)
+{
+	if (Index < 0 || Index > 3)
+	{
+		return;
+	}
+
+	UHUDWidgetEntry* TargetWidget;
+	switch (Index)
+	{
+	case 0:
+		TargetWidget = Widget_HUDNameValueP1;
+		break;
+	case 1:
+		TargetWidget = Widget_HUDNameValueP2;
+		break;
+	case 2:
+		TargetWidget = Widget_HUDNameValueP3;
+		break;
+	case 3:
+		TargetWidget = Widget_HUDNameValueP4;
+		break;
+	default:
+		return;
+	}
+
+	TargetWidget->SetVisibility(bActivate ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 }
 
 void UHUDWidget::SetTimerValue(const float TimeLeft)

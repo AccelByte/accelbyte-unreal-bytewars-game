@@ -16,7 +16,11 @@ class ACCELBYTEWARS_API ULoadingWidget : public UAccelByteWarsActivatableWidget
 	GENERATED_BODY()
 	
 public:
+	UFUNCTION(BlueprintCallable)
 	void SetLoadingMessage(const FText& LoadingMessage);
+
+protected:
+	virtual void NativePreConstruct() override;
 
 private:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))

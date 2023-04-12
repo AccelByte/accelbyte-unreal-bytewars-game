@@ -21,7 +21,7 @@ DECLARE_DELEGATE_RetVal(ECountdownState, FCheckCountdownState);
 DECLARE_DELEGATE_RetVal(int, FUpdateCountdownValue);
 DECLARE_MULTICAST_DELEGATE(FOnCountdownFinished);
 
-class AAccelByteWarsGameStateBase;
+class AAccelByteWarsGameState;
 /**
  * 
  */
@@ -91,7 +91,7 @@ private:
 	UPanelWidget* Panel_Countdown;
 
 	UPROPERTY()
-	AAccelByteWarsGameStateBase* ByteWarsGameState;
+	AAccelByteWarsGameState* ByteWarsGameState;
 
 	void CollapseWidgetWithTimer();
 	void ChangeWidgetVisibility(const bool bVisible);

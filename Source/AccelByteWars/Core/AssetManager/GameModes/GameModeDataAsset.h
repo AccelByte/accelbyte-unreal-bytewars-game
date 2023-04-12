@@ -55,9 +55,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, AssetRegistrySearchable)
 	FString GameModeTypeString;
 	
-	// Either local multiplayer game or not
+	// Network type
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	bool bIsLocalGame;
+	EGameModeNetworkType NetworkType;
 	
 	// Either team game or not; If FFA then should be false.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)

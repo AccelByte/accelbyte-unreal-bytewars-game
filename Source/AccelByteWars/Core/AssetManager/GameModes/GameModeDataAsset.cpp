@@ -15,7 +15,7 @@ FGameModeData UGameModeDataAsset::GetGameModeDataByCodeName(const FString& InCod
 	GameModeData.CodeName = InCodeName;
 	GameModeData.DisplayName = UAccelByteWarsDataAsset::GetDisplayNameForAsset(GameModeAssetId);
 
-	GameModeData.bIsLocalGame = UAccelByteWarsDataAsset::GetMetadataForAsset<bool>(GameModeAssetId, GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, bIsLocalGame));
+	GameModeData.NetworkType = static_cast<EGameModeNetworkType>(UAccelByteWarsDataAsset::GetMetadataForAsset<int32>(GameModeAssetId, GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, NetworkType)));
 	GameModeData.bIsTeamGame = UAccelByteWarsDataAsset::GetMetadataForAsset<bool>(GameModeAssetId, GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, bIsTeamGame));
 
 	GameModeData.MaxTeamNum = UAccelByteWarsDataAsset::GetMetadataForAsset<int32>(GameModeAssetId, GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, MaxTeamNum));

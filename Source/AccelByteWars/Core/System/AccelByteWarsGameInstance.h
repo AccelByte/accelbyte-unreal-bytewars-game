@@ -6,8 +6,12 @@
 #include "Core/Settings/GameModeDataAssets.h"
 #include "Core/Settings/GlobalSettingsDataAsset.h"
 #include "Engine/GameInstance.h"
-#include "Core/UI/AccelByteWarsActivatableWidget.h"
 #include "AccelByteWarsGameInstance.generated.h"
+
+class ULoadingWidget;
+class UAccelByteWarsBaseUI;
+class UAccelByteWarsActivatableWidget;
+class UAccelByteWarsButtonBase;
 
 #pragma region "Structs and data storing purpose UObject declaration"
 USTRUCT(BlueprintType)
@@ -111,19 +115,11 @@ class ACCELBYTEWARS_API UAccelByteWarsGameInstance : public UGameInstance
 	virtual void Shutdown() override;
 	
 public:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Attributes)
-	UAccelByteWarsActivatableWidget* BaseUIWidget;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Attributes)
-	TSubclassOf<class UAccelByteWarsButtonBase> DefaultButtonClass;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attributes)
-	FGameModeData GameSetup;
-
 	/**
 	 * @brief Transferring data between data - purpose. Do not use this directly. Use the one in GameState instead.
 	 */
 	TArray<FGameplayTeamData> Teams;
+	FGameModeData GameSetup;
 
 	UPROPERTY(BlueprintAssignable)
 	FOnLocalPlayerChanged OnLocalPlayerAdded;
@@ -142,12 +138,6 @@ private:
 
 public:
 	virtual int32 AddLocalPlayer(ULocalPlayer* NewLocalPlayer, FPlatformUserId UserId) override;
-
-	/**
-	 * @brief flag to indicate if this machine currently loading a map.
-	 * Used to differentiate between normal player logout or logout due to non-seamless server travel.
-	 */
-	bool bServerCurrentlyTravelling = false;
 
 	virtual bool RemoveLocalPlayer(ULocalPlayer* ExistingPlayer) override;
 
@@ -169,19 +159,10 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = GameSettings)
 	void SaveGameSettings();
 
-	/**
-	 * @brief Get the currently set GameSetup GameModeType
-	 * @return Game Mode type
-	 */
-	UFUNCTION(BlueprintCallable)
-	EGameModeType GetCurrentGameModeType() const;
+	UFUNCTION(BlueprintCallable, BlueprintCosmetic)
+	UAccelByteWarsBaseUI* GetBaseUIWidget();
 
-	/**
-	 * @brief Assign game mode to GameSetup based on it's code name | will use the first GameMode in data table if not found
-	 * @param CodeName Target GameMode code name
-	 */
-	UFUNCTION(BlueprintCallable)
-	void AssignGameMode(FString CodeName);
+	FGameModeData GetGameModeDataByCodeName(const FString CodeName) const;
 
 	/**
 	 * @brief Get team color specified in GlobalSettingsDataAsset
@@ -191,12 +172,19 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FLinearColor GetTeamColor(uint8 TeamId) const;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Attributes)
+	TSubclassOf<UAccelByteWarsButtonBase> DefaultButtonClass;
+
 protected:
+	UPROPERTY()
+	UAccelByteWarsBaseUI* BaseUIWidget;
+
+	UPROPERTY(EditDefaultsOnly, NoClear)
+	TSubclassOf<UAccelByteWarsBaseUI> BaseUIMenuWidgetClass;
+
 	UPROPERTY(EditAnywhere)
 	UGlobalSettingsDataAsset* GlobalSettingsDataAsset;
 
 	UPROPERTY(EditAnywhere)
 	UDataTable* GameModeDataTable;
-
-	FGameModeData GetGameModeDataByCodeName(const FString CodeName) const;
 };

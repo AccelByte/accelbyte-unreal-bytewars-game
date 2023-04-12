@@ -9,13 +9,14 @@
 #include "Core/UI/Components/Countdown/CountdownWidget.h"
 #include "GameOverWidget.generated.h"
 
+class AAccelByteWarsInGameGameState;
 class UCommonButtonBase;
 class UTextBlock;
 class UVerticalBox;
 class UWidgetSwitcher;
 class UGameOverLeaderboardEntry;
 class UAccelByteWarsGameInstance;
-class AAccelByteWarsGameStateBase;
+class AAccelByteWarsGameState;
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnQuitGame, APlayerController* /*PlayerController*/);
 
@@ -83,5 +84,5 @@ private:
 
 	UPROPERTY()
 	UAccelByteWarsGameInstance* GameInstance;
-	AAccelByteWarsGameStateBase* GameState;
+	AAccelByteWarsInGameGameState* GameState;
 };

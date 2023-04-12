@@ -95,9 +95,9 @@ void UAccelByteWarsActivatableWidget::PostLoad()
 		AssociateTutorialModule = nullptr;
 	}
 	DissociateTutorialModuleWidgets.RemoveAll([](const FTutorialModuleWidgetConnection& Temp)
-		{
-			return Temp.SourceTutorialModule == nullptr;
-		});
+	{
+		return Temp.SourceTutorialModule == nullptr;
+	});
 }
 
 #endif

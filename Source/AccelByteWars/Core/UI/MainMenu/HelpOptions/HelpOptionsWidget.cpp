@@ -14,7 +14,7 @@ void UHelpOptionsWidget::NativeOnActivated()
 	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetWorld()->GetGameInstance());
 	ensure(GameInstance);
 
-	UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->BaseUIWidget);
+	UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->GetBaseUIWidget());
 	ensure(BaseUIWidget);
 
 	Btn_Help->OnClicked().AddWeakLambda(this, [this, BaseUIWidget]()
