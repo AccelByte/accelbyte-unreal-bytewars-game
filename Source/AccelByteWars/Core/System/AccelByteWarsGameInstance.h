@@ -11,6 +11,7 @@
 class ULoadingWidget;
 class UAccelByteWarsBaseUI;
 class UAccelByteWarsActivatableWidget;
+class UAccelByteWarsButtonBase;
 
 #pragma region "Structs and data storing purpose UObject declaration"
 USTRUCT(BlueprintType)
@@ -161,6 +162,9 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintCosmetic)
 	UAccelByteWarsBaseUI* GetBaseUIWidget();
 
+	UFUNCTION(BlueprintPure)
+	TSubclassOf<UAccelByteWarsButtonBase> GetDefaultButtonClass() const { return DefaultButtonClass; }
+
 	FGameModeData GetGameModeDataByCodeName(const FString CodeName) const;
 
 	/**
@@ -177,6 +181,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, NoClear)
 	TSubclassOf<UAccelByteWarsBaseUI> BaseUIMenuWidgetClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TSubclassOf<UAccelByteWarsButtonBase> DefaultButtonClass;
 
 	UPROPERTY(EditAnywhere)
 	UGlobalSettingsDataAsset* GlobalSettingsDataAsset;
