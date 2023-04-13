@@ -8,6 +8,7 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "OnlineIdentityInterfaceAccelByte.h"
 #include "AuthEssentialsLog.h"
+#include "AuthEssentialsModels.h"
 #include "AuthEssentialsSubsystem.generated.h"
 
 DECLARE_MULTICAST_DELEGATE_TwoParams(FAuthOnLoginComplete, bool /*bWasSuccessful*/, const FString& /*ErrorMessage*/);
@@ -36,6 +37,9 @@ public:
 	 * @param bAlsoResetType will clear the auth's login type if it sets to true.
 	 */
 	void ClearAuthCredentials(bool bAlsoResetType = false);
+
+	UFUNCTION(BlueprintCallable)
+	EAuthStatus GetLoginStatus(const APlayerController* PC) const;
 
 protected:
 	void OnLoginComplete(int32 LocalUserNum, bool bLoginWasSuccessful, const FUniqueNetId& UserId, const FString& LoginError, const FAuthOnLoginCompleteDelegate OnLoginComplete);

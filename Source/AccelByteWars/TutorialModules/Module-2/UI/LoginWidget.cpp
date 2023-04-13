@@ -37,6 +37,16 @@ void ULoginWidget::NativeOnActivated()
 	Btn_RetryLogin->OnClicked().AddUObject(this, &ULoginWidget::OnRetryLoginButtonClicked);
 	Btn_QuitGame->OnClicked().AddUObject(this, &ULoginWidget::OnQuitGameButtonClicked);
 
+	// check current user's login state
+	switch (AuthSubsystem->GetLoginStatus(GetOwningPlayer()))
+	{
+	case LoggedIn:
+		// Immediately triggers if already logged in
+		OnLoginComplete(true, "");
+		break;
+	default: ;
+	}
+
 	SetLoginState(ELoginState::Default);
 
 	AutoLoginCmd();
