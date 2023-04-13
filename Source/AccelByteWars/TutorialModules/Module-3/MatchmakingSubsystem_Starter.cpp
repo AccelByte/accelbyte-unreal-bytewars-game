@@ -8,7 +8,7 @@
 #include "OnlineSubsystemAccelByteSessionSettings.h"
 
 #include "Core/AssetManager/TutorialModules/TutorialModuleUtility.h"
-#include "Core/GameModes/AccelByteWarsGameModeBase.h"
+#include "Core/GameModes/AccelByteWarsGameMode.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/System/AccelByteWarsGameSession.h"
 #include "Core/Player/AccelByteWarsPlayerState.h"
@@ -41,7 +41,7 @@ void UMatchmakingSubsystem_Starter::Initialize(FSubsystemCollectionBase& Collect
 	// Bind delegates to game events if the matchmaking module is active.
 	if (UTutorialModuleUtility::IsTutorialModuleActive(FPrimaryAssetId{ "TutorialModule:MATCHMAKINGESSENTIALS" }, this))
 	{
-		AAccelByteWarsGameModeBase::OnAddOnlineMemberDelegate.AddUObject(this, &ThisClass::SetTeamMemberAccelByteInformation);
+		AAccelByteWarsGameMode::OnAddOnlineMemberDelegate.AddUObject(this, &ThisClass::SetTeamMemberAccelByteInformation);
 		UMatchLobbyWidget::OnQuitLobbyDelegate.AddUObject(this, &ThisClass::OnQuitGameButtonsClicked);
 		UPauseWidget::OnQuitGameDelegate.AddUObject(this, &ThisClass::OnQuitGameButtonsClicked);
 		UGameOverWidget::OnQuitGameDelegate.AddUObject(this, &ThisClass::OnQuitGameButtonsClicked);
@@ -59,7 +59,7 @@ void UMatchmakingSubsystem_Starter::Deinitialize()
 {
 	Super::Deinitialize();
 
-	AAccelByteWarsGameModeBase::OnAddOnlineMemberDelegate.Clear();
+	AAccelByteWarsGameMode::OnAddOnlineMemberDelegate.Clear();
 	UMatchLobbyWidget::OnQuitLobbyDelegate.Clear();
 	UPauseWidget::OnQuitGameDelegate.Clear();
 	UGameOverWidget::OnQuitGameDelegate.Clear();
@@ -121,10 +121,10 @@ void UMatchmakingSubsystem_Starter::OnServerReceivedSession(FName SessionName)
 		return;
 	}
 
-	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
-	if (!ensure(GameInstance))
+	AAccelByteWarsGameState* GameState = Cast<AAccelByteWarsGameState>(GetWorld()->GetGameState());
+	if (!ensure(GameState)) 
 	{
-		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Server cannot handle received game session. Game Instance is null."));
+		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Server cannot handle received game session. Game State is null."));
 		return;
 	}
 
@@ -132,7 +132,7 @@ void UMatchmakingSubsystem_Starter::OnServerReceivedSession(FName SessionName)
 	const FString GameMode = SessionInfo->GetBackendSessionData()->Configuration.Name;
 	if (!GameMode.IsEmpty())
 	{
-		GameInstance->AssignGameMode(GameMode.ToUpper());
+		GameState->AssignGameMode(GameMode.ToUpper());
 	}
 }
 
