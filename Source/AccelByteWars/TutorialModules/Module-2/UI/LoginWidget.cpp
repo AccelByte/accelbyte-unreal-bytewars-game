@@ -103,7 +103,7 @@ void ULoginWidget::OnLoginComplete(bool bWasSuccessful, const FString& ErrorMess
 	if (bWasSuccessful) 
 	{
 		// When login success, open Main Menu widget.
-		UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->BaseUIWidget);
+		UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->GetBaseUIWidget());
 		ensure(BaseUIWidget);
 		BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, MainMenuWidgetClass);
 	}
