@@ -179,6 +179,8 @@ protected:
 	UPROPERTY()
 	UAccelByteWarsBaseUI* BaseUIWidget;
 
+	bool bHasAddToViewportCalled = false;
+
 	UPROPERTY(EditDefaultsOnly, NoClear)
 	TSubclassOf<UAccelByteWarsBaseUI> BaseUIMenuWidgetClass;
 
