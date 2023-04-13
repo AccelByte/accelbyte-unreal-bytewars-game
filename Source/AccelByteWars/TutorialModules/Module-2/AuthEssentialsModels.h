@@ -13,3 +13,11 @@ enum class ELoginState
 	LoggingIn,
 	Failed
 };
+
+UENUM(BlueprintType)
+enum EAuthStatus
+{
+	NotLoggedIn,
+	UsingLocalProfile,
+	LoggedIn
+};

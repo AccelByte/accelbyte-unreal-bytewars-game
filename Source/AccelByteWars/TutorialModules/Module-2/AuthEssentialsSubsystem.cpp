@@ -95,6 +95,32 @@ void UAuthEssentialsSubsystem::ClearAuthCredentials(bool bAlsoResetType)
     }
 }
 
+EAuthStatus UAuthEssentialsSubsystem::GetLoginStatus(const APlayerController* PC) const
+{
+    EAuthStatus Status = EAuthStatus::NotLoggedIn;
+
+    // get local controller id
+    const ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
+    ensure(LocalPlayer != nullptr);
+    const int32 LocalUserNum = LocalPlayer->GetControllerId();
+
+    switch (IdentityInterface->GetLoginStatus(LocalUserNum))
+    {
+    case ELoginStatus::NotLoggedIn:
+        Status = EAuthStatus::NotLoggedIn;
+        break;
+    case ELoginStatus::UsingLocalProfile:
+        Status = EAuthStatus::UsingLocalProfile;
+        break;
+    case ELoginStatus::LoggedIn:
+        Status = EAuthStatus::LoggedIn;
+        break;
+    default: ;
+    }
+
+    return Status;
+}
+
 void UAuthEssentialsSubsystem::OnLoginComplete(int32 LocalUserNum, bool bLoginWasSuccessful, const FUniqueNetId& UserId, const FString& LoginError, const FAuthOnLoginCompleteDelegate OnLoginComplete)
 {
     if (bLoginWasSuccessful)
