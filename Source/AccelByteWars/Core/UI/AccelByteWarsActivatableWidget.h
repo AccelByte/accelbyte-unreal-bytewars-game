@@ -30,7 +30,7 @@ class ACCELBYTEWARS_API UAccelByteWarsActivatableWidget : public UCommonActivata
 public:
 	UAccelByteWarsActivatableWidget(const FObjectInitializer& ObjectInitializer);
 	virtual void NativePreConstruct() override;
-	virtual void NativeConstruct() override;
+	virtual void NativeOnActivated() override;
 #if WITH_EDITOR
 	virtual void PostLoad() override;
 #endif

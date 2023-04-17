@@ -39,9 +39,9 @@ void UAccelByteWarsActivatableWidget::NativePreConstruct()
 #endif
 }
 
-void UAccelByteWarsActivatableWidget::NativeConstruct()
+void UAccelByteWarsActivatableWidget::NativeOnActivated()
 {
-	Super::NativeConstruct();
+	Super::NativeOnActivated();
 
 	if (!bIsTutorialModuleWidgetsInitialized) 
 	{
@@ -157,7 +157,12 @@ void UAccelByteWarsActivatableWidget::LoadTutorialModuleWidgetConnection()
 	// Connect Other Tutorial Module Widgets to This Tutorial Module.
 	if (AssociateTutorialModule)
 	{
-		InitializeTutorialModuleWidgets(AssociateTutorialModule->OtherTutorialModuleWidgetsToThisModuleWidgetConnections);
+		const bool bIsTutorialModuleActive = AssociateTutorialModule->IsActiveAndDependenciesChecked();
+		SetVisibility(bIsTutorialModuleActive ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+		if (bIsTutorialModuleActive) 
+		{
+			InitializeTutorialModuleWidgets(AssociateTutorialModule->OtherTutorialModuleWidgetsToThisModuleWidgetConnections);
+		}
 	}
 
 	// Connect This Tutorial Module Widgets to Non-Tutorial Module.
