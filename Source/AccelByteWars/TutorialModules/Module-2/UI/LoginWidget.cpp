@@ -27,38 +27,34 @@ void ULoginWidget::NativeConstruct()
 
 	PromptSubsystem = GameInstance->GetSubsystem<UPromptSubsystem>();
 	ensure(PromptSubsystem);
+
+	OnLoginWithSinglePlatformAuthDelegate.BindUObject(this, &ThisClass::OnLoginWithSinglePlatformAuth);
 }
 
 void ULoginWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
-	Btn_LoginWithDeviceId->OnClicked().AddUObject(this, &ULoginWidget::OnLoginWithDeviceIdButtonClicked);
-	Btn_RetryLogin->OnClicked().AddUObject(this, &ULoginWidget::OnRetryLoginButtonClicked);
-	Btn_QuitGame->OnClicked().AddUObject(this, &ULoginWidget::OnQuitGameButtonClicked);
+	Btn_LoginWithDeviceId->OnClicked().AddUObject(this, &ThisClass::OnLoginWithDeviceIdButtonClicked);
+	Btn_RetryLogin->OnClicked().AddUObject(this, &ThisClass::OnRetryLoginButtonClicked);
+	Btn_QuitGame->OnClicked().AddUObject(this, &ThisClass::OnQuitGameButtonClicked);
 
-	// check current user's login state
-	switch (AuthSubsystem->GetLoginStatus(GetOwningPlayer()))
+	if (LastLoginMethod == EAccelByteLoginType::None) 
 	{
-	case LoggedIn:
-		// Immediately triggers if already logged in
-		OnLoginComplete(true, "");
-		break;
-	default: ;
+		SetLoginState(ELoginState::Default);
+		AutoLoginCmd();
 	}
-
-	SetLoginState(ELoginState::Default);
-
-	AutoLoginCmd();
 }
 
 void ULoginWidget::NativeOnDeactivated()
 {
 	Super::NativeOnDeactivated();
 
-	Btn_LoginWithDeviceId->OnClicked().RemoveAll(this);
-	Btn_RetryLogin->OnClicked().RemoveAll(this);
-	Btn_QuitGame->OnClicked().RemoveAll(this);
+	Btn_LoginWithDeviceId->OnClicked().Clear();
+	Btn_RetryLogin->OnClicked().Clear();
+	Btn_QuitGame->OnClicked().Clear();
+
+	LastLoginMethod = EAccelByteLoginType::None;
 }
 
 void ULoginWidget::SetLoginState(const ELoginState NewState)
@@ -79,71 +75,9 @@ void ULoginWidget::SetLoginState(const ELoginState NewState)
 	}
 }
 
-void ULoginWidget::OnLoginWithDeviceIdButtonClicked()
-{
-	Login(EAccelByteLoginType::DeviceId);
-}
-
-void ULoginWidget::OnRetryLoginButtonClicked()
-{
-	Login(LastLoginMethod);
-}
-
 void ULoginWidget::OnQuitGameButtonClicked()
 {
 	QuitGame();
-}
-
-void ULoginWidget::Login(EAccelByteLoginType LoginMethod)
-{
-	SetLoginState(ELoginState::LoggingIn);
-
-	APlayerController* PC = GetWorld()->GetFirstPlayerController();
-	ensure(PC);
-	
-	// Cached last login method for the UI login retry functionality later. 
-	LastLoginMethod = LoginMethod;
-
-	ensure(AuthSubsystem);
-	AuthSubsystem->Login(LoginMethod, PC, FAuthOnLoginCompleteDelegate::CreateUObject(this, &ULoginWidget::OnLoginComplete));
-}
-
-void ULoginWidget::OnLoginComplete(bool bWasSuccessful, const FString& ErrorMessage)
-{
-	if (bWasSuccessful) 
-	{
-		// When login success, open Main Menu widget.
-		UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->GetBaseUIWidget());
-		ensure(BaseUIWidget);
-		BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, MainMenuWidgetClass);
-	}
-	else 
-	{
-		// When login failed, show error message.
-		Tb_FailedMessage->SetText(FText::FromString(ErrorMessage));
-		SetLoginState(ELoginState::Failed);
-	}
-}
-
-void ULoginWidget::AutoLoginCmd()
-{
-	FString CmdArgs = FCommandLine::Get();
-	if (!CmdArgs.Contains(TEXT("-AUTH_TYPE=ACCELBYTE")))
-	{
-		return;
-	}
-	FString Username, Password;
-	FParse::Value(FCommandLine::Get(), TEXT("-AUTH_LOGIN="), Username);
-	FParse::Value(FCommandLine::Get(), TEXT("-AUTH_PASSWORD="), Password);
-	if (!Username.IsEmpty() && !Password.IsEmpty())
-	{
-		AuthSubsystem->SetAuthCredentials(Username, Password);
-		Login(EAccelByteLoginType::AccelByte);
-	}
-	else
-	{
-		UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("Cannot auto login with AccelByte account. Username and password cannot be found from command line."));
-	}
 }
 
 void ULoginWidget::QuitGame()
@@ -156,12 +90,85 @@ void ULoginWidget::QuitGame()
 		EPopUpType::ConfirmationYesNo,
 		FPopUpResultDelegate::CreateWeakLambda(this, [this](EPopUpResult Result)
 		{
-			if (Result == EPopUpResult::Confirmed) 
+			if (Result == EPopUpResult::Confirmed)
 			{
 				UKismetSystemLibrary::QuitGame(GetWorld(), nullptr, EQuitPreference::Type::Quit, false);
 			}
 		})
 	);
 }
+
+void ULoginWidget::AutoLoginCmd()
+{
+	const FString CmdArgs = FCommandLine::Get();
+	if (CmdArgs.Contains(TEXT("-AUTH_TYPE=ACCELBYTE")))
+	{
+		FString Username, Password;
+		FParse::Value(FCommandLine::Get(), TEXT("-AUTH_LOGIN="), Username);
+		FParse::Value(FCommandLine::Get(), TEXT("-AUTH_PASSWORD="), Password);
+		if (!Username.IsEmpty() && !Password.IsEmpty())
+		{
+			AuthSubsystem->SetAuthCredentials(Username, Password);
+			Login(EAccelByteLoginType::AccelByte);
+		}
+		else
+		{
+			UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("Cannot auto login with AccelByte account. Username and password cannot be found from command line."));
+		}
+	}
+}
+
+#pragma region Module.2 Function Definitions
+void ULoginWidget::OnLoginWithDeviceIdButtonClicked()
+{
+	Login(EAccelByteLoginType::DeviceId);
+}
+
+void ULoginWidget::OnRetryLoginButtonClicked()
+{
+	if (LastLoginMethod != EAccelByteLoginType::None)
+	{
+		Login(LastLoginMethod);
+	}
+}
+
+void ULoginWidget::Login(EAccelByteLoginType LoginMethod)
+{
+	SetLoginState(ELoginState::LoggingIn);
+
+	APlayerController* PC = GetWorld()->GetFirstPlayerController();
+	ensure(PC);
+
+	// Cached last login method for the UI login retry functionality later. 
+	LastLoginMethod = LoginMethod;
+
+	ensure(AuthSubsystem);
+	AuthSubsystem->Login(LoginMethod, PC, FAuthOnLoginCompleteDelegate::CreateUObject(this, &ULoginWidget::OnLoginComplete));
+}
+
+void ULoginWidget::OnLoginComplete(bool bWasSuccessful, const FString& ErrorMessage)
+{
+	if (bWasSuccessful)
+	{
+		// When login success, open Main Menu widget.
+		UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget();
+		ensure(BaseUIWidget);
+		BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, MainMenuWidgetClass);
+	}
+	else
+	{
+		// When login failed, show error message.
+		Tb_FailedMessage->SetText(FText::FromString(ErrorMessage));
+		SetLoginState(ELoginState::Failed);
+	}
+}
+#pragma endregion
+
+#pragma region Module.4 Function Definitions
+void ULoginWidget::OnLoginWithSinglePlatformAuth() 
+{
+	Login(EAccelByteLoginType::Steam);
+}
+#pragma endregion
 
 #undef LOCTEXT_NAMESPACE

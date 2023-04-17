@@ -14,10 +14,4 @@ enum class ELoginState
 	Failed
 };
 
-UENUM(BlueprintType)
-enum EAuthStatus
-{
-	NotLoggedIn,
-	UsingLocalProfile,
-	LoggedIn
-};
+DECLARE_DELEGATE(FOnLoginWithSinglePlatformAuth);
