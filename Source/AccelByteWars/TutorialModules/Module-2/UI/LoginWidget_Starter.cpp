@@ -22,6 +22,9 @@ void ULoginWidget_Starter::NativeConstruct()
 	GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
 	ensure(GameInstance);
 
+	AuthSubsystem = GameInstance->GetSubsystem<UAuthEssentialsSubsystem_Starter>();
+	ensure(AuthSubsystem);
+
 	PromptSubsystem = GameInstance->GetSubsystem<UPromptSubsystem>();
 	ensure(PromptSubsystem);
 }
@@ -30,20 +33,25 @@ void ULoginWidget_Starter::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
-	Btn_LoginWithDeviceId->OnClicked().AddUObject(this, &ULoginWidget_Starter::OnLoginWithDeviceIdButtonClicked);
-	Btn_RetryLogin->OnClicked().AddUObject(this, &ULoginWidget_Starter::OnRetryLoginButtonClicked);
-	Btn_QuitGame->OnClicked().AddUObject(this, &ULoginWidget_Starter::OnQuitGameButtonClicked);
+	Btn_LoginWithDeviceId->OnClicked().AddUObject(this, &ThisClass::OnLoginWithDeviceIdButtonClicked);
+	Btn_RetryLogin->OnClicked().AddUObject(this, &ThisClass::OnRetryLoginButtonClicked);
+	Btn_QuitGame->OnClicked().AddUObject(this, &ThisClass::OnQuitGameButtonClicked);
 
-	SetLoginState(ELoginState::Default);
+	if (LastLoginMethod == EAccelByteLoginType::None)
+	{
+		SetLoginState(ELoginState::Default);
+	}
 }
 
 void ULoginWidget_Starter::NativeOnDeactivated()
 {
 	Super::NativeOnDeactivated();
 
-	Btn_LoginWithDeviceId->OnClicked().RemoveAll(this);
-	Btn_RetryLogin->OnClicked().RemoveAll(this);
-	Btn_QuitGame->OnClicked().RemoveAll(this);
+	Btn_LoginWithDeviceId->OnClicked().Clear();
+	Btn_RetryLogin->OnClicked().Clear();
+	Btn_QuitGame->OnClicked().Clear();
+
+	LastLoginMethod = EAccelByteLoginType::None;
 }
 
 void ULoginWidget_Starter::SetLoginState(const ELoginState NewState)
@@ -64,20 +72,6 @@ void ULoginWidget_Starter::SetLoginState(const ELoginState NewState)
 	}
 }
 
-void ULoginWidget_Starter::OnLoginWithDeviceIdButtonClicked()
-{
-	// TODO (TutorialModule): call login with device id.
-	
-	UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("Please integrate AcceByte Online Subsystem to access AccelByte Game Services."));
-}
-
-void ULoginWidget_Starter::OnRetryLoginButtonClicked()
-{
-	// TODO (TutorialModule): call login with latest login method used
-
-	UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("Please integrate AcceByte Online Subsystem to access AccelByte Game Services."));
-}
-
 void ULoginWidget_Starter::OnQuitGameButtonClicked()
 {
 	QuitGame();
@@ -93,12 +87,33 @@ void ULoginWidget_Starter::QuitGame()
 		EPopUpType::ConfirmationYesNo,
 		FPopUpResultDelegate::CreateWeakLambda(this, [this](EPopUpResult Result)
 		{
-			if (Result == EPopUpResult::Confirmed) 
+			if (Result == EPopUpResult::Confirmed)
 			{
 				UKismetSystemLibrary::QuitGame(GetWorld(), nullptr, EQuitPreference::Type::Quit, false);
 			}
 		})
 	);
 }
+
+#pragma region Module.2 Function Definitions
+void ULoginWidget_Starter::OnLoginWithDeviceIdButtonClicked()
+{
+	// TODO: Call login with device id here.
+}
+
+void ULoginWidget_Starter::OnRetryLoginButtonClicked()
+{
+	if (LastLoginMethod != EAccelByteLoginType::None)
+	{
+		// TODO: Call retry login here.
+	}
+}
+
+// TODO: Add your Module.2 function definitions here.
+#pragma endregion
+
+#pragma region Module.4 Function Definitions
+// TODO: Add your Module.4 function definitions here.
+#pragma endregion
 
 #undef LOCTEXT_NAMESPACE

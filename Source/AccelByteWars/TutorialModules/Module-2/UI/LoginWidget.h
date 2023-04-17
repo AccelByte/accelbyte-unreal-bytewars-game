@@ -20,30 +20,38 @@ UCLASS()
 class ACCELBYTEWARS_API ULoginWidget : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
-			
+	
+public:
+	inline static FOnLoginWithSinglePlatformAuth OnLoginWithSinglePlatformAuthDelegate;
+
 protected:
 	void NativeConstruct() override;
 	void NativeOnActivated() override;
 	void NativeOnDeactivated() override;
 
 	void SetLoginState(const ELoginState NewState);
-	
+	void QuitGame();
+	void AutoLoginCmd();
+
+#pragma region Module.2 Function Declarations
 	void OnLoginWithDeviceIdButtonClicked();
 	void OnRetryLoginButtonClicked();
 	void OnQuitGameButtonClicked();
-	
+
 	void Login(EAccelByteLoginType LoginMethod);
 	void OnLoginComplete(bool bWasSuccessful, const FString& ErrorMessage);
-	
-	void AutoLoginCmd();
-	void QuitGame();
+#pragma endregion
+
+#pragma region Module.4 Function Declarations
+	void OnLoginWithSinglePlatformAuth();
+#pragma endregion
 
 private:
 	UAccelByteWarsGameInstance* GameInstance;
 	UAuthEssentialsSubsystem* AuthSubsystem;
 	UPromptSubsystem* PromptSubsystem;
 
-	EAccelByteLoginType LastLoginMethod;
+	EAccelByteLoginType LastLoginMethod = EAccelByteLoginType::None;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UWidgetSwitcher* Ws_LoginState;
