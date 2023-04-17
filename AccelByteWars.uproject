@@ -45,6 +45,10 @@
 		{
 			"Name": "AccelByteUe4Sdk",
 			"Enabled": true
+		},
+		{
+			"Name": "OnlineSubsystemSteam",
+			"Enabled": true
 		}
 	]
 }
