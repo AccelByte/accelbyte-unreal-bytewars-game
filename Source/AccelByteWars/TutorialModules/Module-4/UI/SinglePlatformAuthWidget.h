@@ -14,7 +14,7 @@ UCLASS()
 class ACCELBYTEWARS_API USinglePlatformAuthWidget : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
-	
+
 protected:
 	void NativeConstruct() override;
 

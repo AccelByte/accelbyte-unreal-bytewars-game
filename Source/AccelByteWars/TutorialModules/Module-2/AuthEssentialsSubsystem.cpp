@@ -31,10 +31,10 @@ void UAuthEssentialsSubsystem::Deinitialize()
 {
     Super::Deinitialize();
 
-    ClearAuthCredentials(true);
+    ClearAuthCredentials();
 }
 
-void UAuthEssentialsSubsystem::Login(EAccelByteLoginType LoginMethod, const APlayerController* PC, const FAuthOnLoginCompleteDelegate& OnLoginComplete)
+void UAuthEssentialsSubsystem::Login(const APlayerController* PC, const FAuthOnLoginCompleteDelegate& OnLoginComplete)
 {
     if (!ensure(IdentityInterface.IsValid()))
     {
@@ -42,23 +42,6 @@ void UAuthEssentialsSubsystem::Login(EAccelByteLoginType LoginMethod, const APla
         UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("%s"), *Message);
         OnLoginComplete.ExecuteIfBound(false, *Message);
         return;
-    }
-
-    // Set login type.
-    Credentials.Type = FAccelByteUtilities::GetUEnumValueAsString(LoginMethod);
-
-    // Set login credentials based on login type.
-    switch (LoginMethod)
-    {
-        case EAccelByteLoginType::DeviceId:
-            // Login with device id doesn't require id and token credentials.
-            ClearAuthCredentials();
-            break;
-        case EAccelByteLoginType::Steam:
-            /* Since Steam is one of native subsystem, then login with Steam
-             * doesn't require login type, id, and token credentials. */
-            ClearAuthCredentials(true);
-            break;
     }
 
     const ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
@@ -83,21 +66,18 @@ void UAuthEssentialsSubsystem::Login(EAccelByteLoginType LoginMethod, const APla
     }
 }
 
-void UAuthEssentialsSubsystem::SetAuthCredentials(const FString& Id, const FString& Token) 
+void UAuthEssentialsSubsystem::SetAuthCredentials(const EAccelByteLoginType& LoginMethod, const FString& Id, const FString& Token) 
 {
+    Credentials.Type = (LoginMethod == EAccelByteLoginType::None) ? TEXT("") : FAccelByteUtilities::GetUEnumValueAsString(LoginMethod);
     Credentials.Id = Id;
     Credentials.Token = Token;
 }
 
-void UAuthEssentialsSubsystem::ClearAuthCredentials(bool bAlsoResetType)
+void UAuthEssentialsSubsystem::ClearAuthCredentials()
 {
+    Credentials.Type = TEXT("");
     Credentials.Id = TEXT("");
     Credentials.Token = TEXT("");
-
-    if (bAlsoResetType) 
-    {
-        Credentials.Type = TEXT("");
-    }
 }
 
 void UAuthEssentialsSubsystem::OnLoginComplete(int32 LocalUserNum, bool bLoginWasSuccessful, const FUniqueNetId& UserId, const FString& LoginError, const FAuthOnLoginCompleteDelegate OnLoginComplete)

@@ -30,22 +30,19 @@ void UAuthEssentialsSubsystem_Starter::Deinitialize()
 {
     Super::Deinitialize();
 
-    ClearAuthCredentials(true);
+    ClearAuthCredentials();
 }
 
-void UAuthEssentialsSubsystem_Starter::SetAuthCredentials(const FString& Id, const FString& Token) 
+void UAuthEssentialsSubsystem_Starter::SetAuthCredentials(const EAccelByteLoginType& LoginMethod, const FString& Id, const FString& Token)
 {
+    Credentials.Type = (LoginMethod == EAccelByteLoginType::None) ? TEXT("") : FAccelByteUtilities::GetUEnumValueAsString(LoginMethod);
     Credentials.Id = Id;
     Credentials.Token = Token;
 }
 
-void UAuthEssentialsSubsystem_Starter::ClearAuthCredentials(bool bAlsoResetType)
+void UAuthEssentialsSubsystem_Starter::ClearAuthCredentials()
 {
+    Credentials.Type = TEXT("");
     Credentials.Id = TEXT("");
     Credentials.Token = TEXT("");
-
-    if (bAlsoResetType) 
-    {
-        Credentials.Type = TEXT("");
-    }
 }

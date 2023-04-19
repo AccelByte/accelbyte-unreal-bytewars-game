@@ -3,6 +3,7 @@
 // and restrictions contact your company contract manager.
 
 #include "TutorialModules/Module-4/UI/SinglePlatformAuthWidget_Starter.h"
+#include "TutorialModules/Module-2/AuthEssentialsSubsystem_Starter.h"
 #include "TutorialModules/Module-2/UI/LoginWidget_Starter.h"
 #include "CommonButtonBase.h"
 
