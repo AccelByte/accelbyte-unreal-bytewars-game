@@ -27,6 +27,9 @@ void ULoginWidget_Starter::NativeConstruct()
 
 	PromptSubsystem = GameInstance->GetSubsystem<UPromptSubsystem>();
 	ensure(PromptSubsystem);
+
+	SetLoginState(ELoginState::Default);
+	OnRetryLoginDelegate.Clear();
 }
 
 void ULoginWidget_Starter::NativeOnActivated()
@@ -37,10 +40,8 @@ void ULoginWidget_Starter::NativeOnActivated()
 	Btn_RetryLogin->OnClicked().AddUObject(this, &ThisClass::OnRetryLoginButtonClicked);
 	Btn_QuitGame->OnClicked().AddUObject(this, &ThisClass::OnQuitGameButtonClicked);
 
-	if (LastLoginMethod == EAccelByteLoginType::None)
-	{
-		SetLoginState(ELoginState::Default);
-	}
+	SetLoginState(ELoginState::Default);
+	OnRetryLoginDelegate.Clear();
 }
 
 void ULoginWidget_Starter::NativeOnDeactivated()
@@ -50,8 +51,6 @@ void ULoginWidget_Starter::NativeOnDeactivated()
 	Btn_LoginWithDeviceId->OnClicked().Clear();
 	Btn_RetryLogin->OnClicked().Clear();
 	Btn_QuitGame->OnClicked().Clear();
-
-	LastLoginMethod = EAccelByteLoginType::None;
 }
 
 void ULoginWidget_Starter::SetLoginState(const ELoginState NewState)
@@ -72,12 +71,22 @@ void ULoginWidget_Starter::SetLoginState(const ELoginState NewState)
 	}
 }
 
-void ULoginWidget_Starter::OnQuitGameButtonClicked()
+void ULoginWidget_Starter::OnLoginWithDeviceIdButtonClicked()
 {
-	QuitGame();
+	// TODO (TutorialModule): call login with device id.
+	
+	UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("Please integrate AcceByte Online Subsystem to access AccelByte Game Services."));
 }
 
-void ULoginWidget_Starter::QuitGame()
+void ULoginWidget_Starter::OnRetryLoginButtonClicked()
+{
+	if (OnRetryLoginDelegate.IsBound())
+	{
+		OnRetryLoginDelegate.Broadcast();
+	}
+}
+
+void ULoginWidget_Starter::OnQuitGameButtonClicked()
 {
 	ensure(PromptSubsystem);
 
@@ -94,26 +103,5 @@ void ULoginWidget_Starter::QuitGame()
 		})
 	);
 }
-
-#pragma region Module.2 Function Definitions
-void ULoginWidget_Starter::OnLoginWithDeviceIdButtonClicked()
-{
-	// TODO: Call login with device id here.
-}
-
-void ULoginWidget_Starter::OnRetryLoginButtonClicked()
-{
-	if (LastLoginMethod != EAccelByteLoginType::None)
-	{
-		// TODO: Call retry login here.
-	}
-}
-
-// TODO: Add your Module.2 function definitions here.
-#pragma endregion
-
-#pragma region Module.4 Function Definitions
-// TODO: Add your Module.4 function definitions here.
-#pragma endregion
 
 #undef LOCTEXT_NAMESPACE

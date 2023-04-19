@@ -3,7 +3,10 @@
 // and restrictions contact your company contract manager.
 
 #include "TutorialModules/Module-4/UI/SinglePlatformAuthWidget.h"
+#include "TutorialModules/Module-2/AuthEssentialsSubsystem.h"
 #include "TutorialModules/Module-2/UI/LoginWidget.h"
+#include "Core/System/AccelByteWarsGameInstance.h"
+#include "Core/UI/AccelByteWarsBaseUI.h"
 #include "CommonButtonBase.h"
 
 void USinglePlatformAuthWidget::NativeConstruct()
@@ -11,11 +14,11 @@ void USinglePlatformAuthWidget::NativeConstruct()
 	Super::NativeConstruct();
 
 	Btn_LoginWithSinglePlatformAuth->OnClicked().AddUObject(this, &ThisClass::OnLoginWithSinglePlatformAuthButtonClicked);
-	
-	// Toggle the login button visibility if Steam OSS exists.
+
+	// Toggle the login button visibility if the default native platform exists.
 	SetVisibility(IOnlineSubsystem::GetByPlatform() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 
-	// Auto login with Steam.
+	// Auto login with default native platform.
 	bool bShowLoginMenu = true;
 	GConfig->GetBool(TEXT("AuthEssentialsLoginMenu"), TEXT("bEnabled"), bShowLoginMenu, GEngineIni);
 	if (!bShowLoginMenu && GetVisibility() == ESlateVisibility::Visible)
@@ -26,5 +29,28 @@ void USinglePlatformAuthWidget::NativeConstruct()
 
 void USinglePlatformAuthWidget::OnLoginWithSinglePlatformAuthButtonClicked()
 {
-	ULoginWidget::OnLoginWithSinglePlatformAuthDelegate.ExecuteIfBound();
+	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+	ensure(GameInstance);
+	
+	UAuthEssentialsSubsystem* AuthSubsystem = GameInstance->GetSubsystem<UAuthEssentialsSubsystem>();
+	ensure(AuthSubsystem);
+
+	APlayerController* PC = GetWorld()->GetFirstPlayerController();
+	ensure(PC);
+
+	UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget();
+	ensure(BaseUIWidget);
+
+	// Grab the login widget reference to show login state UI.
+	ULoginWidget* LoginWidget = Cast<ULoginWidget>(BaseUIWidget->Stacks[EBaseUIStackType::Menu]->GetActiveWidget());
+	ensure(LoginWidget);
+
+	LoginWidget->SetLoginState(ELoginState::LoggingIn);
+	LoginWidget->OnRetryLoginDelegate.AddUObject(this, &ThisClass::OnLoginWithSinglePlatformAuthButtonClicked);
+
+	// Login with single platform auth.
+	// Notice that login with single platform auth is considered as login with default native platform.
+	// Thus, it doesn't need username, token, nor the login method.
+	AuthSubsystem->SetAuthCredentials(EAccelByteLoginType::None, TEXT(""), TEXT(""));
+	AuthSubsystem->Login(PC, FAuthOnLoginCompleteDelegate::CreateUObject(LoginWidget, &ULoginWidget::OnLoginComplete));
 }
