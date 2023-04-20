@@ -9,7 +9,6 @@
 
 #include "Core/AssetManager/TutorialModules/TutorialModuleUtility.h"
 #include "Core/GameModes/AccelByteWarsGameMode.h"
-#include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/System/AccelByteWarsGameSession.h"
 #include "Core/Player/AccelByteWarsPlayerState.h"
 

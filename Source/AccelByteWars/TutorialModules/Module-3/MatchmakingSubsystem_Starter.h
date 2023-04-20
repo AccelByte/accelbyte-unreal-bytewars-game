@@ -5,7 +5,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Subsystems/LocalPlayerSubsystem.h"
+#include "Subsystems/GameInstanceSubsystem.h"
 #include "OnlineSessionInterfaceV2AccelByte.h"
 #include "MatchmakingEssentialsModels.h"
 #include "MatchmakingEssentialsLog.h"
@@ -67,5 +67,5 @@ private:
 	FDelegateHandle OnServerReceivedSessionDelegateHandle;
 
 	FOnMatchmakingStateChangedDelegate OnMatchmakingHandle;
-	FOnlineSessionAccelBytePtr SessionInterface;
+	FOnlineSessionV2AccelBytePtr SessionInterface;
 };

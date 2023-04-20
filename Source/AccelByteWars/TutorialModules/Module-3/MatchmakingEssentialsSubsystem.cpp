@@ -9,7 +9,6 @@
 
 #include "Core/AssetManager/TutorialModules/TutorialModuleUtility.h"
 #include "Core/GameModes/AccelByteWarsGameMode.h"
-#include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/System/AccelByteWarsGameSession.h"
 #include "Core/Player/AccelByteWarsPlayerState.h"
 
@@ -704,32 +703,9 @@ void UMatchmakingEssentialsSubsystem::LeaveSession(APlayerController* PC)
 		return;
 	}
 
-	FNamedOnlineSession* Session = SessionInterface->GetNamedSession(NAME_GameSession);
-	if (!ensure(Session))
-	{
-		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot leave game session. Session is not valid."));
-		return;
-	}
-
-	ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
-	if (!ensure(LocalPlayer))
-	{
-		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot leave game session. LocalPlayer is null."));
-		return;
-	}
-
-	const FUniqueNetIdPtr LocalPlayerId = LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId();
-	if (!ensure(LocalPlayerId.IsValid()))
-	{
-		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot leave game session. LocalPlayer NetId is not valid."));
-		return;
-	}
-
-	SessionInterface->LeaveSession(
-		LocalPlayerId.ToSharedRef().Get(),
-		EAccelByteV2SessionType::GameSession,
-		Session->GetSessionIdStr(),
-		FOnLeaveSessionComplete::CreateWeakLambda(this, [](bool bWasSuccessful, FString SessionId)
+	SessionInterface->DestroySession(
+		NAME_GameSession,
+		FOnDestroySessionCompleteDelegate::CreateWeakLambda(this, [](FName SessionName, bool bWasSuccessful)
 		{
 			if (bWasSuccessful)
 			{
