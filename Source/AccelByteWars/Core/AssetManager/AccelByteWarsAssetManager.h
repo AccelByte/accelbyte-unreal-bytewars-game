@@ -8,6 +8,8 @@
 #include "Core/Settings/GameModeDataAssets.h"
 #include "AccelByteWarsAssetManager.generated.h"
 
+class UTutorialModuleDataAsset;
+
 USTRUCT(BlueprintType)
 struct FPrimaryAssetCache
 {
@@ -64,10 +66,20 @@ protected:
 	
 	void AddAssetToCache(UAccelByteWarsDataAsset* Asset);
 	void RemoveAssetFromCache(const FPrimaryAssetId& AssetId);
-	
+
+	void TutorialModuleOverride();
+
+#if UE_EDITOR
+	virtual void PostInitialAssetScan() override;
+
+	TSharedPtr<SNotificationItem> OverrideNotificationItem;
+#endif
+
 private:
 
 	TSharedPtr<FStreamableHandle> StreamableHandle = nullptr;
 	
 	TMap<FPrimaryAssetType, FPrimaryAssetCache> PrimaryAssetCache;
+
+	void RecursiveGetSelfAndDependencyIds(TArray<FString>& OutIds, const UTutorialModuleDataAsset* TutorialModule) const;
 };

@@ -61,6 +61,17 @@ bool UTutorialModuleDataAsset::IsActiveAndDependenciesChecked()
 	return !bIsDependencySatisfied ? false : bIsActive;
 }
 
+void UTutorialModuleDataAsset::OverridesIsActive(const bool bInIsActive)
+{
+	bOverriden = true;
+	bIsActive = bInIsActive;
+}
+
+void UTutorialModuleDataAsset::ResetOverrides()
+{
+	bOverriden = false;
+}
+
 #if WITH_EDITOR
 void UTutorialModuleDataAsset::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {

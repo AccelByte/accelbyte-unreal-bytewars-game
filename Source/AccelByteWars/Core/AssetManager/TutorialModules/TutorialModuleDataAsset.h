@@ -55,8 +55,14 @@ public:
 
 	static const FPrimaryAssetType TutorialModuleAssetType;
 
+	void OverridesIsActive(const bool bInIsActive);
+	void ResetOverrides();
+
 private:
-	UPROPERTY(EditAnywhere)
+	UPROPERTY()
+	bool bOverriden = false;
+
+	UPROPERTY(EditAnywhere, meta = (EditCondition ="!bOverriden", HideEditConditionToggle))
 	bool bIsActive = true;
 
 public:

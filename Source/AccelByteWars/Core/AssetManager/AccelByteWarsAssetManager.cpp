@@ -2,9 +2,12 @@
 
 
 #include "Core/AssetManager/AccelByteWarsAssetManager.h"
+
+#include "Framework/Notifications/NotificationManager.h"
 #include "GameModes/GameModeDataAsset.h"
 #include "GameModes/GameModeTypeDataAsset.h"
 #include "TutorialModules/TutorialModuleDataAsset.h"
+#include "Widgets/Notifications/SNotificationList.h"
 
 UAccelByteWarsAssetManager::UAccelByteWarsAssetManager() {
 
@@ -165,6 +168,8 @@ void UAccelByteWarsAssetManager::LoadAssetsOfType(const TArray<FPrimaryAssetType
 			{
 				AddAssetToCache(Cast<UAccelByteWarsDataAsset>(LoadedAsset));
 			}
+
+			TutorialModuleOverride();
 		}
 	}
 }
@@ -191,5 +196,126 @@ void UAccelByteWarsAssetManager::RemoveAssetFromCache(const FPrimaryAssetId& Ass
 	if (PrimaryAssetCache.Contains(AssetId.PrimaryAssetType))
 	{
 		PrimaryAssetCache.FindChecked(AssetId.PrimaryAssetType).AssetMap.Remove(AssetId);
+	}
+}
+
+void UAccelByteWarsAssetManager::TutorialModuleOverride()
+{
+	// Get values from DefaultEngine.ini
+	TArray<FString> ModuleOverrides;
+	GConfig->GetArray(TEXT("AccelByteTutorialModules"), TEXT("ForcedEnabledModules"), ModuleOverrides, GEngineIni);
+	bool bDisableOtherModules = false;
+	GConfig->GetBool(TEXT("AccelByteTutorialModules"), TEXT("ForceDisabledOtherModules"), bDisableOtherModules, GEngineIni);
+
+	// Consolidate all modules needed to be activated
+	TArray<FString> IdsToBeOverriden;
+	for (const FString& ModuleOverride : ModuleOverrides)
+	{
+		if (UAccelByteWarsDataAsset* DataAsset = GetAssetFromCache(FPrimaryAssetId{ModuleOverride}))
+		{
+			if (const UTutorialModuleDataAsset* TutorialModule = Cast<UTutorialModuleDataAsset>(DataAsset))
+			{
+				RecursiveGetSelfAndDependencyIds(IdsToBeOverriden, TutorialModule);
+			}
+		}
+	}
+
+	// Reset overrides and overrides the one needed to be overriden
+	TArray<UAccelByteWarsDataAsset*> Assets = GetAllAssetsForTypeFromCache(UTutorialModuleDataAsset::TutorialModuleAssetType);
+	for (UAccelByteWarsDataAsset* Asset : Assets)
+	{
+		if (UTutorialModuleDataAsset* TutorialModule = Cast<UTutorialModuleDataAsset>(Asset))
+		{
+			if (IdsToBeOverriden.Find(TutorialModule->CodeName) != INDEX_NONE)
+			{
+				TutorialModule->OverridesIsActive(true);
+			}
+			else
+			{
+				if (bDisableOtherModules)
+				{
+					TutorialModule->OverridesIsActive(false);
+				}
+			}
+		}
+	}
+
+#if UE_EDITOR
+	if (!IsRunningGame())
+	{
+		// Show notification if overriden
+		if (bDisableOtherModules || !IdsToBeOverriden.IsEmpty())
+		{
+			FNotificationInfo Info(FText::FromString("Overrides found on DefaultEngine.ini"));
+
+			// build info string
+			FString SubText;
+			if (!IdsToBeOverriden.IsEmpty())
+			{
+				SubText += "Force enabled modules:";
+				for (const FString& Id : IdsToBeOverriden)
+				{
+					SubText += FString::Printf(TEXT("%s%s%s"),
+						LINE_TERMINATOR,
+						TCString<TCHAR>::Tab(1),
+						*Id);
+				}
+			}
+			if (bDisableOtherModules)
+			{
+				if (!IdsToBeOverriden.IsEmpty())
+				{
+					SubText += FString::Printf(TEXT("%s%s"), LINE_TERMINATOR, LINE_TERMINATOR);
+				}
+				SubText += "All unrelated modules are disabled";
+			}
+			Info.SubText = FText::FromString(SubText);
+
+			Info.HyperlinkText = FText::FromString("Edit Override");
+			Info.Hyperlink = FSimpleDelegate::CreateWeakLambda(this, []()
+			{
+				FPlatformProcess::LaunchFileInDefaultExternalApplication(
+					*FString::Printf(TEXT("%sDefaultEngine.ini"), *FPaths::SourceConfigDir()));
+			});
+
+			Info.FadeInDuration = 0.25f;
+			Info.FadeOutDuration = 0.5f;
+			Info.bFireAndForget = false;
+			Info.ButtonDetails.Add(FNotificationButtonInfo(
+				FText::FromString("Dismiss"),
+				FText::FromString("Dismiss this notification"),
+				FSimpleDelegate::CreateWeakLambda(this, [this]()
+				{
+					OverrideNotificationItem->SetCompletionState(SNotificationItem::CS_None);
+					OverrideNotificationItem->ExpireAndFadeout();
+				}),
+				SNotificationItem::CS_None));
+
+			OverrideNotificationItem = FSlateNotificationManager::Get().AddNotification(Info);
+		}
+	}
+#endif
+}
+
+#if UE_EDITOR
+void UAccelByteWarsAssetManager::PostInitialAssetScan()
+{
+	Super::PostInitialAssetScan();
+
+	if (!IsRunningGame())
+	{
+		PopulateAssetCache();
+	}
+}
+#endif
+
+void UAccelByteWarsAssetManager::RecursiveGetSelfAndDependencyIds(
+	TArray<FString>& OutIds,
+	const UTutorialModuleDataAsset* TutorialModule) const
+{
+	OutIds.AddUnique(TutorialModule->CodeName);
+	for (const UTutorialModuleDataAsset* Module : TutorialModule->TutorialModuleDependencies)
+	{
+		RecursiveGetSelfAndDependencyIds(OutIds, Module);
 	}
 }
