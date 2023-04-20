@@ -2,7 +2,7 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-#include "TutorialModules/Module-4/UI/SinglePlatformAuthWidget.h"
+#include "TutorialModules/Module-7/UI/SinglePlatformAuthWidget.h"
 #include "TutorialModules/Module-2/AuthEssentialsSubsystem.h"
 #include "TutorialModules/Module-2/UI/LoginWidget.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
