@@ -556,7 +556,7 @@ void UMatchmakingEssentialsSubsystem::JoinSession(const FOnlineSessionSearchResu
 		return;
 	}
 
-	OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::JoiningMatch , FAILED_MESSAGE_NONE);
+	OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::JoiningMatch, FAILED_MESSAGE_NONE);
 
 	// Bind on-join session completed and start join session process.
 	JoinSessionCompleteDelegateHandle = SessionInterface->AddOnJoinSessionCompleteDelegate_Handle(FOnJoinSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnJoinSessionComplete, PC));
