@@ -19,9 +19,9 @@ void USinglePlatformAuthWidget::NativeConstruct()
 	SetVisibility(IOnlineSubsystem::GetByPlatform() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 
 	// Auto login with default native platform.
-	bool bShowLoginMenu = true;
-	GConfig->GetBool(TEXT("AuthEssentialsLoginMenu"), TEXT("bEnabled"), bShowLoginMenu, GEngineIni);
-	if (!bShowLoginMenu && GetVisibility() == ESlateVisibility::Visible)
+	bool bAutoLogin = true;
+	GConfig->GetBool(TEXT("/ByteWars/TutorialModule.AuthEssentials"), TEXT("bAutoLogin"), bAutoLogin, GEngineIni);
+	if (bAutoLogin && GetVisibility() == ESlateVisibility::Visible)
 	{
 		OnLoginWithSinglePlatformAuthButtonClicked();
 	}
@@ -48,8 +48,7 @@ void USinglePlatformAuthWidget::OnLoginWithSinglePlatformAuthButtonClicked()
 	LoginWidget->SetLoginState(ELoginState::LoggingIn);
 	LoginWidget->OnRetryLoginDelegate.AddUObject(this, &ThisClass::OnLoginWithSinglePlatformAuthButtonClicked);
 
-	// Login with single platform auth.
-	// Notice that login with single platform auth is considered as login with default native platform.
+	// Login with single platform auth is considered as login with default native platform.
 	// Thus, it doesn't need username, token, nor the login method.
 	AuthSubsystem->SetAuthCredentials(EAccelByteLoginType::None, TEXT(""), TEXT(""));
 	AuthSubsystem->Login(PC, FAuthOnLoginCompleteDelegate::CreateUObject(LoginWidget, &ULoginWidget::OnLoginComplete));
