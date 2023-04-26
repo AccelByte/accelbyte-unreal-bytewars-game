@@ -44,6 +44,7 @@ public:
 	static FPrimaryAssetId GenerateAssetIdFromCodeName(const FString& InCodeName);
 	static FString GetCodeNameFromAssetId(const FPrimaryAssetId& AssetId);
 	bool IsActiveAndDependenciesChecked();
+	bool IsStarterMode() { return bIsStarterMode; }
 
 	// The UI class that used as the entrypoint from main menu to the tutorial module
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, AssetRegistrySearchable)
@@ -64,6 +65,9 @@ private:
 
 	UPROPERTY(EditAnywhere, meta = (EditCondition ="!bOverriden", HideEditConditionToggle))
 	bool bIsActive = true;
+
+	UPROPERTY(EditAnywhere)
+	bool bIsStarterMode = false;
 
 public:
 #pragma region "Tutorial Module Dependencies"
