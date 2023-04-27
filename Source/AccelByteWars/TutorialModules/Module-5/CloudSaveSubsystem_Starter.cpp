@@ -7,7 +7,7 @@
 #include "OnlineSubsystemUtils.h"
 
 #include "Core/AssetManager/TutorialModules/TutorialModuleDataAsset.h"
-#include "Core/UI/MainMenu/HelpOptions/Settings/SettingsWidget.h"
+#include "Core/UI/MainMenu/HelpOptions/Options/OptionsWidget.h"
 
 void UCloudSaveSubsystem_Starter::Initialize(FSubsystemCollectionBase& Collection)
 {

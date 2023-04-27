@@ -7,7 +7,7 @@
 #include "OnlineSubsystemUtils.h"
 
 #include "Core/AssetManager/TutorialModules/TutorialModuleDataAsset.h"
-#include "Core/UI/MainMenu/HelpOptions/Settings/SettingsWidget.h"
+#include "Core/UI/MainMenu/HelpOptions/Options/OptionsWidget.h"
 
 void UCloudSaveSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -47,14 +47,14 @@ void UCloudSaveSubsystem::Deinitialize()
 #pragma region Module.5 General Function Definitions
 void UCloudSaveSubsystem::BindDelegates()
 {
-    USettingsWidget::OnSetOnlineGameSettingsDelegate.AddUObject(this, &ThisClass::SetPlayerRecord);
-    USettingsWidget::OnGetOnlineGameSettingsDelegate.AddUObject(this, &ThisClass::GetPlayerRecord);
+    UOptionsWidget::OnSetOnlineGameOptionsDelegate.AddUObject(this, &ThisClass::SetPlayerRecord);
+    UOptionsWidget::OnGetOnlineGameOptionsDelegate.AddUObject(this, &ThisClass::GetPlayerRecord);
 }
 
 void UCloudSaveSubsystem::UnbindDelegates()
 {
-    USettingsWidget::OnSetOnlineGameSettingsDelegate.RemoveAll(this);
-    USettingsWidget::OnGetOnlineGameSettingsDelegate.RemoveAll(this);
+    UOptionsWidget::OnSetOnlineGameOptionsDelegate.Clear();
+    UOptionsWidget::OnGetOnlineGameOptionsDelegate.Clear();
 }
 #pragma endregion
 
