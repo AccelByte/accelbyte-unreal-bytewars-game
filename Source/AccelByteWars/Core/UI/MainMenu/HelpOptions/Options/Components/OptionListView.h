@@ -6,13 +6,13 @@
 
 #include "CoreMinimal.h"
 #include "CommonListView.h"
-#include "SettingListView.generated.h"
+#include "OptionListView.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class ACCELBYTEWARS_API USettingListView : public UCommonListView
+class ACCELBYTEWARS_API UOptionListView : public UCommonListView
 {
 	GENERATED_BODY()
 
