@@ -34,5 +34,6 @@ private:
 
 	FDelegateHandle OnSetPlayerRecordCompletedDelegateHandle;
 	FDelegateHandle OnGetPlayerRecordCompletedDelegateHandle;
+	FDelegateHandle OnDeletePlayerRecordCompletedDelegateHandle;
 	FOnlineCloudSaveAccelBytePtr CloudSaveInterface;
 };

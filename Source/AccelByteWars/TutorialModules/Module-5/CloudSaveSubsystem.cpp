@@ -124,4 +124,35 @@ void UCloudSaveSubsystem::OnGetPlayerRecordComplete(int32 LocalUserNum, bool bWa
     CloudSaveInterface->ClearOnGetUserRecordCompletedDelegate_Handle(LocalUserNum, OnGetPlayerRecordCompletedDelegateHandle);
     OnGetRecordComplete.ExecuteIfBound(bWasSuccessful, RecordResult);
 }
+
+void UCloudSaveSubsystem::DeletePlayerRecord(const APlayerController* PC, const FString& RecordKey, const FOnDeleteCloudSaveRecordComplete& OnDeleteRecordComplete)
+{
+    if (!ensure(CloudSaveInterface.IsValid()))
+    {
+        UE_LOG_CLOUDSAVE_ESSENTIALS(Warning, TEXT("Cloud Save interface is not valid."));
+        return;
+    }
+
+    const ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
+    ensure(LocalPlayer != nullptr);
+    int32 LocalUserNum = LocalPlayer->GetControllerId();
+
+    OnDeletePlayerRecordCompletedDelegateHandle = CloudSaveInterface->AddOnDeleteUserRecordCompletedDelegate_Handle(LocalUserNum, FOnDeleteUserRecordCompletedDelegate::CreateUObject(this, &ThisClass::OnDeletePlayerRecordComplete, OnDeleteRecordComplete));
+    CloudSaveInterface->DeleteUserRecord(LocalUserNum, RecordKey);
+}
+
+void UCloudSaveSubsystem::OnDeletePlayerRecordComplete(int32 LocalUserNum, bool bWasSuccessful, const FString& Error, const FOnDeleteCloudSaveRecordComplete OnDeleteRecordComplete)
+{
+    if (bWasSuccessful)
+    {
+        UE_LOG_CLOUDSAVE_ESSENTIALS(Log, TEXT("Success to delete player record."));
+    }
+    else
+    {
+        UE_LOG_CLOUDSAVE_ESSENTIALS(Log, TEXT("Failed to delete player record. Message: %s"), *Error);
+    }
+
+    CloudSaveInterface->ClearOnDeleteUserRecordCompletedDelegate_Handle(LocalUserNum, OnDeletePlayerRecordCompletedDelegateHandle);
+    OnDeleteRecordComplete.ExecuteIfBound(bWasSuccessful);
+}
 #pragma endregion

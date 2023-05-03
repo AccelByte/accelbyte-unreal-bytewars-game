@@ -9,3 +9,5 @@
 DECLARE_DELEGATE_OneParam(FOnSetCloudSaveRecordComplete, bool /*bWasSuccessful*/);
 
 DECLARE_DELEGATE_TwoParams(FOnGetCloudSaveRecordComplete, bool /*bWasSuccessful*/, FJsonObject& /*Result*/);
+
+DECLARE_DELEGATE_OneParam(FOnDeleteCloudSaveRecordComplete, bool /*bWasSuccessful*/);

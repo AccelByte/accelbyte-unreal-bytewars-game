@@ -24,10 +24,12 @@ public:
 public:
 	void SetPlayerRecord(const APlayerController* PC, const FString& RecordKey, const FJsonObject& RecordData, const FOnSetCloudSaveRecordComplete& OnSetRecordComplete);
 	void GetPlayerRecord(const APlayerController* PC, const FString& RecordKey, const FOnGetCloudSaveRecordComplete& OnGetRecordComplete);
+	void DeletePlayerRecord(const APlayerController* PC, const FString& RecordKey, const FOnDeleteCloudSaveRecordComplete& OnDeleteRecordComplete);
 
 private:
 	void OnSetPlayerRecordComplete(int32 LocalUserNum, bool bWasSuccessful, const FString& Error, const FOnSetCloudSaveRecordComplete OnSetRecordComplete);
 	void OnGetPlayerRecordComplete(int32 LocalUserNum, bool bWasSuccessful, const FAccelByteModelsUserRecord& UserRecord, const FString& Error, const FOnGetCloudSaveRecordComplete OnGetRecordComplete);
+	void OnDeletePlayerRecordComplete(int32 LocalUserNum, bool bWasSuccessful, const FString& Error, const FOnDeleteCloudSaveRecordComplete OnDeleteRecordComplete);
 #pragma endregion
 
 private:
@@ -36,5 +38,6 @@ private:
 
 	FDelegateHandle OnSetPlayerRecordCompletedDelegateHandle;
 	FDelegateHandle OnGetPlayerRecordCompletedDelegateHandle;
+	FDelegateHandle OnDeletePlayerRecordCompletedDelegateHandle;
 	FOnlineCloudSaveAccelBytePtr CloudSaveInterface;
 };
