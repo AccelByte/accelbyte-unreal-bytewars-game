@@ -2,9 +2,9 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-#include "Core/UI/MainMenu/HelpOptions/Settings/Components/SettingListView.h"
+#include "Core/UI/MainMenu/HelpOptions/Options/Components/OptionListView.h"
 
-void USettingListView::AddNameOverride(const FName& DevName, const FText& OverrideName)
+void UOptionListView::AddNameOverride(const FName& DevName, const FText& OverrideName)
 {
 	NameOverrides.Add(DevName, OverrideName);
 }

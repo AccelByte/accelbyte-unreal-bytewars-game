@@ -8,7 +8,7 @@
 #include "Blueprint/IUserListEntry.h"
 #include "Blueprint/IUserObjectListEntry.h"
 #include "CommonUserWidget.h"
-#include "SettingsListEntryBase.generated.h"
+#include "OptionListEntryBase.generated.h"
 
 class UAnalogSlider;
 class USlider;
@@ -17,16 +17,15 @@ class UCommonTextBlock;
 class UCommonButtonBase;
 class UCommonRotator;
 
-// Settings Entry Type
 UENUM(BlueprintType)
-enum class ESettingsEntryType : uint8
+enum class EOptionEntryType : uint8
 {
 	EntryScalar,
 	EntryDiscrete
 };
 
 USTRUCT(BlueprintType)
-struct FSettingsEntryDiscreteValue
+struct FOptionEntryDiscreteValue
 {
 	GENERATED_USTRUCT_BODY()
 	
@@ -42,11 +41,8 @@ public:
 	FString Value;
 };
 
-/**
- * 
- */
 UCLASS(Abstract, NotBlueprintable)
-class ACCELBYTEWARS_API USettingsListEntryBase : public UCommonUserWidget, public IUserObjectListEntry
+class ACCELBYTEWARS_API UOptionListEntryBase : public UCommonUserWidget, public IUserObjectListEntry
 {
 	GENERATED_BODY()
 
@@ -66,23 +62,23 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent)
 	UWidget* GetPrimaryGamepadFocusWidget();
 
-	ESettingsEntryType EntryType;
+	EOptionEntryType EntryType;
 };
 
 //////////////////////////////////////////////////////////////////////////
-// USettingsListEntry_Scalar
+// UOptionListEntry_Scalar
 //////////////////////////////////////////////////////////////////////////
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnScalarValueChangedDelegate, float /*Value*/);
 
 UCLASS(Abstract, Blueprintable)
-class ACCELBYTEWARS_API USettingsListEntry_Scalar : public USettingsListEntryBase
+class ACCELBYTEWARS_API UOptionListEntry_Scalar : public UOptionListEntryBase
 {
 	GENERATED_BODY()
 
 public:
 	UFUNCTION(BlueprintCallable)
-	void InitSetting(const FText& InName, const float InValue);
+	void InitOption(const FText& InName, const float InValue);
 
 	void SetDisplayName(const FText& InName) override;
 
@@ -105,21 +101,21 @@ private:	// Bound Widgets
 	UImage* Img_ProgressBar;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UAnalogSlider* Slider_SettingValue;
+	UAnalogSlider* Slider_OptionValue;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UCommonTextBlock* Txt_SettingValue;
+	UCommonTextBlock* Txt_OptionValue;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UCommonTextBlock* Txt_SettingName;
+	UCommonTextBlock* Txt_OptionName;
 };
 
 //////////////////////////////////////////////////////////////////////////
-// UGameSettingListEntrySetting_Discrete
+// UOptionListEntry_Discrete
 //////////////////////////////////////////////////////////////////////////
 
 UCLASS(Abstract, Blueprintable)
-class ACCELBYTEWARS_API USettingsListEntry_Discrete : public USettingsListEntryBase
+class ACCELBYTEWARS_API UOptionListEntry_Discrete : public UOptionListEntryBase
 {
 	GENERATED_BODY()
 	
@@ -135,19 +131,15 @@ protected:
 	void HandleRotatorChangedValue(int32 Value, bool bUserInitiated);
 
 protected:
-	// 
-	// UPROPERTY()
-	// UGameSettingValueDiscrete* DiscreteSetting;
-
 	UPROPERTY()
-	TArray<FSettingsEntryDiscreteValue> DiscreteValues;
+	TArray<FOptionEntryDiscreteValue> DiscreteValues;
 
-private:	// Bound Widgets
+private:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UPanelWidget* Panel_Value;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UCommonRotator* Rotator_SettingValue;
+	UCommonRotator* Rotator_OptionValue;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Button_Decrease;
@@ -156,5 +148,5 @@ private:	// Bound Widgets
 	UCommonButtonBase* Button_Increase;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UCommonTextBlock* Txt_SettingName;
+	UCommonTextBlock* Txt_OptionName;
 };
