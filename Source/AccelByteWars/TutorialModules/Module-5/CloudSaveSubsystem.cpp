@@ -5,8 +5,6 @@
 #include "TutorialModules/Module-5/CloudSaveSubsystem.h"
 #include "OnlineSubsystemAccelByte.h"
 #include "OnlineSubsystemUtils.h"
-
-#include "Core/AssetManager/TutorialModules/TutorialModuleDataAsset.h"
 #include "Core/UI/MainMenu/HelpOptions/Options/OptionsWidget.h"
 
 void UCloudSaveSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -29,11 +27,7 @@ void UCloudSaveSubsystem::Initialize(FSubsystemCollectionBase& Collection)
         return;
     }
 
-    UTutorialModuleDataAsset* TutorialModule = UTutorialModuleUtility::GetTutorialModuleDataAsset(FPrimaryAssetId{ "TutorialModule:CLOUDSAVEESSENTIALS" }, this, true);
-    if (TutorialModule && TutorialModule->IsActiveAndDependenciesChecked() && !TutorialModule->IsStarterMode())
-    {
-        BindDelegates();
-    }
+    BindDelegates();
 }
 
 void UCloudSaveSubsystem::Deinitialize()

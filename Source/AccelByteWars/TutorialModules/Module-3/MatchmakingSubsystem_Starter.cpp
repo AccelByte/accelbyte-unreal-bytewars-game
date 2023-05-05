@@ -37,21 +37,19 @@ void UMatchmakingSubsystem_Starter::Initialize(FSubsystemCollectionBase& Collect
 		return;
 	}
 
-	// Bind delegates to game events if the matchmaking module is active.
-	if (UTutorialModuleUtility::IsTutorialModuleActive(FPrimaryAssetId{ "TutorialModule:MATCHMAKINGESSENTIALS" }, this))
+	AAccelByteWarsGameMode::OnAddOnlineMemberDelegate.AddUObject(this, &ThisClass::SetTeamMemberAccelByteInformation);
+	UMatchLobbyWidget::OnQuitLobbyDelegate.AddUObject(this, &ThisClass::OnQuitGameButtonsClicked);
+	UPauseWidget::OnQuitGameDelegate.AddUObject(this, &ThisClass::OnQuitGameButtonsClicked);
+	UGameOverWidget::OnQuitGameDelegate.AddUObject(this, &ThisClass::OnQuitGameButtonsClicked);
+
+	if (IsRunningDedicatedServer())
 	{
-		AAccelByteWarsGameMode::OnAddOnlineMemberDelegate.AddUObject(this, &ThisClass::SetTeamMemberAccelByteInformation);
-		UMatchLobbyWidget::OnQuitLobbyDelegate.AddUObject(this, &ThisClass::OnQuitGameButtonsClicked);
-		UPauseWidget::OnQuitGameDelegate.AddUObject(this, &ThisClass::OnQuitGameButtonsClicked);
-		UGameOverWidget::OnQuitGameDelegate.AddUObject(this, &ThisClass::OnQuitGameButtonsClicked);
-
-		if (IsRunningDedicatedServer())
-		{
-			OnServerReceivedSessionDelegateHandle = SessionInterface->AddOnServerReceivedSessionDelegate_Handle(FOnServerReceivedSessionDelegate::CreateUObject(this, &ThisClass::OnServerReceivedSession));
-		}
-
-		BindDelegates();
+		OnServerReceivedSessionDelegateHandle = SessionInterface->AddOnServerReceivedSessionDelegate_Handle(FOnServerReceivedSessionDelegate::CreateUObject(this, &ThisClass::OnServerReceivedSession));
 	}
+
+	// Bind delegates that needed for the tutorial module.
+	// Intended for the reader of the tutorial module to follow along.
+	BindDelegates();
 }
 
 void UMatchmakingSubsystem_Starter::Deinitialize()
@@ -74,6 +72,8 @@ void UMatchmakingSubsystem_Starter::Deinitialize()
 		SessionInterface->ClearOnServerReceivedSessionDelegate_Handle(OnServerReceivedSessionDelegateHandle);
 	}
 
+	// Unbind delegates that used for the tutorial module.
+	// Intended for the reader of the tutorial module to follow along.
 	UnbindDelegates();
 }
 

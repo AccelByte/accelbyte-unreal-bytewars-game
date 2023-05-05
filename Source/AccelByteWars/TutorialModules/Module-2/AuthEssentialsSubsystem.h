@@ -5,17 +5,17 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Subsystems/GameInstanceSubsystem.h"
 #include "OnlineIdentityInterfaceAccelByte.h"
 #include "AuthEssentialsLog.h"
 #include "AuthEssentialsModels.h"
+#include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "AuthEssentialsSubsystem.generated.h"
 
 DECLARE_MULTICAST_DELEGATE_TwoParams(FAuthOnLoginComplete, bool /*bWasSuccessful*/, const FString& /*ErrorMessage*/);
 typedef FAuthOnLoginComplete::FDelegate FAuthOnLoginCompleteDelegate;
 
 UCLASS()
-class ACCELBYTEWARS_API UAuthEssentialsSubsystem : public UGameInstanceSubsystem
+class ACCELBYTEWARS_API UAuthEssentialsSubsystem : public UTutorialModuleSubsystem
 {
 	GENERATED_BODY()
 
