@@ -24,7 +24,6 @@ struct FTutorialModuleWidgetConnection
 {
 	GENERATED_BODY()
 
-public:
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere)
 	bool bIsTargetUISelf = false;
 
@@ -32,10 +31,10 @@ public:
 	TSubclassOf<UAccelByteWarsActivatableWidget> TargetUIClass;
 
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (DisplayThumbnail = false, EditCondition = "bIsTargetUISelf", EditConditionHides))
-	UTutorialModuleDataAsset* SourceTutorialModule;
+	UTutorialModuleDataAsset* SourceTutorialModule = nullptr;
 
 	UPROPERTY(BlueprintReadOnly, EditAnywhere)
-	ETutorialModuleWidgetType WidgetType;
+	ETutorialModuleWidgetType WidgetType = ETutorialModuleWidgetType::TUTORIAL_MODULE_ENTRY_BUTTON;
 
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (EditCondition = "WidgetType==ETutorialModuleWidgetType::TUTORIAL_MODULE_ENTRY_BUTTON||WidgetType==ETutorialModuleWidgetType::OTHER_UI_ENTRY_BUTTON", EditConditionHides))
 	FText EntryButtonText;
@@ -63,7 +62,7 @@ public:
 	 * @param Context The context of the caller of this function.
 	*/
 	UFUNCTION(BlueprintCallable, Category = "Tutorial Module Utility")
-	static bool ActivateTutorialModuleWidget(const UTutorialModuleDataAsset* TutorialModule, const UObject* Context);
+	static bool ActivateTutorialModuleWidget(UTutorialModuleDataAsset* TutorialModule, const UObject* Context);
 
 	/* @brief
 	 * Get Tutorial Module data asset from its code name.

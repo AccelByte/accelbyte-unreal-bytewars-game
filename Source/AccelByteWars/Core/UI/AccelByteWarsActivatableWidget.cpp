@@ -90,7 +90,8 @@ void UAccelByteWarsActivatableWidget::ValidateCompiledWidgetTree(const UWidgetTr
 void UAccelByteWarsActivatableWidget::PostLoad()
 {
 	Super::PostLoad();
-	if (AssociateTutorialModule && AssociateTutorialModule->DefaultUIClass != GetClass())
+
+	if (AssociateTutorialModule && AssociateTutorialModule->GetTutorialModuleUIClass() != GetClass())
 	{
 		AssociateTutorialModule = nullptr;
 	}
@@ -217,7 +218,7 @@ void UAccelByteWarsActivatableWidget::InitializeTutorialModuleWidgets(TArray<FTu
 			const TWeakObjectPtr<UAccelByteWarsButtonBase> Button = MakeWeakObjectPtr<UAccelByteWarsButtonBase>(CreateWidget<UAccelByteWarsButtonBase>(this, DefaultButtonClass.Get()));
 			Button->OnClicked().AddWeakLambda(this, [Connection, BaseUIWidget]()
 			{
-				BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, Connection.SourceTutorialModule->DefaultUIClass);
+				BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, Connection.SourceTutorialModule->GetTutorialModuleUIClass());
 			});
 			Button->SetButtonText(Connection.EntryButtonText);
 			WidgetContainer->AddChild(Button.Get());
@@ -234,7 +235,7 @@ void UAccelByteWarsActivatableWidget::InitializeTutorialModuleWidgets(TArray<FTu
 		}
 		else if (Connection.WidgetType == ETutorialModuleWidgetType::TUTORIAL_MODULE_DEFAULT_UI)
 		{
-			const TWeakObjectPtr<UAccelByteWarsActivatableWidget> Widget = MakeWeakObjectPtr<UAccelByteWarsActivatableWidget>(CreateWidget<UAccelByteWarsActivatableWidget>(this, Connection.SourceTutorialModule->DefaultUIClass.Get()));
+			const TWeakObjectPtr<UAccelByteWarsActivatableWidget> Widget = MakeWeakObjectPtr<UAccelByteWarsActivatableWidget>(CreateWidget<UAccelByteWarsActivatableWidget>(this, Connection.SourceTutorialModule->GetTutorialModuleUIClass().Get()));
 			WidgetContainer->AddChild(Widget.Get());
 		}
 		else if (Connection.WidgetType == ETutorialModuleWidgetType::OTHER_UI_ENTRY_BUTTON)

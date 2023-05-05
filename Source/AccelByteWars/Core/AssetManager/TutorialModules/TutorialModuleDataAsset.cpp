@@ -3,6 +3,7 @@
 // and restrictions contact your company contract manager.
 
 #include "Core/AssetManager/TutorialModules/TutorialModuleDataAsset.h"
+#include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
 #include "Widgets/SWidget.h"
 #include "Blueprint/UserWidget.h"
@@ -44,6 +45,16 @@ FString UTutorialModuleDataAsset::GetCodeNameFromAssetId(const FPrimaryAssetId& 
 	return AssetId.PrimaryAssetName.ToString();
 }
 
+TSubclassOf<UAccelByteWarsActivatableWidget> UTutorialModuleDataAsset::GetTutorialModuleUIClass()
+{
+	return IsStarterModeActive() ? StarterUIClass : DefaultUIClass;
+}
+
+TSubclassOf<UTutorialModuleSubsystem> UTutorialModuleDataAsset::GetTutorialModuleSubsystemClass()
+{
+	return IsStarterModeActive() ? StarterSubsystemClass : DefaultSubsystemClass;
+}
+
 bool UTutorialModuleDataAsset::IsActiveAndDependenciesChecked()
 {
 	bool bIsDependencySatisfied = true;
@@ -73,47 +84,38 @@ void UTutorialModuleDataAsset::ResetOverrides()
 }
 
 #if WITH_EDITOR
+void UTutorialModuleDataAsset::PostLoad()
+{
+	Super::PostLoad();
+
+	UpdateDataAssetProperties();
+}
+
 void UTutorialModuleDataAsset::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
-	ValidateDataAssetProperties();
+
 	UpdateDataAssetProperties();
 }
 
 void UTutorialModuleDataAsset::PostDuplicate(EDuplicateMode::Type DuplicateMode)
 {
 	Super::PostDuplicate(DuplicateMode);
-	CodeName = TEXT("");
-	ValidateDataAssetProperties();
-}
 
-void UTutorialModuleDataAsset::PostLoad()
-{
-	Super::PostLoad();
+	CodeName = TEXT("");
 	UpdateDataAssetProperties();
 }
 
 void UTutorialModuleDataAsset::UpdateDataAssetProperties()
 {
-#pragma region "Connect Other Tutorial Module Widgets to This Tutorial Module"
-	// Refresh Default UI Class.
-	// This will make sure the Associated of that Default UI Class correctly points to this Tutorial Module.
-	if (LastDefaultUIClass.Get() && LastDefaultUIClass.GetDefaultObject() 
-		&& LastDefaultUIClass.GetDefaultObject()->AssociateTutorialModule == this)
-	{
-		LastDefaultUIClass.GetDefaultObject()->AssociateTutorialModule = nullptr;
-	}
-	if (DefaultUIClass.Get() && DefaultUIClass.GetDefaultObject())
-	{
-		DefaultUIClass.GetDefaultObject()->AssociateTutorialModule = this;
-	}
-	LastDefaultUIClass = DefaultUIClass;
+	ValidateDataAssetProperties();
 
+#pragma region "Connect Other Tutorial Module Widgets to This Tutorial Module"
 	// Refresh "Other Tutorial Module Widgets to This Tutorial Module" connections.
 	for (FTutorialModuleWidgetConnection& Connection : OtherTutorialModuleWidgetsToThisModuleWidgetConnections)
 	{
 		Connection.bIsTargetUISelf = true;
-		Connection.TargetUIClass = DefaultUIClass;
+		Connection.TargetUIClass = GetTutorialModuleUIClass();
 	}
 #pragma endregion
 
@@ -124,8 +126,8 @@ void UTutorialModuleDataAsset::UpdateDataAssetProperties()
 	{
 		if (!LastConnection.TargetUIClass || !LastConnection.TargetUIClass.GetDefaultObject()) continue;
 		LastConnection.TargetUIClass.GetDefaultObject()->DissociateTutorialModuleWidgets.RemoveAll([this](const FTutorialModuleWidgetConnection& Temp)
-		{ 
-			return Temp.SourceTutorialModule == this; 
+		{
+			return Temp.SourceTutorialModule == this;
 		});
 	}
 	for (FTutorialModuleWidgetConnection& Connection : ThisTutorialModuleWidgetToNonTutorialModuleWidgetsConnections)
@@ -152,26 +154,86 @@ void UTutorialModuleDataAsset::UpdateDataAssetProperties()
 #pragma endregion
 }
 
-bool UTutorialModuleDataAsset::ValidateDataAssetProperties()
+void UTutorialModuleDataAsset::ValidateDataAssetProperties()
 {
-	if (DefaultUIClass.Get()) 
-	{
-		if (DefaultUIClass.GetDefaultObject()->AssociateTutorialModule != nullptr && 
-			DefaultUIClass.GetDefaultObject()->AssociateTutorialModule != this)
-		{
-			ShowPopupMessage(
-				FString::Printf(TEXT("Default UI Class %s is already being used by %s Tutorial Module"),
-				*DefaultUIClass.Get()->GetName(),
-				*DefaultUIClass.GetDefaultObject()->AssociateTutorialModule->GetName()));
-			DefaultUIClass = nullptr;	
-			return false;
-		}
-	}
+	// Validate Default's class properties.
+	ValidateClassProperty(DefaultUIClass, LastDefaultUIClass, false);
+	ValidateClassProperty(DefaultSubsystemClass, LastDefaultSubsystemClass, false);
 
-	return true;
+	// Validate Starter's class properties.
+	ValidateClassProperty(StarterUIClass, LastStarterUIClass, true);
+	ValidateClassProperty(StarterSubsystemClass, LastStarterSubsystemClass, true);
 }
 
-void UTutorialModuleDataAsset::ShowPopupMessage(const FString& Message)
+bool UTutorialModuleDataAsset::ValidateClassProperty(TSubclassOf<UAccelByteWarsActivatableWidget>& UIClass, TSubclassOf<UAccelByteWarsActivatableWidget>& LastUIClass, const bool IsStarterClass)
+{
+	// Check if the class is used by other Tutorial Module or not.
+	if (UIClass.Get() && UIClass.GetDefaultObject()->AssociateTutorialModule != nullptr
+		&& UIClass.GetDefaultObject()->AssociateTutorialModule != this)
+	{
+		ShowPopupMessage(
+			FString::Printf(TEXT("UI Class %s is already being used by %s Tutorial Module"),
+				*UIClass.Get()->GetName(),
+				*UIClass.GetDefaultObject()->AssociateTutorialModule->GetName()));
+
+		UIClass = nullptr;
+	}
+
+	// Reset the last class first to makes sure the references are clear.
+	if (LastUIClass.Get() && LastUIClass.GetDefaultObject()
+		&& LastUIClass.GetDefaultObject()->AssociateTutorialModule == this)
+	{
+		LastUIClass.GetDefaultObject()->AssociateTutorialModule = nullptr;
+	}
+
+	// Update the new class to points to this Tutorial Module.
+	if (UIClass.Get() && UIClass.GetDefaultObject())
+	{
+		UIClass.GetDefaultObject()->AssociateTutorialModule = 
+			((IsStarterClass && IsStarterModeActive()) || (!IsStarterClass && !IsStarterModeActive())) ? this : nullptr;
+	}
+
+	// Cache the class reference.
+	LastUIClass = UIClass;
+
+	return UIClass != nullptr;
+}
+
+bool UTutorialModuleDataAsset::ValidateClassProperty(TSubclassOf<UTutorialModuleSubsystem>& SubsystemClass, TSubclassOf<UTutorialModuleSubsystem>& LastSubsystemClass, const bool IsStarterClass)
+{
+	// Check if the class is used by other Tutorial Module or not.
+	if (SubsystemClass.Get() && SubsystemClass.GetDefaultObject()->AssociateTutorialModule != nullptr
+		&& SubsystemClass.GetDefaultObject()->AssociateTutorialModule != this)
+	{
+		ShowPopupMessage(
+			FString::Printf(TEXT("Subsystem Class %s is already being used by %s Tutorial Module"),
+				*SubsystemClass.Get()->GetName(),
+				*SubsystemClass.GetDefaultObject()->AssociateTutorialModule->GetName()));
+
+		SubsystemClass = nullptr;
+	}
+
+	// Reset the last class first to makes sure the references are clear.
+	if (LastSubsystemClass.Get() && LastSubsystemClass.GetDefaultObject()
+		&& LastSubsystemClass.GetDefaultObject()->AssociateTutorialModule == this)
+	{
+		LastSubsystemClass.GetDefaultObject()->AssociateTutorialModule = nullptr;
+	}
+
+	// Update the new class to points to this Tutorial Module
+	if (SubsystemClass.Get() && SubsystemClass.GetDefaultObject())
+	{
+		SubsystemClass.GetDefaultObject()->AssociateTutorialModule =
+			((IsStarterClass && IsStarterModeActive()) || (!IsStarterClass && !IsStarterModeActive())) ? this : nullptr;
+	}
+
+	// Cache the class reference.
+	LastSubsystemClass = SubsystemClass;
+
+	return SubsystemClass != nullptr;
+}
+
+void UTutorialModuleDataAsset::ShowPopupMessage(const FString& Message) const
 {
 	FNotificationInfo Info(FText::FromString(Message));
 	Info.Image = FCoreStyle::Get().GetBrush("MessageLog.Error");
