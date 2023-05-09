@@ -5,7 +5,10 @@
 #include "TutorialModules/Module-5/CloudSaveSubsystem.h"
 #include "OnlineSubsystemAccelByte.h"
 #include "OnlineSubsystemUtils.h"
+#include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "Core/UI/MainMenu/HelpOptions/Options/OptionsWidget.h"
+
+#define LOCTEXT_NAMESPACE "AccelByteWars"
 
 void UCloudSaveSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -41,14 +44,88 @@ void UCloudSaveSubsystem::Deinitialize()
 #pragma region Module.5 General Function Definitions
 void UCloudSaveSubsystem::BindDelegates()
 {
-    UOptionsWidget::OnSetOnlineGameOptionsDelegate.AddUObject(this, &ThisClass::SetPlayerRecord);
-    UOptionsWidget::OnGetOnlineGameOptionsDelegate.AddUObject(this, &ThisClass::GetPlayerRecord);
+    UOptionsWidget::OnOptionsWidgetActivated.AddUObject(this, &ThisClass::OnLoadGameSoundOptions);
+    UOptionsWidget::OnOptionsWidgetDeactivated.AddUObject(this, &ThisClass::OnSaveGameSoundOptions);
 }
 
 void UCloudSaveSubsystem::UnbindDelegates()
 {
-    UOptionsWidget::OnSetOnlineGameOptionsDelegate.Clear();
-    UOptionsWidget::OnGetOnlineGameOptionsDelegate.Clear();
+    UOptionsWidget::OnOptionsWidgetActivated.RemoveAll(this);
+    UOptionsWidget::OnOptionsWidgetDeactivated.RemoveAll(this);
+}
+
+void UCloudSaveSubsystem::OnLoadGameSoundOptions(const APlayerController* PC, TDelegate<void()> OnComplete)
+{
+    if (!PC)
+    {
+        UE_LOG_CLOUDSAVE_ESSENTIALS(Warning, TEXT("Cannot get game options from Cloud Save. Player Controller is null."));
+        return;
+    }
+
+    UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+    ensure(GameInstance);
+
+    UPromptSubsystem* PromptSubsystem = GameInstance->GetSubsystem<UPromptSubsystem>();
+    ensure(PromptSubsystem);
+
+    PromptSubsystem->ShowLoading();
+
+    // Get game options from Cloud Save.
+    GetPlayerRecord(
+        PC,
+        FString::Printf(TEXT("%s-%s"), *GAME_OPTIONS_KEY, *SOUND_OPTIONS_KEY),
+        FOnGetCloudSaveRecordComplete::CreateWeakLambda(this, [this, GameInstance, PromptSubsystem, OnComplete](bool bWasSuccessful, FJsonObject& Result)
+        {
+            UE_LOG_CLOUDSAVE_ESSENTIALS(Warning, TEXT("Get game options from Cloud Save was successful: %s"), bWasSuccessful ? TEXT("True") : TEXT("False"));
+
+            PromptSubsystem->HideLoading();
+
+            // Update the local game options based on the Cloud Save record.
+            if (bWasSuccessful)
+            {
+                GameInstance->SetMusicVolume(Result.GetNumberField(SOUND_OPTIONS_MUSIC_KEY));
+                GameInstance->SetSFXVolume(Result.GetNumberField(SOUND_OPTIONS_SFX_KEY));
+            }
+
+            OnComplete.ExecuteIfBound();
+        })
+    );
+}
+
+void UCloudSaveSubsystem::OnSaveGameSoundOptions(const APlayerController* PC, TDelegate<void()> OnComplete)
+{
+    if (!PC)
+    {
+        UE_LOG_CLOUDSAVE_ESSENTIALS(Warning, TEXT("Cannot set game options from Cloud Save. Player Controller is null."));
+        return;
+    }
+
+    UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+    ensure(GameInstance);
+
+    UPromptSubsystem* PromptSubsystem = GameInstance->GetSubsystem<UPromptSubsystem>();
+    ensure(PromptSubsystem);
+
+    PromptSubsystem->ShowLoading(LOCTEXT("Saving", "Saving"));
+
+    // Construct game options to save.
+    FJsonObject GameOptionsData;
+    GameOptionsData.SetNumberField(SOUND_OPTIONS_MUSIC_KEY, GameInstance->GetMusicVolume());
+    GameOptionsData.SetNumberField(SOUND_OPTIONS_SFX_KEY, GameInstance->GetSFXVolume());
+
+    // Save the game options to Cloud Save.
+    SetPlayerRecord(
+        PC,
+        FString::Printf(TEXT("%s-%s"), *GAME_OPTIONS_KEY, *SOUND_OPTIONS_KEY),
+        GameOptionsData,
+        FOnSetCloudSaveRecordComplete::CreateWeakLambda(this, [this, PromptSubsystem, OnComplete](bool bWasSuccessful)
+        {
+            UE_LOG_CLOUDSAVE_ESSENTIALS(Warning, TEXT("Set game options from Cloud Save was successful: %s"), bWasSuccessful ? TEXT("True") : TEXT("False"));
+
+            PromptSubsystem->HideLoading();
+            OnComplete.ExecuteIfBound();
+        }
+    ));
 }
 #pragma endregion
 
@@ -150,3 +227,5 @@ void UCloudSaveSubsystem::OnDeletePlayerRecordComplete(int32 LocalUserNum, bool 
     OnDeleteRecordComplete.ExecuteIfBound(bWasSuccessful);
 }
 #pragma endregion
+
+#undef LOCTEXT_NAMESPACE

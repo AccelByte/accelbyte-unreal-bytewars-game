@@ -5,7 +5,10 @@
 #include "TutorialModules/Module-5/CloudSaveSubsystem_Starter.h"
 #include "OnlineSubsystemAccelByte.h"
 #include "OnlineSubsystemUtils.h"
+#include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "Core/UI/MainMenu/HelpOptions/Options/OptionsWidget.h"
+
+#define LOCTEXT_NAMESPACE "AccelByteWars"
 
 void UCloudSaveSubsystem_Starter::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -48,6 +51,16 @@ void UCloudSaveSubsystem_Starter::UnbindDelegates()
 {
     // TODO: Unbind your delegates here.
 }
+
+void UCloudSaveSubsystem_Starter::OnLoadGameSoundOptions(const APlayerController* PC, TDelegate<void()> OnComplete)
+{
+    // TODO: Implement to load game sound options from Cloud Save here.
+}
+
+void UCloudSaveSubsystem_Starter::OnSaveGameSoundOptions(const APlayerController* PC, TDelegate<void()> OnComplete)
+{
+    // TODO: Implement to save game sound options to Cloud Save here.
+}
 #pragma endregion
 
 
@@ -56,3 +69,5 @@ void UCloudSaveSubsystem_Starter::UnbindDelegates()
 // TODO: Add your Module.5 function definitions here.
 
 #pragma endregion
+
+#undef LOCTEXT_NAMESPACE

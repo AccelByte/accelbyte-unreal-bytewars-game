@@ -6,6 +6,11 @@
 
 #include "CoreMinimal.h"
 
+#define GAME_OPTIONS_KEY FString(TEXT("GameOptions"))
+#define SOUND_OPTIONS_KEY FString(TEXT("Sound"))
+#define SOUND_OPTIONS_MUSIC_KEY FString(TEXT("musicvolume"))
+#define SOUND_OPTIONS_SFX_KEY FString(TEXT("sfxvolume"))
+
 DECLARE_DELEGATE_OneParam(FOnSetCloudSaveRecordComplete, bool /*bWasSuccessful*/);
 
 DECLARE_DELEGATE_TwoParams(FOnGetCloudSaveRecordComplete, bool /*bWasSuccessful*/, FJsonObject& /*Result*/);
