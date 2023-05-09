@@ -11,6 +11,9 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "CloudSaveSubsystem.generated.h"
 
+class UAccelByteWarsGameInstance;
+class UPromptSubsystem;
+
 UCLASS()
 class ACCELBYTEWARS_API UCloudSaveSubsystem : public UGameInstanceSubsystem
 {
@@ -35,6 +38,9 @@ private:
 private:
 	void BindDelegates();
 	void UnbindDelegates();
+
+	void OnLoadGameSoundOptions(const APlayerController* PC, TDelegate<void()> OnComplete);
+	void OnSaveGameSoundOptions(const APlayerController* PC, TDelegate<void()> OnComplete);
 
 	FDelegateHandle OnSetPlayerRecordCompletedDelegateHandle;
 	FDelegateHandle OnGetPlayerRecordCompletedDelegateHandle;
