@@ -5,14 +5,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Subsystems/GameInstanceSubsystem.h"
 #include "OnlineSessionInterfaceV2AccelByte.h"
 #include "MatchmakingEssentialsModels.h"
 #include "MatchmakingEssentialsLog.h"
+#include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "MatchmakingSubsystem_Starter.generated.h"
 
 UCLASS()
-class ACCELBYTEWARS_API UMatchmakingSubsystem_Starter : public UGameInstanceSubsystem
+class ACCELBYTEWARS_API UMatchmakingSubsystem_Starter : public UTutorialModuleSubsystem
 {
 	GENERATED_BODY()
 

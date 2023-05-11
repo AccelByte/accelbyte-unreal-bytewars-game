@@ -8,14 +8,14 @@
 #include "TutorialModules/Module-5/CloudSaveLog.h"
 #include "TutorialModules/Module-5/CloudSaveModels.h"
 #include "OnlineCloudSaveInterfaceAccelByte.h"
-#include "Subsystems/GameInstanceSubsystem.h"
+#include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "CloudSaveSubsystem_Starter.generated.h"
 
 class UAccelByteWarsGameInstance;
 class UPromptSubsystem;
 
 UCLASS()
-class ACCELBYTEWARS_API UCloudSaveSubsystem_Starter : public UGameInstanceSubsystem
+class ACCELBYTEWARS_API UCloudSaveSubsystem_Starter : public UTutorialModuleSubsystem
 {
 	GENERATED_BODY()
 
