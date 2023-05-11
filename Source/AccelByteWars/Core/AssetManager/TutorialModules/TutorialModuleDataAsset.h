@@ -11,6 +11,7 @@
 #include "TutorialModuleDataAsset.generated.h"
 
 class UAccelByteWarsActivatableWidget;
+class UTutorialModuleSubsystem;
 
 UCLASS()
 class ACCELBYTEWARS_API UTutorialModuleDataAsset : public UAccelByteWarsDataAsset
@@ -35,39 +36,54 @@ public:
 	}
 
 #if WITH_EDITOR
+	virtual void PostLoad() override;
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 	virtual void PostDuplicate(EDuplicateMode::Type DuplicateMode) override;
-	virtual void PostLoad() override;
 #endif
 
 	static FTutorialModuleData GetTutorialModuleDataByCodeName(const FString& InCodeName);
 	static FPrimaryAssetId GenerateAssetIdFromCodeName(const FString& InCodeName);
 	static FString GetCodeNameFromAssetId(const FPrimaryAssetId& AssetId);
+
+	UFUNCTION(BlueprintPure)
+	TSubclassOf<UAccelByteWarsActivatableWidget> GetTutorialModuleUIClass();
+	
+	UFUNCTION(BlueprintPure)
+	TSubclassOf<UTutorialModuleSubsystem> GetTutorialModuleSubsystemClass();
+	
 	bool IsActiveAndDependenciesChecked();
-	bool IsStarterMode() { return bIsStarterMode; }
-
-	// The UI class that used as the entrypoint from main menu to the tutorial module
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, AssetRegistrySearchable)
-	TSubclassOf<UAccelByteWarsActivatableWidget> DefaultUIClass;
-
-	// Alias to set for this mode (needs to be unique)
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	FString CodeName;
-
-	static const FPrimaryAssetType TutorialModuleAssetType;
+	bool IsStarterModeActive() { return bIsStarterModeActive; }
 
 	void OverridesIsActive(const bool bInIsActive);
 	void ResetOverrides();
 
+	// Alias to set for this mode (needs to be unique)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tutorial Module")
+	FString CodeName;
+
+	static const FPrimaryAssetType TutorialModuleAssetType;
+
 private:
+	UPROPERTY(EditAnywhere, AssetRegistrySearchable, Category = "Tutorial Module")
+	TSubclassOf<UAccelByteWarsActivatableWidget> DefaultUIClass;
+
+	UPROPERTY(EditAnywhere, AssetRegistrySearchable, Category = "Tutorial Module")
+	TSubclassOf<UTutorialModuleSubsystem> DefaultSubsystemClass;
+
+	UPROPERTY(EditAnywhere, AssetRegistrySearchable, Category = "Tutorial Module Starter")
+	TSubclassOf<UAccelByteWarsActivatableWidget> StarterUIClass;
+
+	UPROPERTY(EditAnywhere, AssetRegistrySearchable, Category = "Tutorial Module Starter")
+	TSubclassOf<UTutorialModuleSubsystem> StarterSubsystemClass;
+
 	UPROPERTY()
 	bool bOverriden = false;
 
-	UPROPERTY(EditAnywhere, meta = (EditCondition ="!bOverriden", HideEditConditionToggle))
+	UPROPERTY(EditAnywhere, meta = (EditCondition = "!bOverriden", HideEditConditionToggle), Category = "Tutorial Module")
 	bool bIsActive = true;
 
-	UPROPERTY(EditAnywhere)
-	bool bIsStarterMode = false;
+	UPROPERTY(EditAnywhere, Category = "Tutorial Module Starter")
+	bool bIsStarterModeActive = false;
 
 public:
 #pragma region "Tutorial Module Dependencies"
@@ -85,12 +101,22 @@ public:
 #pragma endregion
 #endif
 
-#if WITH_EDITOR
 private:
+#if WITH_EDITOR
 	void UpdateDataAssetProperties();
-	bool ValidateDataAssetProperties();
-	void ShowPopupMessage(const FString& Message);
+	void ValidateDataAssetProperties();
+
+	bool ValidateClassProperty(TSubclassOf<UAccelByteWarsActivatableWidget>& UIClass, TSubclassOf<UAccelByteWarsActivatableWidget>& LastUIClass, const bool IsStarterClass);
+	bool ValidateClassProperty(TSubclassOf<UTutorialModuleSubsystem>& SubsystemClass, TSubclassOf<UTutorialModuleSubsystem>& LastSubsystemClass, const bool IsStarterClass);
+
+	void ShowPopupMessage(const FString& Message) const;
+
 	TSubclassOf<UAccelByteWarsActivatableWidget> LastDefaultUIClass;
+	TSubclassOf<UTutorialModuleSubsystem> LastDefaultSubsystemClass;
+
+	TSubclassOf<UAccelByteWarsActivatableWidget> LastStarterUIClass;
+	TSubclassOf<UTutorialModuleSubsystem> LastStarterSubsystemClass;
+
 	TArray<FTutorialModuleWidgetConnection> LastThisTutorialModuleWidgetToNonModuleWidgetsConnections;
 #endif
 };
