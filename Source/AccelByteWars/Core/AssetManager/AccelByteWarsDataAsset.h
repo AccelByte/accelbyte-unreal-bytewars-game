@@ -1,4 +1,6 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
 
 #pragma once
 
@@ -7,9 +9,6 @@
 #include "Core/AssetManager/AccelByteWarsAssetManager.h"
 #include "AccelByteWarsDataAsset.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class ACCELBYTEWARS_API UAccelByteWarsDataAsset : public UPrimaryDataAsset
 {
@@ -17,17 +16,12 @@ class ACCELBYTEWARS_API UAccelByteWarsDataAsset : public UPrimaryDataAsset
 
 public:
 	// Human Readable Display Name for this Asset
-	UPROPERTY(EditAnywhere, Category = "UI", AssetRegistrySearchable)
+	UPROPERTY(EditAnywhere, Category = "Asset Info", AssetRegistrySearchable)
 	FText DisplayName;
+
 	// Description for this Asset
-	UPROPERTY(EditAnywhere, Category = "UI", AssetRegistrySearchable)
+	UPROPERTY(EditAnywhere, Category = "Asset Info", AssetRegistrySearchable)
 	FText Description;
-
-	// Display Image for this Asset
-	// UPROPERTY(EditAnywhere, Category = "UI|Images", AssetRegistrySearchable)
-	// TSoftObjectPtr<UTexture2D> DisplayImage;
-
-	// TODO: store reference to asset manager here
 
 public:
 	static FText GetDisplayNameForAsset(const FPrimaryAssetId& AssetId);

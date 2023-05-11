@@ -10,7 +10,7 @@
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "Blueprint/UserWidget.h"
 
-bool UTutorialModuleUtility::ActivateTutorialModuleWidget(const UTutorialModuleDataAsset* TutorialModule, const UObject* Context)
+bool UTutorialModuleUtility::ActivateTutorialModuleWidget(UTutorialModuleDataAsset* TutorialModule, const UObject* Context)
 {
 	if (!Context)
 	{
@@ -30,7 +30,7 @@ bool UTutorialModuleUtility::ActivateTutorialModuleWidget(const UTutorialModuleD
 		return false;
 	}
 
-	BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, TutorialModule->DefaultUIClass);
+	BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, TutorialModule->GetTutorialModuleUIClass());
 
 	return true;
 }
