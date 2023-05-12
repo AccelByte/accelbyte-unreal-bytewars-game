@@ -83,29 +83,6 @@ void UTutorialModuleDataAsset::ResetOverrides()
 	bOverriden = false;
 }
 
-#if WITH_EDITOR
-void UTutorialModuleDataAsset::PostLoad()
-{
-	Super::PostLoad();
-
-	UpdateDataAssetProperties();
-}
-
-void UTutorialModuleDataAsset::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
-{
-	Super::PostEditChangeProperty(PropertyChangedEvent);
-
-	UpdateDataAssetProperties();
-}
-
-void UTutorialModuleDataAsset::PostDuplicate(EDuplicateMode::Type DuplicateMode)
-{
-	Super::PostDuplicate(DuplicateMode);
-
-	CodeName = TEXT("");
-	UpdateDataAssetProperties();
-}
-
 void UTutorialModuleDataAsset::UpdateDataAssetProperties()
 {
 	ValidateDataAssetProperties();
@@ -171,11 +148,12 @@ bool UTutorialModuleDataAsset::ValidateClassProperty(TSubclassOf<UAccelByteWarsA
 	if (UIClass.Get() && UIClass.GetDefaultObject()->AssociateTutorialModule != nullptr
 		&& UIClass.GetDefaultObject()->AssociateTutorialModule != this)
 	{
+#if UE_EDITOR
 		ShowPopupMessage(
 			FString::Printf(TEXT("UI Class %s is already being used by %s Tutorial Module"),
 				*UIClass.Get()->GetName(),
 				*UIClass.GetDefaultObject()->AssociateTutorialModule->GetName()));
-
+#endif
 		UIClass = nullptr;
 	}
 
@@ -189,7 +167,7 @@ bool UTutorialModuleDataAsset::ValidateClassProperty(TSubclassOf<UAccelByteWarsA
 	// Update the new class to points to this Tutorial Module.
 	if (UIClass.Get() && UIClass.GetDefaultObject())
 	{
-		UIClass.GetDefaultObject()->AssociateTutorialModule = 
+		UIClass.GetDefaultObject()->AssociateTutorialModule =
 			((IsStarterClass && IsStarterModeActive()) || (!IsStarterClass && !IsStarterModeActive())) ? this : nullptr;
 	}
 
@@ -205,11 +183,12 @@ bool UTutorialModuleDataAsset::ValidateClassProperty(TSubclassOf<UTutorialModule
 	if (SubsystemClass.Get() && SubsystemClass.GetDefaultObject()->AssociateTutorialModule != nullptr
 		&& SubsystemClass.GetDefaultObject()->AssociateTutorialModule != this)
 	{
+#if UE_EDITOR
 		ShowPopupMessage(
 			FString::Printf(TEXT("Subsystem Class %s is already being used by %s Tutorial Module"),
 				*SubsystemClass.Get()->GetName(),
 				*SubsystemClass.GetDefaultObject()->AssociateTutorialModule->GetName()));
-
+#endif
 		SubsystemClass = nullptr;
 	}
 
@@ -231,6 +210,29 @@ bool UTutorialModuleDataAsset::ValidateClassProperty(TSubclassOf<UTutorialModule
 	LastSubsystemClass = SubsystemClass;
 
 	return SubsystemClass != nullptr;
+}
+
+void UTutorialModuleDataAsset::PostLoad()
+{
+	Super::PostLoad();
+
+	UpdateDataAssetProperties();
+}
+
+#if WITH_EDITOR
+void UTutorialModuleDataAsset::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+
+	UpdateDataAssetProperties();
+}
+
+void UTutorialModuleDataAsset::PostDuplicate(EDuplicateMode::Type DuplicateMode)
+{
+	Super::PostDuplicate(DuplicateMode);
+
+	CodeName = TEXT("");
+	UpdateDataAssetProperties();
 }
 
 void UTutorialModuleDataAsset::ShowPopupMessage(const FString& Message) const
