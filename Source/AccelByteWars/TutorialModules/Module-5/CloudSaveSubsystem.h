@@ -30,9 +30,9 @@ public:
 	void DeletePlayerRecord(const APlayerController* PC, const FString& RecordKey, const FOnDeleteCloudSaveRecordComplete& OnDeleteRecordComplete);
 
 private:
-	void OnSetPlayerRecordComplete(int32 LocalUserNum, bool bWasSuccessful, const FString& Error, const FOnSetCloudSaveRecordComplete OnSetRecordComplete);
-	void OnGetPlayerRecordComplete(int32 LocalUserNum, bool bWasSuccessful, const FAccelByteModelsUserRecord& UserRecord, const FString& Error, const FOnGetCloudSaveRecordComplete OnGetRecordComplete);
-	void OnDeletePlayerRecordComplete(int32 LocalUserNum, bool bWasSuccessful, const FString& Error, const FOnDeleteCloudSaveRecordComplete OnDeleteRecordComplete);
+	void OnSetPlayerRecordComplete(int32 LocalUserNum, const FOnlineError& Result, const FString& Key, const FOnSetCloudSaveRecordComplete OnSetRecordComplete);
+	void OnGetPlayerRecordComplete(int32 LocalUserNum, const FOnlineError& Result, const FString& Key, const FAccelByteModelsUserRecord& UserRecord, const FOnGetCloudSaveRecordComplete OnGetRecordComplete);
+	void OnDeletePlayerRecordComplete(int32 LocalUserNum, const FOnlineError& Result, const FString& Key, const FOnDeleteCloudSaveRecordComplete OnDeleteRecordComplete);
 #pragma endregion
 
 private:

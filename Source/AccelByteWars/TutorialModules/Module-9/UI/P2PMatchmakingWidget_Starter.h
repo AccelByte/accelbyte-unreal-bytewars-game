@@ -6,12 +6,12 @@
 
 #include "CoreMinimal.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
-#include "SinglePlatformAuthWidget.generated.h"
+#include "P2PMatchmakingWidget_Starter.generated.h"
 
 class UCommonButtonBase;
 
 UCLASS(Abstract)
-class ACCELBYTEWARS_API USinglePlatformAuthWidget : public UAccelByteWarsActivatableWidget
+class ACCELBYTEWARS_API UP2PMatchmakingWidget_Starter : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
 
@@ -20,8 +20,8 @@ protected:
 	void NativeDestruct() override;
 
 private:
-	void OnLoginWithSinglePlatformAuthButtonClicked();
+	void OnStartP2PMatchmakingButtonClicked();
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UCommonButtonBase* Btn_LoginWithSinglePlatformAuth;
+	UCommonButtonBase* Btn_StartP2PMatchmaking;
 };

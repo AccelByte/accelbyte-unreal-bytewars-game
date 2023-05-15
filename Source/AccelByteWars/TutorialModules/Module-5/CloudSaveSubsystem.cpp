@@ -147,19 +147,19 @@ void UCloudSaveSubsystem::SetPlayerRecord(const APlayerController* PC, const FSt
     CloudSaveInterface->ReplaceUserRecord(LocalUserNum, RecordKey, RecordData);
 }
 
-void UCloudSaveSubsystem::OnSetPlayerRecordComplete(int32 LocalUserNum, bool bWasSuccessful, const FString& Error, const FOnSetCloudSaveRecordComplete OnSetRecordComplete)
+void UCloudSaveSubsystem::OnSetPlayerRecordComplete(int32 LocalUserNum, const FOnlineError& Result, const FString& Key, const FOnSetCloudSaveRecordComplete OnSetRecordComplete)
 {
-    if (bWasSuccessful)
+    if (Result.bSucceeded)
     {
         UE_LOG_CLOUDSAVE_ESSENTIALS(Log, TEXT("Success to set player record."));
     }
     else
     {
-        UE_LOG_CLOUDSAVE_ESSENTIALS(Log, TEXT("Failed to set player record. Message: %s"), *Error);
+        UE_LOG_CLOUDSAVE_ESSENTIALS(Log, TEXT("Failed to set player record. Message: %s"), *Result.ErrorMessage.ToString());
     }
 
     CloudSaveInterface->ClearOnReplaceUserRecordCompletedDelegate_Handle(LocalUserNum, OnSetPlayerRecordCompletedDelegateHandle);
-    OnSetRecordComplete.ExecuteIfBound(bWasSuccessful);
+    OnSetRecordComplete.ExecuteIfBound(Result.bSucceeded);
 }
 
 void UCloudSaveSubsystem::GetPlayerRecord(const APlayerController* PC, const FString& RecordKey, const FOnGetCloudSaveRecordComplete& OnGetRecordComplete)
@@ -178,22 +178,22 @@ void UCloudSaveSubsystem::GetPlayerRecord(const APlayerController* PC, const FSt
     CloudSaveInterface->GetUserRecord(LocalUserNum, RecordKey);
 }
 
-void UCloudSaveSubsystem::OnGetPlayerRecordComplete(int32 LocalUserNum, bool bWasSuccessful, const FAccelByteModelsUserRecord& UserRecord, const FString& Error, const FOnGetCloudSaveRecordComplete OnGetRecordComplete)
+void UCloudSaveSubsystem::OnGetPlayerRecordComplete(int32 LocalUserNum, const FOnlineError& Result, const FString& Key, const FAccelByteModelsUserRecord& UserRecord, const FOnGetCloudSaveRecordComplete OnGetRecordComplete)
 {
     FJsonObject RecordResult;
 
-    if (bWasSuccessful)
+    if (Result.bSucceeded)
     {
         RecordResult = UserRecord.Value.JsonObject.ToSharedRef().Get();
         UE_LOG_CLOUDSAVE_ESSENTIALS(Log, TEXT("Success to get player record."));
     }
     else
     {
-        UE_LOG_CLOUDSAVE_ESSENTIALS(Log, TEXT("Failed to get player record. Message: %s"), *Error);
+        UE_LOG_CLOUDSAVE_ESSENTIALS(Log, TEXT("Failed to get player record. Message: %s"), *Result.ErrorMessage.ToString());
     }
 
     CloudSaveInterface->ClearOnGetUserRecordCompletedDelegate_Handle(LocalUserNum, OnGetPlayerRecordCompletedDelegateHandle);
-    OnGetRecordComplete.ExecuteIfBound(bWasSuccessful, RecordResult);
+    OnGetRecordComplete.ExecuteIfBound(Result.bSucceeded, RecordResult);
 }
 
 void UCloudSaveSubsystem::DeletePlayerRecord(const APlayerController* PC, const FString& RecordKey, const FOnDeleteCloudSaveRecordComplete& OnDeleteRecordComplete)
@@ -212,19 +212,19 @@ void UCloudSaveSubsystem::DeletePlayerRecord(const APlayerController* PC, const 
     CloudSaveInterface->DeleteUserRecord(LocalUserNum, RecordKey);
 }
 
-void UCloudSaveSubsystem::OnDeletePlayerRecordComplete(int32 LocalUserNum, bool bWasSuccessful, const FString& Error, const FOnDeleteCloudSaveRecordComplete OnDeleteRecordComplete)
+void UCloudSaveSubsystem::OnDeletePlayerRecordComplete(int32 LocalUserNum, const FOnlineError& Result, const FString& Key, const FOnDeleteCloudSaveRecordComplete OnDeleteRecordComplete)
 {
-    if (bWasSuccessful)
+    if (Result.bSucceeded)
     {
         UE_LOG_CLOUDSAVE_ESSENTIALS(Log, TEXT("Success to delete player record."));
     }
     else
     {
-        UE_LOG_CLOUDSAVE_ESSENTIALS(Log, TEXT("Failed to delete player record. Message: %s"), *Error);
+        UE_LOG_CLOUDSAVE_ESSENTIALS(Log, TEXT("Failed to delete player record. Message: %s"), *Result.ErrorMessage.ToString());
     }
 
     CloudSaveInterface->ClearOnDeleteUserRecordCompletedDelegate_Handle(LocalUserNum, OnDeletePlayerRecordCompletedDelegateHandle);
-    OnDeleteRecordComplete.ExecuteIfBound(bWasSuccessful);
+    OnDeleteRecordComplete.ExecuteIfBound(Result.bSucceeded);
 }
 #pragma endregion
 

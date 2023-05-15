@@ -1,9 +1,4 @@
-[submodule "Plugins/AccelByte/OnlineSubsystemAccelByte"]
-	path = Plugins/AccelByte/OnlineSubsystemAccelByte
-	url = git@github.com:AccelByte/accelbyte-unreal-oss.git
-[submodule "Plugins/AccelByte/AccelByteUe4Sdk"]
-	path = Plugins/AccelByte/AccelByteUe4Sdk
-	url = git@github.com:AccelByte/accelbyte-unreal-sdk-plugin.git
-[submodule "Plugins/AccelByte/AccelByteNetworkUtilities"]
-	path = Plugins/AccelByte/AccelByteNetworkUtilities
-	url = git@github.com:AccelByte/accelbyte-unreal-network-utilities.git
+[submodule "Plugins/AccelByte"]
+	path = Plugins/AccelByte
+	url = git@bitbucket.org:accelbyte/justice-ue4-oss.git
+	branch = master

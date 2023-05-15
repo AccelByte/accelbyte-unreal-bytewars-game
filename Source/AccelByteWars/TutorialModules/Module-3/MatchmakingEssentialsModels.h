@@ -25,3 +25,5 @@ enum class EMatchmakingState : uint8
 
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnMatchmakingStateChanged, EMatchmakingState /*MatchmakingState*/, FString /* ErrorMessage */);
 typedef FOnMatchmakingStateChanged::FDelegate FOnMatchmakingStateChangedDelegate;
+
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnRequestCancelMatchmaking, APlayerController* /*PlayerController*/);
