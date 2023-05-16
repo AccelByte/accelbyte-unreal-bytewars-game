@@ -44,10 +44,23 @@ void AAccelByteWarsGameMode::BeginPlay()
 	// Check if GameSetup have already been set up or not
 	if (!ABGameState->GameSetup)
 	{
-		// have not yet set up, set GameSetup based on launch argument
 		FString CodeName;
 		FParse::Value(FCommandLine::Get(), TEXT("-GameMode="), CodeName);
-		ABGameState->AssignGameMode(CodeName);
+
+		// Prioritize assign game mode from command-line.
+		if (!CodeName.IsEmpty())
+		{
+			ABGameState->AssignGameMode(CodeName);
+		}
+		/* When transitioning to the listen server (P2P server), the server will initialize 
+		 * a new Game Instance and Game State (this is Unreal Engine's default behavior).
+		 * Thus, the data set up before transitioning to the listen server will be reset.
+		 * Therefore, the delegate below will help to reinitialize the listen server data 
+		 * (e.g. assigning game mode through the Game State). */
+		else if (GetNetMode() == ENetMode::NM_ListenServer && OnInitializeListenServer.IsBound())
+		{
+			OnInitializeListenServer.Broadcast(GameSessionName);
+		}
 	}
 
 	// Setup GameState variables if in GameplayLevel or if DedicatedServer
@@ -93,15 +106,6 @@ void AAccelByteWarsGameMode::PostLogin(APlayerController* NewPlayer)
 			GameSession->KickPlayer(NewPlayer, FText::FromString("Max player reached"));
 			GAMEMODE_LOG(Warning, TEXT("Player did not registered in Teams data. Max registered players reached. Kicking this player"));
 			return;
-		}
-
-		// If running online, refresh player's data based on AccelByte's data.
-		if (NewPlayer->GetNetMode() != ENetMode::NM_Standalone && OnAddOnlineMemberDelegate.IsBound())
-		{
-			OnAddOnlineMemberDelegate.Broadcast(NewPlayer, TDelegate<void(bool)>::CreateWeakLambda(this, [this, NewPlayer](bool bIsSuccessful)
-			{
-				UpdatePlayerInformation(NewPlayer);
-			}));
 		}
 	}
 }
@@ -201,7 +205,7 @@ void AAccelByteWarsGameMode::PlayerTeamSetup(APlayerController* PlayerController
 	// if no match found, assign player to a new team or least populated team
 	if (TeamId == INDEX_NONE)
 	{
-		if (IsRunningDedicatedServer())
+		if (IsServer())
 		{
 			// Running online, assign team from session info
 			if (OnGetTeamIdFromSessionDelegate.IsBound()) 
@@ -255,6 +259,15 @@ void AAccelByteWarsGameMode::PlayerTeamSetup(APlayerController* PlayerController
 		ControllerId,
 		PlayerState->GetScore(),
 		PlayerState->KillCount);
+
+	// If running online, refresh player's data based on AccelByte's data.
+	if (PlayerController->GetNetMode() != ENetMode::NM_Standalone && OnAddOnlineMemberDelegate.IsBound())
+	{
+		OnAddOnlineMemberDelegate.Broadcast(PlayerController, TDelegate<void(bool)>::CreateWeakLambda(this, [this, PlayerController](bool bIsSuccessful)
+		{
+			UpdatePlayerInformation(PlayerController);
+		}));
+	}
 }
 
 void AAccelByteWarsGameMode::ServerTravel(TSoftObjectPtr<UWorld> Level)
