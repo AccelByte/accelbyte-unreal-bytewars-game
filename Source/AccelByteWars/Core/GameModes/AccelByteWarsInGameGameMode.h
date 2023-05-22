@@ -15,14 +15,10 @@ class ACCELBYTEWARS_API AAccelByteWarsInGameGameMode : public AAccelByteWarsGame
 	GENERATED_BODY()
 
 public:
-	static inline FSimpleMulticastDelegate OnGameEndsDelegate;
-
-	//~AGameModeBase overridden functions
 	virtual void InitGameState() override;
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void PostLogin(APlayerController* NewPlayer) override;
-	//~End of AGameModeBase overridden functions
 
 	/**
 	 * @brief Add player's score in GameState and PlayerState
