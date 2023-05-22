@@ -8,9 +8,6 @@
 #include "OnlineStatisticInterfaceAccelByte.h"
 #include "StatsEssentialsSubsystem.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class ACCELBYTEWARS_API UStatsEssentialsSubsystem : public UGameInstanceSubsystem
 {
@@ -67,11 +64,22 @@ public:
 		const TArray<FString>& StatNames,
 		const FOnlineStatsQueryUsersStatsComplete& OnComplete);
 
+	/**
+	 * @brief Reset all connected users stats value to 0
+	 * @param LocalUserNum LocalUserNum to determine who's credential is going to be used for the API call
+	 * @param OnCompleteClient Call upon completion if current instance is not a dedicated server
+	 * @param OnCompleteServer Call upon completion if current instance is a dedicated server
+	 * @return True if Async Task started successfully, false if task already running
+	 */
+	bool ResetConnectedUsersStats(
+		const int32 LocalUserNum,
+		const FOnlineStatsUpdateStatsComplete& OnCompleteClient = {},
+		const FOnUpdateMultipleUserStatItemsComplete& OnCompleteServer = {});
+
 private:
 	UFUNCTION()
 	void UpdatePlayersStatOnGameEnds();
 
-	IOnlineStatsPtr StatsPtr;
 	IOnlineIdentityPtr IdentityPtr;
 	FOnlineStatisticAccelBytePtr ABStatsPtr;
 

@@ -3,11 +3,11 @@
 // and restrictions contact your company contract manager.
 
 
-#include "StatsWidgetEntry.h"
+#include "StatsProfileWidgetEntry.h"
 
 #include "Components/TextBlock.h"
 
-void UStatsWidgetEntry::Setup(FText StatCode, FText StatValue) const
+void UStatsProfileWidgetEntry::Setup(FText StatCode, FText StatValue) const
 {
 	Txt_StatName->SetText(StatCode);
 	Txt_StatValue->SetText(StatValue);

@@ -17,10 +17,11 @@ void UStatsEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 	const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
 
-	StatsPtr = Subsystem->GetStatsInterface();
+	const IOnlineStatsPtr StatsPtr = Subsystem->GetStatsInterface();
 	ensure(StatsPtr);
 
 	ABStatsPtr = StaticCastSharedPtr<FOnlineStatisticAccelByte>(StatsPtr);
+	ensure(ABStatsPtr);
 
 	IdentityPtr = Subsystem->GetIdentityInterface();
 	ensure(IdentityPtr);
@@ -43,173 +44,29 @@ bool UStatsEssentialsSubsystem::UpdateUsersStats(const int32 LocalUserNum,
 		return false;
 	}
 
-	/**
-	 * AB OSS limitation:
-	 * Updated stats value will always override the current value despite changing the EOnlineStatModificationType.
-	 * Workaround -> Query first, do logic on game side, then call update.
-	 */
-	TArray<FUniqueNetIdRef> StatsUsers;
-	TArray<FString> StatNames;
-	for (const FOnlineStatsUserUpdatedStats& UserStats : UpdatedUsersStats)
+	if (IsRunningDedicatedServer())
 	{
-		StatsUsers.AddUnique(UserStats.Account);
-		for (const TTuple<FString, FOnlineStatUpdate>& Stat : UserStats.Stats)
-		{
-			StatNames.AddUnique(Stat.Key);
-		}
+		OnServerUpdateStatsComplete = FOnUpdateMultipleUserStatItemsComplete::CreateWeakLambda(
+			this, [OnCompleteServer, this](const FOnlineError& ResultState,
+										   const TArray<FAccelByteModelsUpdateUserStatItemsResponse>& Result)
+			{
+				OnCompleteServer.ExecuteIfBound(ResultState, Result);
+				OnServerUpdateStatsComplete.Unbind();
+			});
+
+		ABStatsPtr->UpdateStats(LocalUserNum, UpdatedUsersStats, OnServerUpdateStatsComplete);
 	}
-
-	const bool bQuerySucceeded = QueryUserStats(LocalUserNum, StatsUsers, StatNames, FOnlineStatsQueryUsersStatsComplete::CreateWeakLambda(this, [UpdatedUsersStats, this, LocalUserNum, OnCompleteClient, OnCompleteServer](const FOnlineError& ResultState, const TArray<TSharedRef<const FOnlineStatsUserStats>>& UsersStatsResult)
+	else
 	{
-		if (ResultState.bSucceeded)
-		{
-			TArray<FOnlineStatsUserUpdatedStats> UpdatedUsersStatsCopy = UpdatedUsersStats;
-			for (FOnlineStatsUserUpdatedStats& UpdatedUserStats : UpdatedUsersStatsCopy)
+		OnUpdateStatsComplete = FOnlineStatsUpdateStatsComplete::CreateWeakLambda(
+			this, [OnCompleteClient, this](const FOnlineError& ResultState)
 			{
-				// loop through each stats
-				for (TTuple<FString, FOnlineStatUpdate>& UpdatedStat : UpdatedUserStats.Stats)
-				{
-					// get current value
-					FVariantData CurrentValue;
-					// find user
-					for (const TSharedRef<const FOnlineStatsUserStats> CurrentUserStats : UsersStatsResult)
-					{
-						if (CurrentUserStats->Account == UpdatedUserStats.Account)
-						{
-							// find stat
-							for (const TTuple<FString, FVariantData>& CurrentStat : CurrentUserStats->Stats)
-							{
-								if (CurrentStat.Key.Equals(UpdatedStat.Key))
-								{
-									CurrentValue = CurrentStat.Value;
-									break;
-								}
-							}
-							break;
-						}
-					}
+				OnCompleteClient.ExecuteIfBound(ResultState);
+				OnUpdateStatsComplete.Unbind();
+			});
 
-					if (CurrentValue.GetType() == EOnlineKeyValuePairDataType::Type::Empty)
-					{
-						// data not found, override value as is
-						continue;
-					}
-
-					// data found, calculate value to set based on EOnlineStatModificationType
-					float UpdatedValueFloat = 0.0f;
-					switch (UpdatedStat.Value.GetType())
-					{
-					case EOnlineKeyValuePairDataType::Empty: break;
-					case EOnlineKeyValuePairDataType::Int32:
-						{
-							int32 UpdatedValueInt;
-							UpdatedStat.Value.GetValue().GetValue(UpdatedValueInt);
-							UpdatedValueFloat = static_cast<float>(UpdatedValueInt);
-							break;
-						}
-					case EOnlineKeyValuePairDataType::UInt32:
-						{
-							uint32 UpdatedValueInt;
-							UpdatedStat.Value.GetValue().GetValue(UpdatedValueInt);
-							UpdatedValueFloat = static_cast<float>(UpdatedValueInt);
-							break;
-						}
-					case EOnlineKeyValuePairDataType::Int64:
-						{
-							int64 UpdatedValueInt;
-							UpdatedStat.Value.GetValue().GetValue(UpdatedValueInt);
-							UpdatedValueFloat = static_cast<float>(UpdatedValueInt);
-							break;
-						}
-					case EOnlineKeyValuePairDataType::UInt64:
-						{
-							uint64 UpdatedValueInt;
-							UpdatedStat.Value.GetValue().GetValue(UpdatedValueInt);
-							UpdatedValueFloat = static_cast<float>(UpdatedValueInt);
-							break;
-						}
-					case EOnlineKeyValuePairDataType::Double:
-						{
-							double UpdatedValueDouble;
-							UpdatedStat.Value.GetValue().GetValue(UpdatedValueDouble);
-							UpdatedValueFloat = static_cast<float>(UpdatedValueDouble);
-							break;
-						}
-					case EOnlineKeyValuePairDataType::String:
-						{
-							FString UpdatedValueString;
-							UpdatedStat.Value.GetValue().GetValue(UpdatedValueString);
-							UpdatedValueFloat = FCString::Atof(*UpdatedValueString);
-							break;
-						}
-					case EOnlineKeyValuePairDataType::Float:
-						{
-							UpdatedStat.Value.GetValue().GetValue(UpdatedValueFloat);
-							break;
-						}
-					default: ;
-					}
-					float QueryValueFloat;
-					CurrentValue.GetValue(QueryValueFloat);
-
-					switch (UpdatedStat.Value.GetModificationType())
-					{
-					case FOnlineStatUpdate::EOnlineStatModificationType::Sum:
-						UpdatedStat.Value = FOnlineStatUpdate{
-							(QueryValueFloat + UpdatedValueFloat), FOnlineStatUpdate::EOnlineStatModificationType::Set
-						};
-						break;
-					case FOnlineStatUpdate::EOnlineStatModificationType::Largest:
-						UpdatedStat.Value = FOnlineStatUpdate{
-							(UpdatedValueFloat > QueryValueFloat ? UpdatedValueFloat : QueryValueFloat),
-							FOnlineStatUpdate::EOnlineStatModificationType::Set
-						};
-						break;
-					case FOnlineStatUpdate::EOnlineStatModificationType::Smallest:
-						UpdatedStat.Value = FOnlineStatUpdate{
-							(UpdatedValueFloat < QueryValueFloat ? UpdatedValueFloat : QueryValueFloat),
-							FOnlineStatUpdate::EOnlineStatModificationType::Set
-						};
-						break;
-					default:
-						UpdatedStat.Value = FOnlineStatUpdate{
-							UpdatedValueFloat, FOnlineStatUpdate::EOnlineStatModificationType::Set
-						};;
-					}
-				}
-			}
-
-			// update stats (override value)
-			if (IsRunningDedicatedServer())
-			{
-				OnServerUpdateStatsComplete = FOnUpdateMultipleUserStatItemsComplete::CreateWeakLambda(
-					this, [OnCompleteServer, this](const FOnlineError& ResultState,
-					                               const TArray<FAccelByteModelsUpdateUserStatItemsResponse>& Result)
-					{
-						OnCompleteServer.ExecuteIfBound(ResultState, Result);
-						OnServerUpdateStatsComplete.Unbind();
-					});
-
-				ABStatsPtr->UpdateStats(LocalUserNum, UpdatedUsersStatsCopy, OnServerUpdateStatsComplete);
-			}
-			else
-			{
-				OnUpdateStatsComplete = FOnlineStatsUpdateStatsComplete::CreateWeakLambda(
-					this, [OnCompleteClient, this](const FOnlineError& ResultState)
-					{
-						OnCompleteClient.ExecuteIfBound(ResultState);
-						OnUpdateStatsComplete.Unbind();
-					});
-
-				const FUniqueNetIdRef LocalUserId = IdentityPtr->GetUniquePlayerId(LocalUserNum).ToSharedRef();
-				StatsPtr->UpdateStats(LocalUserId, UpdatedUsersStatsCopy, OnUpdateStatsComplete);
-			}
-		}
-	}));
-
-	if (!bQuerySucceeded)
-	{
-		return false;
+		const FUniqueNetIdRef LocalUserId = IdentityPtr->GetUniquePlayerId(LocalUserNum).ToSharedRef();
+		ABStatsPtr->UpdateStats(LocalUserId, UpdatedUsersStats, OnUpdateStatsComplete);
 	}
 
 	return true;
@@ -243,8 +100,60 @@ bool UStatsEssentialsSubsystem::QueryUserStats(
 	});
 
 	const FUniqueNetIdRef LocalUserId = IdentityPtr->GetUniquePlayerId(LocalUserNum).ToSharedRef();
-	StatsPtr->QueryStats(LocalUserId, StatsUsers, StatNames, OnQueryUsersStatsComplete);
+	ABStatsPtr->QueryStats(LocalUserId, StatsUsers, StatNames, OnQueryUsersStatsComplete);
 	return true;
+}
+
+bool UStatsEssentialsSubsystem::ResetConnectedUsersStats(
+	const int32 LocalUserNum,
+	const FOnlineStatsUpdateStatsComplete& OnCompleteClient,
+	const FOnUpdateMultipleUserStatItemsComplete& OnCompleteServer)
+{
+	AGameStateBase* GameState = GetWorld()->GetGameState();
+	if (!ensure(GameState))
+	{
+		return false;
+	}
+
+	AAccelByteWarsGameState* ABGameState = Cast<AAccelByteWarsGameState>(GameState);
+	if (!ensure(ABGameState))
+	{
+		return false;
+	}
+
+	// Updated stats builder. Update only existing player -> use PlayerArray
+	TArray<FOnlineStatsUserUpdatedStats> UpdatedUsersStats;
+	for (const TObjectPtr<APlayerState> PlayerState : GameState->PlayerArray)
+	{
+		AAccelByteWarsPlayerState* ABPlayerState = Cast<AAccelByteWarsPlayerState>(PlayerState);
+		if (!ABPlayerState)
+		{
+			continue;
+		}
+
+		const FUniqueNetIdRepl& PlayerUniqueId = PlayerState->GetUniqueId();
+		if (!PlayerUniqueId.IsValid())
+		{
+			continue;
+		}
+
+		FOnlineStatsUserUpdatedStats UpdatedUserStats(PlayerUniqueId->AsShared());
+		if (IsRunningDedicatedServer())
+		{
+			// server side stats, need to be set by the server
+			UpdatedUserStats.Stats.Add(StatsCode_HighestElimination, FOnlineStatUpdate{0.0f, FOnlineStatUpdate::EOnlineStatModificationType::Set});
+			UpdatedUserStats.Stats.Add(StatsCode_HighestTeamDeathMatch, FOnlineStatUpdate{0.0f, FOnlineStatUpdate::EOnlineStatModificationType::Set});
+			UpdatedUserStats.Stats.Add(StatsCode_KillCount, FOnlineStatUpdate{0.0f, FOnlineStatUpdate::EOnlineStatModificationType::Set});
+		}
+		else
+		{
+			// client side stats, need to be set by the client
+			UpdatedUserStats.Stats.Add(StatsCode_HighestSinglePlayer, FOnlineStatUpdate{0.0f, FOnlineStatUpdate::EOnlineStatModificationType::Set});
+		}
+	}
+
+	// Update stats
+	return UpdateUsersStats(LocalUserNum, UpdatedUsersStats, OnCompleteClient, OnCompleteServer);
 }
 
 void UStatsEssentialsSubsystem::UpdatePlayersStatOnGameEnds()
@@ -278,7 +187,9 @@ void UStatsEssentialsSubsystem::UpdatePlayersStatOnGameEnds()
 		}
 
 		FOnlineStatsUserUpdatedStats UpdatedUserStats(PlayerUniqueId->AsShared());
+
 		TTuple<FString, FOnlineStatUpdate> StatHighest;
+		TTuple<FString, FOnlineStatUpdate> StatKillCount;
 
 		if (ABGameState->GameSetup.NetworkType == EGameModeNetworkType::LOCAL)
 		{
@@ -296,6 +207,10 @@ void UStatsEssentialsSubsystem::UpdatePlayersStatOnGameEnds()
 				break;
 			default: ;
 			}
+
+			StatKillCount.Key = StatsCode_KillCount;
+			StatKillCount.Value = FOnlineStatUpdate{ABPlayerState->KillCount, FOnlineStatUpdate::EOnlineStatModificationType::Sum};
+			UpdatedUserStats.Stats.Add(StatKillCount);
 		}
 
 		FGameplayTeamData TeamData;
@@ -306,28 +221,9 @@ void UStatsEssentialsSubsystem::UpdatePlayersStatOnGameEnds()
 		StatHighest.Value = FOnlineStatUpdate{TeamScore, FOnlineStatUpdate::EOnlineStatModificationType::Largest};
 		UpdatedUserStats.Stats.Add(StatHighest);
 
-		TTuple<FString, FOnlineStatUpdate> StatKillCount;
-		StatKillCount.Key = StatsCode_KillCount;
-		StatKillCount.Value = FOnlineStatUpdate{ABPlayerState->KillCount, FOnlineStatUpdate::EOnlineStatModificationType::Sum};
-		UpdatedUserStats.Stats.Add(StatKillCount);
-
 		UpdatedUsersStats.Add(UpdatedUserStats);
 	}
 
 	// Update stats
-	UpdateUsersStats(0, UpdatedUsersStats,
-		FOnlineStatsUpdateStatsComplete::CreateWeakLambda(this, [](const FOnlineError& ResultState)
-		{
-			for (auto UpdatedUsersStat : ResultState.ErrorMessage.ToString())
-			{
-				
-			}
-		}),
-		FOnUpdateMultipleUserStatItemsComplete::CreateWeakLambda(this, [](const FOnlineError& ResultState, const TArray<FAccelByteModelsUpdateUserStatItemsResponse>& Result)
-		{
-			for (auto UpdatedUsersStat : Result)
-			{
-				
-			}
-		}));
+	UpdateUsersStats(0, UpdatedUsersStats);
 }

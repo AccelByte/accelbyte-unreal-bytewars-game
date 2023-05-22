@@ -3,18 +3,18 @@
 // and restrictions contact your company contract manager.
 
 
-#include "TutorialModules/Module-4/UI/StatsWidget.h"
+#include "TutorialModules/Module-4/UI/StatsProfileWidget.h"
 
 #include "CommonButtonBase.h"
 #include "Components/WidgetSwitcher.h"
 #include "Components/DynamicEntryBox.h"
-#include "Components/StatsWidgetEntry.h"
+#include "Components/StatsProfileWidgetEntry.h"
 
 #include "TutorialModules/Module-4/StatsEssentialsSubsystem.h"
 
 class UStatWidgetEntryObject;
 
-void UStatsWidget::NativeOnActivated()
+void UStatsProfileWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
@@ -24,7 +24,7 @@ void UStatsWidget::NativeOnActivated()
 	StartQueryLocalUserStats();
 }
 
-void UStatsWidget::NativeConstruct()
+void UStatsProfileWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
@@ -32,7 +32,7 @@ void UStatsWidget::NativeConstruct()
 	ensure(EssentialsSubsystem);
 }
 
-void UStatsWidget::NativeOnDeactivated()
+void UStatsProfileWidget::NativeOnDeactivated()
 {
 	Super::NativeOnDeactivated();
 
@@ -40,7 +40,14 @@ void UStatsWidget::NativeOnDeactivated()
 	Btn_Retry->OnClicked().Clear();
 }
 
-void UStatsWidget::StartQueryLocalUserStats()
+void UStatsProfileWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+{
+	Super::NativeTick(MyGeometry, InDeltaTime);
+
+	MoveCameraToTargetLocation(InDeltaTime, FVector(60.0f, 600.0f, 160.0f));
+}
+
+void UStatsProfileWidget::StartQueryLocalUserStats()
 {
 	const int32 LocalUserNum = GetOwningPlayer()->GetLocalPlayer()->GetControllerId();
 	const bool bStarted = EssentialsSubsystem->QueryLocalUserStats(
@@ -58,7 +65,7 @@ void UStatsWidget::StartQueryLocalUserStats()
 	Ws_Outer->SetActiveWidget((bLoading || bStarted) ? W_LoadingOuter : W_FailedOuter);
 }
 
-void UStatsWidget::OnQueryLocalUserStatsComplete(
+void UStatsProfileWidget::OnQueryLocalUserStatsComplete(
 	const FOnlineError& ResultState,
 	const TArray<TSharedRef<const FOnlineStatsUserStats>>& UsersStatsResult)
 {
@@ -80,18 +87,13 @@ void UStatsWidget::OnQueryLocalUserStatsComplete(
 			Stat.Value.GetValue(StatValue);
 
 			// Add entry object
-			const UStatsWidgetEntry* WidgetEntry = Deb_StatsList->CreateEntry<UStatsWidgetEntry>();
-			WidgetEntry->Setup(FText::FromString(Stat.Key), FText::AsNumber(StatValue));
+			const UStatsProfileWidgetEntry* WidgetEntry = Deb_StatsList->CreateEntry<UStatsProfileWidgetEntry>();
+			WidgetEntry->Setup(
+				FText::FromStringTable("/Game/TutorialModules/Module-4/String/ST_StatsKey.ST_StatsKey", Stat.Key),
+				FText::AsNumber(StatValue));
 		}
 	}
 
-	// Hide loading
-	Ws_Outer->SetActiveWidget(Deb_StatsList);
-}
-
-void UStatsWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
-{
-	Super::NativeTick(MyGeometry, InDeltaTime);
-
-	MoveCameraToTargetLocation(InDeltaTime, FVector(60.0f, 600.0f, 160.0f));
+	// show empty message if user doesn't have any stats, show list otherwise
+	Ws_Outer->SetActiveWidget(UsersStatsResult.Num() > 0 ? Deb_StatsList : W_EmptyOuter);
 }

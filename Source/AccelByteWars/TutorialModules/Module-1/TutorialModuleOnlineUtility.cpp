@@ -25,7 +25,7 @@ bool UTutorialModuleOnlineUtility::IsAccelByteSDKInitialized(const UObject* Targ
     if (IsRunningDedicatedServer()) 
     {
         // Check server credentials.
-        ServerSettings ServerCreds = FRegistry::ServerSettings;
+        AccelByte::ServerSettings ServerCreds = AccelByte::FRegistry::ServerSettings;
         if (ServerCreds.ClientId.IsEmpty() || ServerCreds.ClientSecret.IsEmpty() ||
             ServerCreds.Namespace.IsEmpty() || ServerCreds.PublisherNamespace.IsEmpty() || ServerCreds.BaseUrl.IsEmpty())
         {
@@ -36,7 +36,7 @@ bool UTutorialModuleOnlineUtility::IsAccelByteSDKInitialized(const UObject* Targ
     else 
     {
         // Check client credentials.
-        Settings ClientCreds = FRegistry::Settings;
+        AccelByte::Settings ClientCreds = AccelByte::FRegistry::Settings;
         if (ClientCreds.ClientId.IsEmpty() || ClientCreds.Namespace.IsEmpty() ||
             ClientCreds.PublisherNamespace.IsEmpty() || ClientCreds.BaseUrl.IsEmpty())
         {

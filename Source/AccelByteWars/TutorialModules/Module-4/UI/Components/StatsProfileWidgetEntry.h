@@ -6,12 +6,12 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "StatsWidgetEntry.generated.h"
+#include "StatsProfileWidgetEntry.generated.h"
 
 class UTextBlock;
 
 UCLASS(Abstract)
-class ACCELBYTEWARS_API UStatsWidgetEntry : public UUserWidget
+class ACCELBYTEWARS_API UStatsProfileWidgetEntry : public UUserWidget
 {
 	GENERATED_BODY()
 
