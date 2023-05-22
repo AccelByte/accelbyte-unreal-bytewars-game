@@ -5,7 +5,6 @@
 #include "TutorialModules/Module-5/CloudSaveSubsystem.h"
 #include "OnlineSubsystemAccelByte.h"
 #include "OnlineSubsystemUtils.h"
-#include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "Core/UI/MainMenu/HelpOptions/Options/OptionsWidget.h"
 
@@ -144,7 +143,7 @@ void UCloudSaveSubsystem::SetPlayerRecord(const APlayerController* PC, const FSt
     ensure(LocalPlayer != nullptr);
     int32 LocalUserNum = LocalPlayer->GetControllerId();
 
-    //OnSetPlayerRecordCompletedDelegateHandle = CloudSaveInterface->AddOnReplaceUserRecordCompletedDelegate_Handle(LocalUserNum, FOnReplaceUserRecordCompletedDelegate::CreateUObject(this, &ThisClass::OnSetPlayerRecordComplete, OnSetRecordComplete));
+    OnSetPlayerRecordCompletedDelegateHandle = CloudSaveInterface->AddOnReplaceUserRecordCompletedDelegate_Handle(LocalUserNum, FOnReplaceUserRecordCompletedDelegate::CreateUObject(this, &ThisClass::OnSetPlayerRecordComplete, OnSetRecordComplete));
     CloudSaveInterface->ReplaceUserRecord(LocalUserNum, RecordKey, RecordData);
 }
 
@@ -175,7 +174,7 @@ void UCloudSaveSubsystem::GetPlayerRecord(const APlayerController* PC, const FSt
     ensure(LocalPlayer != nullptr);
     int32 LocalUserNum = LocalPlayer->GetControllerId();
 
-    //OnGetPlayerRecordCompletedDelegateHandle = CloudSaveInterface->AddOnGetUserRecordCompletedDelegate_Handle(LocalUserNum, FOnGetUserRecordCompletedDelegate::CreateUObject(this, &ThisClass::OnGetPlayerRecordComplete, OnGetRecordComplete));
+    OnGetPlayerRecordCompletedDelegateHandle = CloudSaveInterface->AddOnGetUserRecordCompletedDelegate_Handle(LocalUserNum, FOnGetUserRecordCompletedDelegate::CreateUObject(this, &ThisClass::OnGetPlayerRecordComplete, OnGetRecordComplete));
     CloudSaveInterface->GetUserRecord(LocalUserNum, RecordKey);
 }
 
@@ -209,7 +208,7 @@ void UCloudSaveSubsystem::DeletePlayerRecord(const APlayerController* PC, const 
     ensure(LocalPlayer != nullptr);
     int32 LocalUserNum = LocalPlayer->GetControllerId();
 
-    //OnDeletePlayerRecordCompletedDelegateHandle = CloudSaveInterface->AddOnDeleteUserRecordCompletedDelegate_Handle(LocalUserNum, FOnDeleteUserRecordCompletedDelegate::CreateUObject(this, &ThisClass::OnDeletePlayerRecordComplete, OnDeleteRecordComplete));
+    OnDeletePlayerRecordCompletedDelegateHandle = CloudSaveInterface->AddOnDeleteUserRecordCompletedDelegate_Handle(LocalUserNum, FOnDeleteUserRecordCompletedDelegate::CreateUObject(this, &ThisClass::OnDeletePlayerRecordComplete, OnDeleteRecordComplete));
     CloudSaveInterface->DeleteUserRecord(LocalUserNum, RecordKey);
 }
 
