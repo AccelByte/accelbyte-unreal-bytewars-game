@@ -3,8 +3,10 @@
 // and restrictions contact your company contract manager.
 
 #include "TutorialModules/Module-5/CloudSaveSubsystem.h"
+#include "TutorialModules/Module-2/AuthEssentialsModels.h"
 #include "OnlineSubsystemAccelByte.h"
 #include "OnlineSubsystemUtils.h"
+#include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "Core/UI/MainMenu/HelpOptions/Options/OptionsWidget.h"
 
@@ -44,12 +46,14 @@ void UCloudSaveSubsystem::Deinitialize()
 #pragma region Module.5 General Function Definitions
 void UCloudSaveSubsystem::BindDelegates()
 {
+    UAuthEssentialsModels::OnLoginSuccessDelegate.AddUObject(this, &ThisClass::OnLoadGameSoundOptions, TDelegate<void()>());
     UOptionsWidget::OnOptionsWidgetActivated.AddUObject(this, &ThisClass::OnLoadGameSoundOptions);
     UOptionsWidget::OnOptionsWidgetDeactivated.AddUObject(this, &ThisClass::OnSaveGameSoundOptions);
 }
 
 void UCloudSaveSubsystem::UnbindDelegates()
 {
+    UAuthEssentialsModels::OnLoginSuccessDelegate.RemoveAll(this);
     UOptionsWidget::OnOptionsWidgetActivated.RemoveAll(this);
     UOptionsWidget::OnOptionsWidgetDeactivated.RemoveAll(this);
 }
