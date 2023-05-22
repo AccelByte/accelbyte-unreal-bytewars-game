@@ -12,8 +12,6 @@
 
 #include "TutorialModules/Module-4/StatsEssentialsSubsystem.h"
 
-class UStatWidgetEntryObject;
-
 void UStatsProfileWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();

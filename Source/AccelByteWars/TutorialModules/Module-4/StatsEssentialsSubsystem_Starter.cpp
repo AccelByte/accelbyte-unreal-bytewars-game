@@ -5,6 +5,12 @@
 
 #include "TutorialModules/Module-4/StatsEssentialsSubsystem_Starter.h"
 
+#include "OnlineSubsystem.h"
+#include "OnlineSubsystemUtils.h"
+#include "Core/AssetManager/TutorialModules/TutorialModuleUtility.h"
+#include "Core/GameModes/AccelByteWarsInGameGameMode.h"
+#include "Core/Player/AccelByteWarsPlayerState.h"
+
 void UStatsEssentialsSubsystem_Starter::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);

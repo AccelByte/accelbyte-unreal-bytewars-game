@@ -47,8 +47,7 @@ bool UStatsEssentialsSubsystem::UpdateUsersStats(const int32 LocalUserNum,
 	if (IsRunningDedicatedServer())
 	{
 		OnServerUpdateStatsComplete = FOnUpdateMultipleUserStatItemsComplete::CreateWeakLambda(
-			this, [OnCompleteServer, this](const FOnlineError& ResultState,
-										   const TArray<FAccelByteModelsUpdateUserStatItemsResponse>& Result)
+			this, [OnCompleteServer, this](const FOnlineError& ResultState, const TArray<FAccelByteModelsUpdateUserStatItemsResponse>& Result)
 			{
 				OnCompleteServer.ExecuteIfBound(ResultState, Result);
 				OnServerUpdateStatsComplete.Unbind();

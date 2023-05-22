@@ -6,13 +6,8 @@
 
 #include "CoreMinimal.h"
 #include "OnlineStatisticInterfaceAccelByte.h"
-#include "OnlineSubsystemUtils.h"
-#include "Core/GameModes/AccelByteWarsInGameGameMode.h"
 #include "StatsEssentialsSubsystem_Starter.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class ACCELBYTEWARS_API UStatsEssentialsSubsystem_Starter : public UGameInstanceSubsystem
 {
