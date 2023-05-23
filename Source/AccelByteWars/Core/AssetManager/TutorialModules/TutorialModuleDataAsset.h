@@ -35,8 +35,8 @@ public:
 		return UTutorialModuleDataAsset::GenerateAssetIdFromCodeName(CodeName);
 	}
 
-#if WITH_EDITOR
 	virtual void PostLoad() override;
+#if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 	virtual void PostDuplicate(EDuplicateMode::Type DuplicateMode) override;
 #endif
@@ -95,21 +95,20 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tutorial Module Widgets", meta = (ShowOnlyInnerProperties))
 	TArray<FTutorialModuleWidgetConnection> OtherTutorialModuleWidgetsToThisModuleWidgetConnections;
 
-#if WITH_EDITORONLY_DATA
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tutorial Module Widgets", meta = (ShowOnlyInnerProperties))
 	TArray<FTutorialModuleWidgetConnection> ThisTutorialModuleWidgetToNonTutorialModuleWidgetsConnections;
 #pragma endregion
-#endif
 
 private:
-#if WITH_EDITOR
 	void UpdateDataAssetProperties();
 	void ValidateDataAssetProperties();
 
 	bool ValidateClassProperty(TSubclassOf<UAccelByteWarsActivatableWidget>& UIClass, TSubclassOf<UAccelByteWarsActivatableWidget>& LastUIClass, const bool IsStarterClass);
 	bool ValidateClassProperty(TSubclassOf<UTutorialModuleSubsystem>& SubsystemClass, TSubclassOf<UTutorialModuleSubsystem>& LastSubsystemClass, const bool IsStarterClass);
 
+#if WITH_EDITOR
 	void ShowPopupMessage(const FString& Message) const;
+#endif
 
 	TSubclassOf<UAccelByteWarsActivatableWidget> LastDefaultUIClass;
 	TSubclassOf<UTutorialModuleSubsystem> LastDefaultSubsystemClass;
@@ -118,5 +117,4 @@ private:
 	TSubclassOf<UTutorialModuleSubsystem> LastStarterSubsystemClass;
 
 	TArray<FTutorialModuleWidgetConnection> LastThisTutorialModuleWidgetToNonModuleWidgetsConnections;
-#endif
 };
