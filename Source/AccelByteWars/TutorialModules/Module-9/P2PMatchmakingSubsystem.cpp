@@ -32,27 +32,27 @@ bool UP2PMatchmakingSubsystem::TravelClient(FName SessionName, APlayerController
 
 	if (!ensure(SessionInterface.IsValid()))
 	{
-		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot travel the client to the game server. Session Interface is not valid."));
+		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot travel the client to the host server. Session Interface is not valid."));
 		return false;
 	}
 
 	FNamedOnlineSession* Session = SessionInterface->GetNamedSession(SessionName);
 	if (!ensure(Session))
 	{
-		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot travel the client to the game server. Session is not null."));
+		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot travel the client to the host server. Session is not null."));
 		return false;
 	}
 
 	TSharedPtr<FOnlineSessionInfoAccelByteV2> SessionInfo = StaticCastSharedPtr<FOnlineSessionInfoAccelByteV2>(Session->SessionInfo);
 	if (!ensure(SessionInfo.IsValid()))
 	{
-		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot travel the client to the game server. Session Info is not valid."));
+		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot travel the client to the host server. Session Info is not valid."));
 		return false;
 	}
 
 	if (!ensure(PC))
 	{
-		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot travel the client to the game server. PlayerController is not valid."));
+		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot travel the client to the host server. PlayerController is not valid."));
 		return false;
 	}
 
@@ -64,7 +64,7 @@ bool UP2PMatchmakingSubsystem::TravelClient(FName SessionName, APlayerController
 		{
 			PC->ClientTravel(TEXT("MainMenu?listen"), TRAVEL_Absolute);
 		}
-		// If not, then travel to the P2P host.
+		// If not, then travel to the host.
 		else
 		{
 			PC->ClientTravel(HostUrl, TRAVEL_Absolute);
