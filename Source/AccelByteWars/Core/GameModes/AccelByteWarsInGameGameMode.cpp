@@ -212,6 +212,8 @@ void AAccelByteWarsInGameGameMode::EndGame(const FString Reason)
 {
 	ABInGameGameState->GameStatus = EGameStatus::GAME_ENDS_DELAY;
 
+	OnGameEndsDelegate.Broadcast();
+
 	GAMEMODE_LOG(Log, TEXT("Game ends with reason: %s."), *Reason);
 }
 
