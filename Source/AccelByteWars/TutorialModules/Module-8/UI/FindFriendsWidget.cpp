@@ -6,7 +6,9 @@
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/Components/AccelByteWarsWidgetList.h"
 #include "Components/EditableText.h"
+#include "Components/ComboBoxString.h"
 
+#define LOCTEXT_NAMESPACE "AccelByteWars"
 
 void UFindFriendsWidget::NativeConstruct()
 {
@@ -15,13 +17,15 @@ void UFindFriendsWidget::NativeConstruct()
 	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
 	ensure(GameInstance);
 
-	FriendsSubsystem = GameInstance->GetSubsystem<UFriendsEssentialsSubsystem>();
+	FriendsSubsystem = GameInstance->GetSubsystem<UFriendsSubsystem>();
 	ensure(FriendsSubsystem);
 }
 
 void UFindFriendsWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
+
+	Cb_SearchType->OnSelectionChanged.AddDynamic(this, &ThisClass::OnSearchTypeChanged);
 
 	Edt_SearchBar->SetText(FText::FromString(TEXT("")));
 	Edt_SearchBar->OnTextCommitted.AddDynamic(this, &ThisClass::OnSearchBarCommitted);
@@ -33,12 +37,29 @@ void UFindFriendsWidget::NativeOnDeactivated()
 {
 	Super::NativeOnDeactivated();
 
+	Cb_SearchType->OnSelectionChanged.Clear();
 	Edt_SearchBar->OnTextCommitted.Clear();
+}
+
+void UFindFriendsWidget::OnSearchTypeChanged(FString SelectedItem, ESelectInfo::Type SelectInfo)
+{
+	int32 SelectedIndex = Cb_SearchType->GetSelectedIndex();
+
+	// Search by user id.
+	if (SelectedIndex == 0) 
+	{
+		Edt_SearchBar->SetHintText(LOCTEXT("Search By User Id", "Search By User Id"));
+	}
+	// Search by display name.
+	else 
+	{
+		Edt_SearchBar->SetHintText(LOCTEXT("Search By Exact Display Name", "Search By Exact Display Name"));
+	}
 }
 
 void UFindFriendsWidget::OnSearchBarCommitted(const FText& Text, ETextCommit::Type CommitMethod)
 {
-	if (CommitMethod != ETextCommit::Type::OnEnter) 
+	if (CommitMethod != ETextCommit::Type::OnEnter || Text.IsEmpty())
 	{
 		return;
 	}
@@ -48,7 +69,8 @@ void UFindFriendsWidget::OnSearchBarCommitted(const FText& Text, ETextCommit::Ty
 	WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::LoadingEntry);
 
 	FriendsSubsystem->FindFriend(
-		GetOwningPlayer(), 
+		GetOwningPlayer(),
+		Cb_SearchType->GetSelectedIndex() == 0 ? ESearchFriendType::ByUserId : ESearchFriendType::ByDisplayName,
 		Text.ToString(), 
 		FOnFindFriendComplete::CreateWeakLambda(this, [this](bool bWasSuccessful, UFriendData* FriendData, const FString& ErrorMessage)
 		{
@@ -70,3 +92,5 @@ void UFindFriendsWidget::OnSearchBarCommitted(const FText& Text, ETextCommit::Ty
 		}
 	));
 }
+
+#undef LOCTEXT_NAMESPACE

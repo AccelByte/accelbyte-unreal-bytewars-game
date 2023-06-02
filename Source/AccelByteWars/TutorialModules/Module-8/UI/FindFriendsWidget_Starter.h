@@ -6,18 +6,18 @@
 
 #include "CoreMinimal.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
-#include "TutorialModules/Module-8/FriendsSubsystem.h"
-#include "FindFriendsWidget.generated.h"
+#include "TutorialModules/Module-8/FriendsSubsystem_Starter.h"
+#include "FindFriendsWidget_Starter.generated.h"
 
 class UAccelByteWarsWidgetList;
 class UEditableText;
 class UComboBoxString;
 
 UCLASS(Abstract)
-class ACCELBYTEWARS_API UFindFriendsWidget : public UAccelByteWarsActivatableWidget
+class ACCELBYTEWARS_API UFindFriendsWidget_Starter : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
-	
+
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeOnActivated() override;
@@ -29,7 +29,7 @@ protected:
 	UFUNCTION()
 	void OnSearchTypeChanged(FString SelectedItem, ESelectInfo::Type SelectInfo);
 
-	UFriendsSubsystem* FriendsSubsystem;
+	UFriendsSubsystem_Starter* FriendsSubsystem;
 	FDelegateHandle OnFriendListUpdatedDelegateHandle;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))

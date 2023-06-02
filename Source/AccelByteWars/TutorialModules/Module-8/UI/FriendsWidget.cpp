@@ -16,7 +16,7 @@ void UFriendsWidget::NativeConstruct()
 	GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
 	ensure(GameInstance);
 
-	FriendsSubsystem = GameInstance->GetSubsystem<UFriendsEssentialsSubsystem>();
+	FriendsSubsystem = GameInstance->GetSubsystem<UFriendsSubsystem>();
 	ensure(FriendsSubsystem);
 }
 
@@ -57,7 +57,7 @@ void UFriendsWidget::GetFriendList()
 				WidgetList->GetListView()->SetListItems(Friends);
 				WidgetList->ChangeWidgetListState(Friends.IsEmpty() ? EAccelByteWarsWidgetListState::NoEntry : EAccelByteWarsWidgetListState::EntryLoaded);
 			}
-			else 
+			else
 			{
 				WidgetList->SetFailedMessage(FText::FromString(ErrorMessage));
 				WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::Error);

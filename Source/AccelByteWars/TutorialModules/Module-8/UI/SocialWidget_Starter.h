@@ -6,13 +6,13 @@
 
 #include "CoreMinimal.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
-#include "SocialWidget.generated.h"
+#include "SocialWidget_Starter.generated.h"
 
 class UAccelByteWarsWidgetList;
 class UCommonButtonBase;
 
 UCLASS(Abstract)
-class ACCELBYTEWARS_API USocialWidget : public UAccelByteWarsActivatableWidget
+class ACCELBYTEWARS_API USocialWidget_Starter : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
 

@@ -13,7 +13,7 @@ void USentFriendRequestsWidget::NativeConstruct()
 	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
 	ensure(GameInstance);
 
-	FriendsSubsystem = GameInstance->GetSubsystem<UFriendsEssentialsSubsystem>();
+	FriendsSubsystem = GameInstance->GetSubsystem<UFriendsSubsystem>();
 	ensure(FriendsSubsystem);
 }
 

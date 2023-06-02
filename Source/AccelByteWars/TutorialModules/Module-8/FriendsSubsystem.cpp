@@ -2,14 +2,14 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-#include "TutorialModules/Module-8/FriendsEssentialsSubsystem.h"
+#include "TutorialModules/Module-8/FriendsSubsystem.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "OnlineSubsystemUtils.h"
 
 #define LOCTEXT_NAMESPACE "AccelByteWars"
 
-void UFriendsEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+void UFriendsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
@@ -45,12 +45,12 @@ void UFriendsEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collectio
     ensure(PromptSubsystem);
 }
 
-void UFriendsEssentialsSubsystem::Deinitialize()
+void UFriendsSubsystem::Deinitialize()
 {
 	Super::Deinitialize();
 }
 
-FUniqueNetIdPtr UFriendsEssentialsSubsystem::GetPlayerUniqueNetId(const APlayerController* PC) const
+FUniqueNetIdPtr UFriendsSubsystem::GetPlayerUniqueNetId(const APlayerController* PC) const
 {
     if (!ensure(PC))
     {
@@ -66,7 +66,7 @@ FUniqueNetIdPtr UFriendsEssentialsSubsystem::GetPlayerUniqueNetId(const APlayerC
     return LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId();
 }
 
-int32 UFriendsEssentialsSubsystem::GetPlayerControllerId(const APlayerController* PC) const
+int32 UFriendsSubsystem::GetPlayerControllerId(const APlayerController* PC) const
 {
     int32 LocalUserNum = 0;
 
@@ -82,7 +82,7 @@ int32 UFriendsEssentialsSubsystem::GetPlayerControllerId(const APlayerController
 
 #pragma region Module.8a Function Definitions
 
-void UFriendsEssentialsSubsystem::CacheFriendList(const APlayerController* PC, const FOnCacheFriendsDataComplete& OnComplete)
+void UFriendsSubsystem::CacheFriendList(const APlayerController* PC, const FOnCacheFriendsDataComplete& OnComplete)
 {
     if (!ensure(FriendsInterface))
     {
@@ -95,12 +95,12 @@ void UFriendsEssentialsSubsystem::CacheFriendList(const APlayerController* PC, c
     FriendsInterface->ReadFriendsList(LocalUserNum, TEXT(""), FOnReadFriendsListComplete::CreateUObject(this, &ThisClass::OnCacheFriendListComplete, OnComplete));
 }
 
-void UFriendsEssentialsSubsystem::OnCacheFriendListComplete(int32 LocalUserNum, bool bWasSuccessful, const FString& ListName, const FString& Error, const FOnCacheFriendsDataComplete OnComplete)
+void UFriendsSubsystem::OnCacheFriendListComplete(int32 LocalUserNum, bool bWasSuccessful, const FString& ListName, const FString& Error, const FOnCacheFriendsDataComplete OnComplete)
 {
     OnComplete.ExecuteIfBound(bWasSuccessful, Error);
 }
 
-void UFriendsEssentialsSubsystem::FindFriend(const APlayerController* PC, const FString& InKeyword, const FOnFindFriendComplete& OnComplete)
+void UFriendsSubsystem::FindFriend(const APlayerController* PC, const ESearchFriendType& SearchType, const FString& InKeyword, const FOnFindFriendComplete& OnComplete)
 {
     if (!ensure(FriendsInterface) || !ensure(UserInterface))
     {
@@ -121,11 +121,11 @@ void UFriendsEssentialsSubsystem::FindFriend(const APlayerController* PC, const 
     TArray<TSharedRef<FOnlineFriend>> OutFriendList;
     if (!FriendsInterface->GetFriendsList(LocalUserNum, TEXT(""), OutFriendList))
     {
-        CacheFriendList(PC, FOnCacheFriendsDataComplete::CreateWeakLambda(this, [this, PC, InKeyword, OnComplete](bool bWasSuccessful, const FString& ErrorMessage)
+        CacheFriendList(PC, FOnCacheFriendsDataComplete::CreateWeakLambda(this, [this, PC, SearchType, InKeyword, OnComplete](bool bWasSuccessful, const FString& ErrorMessage)
         {
             if (bWasSuccessful)
             {
-                FindFriend(PC, InKeyword, OnComplete);
+                FindFriend(PC, SearchType, InKeyword, OnComplete);
             }
             else
             {
@@ -135,11 +135,44 @@ void UFriendsEssentialsSubsystem::FindFriend(const APlayerController* PC, const 
         return;
     }
 
-    // Find a friend.
-    UserInterface->QueryUserIdMapping(LocalPlayerId.ToSharedRef().Get(), InKeyword, IOnlineUser::FOnQueryUserMappingComplete::CreateUObject(this, &ThisClass::OnFindFriendComplete, LocalUserNum, OnComplete));
+    // Find friend by user id.
+    if (SearchType == ESearchFriendType::ByUserId)
+    {
+        // Create UniqueNetId to search friend by user id.
+        TSharedPtr<const FUniqueNetIdAccelByteUser> TempUniqueNetId;
+        FAccelByteUniqueIdComposite TempCompositeId;
+        TempCompositeId.Id = InKeyword;
+        TempUniqueNetId = FUniqueNetIdAccelByteUser::Create(TempCompositeId);
+
+        // Query to search friend by user id. 
+        OnQueryUserInfoCompleteDelegateHandle = UserInterface->AddOnQueryUserInfoCompleteDelegate_Handle(
+            LocalUserNum,
+            FOnQueryUserInfoCompleteDelegate::CreateWeakLambda(this, [this, LocalPlayerId, OnComplete](int32 LocalUserNum, bool bWasSuccessful, const TArray<FUniqueNetIdRef>& UserIds, const FString& ErrorStr)
+            {
+                UserInterface->ClearOnQueryUserInfoCompleteDelegate_Handle(LocalUserNum, OnQueryUserInfoCompleteDelegateHandle);
+
+                if (bWasSuccessful)
+                {
+                    // Handle result in the callback function.
+                    TSharedPtr<FOnlineUser> FoundUser = UserInterface->GetUserInfo(LocalUserNum, UserIds[0].Get());
+                    OnFindFriendComplete(true, LocalPlayerId.ToSharedRef().Get(), FoundUser->GetDisplayName(), FoundUser->GetUserId().Get(), ErrorStr, LocalUserNum, OnComplete);
+                }
+                else
+                {
+                    OnComplete.ExecuteIfBound(false, nullptr, DEFAULT_FIND_FRIEND_ERROR_MESSAGE.ToString());
+                }
+            }
+        ));
+        UserInterface->QueryUserInfo(LocalUserNum, TPartyMemberArray{ TempUniqueNetId.ToSharedRef() });
+    }
+    // Find a friend by display name.
+    else if (SearchType == ESearchFriendType::ByDisplayName)
+    {
+        UserInterface->QueryUserIdMapping(LocalPlayerId.ToSharedRef().Get(), InKeyword, IOnlineUser::FOnQueryUserMappingComplete::CreateUObject(this, &ThisClass::OnFindFriendComplete, LocalUserNum, OnComplete));
+    }
 }
 
-void UFriendsEssentialsSubsystem::OnFindFriendComplete(bool bWasSuccessful, const FUniqueNetId& UserId, const FString& Username, const FUniqueNetId& FoundUserId, const FString& Error, int32 LocalUserNum, const FOnFindFriendComplete OnComplete)
+void UFriendsSubsystem::OnFindFriendComplete(bool bWasSuccessful, const FUniqueNetId& UserId, const FString& Username, const FUniqueNetId& FoundUserId, const FString& Error, int32 LocalUserNum, const FOnFindFriendComplete OnComplete)
 {
     if (bWasSuccessful)
     {
@@ -186,7 +219,7 @@ void UFriendsEssentialsSubsystem::OnFindFriendComplete(bool bWasSuccessful, cons
     }
 }
 
-void UFriendsEssentialsSubsystem::SendFriendRequest(const APlayerController* PC, const FUniqueNetIdRepl FriendUserId, const FOnSendFriendRequestComplete& OnComplete)
+void UFriendsSubsystem::SendFriendRequest(const APlayerController* PC, const FUniqueNetIdRepl FriendUserId, const FOnSendFriendRequestComplete& OnComplete)
 {
     if (!ensure(FriendsInterface) || !ensure(PromptSubsystem))
     {
@@ -200,7 +233,7 @@ void UFriendsEssentialsSubsystem::SendFriendRequest(const APlayerController* PC,
     FriendsInterface->SendInvite(LocalUserNum, *FriendUserId.GetUniqueNetId().Get(), TEXT(""), FOnSendInviteComplete::CreateUObject(this, &ThisClass::OnSendFriendRequestComplete, OnComplete));
 }
 
-void UFriendsEssentialsSubsystem::OnSendFriendRequestComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& FriendId, const FString& ListName, const FString& ErrorStr, const FOnSendFriendRequestComplete OnComplete)
+void UFriendsSubsystem::OnSendFriendRequestComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& FriendId, const FString& ListName, const FString& ErrorStr, const FOnSendFriendRequestComplete OnComplete)
 {
     PromptSubsystem->HideLoading();
 
@@ -226,7 +259,7 @@ void UFriendsEssentialsSubsystem::OnSendFriendRequestComplete(int32 LocalUserNum
 
 #pragma region Module.8b Function Definitions
 
-void UFriendsEssentialsSubsystem::BindOnCachedFriendsDataUpdated(const APlayerController* PC, const FOnFriendsChangeDelegate& Delegate)
+void UFriendsSubsystem::BindOnCachedFriendsDataUpdated(const APlayerController* PC, const FOnFriendsChangeDelegate& Delegate)
 {
     ensure(FriendsInterface);
 
@@ -236,7 +269,7 @@ void UFriendsEssentialsSubsystem::BindOnCachedFriendsDataUpdated(const APlayerCo
     OnFriendsChangeDelegateHandles.Add(LocalUserNum, FriendsInterface->AddOnFriendsChangeDelegate_Handle(LocalUserNum, FOnFriendsChangeDelegate::CreateWeakLambda(this, [Delegate]() { Delegate.ExecuteIfBound(); })));
 }
 
-void UFriendsEssentialsSubsystem::UnbindOnCachedFriendsDataUpdated(const APlayerController* PC)
+void UFriendsSubsystem::UnbindOnCachedFriendsDataUpdated(const APlayerController* PC)
 {
     ensure(FriendsInterface);
 
@@ -250,7 +283,7 @@ void UFriendsEssentialsSubsystem::UnbindOnCachedFriendsDataUpdated(const APlayer
     }
 }
 
-void UFriendsEssentialsSubsystem::GetInboundFriendRequestList(const APlayerController* PC, const FOnGetInboundFriendRequestListComplete& OnComplete)
+void UFriendsSubsystem::GetInboundFriendRequestList(const APlayerController* PC, const FOnGetInboundFriendRequestListComplete& OnComplete)
 {
     if (!ensure(FriendsInterface))
     {
@@ -294,7 +327,7 @@ void UFriendsEssentialsSubsystem::GetInboundFriendRequestList(const APlayerContr
     }));
 }
 
-void UFriendsEssentialsSubsystem::GetOutboundFriendRequestList(const APlayerController* PC, const FOnGetOutboundFriendRequestListComplete& OnComplete)
+void UFriendsSubsystem::GetOutboundFriendRequestList(const APlayerController* PC, const FOnGetOutboundFriendRequestListComplete& OnComplete)
 {
     if (!ensure(FriendsInterface))
     {
@@ -338,7 +371,7 @@ void UFriendsEssentialsSubsystem::GetOutboundFriendRequestList(const APlayerCont
     }));
 }
 
-void UFriendsEssentialsSubsystem::AcceptFriendRequest(const APlayerController* PC, const FUniqueNetIdRepl FriendUserId, const FOnAcceptFriendRequestComplete& OnComplete)
+void UFriendsSubsystem::AcceptFriendRequest(const APlayerController* PC, const FUniqueNetIdRepl FriendUserId, const FOnAcceptFriendRequestComplete& OnComplete)
 {
     if (!ensure(FriendsInterface) || !ensure(PromptSubsystem))
     {
@@ -352,7 +385,7 @@ void UFriendsEssentialsSubsystem::AcceptFriendRequest(const APlayerController* P
     FriendsInterface->AcceptInvite(LocalUserNum, FriendUserId.GetUniqueNetId().ToSharedRef().Get(), TEXT(""), FOnAcceptInviteComplete::CreateUObject(this, &ThisClass::OnAcceptFriendRequestComplete, OnComplete));
 }
 
-void UFriendsEssentialsSubsystem::OnAcceptFriendRequestComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& FriendId, const FString& ListName, const FString& ErrorStr, const FOnAcceptFriendRequestComplete OnComplete)
+void UFriendsSubsystem::OnAcceptFriendRequestComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& FriendId, const FString& ListName, const FString& ErrorStr, const FOnAcceptFriendRequestComplete OnComplete)
 {
     PromptSubsystem->HideLoading();
 
@@ -372,7 +405,7 @@ void UFriendsEssentialsSubsystem::OnAcceptFriendRequestComplete(int32 LocalUserN
     }
 }
 
-void UFriendsEssentialsSubsystem::RejectFriendRequest(const APlayerController* PC, const FUniqueNetIdRepl FriendUserId, const FOnRejectFriendRequestComplete& OnComplete)
+void UFriendsSubsystem::RejectFriendRequest(const APlayerController* PC, const FUniqueNetIdRepl FriendUserId, const FOnRejectFriendRequestComplete& OnComplete)
 {
     if (!ensure(FriendsInterface) || !ensure(PromptSubsystem))
     {
@@ -387,7 +420,7 @@ void UFriendsEssentialsSubsystem::RejectFriendRequest(const APlayerController* P
     FriendsInterface->RejectInvite(LocalUserNum, FriendUserId.GetUniqueNetId().ToSharedRef().Get(), TEXT(""));
 }
 
-void UFriendsEssentialsSubsystem::OnRejectFriendRequestComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& FriendId, const FString& ListName, const FString& ErrorStr, const FOnRejectFriendRequestComplete OnComplete)
+void UFriendsSubsystem::OnRejectFriendRequestComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& FriendId, const FString& ListName, const FString& ErrorStr, const FOnRejectFriendRequestComplete OnComplete)
 {
     PromptSubsystem->HideLoading();
 
@@ -409,7 +442,7 @@ void UFriendsEssentialsSubsystem::OnRejectFriendRequestComplete(int32 LocalUserN
     }
 }
 
-void UFriendsEssentialsSubsystem::RemoveFriend(const APlayerController* PC, const FUniqueNetIdRepl FriendUserId, const FOnRemoveFriendComplete& OnComplete)
+void UFriendsSubsystem::RemoveFriend(const APlayerController* PC, const FUniqueNetIdRepl FriendUserId, const FOnRemoveFriendComplete& OnComplete)
 {
     if (!ensure(FriendsInterface) || !ensure(PromptSubsystem))
     {
@@ -424,7 +457,7 @@ void UFriendsEssentialsSubsystem::RemoveFriend(const APlayerController* PC, cons
     FriendsInterface->DeleteFriend(LocalUserNum, FriendUserId.GetUniqueNetId().ToSharedRef().Get(), TEXT(""));
 }
 
-void UFriendsEssentialsSubsystem::OnRemoveFriendComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& FriendId, const FString& ListName, const FString& ErrorStr, const FOnRemoveFriendComplete OnComplete)
+void UFriendsSubsystem::OnRemoveFriendComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& FriendId, const FString& ListName, const FString& ErrorStr, const FOnRemoveFriendComplete OnComplete)
 {
     PromptSubsystem->HideLoading();
 
@@ -451,7 +484,7 @@ void UFriendsEssentialsSubsystem::OnRemoveFriendComplete(int32 LocalUserNum, boo
 
 #pragma region Module.8c Function Definitions
 
-void UFriendsEssentialsSubsystem::GetFriendList(const APlayerController* PC, const FOnGetFriendListComplete& OnComplete)
+void UFriendsSubsystem::GetFriendList(const APlayerController* PC, const FOnGetFriendListComplete& OnComplete)
 {
     if (!ensure(FriendsInterface))
     {

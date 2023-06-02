@@ -6,7 +6,7 @@
 
 #include "CoreMinimal.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
-#include "TutorialModules/Module-8/FriendsEssentialsSubsystem.h"
+#include "TutorialModules/Module-8/FriendsSubsystem.h"
 #include "FriendRequestsWidget.generated.h"
 
 class UAccelByteWarsWidgetList;
@@ -23,9 +23,9 @@ protected:
 
 	void GetFriendRequestList();
 
-	UFriendsEssentialsSubsystem* FriendsSubsystem;
+	UFriendsSubsystem* FriendsSubsystem;
 	FDelegateHandle OnFriendListUpdatedDelegateHandle;
 
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UAccelByteWarsWidgetList* WidgetList;
 };

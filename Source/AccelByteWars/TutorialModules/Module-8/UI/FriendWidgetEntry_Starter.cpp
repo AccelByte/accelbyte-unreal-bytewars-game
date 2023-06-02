@@ -2,7 +2,7 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-#include "TutorialModules/Module-8/UI/FriendWidgetEntry.h"
+#include "TutorialModules/Module-8/UI/FriendWidgetEntry_Starter.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/Utilities/AccelByteWarsUtility.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
@@ -13,7 +13,7 @@
 
 #define LOCTEXT_NAMESPACE "AccelByteWars"
 
-void UFriendWidgetEntry::NativeConstruct()
+void UFriendWidgetEntry_Starter::NativeConstruct()
 {
 	Super::NativeConstruct();
 
@@ -23,7 +23,7 @@ void UFriendWidgetEntry::NativeConstruct()
 	PromptSubsystem = GameInstance->GetSubsystem<UPromptSubsystem>();
 	ensure(PromptSubsystem);
 
-	FriendsSubsystem = GameInstance->GetSubsystem<UFriendsSubsystem>();
+	FriendsSubsystem = GameInstance->GetSubsystem<UFriendsSubsystem_Starter>();
 	ensure(FriendsSubsystem);
 
 	Btn_Invite->OnClicked().AddUObject(this, &ThisClass::OnInviteButtonClicked);
@@ -33,22 +33,22 @@ void UFriendWidgetEntry::NativeConstruct()
 	Btn_Unblock->OnClicked().AddUObject(this, &ThisClass::OnUnblockButtonClicked);
 }
 
-void UFriendWidgetEntry::NativeOnListItemObjectSet(UObject* ListItemObject)
+void UFriendWidgetEntry_Starter::NativeOnListItemObjectSet(UObject* ListItemObject)
 {
 	Super::NativeOnListItemObjectSet(ListItemObject);
 
 	CachedFriendData = Cast<UFriendData>(ListItemObject);
 
 	// Display username.
-	if (!CachedFriendData->Username.IsEmpty()) 
+	if (!CachedFriendData->Username.IsEmpty())
 	{
 		Tb_Username->SetText(FText::FromString(CachedFriendData->Username));
 	}
-	else 
+	else
 	{
 		Tb_Username->SetText(LOCTEXT("Byte Wars Player", "Byte Wars Player"));
 	}
-	
+
 	// Display presence.
 	Tb_Presence->SetText(FText::FromString(CachedFriendData->GetPresence()));
 
@@ -70,10 +70,10 @@ void UFriendWidgetEntry::NativeOnListItemObjectSet(UObject* ListItemObject)
 			AvatarURL,
 			AvatarId,
 			FOnImageReceived::CreateWeakLambda(this, [this](const FCacheBrush ImageResult)
-			{
-				Img_Avatar->SetBrushColor(FLinearColor::White);
-				Img_Avatar->SetBrush(*ImageResult.Get());
-			})
+				{
+					Img_Avatar->SetBrushColor(FLinearColor::White);
+					Img_Avatar->SetBrush(*ImageResult.Get());
+				})
 		);
 	}
 
@@ -86,52 +86,27 @@ void UFriendWidgetEntry::NativeOnListItemObjectSet(UObject* ListItemObject)
 	Tb_CannotInviteMessage->SetText(FText::FromString(CachedFriendData->ReasonCannotBeInvited));
 }
 
-void UFriendWidgetEntry::OnInviteButtonClicked()
+void UFriendWidgetEntry_Starter::OnInviteButtonClicked()
 {
-	ensure(CachedFriendData);
-	ensure(FriendsSubsystem);
-
-	FriendsSubsystem->SendFriendRequest(
-		GetOwningPlayer(), 
-		CachedFriendData->UserId, 
-		FOnSendFriendRequestComplete::CreateWeakLambda(this, [this](bool bWasSuccessful, UFriendData* FriendData, const FString& ErrorMessage) 
-		{
-			if (bWasSuccessful) 
-			{
-				// Since the invitation is already sent, refresh the entry data to show that the friend cannot be invited again.
-				FriendData->Status = EFriendStatus::Searched;
-				NativeOnListItemObjectSet(FriendData);
-			}
-		}
-	));
+	// TODO: Call send friend request here.
 }
 
-void UFriendWidgetEntry::OnAcceptButtonClicked()
+void UFriendWidgetEntry_Starter::OnAcceptButtonClicked()
 {
-	ensure(CachedFriendData);
-	ensure(FriendsSubsystem);
-
-	FriendsSubsystem->AcceptFriendRequest(GetOwningPlayer(), CachedFriendData->UserId);
+	// TODO: Call accept friend request here.
 }
 
-void UFriendWidgetEntry::OnRejectButtonClicked()
+void UFriendWidgetEntry_Starter::OnRejectButtonClicked()
 {
-	ensure(CachedFriendData);
-	ensure(FriendsSubsystem);
-
-	FriendsSubsystem->RejectFriendRequest(GetOwningPlayer(), CachedFriendData->UserId);
+	// TODO: Call reject friend request here.
 }
 
-void UFriendWidgetEntry::OnCancelButtonClicked()
+void UFriendWidgetEntry_Starter::OnCancelButtonClicked()
 {
-	ensure(CachedFriendData);
-	ensure(FriendsSubsystem);
-
-	// Cancel friend request is the same as removing a friend.
-	FriendsSubsystem->RemoveFriend(GetOwningPlayer(), CachedFriendData->UserId);
+	// TODO: Call cancel friend request here.
 }
 
-void UFriendWidgetEntry::OnUnblockButtonClicked()
+void UFriendWidgetEntry_Starter::OnUnblockButtonClicked()
 {
 	// TODO: Implement unblock player on the future tutorial module.
 }

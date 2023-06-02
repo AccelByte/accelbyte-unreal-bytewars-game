@@ -6,32 +6,27 @@
 
 #include "CoreMinimal.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
-#include "TutorialModules/Module-8/FriendsSubsystem.h"
-#include "FriendsWidget.generated.h"
+#include "TutorialModules/Module-8/FriendsSubsystem_Starter.h"
+#include "SentFriendRequestsWidget_Starter.generated.h"
 
 class UAccelByteWarsGameInstance;
 class UAccelByteWarsWidgetList;
 
 UCLASS(Abstract)
-class ACCELBYTEWARS_API UFriendsWidget : public UAccelByteWarsActivatableWidget
+class ACCELBYTEWARS_API USentFriendRequestsWidget_Starter : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
-	
+
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
 
-	void GetFriendList();
-	void OnFriendEntryClicked(UObject* Item);
+	void GetSentFriendRequestList();
 
-	UAccelByteWarsGameInstance* GameInstance;
-	UFriendsSubsystem* FriendsSubsystem;
+	UFriendsSubsystem_Starter* FriendsSubsystem;
 	FDelegateHandle OnFriendListUpdatedDelegateHandle;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UAccelByteWarsWidgetList* WidgetList;
-
-	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<UAccelByteWarsActivatableWidget> FriendDetailsWidgetClass;
 };

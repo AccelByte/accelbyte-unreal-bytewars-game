@@ -6,17 +6,17 @@
 
 #include "CoreMinimal.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
-#include "TutorialModules/Module-8/FriendsSubsystem.h"
-#include "FriendDetailsWidget.generated.h"
+#include "TutorialModules/Module-8/FriendsSubsystem_Starter.h"
+#include "FriendDetailsWidget_Starter.generated.h"
 
 class UTextBlock;
 class UBorder;
 
 UCLASS(Abstract)
-class ACCELBYTEWARS_API UFriendDetailsWidget : public UAccelByteWarsActivatableWidget
+class ACCELBYTEWARS_API UFriendDetailsWidget_Starter : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
-	
+
 public:
 	void InitData(UFriendData* FriendData);
 

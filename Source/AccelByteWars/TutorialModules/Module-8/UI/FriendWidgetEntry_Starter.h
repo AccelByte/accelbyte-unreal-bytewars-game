@@ -6,8 +6,8 @@
 
 #include "CoreMinimal.h"
 #include "Core/UI/Components/UAccelByteWarsWidgetEntry.h"
-#include "TutorialModules/Module-8/FriendsSubsystem.h"
-#include "FriendWidgetEntry.generated.h"
+#include "TutorialModules/Module-8/FriendsSubsystem_Starter.h"
+#include "FriendWidgetEntry_Starter.generated.h"
 
 class UPromptSubsystem;
 class UWidgetSwitcher;
@@ -16,7 +16,7 @@ class UTextBlock;
 class UBorder;
 
 UCLASS(Abstract)
-class ACCELBYTEWARS_API UFriendWidgetEntry : public UUAccelByteWarsWidgetEntry
+class ACCELBYTEWARS_API UFriendWidgetEntry_Starter : public UUAccelByteWarsWidgetEntry
 {
 	GENERATED_BODY()
 
@@ -31,7 +31,7 @@ protected:
 	void OnUnblockButtonClicked();
 
 	UPromptSubsystem* PromptSubsystem;
-	UFriendsSubsystem* FriendsSubsystem;
+	UFriendsSubsystem_Starter* FriendsSubsystem;
 	UFriendData* CachedFriendData;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
