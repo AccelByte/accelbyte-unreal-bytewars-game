@@ -11,7 +11,6 @@
 
 class UAccelByteWarsWidgetList;
 class UEditableText;
-class UComboBoxString;
 
 UCLASS(Abstract)
 class ACCELBYTEWARS_API UFindFriendsWidget : public UAccelByteWarsActivatableWidget
@@ -26,14 +25,8 @@ protected:
 	UFUNCTION()
 	void OnSearchBarCommitted(const FText& Text, ETextCommit::Type CommitMethod);
 
-	UFUNCTION()
-	void OnSearchTypeChanged(FString SelectedItem, ESelectInfo::Type SelectInfo);
-
 	UFriendsSubsystem* FriendsSubsystem;
 	FDelegateHandle OnFriendListUpdatedDelegateHandle;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
-	UComboBoxString* Cb_SearchType;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UEditableText* Edt_SearchBar;

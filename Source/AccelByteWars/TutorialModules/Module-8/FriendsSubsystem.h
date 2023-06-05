@@ -23,7 +23,7 @@ class ACCELBYTEWARS_API UFriendsSubsystem : public UTutorialModuleSubsystem
 
 #pragma region Module.8a Function Declarations
 public:
-	void FindFriend(const APlayerController* PC, const ESearchFriendType& SearchType, const FString& InKeyword, const FOnFindFriendComplete& OnComplete = FOnFindFriendComplete());
+	void FindFriend(const APlayerController* PC, const FString& InKeyword, const FOnFindFriendComplete& OnComplete = FOnFindFriendComplete());
 	void SendFriendRequest(const APlayerController* PC, const FUniqueNetIdRepl FriendUserId, const FOnSendFriendRequestComplete& OnComplete = FOnSendFriendRequestComplete());
 
 protected:

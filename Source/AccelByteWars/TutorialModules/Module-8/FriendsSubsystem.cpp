@@ -100,7 +100,7 @@ void UFriendsSubsystem::OnCacheFriendListComplete(int32 LocalUserNum, bool bWasS
     OnComplete.ExecuteIfBound(bWasSuccessful, Error);
 }
 
-void UFriendsSubsystem::FindFriend(const APlayerController* PC, const ESearchFriendType& SearchType, const FString& InKeyword, const FOnFindFriendComplete& OnComplete)
+void UFriendsSubsystem::FindFriend(const APlayerController* PC, const FString& InKeyword, const FOnFindFriendComplete& OnComplete)
 {
     if (!ensure(FriendsInterface) || !ensure(UserInterface))
     {
@@ -121,11 +121,11 @@ void UFriendsSubsystem::FindFriend(const APlayerController* PC, const ESearchFri
     TArray<TSharedRef<FOnlineFriend>> OutFriendList;
     if (!FriendsInterface->GetFriendsList(LocalUserNum, TEXT(""), OutFriendList))
     {
-        CacheFriendList(PC, FOnCacheFriendsDataComplete::CreateWeakLambda(this, [this, PC, SearchType, InKeyword, OnComplete](bool bWasSuccessful, const FString& ErrorMessage)
+        CacheFriendList(PC, FOnCacheFriendsDataComplete::CreateWeakLambda(this, [this, PC, InKeyword, OnComplete](bool bWasSuccessful, const FString& ErrorMessage)
         {
             if (bWasSuccessful)
             {
-                FindFriend(PC, SearchType, InKeyword, OnComplete);
+                FindFriend(PC, InKeyword, OnComplete);
             }
             else
             {
@@ -135,41 +135,8 @@ void UFriendsSubsystem::FindFriend(const APlayerController* PC, const ESearchFri
         return;
     }
 
-    // Find friend by user id.
-    if (SearchType == ESearchFriendType::ByUserId)
-    {
-        // Create UniqueNetId to search friend by user id.
-        TSharedPtr<const FUniqueNetIdAccelByteUser> TempUniqueNetId;
-        FAccelByteUniqueIdComposite TempCompositeId;
-        TempCompositeId.Id = InKeyword;
-        TempUniqueNetId = FUniqueNetIdAccelByteUser::Create(TempCompositeId);
-
-        // Query to search friend by user id. 
-        OnQueryUserInfoCompleteDelegateHandle = UserInterface->AddOnQueryUserInfoCompleteDelegate_Handle(
-            LocalUserNum,
-            FOnQueryUserInfoCompleteDelegate::CreateWeakLambda(this, [this, LocalPlayerId, OnComplete](int32 LocalUserNum, bool bWasSuccessful, const TArray<FUniqueNetIdRef>& UserIds, const FString& ErrorStr)
-            {
-                UserInterface->ClearOnQueryUserInfoCompleteDelegate_Handle(LocalUserNum, OnQueryUserInfoCompleteDelegateHandle);
-
-                if (bWasSuccessful)
-                {
-                    // Handle result in the callback function.
-                    TSharedPtr<FOnlineUser> FoundUser = UserInterface->GetUserInfo(LocalUserNum, UserIds[0].Get());
-                    OnFindFriendComplete(true, LocalPlayerId.ToSharedRef().Get(), FoundUser->GetDisplayName(), FoundUser->GetUserId().Get(), ErrorStr, LocalUserNum, OnComplete);
-                }
-                else
-                {
-                    OnComplete.ExecuteIfBound(false, nullptr, DEFAULT_FIND_FRIEND_ERROR_MESSAGE.ToString());
-                }
-            }
-        ));
-        UserInterface->QueryUserInfo(LocalUserNum, TPartyMemberArray{ TempUniqueNetId.ToSharedRef() });
-    }
-    // Find a friend by display name.
-    else if (SearchType == ESearchFriendType::ByDisplayName)
-    {
-        UserInterface->QueryUserIdMapping(LocalPlayerId.ToSharedRef().Get(), InKeyword, IOnlineUser::FOnQueryUserMappingComplete::CreateUObject(this, &ThisClass::OnFindFriendComplete, LocalUserNum, OnComplete));
-    }
+    // Find friend by exact display name.
+    UserInterface->QueryUserIdMapping(LocalPlayerId.ToSharedRef().Get(), InKeyword, IOnlineUser::FOnQueryUserMappingComplete::CreateUObject(this, &ThisClass::OnFindFriendComplete, LocalUserNum, OnComplete));
 }
 
 void UFriendsSubsystem::OnFindFriendComplete(bool bWasSuccessful, const FUniqueNetId& UserId, const FString& Username, const FUniqueNetId& FoundUserId, const FString& Error, int32 LocalUserNum, const FOnFindFriendComplete OnComplete)

@@ -9,13 +9,6 @@
 #include "FriendsEssentialsModels.generated.h"
 
 UENUM()
-enum class ESearchFriendType : uint8
-{
-    ByUserId = 0,
-    ByDisplayName
-};
-
-UENUM()
 enum class EFriendStatus : uint8
 {
 	Accepted = 0,
@@ -147,8 +140,6 @@ public:
         return FriendData;
     }
 };
-
-#define DEFAULT_FIND_FRIEND_ERROR_MESSAGE NSLOCTEXT("AccelByteWars", "Friend Not Found", "Friend Not Found")
 
 #define SEND_FRIEND_REQUEST_MESSAGE NSLOCTEXT("AccelByteWars", "Sending Friend Request", "Sending Friend Request")
 #define ACCEPT_FRIEND_REQUEST_MESSAGE NSLOCTEXT("AccelByteWars", "Accepting Friend", "Accepting Friend")
