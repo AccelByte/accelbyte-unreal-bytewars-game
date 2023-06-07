@@ -27,6 +27,13 @@ void USinglePlatformAuthWidget::NativeConstruct()
 	}
 }
 
+void USinglePlatformAuthWidget::NativeDestruct()
+{
+	Super::NativeDestruct();
+
+	Btn_LoginWithSinglePlatformAuth->OnClicked().Clear();
+}
+
 void USinglePlatformAuthWidget::OnLoginWithSinglePlatformAuthButtonClicked()
 {
 	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());

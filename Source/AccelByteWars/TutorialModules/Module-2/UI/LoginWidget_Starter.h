@@ -16,7 +16,7 @@ class UTextBlock;
 class UAccelByteWarsGameInstance;
 class UPromptSubsystem;
 
-UCLASS()
+UCLASS(Abstract)
 class ACCELBYTEWARS_API ULoginWidget_Starter : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()

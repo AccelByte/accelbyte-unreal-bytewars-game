@@ -3,6 +3,7 @@
 // and restrictions contact your company contract manager.
 
 #include "TutorialModules/Module-3/UI/QuickPlayWidget.h"
+#include "TutorialModules/Module-3/MatchmakingEssentialsSubsystem.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Components/WidgetSwitcher.h"
 #include "Components/TextBlock.h"
@@ -14,14 +15,6 @@ void UQuickPlayWidget::NativeConstruct()
 
 	GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
 	ensure(GameInstance);
-
-	MatchmakingSubsystem = GameInstance->GetSubsystem<UMatchmakingEssentialsSubsystem>();
-	ensure(MatchmakingSubsystem);
-}
-
-void UQuickPlayWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
-{
-	MoveCameraToTargetLocation(InDeltaTime, FVector(60.0f, 600.0f, 160.0f));
 }
 
 void UQuickPlayWidget::NativeOnActivated()
@@ -32,7 +25,9 @@ void UQuickPlayWidget::NativeOnActivated()
 
 	Btn_Elimination->OnClicked().AddUObject(this, &ThisClass::OnEliminationButtonClicked);
 	Btn_TeamDeathmatch->OnClicked().AddUObject(this, &ThisClass::OnTeamDeathmatchButtonClicked);
-	Btn_Cancel->OnClicked().AddUObject(this, &ThisClass::OnCancelMatchmakingClicked);
+
+	Btn_DedicatedServerType->OnClicked().AddUObject(this, &ThisClass::OnDedicatedServerTypeButtonClicked);
+	Btn_Cancel->OnClicked().AddUObject(this, &ThisClass::OnCancelMatchmakingButtonClicked);
 
 	Btn_Ok->OnClicked().AddWeakLambda(this, [this]() { SetQuickPlayState(EMatchmakingState::Default); });
 }
@@ -44,7 +39,9 @@ void UQuickPlayWidget::NativeOnDeactivated()
 	Btn_Elimination->OnClicked().Clear();
 	Btn_TeamDeathmatch->OnClicked().Clear();
 
+	Btn_DedicatedServerType->OnClicked().Clear();
 	Btn_Cancel->OnClicked().Clear();
+
 	Btn_Ok->OnClicked().Clear();
 }
 
@@ -75,8 +72,15 @@ void UQuickPlayWidget::SetQuickPlayState(const EMatchmakingState NewState)
 	switch (NewState)
 	{
 	case EMatchmakingState::Default:
-		bIsBackHandler = true;
-		Btn_Elimination->SetUserFocus(GetOwningPlayer());
+		bIsBackHandler = Ws_QuickPlayMenu->ActiveWidgetIndex == 0;
+		if (bIsBackHandler) 
+		{
+			Btn_Elimination->SetUserFocus(GetOwningPlayer());
+		}
+		else 
+		{
+			Btn_DedicatedServerType->SetUserFocus(GetOwningPlayer());
+		}
 		break;
 	case EMatchmakingState::FindingMatch:
 		Btn_Cancel->SetUserFocus(GetOwningPlayer());
@@ -87,40 +91,52 @@ void UQuickPlayWidget::SetQuickPlayState(const EMatchmakingState NewState)
 	}
 }
 
+void UQuickPlayWidget::SetMatchGameMode(const FString& InMatchGameMode)
+{
+	MatchPoolGameMode = InMatchGameMode;
+
+	// Switch to game server type selection.
+	Ws_QuickPlayMenu->SetActiveWidgetIndex(1);
+}
+
+FString UQuickPlayWidget::GetMatchGameMode() const
+{
+	return MatchPoolGameMode;
+}
+
 
 #pragma region Module.3 General Function Definitions
 void UQuickPlayWidget::OnEliminationButtonClicked()
 {
-	StartMatchmaking(TEXT("Elimination"));
+	SetMatchGameMode(TEXT("elimination"));
 }
 
 void UQuickPlayWidget::OnTeamDeathmatchButtonClicked()
 {
-	StartMatchmaking(TEXT("TeamDeathmatch"));
+	SetMatchGameMode(TEXT("teamdeathmatch"));
 }
 
-void UQuickPlayWidget::OnCancelMatchmakingClicked()
+void UQuickPlayWidget::OnDedicatedServerTypeButtonClicked()
 {
-	CancelMatchmaking();
-}
-#pragma endregion
-
-
-#pragma region Module.3a Function Definitions
-void UQuickPlayWidget::StartMatchmaking(const FString MatchPool)
-{
-	SetQuickPlayState(EMatchmakingState::FindingMatch);
-
+	UMatchmakingEssentialsSubsystem* MatchmakingSubsystem = GameInstance->GetSubsystem<UMatchmakingEssentialsSubsystem>();
 	ensure(MatchmakingSubsystem);
+
+	// When the cancel matchmaking clicked, handle the matchmaking cancelation through the matchmaking subsystem.
+	OnRequestCancelMatchmaking.AddUObject(MatchmakingSubsystem, &UMatchmakingEssentialsSubsystem::CancelMatchmaking);
+
+	// Request matchmaking using dedicated server. Match pool format: unreal-{gamemode}-ds.
+	const FString MatchPool = FString::Printf(TEXT("unreal-%s-ds"), *GetMatchGameMode());
 	MatchmakingSubsystem->StartMatchmaking(GetOwningPlayer(), MatchPool, FOnMatchmakingStateChangedDelegate::CreateUObject(this, &ThisClass::OnMatchmaking));
 }
 
-void UQuickPlayWidget::CancelMatchmaking()
+void UQuickPlayWidget::OnCancelMatchmakingButtonClicked()
 {
-	SetQuickPlayState(EMatchmakingState::CancelingMatch);
+	if (OnRequestCancelMatchmaking.IsBound()) 
+	{
+		OnRequestCancelMatchmaking.Broadcast(GetOwningPlayer());
+	}
 
-	ensure(MatchmakingSubsystem);
-	MatchmakingSubsystem->CancelMatchmaking(GetOwningPlayer());
+	OnRequestCancelMatchmaking.Clear();
 }
 #pragma endregion
 

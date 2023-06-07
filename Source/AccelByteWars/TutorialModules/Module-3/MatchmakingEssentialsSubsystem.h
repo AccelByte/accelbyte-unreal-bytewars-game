@@ -21,7 +21,7 @@ public:
 	void StartMatchmaking(APlayerController* PC, const FString& MatchPool, const FOnMatchmakingStateChangedDelegate& OnMatchmaking);
 	void CancelMatchmaking(APlayerController* PC);
 
-private:
+protected:
 	void OnDestroyToRematchmakingComplete(FName SessionName, bool bWasSuccessful, APlayerController* PC, const FString LastMatchPool);
 	void OnStartMatchmakingComplete(FName SessionName, const FOnlineError& ErrorDetails, const FSessionMatchmakingResults& Results);
 	void OnMatchmakingComplete(FName SessionName, bool bWasSuccessful, APlayerController* PC);
@@ -30,7 +30,7 @@ private:
 
 
 #pragma region Module.3b Function Declarations
-private:
+protected:
 	void RegisterServer(FName SessionName);
 	void GetTeamIdFromSession(FName SessionName, const FUniqueNetIdRepl& UniqueNetId, int32& OutTeamId);
 	void UnregisterServer(FName SessionName);
@@ -39,10 +39,10 @@ private:
 
 
 #pragma region Module.3c Function Declarations
-private:
+protected:
 	void JoinSession(const FOnlineSessionSearchResult& Session, APlayerController* PC);
 	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result, APlayerController* PC);
-	bool TravelClient(FName SessionName, APlayerController* PC);
+	virtual bool TravelClient(FName SessionName, APlayerController* PC);
 	void OnSessionServerUpdate(FName SessionName, APlayerController* PC);
 	void OnSessionServerError(FName SessionName, const FString& ErrorMessage);
 	void LeaveSession(APlayerController* PC);
@@ -50,10 +50,10 @@ private:
 
 
 public:
-	void Initialize(FSubsystemCollectionBase& Collection) override;
-	void Deinitialize() override;
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	virtual void Deinitialize() override;
 
-private:
+protected:
 	void BindDelegates();
 	void UnbindDelegates();
 

@@ -6,7 +6,6 @@
 
 #include "CoreMinimal.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
-#include "TutorialModules/Module-3/MatchmakingSubsystem_Starter.h"
 #include "TutorialModules/Module-3/MatchmakingEssentialsModels.h"
 #include "QuickPlayWidget_Starter.generated.h"
 
@@ -15,44 +14,46 @@ class UWidgetSwitcher;
 class UTextBlock;
 class UCommonButtonBase;
 
-UCLASS()
+UCLASS(Abstract)
 class ACCELBYTEWARS_API UQuickPlayWidget_Starter : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
 
-#pragma region Module.3a Function Declarations
-
-protected:
-	// TODO: Add your Module.3a function declarations here.
-
-#pragma endregion
-
-
 #pragma region Module.3c Function Declarations
 
-protected:
+public:
 	// TODO: Add your Module.3c function declarations here.
 
 #pragma endregion
 
+public:
+	FString GetMatchGameMode() const;
+
+	FOnRequestCancelMatchmaking OnRequestCancelMatchmaking;
 
 protected:
 	void NativeConstruct() override;
-	void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 	void NativeOnActivated() override;
 	void NativeOnDeactivated() override;
+
 	void SetQuickPlayState(const EMatchmakingState NewState);
+	void SetMatchGameMode(const FString& InMatchGameMode);
 
 private:
 	void OnEliminationButtonClicked();
 	void OnTeamDeathmatchButtonClicked();
-	void OnCancelMatchmakingClicked();
+
+	void OnDedicatedServerTypeButtonClicked();
+	void OnCancelMatchmakingButtonClicked();
 
 	UAccelByteWarsGameInstance* GameInstance;
-	UMatchmakingSubsystem_Starter* MatchmakingSubsystem;
+	FString MatchPoolGameMode;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UWidgetSwitcher* Ws_QuickPlayState;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UWidgetSwitcher* Ws_QuickPlayMenu;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Tb_FailedMessage;
@@ -62,6 +63,9 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_TeamDeathmatch;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UCommonButtonBase* Btn_DedicatedServerType;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_Cancel;

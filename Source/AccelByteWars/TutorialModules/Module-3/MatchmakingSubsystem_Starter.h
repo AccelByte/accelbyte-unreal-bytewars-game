@@ -21,33 +21,33 @@ class ACCELBYTEWARS_API UMatchmakingSubsystem_Starter : public UTutorialModuleSu
 public:
 	// TODO: Add your public Module.3a function declarations here.
 
-private:
-	// TODO: Add your private Module.3a function declarations here.
+protected:
+	// TODO: Add your protected Module.3a function declarations here.
 
 #pragma endregion
 
 
 #pragma region Module.3b Function Declarations
 
-private:
-	// TODO: Add your private Module.3b function declarations here.
+protected:
+	// TODO: Add your protected Module.3b function declarations here.
 
 #pragma endregion
 
 
 #pragma region Module.3c Function Declarations
 
-private:
-	// TODO: Add your private Module.3c function declarations here.
+protected:
+	// TODO: Add your protected Module.3c function declarations here.
 
 #pragma endregion
 
 
 public:
-	void Initialize(FSubsystemCollectionBase& Collection) override;
-	void Deinitialize() override;
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	virtual void Deinitialize() override;
 
-private:
+protected:
 	void BindDelegates();
 	void UnbindDelegates();
 
