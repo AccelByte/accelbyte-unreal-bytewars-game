@@ -1,4 +1,6 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
 
 
 #include "Core/UI/Components/Info/InfoWidget.h"
@@ -25,15 +27,26 @@ void UInfoWidget::NativeConstruct()
 void UInfoWidget::DisplayInfo()
 {
 	// user info
-	if (!GetOwningPlayer()->PlayerState->GetUniqueId().GetType().IsEqual("NULL"))
+	const APlayerController* OwningPlayerController = GetOwningPlayer();
+	if (!OwningPlayerController)
+	{
+		goto UserInfoEmpty;
+	}
+	const APlayerState* OwningPlayerState = OwningPlayerController->PlayerState;
+	if (!OwningPlayerState)
+	{
+		goto UserInfoEmpty;
+	}
+
+	if (!OwningPlayerState->GetUniqueId().GetType().IsEqual("NULL"))
 	{
 		/**
 		 * Player logged in, displays name and ID.
 		 * For some reason, AB user ID does not Immidiately stored in the PlayerState.UniqueNetId.
 		 * Use Identity Interface as a workaround
 		 */
-		// Get owning player's local user index
-		const ULocalPlayer* OwningLocalPlayer = GetOwningPlayer()->GetLocalPlayer();
+		 // Get owning player's local user index
+		const ULocalPlayer* OwningLocalPlayer = OwningPlayerController->GetLocalPlayer();
 		if (!OwningLocalPlayer)
 		{
 			goto UserInfoEmpty;

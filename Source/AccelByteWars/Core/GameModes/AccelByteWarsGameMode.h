@@ -22,6 +22,7 @@ class AAccelByteWarsPlayerState;
 #pragma region "Structs, Enums, and Delegates declaration"
 DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnGetTeamIdFromSession, FName /* SessioName */, const FUniqueNetIdRepl& /* UniqueNetId */, int32& /* OutTeamId */);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnAddOnlineMember, APlayerController* /* PlayerController */, TDelegate<void(bool /*bIsSuccessful*/)> /* OnComplete */);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnInitializeListenServer, FName /* SessioName */);
 #pragma endregion 
 
 UCLASS()
@@ -63,6 +64,8 @@ public:
 
 	inline static FOnGetTeamIdFromSession OnGetTeamIdFromSessionDelegate;
 	inline static FOnAddOnlineMember OnAddOnlineMemberDelegate;
+
+	inline static FOnInitializeListenServer OnInitializeListenServer;
 
 protected:
 	/**
