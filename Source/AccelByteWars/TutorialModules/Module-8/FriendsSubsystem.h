@@ -30,7 +30,7 @@ protected:
 	void CacheFriendList(const APlayerController* PC, const FOnCacheFriendsDataComplete& OnComplete = FOnCacheFriendsDataComplete());
 	void OnCacheFriendListComplete(int32 LocalUserNum, bool bWasSuccessful, const FString& ListName, const FString& Error, const FOnCacheFriendsDataComplete OnComplete);
 
-	void OnFindFriendComplete(bool bWasSuccessful, const FUniqueNetId& UserId, const FString& Username, const FUniqueNetId& FoundUserId, const FString& Error, int32 LocalUserNum, const FOnFindFriendComplete OnComplete);
+	void OnFindFriendComplete(bool bWasSuccessful, const FUniqueNetId& UserId, const FString& DisplayName, const FUniqueNetId& FoundUserId, const FString& Error, int32 LocalUserNum, const FOnFindFriendComplete OnComplete);
 	void OnSendFriendRequestComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& FriendId, const FString& ListName, const FString& ErrorStr, const FOnSendFriendRequestComplete OnComplete);
 #pragma endregion
 

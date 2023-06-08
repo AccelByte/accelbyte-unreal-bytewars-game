@@ -28,7 +28,7 @@ public:
 	UFriendData() : bIsOnline(false), bCannotBeInvited(false) {}
 
 	FUniqueNetIdRepl UserId;
-	FString Username;
+	FString DisplayName;
 	FString AvatarURL;
 	EFriendStatus Status = EFriendStatus::Unknown;
 
@@ -84,7 +84,7 @@ public:
         UFriendData* FriendData = NewObject<UFriendData>();
 
         FriendData->UserId = OnlineUser->GetUserId();
-        FriendData->Username = OnlineUser->GetDisplayName();
+        FriendData->DisplayName = OnlineUser->GetDisplayName();
         OnlineUser->GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, FriendData->AvatarURL);
         FriendData->Status = EFriendStatus::Unknown;
         FriendData->bCannotBeInvited = false;
@@ -149,7 +149,7 @@ public:
 #define UNBLOCK_PLAYER_MESSAGE NSLOCTEXT("AccelByteWars", "Unblocking Player", "Unblocking Player")
 
 #define SUCCESS_SEND_FRIEND_REQUEST NSLOCTEXT("AccelByteWars", "Friend request is sent", "Friend request is sent")
-#define SUCCESS_ACCEPT_FRIEND_REQUEST NSLOCTEXT("AccelByteWars", "Friend request is sent", "Friend request is sent")
+#define SUCCESS_ACCEPT_FRIEND_REQUEST NSLOCTEXT("AccelByteWars", "Friend request is accepted", "Friend request is accepted")
 #define SUCCESS_REJECT_FRIEND_REQUEST NSLOCTEXT("AccelByteWars", "Friend request is rejected", "Friend request is rejected")
 #define SUCCESS_REMOVE_FRIEND NSLOCTEXT("AccelByteWars", "Friend is canceled and removed", "Friend is canceled and removed")
 #define SUCCESS_BLOCK_PLAYER NSLOCTEXT("AccelByteWars", "Player is blocked", "Player is blocked")

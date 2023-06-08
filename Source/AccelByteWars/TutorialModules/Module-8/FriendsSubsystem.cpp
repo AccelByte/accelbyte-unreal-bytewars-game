@@ -139,11 +139,11 @@ void UFriendsSubsystem::FindFriend(const APlayerController* PC, const FString& I
     UserInterface->QueryUserIdMapping(LocalPlayerId.ToSharedRef().Get(), InKeyword, IOnlineUser::FOnQueryUserMappingComplete::CreateUObject(this, &ThisClass::OnFindFriendComplete, LocalUserNum, OnComplete));
 }
 
-void UFriendsSubsystem::OnFindFriendComplete(bool bWasSuccessful, const FUniqueNetId& UserId, const FString& Username, const FUniqueNetId& FoundUserId, const FString& Error, int32 LocalUserNum, const FOnFindFriendComplete OnComplete)
+void UFriendsSubsystem::OnFindFriendComplete(bool bWasSuccessful, const FUniqueNetId& UserId, const FString& DisplayName, const FUniqueNetId& FoundUserId, const FString& Error, int32 LocalUserNum, const FOnFindFriendComplete OnComplete)
 {
     if (bWasSuccessful)
     {
-        UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Success to find a friend with keyword: %s"), *Username);
+        UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Success to find a friend with keyword: %s"), *DisplayName);
 
         // Check if the found user is the player it self.
         if (UserId == FoundUserId) 
@@ -160,7 +160,7 @@ void UFriendsSubsystem::OnFindFriendComplete(bool bWasSuccessful, const FUniqueN
             return;
         }
 
-        // Request the found user information to backend (to retrieve avatar URL, username, etc.)
+        // Request the found user information to backend (to retrieve avatar URL, display name, etc.)
         OnQueryUserInfoCompleteDelegateHandle = UserInterface->AddOnQueryUserInfoCompleteDelegate_Handle(
             LocalUserNum,
             FOnQueryUserInfoCompleteDelegate::CreateWeakLambda(this, [this, OnComplete](int32 LocalUserNum, bool bWasSuccessful, const TArray<FUniqueNetIdRef>& UserIds, const FString& ErrorStr)
@@ -181,7 +181,7 @@ void UFriendsSubsystem::OnFindFriendComplete(bool bWasSuccessful, const FUniqueN
     }
     else
     {
-        UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Failed to find a friend with keyword: %s"), *Username);
+        UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Failed to find a friend with keyword: %s"), *DisplayName);
         OnComplete.ExecuteIfBound(false, nullptr, Error);
     }
 }

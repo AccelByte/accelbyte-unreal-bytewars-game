@@ -27,7 +27,7 @@ protected:
 	UBorder* Img_Avatar;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
-	UTextBlock* Tb_Username;
+	UTextBlock* Tb_DisplayName;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Tb_Presence;

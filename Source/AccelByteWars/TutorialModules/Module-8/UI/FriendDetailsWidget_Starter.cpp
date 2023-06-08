@@ -8,12 +8,24 @@
 #include "Components/TextBlock.h"
 #include "Components/Border.h"
 
+#define LOCTEXT_NAMESPACE "AccelByteWars"
+
 void UFriendDetailsWidget_Starter::InitData(UFriendData* FriendData)
 {
 	ensure(FriendData);
 	CachedFriendData = FriendData;
 
-	Tb_Username->SetText(FText::FromString(CachedFriendData->Username));
+	// Display display name.
+	if (!CachedFriendData->DisplayName.IsEmpty())
+	{
+		Tb_DisplayName->SetText(FText::FromString(CachedFriendData->DisplayName));
+	}
+	else
+	{
+		Tb_DisplayName->SetText(LOCTEXT("Byte Wars Player", "Byte Wars Player"));
+	}
+
+	// Display presence.
 	Tb_Presence->SetText(FText::FromString(CachedFriendData->GetPresence()));
 
 	// Display avatar image.
@@ -41,3 +53,5 @@ void UFriendDetailsWidget_Starter::InitData(UFriendData* FriendData)
 		);
 	}
 }
+
+#undef LOCTEXT_NAMESPACE

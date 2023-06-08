@@ -39,14 +39,14 @@ void UFriendWidgetEntry::NativeOnListItemObjectSet(UObject* ListItemObject)
 
 	CachedFriendData = Cast<UFriendData>(ListItemObject);
 
-	// Display username.
-	if (!CachedFriendData->Username.IsEmpty()) 
+	// Display display name.
+	if (!CachedFriendData->DisplayName.IsEmpty()) 
 	{
-		Tb_Username->SetText(FText::FromString(CachedFriendData->Username));
+		Tb_DisplayName->SetText(FText::FromString(CachedFriendData->DisplayName));
 	}
 	else 
 	{
-		Tb_Username->SetText(LOCTEXT("Byte Wars Player", "Byte Wars Player"));
+		Tb_DisplayName->SetText(LOCTEXT("Byte Wars Player", "Byte Wars Player"));
 	}
 	
 	// Display presence.
