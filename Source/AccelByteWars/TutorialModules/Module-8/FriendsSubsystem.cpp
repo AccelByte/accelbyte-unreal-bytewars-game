@@ -82,7 +82,7 @@ int32 UFriendsSubsystem::GetPlayerControllerId(const APlayerController* PC) cons
 
 #pragma region Module.8a Function Definitions
 
-void UFriendsSubsystem::CacheFriendList(const APlayerController* PC, const FOnCacheFriendsDataComplete& OnComplete)
+void UFriendsSubsystem::GetCacheFriendList(const APlayerController* PC, const FOnCacheFriendsDataComplete& OnComplete)
 {
     if (!ensure(FriendsInterface))
     {
@@ -91,13 +91,28 @@ void UFriendsSubsystem::CacheFriendList(const APlayerController* PC, const FOnCa
     }
 
     const int32 LocalUserNum = GetPlayerControllerId(PC);
+    
+    // Try to get cached friend list first.
+    TArray<TSharedRef<FOnlineFriend>> OutFriendList;
+    if (FriendsInterface->GetFriendsList(LocalUserNum, TEXT(""), OutFriendList))
+    {
+        OnComplete.ExecuteIfBound(true, OutFriendList, TEXT(""));
+    }
+    // If none, request to backend then get the cached the friend list.
+    else
+    {
+        FriendsInterface->ReadFriendsList(
+            LocalUserNum, 
+            TEXT(""), 
+            FOnReadFriendsListComplete::CreateWeakLambda(this, [this, OnComplete](int32 LocalUserNum, bool bWasSuccessful, const FString& ListName, const FString& Error)
+            {
+                TArray<TSharedRef<FOnlineFriend>> OutFriendList;
+                FriendsInterface->GetFriendsList(LocalUserNum, TEXT(""), OutFriendList);
 
-    FriendsInterface->ReadFriendsList(LocalUserNum, TEXT(""), FOnReadFriendsListComplete::CreateUObject(this, &ThisClass::OnCacheFriendListComplete, OnComplete));
-}
-
-void UFriendsSubsystem::OnCacheFriendListComplete(int32 LocalUserNum, bool bWasSuccessful, const FString& ListName, const FString& Error, const FOnCacheFriendsDataComplete OnComplete)
-{
-    OnComplete.ExecuteIfBound(bWasSuccessful, Error);
+                OnComplete.ExecuteIfBound(bWasSuccessful, OutFriendList, Error);
+            }
+        ));
+    }
 }
 
 void UFriendsSubsystem::FindFriend(const APlayerController* PC, const FString& InKeyword, const FOnFindFriendComplete& OnComplete)
@@ -118,25 +133,18 @@ void UFriendsSubsystem::FindFriend(const APlayerController* PC, const FString& I
 
     // Before request find friend to backend, check if friend list is queried in cache.
     // This is necessary to check the found user status (e.g. is already friend, invitation request already sent).
-    TArray<TSharedRef<FOnlineFriend>> OutFriendList;
-    if (!FriendsInterface->GetFriendsList(LocalUserNum, TEXT(""), OutFriendList))
+    GetCacheFriendList(PC, FOnCacheFriendsDataComplete::CreateWeakLambda(this, [this, LocalPlayerId, LocalUserNum, InKeyword, OnComplete](bool bWasSuccessful, TArray<TSharedRef<FOnlineFriend>>& CachedFriendList, const FString& ErrorMessage)
     {
-        CacheFriendList(PC, FOnCacheFriendsDataComplete::CreateWeakLambda(this, [this, PC, InKeyword, OnComplete](bool bWasSuccessful, const FString& ErrorMessage)
+        if (bWasSuccessful)
         {
-            if (bWasSuccessful)
-            {
-                FindFriend(PC, InKeyword, OnComplete);
-            }
-            else
-            {
-                OnComplete.ExecuteIfBound(false, nullptr, ErrorMessage);
-            }
-        }));
-        return;
-    }
-
-    // Find friend by exact display name.
-    UserInterface->QueryUserIdMapping(LocalPlayerId.ToSharedRef().Get(), InKeyword, IOnlineUser::FOnQueryUserMappingComplete::CreateUObject(this, &ThisClass::OnFindFriendComplete, LocalUserNum, OnComplete));
+            // Find friend by exact display name.
+            UserInterface->QueryUserIdMapping(LocalPlayerId.ToSharedRef().Get(), InKeyword, IOnlineUser::FOnQueryUserMappingComplete::CreateUObject(this, &ThisClass::OnFindFriendComplete, LocalUserNum, OnComplete));
+        }
+        else
+        {
+            OnComplete.ExecuteIfBound(false, nullptr, ErrorMessage);
+        }
+    }));
 }
 
 void UFriendsSubsystem::OnFindFriendComplete(bool bWasSuccessful, const FUniqueNetId& UserId, const FString& DisplayName, const FUniqueNetId& FoundUserId, const FString& Error, int32 LocalUserNum, const FOnFindFriendComplete OnComplete)
@@ -258,34 +266,24 @@ void UFriendsSubsystem::GetInboundFriendRequestList(const APlayerController* PC,
         return;
     }
 
-    const int32 LocalUserNum = GetPlayerControllerId(PC);
-
-    // Try to get friend inbound request list from cache first.
-    TArray<TSharedRef<FOnlineFriend>> OutFriendList;
-    TArray<UFriendData*> FriendRequestList;
-    if (FriendsInterface->GetFriendsList(LocalUserNum, TEXT(""), OutFriendList))
-    {
-        // Filter pending inbound friend requests.
-        OutFriendList = OutFriendList.FilterByPredicate([](const TSharedRef<FOnlineFriend>& Friend)
-        {
-            return Friend->GetInviteStatus() == EInviteStatus::PendingInbound;
-        });
-        
-        for (const TSharedRef<FOnlineFriend> TempData : OutFriendList)
-        {
-            FriendRequestList.Add(UFriendData::ConvertToFriendData(TempData));
-        }
-
-        OnComplete.ExecuteIfBound(true, FriendRequestList, TEXT(""));
-        return;
-    }
-    
-    // If none, request to query from backend. Then, try the get the list again.
-    CacheFriendList(PC, FOnCacheFriendsDataComplete::CreateWeakLambda(this, [this, PC, OnComplete](bool bWasSuccessful, const FString& ErrorMessage)
+    // Get friend inbound request list from cache.
+    GetCacheFriendList(PC, FOnCacheFriendsDataComplete::CreateWeakLambda(this, [this, OnComplete](bool bWasSuccessful, TArray<TSharedRef<FOnlineFriend>>& CachedFriendList, const FString& ErrorMessage)
     {
         if (bWasSuccessful)
         {
-            GetInboundFriendRequestList(PC, OnComplete);
+            // Filter pending inbound friend requests.
+            CachedFriendList = CachedFriendList.FilterByPredicate([](const TSharedRef<FOnlineFriend>& Friend)
+            {
+                return Friend->GetInviteStatus() == EInviteStatus::PendingInbound;
+            });
+
+            TArray<UFriendData*> InboundFriendRequestList;
+            for (const TSharedRef<FOnlineFriend> TempData : CachedFriendList)
+            {
+                InboundFriendRequestList.Add(UFriendData::ConvertToFriendData(TempData));
+            }
+
+            OnComplete.ExecuteIfBound(true, InboundFriendRequestList, TEXT(""));
         }
         else
         {
@@ -302,34 +300,24 @@ void UFriendsSubsystem::GetOutboundFriendRequestList(const APlayerController* PC
         return;
     }
 
-    const int32 LocalUserNum = GetPlayerControllerId(PC);
-
-    // Try to get friend outbound request list from cache first.
-    TArray<TSharedRef<FOnlineFriend>> OutFriendList;
-    TArray<UFriendData*> FriendRequestList;
-    if (FriendsInterface->GetFriendsList(LocalUserNum, TEXT(""), OutFriendList))
-    {
-        // Filter pending outbound friend requests.
-        OutFriendList = OutFriendList.FilterByPredicate([](const TSharedRef<FOnlineFriend>& Friend)
-        {
-            return Friend->GetInviteStatus() == EInviteStatus::PendingOutbound;
-        });
-
-        for (const TSharedRef<FOnlineFriend> TempData : OutFriendList)
-        {
-            FriendRequestList.Add(UFriendData::ConvertToFriendData(TempData));
-        }
-
-        OnComplete.ExecuteIfBound(true, FriendRequestList, TEXT(""));
-        return;
-    }
-
-    // If none, request to query from backend. Then, try the get the list again.
-    CacheFriendList(PC, FOnCacheFriendsDataComplete::CreateWeakLambda(this, [this, PC, OnComplete](bool bWasSuccessful, const FString& ErrorMessage)
+    // Get friend outbound request list from cache.
+    GetCacheFriendList(PC, FOnCacheFriendsDataComplete::CreateWeakLambda(this, [this, OnComplete](bool bWasSuccessful, TArray<TSharedRef<FOnlineFriend>>& CachedFriendList, const FString& ErrorMessage)
     {
         if (bWasSuccessful)
         {
-            GetOutboundFriendRequestList(PC, OnComplete);
+            // Filter pending outbound friend requests.
+            CachedFriendList = CachedFriendList.FilterByPredicate([](const TSharedRef<FOnlineFriend>& Friend)
+            {
+                return Friend->GetInviteStatus() == EInviteStatus::PendingOutbound;
+            });
+
+            TArray<UFriendData*> OutbondFriendRequestList;
+            for (const TSharedRef<FOnlineFriend> TempData : CachedFriendList)
+            {
+                OutbondFriendRequestList.Add(UFriendData::ConvertToFriendData(TempData));
+            }
+
+            OnComplete.ExecuteIfBound(true, OutbondFriendRequestList, TEXT(""));
         }
         else
         {
@@ -459,42 +447,24 @@ void UFriendsSubsystem::GetFriendList(const APlayerController* PC, const FOnGetF
         return;
     }
 
-    const int32 LocalUserNum = GetPlayerControllerId(PC);
-    const FUniqueNetIdPtr LocalPlayerId = GetPlayerUniqueNetId(PC);
-    if (!ensure(LocalPlayerId.IsValid()))
-    {
-        UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Cannot get friend list. LocalPlayer NetId is not valid."));
-        return;
-    }
-
-    // Try to get friend list from cache first.
-    TArray<TSharedRef<FOnlineFriend>> OutFriendList;
-    TArray<UFriendData*> FriendList;
-    if (FriendsInterface->GetFriendsList(LocalUserNum, TEXT(""), OutFriendList))
-    {
-        // Filter accepted friends.
-        OutFriendList = OutFriendList.FilterByPredicate([](const TSharedRef<FOnlineFriend>& Friend)
-        {
-            return Friend->GetInviteStatus() == EInviteStatus::Accepted;
-        });
-
-        TPartyMemberArray FriendIds;
-        for (const TSharedRef<FOnlineFriend> TempData : OutFriendList)
-        {
-            FriendIds.Add(TempData->GetUserId());
-            FriendList.Add(UFriendData::ConvertToFriendData(TempData));
-        }
-
-        OnComplete.ExecuteIfBound(true, FriendList, TEXT(""));
-        return;
-    }
-
-    // If none, request to query from backend. Then, try the get the list again.
-    CacheFriendList(PC, FOnCacheFriendsDataComplete::CreateWeakLambda(this, [this, PC, OnComplete](bool bWasSuccessful, const FString& ErrorMessage)
+    // Get accepted friend list from cache.
+    GetCacheFriendList(PC, FOnCacheFriendsDataComplete::CreateWeakLambda(this, [this, OnComplete](bool bWasSuccessful, TArray<TSharedRef<FOnlineFriend>>& CachedFriendList, const FString& ErrorMessage)
     {
         if (bWasSuccessful)
         {
-            GetFriendList(PC, OnComplete);
+            // Filter accepted friends.
+            CachedFriendList = CachedFriendList.FilterByPredicate([](const TSharedRef<FOnlineFriend>& Friend)
+            {
+                return Friend->GetInviteStatus() == EInviteStatus::Accepted;
+            });
+
+            TArray<UFriendData*> AcceptedFriendList;
+            for (const TSharedRef<FOnlineFriend> TempData : CachedFriendList)
+            {
+                AcceptedFriendList.Add(UFriendData::ConvertToFriendData(TempData));
+            }
+
+            OnComplete.ExecuteIfBound(true, AcceptedFriendList, TEXT(""));
         }
         else
         {
