@@ -58,7 +58,6 @@ public:
 
 public:
 	void Initialize(FSubsystemCollectionBase& Collection) override;
-	void Deinitialize() override;
 
 	FUniqueNetIdPtr GetPlayerUniqueNetId(const APlayerController* PC) const;
 	int32 GetPlayerControllerId(const APlayerController* PC) const;

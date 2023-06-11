@@ -59,6 +59,7 @@ void UFindFriendsWidget::OnSearchBarCommitted(const FText& Text, ETextCommit::Ty
 				// Reset the status to be "searched", because the data is retrieved from find friend result.
 				FriendData->Status = EFriendStatus::Searched;
 				WidgetList->GetListView()->AddItem(FriendData);
+				WidgetList->GetListView()->RequestRefresh();
 				WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::EntryLoaded);
 			}
 			else

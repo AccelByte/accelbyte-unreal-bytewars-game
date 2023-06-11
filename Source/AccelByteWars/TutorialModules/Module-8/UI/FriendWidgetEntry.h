@@ -63,4 +63,6 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_Unblock;
+
+	FSlateBrush DefaultAvatarBrush;
 };

@@ -45,11 +45,6 @@ void UFriendsSubsystem_Starter::Initialize(FSubsystemCollectionBase& Collection)
     ensure(PromptSubsystem);
 }
 
-void UFriendsSubsystem_Starter::Deinitialize()
-{
-    Super::Deinitialize();
-}
-
 FUniqueNetIdPtr UFriendsSubsystem_Starter::GetPlayerUniqueNetId(const APlayerController* PC) const
 {
     if (!ensure(PC))

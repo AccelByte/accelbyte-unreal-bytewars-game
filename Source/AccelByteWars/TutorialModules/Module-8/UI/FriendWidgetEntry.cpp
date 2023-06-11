@@ -31,6 +31,9 @@ void UFriendWidgetEntry::NativeConstruct()
 	Btn_Reject->OnClicked().AddUObject(this, &ThisClass::OnRejectButtonClicked);
 	Btn_Cancel->OnClicked().AddUObject(this, &ThisClass::OnCancelButtonClicked);
 	Btn_Unblock->OnClicked().AddUObject(this, &ThisClass::OnUnblockButtonClicked);
+
+	// Save default brush to be used to reset the avatar brush later.
+	DefaultAvatarBrush = Img_Avatar->Background;
 }
 
 void UFriendWidgetEntry::NativeOnListItemObjectSet(UObject* ListItemObject)
@@ -75,6 +78,11 @@ void UFriendWidgetEntry::NativeOnListItemObjectSet(UObject* ListItemObject)
 				Img_Avatar->SetBrush(*ImageResult.Get());
 			})
 		);
+	}
+	// If no valid avatar, reset it to the default one.
+	else 
+	{
+		Img_Avatar->SetBrush(DefaultAvatarBrush);
 	}
 
 	// Display options based on friend's invitation status.
