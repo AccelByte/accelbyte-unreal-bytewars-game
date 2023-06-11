@@ -3,15 +3,31 @@
 // and restrictions contact your company contract manager.
 
 #include "Core/UI/Components/AccelByteWarsWidgetList.h"
+#include "Core/UI/Components/AccelByteWarsListView.h"
+#include "Core/UI/Components/AccelByteWarsTileView.h"
 #include "Components/WidgetSwitcher.h"
 #include "Components/NamedSlot.h"
 #include "Components/TextBlock.h"
+
+void UAccelByteWarsWidgetList::NativePreConstruct()
+{
+	Super::NativePreConstruct();
+
+	ListView->SetEntryWidgetClass(EntryWidgetClass);
+
+	TileView->SetEntryWidgetClass(EntryWidgetClass);
+	TileView->SetEntryWidth(EntryWidgetWidth);
+	TileView->SetEntryHeight(EntryWidgetHeight);
+
+	Ws_ListViewType->SetActiveWidgetIndex((uint8)ListViewType);
+}
 
 void UAccelByteWarsWidgetList::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	ListView = Cast<UListView>(ListViewSlot->GetChildAt(0));
+	SelectedListViewType = Cast<UListView>(Ws_ListViewType->GetActiveWidget());
+	ensure(SelectedListViewType);
 
 	ChangeWidgetListState(EAccelByteWarsWidgetListState::NoEntry);
 }

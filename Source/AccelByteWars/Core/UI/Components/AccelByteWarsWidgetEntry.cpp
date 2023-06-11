@@ -2,4 +2,4 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-#include "Core/UI/Components/UAccelByteWarsWidgetEntry.h"
+#include "Core/UI/Components/AccelByteWarsWidgetEntry.h"

@@ -10,6 +10,13 @@
 #include "AccelByteWarsWidgetList.generated.h"
 
 UENUM(BlueprintType)
+enum class EAccelByteWarsWidgetListType : uint8
+{
+	ListView = 0,
+	TileView
+};
+
+UENUM(BlueprintType)
 enum class EAccelByteWarsWidgetListState : uint8
 {
 	EntryLoaded = 0,
@@ -19,8 +26,9 @@ enum class EAccelByteWarsWidgetListState : uint8
 };
 
 class UWidgetSwitcher;
-class UNamedSlot;
-class UListView;
+class UAccelByteWarsListView;
+class UAccelByteWarsTileView;
+class UAccelByteWarsWidgetEntry;
 class UTextBlock;
 
 UCLASS(Abstract)
@@ -39,23 +47,41 @@ public:
 	void SetFailedMessage(const FText& Message);
 
 	UFUNCTION(BlueprintPure)
-	UListView* GetListView() const { return ListView; };
+	UListView* GetListView() const { return SelectedListViewType; };
 
 protected:
+	void NativePreConstruct() override;
 	void NativeConstruct() override;
 
-	UPROPERTY();
-	UListView* ListView;
+	UListView* SelectedListViewType;
 
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	EAccelByteWarsWidgetListType ListViewType;
+
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<UAccelByteWarsWidgetEntry> EntryWidgetClass;
+
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (EditCondition = "ListViewType==EAccelByteWarsWidgetListType::TileView", EditConditionHides))
+	float EntryWidgetWidth;
+
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (EditCondition = "ListViewType==EAccelByteWarsWidgetListType::TileView", EditConditionHides))
+	float EntryWidgetHeight;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UWidgetSwitcher* Ws_ListViewType;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UAccelByteWarsListView* ListView;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UAccelByteWarsTileView* TileView;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UWidgetSwitcher* Ws_ListViewState;
 
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
-	UNamedSlot* ListViewSlot;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Tb_NoEntryMessage;
 
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Tb_FailedMessage;
 };

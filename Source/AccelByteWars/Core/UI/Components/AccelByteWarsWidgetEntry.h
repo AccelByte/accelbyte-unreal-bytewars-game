@@ -8,10 +8,10 @@
 #include "Blueprint/IUserListEntry.h"
 #include "Blueprint/IUserObjectListEntry.h"
 #include "CommonUserWidget.h"
-#include "UAccelByteWarsWidgetEntry.generated.h"
+#include "AccelByteWarsWidgetEntry.generated.h"
 
 UCLASS(Abstract)
-class ACCELBYTEWARS_API UUAccelByteWarsWidgetEntry : public UCommonUserWidget, public IUserObjectListEntry
+class ACCELBYTEWARS_API UAccelByteWarsWidgetEntry : public UCommonUserWidget, public IUserObjectListEntry
 {
 	GENERATED_BODY()
 };
