@@ -31,4 +31,6 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Tb_Presence;
+
+	FSlateBrush DefaultAvatarBrush;
 };

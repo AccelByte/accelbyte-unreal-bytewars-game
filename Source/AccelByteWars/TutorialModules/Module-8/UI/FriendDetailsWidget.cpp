@@ -28,6 +28,12 @@ void UFriendDetailsWidget::InitData(UFriendData* FriendData)
 	// Display presence.
 	Tb_Presence->SetText(FText::FromString(CachedFriendData->GetPresence()));
 
+	// Store default brush to be used to reset the avatar brush if needed.
+	if (!DefaultAvatarBrush.GetResourceObject())
+	{
+		DefaultAvatarBrush = Img_Avatar->Background;
+	}
+
 	// Display avatar image.
 	const FString AvatarURL = CachedFriendData->AvatarURL;
 	const FString AvatarId = FBase64::Encode(AvatarURL);
@@ -51,6 +57,11 @@ void UFriendDetailsWidget::InitData(UFriendData* FriendData)
 				Img_Avatar->SetBrush(*ImageResult.Get());
 			})
 		);
+	}
+	// If no valid avatar, reset it to the default one.
+	else
+	{
+		Img_Avatar->SetBrush(DefaultAvatarBrush);
 	}
 }
 

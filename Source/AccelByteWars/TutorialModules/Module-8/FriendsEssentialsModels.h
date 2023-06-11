@@ -156,7 +156,7 @@ public:
 #define SUCCESS_UNBLOCK_PLAYER NSLOCTEXT("AccelByteWars", "Player is unblock", "Player is unblock")
 #define CANNOT_INVITE_FRIEND_SELF NSLOCTEXT("AccelByteWars", "Cannot friend with yourself", "Cannot friend with yourself")
 
-DECLARE_DELEGATE_ThreeParams(FOnCacheFriendsDataComplete, bool /*bWasSuccessful*/, TArray<TSharedRef<FOnlineFriend>>& /*CachedFriendList*/, const FString& /*ErrorMessage*/);
+DECLARE_DELEGATE_ThreeParams(FOnGetCacheFriendListComplete, bool /*bWasSuccessful*/, TArray<TSharedRef<FOnlineFriend>>& /*CachedFriendList*/, const FString& /*ErrorMessage*/);
 DECLARE_DELEGATE(FOnCachedFriendsDataUpdated);
 
 DECLARE_DELEGATE_ThreeParams(FOnFindFriendComplete, bool /*bWasSuccessful*/, UFriendData* /*FriendData*/, const FString& /*ErrorMessage*/);

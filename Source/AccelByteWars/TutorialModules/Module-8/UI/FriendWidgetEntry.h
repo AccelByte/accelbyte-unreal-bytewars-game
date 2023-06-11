@@ -5,7 +5,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Core/UI/Components/UAccelByteWarsWidgetEntry.h"
+#include "Core/UI/Components/AccelByteWarsWidgetEntry.h"
 #include "TutorialModules/Module-8/FriendsSubsystem.h"
 #include "FriendWidgetEntry.generated.h"
 
@@ -16,7 +16,7 @@ class UTextBlock;
 class UBorder;
 
 UCLASS(Abstract)
-class ACCELBYTEWARS_API UFriendWidgetEntry : public UUAccelByteWarsWidgetEntry
+class ACCELBYTEWARS_API UFriendWidgetEntry : public UAccelByteWarsWidgetEntry
 {
 	GENERATED_BODY()
 

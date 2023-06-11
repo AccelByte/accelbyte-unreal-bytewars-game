@@ -77,7 +77,7 @@ int32 UFriendsSubsystem::GetPlayerControllerId(const APlayerController* PC) cons
 
 #pragma region Module.8a Function Definitions
 
-void UFriendsSubsystem::GetCacheFriendList(const APlayerController* PC, const FOnCacheFriendsDataComplete& OnComplete)
+void UFriendsSubsystem::GetCacheFriendList(const APlayerController* PC, const FOnGetCacheFriendListComplete& OnComplete)
 {
     if (!ensure(FriendsInterface))
     {
@@ -126,9 +126,7 @@ void UFriendsSubsystem::FindFriend(const APlayerController* PC, const FString& I
         return;
     }
 
-    // Before request find friend to backend, check if friend list is queried in cache.
-    // This is necessary to check the found user status (e.g. is already friend, invitation request already sent).
-    GetCacheFriendList(PC, FOnCacheFriendsDataComplete::CreateWeakLambda(this, [this, LocalPlayerId, LocalUserNum, InKeyword, OnComplete](bool bWasSuccessful, TArray<TSharedRef<FOnlineFriend>>& CachedFriendList, const FString& ErrorMessage)
+    GetCacheFriendList(PC, FOnGetCacheFriendListComplete::CreateWeakLambda(this, [this, LocalPlayerId, LocalUserNum, InKeyword, OnComplete](bool bWasSuccessful, TArray<TSharedRef<FOnlineFriend>>& CachedFriendList, const FString& ErrorMessage)
     {
         if (bWasSuccessful)
         {
@@ -262,7 +260,7 @@ void UFriendsSubsystem::GetInboundFriendRequestList(const APlayerController* PC,
     }
 
     // Get friend inbound request list from cache.
-    GetCacheFriendList(PC, FOnCacheFriendsDataComplete::CreateWeakLambda(this, [this, OnComplete](bool bWasSuccessful, TArray<TSharedRef<FOnlineFriend>>& CachedFriendList, const FString& ErrorMessage)
+    GetCacheFriendList(PC, FOnGetCacheFriendListComplete::CreateWeakLambda(this, [this, OnComplete](bool bWasSuccessful, TArray<TSharedRef<FOnlineFriend>>& CachedFriendList, const FString& ErrorMessage)
     {
         if (bWasSuccessful)
         {
@@ -296,7 +294,7 @@ void UFriendsSubsystem::GetOutboundFriendRequestList(const APlayerController* PC
     }
 
     // Get friend outbound request list from cache.
-    GetCacheFriendList(PC, FOnCacheFriendsDataComplete::CreateWeakLambda(this, [this, OnComplete](bool bWasSuccessful, TArray<TSharedRef<FOnlineFriend>>& CachedFriendList, const FString& ErrorMessage)
+    GetCacheFriendList(PC, FOnGetCacheFriendListComplete::CreateWeakLambda(this, [this, OnComplete](bool bWasSuccessful, TArray<TSharedRef<FOnlineFriend>>& CachedFriendList, const FString& ErrorMessage)
     {
         if (bWasSuccessful)
         {
@@ -443,7 +441,7 @@ void UFriendsSubsystem::GetFriendList(const APlayerController* PC, const FOnGetF
     }
 
     // Get accepted friend list from cache.
-    GetCacheFriendList(PC, FOnCacheFriendsDataComplete::CreateWeakLambda(this, [this, OnComplete](bool bWasSuccessful, TArray<TSharedRef<FOnlineFriend>>& CachedFriendList, const FString& ErrorMessage)
+    GetCacheFriendList(PC, FOnGetCacheFriendListComplete::CreateWeakLambda(this, [this, OnComplete](bool bWasSuccessful, TArray<TSharedRef<FOnlineFriend>>& CachedFriendList, const FString& ErrorMessage)
     {
         if (bWasSuccessful)
         {

@@ -27,7 +27,7 @@ public:
 	void SendFriendRequest(const APlayerController* PC, const FUniqueNetIdRepl FriendUserId, const FOnSendFriendRequestComplete& OnComplete = FOnSendFriendRequestComplete());
 
 protected:
-	void GetCacheFriendList(const APlayerController* PC, const FOnCacheFriendsDataComplete& OnComplete = FOnCacheFriendsDataComplete());
+	void GetCacheFriendList(const APlayerController* PC, const FOnGetCacheFriendListComplete& OnComplete = FOnGetCacheFriendListComplete());
 
 	void OnFindFriendComplete(bool bWasSuccessful, const FUniqueNetId& UserId, const FString& DisplayName, const FUniqueNetId& FoundUserId, const FString& Error, int32 LocalUserNum, const FOnFindFriendComplete OnComplete);
 	void OnSendFriendRequestComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& FriendId, const FString& ListName, const FString& ErrorStr, const FOnSendFriendRequestComplete OnComplete);
