@@ -14,61 +14,16 @@
 
 void UInfoWidget::RefreshUI()
 {
-	DisplayInfo();
-}
-
-void UInfoWidget::NativeConstruct()
-{
-	Super::NativeConstruct();
-
-	DisplayInfo();
-}
-
-void UInfoWidget::DisplayInfo()
-{
-	// user info
-	const APlayerController* OwningPlayerController = GetOwningPlayer();
-	if (!OwningPlayerController)
+	FString UserNickname;
+	FString UserId;
+	if (GetUserInfo(UserNickname, UserId))
 	{
-		goto UserInfoEmpty;
-	}
-	const APlayerState* OwningPlayerState = OwningPlayerController->PlayerState;
-	if (!OwningPlayerState)
-	{
-		goto UserInfoEmpty;
-	}
-
-	if (!OwningPlayerState->GetUniqueId().GetType().IsEqual("NULL"))
-	{
-		/**
-		 * Player logged in, displays name and ID.
-		 * For some reason, AB user ID does not Immidiately stored in the PlayerState.UniqueNetId.
-		 * Use Identity Interface as a workaround
-		 */
-		 // Get owning player's local user index
-		const ULocalPlayer* OwningLocalPlayer = OwningPlayerController->GetLocalPlayer();
-		if (!OwningLocalPlayer)
-		{
-			goto UserInfoEmpty;
-		}
-		const FUniqueNetIdPtr OwningNetId = Online::GetSubsystem(
-			GetWorld())->GetIdentityInterface()->GetUniquePlayerId(OwningLocalPlayer->GetLocalPlayerIndex());
-		if (!OwningNetId.IsValid())
-		{
-			goto UserInfoEmpty;
-		}
-
-		const FString UserNickname = GetOwningPlayer()->PlayerState->GetPlayerName();
-		const FString UserId = OwningNetId->ToDebugString();
-
 		Text_Username->SetText(FText::FromString(UserNickname));
 		Text_UserId->SetVisibility(ESlateVisibility::Visible);
 		Text_UserId->SetText(FText::FromString(UserId));
 	}
 	else
 	{
-		UserInfoEmpty:;
-
 		// player not logged in, displays name as 'not logged in'
 		Text_Username->SetText(FText::FromString("Not logged in"));
 		Text_UserId->SetVisibility(ESlateVisibility::Collapsed);
@@ -110,4 +65,54 @@ void UInfoWidget::DisplayInfo()
 		*ProjectVersion,
 		*FString(bIsBaseGame ? "BaseGame" : "TutorialModules"),
 		*PluginsInfo)));
+}
+
+void UInfoWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	RefreshUI();
+}
+
+bool UInfoWidget::GetUserInfo(FString& OutUserNickname, FString& OutUserId) const
+{
+	// user info
+	const APlayerController* OwningPlayerController = GetOwningPlayer();
+	if (!OwningPlayerController)
+	{
+		return false;
+	}
+	const APlayerState* OwningPlayerState = OwningPlayerController->PlayerState;
+	if (!OwningPlayerState)
+	{
+		return false;
+	}
+
+	if (OwningPlayerState->GetUniqueId().GetType().IsEqual("NULL"))
+	{
+		return false;
+	}
+	
+	/**
+	 * Player logged in, displays name and ID.
+	 * For some reason, AB user ID does not Immidiately stored in the PlayerState.UniqueNetId.
+	 * Use Identity Interface as a workaround
+	 */
+	// Get owning player's local user index
+	const ULocalPlayer* OwningLocalPlayer = OwningPlayerController->GetLocalPlayer();
+	if (!OwningLocalPlayer)
+	{
+		return false;
+	}
+	const FUniqueNetIdPtr OwningNetId = Online::GetSubsystem(
+		GetWorld())->GetIdentityInterface()->GetUniquePlayerId(OwningLocalPlayer->GetLocalPlayerIndex());
+	if (!OwningNetId.IsValid())
+	{
+		return false;
+	}
+
+	OutUserNickname = GetOwningPlayer()->PlayerState->GetPlayerName();
+	OutUserId = OwningNetId->ToDebugString();
+
+	return true;
 }
