@@ -59,7 +59,7 @@ void AAccelByteWarsGameMode::BeginPlay()
 		 * (e.g. assigning game mode through the Game State). */
 		else if (GetNetMode() == ENetMode::NM_ListenServer && OnInitializeListenServer.IsBound())
 		{
-			OnInitializeListenServer.Broadcast(GameSessionName);
+			OnInitializeListenServer.Broadcast(NAME_GameSession);
 		}
 	}
 

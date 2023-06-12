@@ -20,7 +20,7 @@ protected:
 	virtual void NativeConstruct() override;
 
 private:
-	void DisplayInfo();
+	bool GetUserInfo(FString& OutUserNickname, FString& OutUserId) const;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Text_Username;
