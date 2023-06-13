@@ -105,29 +105,19 @@ void UFriendsSubsystem::GetCacheFriendList(const APlayerController* PC, const FO
             {
                 UserInterface->ClearOnQueryUserInfoCompleteDelegate_Handle(LocalUserNum, OnQueryUserInfoCompleteDelegateHandle);
 
-                if (bWasSuccessful)
+                // Refresh friends data with queried friend's user information.
+                TArray<TSharedRef<FOnlineFriend>> NewCachedFriendList;
+                FriendsInterface->GetFriendsList(LocalUserNum, TEXT(""), NewCachedFriendList);
+                for (const TSharedRef<FOnlineFriend>& NewCachedFriend : NewCachedFriendList)
                 {
-                    // Refresh friends data with queried friend's user information.
-                    TArray<TSharedRef<FOnlineFriend>> NewCachedFriendList;
-                    FriendsInterface->GetFriendsList(LocalUserNum, TEXT(""), NewCachedFriendList);
-                    for (const TSharedRef<FOnlineFriend>& NewCachedFriend : NewCachedFriendList)
-                    {
-                        // Update friend's avatar URL based on queried friend's user information.
-                        FString UserAvatarURL;
-                        TSharedPtr<FOnlineUser> UserInfo = UserInterface->GetUserInfo(LocalUserNum, NewCachedFriend.Get().GetUserId().Get());
-                        UserInfo->GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, UserAvatarURL);
-                        StaticCastSharedRef<FOnlineFriendAccelByte>(NewCachedFriend).Get().SetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, UserAvatarURL);
-                    }
-
-                    OnComplete.ExecuteIfBound(true, NewCachedFriendList, TEXT(""));
+                    // Update friend's avatar URL based on queried friend's user information.
+                    FString UserAvatarURL;
+                    TSharedPtr<FOnlineUser> UserInfo = UserInterface->GetUserInfo(LocalUserNum, NewCachedFriend.Get().GetUserId().Get());
+                    UserInfo->GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, UserAvatarURL);
+                    StaticCastSharedRef<FOnlineFriendAccelByte>(NewCachedFriend).Get().SetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, UserAvatarURL);
                 }
-                else
-                {
-                    UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Cannot query cached friends' user info. Error: "), *Error);
 
-                    TArray<TSharedRef<FOnlineFriend>> EmptyCachedFriendList;
-                    OnComplete.ExecuteIfBound(false, EmptyCachedFriendList, Error);
-                }
+                OnComplete.ExecuteIfBound(true, NewCachedFriendList, TEXT(""));
             }
         ));
 

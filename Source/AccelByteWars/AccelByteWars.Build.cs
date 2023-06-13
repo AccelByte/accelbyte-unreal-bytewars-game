@@ -26,10 +26,10 @@ public class AccelByteWars : ModuleRules
 			"AccelByteUe4Sdk", 
 			"AccelByteNetworkUtilities", 
 			"OnlineSubsystemAccelByte",
-            "OnlineSubsystem",
-            "OnlineSubsystemUtils",
-            "Json",
-            "HTTP"
+			"OnlineSubsystem",
+			"OnlineSubsystemUtils",
+			"Json",
+			"HTTP"
         });
 
 

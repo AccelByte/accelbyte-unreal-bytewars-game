@@ -10,13 +10,14 @@
 
 class UCommonButtonBase;
 
-UCLASS()
+UCLASS(Abstract)
 class ACCELBYTEWARS_API USinglePlatformAuthWidget : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
 
 protected:
 	void NativeConstruct() override;
+	void NativeDestruct() override;
 
 private:
 	void OnLoginWithSinglePlatformAuthButtonClicked();

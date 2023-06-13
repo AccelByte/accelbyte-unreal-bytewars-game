@@ -128,7 +128,7 @@ void UMatchmakingSubsystem_Starter::OnServerReceivedSession(FName SessionName)
 	}
 
 	// Set server's game mode.
-	const FString GameMode = SessionInfo->GetBackendSessionData()->Configuration.Name;
+	const FString GameMode = SessionInfo->GetBackendSessionData()->Configuration.Name.Replace(TEXT("unreal-"), TEXT(""));
 	if (!GameMode.IsEmpty())
 	{
 		GameState->AssignGameMode(GameMode.ToUpper());
