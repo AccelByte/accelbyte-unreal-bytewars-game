@@ -110,8 +110,9 @@ void UFriendWidgetEntry::OnInviteButtonClicked()
 			if (bWasSuccessful) 
 			{
 				// Since the invitation is already sent, refresh the entry data to show that the friend cannot be invited again.
-				FriendData->Status = EFriendStatus::Searched;
-				NativeOnListItemObjectSet(FriendData);
+				CachedFriendData->bCannotBeInvited = FriendData->bCannotBeInvited;
+				CachedFriendData->ReasonCannotBeInvited = FriendData->ReasonCannotBeInvited;
+				NativeOnListItemObjectSet(CachedFriendData);
 			}
 		}
 	));

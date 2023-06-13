@@ -88,10 +88,51 @@ void UFriendsSubsystem::GetCacheFriendList(const APlayerController* PC, const FO
     const int32 LocalUserNum = GetPlayerControllerId(PC);
     
     // Try to get cached friend list first.
-    TArray<TSharedRef<FOnlineFriend>> OutFriendList;
-    if (FriendsInterface->GetFriendsList(LocalUserNum, TEXT(""), OutFriendList))
+    TArray<TSharedRef<FOnlineFriend>> CachedFriendList;
+    if (FriendsInterface->GetFriendsList(LocalUserNum, TEXT(""), CachedFriendList))
     {
-        OnComplete.ExecuteIfBound(true, OutFriendList, TEXT(""));
+        // Then, update the cached friends' information by querying their user information.
+        TPartyMemberArray FriendIds;
+        for (const TSharedRef<FOnlineFriend>& CachedFriend : CachedFriendList)
+        {
+            FriendIds.Add(CachedFriend.Get().GetUserId());
+        }
+
+        // Create callback to handle queried friends' user information.
+        OnQueryUserInfoCompleteDelegateHandle = UserInterface->AddOnQueryUserInfoCompleteDelegate_Handle(
+            LocalUserNum,
+            FOnQueryUserInfoCompleteDelegate::CreateWeakLambda(this, [this, OnComplete](int32 LocalUserNum, bool bWasSuccessful, const TArray<FUniqueNetIdRef>& UserIds, const FString& Error)
+            {
+                UserInterface->ClearOnQueryUserInfoCompleteDelegate_Handle(LocalUserNum, OnQueryUserInfoCompleteDelegateHandle);
+
+                if (bWasSuccessful)
+                {
+                    // Refresh friends data with queried friend's user information.
+                    TArray<TSharedRef<FOnlineFriend>> NewCachedFriendList;
+                    FriendsInterface->GetFriendsList(LocalUserNum, TEXT(""), NewCachedFriendList);
+                    for (const TSharedRef<FOnlineFriend>& NewCachedFriend : NewCachedFriendList)
+                    {
+                        // Update friend's avatar URL based on queried friend's user information.
+                        FString UserAvatarURL;
+                        TSharedPtr<FOnlineUser> UserInfo = UserInterface->GetUserInfo(LocalUserNum, NewCachedFriend.Get().GetUserId().Get());
+                        UserInfo->GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, UserAvatarURL);
+                        StaticCastSharedRef<FOnlineFriendAccelByte>(NewCachedFriend).Get().SetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, UserAvatarURL);
+                    }
+
+                    OnComplete.ExecuteIfBound(true, NewCachedFriendList, TEXT(""));
+                }
+                else
+                {
+                    UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Cannot query cached friends' user info. Error: "), *Error);
+
+                    TArray<TSharedRef<FOnlineFriend>> EmptyCachedFriendList;
+                    OnComplete.ExecuteIfBound(false, EmptyCachedFriendList, Error);
+                }
+            }
+        ));
+
+        // Query friends' user information.
+        UserInterface->QueryUserInfo(LocalUserNum, FriendIds);
     }
     // If none, request to backend then get the cached the friend list.
     else
@@ -101,10 +142,10 @@ void UFriendsSubsystem::GetCacheFriendList(const APlayerController* PC, const FO
             TEXT(""), 
             FOnReadFriendsListComplete::CreateWeakLambda(this, [this, OnComplete](int32 LocalUserNum, bool bWasSuccessful, const FString& ListName, const FString& Error)
             {
-                TArray<TSharedRef<FOnlineFriend>> OutFriendList;
-                FriendsInterface->GetFriendsList(LocalUserNum, TEXT(""), OutFriendList);
+                TArray<TSharedRef<FOnlineFriend>> CachedFriendList;
+                FriendsInterface->GetFriendsList(LocalUserNum, TEXT(""), CachedFriendList);
 
-                OnComplete.ExecuteIfBound(bWasSuccessful, OutFriendList, Error);
+                OnComplete.ExecuteIfBound(bWasSuccessful, CachedFriendList, Error);
             }
         ));
     }
@@ -227,7 +268,7 @@ void UFriendsSubsystem::OnSendFriendRequestComplete(int32 LocalUserNum, bool bWa
 
 #pragma region Module.8b Function Definitions
 
-void UFriendsSubsystem::BindOnCachedFriendsDataUpdated(const APlayerController* PC, const FOnFriendsChangeDelegate& Delegate)
+void UFriendsSubsystem::BindOnCachedFriendsDataUpdated(const APlayerController* PC, const FOnCachedFriendsDataUpdated& Delegate)
 {
     ensure(FriendsInterface);
 
