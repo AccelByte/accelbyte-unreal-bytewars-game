@@ -36,5 +36,4 @@ void UFriendRequestsWidget_Starter::NativeOnDeactivated()
 void UFriendRequestsWidget_Starter::GetFriendRequestList()
 {
 	// TODO: Get and display friend request list here.
-	UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Get friend request list is not yet implemented."));
 }

@@ -38,5 +38,4 @@ void UFindFriendsWidget_Starter::NativeOnDeactivated()
 void UFindFriendsWidget_Starter::OnSearchBarCommitted(const FText& Text, ETextCommit::Type CommitMethod)
 {
 	// TODO: Get and display find friend result here.
-	UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Find friends is not yet implemented."));
 }
