@@ -99,21 +99,25 @@ void UFriendWidgetEntry_Starter::NativeOnListItemObjectSet(UObject* ListItemObje
 void UFriendWidgetEntry_Starter::OnInviteButtonClicked()
 {
 	// TODO: Call send friend request here.
+	UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Send a friend request is not yet implemented."));
 }
 
 void UFriendWidgetEntry_Starter::OnAcceptButtonClicked()
 {
 	// TODO: Call accept friend request here.
+	UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Accept a friend request is not yet implemented."));
 }
 
 void UFriendWidgetEntry_Starter::OnRejectButtonClicked()
 {
 	// TODO: Call reject friend request here.
+	UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Reject a friend request is not yet implemented."));
 }
 
 void UFriendWidgetEntry_Starter::OnCancelButtonClicked()
 {
 	// TODO: Call cancel friend request here.
+	UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Cancel a friend request is not yet implemented."));
 }
 
 #undef LOCTEXT_NAMESPACE

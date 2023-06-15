@@ -28,12 +28,13 @@ void USentFriendRequestsWidget_Starter::NativeOnActivated()
 
 void USentFriendRequestsWidget_Starter::NativeOnDeactivated()
 {
-	Super::NativeOnDeactivated();
-
 	// TODO: Unbind event to refresh sent friend request list here.
+
+	Super::NativeOnDeactivated();
 }
 
 void USentFriendRequestsWidget_Starter::GetSentFriendRequestList()
 {
 	// TODO: Get and display sent friend request list here.
+	UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Get sent friend request list is not yet implemented."));
 }

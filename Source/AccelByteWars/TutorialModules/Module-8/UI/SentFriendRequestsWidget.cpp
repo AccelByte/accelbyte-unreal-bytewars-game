@@ -27,9 +27,9 @@ void USentFriendRequestsWidget::NativeOnActivated()
 
 void USentFriendRequestsWidget::NativeOnDeactivated()
 {
-	Super::NativeOnDeactivated();
-
 	FriendsSubsystem->UnbindOnCachedFriendsDataUpdated(GetOwningPlayer());
+
+	Super::NativeOnDeactivated();
 }
 
 void USentFriendRequestsWidget::GetSentFriendRequestList()

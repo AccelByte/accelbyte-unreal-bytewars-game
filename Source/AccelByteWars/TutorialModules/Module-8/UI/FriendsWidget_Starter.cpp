@@ -33,16 +33,17 @@ void UFriendsWidget_Starter::NativeOnActivated()
 
 void UFriendsWidget_Starter::NativeOnDeactivated()
 {
-	Super::NativeOnDeactivated();
-
 	WidgetList->GetListView()->OnItemClicked().Clear();
 
 	// TODO: Unbind event to refresh friend list here.
+
+	Super::NativeOnDeactivated();
 }
 
 void UFriendsWidget_Starter::GetFriendList()
 {
 	// TODO: Get and display friend list here.
+	UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Get friend list is not yet implemented."));
 }
 
 void UFriendsWidget_Starter::OnFriendEntryClicked(UObject* Item)

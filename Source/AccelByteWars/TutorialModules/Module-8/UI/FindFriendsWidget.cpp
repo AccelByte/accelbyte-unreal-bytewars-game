@@ -30,9 +30,9 @@ void UFindFriendsWidget::NativeOnActivated()
 
 void UFindFriendsWidget::NativeOnDeactivated()
 {
-	Super::NativeOnDeactivated();
-
 	Edt_SearchBar->OnTextCommitted.Clear();
+
+	Super::NativeOnDeactivated();
 }
 
 void UFindFriendsWidget::OnSearchBarCommitted(const FText& Text, ETextCommit::Type CommitMethod)

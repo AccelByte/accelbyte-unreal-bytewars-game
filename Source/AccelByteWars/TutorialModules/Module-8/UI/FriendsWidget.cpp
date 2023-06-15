@@ -32,11 +32,11 @@ void UFriendsWidget::NativeOnActivated()
 
 void UFriendsWidget::NativeOnDeactivated()
 {
-	Super::NativeOnDeactivated();
-
 	WidgetList->GetListView()->OnItemClicked().Clear();
 
 	FriendsSubsystem->UnbindOnCachedFriendsDataUpdated(GetOwningPlayer());
+
+	Super::NativeOnDeactivated();
 }
 
 void UFriendsWidget::GetFriendList()

@@ -24,12 +24,12 @@ void USocialWidget_Starter::NativeOnActivated()
 
 void USocialWidget_Starter::NativeOnDeactivated()
 {
-	Super::NativeOnDeactivated();
-
 	Btn_FindFriends->OnClicked().Clear();
 	Btn_Friends->OnClicked().Clear();
 	Btn_FriendRequests->OnClicked().Clear();
 	Btn_SentFriendRequests->OnClicked().Clear();
+
+	Super::NativeOnDeactivated();
 }
 
 void USocialWidget_Starter::OpenFriendMenu(TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass)
