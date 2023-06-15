@@ -30,7 +30,6 @@ void UFriendWidgetEntry_Starter::NativeConstruct()
 	Btn_Accept->OnClicked().AddUObject(this, &ThisClass::OnAcceptButtonClicked);
 	Btn_Reject->OnClicked().AddUObject(this, &ThisClass::OnRejectButtonClicked);
 	Btn_Cancel->OnClicked().AddUObject(this, &ThisClass::OnCancelButtonClicked);
-	Btn_Unblock->OnClicked().AddUObject(this, &ThisClass::OnUnblockButtonClicked);
 }
 
 void UFriendWidgetEntry_Starter::NativeOnListItemObjectSet(UObject* ListItemObject)
@@ -115,11 +114,6 @@ void UFriendWidgetEntry_Starter::OnRejectButtonClicked()
 void UFriendWidgetEntry_Starter::OnCancelButtonClicked()
 {
 	// TODO: Call cancel friend request here.
-}
-
-void UFriendWidgetEntry_Starter::OnUnblockButtonClicked()
-{
-	// TODO: Implement unblock player on the future tutorial module.
 }
 
 #undef LOCTEXT_NAMESPACE

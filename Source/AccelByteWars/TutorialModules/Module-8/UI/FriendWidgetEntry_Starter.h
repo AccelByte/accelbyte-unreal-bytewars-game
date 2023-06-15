@@ -28,7 +28,6 @@ protected:
 	void OnAcceptButtonClicked();
 	void OnRejectButtonClicked();
 	void OnCancelButtonClicked();
-	void OnUnblockButtonClicked();
 
 	UPromptSubsystem* PromptSubsystem;
 	UFriendsSubsystem_Starter* FriendsSubsystem;

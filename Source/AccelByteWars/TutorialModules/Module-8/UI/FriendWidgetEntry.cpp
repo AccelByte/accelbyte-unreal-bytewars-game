@@ -30,7 +30,6 @@ void UFriendWidgetEntry::NativeConstruct()
 	Btn_Accept->OnClicked().AddUObject(this, &ThisClass::OnAcceptButtonClicked);
 	Btn_Reject->OnClicked().AddUObject(this, &ThisClass::OnRejectButtonClicked);
 	Btn_Cancel->OnClicked().AddUObject(this, &ThisClass::OnCancelButtonClicked);
-	Btn_Unblock->OnClicked().AddUObject(this, &ThisClass::OnUnblockButtonClicked);
 }
 
 void UFriendWidgetEntry::NativeOnListItemObjectSet(UObject* ListItemObject)
@@ -141,11 +140,6 @@ void UFriendWidgetEntry::OnCancelButtonClicked()
 
 	// Cancel friend request is the same as removing a friend.
 	FriendsSubsystem->RemoveFriend(GetOwningPlayer(), CachedFriendData->UserId);
-}
-
-void UFriendWidgetEntry::OnUnblockButtonClicked()
-{
-	// TODO: Implement unblock player on the future tutorial module.
 }
 
 #undef LOCTEXT_NAMESPACE
