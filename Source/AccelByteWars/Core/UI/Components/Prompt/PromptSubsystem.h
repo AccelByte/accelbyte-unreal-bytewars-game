@@ -9,6 +9,9 @@
 #include "Core/UI/Components/Prompt/PopUp/PopUpWidget.h"
 #include "PromptSubsystem.generated.h"
 
+#define MESSAGE_PROMPT_TEXT NSLOCTEXT("AccelByteWars", "Message", "Message")
+#define ERROR_PROMPT_TEXT NSLOCTEXT("AccelByteWars", "Error", "Error")
+
 class UAccelByteWarsGameInstance;
 class ULoadingWidget;
 
@@ -32,7 +35,7 @@ public:
 	void ShowDialoguePopUp(const FText Header, const FText Body, const EPopUpType Type, FPopUpResultDelegate Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "Loading Prompt")
-	void ShowLoading(const FText LoadingMessage = INVTEXT("Loading"));
+	void ShowLoading(const FText LoadingMessage = NSLOCTEXT("AccelByteWars", "Loading", "Loading"));
 
 	UFUNCTION(BlueprintCallable, Category = "Loading Prompt")
 	void HideLoading();
