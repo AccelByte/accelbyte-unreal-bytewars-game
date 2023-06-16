@@ -269,7 +269,10 @@ void UMatchmakingEssentialsSubsystem::StartMatchmaking(APlayerController* PC, co
 	if (SessionInterface->StartMatchmaking(USER_ID_TO_MATCHMAKING_USER_ARRAY(LocalPlayerId.ToSharedRef()), NAME_GameSession, FOnlineSessionSettings(), MatchmakingSearchHandle, OnStartMatchmakingCompleteDelegate))
 	{
 		// If success, save the matchmaking search results.
-		CurrentMatchmakingSearchHandle = MatchmakingSearchHandle;
+		CurrentMatchmakingSearchHandle = StaticCastSharedRef<FOnlineSessionSearchAccelByte>(MatchmakingSearchHandle);
+
+		// Start finding match timeout.
+		GetWorld()->GetTimerManager().SetTimer(FindMatchTimeoutHandle, [this, PC]() { OnFindingMatchTimeout(PC); }, FindMatchTimeout, false);
 	}
 	else
 	{
@@ -321,6 +324,9 @@ void UMatchmakingEssentialsSubsystem::OnStartMatchmakingComplete(FName SessionNa
 
 void UMatchmakingEssentialsSubsystem::OnMatchmakingComplete(FName SessionName, bool bWasSuccessful, APlayerController* PC)
 {
+	// Clear finding match timeout handler.
+	GetWorld()->GetTimerManager().ClearTimer(FindMatchTimeoutHandle);
+
 	if (!IsGameSessionValid(SessionName))
 	{
 		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed, FAILED_FIND_MATCH);
@@ -348,8 +354,77 @@ void UMatchmakingEssentialsSubsystem::OnMatchmakingComplete(FName SessionName, b
 	CurrentMatchmakingSearchHandle.Reset();
 }
 
+void UMatchmakingEssentialsSubsystem::OnFindingMatchTimeout(APlayerController* PC)
+{
+	// Clear finding match timeout handler.
+	GetWorld()->GetTimerManager().ClearTimer(FindMatchTimeoutHandle);
+
+	// Stop listenting to on-matchmaking complete.
+	SessionInterface->ClearOnMatchmakingCompleteDelegate_Handle(MatchmakingCompleteDelegateHandle);
+
+	// Check if the game session is already received. If yes, try to join the game session.
+	FNamedOnlineSession* Session = SessionInterface->GetNamedSession(CurrentMatchmakingSearchHandle->SearchingSessionName);
+	if (Session)
+	{
+		JoinSession(CurrentMatchmakingSearchHandle->SearchResults[0], PC);
+		return;
+	}
+
+	const FUniqueNetIdPtr LocalPlayerId = GetPlayerUniqueNetId(PC);
+	if (!ensure(LocalPlayerId.IsValid()))
+	{
+		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot manually get match session. LocalPlayer NetId is not valid."));
+		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed, FAILED_FIND_MATCH);
+		return;
+	}
+
+	// Manually request to backend to get the game session. If valid, try to join the game session.
+	FRegistry::MatchmakingV2.GetMatchTicketDetails(
+		CurrentMatchmakingSearchHandle->GetTicketId(),
+		AccelByte::THandler<FAccelByteModelsV2MatchmakingGetTicketDetailsResponse>::CreateWeakLambda(this, [this, PC, LocalPlayerId](const FAccelByteModelsV2MatchmakingGetTicketDetailsResponse& Result)
+		{
+			if (Result.MatchFound)
+			{
+				FOnlineSessionSearchResult SessionResult;
+
+				// Construct game session based on session-type.
+				if (CurrentMatchmakingSearchHandle->SearchingSessionName == NAME_GameSession)
+				{
+					FAccelByteModelsV2GameSession GameSession;
+					GameSession.ID = Result.SessionId;
+					GameSession.SessionType = EAccelByteV2SessionType::GameSession;
+					SessionInterface->ConstructGameSessionFromBackendSessionModel(GameSession, SessionResult.Session);
+				}
+				else if (CurrentMatchmakingSearchHandle->SearchingSessionName == NAME_PartySession)
+				{
+					FAccelByteModelsV2PartySession PartySession;
+					PartySession.ID = Result.SessionId;
+					PartySession.SessionType = EAccelByteV2SessionType::PartySession;
+					SessionInterface->ConstructPartySessionFromBackendSessionModel(PartySession, SessionResult.Session);
+				}
+
+				// Try to join the session.
+				JoinSession(SessionResult, PC);
+			}
+			else
+			{
+				SessionInterface->CancelMatchmaking(LocalPlayerId.ToSharedRef().Get(), CurrentMatchmakingSearchHandle->SearchingSessionName);
+				OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed, FAILED_FIND_MATCH);
+			}
+		}),
+		AccelByte::FErrorHandler::CreateWeakLambda(this, [this, LocalPlayerId](int32 ErrorCode, const FString& ErrorMessage)
+		{
+			SessionInterface->CancelMatchmaking(LocalPlayerId.ToSharedRef().Get(), CurrentMatchmakingSearchHandle->SearchingSessionName);
+			OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed, FAILED_FIND_MATCH);
+		})
+	);
+}
+
 void UMatchmakingEssentialsSubsystem::CancelMatchmaking(APlayerController* PC)
 {
+	// Clear finding match timeout handler.
+	GetWorld()->GetTimerManager().ClearTimer(FindMatchTimeoutHandle);
+
 	if (!ensure(SessionInterface.IsValid()))
 	{
 		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot cancel matchmaking. Session Interface is not valid."));
