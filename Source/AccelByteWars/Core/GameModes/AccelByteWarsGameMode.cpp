@@ -47,17 +47,15 @@ void AAccelByteWarsGameMode::BeginPlay()
 		FString CodeName;
 		FParse::Value(FCommandLine::Get(), TEXT("-GameMode="), CodeName);
 
-		// Prioritize assign game mode from command-line.
-		if (!CodeName.IsEmpty())
-		{
-			ABGameState->AssignGameMode(CodeName);
-		}
+		// if launch argument does not exist, will use the first game mode
+		ABGameState->AssignGameMode(CodeName);
+
 		/* When transitioning to the listen server (P2P server), the server will initialize 
 		 * a new Game Instance and Game State (this is Unreal Engine's default behavior).
 		 * Thus, the data set up before transitioning to the listen server will be reset.
 		 * Therefore, the delegate below will help to reinitialize the listen server data 
 		 * (e.g. assigning game mode through the Game State). */
-		else if (GetNetMode() == ENetMode::NM_ListenServer && OnInitializeListenServer.IsBound())
+		if (GetNetMode() == ENetMode::NM_ListenServer && OnInitializeListenServer.IsBound())
 		{
 			OnInitializeListenServer.Broadcast(NAME_GameSession);
 		}
