@@ -134,8 +134,9 @@ void UMatchLobbyWidget::ResetTeamEntries()
 void UMatchLobbyWidget::GenerateMultiplayerTeamEntries()
 {
 	// Generate team entries only on game clients.
+	// Also, don't attempt to generate entries when the Listen Server is tearing down.
 	ENetMode NetMode = GetOwningPlayer()->GetNetMode();
-	if (NetMode != ENetMode::NM_Client && NetMode != ENetMode::NM_ListenServer) 
+	if ((NetMode != ENetMode::NM_Client && NetMode != ENetMode::NM_ListenServer) || GetWorld()->bIsTearingDown)
 	{
 		return;
 	}
@@ -144,7 +145,7 @@ void UMatchLobbyWidget::GenerateMultiplayerTeamEntries()
 
 	// Spawn team and player entry widgets.
 	int32 PlayerIndex = 0;
-	for (FGameplayTeamData Team : GameState->Teams) 
+	for (const FGameplayTeamData& Team : GameState->Teams) 
 	{
 		if (Team.TeamMembers.IsEmpty()) continue;
 
@@ -155,7 +156,7 @@ void UMatchLobbyWidget::GenerateMultiplayerTeamEntries()
 		TeamEntry->SetTeamEntryColor(TeamColor);
 
 		// Spawn team entry widget.
-		for (FGameplayPlayerData Member : Team.TeamMembers)
+		for (const FGameplayPlayerData& Member : Team.TeamMembers)
 		{
 			PlayerIndex++;
 			const FString PlayerName = Member.PlayerName.IsEmpty() ? FString::Printf(TEXT("Player %d"), PlayerIndex) : Member.PlayerName;
