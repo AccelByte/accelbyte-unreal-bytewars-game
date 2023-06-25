@@ -14,6 +14,7 @@
 #include "Framework/Notifications/NotificationManager.h"
 
 const FPrimaryAssetType	UTutorialModuleDataAsset::TutorialModuleAssetType = TEXT("TutorialModule");
+TSet<FString> UTutorialModuleDataAsset::GeneratedWidgetUsedIds;
 
 FTutorialModuleData UTutorialModuleDataAsset::GetTutorialModuleDataByCodeName(const FString& InCodeName)
 {
@@ -87,48 +88,115 @@ void UTutorialModuleDataAsset::UpdateDataAssetProperties()
 {
 	ValidateDataAssetProperties();
 
-#pragma region "Connect Other Tutorial Module Widgets to This Tutorial Module"
-	// Refresh "Other Tutorial Module Widgets to This Tutorial Module" connections.
-	for (FTutorialModuleWidgetConnection& Connection : OtherTutorialModuleWidgetsToThisModuleWidgetConnections)
+	// Clean up last associated widgets metadata to avoid duplication.
+	for (FTutorialModuleAssociateWidget& LastAssociateWidget : LastAssociateWidgets)
 	{
-		Connection.bIsTargetUISelf = true;
-		Connection.TargetUIClass = GetTutorialModuleUIClass();
-	}
-#pragma endregion
-
-#pragma region "Connect This Tutorial Module Widgets to Non Tutorial Module"
-	// Reset Target UI Class of "This Tutorial Module Widgets to Non Tutorial Module" connections.
-	// This will makes sure the DefaultObject of TargetUIClass corretly points to this Tutorial Module.
-	for (FTutorialModuleWidgetConnection& LastConnection : LastThisTutorialModuleWidgetToNonModuleWidgetsConnections)
-	{
-		if (!LastConnection.TargetUIClass || !LastConnection.TargetUIClass.GetDefaultObject()) continue;
-		LastConnection.TargetUIClass.GetDefaultObject()->DissociateTutorialModuleWidgets.RemoveAll([this](const FTutorialModuleWidgetConnection& Temp)
+		if (LastAssociateWidget.DefaultWidgetClass && LastAssociateWidget.DefaultWidgetClass.GetDefaultObject())
 		{
-			return Temp.SourceTutorialModule == this;
-		});
-	}
-	for (FTutorialModuleWidgetConnection& Connection : ThisTutorialModuleWidgetToNonTutorialModuleWidgetsConnections)
-	{
-		if (!Connection.TargetUIClass || !Connection.TargetUIClass.GetDefaultObject()) continue;
-		Connection.TargetUIClass.GetDefaultObject()->DissociateTutorialModuleWidgets.RemoveAll([this](const FTutorialModuleWidgetConnection& Temp)
-		{
-			return Temp.SourceTutorialModule == this;
-		});
-	}
+			LastAssociateWidget.DefaultWidgetClass.GetDefaultObject()->AssociateTutorialModule = nullptr;
+		}
 
-	// Refresh "This Tutorial Module Widgets to Non Tutorial Module" connections.
-	for (FTutorialModuleWidgetConnection& Connection : ThisTutorialModuleWidgetToNonTutorialModuleWidgetsConnections)
-	{
-		Connection.bIsTargetUISelf = false;
-		Connection.SourceTutorialModule = this;
-
-		if (Connection.TargetUIClass && Connection.TargetUIClass.GetDefaultObject())
+		if (LastAssociateWidget.StarterWidgetClass && LastAssociateWidget.StarterWidgetClass.GetDefaultObject())
 		{
-			Connection.TargetUIClass.GetDefaultObject()->DissociateTutorialModuleWidgets.Add(Connection);
+			LastAssociateWidget.StarterWidgetClass.GetDefaultObject()->AssociateTutorialModule = nullptr;
 		}
 	}
-	LastThisTutorialModuleWidgetToNonModuleWidgetsConnections = ThisTutorialModuleWidgetToNonTutorialModuleWidgetsConnections;
-#pragma endregion
+	
+	// Set this tutorial module to the associated widgets.
+	for (FTutorialModuleAssociateWidget& AssociateWidget : AssociateWidgets)
+	{
+		if (AssociateWidget.DefaultWidgetClass && AssociateWidget.DefaultWidgetClass.GetDefaultObject()) 
+		{
+			AssociateWidget.DefaultWidgetClass.GetDefaultObject()->AssociateTutorialModule = this;
+		}
+		
+		if (AssociateWidget.StarterWidgetClass && AssociateWidget.StarterWidgetClass.GetDefaultObject())
+		{
+			AssociateWidget.StarterWidgetClass.GetDefaultObject()->AssociateTutorialModule = this;
+		}
+	}
+
+	// Clean up last generated widgets metadata to avoid duplication.
+	for (FTutorialModuleGeneratedWidget& LastGeneratedWidget : LastGeneratedWidgets)
+	{
+		UTutorialModuleDataAsset::GeneratedWidgetUsedIds.Remove(LastGeneratedWidget.WidgetId);
+		LastGeneratedWidget.OtherTutorialModule = nullptr;
+
+		if (!LastGeneratedWidget.TargetWidgetClass || !LastGeneratedWidget.TargetWidgetClass.GetDefaultObject())
+		{
+			continue;
+		}
+
+		LastGeneratedWidget.TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.RemoveAll([this](const FTutorialModuleGeneratedWidget& Temp)
+		{
+			return Temp.OwnerTutorialModule == this;
+		});
+	}
+	for (FTutorialModuleGeneratedWidget& GeneratedWidget : GeneratedWidgets)
+	{
+		if (!GeneratedWidget.TargetWidgetClass || !GeneratedWidget.TargetWidgetClass.GetDefaultObject())
+		{
+			continue;
+		}
+
+		GeneratedWidget.TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.RemoveAll([this](const FTutorialModuleGeneratedWidget& Temp)
+		{
+			return Temp.OwnerTutorialModule == this;
+		});
+	}
+
+	// Assign fresh generated widget to the target widget class.
+	for (FTutorialModuleGeneratedWidget& GeneratedWidget : GeneratedWidgets) 
+	{
+		// Clean up unnecessary references.
+		if (GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::GENERIC_WIDGET_ENTRY_BUTTON && 
+			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::GENERIC_WIDGET) 
+		{
+			GeneratedWidget.GenericWidgetClass = nullptr;
+		}
+		if (GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_BUTTON &&
+			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_WIDGET)
+		{
+			GeneratedWidget.OtherTutorialModule = nullptr;
+		}
+		
+		// Assign the owner of the generated widget metadata to this Tutorial Module.
+		GeneratedWidget.OwnerTutorialModule = this;
+
+		// Check if the widget id is already used.
+		if (UTutorialModuleDataAsset::GeneratedWidgetUsedIds.Contains(GeneratedWidget.WidgetId))
+		{
+			ShowPopupMessage(FString::Printf(TEXT("%s widget id is already used. Widget id must be unique."), *GeneratedWidget.WidgetId));
+			GeneratedWidget.WidgetId = TEXT("");
+		}
+		else if (!GeneratedWidget.WidgetId.IsEmpty())
+		{
+			UTutorialModuleDataAsset::GeneratedWidgetUsedIds.Add(GeneratedWidget.WidgetId);
+		}
+
+		// Check if asssociate widget entry index is out of bound.
+		if (GeneratedWidget.WidgetType == ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_ENTRY_BUTTON &&
+			!(GeneratedWidget.AssociateEntryWidgetIndex >= -1 && GeneratedWidget.AssociateEntryWidgetIndex <= AssociateWidgets.Num() - 1))
+		{
+			ShowPopupMessage(FString::Printf(TEXT("Associate Entry Widget Index %d is out of bound for %s. Assigning default value -1."), GeneratedWidget.AssociateEntryWidgetIndex, *GeneratedWidget.OtherTutorialModule->GetName()));
+			GeneratedWidget.AssociateEntryWidgetIndex = -1;
+		}
+		else if (GeneratedWidget.WidgetType == ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_BUTTON && GeneratedWidget.OtherTutorialModule &&
+			!(GeneratedWidget.AssociateEntryWidgetIndex >= -1 && GeneratedWidget.AssociateEntryWidgetIndex <= GeneratedWidget.OtherTutorialModule->AssociateWidgets.Num() - 1))
+		{
+			ShowPopupMessage(FString::Printf(TEXT("Associate Entry Widget Index %d is out of bound for %s. Assigning default value -1."), GeneratedWidget.AssociateEntryWidgetIndex, *GeneratedWidget.OtherTutorialModule->GetName()));
+			GeneratedWidget.AssociateEntryWidgetIndex = -1;
+		}
+
+		// Assign the generated widget to the target widget class.
+		if (!GeneratedWidget.TargetWidgetClass || !GeneratedWidget.TargetWidgetClass.GetDefaultObject()) 
+		{
+			continue;
+		}
+		GeneratedWidget.TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.Add(GeneratedWidget);
+	}
+
+	LastGeneratedWidgets = GeneratedWidgets;
 }
 
 void UTutorialModuleDataAsset::ValidateDataAssetProperties()
@@ -212,6 +280,45 @@ bool UTutorialModuleDataAsset::ValidateClassProperty(TSubclassOf<UTutorialModule
 	return SubsystemClass != nullptr;
 }
 
+void UTutorialModuleDataAsset::CleanUpDataAssetProperties()
+{
+	TutorialModuleDependencies.Empty();
+
+	for (FTutorialModuleGeneratedWidget& Connection : GeneratedWidgets)
+	{
+		if (!Connection.TargetWidgetClass || !Connection.TargetWidgetClass.GetDefaultObject())
+		{
+			continue;
+		}
+
+		Connection.TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.RemoveAll([this](const FTutorialModuleGeneratedWidget& Temp)
+		{
+			return Temp.OwnerTutorialModule == this;
+		});
+	}
+	GeneratedWidgets.Empty();
+
+	if (DefaultUIClass.Get())
+	{
+		DefaultUIClass.GetDefaultObject()->AssociateTutorialModule = nullptr;
+	}
+
+	if (DefaultSubsystemClass.Get())
+	{
+		DefaultSubsystemClass.GetDefaultObject()->AssociateTutorialModule = nullptr;
+	}
+
+	if (StarterUIClass.Get())
+	{
+		StarterUIClass.GetDefaultObject()->AssociateTutorialModule = nullptr;
+	}
+
+	if (StarterSubsystemClass.Get())
+	{
+		StarterSubsystemClass.GetDefaultObject()->AssociateTutorialModule = nullptr;
+	}
+}
+
 void UTutorialModuleDataAsset::PostLoad()
 {
 	Super::PostLoad();
@@ -246,3 +353,10 @@ void UTutorialModuleDataAsset::ShowPopupMessage(const FString& Message) const
 	FSlateNotificationManager::Get().AddNotification(Info);
 }
 #endif
+
+void UTutorialModuleDataAsset::FinishDestroy()
+{
+	CleanUpDataAssetProperties();
+
+	Super::FinishDestroy();
+}

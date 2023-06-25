@@ -7,6 +7,7 @@
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleUtility.h"
+#include "Core/AssetManager/TutorialModules/TutorialModuleDataAsset.h"
 #include "AccelByteWarsActivatableWidget.generated.h"
 
 
@@ -39,17 +40,17 @@ public:
 	virtual TOptional<FUIInputConfig> GetDesiredInputConfig() const override;
 	//~End of UCommonActivatableWidget interface
 
-	UFUNCTION(BlueprintImplementableEvent, Category = "Tutorial Module Connection")
-	void SetTutorialModuleWidgetContainers();
+	UFUNCTION(BlueprintImplementableEvent, Category = "Tutorial Module Metadata")
+	void SetGeneratedWidgetContainers();
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tutorial Module Connection", meta = (DisplayThumbnail = false))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tutorial Module Metadata", meta = (DisplayThumbnail = false))
 	UTutorialModuleDataAsset* AssociateTutorialModule;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tutorial Module Connection", meta = (DisplayThumbnail = false))
-	TArray<FTutorialModuleWidgetConnection> DissociateTutorialModuleWidgets;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tutorial Module Metadata", meta = (DisplayThumbnail = false))
+	TArray<FTutorialModuleGeneratedWidget> GeneratedWidgets;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tutorial Module Connection", meta = (DisplayThumbnail = false))
-	TArray<UPanelWidget*> TutorialModuleWidgetContainers;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tutorial Module Metadata", meta = (DisplayThumbnail = false))
+	TArray<UPanelWidget*> GeneratedWidgetContainers;
 
 #if WITH_EDITOR
 	virtual void ValidateCompiledWidgetTree(const UWidgetTree& BlueprintWidgetTree, class IWidgetCompilerLog& CompileLog) const override;
@@ -77,7 +78,7 @@ protected:
 	void SetInputModeToGameOnly();
 
 private:
-	void LoadTutorialModuleWidgetConnection();
-	void InitializeTutorialModuleWidgets(TArray<FTutorialModuleWidgetConnection>& TutorialModuleWidgets);
-	bool bIsTutorialModuleWidgetsInitialized = false;
+	void InitializeGeneratedWidgets();
+
+	bool bIsAlreadyInitialized = false;
 };

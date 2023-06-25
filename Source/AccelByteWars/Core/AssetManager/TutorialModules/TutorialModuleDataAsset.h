@@ -40,6 +40,7 @@ public:
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 	virtual void PostDuplicate(EDuplicateMode::Type DuplicateMode) override;
 #endif
+	virtual void FinishDestroy();
 
 	static FTutorialModuleData GetTutorialModuleDataByCodeName(const FString& InCodeName);
 	static FPrimaryAssetId GenerateAssetIdFromCodeName(const FString& InCodeName);
@@ -86,25 +87,23 @@ private:
 	bool bIsStarterModeActive = false;
 
 public:
-#pragma region "Tutorial Module Dependencies"
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tutorial Module Dependencies", meta = (DisplayThumbnail = false, ShowOnlyInnerProperties))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tutorial Module Dependencies", meta = (Tooltip = "Other Tutorial Modules that is required by this Tutorial Module", DisplayThumbnail = false, ShowOnlyInnerProperties))
 	TArray<UTutorialModuleDataAsset*> TutorialModuleDependencies;
-#pragma endregion
 
-#pragma region "Tutorial Module Widgets"
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tutorial Module Widgets", meta = (ShowOnlyInnerProperties))
-	TArray<FTutorialModuleWidgetConnection> OtherTutorialModuleWidgetsToThisModuleWidgetConnections;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tutorial Module Widgets", meta = (Tooltip = "Widgets that is associated to this Tutorial Module", ShowOnlyInnerProperties))
+	TArray<FTutorialModuleAssociateWidget> AssociateWidgets;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tutorial Module Widgets", meta = (ShowOnlyInnerProperties))
-	TArray<FTutorialModuleWidgetConnection> ThisTutorialModuleWidgetToNonTutorialModuleWidgetsConnections;
-#pragma endregion
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tutorial Module Widgets", meta = (Tooltip = "Widgets that will be generated if this Tutorial Module active", ShowOnlyInnerProperties))
+	TArray<FTutorialModuleGeneratedWidget> GeneratedWidgets;
 
 private:
 	void UpdateDataAssetProperties();
-	void ValidateDataAssetProperties();
 
+	void ValidateDataAssetProperties();
 	bool ValidateClassProperty(TSubclassOf<UAccelByteWarsActivatableWidget>& UIClass, TSubclassOf<UAccelByteWarsActivatableWidget>& LastUIClass, const bool IsStarterClass);
 	bool ValidateClassProperty(TSubclassOf<UTutorialModuleSubsystem>& SubsystemClass, TSubclassOf<UTutorialModuleSubsystem>& LastSubsystemClass, const bool IsStarterClass);
+
+	void CleanUpDataAssetProperties();
 
 #if WITH_EDITOR
 	void ShowPopupMessage(const FString& Message) const;
@@ -116,5 +115,8 @@ private:
 	TSubclassOf<UAccelByteWarsActivatableWidget> LastStarterUIClass;
 	TSubclassOf<UTutorialModuleSubsystem> LastStarterSubsystemClass;
 
-	TArray<FTutorialModuleWidgetConnection> LastThisTutorialModuleWidgetToNonModuleWidgetsConnections;
+	TArray<FTutorialModuleAssociateWidget> LastAssociateWidgets;
+	TArray<FTutorialModuleGeneratedWidget> LastGeneratedWidgets;
+
+	static TSet<FString> GeneratedWidgetUsedIds;
 };
