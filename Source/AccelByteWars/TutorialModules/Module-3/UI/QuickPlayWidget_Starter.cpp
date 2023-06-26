@@ -135,6 +135,12 @@ void UQuickPlayWidget_Starter::OnCancelMatchmakingButtonClicked()
 
 #pragma region Module.3c Function Definitions
 
+void UQuickPlayWidget_Starter::OnMatchmaking(EMatchmakingState MatchmakingState, FString ErrorMessage)
+{
+	// TODO: Handle on matchmaking event.
+	UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("On matchmaking event is not yet implemented."));
+}
+
 // TODO: Add your Module.3c function definitions here.
 
 #pragma endregion

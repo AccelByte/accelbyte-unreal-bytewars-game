@@ -41,6 +41,20 @@ void ULoginWidget::NativeOnActivated()
 	Btn_QuitGame->OnClicked().AddUObject(this, &ThisClass::OnQuitGameButtonClicked);
 
 	AutoLoginCmd();
+
+	// Dummy Add Action Button
+	FTutorialModuleGeneratedWidget* Button1 = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("dummy_button1"), GeneratedWidgets);
+	FTutorialModuleGeneratedWidget* Button2 = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("dummy_button2"), GeneratedWidgets);
+
+	Button1->ButtonAction.BindWeakLambda(this, [this]()
+	{
+		PromptSubsystem->ShowMessagePopUp(MESSAGE_PROMPT_TEXT, FText::FromString(("Hello from Dummy Button 1")));
+	});
+
+	Button2->ButtonAction.BindWeakLambda(this, [Button1]()
+	{
+		Button1->GenerateWidgetRef->SetVisibility(Button1->GenerateWidgetRef->IsVisible() ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
+	});
 }
 
 void ULoginWidget::NativeOnDeactivated()

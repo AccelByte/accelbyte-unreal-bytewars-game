@@ -80,8 +80,9 @@ protected:
 
 private:
 	void InitializeGeneratedWidgets();
-	TWeakObjectPtr<UAccelByteWarsButtonBase> GenerateButton(const FText& ButtonText, UPanelWidget& WidgetContainer);
-	TWeakObjectPtr<UAccelByteWarsActivatableWidget> GenerateWidget(TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass, UPanelWidget& WidgetContainer);
+	TWeakObjectPtr<UAccelByteWarsButtonBase> GenerateEntryButton(FTutorialModuleGeneratedWidget& Metadata, UPanelWidget& WidgetContainer);
+	TWeakObjectPtr<UAccelByteWarsButtonBase> GenerateActionButton(FTutorialModuleGeneratedWidget& Metadata, UPanelWidget& WidgetContainer);
+	TWeakObjectPtr<UAccelByteWarsActivatableWidget> GenerateWidget(FTutorialModuleGeneratedWidget& Metadata, UPanelWidget& WidgetContainer);
 
 	bool bIsAlreadyInitialized = false;
 };

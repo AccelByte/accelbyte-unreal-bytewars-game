@@ -3,11 +3,13 @@
 // and restrictions contact your company contract manager.
 
 #include "TutorialModules/Module-9/UI/P2PMatchmakingWidget.h"
-#include "TutorialModules/Module-9/P2PMatchmakingSubsystem.h"
-#include "TutorialModules/Module-3/UI/QuickPlayWidget.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "CommonButtonBase.h"
+
+#include "TutorialModules/Module-9/P2PMatchmakingSubsystem.h"
+#include "TutorialModules/Module-3/UI/QuickPlayWidget.h"
+#include "TutorialModules/Module-3/UI/QuickPlayWidget_Starter.h"
 
 void UP2PMatchmakingWidget::NativeConstruct()
 {
@@ -28,22 +30,42 @@ void UP2PMatchmakingWidget::OnStartP2PMatchmakingButtonClicked()
 	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
 	ensure(GameInstance);
 
-	UP2PMatchmakingSubsystem* P2PMatchmakingSubsystem = GameInstance->GetSubsystem<UP2PMatchmakingSubsystem>();
-	ensure(P2PMatchmakingSubsystem);
+	UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget();
+	ensure(BaseUIWidget);
 
 	APlayerController* PC = GetWorld()->GetFirstPlayerController();
 	ensure(PC);
 
-	UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget();
-	ensure(BaseUIWidget);
+	UTutorialModuleDataAsset* MatchmakingEssentialsModule = UTutorialModuleUtility::GetTutorialModuleDataAsset(FPrimaryAssetId("TutorialModule:MATCHMAKINGESSENTIALS"), this);
+	ensure(MatchmakingEssentialsModule);
 
-	UQuickPlayWidget* ParentWidget = Cast<UQuickPlayWidget>(BaseUIWidget->Stacks[EBaseUIStackType::Menu]->GetActiveWidget());
-	ensure(ParentWidget);
+	UP2PMatchmakingSubsystem* P2PMatchmakingSubsystem = GameInstance->GetSubsystem<UP2PMatchmakingSubsystem>();
+	ensure(P2PMatchmakingSubsystem);
 
-	// When the cancel matchmaking clicked, handle the matchmaking cancelation through the P2P matchmaking subsystem.
-	ParentWidget->OnRequestCancelMatchmaking.AddUObject(P2PMatchmakingSubsystem, &UP2PMatchmakingSubsystem::CancelMatchmaking);
+	// Use Matchmaking's default files if starter mode is not active.
+	if (!MatchmakingEssentialsModule->IsStarterModeActive())
+	{
+		UQuickPlayWidget* ParentWidget = Cast<UQuickPlayWidget>(BaseUIWidget->Stacks[EBaseUIStackType::Menu]->GetActiveWidget());
+		ensure(ParentWidget);
 
-	// Request matchmaking using P2P server. Match pool format: unreal-{gamemode}-p2p.
-	const FString MatchPool = FString::Printf(TEXT("unreal-%s-p2p"), *ParentWidget->GetMatchGameMode());
-	P2PMatchmakingSubsystem->StartMatchmaking(GetOwningPlayer(), MatchPool, FOnMatchmakingStateChangedDelegate::CreateUObject(ParentWidget, &UQuickPlayWidget::OnMatchmaking));
+		// When the cancel matchmaking clicked, handle the matchmaking cancelation through the P2P matchmaking subsystem.
+		ParentWidget->OnRequestCancelMatchmaking.AddUObject(P2PMatchmakingSubsystem, &UP2PMatchmakingSubsystem::CancelMatchmaking);
+
+		// Request matchmaking using P2P server. Match pool format: unreal-{gamemode}-p2p.
+		const FString MatchPool = FString::Printf(TEXT("unreal-%s-p2p"), *ParentWidget->GetMatchGameMode());
+		P2PMatchmakingSubsystem->StartMatchmaking(GetOwningPlayer(), MatchPool, FOnMatchmakingStateChangedDelegate::CreateUObject(ParentWidget, &UQuickPlayWidget::OnMatchmaking));
+	}
+	// Use Matchmaking's starter files if starter mode is not active.
+	else 
+	{
+		UQuickPlayWidget_Starter* ParentWidget = Cast<UQuickPlayWidget_Starter>(BaseUIWidget->Stacks[EBaseUIStackType::Menu]->GetActiveWidget());
+		ensure(ParentWidget);
+
+		// When the cancel matchmaking clicked, handle the matchmaking cancelation through the P2P matchmaking subsystem.
+		ParentWidget->OnRequestCancelMatchmaking.AddUObject(P2PMatchmakingSubsystem, &UP2PMatchmakingSubsystem::CancelMatchmaking);
+
+		// Request matchmaking using P2P server. Match pool format: unreal-{gamemode}-p2p.
+		const FString MatchPool = FString::Printf(TEXT("unreal-%s-p2p"), *ParentWidget->GetMatchGameMode());
+		P2PMatchmakingSubsystem->StartMatchmaking(GetOwningPlayer(), MatchPool, FOnMatchmakingStateChangedDelegate::CreateUObject(ParentWidget, &UQuickPlayWidget_Starter::OnMatchmaking));
+	}
 }

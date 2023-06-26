@@ -46,3 +46,9 @@ void UAuthEssentialsSubsystem_Starter::ClearAuthCredentials()
     Credentials.Id = TEXT("");
     Credentials.Token = TEXT("");
 }
+
+void UAuthEssentialsSubsystem_Starter::Login(const APlayerController* PC, const FAuthOnLoginCompleteDelegate_Starter& OnLoginComplete)
+{
+    // TODO: Implement login functionality here.
+    UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("Login functionality is not yet implemented."))
+}
