@@ -25,6 +25,13 @@ enum class ETutorialModuleGeneratedWidgetType : uint8
 	ACTION_BUTTON UMETA(DisplayName = "Action Button")
 };
 
+UENUM(BlueprintType)
+enum class ETutorialModuleWidgetClassType : uint8
+{
+	DEFAULT_WIDGET_CLASS UMETA(DisplayName = "Default Widget Class"),
+	ASSOCIATE_WIDGET_CLASS UMETA(DisplayName = "Associate Widget Class")
+};
+
 USTRUCT(BlueprintType)
 struct FTutorialModuleGeneratedWidget
 {
@@ -42,8 +49,14 @@ struct FTutorialModuleGeneratedWidget
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (Tooltip = "The other Tutorial Module that its entry or associate widgets will be opened when the entry button is clicked.", DisplayThumbnail = false, EditCondition = "WidgetType==ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_BUTTON||WidgetType==ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_WIDGET", EditConditionHides))
 	UTutorialModuleDataAsset* OtherTutorialModule = nullptr;
 
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (Tooltip = "The index of Tutorial Module associate widgets to be opened when the entry button is clicked. Default value is -1 to open the default entry widget.", EditCondition = "WidgetType==ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_ENTRY_BUTTON||WidgetType==ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_BUTTON", EditConditionHides))
-	int32 AssociateEntryWidgetIndex = -1;
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (Tooltip = "The type of Tutorial Module entry widget to be opened when the entry button is clicked", EditCondition = "WidgetType==ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_ENTRY_BUTTON||WidgetType==ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_WIDGET||WidgetType==ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_BUTTON||WidgetType==ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_WIDGET", EditConditionHides))
+	ETutorialModuleWidgetClassType TutorialModuleWidgetClassType = ETutorialModuleWidgetClassType::DEFAULT_WIDGET_CLASS;
+
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (Tooltip = "The widget to be opened when the entry button is clicked or to be generated if the Tutorial Module is not in starter mode", EditCondition = "TutorialModuleWidgetClassType==ETutorialModuleWidgetClassType::ASSOCIATE_WIDGET_CLASS&&(WidgetType==ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_ENTRY_BUTTON||WidgetType==ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_WIDGET||WidgetType==ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_BUTTON||WidgetType==ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_WIDGET)", EditConditionHides))
+	TSubclassOf<UAccelByteWarsActivatableWidget> DefaultTutorialModuleWidgetClass = nullptr;
+
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (Tooltip = "The widget to be opened when the entry button is clicked or to be generated if the Tutorial Module is in starter mode", EditCondition = "TutorialModuleWidgetClassType==ETutorialModuleWidgetClassType::ASSOCIATE_WIDGET_CLASS&&(WidgetType==ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_ENTRY_BUTTON||WidgetType==ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_WIDGET||WidgetType==ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_BUTTON||WidgetType==ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_WIDGET)", EditConditionHides))
+	TSubclassOf<UAccelByteWarsActivatableWidget> StarterTutorialModuleWidgetClass = nullptr;
 
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (Tooltip = "The widget class that will be generated or will be opened when the entry button is clicked", EditCondition = "WidgetType==ETutorialModuleGeneratedWidgetType::GENERIC_WIDGET_ENTRY_BUTTON||WidgetType==ETutorialModuleGeneratedWidgetType::GENERIC_WIDGET", EditConditionHides))
 	TSubclassOf<UAccelByteWarsActivatableWidget> GenericWidgetClass;
@@ -78,18 +91,6 @@ struct FTutorialModuleGeneratedWidget
 		UUserWidget* Temp = GetMetadataById(WidgetId, GeneratedWidgets)->GenerateWidgetRef;
 		return Temp ? Cast<T>(Temp) : nullptr;
 	}
-};
-
-USTRUCT(BlueprintType)
-struct FTutorialModuleAssociateWidget
-{
-	GENERATED_BODY()
-
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (Tooltip = "The default associate widget"))
-	TSubclassOf<UAccelByteWarsActivatableWidget> DefaultWidgetClass;
-
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (Tooltip = "The starter version of the associate widget"))
-	TSubclassOf<UAccelByteWarsActivatableWidget> StarterWidgetClass;
 };
 
 UCLASS()

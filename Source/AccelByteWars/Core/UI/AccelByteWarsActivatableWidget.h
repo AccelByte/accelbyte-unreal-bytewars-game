@@ -21,6 +21,7 @@ enum class EAccelByteWarsWidgetInputMode : uint8
 };
 
 class UTutorialModuleDataAsset;
+class UAccelByteWarsButtonBase;
 class UPanelWidget;
 
 UCLASS(Abstract, Blueprintable)
@@ -79,6 +80,8 @@ protected:
 
 private:
 	void InitializeGeneratedWidgets();
+	TWeakObjectPtr<UAccelByteWarsButtonBase> GenerateButton(const FText& ButtonText, UPanelWidget& WidgetContainer);
+	TWeakObjectPtr<UAccelByteWarsActivatableWidget> GenerateWidget(TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass, UPanelWidget& WidgetContainer);
 
 	bool bIsAlreadyInitialized = false;
 };

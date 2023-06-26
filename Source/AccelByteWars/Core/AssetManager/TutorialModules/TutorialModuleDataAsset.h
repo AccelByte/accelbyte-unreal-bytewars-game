@@ -90,9 +90,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tutorial Module Dependencies", meta = (Tooltip = "Other Tutorial Modules that is required by this Tutorial Module", DisplayThumbnail = false, ShowOnlyInnerProperties))
 	TArray<UTutorialModuleDataAsset*> TutorialModuleDependencies;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tutorial Module Widgets", meta = (Tooltip = "Widgets that is associated to this Tutorial Module", ShowOnlyInnerProperties))
-	TArray<FTutorialModuleAssociateWidget> AssociateWidgets;
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tutorial Module Widgets", meta = (Tooltip = "Widgets that will be generated if this Tutorial Module active", ShowOnlyInnerProperties))
 	TArray<FTutorialModuleGeneratedWidget> GeneratedWidgets;
 
@@ -115,7 +112,6 @@ private:
 	TSubclassOf<UAccelByteWarsActivatableWidget> LastStarterUIClass;
 	TSubclassOf<UTutorialModuleSubsystem> LastStarterSubsystemClass;
 
-	TArray<FTutorialModuleAssociateWidget> LastAssociateWidgets;
 	TArray<FTutorialModuleGeneratedWidget> LastGeneratedWidgets;
 
 	static TSet<FString> GeneratedWidgetUsedIds;

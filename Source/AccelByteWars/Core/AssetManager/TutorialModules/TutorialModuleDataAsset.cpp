@@ -88,38 +88,14 @@ void UTutorialModuleDataAsset::UpdateDataAssetProperties()
 {
 	ValidateDataAssetProperties();
 
-	// Clean up last associated widgets metadata to avoid duplication.
-	for (FTutorialModuleAssociateWidget& LastAssociateWidget : LastAssociateWidgets)
-	{
-		if (LastAssociateWidget.DefaultWidgetClass && LastAssociateWidget.DefaultWidgetClass.GetDefaultObject())
-		{
-			LastAssociateWidget.DefaultWidgetClass.GetDefaultObject()->AssociateTutorialModule = nullptr;
-		}
-
-		if (LastAssociateWidget.StarterWidgetClass && LastAssociateWidget.StarterWidgetClass.GetDefaultObject())
-		{
-			LastAssociateWidget.StarterWidgetClass.GetDefaultObject()->AssociateTutorialModule = nullptr;
-		}
-	}
-	
-	// Set this tutorial module to the associated widgets.
-	for (FTutorialModuleAssociateWidget& AssociateWidget : AssociateWidgets)
-	{
-		if (AssociateWidget.DefaultWidgetClass && AssociateWidget.DefaultWidgetClass.GetDefaultObject()) 
-		{
-			AssociateWidget.DefaultWidgetClass.GetDefaultObject()->AssociateTutorialModule = this;
-		}
-		
-		if (AssociateWidget.StarterWidgetClass && AssociateWidget.StarterWidgetClass.GetDefaultObject())
-		{
-			AssociateWidget.StarterWidgetClass.GetDefaultObject()->AssociateTutorialModule = this;
-		}
-	}
-
 	// Clean up last generated widgets metadata to avoid duplication.
 	for (FTutorialModuleGeneratedWidget& LastGeneratedWidget : LastGeneratedWidgets)
 	{
 		UTutorialModuleDataAsset::GeneratedWidgetUsedIds.Remove(LastGeneratedWidget.WidgetId);
+
+		LastGeneratedWidget.DefaultTutorialModuleWidgetClass = nullptr;
+		LastGeneratedWidget.StarterTutorialModuleWidgetClass = nullptr;
+		
 		LastGeneratedWidget.OtherTutorialModule = nullptr;
 
 		if (!LastGeneratedWidget.TargetWidgetClass || !LastGeneratedWidget.TargetWidgetClass.GetDefaultObject())
@@ -159,6 +135,15 @@ void UTutorialModuleDataAsset::UpdateDataAssetProperties()
 		{
 			GeneratedWidget.OtherTutorialModule = nullptr;
 		}
+		if ((GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_ENTRY_BUTTON &&
+			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_WIDGET &&
+			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_BUTTON &&
+			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_WIDGET) ||
+			GeneratedWidget.TutorialModuleWidgetClassType != ETutorialModuleWidgetClassType::ASSOCIATE_WIDGET_CLASS)
+		{
+			GeneratedWidget.DefaultTutorialModuleWidgetClass = nullptr;
+			GeneratedWidget.StarterTutorialModuleWidgetClass = nullptr;
+		}
 		
 		// Assign the owner of the generated widget metadata to this Tutorial Module.
 		GeneratedWidget.OwnerTutorialModule = this;
@@ -172,20 +157,6 @@ void UTutorialModuleDataAsset::UpdateDataAssetProperties()
 		else if (!GeneratedWidget.WidgetId.IsEmpty())
 		{
 			UTutorialModuleDataAsset::GeneratedWidgetUsedIds.Add(GeneratedWidget.WidgetId);
-		}
-
-		// Check if asssociate widget entry index is out of bound.
-		if (GeneratedWidget.WidgetType == ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_ENTRY_BUTTON &&
-			!(GeneratedWidget.AssociateEntryWidgetIndex >= -1 && GeneratedWidget.AssociateEntryWidgetIndex <= AssociateWidgets.Num() - 1))
-		{
-			ShowPopupMessage(FString::Printf(TEXT("Associate Entry Widget Index %d is out of bound for %s. Assigning default value -1."), GeneratedWidget.AssociateEntryWidgetIndex, *GeneratedWidget.OtherTutorialModule->GetName()));
-			GeneratedWidget.AssociateEntryWidgetIndex = -1;
-		}
-		else if (GeneratedWidget.WidgetType == ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_BUTTON && GeneratedWidget.OtherTutorialModule &&
-			!(GeneratedWidget.AssociateEntryWidgetIndex >= -1 && GeneratedWidget.AssociateEntryWidgetIndex <= GeneratedWidget.OtherTutorialModule->AssociateWidgets.Num() - 1))
-		{
-			ShowPopupMessage(FString::Printf(TEXT("Associate Entry Widget Index %d is out of bound for %s. Assigning default value -1."), GeneratedWidget.AssociateEntryWidgetIndex, *GeneratedWidget.OtherTutorialModule->GetName()));
-			GeneratedWidget.AssociateEntryWidgetIndex = -1;
 		}
 
 		// Assign the generated widget to the target widget class.
