@@ -4,7 +4,6 @@
 
 
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
-#include "Core/AssetManager/TutorialModules/TutorialModuleDataAsset.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "Core/UI/Components/AccelByteWarsButtonBase.h"
@@ -34,7 +33,7 @@ void UAccelByteWarsActivatableWidget::NativePreConstruct()
 	if (DefaultObj)
 	{
 		AssociateTutorialModule = DefaultObj->AssociateTutorialModule;
-		DissociateTutorialModuleWidgets = DefaultObj->DissociateTutorialModuleWidgets;
+		GeneratedWidgets = DefaultObj->GeneratedWidgets;
 	}
 #endif
 }
@@ -43,11 +42,20 @@ void UAccelByteWarsActivatableWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
-	if (!bIsTutorialModuleWidgetsInitialized) 
+	if (!bIsAlreadyInitialized) 
 	{
-		bIsTutorialModuleWidgetsInitialized = true;
-		SetTutorialModuleWidgetContainers();
-		LoadTutorialModuleWidgetConnection();
+		bIsAlreadyInitialized = true;
+
+		// Set visible only if the associate Tutorial Module is active.
+		if (AssociateTutorialModule)
+		{
+			const bool bIsTutorialModuleActive = AssociateTutorialModule->IsActiveAndDependenciesChecked();
+			SetVisibility(bIsTutorialModuleActive ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+		}
+
+		// Initialize the generated widgets.
+		SetGeneratedWidgetContainers();
+		InitializeGeneratedWidgets();
 	}
 }
 
@@ -95,9 +103,9 @@ void UAccelByteWarsActivatableWidget::PostLoad()
 	{
 		AssociateTutorialModule = nullptr;
 	}
-	DissociateTutorialModuleWidgets.RemoveAll([](const FTutorialModuleWidgetConnection& Temp)
+	GeneratedWidgets.RemoveAll([](const FTutorialModuleGeneratedWidget& Temp)
 	{
-		return Temp.SourceTutorialModule == nullptr;
+		return Temp.OwnerTutorialModule == nullptr || !Temp.OwnerTutorialModule->IsValidLowLevel();
 	});
 }
 
@@ -153,59 +161,42 @@ void UAccelByteWarsActivatableWidget::SetInputModeToGameOnly()
 	PC->bShowMouseCursor = false;
 }
 
-void UAccelByteWarsActivatableWidget::LoadTutorialModuleWidgetConnection()
+void UAccelByteWarsActivatableWidget::InitializeGeneratedWidgets()
 {
-	// Connect Other Tutorial Module Widgets to This Tutorial Module.
-	if (AssociateTutorialModule)
+	if (!IsVisible()) 
 	{
-		const bool bIsTutorialModuleActive = AssociateTutorialModule->IsActiveAndDependenciesChecked();
-		SetVisibility(bIsTutorialModuleActive ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-		if (bIsTutorialModuleActive) 
-		{
-			InitializeTutorialModuleWidgets(AssociateTutorialModule->OtherTutorialModuleWidgetsToThisModuleWidgetConnections);
-		}
+		return;
 	}
 
-	// Connect This Tutorial Module Widgets to Non-Tutorial Module.
-	DissociateTutorialModuleWidgets.Sort([](const FTutorialModuleWidgetConnection& Conn1, const FTutorialModuleWidgetConnection& Conn2)
-	{
-		return Conn1.PriorityOrder < Conn2.PriorityOrder;
-	});
-	InitializeTutorialModuleWidgets(DissociateTutorialModuleWidgets);
-}
-
-void UAccelByteWarsActivatableWidget::InitializeTutorialModuleWidgets(TArray<FTutorialModuleWidgetConnection>& TutorialModuleWidgets)
-{
+	// Get the default button class that will be used to spawn either entry button or action button.
 	UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetWorld()->GetGameInstance());
 	ensure(GameInstance);
-
 	UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget();
 	ensure(BaseUIWidget);
 
-	const TSubclassOf<UAccelByteWarsButtonBase> DefaultButtonClass = GameInstance->GetDefaultButtonClass();
-	ensure(DefaultButtonClass.Get());
-
-	for (const FTutorialModuleWidgetConnection& Connection : TutorialModuleWidgets)
+	// Sort the generated widget based on spawn order.
+	GeneratedWidgets.Sort([](const FTutorialModuleGeneratedWidget& Widget1, const FTutorialModuleGeneratedWidget& Widget2)
 	{
-		if (!Connection.SourceTutorialModule || !Connection.SourceTutorialModule->IsActiveAndDependenciesChecked())
-		{
-			UE_LOG(LogTemp, Log, TEXT("Tutorial Module widget's Tutorial Module Data Asset is not active. Cannot initialize the widget."));
-			continue;
-		}
+		return Widget1.SpawnOrder < Widget2.SpawnOrder;
+	});
 
-		if (!ensure(Connection.TargetUIClass.Get()))
+	// Initialize the generated widgets.
+	for (FTutorialModuleGeneratedWidget& GeneratedWidget : GeneratedWidgets)
+	{
+		if ((!GeneratedWidget.OwnerTutorialModule || !GeneratedWidget.OwnerTutorialModule->IsActiveAndDependenciesChecked()) ||
+			(GeneratedWidget.OtherTutorialModule && !GeneratedWidget.OtherTutorialModule->IsActiveAndDependenciesChecked()))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Tutorial Module widget's Target UI Class is null. Cannot initialize the widget."));
+			UE_LOG(LogTemp, Log, TEXT("Tutorial Module Data Asset is not active. Cannot initialize the generated widget."));
 			continue;
 		}
 
 		// Get valid widget container.
-		if (!ensure(TutorialModuleWidgetContainers.IsValidIndex(Connection.TargetWidgetContainerIndex)))
+		if (!ensure(GeneratedWidgetContainers.IsValidIndex(GeneratedWidget.TargetWidgetContainerIndex)))
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Tutorial Module widget's Target Widget Container index is out of bound. Cannot initialize the widget."));
 			continue;
 		}
-		UPanelWidget* WidgetContainer = TutorialModuleWidgetContainers[Connection.TargetWidgetContainerIndex];
+		UPanelWidget* WidgetContainer = GeneratedWidgetContainers[GeneratedWidget.TargetWidgetContainerIndex];
 		if (!ensure(WidgetContainer))
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Tutorial Module widget's Target Widget Container is null. Cannot initialize the widget."));
@@ -213,56 +204,171 @@ void UAccelByteWarsActivatableWidget::InitializeTutorialModuleWidgets(TArray<FTu
 		}
 
 		// Initialize the widget based on its type.
-		if (Connection.WidgetType == ETutorialModuleWidgetType::TUTORIAL_MODULE_ENTRY_BUTTON)
+		if (GeneratedWidget.WidgetType == ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_ENTRY_BUTTON ||
+			GeneratedWidget.WidgetType == ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_BUTTON ||
+			GeneratedWidget.WidgetType == ETutorialModuleGeneratedWidgetType::GENERIC_WIDGET_ENTRY_BUTTON)
 		{
-			const TWeakObjectPtr<UAccelByteWarsButtonBase> Button = MakeWeakObjectPtr<UAccelByteWarsButtonBase>(CreateWidget<UAccelByteWarsButtonBase>(this, DefaultButtonClass.Get()));
-			Button->OnClicked().AddWeakLambda(this, [Connection, BaseUIWidget]()
-			{
-				BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, Connection.SourceTutorialModule->GetTutorialModuleUIClass());
-			});
-			Button->SetButtonText(Connection.EntryButtonText);
-			WidgetContainer->AddChild(Button.Get());
-
-			UPanelSlot* ButtonSlot = WidgetContainer->AddChild(Button.Get());
-			if (UVerticalBoxSlot* VerticalSlot = StaticCast<UVerticalBoxSlot*>(ButtonSlot))
-			{
-				VerticalSlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Center);
-			}
-			else if (UHorizontalBoxSlot* HorizontalSlot = StaticCast<UHorizontalBoxSlot*>(ButtonSlot))
-			{
-				HorizontalSlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Center);
-			}
+			GenerateEntryButton(GeneratedWidget, *WidgetContainer);
 		}
-		else if (Connection.WidgetType == ETutorialModuleWidgetType::TUTORIAL_MODULE_DEFAULT_UI)
+		else if (GeneratedWidget.WidgetType == ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_WIDGET ||
+			GeneratedWidget.WidgetType == ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_WIDGET ||
+			GeneratedWidget.WidgetType == ETutorialModuleGeneratedWidgetType::GENERIC_WIDGET)
 		{
-			const TWeakObjectPtr<UAccelByteWarsActivatableWidget> Widget = MakeWeakObjectPtr<UAccelByteWarsActivatableWidget>(CreateWidget<UAccelByteWarsActivatableWidget>(this, Connection.SourceTutorialModule->GetTutorialModuleUIClass().Get()));
-			WidgetContainer->AddChild(Widget.Get());
+			GenerateWidget(GeneratedWidget, *WidgetContainer);
 		}
-		else if (Connection.WidgetType == ETutorialModuleWidgetType::OTHER_UI_ENTRY_BUTTON)
+		else if (GeneratedWidget.WidgetType == ETutorialModuleGeneratedWidgetType::ACTION_BUTTON)
 		{
-			const TWeakObjectPtr<UAccelByteWarsButtonBase> Button = MakeWeakObjectPtr<UAccelByteWarsButtonBase>(CreateWidget<UAccelByteWarsButtonBase>(this, DefaultButtonClass.Get()));
-			Button->OnClicked().AddWeakLambda(this, [Connection, BaseUIWidget]()
-			{
-				BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, Connection.OtherUIClass);
-			});
-			Button->SetButtonText(Connection.EntryButtonText);
-			
-			UPanelSlot* ButtonSlot = WidgetContainer->AddChild(Button.Get());
-			if (UVerticalBoxSlot* VerticalSlot = StaticCast<UVerticalBoxSlot*>(ButtonSlot))
-			{
-				VerticalSlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Center);
-			}
-			else if (UHorizontalBoxSlot* HorizontalSlot = StaticCast<UHorizontalBoxSlot*>(ButtonSlot))
-			{
-				HorizontalSlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Center);
-			}
-		}
-		else if (Connection.WidgetType == ETutorialModuleWidgetType::OTHER_UI)
-		{
-			const TWeakObjectPtr<UAccelByteWarsActivatableWidget> Widget = MakeWeakObjectPtr<UAccelByteWarsActivatableWidget>(CreateWidget<UAccelByteWarsActivatableWidget>(this, Connection.OtherUIClass));
-			WidgetContainer->AddChild(Widget.Get());
+			GenerateActionButton(GeneratedWidget, *WidgetContainer);
 		}
 	}
+}
+
+TWeakObjectPtr<UAccelByteWarsButtonBase> UAccelByteWarsActivatableWidget::GenerateEntryButton(FTutorialModuleGeneratedWidget& Metadata, UPanelWidget& WidgetContainer)
+{
+	UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetWorld()->GetGameInstance());
+	ensure(GameInstance);
+	UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget();
+	ensure(BaseUIWidget);
+	const TSubclassOf<UAccelByteWarsButtonBase> DefaultButtonClass = GameInstance->GetDefaultButtonClass();
+	ensure(DefaultButtonClass.Get());
+
+	// Set valid entry widget class.
+	UTutorialModuleDataAsset* SourceTutorialModule = nullptr;
+	TSubclassOf<UAccelByteWarsActivatableWidget> EntryWidgetClass = nullptr;
+	switch (Metadata.WidgetType)
+	{
+	case ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_ENTRY_BUTTON:
+		SourceTutorialModule = Metadata.OwnerTutorialModule;
+		break;
+	case ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_BUTTON:
+		SourceTutorialModule = Metadata.OtherTutorialModule;
+		break;
+	default:
+		EntryWidgetClass = Metadata.GenericWidgetClass;
+		break;
+	}
+	
+	if (SourceTutorialModule) 
+	{
+		EntryWidgetClass = SourceTutorialModule->GetTutorialModuleUIClass();
+		if (Metadata.TutorialModuleWidgetClassType == ETutorialModuleWidgetClassType::ASSOCIATE_WIDGET_CLASS)
+		{
+			EntryWidgetClass = (!SourceTutorialModule->IsStarterModeActive()) ? Metadata.DefaultTutorialModuleWidgetClass : Metadata.StarterTutorialModuleWidgetClass;
+		}
+	}
+
+	if (!EntryWidgetClass)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Entry widget class is null. Cannot initialize the generated entry button."));
+		return nullptr;
+	}
+
+	// Spawn the entry button.
+	const TWeakObjectPtr<UAccelByteWarsButtonBase> Button = MakeWeakObjectPtr<UAccelByteWarsButtonBase>(CreateWidget<UAccelByteWarsButtonBase>(this, DefaultButtonClass.Get()));
+	Button->SetButtonText(Metadata.ButtonText);
+	Button->OnClicked().AddWeakLambda(this, [BaseUIWidget, EntryWidgetClass]()
+	{
+		BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, EntryWidgetClass);
+	});
+	WidgetContainer.AddChild(Button.Get());
+	Metadata.GenerateWidgetRef = Button.Get();
+
+	// Refresh button alignment since the default alignment upon a widget is spawned is "Align_Fill".
+	UPanelSlot* ButtonSlot = WidgetContainer.AddChild(Button.Get());
+	if (UVerticalBoxSlot* VerticalSlot = StaticCast<UVerticalBoxSlot*>(ButtonSlot))
+	{
+		VerticalSlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Center);
+	}
+	else if (UHorizontalBoxSlot* HorizontalSlot = StaticCast<UHorizontalBoxSlot*>(ButtonSlot))
+	{
+		HorizontalSlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Center);
+	}
+
+	return Button;
+}
+
+TWeakObjectPtr<UAccelByteWarsButtonBase> UAccelByteWarsActivatableWidget::GenerateActionButton(FTutorialModuleGeneratedWidget& Metadata, UPanelWidget& WidgetContainer)
+{
+	UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetWorld()->GetGameInstance());
+	ensure(GameInstance);
+	UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget();
+	ensure(BaseUIWidget);
+	const TSubclassOf<UAccelByteWarsButtonBase> DefaultButtonClass = GameInstance->GetDefaultButtonClass();
+	ensure(DefaultButtonClass.Get());
+
+	// Spawn the action button.
+	const TWeakObjectPtr<UAccelByteWarsButtonBase> Button = MakeWeakObjectPtr<UAccelByteWarsButtonBase>(CreateWidget<UAccelByteWarsButtonBase>(this, DefaultButtonClass.Get()));
+	Button->SetButtonText(Metadata.ButtonText);
+	Button->OnClicked().AddWeakLambda(this, [&Metadata]()
+	{
+		if (!Metadata.ButtonAction.IsBound())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Tutorial Module's Button Action event is not bound."));
+		}
+
+		Metadata.ButtonAction.ExecuteIfBound();
+	});
+	WidgetContainer.AddChild(Button.Get());
+	Metadata.GenerateWidgetRef = Button.Get();
+
+	// Refresh button alignment since the default alignment upon a widget is spawned is "Align_Fill".
+	UPanelSlot* ButtonSlot = WidgetContainer.AddChild(Button.Get());
+	if (UVerticalBoxSlot* VerticalSlot = StaticCast<UVerticalBoxSlot*>(ButtonSlot))
+	{
+		VerticalSlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Center);
+	}
+	else if (UHorizontalBoxSlot* HorizontalSlot = StaticCast<UHorizontalBoxSlot*>(ButtonSlot))
+	{
+		HorizontalSlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Center);
+	}
+
+	return Button;
+}
+
+TWeakObjectPtr<UAccelByteWarsActivatableWidget> UAccelByteWarsActivatableWidget::GenerateWidget(FTutorialModuleGeneratedWidget& Metadata, UPanelWidget& WidgetContainer)
+{
+	UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetWorld()->GetGameInstance());
+	ensure(GameInstance);
+	UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget();
+	ensure(BaseUIWidget);
+
+	// Set valid entry widget class.
+	UTutorialModuleDataAsset* SourceTutorialModule = nullptr;
+	TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass = nullptr;
+	switch (Metadata.WidgetType)
+	{
+	case ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_WIDGET:
+		SourceTutorialModule = Metadata.OwnerTutorialModule;
+		break;
+	case ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_WIDGET:
+		SourceTutorialModule = Metadata.OtherTutorialModule;
+		break;
+	default:
+		WidgetClass = Metadata.GenericWidgetClass;
+		break;
+	}
+
+	if (SourceTutorialModule)
+	{
+		WidgetClass = SourceTutorialModule->GetTutorialModuleUIClass();
+		if (Metadata.TutorialModuleWidgetClassType == ETutorialModuleWidgetClassType::ASSOCIATE_WIDGET_CLASS)
+		{
+			WidgetClass = (!SourceTutorialModule->IsStarterModeActive()) ? Metadata.DefaultTutorialModuleWidgetClass : Metadata.StarterTutorialModuleWidgetClass;
+		}
+	}
+
+	if (!WidgetClass)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Widget class is null. Cannot initialize the generated the Tutorial Module's widget."));
+		return nullptr;
+	}
+
+	// Spawn the widget.
+	const TWeakObjectPtr<UAccelByteWarsActivatableWidget> Widget = MakeWeakObjectPtr<UAccelByteWarsActivatableWidget>(CreateWidget<UAccelByteWarsActivatableWidget>(this, WidgetClass.Get()));
+	WidgetContainer.AddChild(Widget.Get());
+	Metadata.GenerateWidgetRef = Widget.Get();
+
+	return Widget;
 }
 
 #undef LOCTEXT_NAMESPACE
