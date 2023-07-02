@@ -5,13 +5,30 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Blueprint/IUserListEntry.h"
 #include "Blueprint/IUserObjectListEntry.h"
 #include "CommonUserWidget.h"
+
 #include "AccelByteWarsWidgetEntry.generated.h"
+
+class UCommonButtonBase;
 
 UCLASS(Abstract)
 class ACCELBYTEWARS_API UAccelByteWarsWidgetEntry : public UCommonUserWidget, public IUserObjectListEntry
 {
 	GENERATED_BODY()
+
+protected:
+	virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;
+	virtual void NativeOnItemSelectionChanged(bool bIsSelected) override;
+	virtual void NativeConstruct() override;
+
+	UFUNCTION(BlueprintImplementableEvent)
+	TArray<UCommonButtonBase*> InputMethodDependantWidgets();
+
+private:
+	UFUNCTION()
+	void ChangeInteractibility(ECommonInputType InputType);
+
+	UPROPERTY()
+	UCommonInputSubsystem* InputSubsystem;
 };

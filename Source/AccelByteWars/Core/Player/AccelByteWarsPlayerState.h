@@ -34,5 +34,11 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = Attributes, Replicated)
 	int32 NumLivesLeft = INDEX_NONE;
 
-	bool bShouldKick = false;
+	UFUNCTION()
+	void RepNotify_PendingTeamAssignment();
+
+	UPROPERTY(Replicated, ReplicatedUsing = "RepNotify_PendingTeamAssignment")
+	bool bPendingTeamAssignment = false;
+
+	FSimpleMulticastDelegate OnPendingTeamAssignmentChangedDelegates;
 };

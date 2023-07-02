@@ -5,6 +5,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "OnlineSessionSettings.h"
 #include "GameFramework/PlayerController.h"
 #include "AccelByteWarsPlayerController.generated.h"
 
@@ -13,8 +14,18 @@ class ACCELBYTEWARS_API AAccelByteWarsPlayerController : public APlayerControlle
 {
 	GENERATED_BODY()
 
+protected:
+	virtual void BeginPlay() override;
+
 public:
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
 	// Trigger to start the game from game lobby.
 	UFUNCTION(Reliable, Server, meta = (WorldContext = "WorldContextObject"))
 	void TriggerLobbyStart();
+
+	TSharedRef<FOnlineSessionSearch> SessionSearch = MakeShared<FOnlineSessionSearch>(FOnlineSessionSearch());
+
+private:
+	void LoadingPlayerAssignment() const;
 };

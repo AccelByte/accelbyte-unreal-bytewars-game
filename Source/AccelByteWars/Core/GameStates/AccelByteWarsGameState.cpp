@@ -2,6 +2,7 @@
 
 
 #include "AccelByteWarsGameState.h"
+
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Net/UnrealNetwork.h"
 
@@ -78,6 +79,126 @@ void AAccelByteWarsGameState::AssignGameMode(const FString& CodeName)
 		*CodeName,
 		*FString(CodeName.Equals(GameSetup.CodeName) ? "Found" : "Not Found"),
 		*GameSetup.CodeName);
+}
+
+void AAccelByteWarsGameState::AssignGameModeByThirdPartyCodeName(const FString& CodeName)
+{
+	GameSetup = GameInstance->GetGameModeDataByThirdPartyCodeName(CodeName);
+
+	GAMESTATE_LOG(Log, TEXT("Game mode set to GameState by third party code: %s | third party code: %s"), *GameSetup.CodeName, *CodeName);
+}
+
+void AAccelByteWarsGameState::AssignCustomGameMode(const FOnlineSessionSettings* Setting)
+{
+	if (!Setting)
+	{
+		GAMESTATE_LOG(Log, TEXT("Setting is not valid. Cancelling operation. Current Game mode: %s"), *GameSetup.CodeName);
+		return;
+	}
+
+	FGameModeData Custom;
+
+	if (FString GameModeTypeString; Setting->Get(GAMESETUP_GameModeType, GameModeTypeString))
+	{
+		Custom.SetGameModeTypeWithString(GameModeTypeString);
+	}
+
+	if (FString DisplayNameString; Setting->Get(GAMESETUP_DisplayName, DisplayNameString))
+	{
+		Custom.DisplayName = FText::FromString(DisplayNameString);
+	}
+
+	if (FString NetworkTypeString; Setting->Get(GAMESETUP_NetworkType, NetworkTypeString))
+	{
+		Custom.SetNetworkTypeWithString(NetworkTypeString);
+	}
+
+	if (int32 IsTeamGameString; Setting->Get(GAMESETUP_IsTeamGame, IsTeamGameString))
+	{
+		Custom.bIsTeamGame = static_cast<bool>(IsTeamGameString);
+	}
+
+	if (int32 MaxTeamNum; Setting->Get(GAMESETUP_MaxTeamNum, MaxTeamNum))
+	{
+		Custom.MaxTeamNum = MaxTeamNum;
+	}
+
+	if (int32 MaxPlayers; Setting->Get(GAMESETUP_MaxPlayers, MaxPlayers))
+	{
+		Custom.MaxPlayers = MaxPlayers;
+	}
+
+	if (int32 MatchTime; Setting->Get(GAMESETUP_MatchTime, MatchTime))
+	{
+		Custom.MatchTime = MatchTime;
+	}
+
+	if (int32 StartGameCountdown; Setting->Get(GAMESETUP_StartGameCountdown, StartGameCountdown))
+	{
+		Custom.StartGameCountdown = StartGameCountdown;
+	}
+
+	if (int32 GameEndsShutdownCountdown; Setting->Get(GAMESETUP_GameEndsShutdownCountdown, GameEndsShutdownCountdown))
+	{
+		Custom.GameEndsShutdownCountdown = GameEndsShutdownCountdown;
+	}
+
+	if (int32 MinimumTeamCountToPreventAutoShutdown; Setting->Get(GAMESETUP_MinimumTeamCountToPreventAutoShutdown, MinimumTeamCountToPreventAutoShutdown))
+	{
+		Custom.MinimumTeamCountToPreventAutoShutdown = MinimumTeamCountToPreventAutoShutdown;
+	}
+
+	if (int32 NotEnoughPlayerShutdownCountdown; Setting->Get(GAMESETUP_NotEnoughPlayerShutdownCountdown, NotEnoughPlayerShutdownCountdown))
+	{
+		Custom.NotEnoughPlayerShutdownCountdown = NotEnoughPlayerShutdownCountdown;
+	}
+
+	if (int32 ScoreLimit; Setting->Get(GAMESETUP_ScoreLimit, ScoreLimit))
+	{
+		Custom.ScoreLimit = ScoreLimit;
+	}
+
+	if (int32 FiredMissilesLimit; Setting->Get(GAMESETUP_FiredMissilesLimit, FiredMissilesLimit))
+	{
+		Custom.FiredMissilesLimit = FiredMissilesLimit;
+	}
+
+	if (int32 StartingLives; Setting->Get(GAMESETUP_StartingLives, StartingLives))
+	{
+		Custom.StartingLives = StartingLives;
+	}
+
+	if (int32 BaseScoreForKill; Setting->Get(GAMESETUP_BaseScoreForKill, BaseScoreForKill))
+	{
+		Custom.BaseScoreForKill = BaseScoreForKill;
+	}
+
+	if (int32 TimeScoreIncrement; Setting->Get(GAMESETUP_TimeScoreIncrement, TimeScoreIncrement))
+	{
+		Custom.TimeScoreIncrement = TimeScoreIncrement;
+	}
+
+	if (int32 TimeScoreDeltaTime; Setting->Get(GAMESETUP_TimeScoreDeltaTime, TimeScoreDeltaTime))
+	{
+		Custom.TimeScoreDeltaTime = TimeScoreDeltaTime;
+	}
+
+	if (int32 SkimInitialScore; Setting->Get(GAMESETUP_SkimInitialScore, SkimInitialScore))
+	{
+		Custom.SkimInitialScore = SkimInitialScore;
+	}
+
+	if (int32 SkimScoreDeltaTime; Setting->Get(GAMESETUP_SkimScoreDeltaTime, SkimScoreDeltaTime))
+	{
+		Custom.SkimScoreDeltaTime = SkimScoreDeltaTime;
+	}
+
+	if (float SkimScoreAdditionalMultiplier; Setting->Get(GAMESETUP_SkimScoreAdditionalMultiplier, SkimScoreAdditionalMultiplier))
+	{
+		Custom.SkimScoreAdditionalMultiplier = SkimScoreAdditionalMultiplier;
+	}
+
+	GameSetup = Custom;
 }
 
 TArray<int32> AAccelByteWarsGameState::GetRemainingTeams() const
@@ -216,8 +337,13 @@ bool AAccelByteWarsGameState::RemovePlayerFromTeam(const FUniqueNetIdRepl Unique
 		for (FGameplayTeamData& Team : Teams)
 		{
 			bStatus = Team.TeamMembers.Remove(FGameplayPlayerData{UniqueNetId, ControllerId}) > 0;
-			if (bStatus) 
+			if (bStatus)
 			{
+				if (HasAuthority())
+				{
+					OnNotify_Teams();
+				}
+
 				AssignedTeamIndex = Teams.Find(Team);
 				break;
 			}

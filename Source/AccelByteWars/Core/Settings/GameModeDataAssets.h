@@ -42,9 +42,6 @@ public:
 	FText Description; // What is the description of this game mode
 };
 
-/**
- * 
- */
 USTRUCT(BlueprintType)
 struct FGameModeData : public FTableRowBase
 {
@@ -57,6 +54,10 @@ public:
 	// Game mode alias; Used for online integration.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FString CodeName;
+
+	// Associate third part code names to this game mode
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TArray<FString> ThirdPartyCodeNames;
 
 	// Game mode alias; Used for online integration.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
@@ -75,11 +76,27 @@ public:
 
 	// Default maximum supported player
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	int32 MaxPlayers = INDEX_NONE;
+	int32 MaxPlayers = 1;
 
 	// Default match time
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 MatchTime = 180;
+
+	// Countdown used to start the game when on Lobby. Set to -1 to disable. Set to 0 to immediately starts.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 StartGameCountdown = 30;
+
+	// Countdown used to shut the game down when the game ends. Set to -1 to disable.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 GameEndsShutdownCountdown = 30;
+
+	// Minimum player count to prevent server to start the NotEnoughPlayerCountdown to shut the game down. Set to -1 to disable. DS only.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (EditCondition="NetworkType == EGameModeNetworkType::DS"))
+	int32 MinimumTeamCountToPreventAutoShutdown = 2;
+
+	// Countdown used to shut the game down when currently connected player is less than MinimumTeamCountToPreventAutoShutdown. Set to -1 to disable. DS only.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (EditCondition="NetworkType == EGameModeNetworkType::DS"))
+	int32 NotEnoughPlayerShutdownCountdown = 30;
 	
 	// Default score limit
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
@@ -117,8 +134,49 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	float SkimScoreAdditionalMultiplier = 2.0f;
 
+	FString GetGameModeTypeString() const
+	{
+		return UEnum::GetValueAsString(GameModeType);
+	}
+	void SetGameModeTypeWithString(const FString& GameModeTypeString)
+	{
+		const UEnum* Enum = StaticEnum<EGameModeType>();
+		GameModeType = static_cast<EGameModeType>(Enum->GetValueByNameString(GameModeTypeString));
+	}
+
+	FString GetNetworkTypeString() const
+	{
+		return UEnum::GetValueAsString(NetworkType);
+	}
+	void SetNetworkTypeWithString(const FString& NetworkTypeString)
+	{
+		const UEnum* Enum = StaticEnum<EGameModeNetworkType>();
+		NetworkType = static_cast<EGameModeNetworkType>(Enum->GetValueByNameString(NetworkTypeString));
+	}
+
 	bool operator!() const
 	{
 		return CodeName.IsEmpty();
 	}
 };
+
+#define GAMESETUP_GameModeType FName(TEXT("GAMEMODETYPE"))
+#define GAMESETUP_DisplayName FName(TEXT("DISPLAYNAME"))
+#define GAMESETUP_NetworkType FName(TEXT("NETWORKTYPE"))
+#define GAMESETUP_IsTeamGame FName(TEXT("ISTEAMGAME"))
+#define GAMESETUP_MaxTeamNum FName(TEXT("MAXTEAMNUM"))
+#define GAMESETUP_MaxPlayers FName(TEXT("MAXPLAYERS"))
+#define GAMESETUP_MatchTime FName(TEXT("MATCHTIME"))
+#define GAMESETUP_StartGameCountdown FName(TEXT("STARTGAMECOUNTDOWN"))
+#define GAMESETUP_GameEndsShutdownCountdown FName(TEXT("GAMEENDSSHUTDOWNCOUNTDOWN"))
+#define GAMESETUP_MinimumTeamCountToPreventAutoShutdown FName(TEXT("MINIMUMTEAMCOUNTTOPREVENTAUTOSHUTDOWN"))
+#define GAMESETUP_NotEnoughPlayerShutdownCountdown FName(TEXT("NOTENOUGHPLAYERSHUTDOWNCOUNTDOWN"))
+#define GAMESETUP_ScoreLimit FName(TEXT("SCORELIMIT"))
+#define GAMESETUP_FiredMissilesLimit FName(TEXT("FIREDMISSILESLIMIT"))
+#define GAMESETUP_StartingLives FName(TEXT("STARTINGLIVES"))
+#define GAMESETUP_BaseScoreForKill FName(TEXT("BASESCOREFORKILL"))
+#define GAMESETUP_TimeScoreIncrement FName(TEXT("TIMESCOREINCREMENT"))
+#define GAMESETUP_TimeScoreDeltaTime FName(TEXT("TIMESCOREDELTATIME"))
+#define GAMESETUP_SkimInitialScore FName(TEXT("SKIMINITIALSCORE"))
+#define GAMESETUP_SkimScoreDeltaTime FName(TEXT("SKIMSCOREDELTATIME"))
+#define GAMESETUP_SkimScoreAdditionalMultiplier FName(TEXT("SKIMSCOREADDITIONALMULTIPLIER"))

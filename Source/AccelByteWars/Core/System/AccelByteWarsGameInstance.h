@@ -166,6 +166,7 @@ public:
 	TSubclassOf<UAccelByteWarsButtonBase> GetDefaultButtonClass() const { return DefaultButtonClass; }
 
 	FGameModeData GetGameModeDataByCodeName(const FString CodeName) const;
+	FGameModeData GetGameModeDataByThirdPartyCodeName(const FString CodeName) const;
 
 	/**
 	 * @brief Get team color specified in GlobalSettingsDataAsset
