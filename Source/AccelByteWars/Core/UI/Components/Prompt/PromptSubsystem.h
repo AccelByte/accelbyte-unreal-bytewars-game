@@ -7,6 +7,7 @@
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Core/UI/Components/Prompt/PopUp/PopUpWidget.h"
+#include "Core/UI/Components/Prompt/PushNotification/PushNotificationModels.h"
 #include "PromptSubsystem.generated.h"
 
 #define MESSAGE_PROMPT_TEXT NSLOCTEXT("AccelByteWars", "Message", "Message")
@@ -27,11 +28,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Pop Up Prompt")
 	void ShowMessagePopUp(const FText Header, const FText Body);
 
-	/** Show dialogue pop-up with dynamic delegate. It is intended for Blueprint binding. */
+	/* Show dialogue pop-up with dynamic delegate (Blueprint). */
 	UFUNCTION(BlueprintCallable, Category = "Pop Up Prompt")
 	void ShowDialoguePopUp(const FText Header, const FText Body, const EPopUpType Type, FPopUpResultDynamicDelegate Callback);
 
-	/** Show dialogue pop-up with non-dynamic delegate. It is intended for binding C++ function. */
+	/* Show dialogue pop-up with non-dynamic delegate (C++). */
 	void ShowDialoguePopUp(const FText Header, const FText Body, const EPopUpType Type, FPopUpResultDelegate Callback);
 
 	UFUNCTION(BlueprintCallable, Category = "Loading Prompt")
@@ -39,6 +40,13 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Loading Prompt")
 	void HideLoading();
+
+	/* Push a notification (Blueprint). */
+	UFUNCTION(BlueprintCallable)
+	void PushNotification(const FString& IconImageURL, const FText Message, const FText ActionButton1, const FText ActionButton2, const FText ActionButton3, FPushNotificationDynamicDelegate ActionButtonCallback);
+
+	/* Push a notification (C++). */
+	void PushNotification(const FString& IconImageURL, const FText& Message, const FText& ActionButton1 = FText::FromString(""), const FText& ActionButton2 = FText::FromString(""), const FText& ActionButton3 = FText::FromString(""), FPushNotificationDelegate ActionButtonCallback = FPushNotificationDelegate());
 
 private:
 	UAccelByteWarsGameInstance* GameInstance;

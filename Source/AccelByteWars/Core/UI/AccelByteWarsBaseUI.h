@@ -7,6 +7,7 @@
 #include "CoreMinimal.h"
 #include "Components/BackgroundBlur.h"
 #include "Components/Prompt/Loading/LoadingWidget.h"
+#include "Core/UI/Components/Prompt/PushNotification/PushNotificationWidget.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
 #include "Widgets/CommonActivatableWidgetContainer.h"
 #include "AccelByteWarsBaseUI.generated.h"
@@ -40,6 +41,16 @@ public:
 	/** Push widget to target stack with init function. */
 	UAccelByteWarsActivatableWidget* PushWidgetToStack(EBaseUIStackType TargetStack, TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass, TFunctionRef<void(UAccelByteWarsActivatableWidget&)> InitFunc);
 
+	UPushNotificationWidget* GetPushNotificationWidget()
+	{
+		if (PushNotificationStack->GetNumWidgets() <= 0)
+		{
+			PushNotificationWidget = Cast<UPushNotificationWidget>(PushNotificationStack->AddWidget(DefaultPushNotificationWidgetClass.Get()));
+		}
+
+		return PushNotificationWidget;
+	};
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Base UI Settings")
 	TMap<TEnumAsByte<EBaseUIStackType>, UCommonActivatableWidgetStack*> Stacks;
 
@@ -49,7 +60,12 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Prompt Settings")
 	TSubclassOf<ULoadingWidget> DefaultLoadingWidgetClass;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Prompt Settings")
+	TSubclassOf<UPushNotificationWidget> DefaultPushNotificationWidgetClass;
+
 private:
+	void OnWidgetTransitionChanged(UCommonActivatableWidgetContainerBase* Widget, bool bIsTransitioning);
+
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UBackgroundBlur* BackgroundBlur;
 
@@ -65,5 +81,8 @@ private:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonActivatableWidgetStack* PromptStack;
 
-	void OnWidgetTransitionChanged(UCommonActivatableWidgetContainerBase* Widget, bool bIsTransitioning);
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UCommonActivatableWidgetStack* PushNotificationStack;
+
+	UPushNotificationWidget* PushNotificationWidget;
 };
