@@ -284,6 +284,58 @@ void AAccelByteWarsGameMode::DelayedPlayerTeamSetupWithPredefinedData(APlayerCon
 		AbPlayerState->AvatarURL);
 }
 
+void AAccelByteWarsGameMode::AssignTeamManually(int32& InOutTeamId) const
+{
+	switch (ABGameState->GameSetup.GameModeType)
+	{
+	case EGameModeType::FFA:
+		// Try to assign to an empty team first.
+		if (ABGameState->Teams.Num() >= ABGameState->GameSetup.MaxTeamNum)
+		{
+			// Assign to empty team.
+			InOutTeamId = INDEX_NONE;
+			for (const FGameplayTeamData& Team : ABGameState->Teams)
+			{
+				if (Team.TeamMembers.IsEmpty())
+				{
+					InOutTeamId = Team.TeamId;
+					break;
+				}
+			}
+		}
+		// Assign to a new team
+		else
+		{
+			InOutTeamId = ABGameState->Teams.Num();
+		}
+		break;
+	case EGameModeType::TDM:
+		// Try to assign to least populated team.
+		if (ABGameState->Teams.Num() >= ABGameState->GameSetup.MaxTeamNum)
+		{
+			// The least populated team should less than the maximum players per team.
+			uint8 CurrentTeamMemberNum = ABGameState->GameSetup.MaxPlayers / ABGameState->GameSetup.MaxTeamNum;
+			InOutTeamId = INDEX_NONE;
+			for (const FGameplayTeamData& Team : ABGameState->Teams)
+			{
+				if (Team.TeamMembers.Num() < CurrentTeamMemberNum)
+				{
+					CurrentTeamMemberNum = Team.TeamMembers.Num();
+					InOutTeamId = Team.TeamId;
+				}
+			}
+		}
+		// Assign to a new team
+		else
+		{
+			InOutTeamId = ABGameState->Teams.Num();
+		}
+		break;
+	default:
+		break;
+	}
+}
+
 void AAccelByteWarsGameMode::ServerTravel(TSoftObjectPtr<UWorld> Level)
 {
 	const FString Url = Level.GetLongPackageName();
@@ -365,58 +417,6 @@ bool AAccelByteWarsGameMode::RemovePlayer(const APlayerController* PlayerControl
 	const int32 ControllerId = GetControllerId(PlayerState);
 
 	return ABGameState->RemovePlayerFromTeam(PlayerUniqueId, ControllerId);
-}
-
-void AAccelByteWarsGameMode::AssignTeamManually(int32& InOutTeamId) const
-{
-	switch (ABGameState->GameSetup.GameModeType)
-	{
-	case EGameModeType::FFA:
-		// Try to assign to an empty team first.
-		if (ABGameState->Teams.Num() >= ABGameState->GameSetup.MaxTeamNum)
-		{
-			// Assign to empty team.
-			InOutTeamId = INDEX_NONE;
-			for (const FGameplayTeamData& Team : ABGameState->Teams)
-			{
-				if (Team.TeamMembers.IsEmpty())
-				{
-					InOutTeamId = Team.TeamId;
-					break;
-				}
-			}
-		}
-		// Assign to a new team
-		else
-		{
-			InOutTeamId = ABGameState->Teams.Num();
-		}
-		break;
-	case EGameModeType::TDM:
-		// Try to assign to least populated team.
-		if (ABGameState->Teams.Num() >= ABGameState->GameSetup.MaxTeamNum)
-		{
-			// The least populated team should less than the maximum players per team.
-			uint8 CurrentTeamMemberNum = ABGameState->GameSetup.MaxPlayers / ABGameState->GameSetup.MaxTeamNum;
-			InOutTeamId = INDEX_NONE;
-			for (const FGameplayTeamData& Team : ABGameState->Teams)
-			{
-				if (Team.TeamMembers.Num() < CurrentTeamMemberNum)
-				{
-					CurrentTeamMemberNum = Team.TeamMembers.Num();
-					InOutTeamId = Team.TeamId;
-				}
-			}
-		}
-		// Assign to a new team
-		else
-		{
-			InOutTeamId = ABGameState->Teams.Num();
-		}
-		break;
-	default:
-		break;
-	}
 }
 
 int32 AAccelByteWarsGameMode::GetControllerId(const APlayerState* PlayerState)

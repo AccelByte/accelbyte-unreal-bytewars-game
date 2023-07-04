@@ -53,6 +53,9 @@ public:
 	virtual void DelayedPlayerTeamSetupWithPredefinedData(APlayerController* PlayerController);
 
 	UFUNCTION(BlueprintCallable)
+	void AssignTeamManually(int32& InOutTeamId) const;
+
+	UFUNCTION(BlueprintCallable)
 	void ServerTravel(TSoftObjectPtr<UWorld> Level);
 
 	void DelayedServerTravel(const FString& URL) const;
@@ -78,7 +81,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	bool bShouldRemovePlayerOnLogoutImmediately = false;
 
-	void AssignTeamManually(int32& InOutTeamId) const;
 	static int32 GetControllerId(const APlayerState* PlayerState);
 	bool IsServer() const;
 
