@@ -19,15 +19,7 @@ void UAccelByteWarsWidgetEntry::NativeOnItemSelectionChanged(bool bIsSelected)
 {
 	IUserObjectListEntry::NativeOnItemSelectionChanged(bIsSelected);
 
-	for (UCommonButtonBase* Button : InputMethodDependantWidgets())
-	{
-		if (!Button)
-		{
-			continue;
-		}
-
-		Button->SetIsInteractionEnabled(bIsSelected);
-	}
+	ChangeInteractibility(InputSubsystem->GetCurrentInputType());
 }
 
 void UAccelByteWarsWidgetEntry::NativeConstruct()
@@ -43,9 +35,9 @@ void UAccelByteWarsWidgetEntry::NativeConstruct()
 
 void UAccelByteWarsWidgetEntry::NativeOnFocusLost(const FFocusEvent& InFocusEvent)
 {
-	Super::NativeOnFocusLost(InFocusEvent);
-
 	ChangeInteractibility(InputSubsystem->GetCurrentInputType());
+
+	Super::NativeOnFocusLost(InFocusEvent);
 }
 
 FReply UAccelByteWarsWidgetEntry::NativeOnFocusReceived(const FGeometry& InGeometry, const FFocusEvent& InFocusEvent)
