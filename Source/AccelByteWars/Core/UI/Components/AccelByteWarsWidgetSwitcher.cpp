@@ -67,6 +67,11 @@ void UAccelByteWarsWidgetSwitcher::SetWidgetState(const EAccelByteWarsWidgetSwit
 	{
 		TargetTextBlock->SetText(TargetText);
 	}
+
+	if (HasUserFocus(GetOwningPlayer()))
+	{
+		GetFocusTargetBasedOnCurrentState()->SetUserFocus(GetOwningPlayer());
+	}
 }
 
 void UAccelByteWarsWidgetSwitcher::NativePreConstruct()
@@ -96,4 +101,55 @@ void UAccelByteWarsWidgetSwitcher::NativeDestruct()
 
 	Btn_Cancel->OnClicked().Clear();
 	Btn_Retry->OnClicked().Clear();
+}
+
+UWidget* UAccelByteWarsWidgetSwitcher::GetFocusTargetBasedOnCurrentState() const
+{
+	UWidget* FocusTarget = nullptr;
+
+	switch (CurrentState)
+	{
+	case EAccelByteWarsWidgetSwitcherState::Loading:
+		if (bShowCancelButtonOnLoading)
+		{
+			FocusTarget = Btn_Cancel;
+		}
+		else if (bShowRetryButtonOnLoading)
+		{
+			FocusTarget = Btn_Retry;
+		}
+		break;
+	case EAccelByteWarsWidgetSwitcherState::Empty:
+		if (bShowCancelButtonOnEmpty)
+		{
+			FocusTarget = Btn_Cancel;
+		}
+		else if (bShowCancelButtonOnEmpty)
+		{
+			FocusTarget = Btn_Retry;
+		}
+		break;
+	case EAccelByteWarsWidgetSwitcherState::Not_Empty:
+		if (bShowCancelButtonOnNotEmpty)
+		{
+			FocusTarget = Btn_Cancel;
+		}
+		else if (bShowCancelButtonOnNotEmpty)
+		{
+			FocusTarget = Btn_Retry;
+		}
+		break;
+	case EAccelByteWarsWidgetSwitcherState::Error:
+		if (bShowCancelButtonOnError)
+		{
+			FocusTarget = Btn_Cancel;
+		}
+		else if (bShowCancelButtonOnError)
+		{
+			FocusTarget = Btn_Retry;
+		}
+		break;
+	}
+
+	return FocusTarget;
 }

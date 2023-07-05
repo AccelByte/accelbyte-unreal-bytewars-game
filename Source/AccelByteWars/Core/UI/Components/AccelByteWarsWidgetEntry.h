@@ -21,6 +21,7 @@ protected:
 	virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;
 	virtual void NativeOnItemSelectionChanged(bool bIsSelected) override;
 	virtual void NativeConstruct() override;
+	virtual void NativeOnFocusLost(const FFocusEvent& InFocusEvent) override;
 
 	UFUNCTION(BlueprintImplementableEvent)
 	TArray<UCommonButtonBase*> InputMethodDependantWidgets();
