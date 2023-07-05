@@ -41,6 +41,20 @@ void UAccelByteWarsWidgetEntry::NativeConstruct()
 	}
 }
 
+void UAccelByteWarsWidgetEntry::NativeOnFocusLost(const FFocusEvent& InFocusEvent)
+{
+	Super::NativeOnFocusLost(InFocusEvent);
+
+	ChangeInteractibility(InputSubsystem->GetCurrentInputType());
+}
+
+FReply UAccelByteWarsWidgetEntry::NativeOnFocusReceived(const FGeometry& InGeometry, const FFocusEvent& InFocusEvent)
+{
+	ChangeInteractibility(InputSubsystem->GetCurrentInputType());
+
+	return FReply::Handled();
+}
+
 void UAccelByteWarsWidgetEntry::ChangeInteractibility(ECommonInputType InputType)
 {
 	for (UCommonButtonBase* Button : InputMethodDependantWidgets())
@@ -50,13 +64,17 @@ void UAccelByteWarsWidgetEntry::ChangeInteractibility(ECommonInputType InputType
 			continue;
 		}
 
+		bool bShouldInteractable;
+
 		switch (InputType)
 		{
 		case ECommonInputType::Gamepad:
-			Button->SetIsInteractionEnabled(IsListItemSelected());
+			bShouldInteractable = IsListItemSelected() && HasUserFocus(GetOwningPlayer());
 			break;
 		default:
-			Button->SetIsInteractionEnabled(true);
+			bShouldInteractable = true;
 		}
+
+		Button->SetIsInteractionEnabled(bShouldInteractable);
 	}
 }
