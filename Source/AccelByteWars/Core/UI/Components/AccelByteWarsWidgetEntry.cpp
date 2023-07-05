@@ -48,6 +48,13 @@ void UAccelByteWarsWidgetEntry::NativeOnFocusLost(const FFocusEvent& InFocusEven
 	ChangeInteractibility(InputSubsystem->GetCurrentInputType());
 }
 
+FReply UAccelByteWarsWidgetEntry::NativeOnFocusReceived(const FGeometry& InGeometry, const FFocusEvent& InFocusEvent)
+{
+	ChangeInteractibility(InputSubsystem->GetCurrentInputType());
+
+	return FReply::Handled();
+}
+
 void UAccelByteWarsWidgetEntry::ChangeInteractibility(ECommonInputType InputType)
 {
 	for (UCommonButtonBase* Button : InputMethodDependantWidgets())
