@@ -25,21 +25,23 @@ public:
 	void Initialize(FSubsystemCollectionBase& Collection) override;
 	void Deinitialize() override;
 
-	UFUNCTION(BlueprintCallable, Category = "Pop Up Prompt")
+	UFUNCTION(BlueprintCallable, Category = "Prompt Subsystem")
 	void ShowMessagePopUp(const FText Header, const FText Body);
 
 	/* Show dialogue pop-up with dynamic delegate (Blueprint). */
-	UFUNCTION(BlueprintCallable, Category = "Pop Up Prompt")
+	UFUNCTION(BlueprintCallable, Category = "Prompt Subsystem")
 	void ShowDialoguePopUp(const FText Header, const FText Body, const EPopUpType Type, FPopUpResultDynamicDelegate Callback);
 
 	/* Show dialogue pop-up with non-dynamic delegate (C++). */
 	void ShowDialoguePopUp(const FText Header, const FText Body, const EPopUpType Type, FPopUpResultDelegate Callback);
 
-	UFUNCTION(BlueprintCallable, Category = "Loading Prompt")
+	UFUNCTION(BlueprintCallable, Category = "Prompt Subsystem")
 	void ShowLoading(const FText LoadingMessage = NSLOCTEXT("AccelByteWars", "Loading", "Loading"));
 
-	UFUNCTION(BlueprintCallable, Category = "Loading Prompt")
+	UFUNCTION(BlueprintCallable, Category = "Prompt Subsystem")
 	void HideLoading();
+
+	void PushNotification(UPushNotification* Notification);
 
 	/* Push a notification (Blueprint). */
 	UFUNCTION(BlueprintCallable)

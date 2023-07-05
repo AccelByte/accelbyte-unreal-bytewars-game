@@ -43,9 +43,9 @@ void UAccelByteWarsWidgetEntry::NativeConstruct()
 
 void UAccelByteWarsWidgetEntry::NativeOnFocusLost(const FFocusEvent& InFocusEvent)
 {
-	Super::NativeOnFocusLost(InFocusEvent);
-
 	ChangeInteractibility(InputSubsystem->GetCurrentInputType());
+
+	Super::NativeOnFocusLost(InFocusEvent);
 }
 
 FReply UAccelByteWarsWidgetEntry::NativeOnFocusReceived(const FGeometry& InGeometry, const FFocusEvent& InFocusEvent)

@@ -45,6 +45,18 @@ UAccelByteWarsActivatableWidget* UAccelByteWarsBaseUI::PushWidgetToStack(EBaseUI
 	return Cast<UAccelByteWarsActivatableWidget>(Stack->AddWidget(WidgetClass, InitFunc));
 }
 
+UPushNotificationWidget* UAccelByteWarsBaseUI::GetPushNotificationWidget()
+{
+	UPushNotificationWidget* PushNotificationWidget = Cast<UPushNotificationWidget>(PushNotificationStack->GetActiveWidget());
+
+	if (!PushNotificationWidget)
+	{
+		PushNotificationWidget = Cast<UPushNotificationWidget>(PushNotificationStack->AddWidget(DefaultPushNotificationWidgetClass.Get()));
+	}
+
+	return PushNotificationWidget;
+}
+
 void UAccelByteWarsBaseUI::OnWidgetTransitionChanged(UCommonActivatableWidgetContainerBase* Widget, bool bIsTransitioning)
 {
 	// Set auto focus to top most stack widget.

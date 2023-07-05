@@ -41,15 +41,7 @@ public:
 	/** Push widget to target stack with init function. */
 	UAccelByteWarsActivatableWidget* PushWidgetToStack(EBaseUIStackType TargetStack, TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass, TFunctionRef<void(UAccelByteWarsActivatableWidget&)> InitFunc);
 
-	UPushNotificationWidget* GetPushNotificationWidget()
-	{
-		if (PushNotificationStack->GetNumWidgets() <= 0)
-		{
-			PushNotificationWidget = Cast<UPushNotificationWidget>(PushNotificationStack->AddWidget(DefaultPushNotificationWidgetClass.Get()));
-		}
-
-		return PushNotificationWidget;
-	};
+	UPushNotificationWidget* GetPushNotificationWidget();
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Base UI Settings")
 	TMap<TEnumAsByte<EBaseUIStackType>, UCommonActivatableWidgetStack*> Stacks;
@@ -83,6 +75,4 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonActivatableWidgetStack* PushNotificationStack;
-
-	UPushNotificationWidget* PushNotificationWidget;
 };

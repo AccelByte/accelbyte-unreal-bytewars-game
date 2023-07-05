@@ -47,30 +47,35 @@ void UPushNotificationWidget::PushNotification(UPushNotification* Notification)
 
 	// Start notification lifetime.
 	FTimerHandle TimerHandle;
-	NotificationTimers.Add(TimerHandle);
+	NotificationTimers.Add(&TimerHandle);
 
 	// Start notification lifetime.
-	GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this, &TimerHandle, Notification]()
-	{
-		// Clear notification timer.
-		if (TimerHandle.IsValid()) 
-		{
-			GetWorld()->GetTimerManager().ClearTimer(TimerHandle);
-		}
-		NotificationTimers.Remove(TimerHandle);
-		
-		// Remove notification.
-		Lv_PushNotification->RemoveItem(Notification);
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle, FTimerDelegate::CreateUObject(this, &ThisClass::OnNotificationLifeTimeEnds, Notification, &TimerHandle), NotificationLifeTime, false);
+}
 
-		// Push pending notification if any.
-		TryPushPendingNotifications();
-	}, NotificationLifeTime, false);
+void UPushNotificationWidget::OnNotificationLifeTimeEnds(UPushNotification* Notification, FTimerHandle* NotificationTimer)
+{
+	// Remove notification.
+	if (Notification) 
+	{
+		Lv_PushNotification->RemoveItem(Notification);
+	}
+
+	// Clear notification timer.
+	if (NotificationTimer)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(*NotificationTimer);
+		NotificationTimers.Remove(NotificationTimer);
+	}
+
+	// Push pending notification if any.
+	TryPushPendingNotifications();
 }
 
 void UPushNotificationWidget::TryPushPendingNotifications()
 {
 	// If no notifications left, deactivate the widget.
-	if (PendingNotifications.IsEmpty()) 
+	if (!PendingNotifications.Peek())
 	{
 		if (Lv_PushNotification->GetNumItems() <= 0) 
 		{
@@ -99,11 +104,11 @@ void UPushNotificationWidget::DismissAllNotifications()
 	PendingNotifications.Empty();
 
 	// Clear dangling notification timers.
-	for (FTimerHandle& NotificationTimer : NotificationTimers)
+	for (FTimerHandle* NotificationTimer : NotificationTimers)
 	{
-		if (NotificationTimer.IsValid())
+		if (NotificationTimer)
 		{
-			GetWorld()->GetTimerManager().ClearTimer(NotificationTimer);
+			GetWorld()->GetTimerManager().ClearTimer(*NotificationTimer);
 		}
 	}
 	NotificationTimers.Empty();
