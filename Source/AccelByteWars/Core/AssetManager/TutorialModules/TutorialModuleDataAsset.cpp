@@ -84,10 +84,17 @@ void UTutorialModuleDataAsset::ResetOverrides()
 	bOverriden = false;
 }
 
-void UTutorialModuleDataAsset::UpdateDataAssetProperties()
+void UTutorialModuleDataAsset::ValidateDataAssetProperties()
 {
-	ValidateDataAssetProperties();
+	// Validate Default's class properties.
+	ValidateClassProperty(DefaultUIClass, LastDefaultUIClass, false);
+	ValidateClassProperty(DefaultSubsystemClass, LastDefaultSubsystemClass, false);
 
+	// Validate Starter's class properties.
+	ValidateClassProperty(StarterUIClass, LastStarterUIClass, true);
+	ValidateClassProperty(StarterSubsystemClass, LastStarterSubsystemClass, true);
+
+#if WITH_EDITOR
 	// Clean up last generated widgets metadata to avoid duplication.
 	for (FTutorialModuleGeneratedWidget& LastGeneratedWidget : LastGeneratedWidgets)
 	{
@@ -95,12 +102,12 @@ void UTutorialModuleDataAsset::UpdateDataAssetProperties()
 
 		LastGeneratedWidget.DefaultTutorialModuleWidgetClass = nullptr;
 		LastGeneratedWidget.StarterTutorialModuleWidgetClass = nullptr;
-		
+
 		LastGeneratedWidget.OtherTutorialModule = nullptr;
 
-		for (TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : LastGeneratedWidget.TargetWidgetClasses) 
+		for (TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : LastGeneratedWidget.TargetWidgetClasses)
 		{
-			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject()) 
+			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
 			{
 				continue;
 			}
@@ -128,11 +135,11 @@ void UTutorialModuleDataAsset::UpdateDataAssetProperties()
 	}
 
 	// Assign fresh generated widget to the target widget class.
-	for (FTutorialModuleGeneratedWidget& GeneratedWidget : GeneratedWidgets) 
+	for (FTutorialModuleGeneratedWidget& GeneratedWidget : GeneratedWidgets)
 	{
 		// Clean up unnecessary references.
-		if (GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::GENERIC_WIDGET_ENTRY_BUTTON && 
-			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::GENERIC_WIDGET) 
+		if (GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::GENERIC_WIDGET_ENTRY_BUTTON &&
+			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::GENERIC_WIDGET)
 		{
 			GeneratedWidget.GenericWidgetClass = nullptr;
 		}
@@ -150,14 +157,16 @@ void UTutorialModuleDataAsset::UpdateDataAssetProperties()
 			GeneratedWidget.DefaultTutorialModuleWidgetClass = nullptr;
 			GeneratedWidget.StarterTutorialModuleWidgetClass = nullptr;
 		}
-		
+
 		// Assign the owner of the generated widget metadata to this Tutorial Module.
 		GeneratedWidget.OwnerTutorialModule = this;
 
 		// Check if the widget id is already used.
 		if (UTutorialModuleDataAsset::GeneratedWidgetUsedIds.Contains(GeneratedWidget.WidgetId))
 		{
+#if UE_EDITOR
 			ShowPopupMessage(FString::Printf(TEXT("%s widget id is already used. Widget id must be unique."), *GeneratedWidget.WidgetId));
+#endif
 			GeneratedWidget.WidgetId = TEXT("");
 		}
 		else if (!GeneratedWidget.WidgetId.IsEmpty())
@@ -177,17 +186,7 @@ void UTutorialModuleDataAsset::UpdateDataAssetProperties()
 	}
 
 	LastGeneratedWidgets = GeneratedWidgets;
-}
-
-void UTutorialModuleDataAsset::ValidateDataAssetProperties()
-{
-	// Validate Default's class properties.
-	ValidateClassProperty(DefaultUIClass, LastDefaultUIClass, false);
-	ValidateClassProperty(DefaultSubsystemClass, LastDefaultSubsystemClass, false);
-
-	// Validate Starter's class properties.
-	ValidateClassProperty(StarterUIClass, LastStarterUIClass, true);
-	ValidateClassProperty(StarterSubsystemClass, LastStarterSubsystemClass, true);
+#endif
 }
 
 bool UTutorialModuleDataAsset::ValidateClassProperty(TSubclassOf<UAccelByteWarsActivatableWidget>& UIClass, TSubclassOf<UAccelByteWarsActivatableWidget>& LastUIClass, const bool IsStarterClass)
@@ -306,7 +305,7 @@ void UTutorialModuleDataAsset::PostLoad()
 {
 	Super::PostLoad();
 
-	UpdateDataAssetProperties();
+	ValidateDataAssetProperties();
 }
 
 #if WITH_EDITOR
@@ -314,7 +313,7 @@ void UTutorialModuleDataAsset::PostEditChangeProperty(FPropertyChangedEvent& Pro
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 
-	UpdateDataAssetProperties();
+	ValidateDataAssetProperties();
 }
 
 void UTutorialModuleDataAsset::PostDuplicate(EDuplicateMode::Type DuplicateMode)
@@ -322,7 +321,14 @@ void UTutorialModuleDataAsset::PostDuplicate(EDuplicateMode::Type DuplicateMode)
 	Super::PostDuplicate(DuplicateMode);
 
 	CodeName = TEXT("");
-	UpdateDataAssetProperties();
+	ValidateDataAssetProperties();
+}
+
+void UTutorialModuleDataAsset::FinishDestroy()
+{
+	CleanUpDataAssetProperties();
+
+	Super::FinishDestroy();
 }
 
 void UTutorialModuleDataAsset::ShowPopupMessage(const FString& Message) const
@@ -336,10 +342,3 @@ void UTutorialModuleDataAsset::ShowPopupMessage(const FString& Message) const
 	FSlateNotificationManager::Get().AddNotification(Info);
 }
 #endif
-
-void UTutorialModuleDataAsset::FinishDestroy()
-{
-	CleanUpDataAssetProperties();
-
-	Super::FinishDestroy();
-}

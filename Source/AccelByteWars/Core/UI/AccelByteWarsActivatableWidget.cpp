@@ -76,6 +76,26 @@ TOptional<FUIInputConfig> UAccelByteWarsActivatableWidget::GetDesiredInputConfig
 }
 
 #if WITH_EDITOR
+void UAccelByteWarsActivatableWidget::PostLoad()
+{
+	Super::PostLoad();
+
+	ValidateGeneratedWidgets();
+}
+
+void UAccelByteWarsActivatableWidget::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+
+	ValidateGeneratedWidgets();
+}
+
+void UAccelByteWarsActivatableWidget::PostDuplicate(bool bDuplicateForPIE)
+{
+	Super::PostDuplicate(bDuplicateForPIE);
+
+	ValidateGeneratedWidgets();
+}
 
 void UAccelByteWarsActivatableWidget::ValidateCompiledWidgetTree(const UWidgetTree& BlueprintWidgetTree, class IWidgetCompilerLog& CompileLog) const
 {
@@ -93,20 +113,6 @@ void UAccelByteWarsActivatableWidget::ValidateCompiledWidgetTree(const UWidgetTr
 			CompileLog.Note(LOCTEXT("ValidateGetDesiredFocusTarget_Note", "GetDesiredFocusTarget wasn't implemented, you're going to have trouble using gamepads on this screen.  If it was implemented in the native base class you can ignore this message."));
 		}
 	}
-}
-
-void UAccelByteWarsActivatableWidget::PostLoad()
-{
-	Super::PostLoad();
-
-	if (AssociateTutorialModule && AssociateTutorialModule->GetTutorialModuleUIClass() != GetClass())
-	{
-		AssociateTutorialModule = nullptr;
-	}
-	GeneratedWidgets.RemoveAll([](const FTutorialModuleGeneratedWidget& Temp)
-	{
-		return Temp.OwnerTutorialModule == nullptr || !Temp.OwnerTutorialModule->IsValidLowLevel();
-	});
 }
 
 #endif
@@ -159,6 +165,18 @@ void UAccelByteWarsActivatableWidget::SetInputModeToGameOnly()
 	FInputModeGameOnly InputMode;
 	PC->SetInputMode(InputMode);
 	PC->bShowMouseCursor = false;
+}
+
+void UAccelByteWarsActivatableWidget::ValidateGeneratedWidgets()
+{
+	if (AssociateTutorialModule && AssociateTutorialModule->GetTutorialModuleUIClass() != GetClass())
+	{
+		AssociateTutorialModule = nullptr;
+	}
+	GeneratedWidgets.RemoveAll([](const FTutorialModuleGeneratedWidget& Temp)
+	{
+		return Temp.OwnerTutorialModule == nullptr;
+	});
 }
 
 void UAccelByteWarsActivatableWidget::InitializeGeneratedWidgets()

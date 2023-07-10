@@ -39,8 +39,8 @@ public:
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 	virtual void PostDuplicate(EDuplicateMode::Type DuplicateMode) override;
-#endif
 	virtual void FinishDestroy();
+#endif
 
 	static FTutorialModuleData GetTutorialModuleDataByCodeName(const FString& InCodeName);
 	static FPrimaryAssetId GenerateAssetIdFromCodeName(const FString& InCodeName);
@@ -94,8 +94,6 @@ public:
 	TArray<FTutorialModuleGeneratedWidget> GeneratedWidgets;
 
 private:
-	void UpdateDataAssetProperties();
-
 	void ValidateDataAssetProperties();
 	bool ValidateClassProperty(TSubclassOf<UAccelByteWarsActivatableWidget>& UIClass, TSubclassOf<UAccelByteWarsActivatableWidget>& LastUIClass, const bool IsStarterClass);
 	bool ValidateClassProperty(TSubclassOf<UTutorialModuleSubsystem>& SubsystemClass, TSubclassOf<UTutorialModuleSubsystem>& LastSubsystemClass, const bool IsStarterClass);

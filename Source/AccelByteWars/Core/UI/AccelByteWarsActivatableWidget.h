@@ -33,8 +33,12 @@ public:
 	UAccelByteWarsActivatableWidget(const FObjectInitializer& ObjectInitializer);
 	virtual void NativePreConstruct() override;
 	virtual void NativeOnActivated() override;
+
 #if WITH_EDITOR
 	virtual void PostLoad() override;
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+	virtual void PostDuplicate(bool bDuplicateForPIE) override;
+	virtual void ValidateCompiledWidgetTree(const UWidgetTree& BlueprintWidgetTree, class IWidgetCompilerLog& CompileLog) const override;
 #endif
 
 	//~UCommonActivatableWidget interface
@@ -53,19 +57,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tutorial Module Metadata", meta = (DisplayThumbnail = false))
 	TArray<UPanelWidget*> GeneratedWidgetContainers;
 
-#if WITH_EDITOR
-	virtual void ValidateCompiledWidgetTree(const UWidgetTree& BlueprintWidgetTree, class IWidgetCompilerLog& CompileLog) const override;
-#endif
-
 protected:
-	/** The desired input mode to use while this UI is activated, for example do you want key presses to still reach the game/player controller? */
-	UPROPERTY(EditDefaultsOnly, Category = Input)
-	EAccelByteWarsWidgetInputMode InputConfig = EAccelByteWarsWidgetInputMode::Default;
-
-	/** The desired mouse behavior when the game gets input. */
-	UPROPERTY(EditDefaultsOnly, Category = Input)
-	EMouseCaptureMode GameMouseCaptureMode = EMouseCaptureMode::CapturePermanently;
-
 	/** Change the owning player controller input mode to game only and also hide the mouse cursor */
 	UFUNCTION(BlueprintCallable)
 	void MoveCameraToTargetLocation(const float DeltaTime, const FVector TargetLocation = FVector(60.0f, 300.0f, 160.0f), const float InterpSpeed = 5.0f);
@@ -78,7 +70,16 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void SetInputModeToGameOnly();
 
+	/** The desired input mode to use while this UI is activated, for example do you want key presses to still reach the game/player controller? */
+	UPROPERTY(EditDefaultsOnly, Category = Input)
+	EAccelByteWarsWidgetInputMode InputConfig = EAccelByteWarsWidgetInputMode::Default;
+
+	/** The desired mouse behavior when the game gets input. */
+	UPROPERTY(EditDefaultsOnly, Category = Input)
+	EMouseCaptureMode GameMouseCaptureMode = EMouseCaptureMode::CapturePermanently;
+
 private:
+	void ValidateGeneratedWidgets();
 	void InitializeGeneratedWidgets();
 	TWeakObjectPtr<UAccelByteWarsButtonBase> GenerateEntryButton(FTutorialModuleGeneratedWidget& Metadata, UPanelWidget& WidgetContainer);
 	TWeakObjectPtr<UAccelByteWarsButtonBase> GenerateActionButton(FTutorialModuleGeneratedWidget& Metadata, UPanelWidget& WidgetContainer);
