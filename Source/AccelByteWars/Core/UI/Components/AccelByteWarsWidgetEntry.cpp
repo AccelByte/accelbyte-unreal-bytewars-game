@@ -61,7 +61,7 @@ void UAccelByteWarsWidgetEntry::ChangeInteractibility(ECommonInputType InputType
 		switch (InputType)
 		{
 		case ECommonInputType::Gamepad:
-			bShouldInteractable = IsListItemSelected() && HasUserFocus(GetOwningPlayer());
+			bShouldInteractable = HasUserFocus(GetOwningPlayer());
 			break;
 		default:
 			bShouldInteractable = true;
