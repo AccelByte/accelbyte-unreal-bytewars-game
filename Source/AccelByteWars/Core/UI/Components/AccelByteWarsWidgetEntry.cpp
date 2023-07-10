@@ -19,15 +19,7 @@ void UAccelByteWarsWidgetEntry::NativeOnItemSelectionChanged(bool bIsSelected)
 {
 	IUserObjectListEntry::NativeOnItemSelectionChanged(bIsSelected);
 
-	for (UCommonButtonBase* Button : InputMethodDependantWidgets())
-	{
-		if (!Button)
-		{
-			continue;
-		}
-
-		Button->SetIsInteractionEnabled(bIsSelected);
-	}
+	ChangeInteractibility(InputSubsystem->GetCurrentInputType());
 }
 
 void UAccelByteWarsWidgetEntry::NativeConstruct()
