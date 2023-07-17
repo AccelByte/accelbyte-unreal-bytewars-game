@@ -6,7 +6,7 @@
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/Utilities/AccelByteWarsUtility.h"
 #include "Components/TextBlock.h"
-#include "Components/Border.h"
+#include "Components/Image.h"
 
 #define LOCTEXT_NAMESPACE "AccelByteWars"
 
@@ -28,6 +28,12 @@ void UFriendDetailsWidget_Starter::InitData(UFriendData* FriendData)
 	// Display presence.
 	Tb_Presence->SetText(FText::FromString(CachedFriendData->GetPresence()));
 
+	// Store default brush to be used to reset the avatar brush if needed.
+	if (!DefaultAvatarBrush.GetResourceObject())
+	{
+		DefaultAvatarBrush = Img_Avatar->Brush;
+	}
+
 	// Display avatar image.
 	const FString AvatarURL = CachedFriendData->AvatarURL;
 	const FString AvatarId = FBase64::Encode(AvatarURL);
@@ -36,7 +42,6 @@ void UFriendDetailsWidget_Starter::InitData(UFriendData* FriendData)
 	FCacheBrush CacheAvatarBrush = AccelByteWarsUtility::GetImageFromCache(AvatarId);
 	if (CacheAvatarBrush.IsValid())
 	{
-		Img_Avatar->SetBrushColor(FLinearColor::White);
 		Img_Avatar->SetBrush(*CacheAvatarBrush.Get());
 	}
 	// Set avatar image from URL if it is not exists in cache.
@@ -47,10 +52,14 @@ void UFriendDetailsWidget_Starter::InitData(UFriendData* FriendData)
 			AvatarId,
 			FOnImageReceived::CreateWeakLambda(this, [this](const FCacheBrush ImageResult)
 			{
-				Img_Avatar->SetBrushColor(FLinearColor::White);
 				Img_Avatar->SetBrush(*ImageResult.Get());
 			})
 		);
+	}
+	// If no valid avatar, reset it to the default one.
+	else
+	{
+		Img_Avatar->SetBrush(DefaultAvatarBrush);
 	}
 }
 

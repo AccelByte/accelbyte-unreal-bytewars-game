@@ -9,11 +9,10 @@
 #include "TutorialModules/Module-8/FriendsSubsystem.h"
 #include "FriendWidgetEntry.generated.h"
 
-class UPromptSubsystem;
 class UWidgetSwitcher;
 class UCommonButtonBase;
 class UTextBlock;
-class UBorder;
+class UImage;
 
 UCLASS(Abstract)
 class ACCELBYTEWARS_API UFriendWidgetEntry : public UAccelByteWarsWidgetEntry
@@ -29,12 +28,11 @@ protected:
 	void OnRejectButtonClicked();
 	void OnCancelButtonClicked();
 
-	UPromptSubsystem* PromptSubsystem;
 	UFriendsSubsystem* FriendsSubsystem;
 	UFriendData* CachedFriendData;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
-	UBorder* Img_Avatar;
+	UImage* Img_Avatar;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Tb_DisplayName;
@@ -59,9 +57,6 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_Cancel;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
-	UCommonButtonBase* Btn_Unblock;
 
 	FSlateBrush DefaultAvatarBrush;
 };

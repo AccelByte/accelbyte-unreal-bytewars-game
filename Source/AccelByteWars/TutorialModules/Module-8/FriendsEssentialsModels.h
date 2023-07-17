@@ -14,8 +14,8 @@ enum class EFriendStatus : uint8
 	Accepted = 0,
 	PendingInbound,
 	PendingOutbound,
-	Blocked,
     Searched,
+	Blocked,
 	Unknown
 };
 
@@ -142,19 +142,24 @@ public:
 };
 
 #define SEND_FRIEND_REQUEST_MESSAGE NSLOCTEXT("AccelByteWars", "Sending Friend Request", "Sending Friend Request")
+
 #define ACCEPT_FRIEND_REQUEST_MESSAGE NSLOCTEXT("AccelByteWars", "Accepting Friend", "Accepting Friend")
 #define REJECT_FRIEND_REQUEST_MESSAGE NSLOCTEXT("AccelByteWars", "Rejecting Friend", "Rejecting Friend")
-#define REMOVE_FRIEND_MESSAGE NSLOCTEXT("AccelByteWars", "Removing Friend", "Removing Friend")
+#define CANCEL_FRIEND_REQUEST_MESSAGE NSLOCTEXT("AccelByteWars", "Canceling Friend Request", "Canceling Friend Request")
+
+#define UNFRIEND_FRIEND_MESSAGE NSLOCTEXT("AccelByteWars", "Unfriending", "Unfriending")
 #define BLOCK_PLAYER_MESSAGE NSLOCTEXT("AccelByteWars", "Blocking Player", "Blocking Player")
 #define UNBLOCK_PLAYER_MESSAGE NSLOCTEXT("AccelByteWars", "Unblocking Player", "Unblocking Player")
 
+#define CANNOT_INVITE_FRIEND_SELF NSLOCTEXT("AccelByteWars", "Cannot friend with yourself", "Cannot friend with yourself")
 #define SUCCESS_SEND_FRIEND_REQUEST NSLOCTEXT("AccelByteWars", "Friend request is sent", "Friend request is sent")
 #define SUCCESS_ACCEPT_FRIEND_REQUEST NSLOCTEXT("AccelByteWars", "Friend request is accepted", "Friend request is accepted")
 #define SUCCESS_REJECT_FRIEND_REQUEST NSLOCTEXT("AccelByteWars", "Friend request is rejected", "Friend request is rejected")
-#define SUCCESS_REMOVE_FRIEND NSLOCTEXT("AccelByteWars", "Friend is canceled and removed", "Friend is canceled and removed")
+#define SUCCESS_CANCEL_FRIEND_REQUEST NSLOCTEXT("AccelByteWars", "Friend request is canceled", "Friend request is canceled")
+
+#define SUCCESS_UNFRIEND_FRIEND NSLOCTEXT("AccelByteWars", "Friend is removed", "Friend is removed")
 #define SUCCESS_BLOCK_PLAYER NSLOCTEXT("AccelByteWars", "Player is blocked", "Player is blocked")
-#define SUCCESS_UNBLOCK_PLAYER NSLOCTEXT("AccelByteWars", "Player is unblock", "Player is unblock")
-#define CANNOT_INVITE_FRIEND_SELF NSLOCTEXT("AccelByteWars", "Cannot friend with yourself", "Cannot friend with yourself")
+#define SUCCESS_UNBLOCK_PLAYER NSLOCTEXT("AccelByteWars", "Player is unblocked", "Player is unblocked")
 
 DECLARE_DELEGATE_ThreeParams(FOnGetCacheFriendListComplete, bool /*bWasSuccessful*/, TArray<TSharedRef<FOnlineFriend>>& /*CachedFriendList*/, const FString& /*ErrorMessage*/);
 DECLARE_DELEGATE(FOnCachedFriendsDataUpdated);
@@ -163,11 +168,15 @@ DECLARE_DELEGATE_ThreeParams(FOnFindFriendComplete, bool /*bWasSuccessful*/, UFr
 DECLARE_DELEGATE_ThreeParams(FOnGetInboundFriendRequestListComplete, bool /*bWasSuccessful*/, TArray<UFriendData*> /*FriendRequests*/, const FString& /*ErrorMessage*/);
 DECLARE_DELEGATE_ThreeParams(FOnGetOutboundFriendRequestListComplete, bool /*bWasSuccessful*/, TArray<UFriendData*> /*FriendRequests*/, const FString& /*ErrorMessage*/);
 DECLARE_DELEGATE_ThreeParams(FOnGetFriendListComplete, bool /*bWasSuccessful*/, TArray<UFriendData*> /*Friends*/, const FString& /*ErrorMessage*/);
-DECLARE_DELEGATE_ThreeParams(FOnGetBlockedPlayerListComplete, bool /*bWasSuccessful*/, TArray<UFriendData*> /*BlockedPlayers*/, const FString& /*ErrorMessage*/);
 
 DECLARE_DELEGATE_ThreeParams(FOnSendFriendRequestComplete, bool /*bWasSuccessful*/, UFriendData* /*FriendData*/, const FString& /*ErrorMessage*/);
 DECLARE_DELEGATE_TwoParams(FOnAcceptFriendRequestComplete, bool /*bWasSuccessful*/, const FString& /*ErrorMessage*/);
 DECLARE_DELEGATE_TwoParams(FOnRejectFriendRequestComplete, bool /*bWasSuccessful*/, const FString& /*ErrorMessage*/);
-DECLARE_DELEGATE_TwoParams(FOnRemoveFriendComplete, bool /*bWasSuccessful*/, const FString& /*ErrorMessage*/);
+DECLARE_DELEGATE_TwoParams(FOnCancelFriendRequestComplete, bool /*bWasSuccessful*/, const FString& /*ErrorMessage*/);
+
+DECLARE_DELEGATE_ThreeParams(FOnGetBlockedPlayerListComplete, bool /*bWasSuccessful*/, TArray<UFriendData*> /*BlockedPlayers*/, const FString& /*ErrorMessage*/);
+DECLARE_DELEGATE(FOnGetCacheBlockedPlayersDataUpdated);
+
+DECLARE_DELEGATE_TwoParams(FOnUnfriendComplete, bool /*bWasSuccessful*/, const FString& /*ErrorMessage*/);
 DECLARE_DELEGATE_TwoParams(FOnBlockPlayerComplete, bool /*bWasSuccessful*/, const FString& /*ErrorMessage*/);
 DECLARE_DELEGATE_TwoParams(FOnUnblockPlayerComplete, bool /*bWasSuccessful*/, const FString& /*ErrorMessage*/);

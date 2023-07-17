@@ -44,13 +44,14 @@ public:
 
 public:
 	void Initialize(FSubsystemCollectionBase& Collection) override;
+	void Deinitialize() override;
 
-	FUniqueNetIdPtr GetPlayerUniqueNetId(const APlayerController* PC) const;
-	int32 GetPlayerControllerId(const APlayerController* PC) const;
+	FUniqueNetIdPtr GetUniqueNetIdFromPlayerController(const APlayerController* PC) const;
+	int32 GetLocalUserNumFromPlayerController(const APlayerController* PC) const;
 
 	FDelegateHandle OnQueryUserInfoCompleteDelegateHandle;
 	FDelegateHandle OnRejectFriendRequestCompleteDelegateHandle;
-	FDelegateHandle OnRemoveFriendCompleteDelegateHandle;
+	FDelegateHandle OnCancelFriendRequestCompleteDelegateHandle;
 
 	TMap<int32, FDelegateHandle> OnFriendsChangeDelegateHandles;
 
