@@ -59,11 +59,11 @@ TSubclassOf<UTutorialModuleSubsystem> UTutorialModuleDataAsset::GetTutorialModul
 bool UTutorialModuleDataAsset::IsActiveAndDependenciesChecked()
 {
 	bool bIsDependencySatisfied = true;
-	for (const UTutorialModuleDataAsset* Dependency : TutorialModuleDependencies)
+	for (UTutorialModuleDataAsset* Dependency : TutorialModuleDependencies)
 	{
 		if (!Dependency) continue;
 
-		if (!Dependency->bIsActive)
+		if (!Dependency->IsActiveAndDependenciesChecked())
 		{
 			bIsDependencySatisfied = false;
 			break;
@@ -112,9 +112,9 @@ void UTutorialModuleDataAsset::ValidateDataAssetProperties()
 				continue;
 			}
 
-			TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.RemoveAll([this](const FTutorialModuleGeneratedWidget& Temp)
+			TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.RemoveAll([this](const FTutorialModuleGeneratedWidget* Temp)
 			{
-				return Temp.OwnerTutorialModule == this;
+				return Temp->OwnerTutorialModule == this;
 			});
 		}
 	}
@@ -127,9 +127,9 @@ void UTutorialModuleDataAsset::ValidateDataAssetProperties()
 				continue;
 			}
 
-			TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.RemoveAll([this](const FTutorialModuleGeneratedWidget& Temp)
+			TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.RemoveAll([this](const FTutorialModuleGeneratedWidget* Temp)
 			{
-				return Temp.OwnerTutorialModule == this;
+				return Temp->OwnerTutorialModule == this;
 			});
 		}
 	}
@@ -181,7 +181,7 @@ void UTutorialModuleDataAsset::ValidateDataAssetProperties()
 			{
 				continue;
 			}
-			TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.Add(GeneratedWidget);
+			TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.Add(&GeneratedWidget);
 		}
 	}
 
@@ -249,8 +249,7 @@ bool UTutorialModuleDataAsset::ValidateClassProperty(TSubclassOf<UTutorialModule
 	// Update the new class to points to this Tutorial Module
 	if (SubsystemClass.Get() && SubsystemClass.GetDefaultObject())
 	{
-		SubsystemClass.GetDefaultObject()->AssociateTutorialModule =
-			((IsStarterClass && IsStarterModeActive()) || (!IsStarterClass && !IsStarterModeActive())) ? this : nullptr;
+		SubsystemClass.GetDefaultObject()->AssociateTutorialModule = ((IsStarterClass && IsStarterModeActive()) || (!IsStarterClass && !IsStarterModeActive())) ? this : nullptr;
 	}
 
 	// Cache the class reference.
@@ -272,9 +271,9 @@ void UTutorialModuleDataAsset::CleanUpDataAssetProperties()
 				continue;
 			}
 
-			TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.RemoveAll([this](const FTutorialModuleGeneratedWidget& Temp)
+			TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.RemoveAll([this](const FTutorialModuleGeneratedWidget* Temp)
 			{
-				return Temp.OwnerTutorialModule == this;
+				return Temp->OwnerTutorialModule == this;
 			});
 		}
 	}

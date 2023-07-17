@@ -77,6 +77,14 @@ struct FTutorialModuleGeneratedWidget
 
 	UUserWidget* GenerateWidgetRef = nullptr;
 
+	static FTutorialModuleGeneratedWidget* GetMetadataById(const FString& WidgetId, TArray<FTutorialModuleGeneratedWidget*>& GeneratedWidgets)
+	{
+		return *GeneratedWidgets.FindByPredicate([WidgetId](const FTutorialModuleGeneratedWidget* Temp)
+		{
+			return Temp->WidgetId == WidgetId;
+		});
+	}
+
 	static FTutorialModuleGeneratedWidget* GetMetadataById(const FString& WidgetId, TArray<FTutorialModuleGeneratedWidget>& GeneratedWidgets)
 	{
 		return GeneratedWidgets.FindByPredicate([WidgetId](const FTutorialModuleGeneratedWidget& Temp)
@@ -86,10 +94,22 @@ struct FTutorialModuleGeneratedWidget
 	}
 
 	template<typename T>
+	static T* GetGeneratedWidgetById(const FString& WidgetId, TArray<FTutorialModuleGeneratedWidget*>& GeneratedWidgets)
+	{
+		UUserWidget* Temp = GetMetadataById(WidgetId, GeneratedWidgets)->GenerateWidgetRef;
+		return Temp ? Cast<T>(Temp) : nullptr;
+	}
+
+	template<typename T>
 	static T* GetGeneratedWidgetById(const FString& WidgetId, TArray<FTutorialModuleGeneratedWidget>& GeneratedWidgets)
 	{
 		UUserWidget* Temp = GetMetadataById(WidgetId, GeneratedWidgets)->GenerateWidgetRef;
 		return Temp ? Cast<T>(Temp) : nullptr;
+	}
+
+	bool operator<(const FTutorialModuleGeneratedWidget& Other) const 
+	{
+		return SpawnOrder < Other.SpawnOrder;
 	}
 };
 

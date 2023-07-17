@@ -46,16 +46,13 @@ public:
 	//~End of UCommonActivatableWidget interface
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Tutorial Module Metadata")
-	void SetGeneratedWidgetContainers();
+	TArray<UPanelWidget*> GetGeneratedWidgetContainers();
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tutorial Module Metadata", meta = (DisplayThumbnail = false))
+	// The Tutorial Module Data Asset associated with this widget.
 	UTutorialModuleDataAsset* AssociateTutorialModule;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tutorial Module Metadata", meta = (DisplayThumbnail = false))
-	TArray<FTutorialModuleGeneratedWidget> GeneratedWidgets;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tutorial Module Metadata", meta = (DisplayThumbnail = false))
-	TArray<UPanelWidget*> GeneratedWidgetContainers;
+	// The generated widget metadatas injected by one or more Tutorial Modules.
+	TArray<FTutorialModuleGeneratedWidget*> GeneratedWidgets;
 
 protected:
 	/** Change the owning player controller input mode to game only and also hide the mouse cursor */
@@ -85,5 +82,5 @@ private:
 	TWeakObjectPtr<UAccelByteWarsButtonBase> GenerateActionButton(FTutorialModuleGeneratedWidget& Metadata, UPanelWidget& WidgetContainer);
 	TWeakObjectPtr<UAccelByteWarsActivatableWidget> GenerateWidget(FTutorialModuleGeneratedWidget& Metadata, UPanelWidget& WidgetContainer);
 
-	bool bIsAlreadyInitialized = false;
+	TArray<UUserWidget*> GeneratedWidgetPool;
 };

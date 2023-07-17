@@ -33,6 +33,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ToggleBackgroundBlur(const bool bShow) const;
 
+	static UCommonActivatableWidget* GetActiveWidgetOfStack(const EBaseUIStackType TargetStack, const UObject* Context);
+
 	/** Push widget to target stack. */
 	UFUNCTION(BlueprintCallable)
 	UAccelByteWarsActivatableWidget* PushWidgetToStack(EBaseUIStackType TargetStack, TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass);
@@ -50,6 +52,8 @@ public:
 	TSubclassOf<ULoadingWidget> DefaultLoadingWidgetClass;
 
 private:
+	void OnWidgetTransitionChanged(UCommonActivatableWidgetContainerBase* Widget, bool bIsTransitioning);
+
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UBackgroundBlur* BackgroundBlur;
 
@@ -64,6 +68,4 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonActivatableWidgetStack* PromptStack;
-
-	void OnWidgetTransitionChanged(UCommonActivatableWidgetContainerBase* Widget, bool bIsTransitioning);
 };

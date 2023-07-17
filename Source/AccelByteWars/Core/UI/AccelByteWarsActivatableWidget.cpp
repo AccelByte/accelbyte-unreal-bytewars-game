@@ -42,21 +42,14 @@ void UAccelByteWarsActivatableWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
-	if (!bIsAlreadyInitialized) 
+	// Set visible only if the associate Tutorial Module is active.
+	if (AssociateTutorialModule)
 	{
-		bIsAlreadyInitialized = true;
-
-		// Set visible only if the associate Tutorial Module is active.
-		if (AssociateTutorialModule)
-		{
-			const bool bIsTutorialModuleActive = AssociateTutorialModule->IsActiveAndDependenciesChecked();
-			SetVisibility(bIsTutorialModuleActive ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-		}
-
-		// Initialize the generated widgets.
-		SetGeneratedWidgetContainers();
-		InitializeGeneratedWidgets();
+		const bool bIsTutorialModuleActive = AssociateTutorialModule->IsActiveAndDependenciesChecked();
+		SetVisibility(bIsTutorialModuleActive ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	}
+
+	InitializeGeneratedWidgets();
 }
 
 TOptional<FUIInputConfig> UAccelByteWarsActivatableWidget::GetDesiredInputConfig() const
@@ -173,9 +166,9 @@ void UAccelByteWarsActivatableWidget::ValidateGeneratedWidgets()
 	{
 		AssociateTutorialModule = nullptr;
 	}
-	GeneratedWidgets.RemoveAll([](const FTutorialModuleGeneratedWidget& Temp)
+	GeneratedWidgets.RemoveAll([](const FTutorialModuleGeneratedWidget* Temp)
 	{
-		return Temp.OwnerTutorialModule == nullptr;
+		return Temp->OwnerTutorialModule == nullptr;
 	});
 }
 
@@ -186,35 +179,37 @@ void UAccelByteWarsActivatableWidget::InitializeGeneratedWidgets()
 		return;
 	}
 
+	// Remove old generated widgets.
+	for (UUserWidget* OldGeneratedWidget : GeneratedWidgetPool)
+	{
+		OldGeneratedWidget->RemoveFromParent();
+	}
+	GeneratedWidgetPool.Empty();
+
 	// Get the default button class that will be used to spawn either entry button or action button.
 	UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetWorld()->GetGameInstance());
 	ensure(GameInstance);
 	UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget();
 	ensure(BaseUIWidget);
 
-	// Sort the generated widget based on spawn order.
-	GeneratedWidgets.Sort([](const FTutorialModuleGeneratedWidget& Widget1, const FTutorialModuleGeneratedWidget& Widget2)
-	{
-		return Widget1.SpawnOrder < Widget2.SpawnOrder;
-	});
-
 	// Initialize the generated widgets.
-	for (FTutorialModuleGeneratedWidget& GeneratedWidget : GeneratedWidgets)
+	GeneratedWidgets.Sort();
+	for (FTutorialModuleGeneratedWidget* GeneratedWidget : GeneratedWidgets)
 	{
-		if ((!GeneratedWidget.OwnerTutorialModule || !GeneratedWidget.OwnerTutorialModule->IsActiveAndDependenciesChecked()) ||
-			(GeneratedWidget.OtherTutorialModule && !GeneratedWidget.OtherTutorialModule->IsActiveAndDependenciesChecked()))
+		if ((!GeneratedWidget->OwnerTutorialModule || !GeneratedWidget->OwnerTutorialModule->IsActiveAndDependenciesChecked()) ||
+			(GeneratedWidget->OtherTutorialModule && !GeneratedWidget->OtherTutorialModule->IsActiveAndDependenciesChecked()))
 		{
 			UE_LOG(LogTemp, Log, TEXT("Tutorial Module Data Asset is not active. Cannot initialize the generated widget."));
 			continue;
 		}
 
 		// Get valid widget container.
-		if (!ensure(GeneratedWidgetContainers.IsValidIndex(GeneratedWidget.TargetWidgetContainerIndex)))
+		if (!ensure(GetGeneratedWidgetContainers().IsValidIndex(GeneratedWidget->TargetWidgetContainerIndex)))
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Tutorial Module widget's Target Widget Container index is out of bound. Cannot initialize the widget."));
 			continue;
 		}
-		UPanelWidget* WidgetContainer = GeneratedWidgetContainers[GeneratedWidget.TargetWidgetContainerIndex];
+		UPanelWidget* WidgetContainer = GetGeneratedWidgetContainers()[GeneratedWidget->TargetWidgetContainerIndex];
 		if (!ensure(WidgetContainer))
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Tutorial Module widget's Target Widget Container is null. Cannot initialize the widget."));
@@ -222,21 +217,21 @@ void UAccelByteWarsActivatableWidget::InitializeGeneratedWidgets()
 		}
 
 		// Initialize the widget based on its type.
-		if (GeneratedWidget.WidgetType == ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_ENTRY_BUTTON ||
-			GeneratedWidget.WidgetType == ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_BUTTON ||
-			GeneratedWidget.WidgetType == ETutorialModuleGeneratedWidgetType::GENERIC_WIDGET_ENTRY_BUTTON)
+		if (GeneratedWidget->WidgetType == ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_ENTRY_BUTTON ||
+			GeneratedWidget->WidgetType == ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_BUTTON ||
+			GeneratedWidget->WidgetType == ETutorialModuleGeneratedWidgetType::GENERIC_WIDGET_ENTRY_BUTTON)
 		{
-			GenerateEntryButton(GeneratedWidget, *WidgetContainer);
+			GenerateEntryButton(*GeneratedWidget, *WidgetContainer);
 		}
-		else if (GeneratedWidget.WidgetType == ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_WIDGET ||
-			GeneratedWidget.WidgetType == ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_WIDGET ||
-			GeneratedWidget.WidgetType == ETutorialModuleGeneratedWidgetType::GENERIC_WIDGET)
+		else if (GeneratedWidget->WidgetType == ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_WIDGET ||
+			GeneratedWidget->WidgetType == ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_WIDGET ||
+			GeneratedWidget->WidgetType == ETutorialModuleGeneratedWidgetType::GENERIC_WIDGET)
 		{
-			GenerateWidget(GeneratedWidget, *WidgetContainer);
+			GenerateWidget(*GeneratedWidget, *WidgetContainer);
 		}
-		else if (GeneratedWidget.WidgetType == ETutorialModuleGeneratedWidgetType::ACTION_BUTTON)
+		else if (GeneratedWidget->WidgetType == ETutorialModuleGeneratedWidgetType::ACTION_BUTTON)
 		{
-			GenerateActionButton(GeneratedWidget, *WidgetContainer);
+			GenerateActionButton(*GeneratedWidget, *WidgetContainer);
 		}
 	}
 }
@@ -302,6 +297,8 @@ TWeakObjectPtr<UAccelByteWarsButtonBase> UAccelByteWarsActivatableWidget::Genera
 		HorizontalSlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Center);
 	}
 
+	GeneratedWidgetPool.Add(Button.Get());
+
 	return Button;
 }
 
@@ -321,7 +318,7 @@ TWeakObjectPtr<UAccelByteWarsButtonBase> UAccelByteWarsActivatableWidget::Genera
 	{
 		if (!Metadata.ButtonAction.IsBound())
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Tutorial Module's Button Action event is not bound."));
+			UE_LOG(LogTemp, Warning, TEXT("Tutorial Module's Button Action with id {%s} is clicked but doesn't have any action."), *Metadata.WidgetId);
 		}
 
 		Metadata.ButtonAction.ExecuteIfBound();
@@ -339,6 +336,8 @@ TWeakObjectPtr<UAccelByteWarsButtonBase> UAccelByteWarsActivatableWidget::Genera
 	{
 		HorizontalSlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Center);
 	}
+
+	GeneratedWidgetPool.Add(Button.Get());
 
 	return Button;
 }
@@ -385,6 +384,8 @@ TWeakObjectPtr<UAccelByteWarsActivatableWidget> UAccelByteWarsActivatableWidget:
 	const TWeakObjectPtr<UAccelByteWarsActivatableWidget> Widget = MakeWeakObjectPtr<UAccelByteWarsActivatableWidget>(CreateWidget<UAccelByteWarsActivatableWidget>(this, WidgetClass.Get()));
 	WidgetContainer.AddChild(Widget.Get());
 	Metadata.GenerateWidgetRef = Widget.Get();
+
+	GeneratedWidgetPool.Add(Widget.Get());
 
 	return Widget;
 }
