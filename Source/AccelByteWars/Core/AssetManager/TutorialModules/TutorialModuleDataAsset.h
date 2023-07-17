@@ -83,7 +83,7 @@ private:
 	UPROPERTY(EditAnywhere, meta = (EditCondition = "!bOverriden", HideEditConditionToggle), Category = "Tutorial Module")
 	bool bIsActive = true;
 
-	UPROPERTY(EditAnywhere, Category = "Tutorial Module Starter")
+	UPROPERTY(EditAnywhere, Category = "Tutorial Module Starter", meta = (EditCondition = "bIsActive"))
 	bool bIsStarterModeActive = false;
 
 public:
