@@ -36,19 +36,3 @@ bool AAccelByteWarsInGameGameState::HasGameStarted() const
 
 	return bStarted;
 }
-
-bool AAccelByteWarsInGameGameState::HasGameEnded() const
-{
-	bool bEnded = false;
-
-	switch (GameStatus)
-	{
-	case EGameStatus::GAME_ENDS_DELAY:
-	case EGameStatus::GAME_ENDS:
-		bEnded = true;
-		break;
-	default: ;
-	}
-
-	return bEnded;
-}

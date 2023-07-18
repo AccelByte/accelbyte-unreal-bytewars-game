@@ -22,11 +22,6 @@ FGameModeData UGameModeDataAsset::GetGameModeDataByCodeName(const FString& InCod
 	GameModeData.MaxPlayers = UAccelByteWarsDataAsset::GetMetadataForAsset<int32>(GameModeAssetId, GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, MaxPlayers));
 
 	GameModeData.MatchTime = UAccelByteWarsDataAsset::GetMetadataForAsset<int32>(GameModeAssetId, GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, MatchTime));
-	GameModeData.StartGameCountdown = UAccelByteWarsDataAsset::GetMetadataForAsset<int32>(GameModeAssetId, GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, StartGameCountdown));
-	GameModeData.GameEndsShutdownCountdown = UAccelByteWarsDataAsset::GetMetadataForAsset<int32>(GameModeAssetId, GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, GameEndsShutdownCountdown));
-	GameModeData.MinimumTeamCountToPreventAutoShutdown = UAccelByteWarsDataAsset::GetMetadataForAsset<int32>(GameModeAssetId, GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, MinimumTeamCountToPreventAutoShutdown));
-	GameModeData.NotEnoughPlayerShutdownCountdown = UAccelByteWarsDataAsset::GetMetadataForAsset<int32>(GameModeAssetId, GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, NotEnoughPlayerCountdown));
-
 	GameModeData.ScoreLimit = UAccelByteWarsDataAsset::GetMetadataForAsset<int32>(GameModeAssetId, GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, ScoreLimit));
 	GameModeData.FiredMissilesLimit = UAccelByteWarsDataAsset::GetMetadataForAsset<int32>(GameModeAssetId, GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, FiredMissilesLimit));
 	GameModeData.StartingLives = UAccelByteWarsDataAsset::GetMetadataForAsset<int32>(GameModeAssetId, GET_MEMBER_NAME_CHECKED(UGameModeDataAsset, StartingLives));

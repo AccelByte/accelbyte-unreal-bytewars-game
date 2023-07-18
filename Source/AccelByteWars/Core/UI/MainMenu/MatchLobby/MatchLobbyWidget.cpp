@@ -31,7 +31,7 @@ void UMatchLobbyWidget::NativeConstruct()
 	// show loading screen on server start travel
 	GameState->OnIsServerTravellingChanged.AddDynamic(this, &ThisClass::ShowLoading);
 
-	if (GameState->GameSetup.StartGameCountdown != INDEX_NONE)
+	if (GameState->GameSetup.NetworkType == EGameModeNetworkType::DS)
 	{
 		// Setup Countdown
 		CountdownWidget->SetupWidget(

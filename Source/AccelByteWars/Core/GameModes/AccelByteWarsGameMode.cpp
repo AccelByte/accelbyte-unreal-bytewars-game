@@ -55,9 +55,9 @@ void AAccelByteWarsGameMode::BeginPlay()
 		 * Thus, the data set up before transitioning to the listen server will be reset.
 		 * Therefore, the delegate below will help to reinitialize the listen server data 
 		 * (e.g. assigning game mode through the Game State). */
-		if (GetNetMode() == ENetMode::NM_ListenServer && OnInitializeListenServerDelegates.IsBound())
+		if (GetNetMode() == ENetMode::NM_ListenServer && OnInitializeListenServer.IsBound())
 		{
-			OnInitializeListenServerDelegates.Broadcast(NAME_GameSession);
+			OnInitializeListenServer.Broadcast(NAME_GameSession);
 		}
 	}
 
@@ -74,14 +74,37 @@ void AAccelByteWarsGameMode::BeginPlay()
 	Super::BeginPlay();
 }
 
-void AAccelByteWarsGameMode::PostLogin(APlayerController* NewPlayer)
+APlayerController* AAccelByteWarsGameMode::Login(
+	UPlayer* NewPlayer,
+	ENetRole InRemoteRole,
+	const FString& Portal,
+	const FString& Options,
+	const FUniqueNetIdRepl& UniqueId,
+	FString& ErrorMessage)
 {
-	Super::PostLogin(NewPlayer);
+	APlayerController* PlayerController = Super::Login(NewPlayer, InRemoteRole, Portal, Options, UniqueId, ErrorMessage);
 
 	// setup player if in GameplayLevel and game started
 	if (bIsGameplayLevel || IsServer())
 	{
-		PlayerTeamSetup(NewPlayer);
+		PlayerTeamSetup(PlayerController);
+	}
+
+	return PlayerController;
+}
+
+void AAccelByteWarsGameMode::PostLogin(APlayerController* NewPlayer)
+{
+	Super::PostLogin(NewPlayer);
+
+	if (const AAccelByteWarsPlayerState* PlayerState = static_cast<AAccelByteWarsPlayerState*>(NewPlayer->PlayerState))
+	{
+		if (PlayerState->bShouldKick)
+		{
+			GameSession->KickPlayer(NewPlayer, FText::FromString("Max player reached"));
+			GAMEMODE_LOG(Warning, TEXT("Player did not registered in Teams data. Max registered players reached. Kicking this player"));
+			return;
+		}
 	}
 }
 
@@ -119,23 +142,16 @@ void AAccelByteWarsGameMode::PlayerTeamSetup(APlayerController* PlayerController
 		return;
 	}
 
-	APlayerState* PlayerState = PlayerController->PlayerState;
+	AAccelByteWarsPlayerState* PlayerState = static_cast<AAccelByteWarsPlayerState*>(PlayerController->PlayerState);
 	if (!PlayerState)
-	{
-		GAMEMODE_LOG(Warning, TEXT("PlayerTeamSetup: PlayerState is invalid. Cancelling operation"));
-		return;
-	}
-
-	AAccelByteWarsPlayerState* AbPlayerState = static_cast<AAccelByteWarsPlayerState*>(PlayerState);
-	if (!AbPlayerState)
 	{
 		GAMEMODE_LOG(Warning, TEXT("PlayerTeamSetup: PlayerState is not (derived from) AAccelByteWarsPlayerState. Cancelling operation"));
 		return;
 	}
 
 	int32 TeamId = INDEX_NONE;
-	const FUniqueNetIdRepl PlayerUniqueId = AbPlayerState->GetUniqueId();
-	const int32 ControllerId = GetControllerId(AbPlayerState);
+	const FUniqueNetIdRepl PlayerUniqueId = PlayerState->GetUniqueId();
+	const int32 ControllerId = GetControllerId(PlayerState);
 	
 	// check for a match in GameState's Teams data
 	if (FGameplayPlayerData* PlayerData =
@@ -143,7 +159,7 @@ void AAccelByteWarsGameMode::PlayerTeamSetup(APlayerController* PlayerController
 	{
 		// found
 		// stored data doesn't have UniqueNetId while the given data has. Overwrite stored data
-		if (AbPlayerState->GetUniqueId().IsValid() && !PlayerData->UniqueNetId.IsValid())
+		if (PlayerState->GetUniqueId().IsValid() && !PlayerData->UniqueNetId.IsValid())
 		{
 			PlayerData->UniqueNetId = PlayerUniqueId;
 
@@ -153,13 +169,13 @@ void AAccelByteWarsGameMode::PlayerTeamSetup(APlayerController* PlayerController
 
 		// restore data
 		TeamId = PlayerData->TeamId;
-		AbPlayerState->SetPlayerName(PlayerData->PlayerName);
-		AbPlayerState->AvatarURL = PlayerData->AvatarURL;
-		AbPlayerState->SetScore(PlayerData->Score);
-		AbPlayerState->TeamId = TeamId;
-		AbPlayerState->NumLivesLeft = PlayerData->NumLivesLeft;
-		AbPlayerState->KillCount = PlayerData->KillCount;
-		AbPlayerState->TeamColor = GameInstance->GetTeamColor(TeamId);
+		PlayerState->SetPlayerName(PlayerData->PlayerName);
+		PlayerState->AvatarURL = PlayerData->AvatarURL;
+		PlayerState->SetScore(PlayerData->Score);
+		PlayerState->TeamId = TeamId;
+		PlayerState->NumLivesLeft = PlayerData->NumLivesLeft;
+		PlayerState->KillCount = PlayerData->KillCount;
+		PlayerState->TeamColor = GameInstance->GetTeamColor(TeamId);
 
 #if UE_BUILD_DEVELOPMENT
 		const bool bUniqueIdValid = PlayerUniqueId.GetUniqueNetId().IsValid();
@@ -173,166 +189,82 @@ void AAccelByteWarsGameMode::PlayerTeamSetup(APlayerController* PlayerController
 			TeamId);
 #endif
 	}
+	// flag to kick player if player's data was not found and max players reached (based on registered players)
 	else
 	{
-		if (OnPlayerPostLoginDelegates.IsBound())
+		if (ABGameState->GetRegisteredPlayersNum() >= ABGameState->GameSetup.MaxPlayers)
 		{
-			// notify client
-			AbPlayerState->bPendingTeamAssignment = true;
-			// notify self if running as listen server
-			if (!IsRunningDedicatedServer())
-			{
-				AbPlayerState->RepNotify_PendingTeamAssignment();
-			}
-
-			// tutorial module active, let the subsystem handle the team assignment logic
-			OnPlayerPostLoginDelegates.Broadcast(PlayerController);
-
+			// kick can happen as early as PostLogin
+			PlayerState->bShouldKick = true;
 			return;
 		}
-		else
+	}
+
+	// if no match found, assign player to a new team or least populated team
+	if (TeamId == INDEX_NONE)
+	{
+		if (IsServer())
 		{
-			// kick player if max player reached
-			if (ABGameState->GetRegisteredPlayersNum() >= ABGameState->GameSetup.MaxPlayers)
+			// Running online, assign team from session info
+			if (OnGetTeamIdFromSessionDelegate.IsBound()) 
 			{
-				// kick can happen as early as PostLogin
-				GAMEMODE_LOG(Warning, TEXT("Player did not registered in Teams data. Max registered players reached (%d / %d). Kicking this player"),
-					ABGameState->GetRegisteredPlayersNum(),
-					ABGameState->GameSetup.MaxPlayers);
-				GameSession->KickPlayer(PlayerController, FText::FromString("Max player reached"));
-				return;
+				OnGetTeamIdFromSessionDelegate.Broadcast(GameSession->SessionName, PlayerUniqueId, TeamId);
 			}
-			// assign team manually
-			else
+			// Running offline, set team assignment manually
+			else 
 			{
+				GAMEMODE_LOG(Warning, TEXT("PlayerTeamSetup: Delegate to get team id from game session is not bound. Cannot retrieve session info, reverting to offline DS flow"));
+
 				AssignTeamManually(TeamId);
-
-				// reset player's state data
-				AbPlayerState->SetPlayerName(TEXT(""));
-				AbPlayerState->AvatarURL = TEXT("");
-				AbPlayerState->TeamId = TeamId;
-				AbPlayerState->TeamColor = GameInstance->GetTeamColor(TeamId);
-				AbPlayerState->SetScore(0.0f);
-				AbPlayerState->NumLivesLeft = INDEX_NONE;
-				AbPlayerState->KillCount = 0;
-
-#if UE_BUILD_DEVELOPMENT
-				const bool bUniqueIdValid = PlayerUniqueId.GetUniqueNetId().IsValid();
-				const FString Identity = bUniqueIdValid ?
-					PlayerUniqueId.GetUniqueNetId()->ToDebugString() : PlayerController->PlayerState->GetPlayerName();
-				GAMEMODE_LOG(
-					Warning,
-					TEXT("No player's (%s [UniqueId: %s]) data found. Assigning team: %d"),
-					*Identity,
-					*FString(bUniqueIdValid ? "TRUE" : "FALSE"),
-					TeamId);
-#endif
 			}
 		}
+		// If running locally, set team assignment manually
+		else 
+		{
+			AssignTeamManually(TeamId);
+		}
+
+		// reset player's state data
+		PlayerState->SetPlayerName(TEXT(""));
+		PlayerState->AvatarURL = TEXT("");
+		PlayerState->TeamId = TeamId;
+		PlayerState->TeamColor = GameInstance->GetTeamColor(TeamId);
+		PlayerState->SetScore(0.0f);
+        PlayerState->NumLivesLeft = INDEX_NONE;
+        PlayerState->KillCount = 0;
+
+#if UE_BUILD_DEVELOPMENT
+		const bool bUniqueIdValid = PlayerUniqueId.GetUniqueNetId().IsValid();
+		const FString Identity = bUniqueIdValid ?
+			PlayerUniqueId.GetUniqueNetId()->ToDebugString() : PlayerController->PlayerState->GetPlayerName();
+		GAMEMODE_LOG(
+			Warning,
+			TEXT("No player's (%s [UniqueId: %s]) data found. Assigning team: %d"),
+			*Identity,
+			*FString(bUniqueIdValid ? "TRUE" : "FALSE"),
+			TeamId);
+#endif
 	}
+
+	// Kick if the player doesn't belong to any team.
+	PlayerState->bShouldKick = (TeamId == INDEX_NONE);
+	if (PlayerState->bShouldKick) return;
 
 	ABGameState->AddPlayerToTeam(
 		TeamId,
 		PlayerUniqueId,
-		AbPlayerState->NumLivesLeft,
+		PlayerState->NumLivesLeft,
 		ControllerId,
-		AbPlayerState->GetScore(),
-		AbPlayerState->KillCount);
-}
+		PlayerState->GetScore(),
+		PlayerState->KillCount);
 
-void AAccelByteWarsGameMode::DelayedPlayerTeamSetupWithPredefinedData(APlayerController* PlayerController)
-{
-	APlayerState* PlayerState = PlayerController->PlayerState;
-	if (!PlayerState)
+	// If running online, refresh player's data based on AccelByte's data.
+	if (PlayerController->GetNetMode() != ENetMode::NM_Standalone && OnAddOnlineMemberDelegate.IsBound())
 	{
-		GAMEMODE_LOG(Warning, TEXT("PlayerTeamSetup: PlayerState is invalid. Cancelling operation"));
-		return;
-	}
-
-	AAccelByteWarsPlayerState* AbPlayerState = static_cast<AAccelByteWarsPlayerState*>(PlayerState);
-	if (!AbPlayerState)
-	{
-		GAMEMODE_LOG(Warning, TEXT("PlayerTeamSetup: PlayerState is not (derived from) AAccelByteWarsPlayerState. Cancelling operation"));
-		return;
-	}
-
-	AbPlayerState->bPendingTeamAssignment = false;
-
-	// notify self if running as listen server
-	if (!IsRunningDedicatedServer())
-	{
-		AbPlayerState->RepNotify_PendingTeamAssignment();
-	}
-
-	const FUniqueNetIdRepl PlayerUniqueId = AbPlayerState->GetUniqueId();
-	const int32 ControllerId = GetControllerId(AbPlayerState);
-
-	// reset player's state data
-	AbPlayerState->TeamColor = GameInstance->GetTeamColor(AbPlayerState->TeamId);
-	AbPlayerState->SetScore(0.0f);
-	AbPlayerState->NumLivesLeft = INDEX_NONE;
-	AbPlayerState->KillCount = 0;
-
-	ABGameState->AddPlayerToTeam(
-		AbPlayerState->TeamId,
-		PlayerUniqueId,
-		AbPlayerState->NumLivesLeft,
-		ControllerId,
-		AbPlayerState->GetScore(),
-		AbPlayerState->KillCount,
-		AbPlayerState->GetPlayerName(),
-		AbPlayerState->AvatarURL);
-}
-
-void AAccelByteWarsGameMode::AssignTeamManually(int32& InOutTeamId) const
-{
-	switch (ABGameState->GameSetup.GameModeType)
-	{
-	case EGameModeType::FFA:
-		// Try to assign to an empty team first.
-		if (ABGameState->Teams.Num() >= ABGameState->GameSetup.MaxTeamNum)
+		OnAddOnlineMemberDelegate.Broadcast(PlayerController, TDelegate<void(bool)>::CreateWeakLambda(this, [this, PlayerController](bool bIsSuccessful)
 		{
-			// Assign to empty team.
-			InOutTeamId = INDEX_NONE;
-			for (const FGameplayTeamData& Team : ABGameState->Teams)
-			{
-				if (Team.TeamMembers.IsEmpty())
-				{
-					InOutTeamId = Team.TeamId;
-					break;
-				}
-			}
-		}
-		// Assign to a new team
-		else
-		{
-			InOutTeamId = ABGameState->Teams.Num();
-		}
-		break;
-	case EGameModeType::TDM:
-		// Try to assign to least populated team.
-		if (ABGameState->Teams.Num() >= ABGameState->GameSetup.MaxTeamNum)
-		{
-			// The least populated team should less than the maximum players per team.
-			uint8 CurrentTeamMemberNum = ABGameState->GameSetup.MaxPlayers / ABGameState->GameSetup.MaxTeamNum;
-			InOutTeamId = INDEX_NONE;
-			for (const FGameplayTeamData& Team : ABGameState->Teams)
-			{
-				if (Team.TeamMembers.Num() < CurrentTeamMemberNum)
-				{
-					CurrentTeamMemberNum = Team.TeamMembers.Num();
-					InOutTeamId = Team.TeamId;
-				}
-			}
-		}
-		// Assign to a new team
-		else
-		{
-			InOutTeamId = ABGameState->Teams.Num();
-		}
-		break;
-	default:
-		break;
+			UpdatePlayerInformation(PlayerController);
+		}));
 	}
 }
 
@@ -419,6 +351,80 @@ bool AAccelByteWarsGameMode::RemovePlayer(const APlayerController* PlayerControl
 	return ABGameState->RemovePlayerFromTeam(PlayerUniqueId, ControllerId);
 }
 
+void AAccelByteWarsGameMode::AssignTeamManually(int32& InOutTeamId) const
+{
+	switch (ABGameState->GameSetup.GameModeType)
+	{
+	case EGameModeType::FFA:
+		// Try to assign to an empty team first.
+		if (ABGameState->Teams.Num() >= ABGameState->GameSetup.MaxTeamNum)
+		{
+			// Assign to empty team.
+			InOutTeamId = INDEX_NONE;
+			for (const FGameplayTeamData& Team : ABGameState->Teams)
+			{
+				if (Team.TeamMembers.IsEmpty())
+				{
+					InOutTeamId = Team.TeamId;
+					break;
+				}
+			}
+		}
+		// Assign to a new team
+		else
+		{
+			InOutTeamId = ABGameState->Teams.Num();
+		}
+		break;
+	case EGameModeType::TDM:
+		// Try to assign to least populated team.
+		if (ABGameState->Teams.Num() >= ABGameState->GameSetup.MaxTeamNum)
+		{
+			// The least populated team should less than the maximum players per team.
+			uint8 CurrentTeamMemberNum = ABGameState->GameSetup.MaxPlayers / ABGameState->GameSetup.MaxTeamNum;
+			InOutTeamId = INDEX_NONE;
+			for (const FGameplayTeamData& Team : ABGameState->Teams)
+			{
+				if (Team.TeamMembers.Num() < CurrentTeamMemberNum)
+				{
+					CurrentTeamMemberNum = Team.TeamMembers.Num();
+					InOutTeamId = Team.TeamId;
+				}
+			}
+		}
+		// Assign to a new team
+		else
+		{
+			InOutTeamId = ABGameState->Teams.Num();
+		}
+		break;
+	default:
+		break;
+	}
+}
+
+void AAccelByteWarsGameMode::UpdatePlayerInformation(const APlayerController* PlayerController) const
+{
+	if (const AAccelByteWarsPlayerState* PlayerState = static_cast<AAccelByteWarsPlayerState*>(PlayerController->PlayerState))
+	{
+		FGameplayPlayerData* PlayerData =
+			ABGameState->GetPlayerDataById(PlayerState->GetUniqueId(), GetControllerId(PlayerState));
+		if (!PlayerData)
+		{
+			return;
+		}
+
+		if (!PlayerState->GetPlayerName().IsEmpty())
+		{
+			PlayerData->PlayerName = PlayerState->GetPlayerName();
+		}
+		PlayerData->AvatarURL = PlayerState->AvatarURL;
+
+		// notify local
+		ABGameState->OnNotify_Teams();
+	}
+}
+
 int32 AAccelByteWarsGameMode::GetControllerId(const APlayerState* PlayerState)
 {
 	int32 ControllerId = 0;
@@ -434,10 +440,6 @@ int32 AAccelByteWarsGameMode::GetControllerId(const APlayerState* PlayerState)
 
 bool AAccelByteWarsGameMode::IsServer() const
 {
-	/**
-	 * Using THIS GetNetMode will return as client even on a listen server mode.
-	 * Uses the World's NetMode as a workaround
-	 */
-	const ENetMode NetMode = GetWorld()->GetNetMode();
+	const ENetMode NetMode = GetNetMode();
 	return NetMode == ENetMode::NM_DedicatedServer || NetMode == ENetMode::NM_ListenServer;
 }

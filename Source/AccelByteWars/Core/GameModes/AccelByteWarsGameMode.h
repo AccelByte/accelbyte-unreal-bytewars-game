@@ -20,8 +20,9 @@ ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogAccelByteWarsGameMode, Log, All
 class AAccelByteWarsPlayerState;
 
 #pragma region "Structs, Enums, and Delegates declaration"
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnPlayerPostLogin, APlayerController* /*NewPlayer*/);
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnInitializeListenServer, FName /* SessionName */);
+DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnGetTeamIdFromSession, FName /* SessioName */, const FUniqueNetIdRepl& /* UniqueNetId */, int32& /* OutTeamId */);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnAddOnlineMember, APlayerController* /* PlayerController */, TDelegate<void(bool /*bIsSuccessful*/)> /* OnComplete */);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnInitializeListenServer, FName /* SessioName */);
 #pragma endregion 
 
 UCLASS()
@@ -35,6 +36,13 @@ public:
 	//~AGameModeBase overridden functions
 	virtual void InitGameState() override;
 	virtual void BeginPlay() override;
+	virtual APlayerController* Login(
+		UPlayer* NewPlayer,
+		ENetRole InRemoteRole,
+		const FString& Portal,
+		const FString& Options,
+		const FUniqueNetIdRepl& UniqueId,
+		FString& ErrorMessage) override;
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 	virtual void Logout(AController* Exiting) override;
 	virtual APawn* SpawnDefaultPawnFor_Implementation(AController* NewPlayer, AActor* StartSpot) override;
@@ -50,18 +58,14 @@ public:
 	void PlayerTeamSetup(APlayerController* PlayerController) const;
 
 	UFUNCTION(BlueprintCallable)
-	virtual void DelayedPlayerTeamSetupWithPredefinedData(APlayerController* PlayerController);
-
-	UFUNCTION(BlueprintCallable)
-	void AssignTeamManually(int32& InOutTeamId) const;
-
-	UFUNCTION(BlueprintCallable)
 	void ServerTravel(TSoftObjectPtr<UWorld> Level);
 
 	void DelayedServerTravel(const FString& URL) const;
 
-	inline static FOnPlayerPostLogin OnPlayerPostLoginDelegates;
-	inline static FOnInitializeListenServer OnInitializeListenServerDelegates;
+	inline static FOnGetTeamIdFromSession OnGetTeamIdFromSessionDelegate;
+	inline static FOnAddOnlineMember OnAddOnlineMemberDelegate;
+
+	inline static FOnInitializeListenServer OnInitializeListenServer;
 
 protected:
 	/**
@@ -81,6 +85,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	bool bShouldRemovePlayerOnLogoutImmediately = false;
 
+	void AssignTeamManually(int32& InOutTeamId) const;
+	void UpdatePlayerInformation(const APlayerController* PlayerController) const;
 	static int32 GetControllerId(const APlayerState* PlayerState);
 	bool IsServer() const;
 

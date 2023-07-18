@@ -34,6 +34,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ToggleBackgroundBlur(const bool bShow) const;
 
+	static UCommonActivatableWidget* GetActiveWidgetOfStack(const EBaseUIStackType TargetStack, const UObject* Context);
+
 	/** Push widget to target stack. */
 	UFUNCTION(BlueprintCallable)
 	UAccelByteWarsActivatableWidget* PushWidgetToStack(EBaseUIStackType TargetStack, TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass);

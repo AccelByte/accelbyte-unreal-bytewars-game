@@ -36,9 +36,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	bool HasGameStarted() const;
 
-	UFUNCTION(BlueprintCallable)
-	bool HasGameEnded() const;
-
 	/**
 	 * @brief Current gameplay state
 	 */

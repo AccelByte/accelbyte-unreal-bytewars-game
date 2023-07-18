@@ -15,10 +15,4 @@ void AAccelByteWarsPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimePrope
 	DOREPLIFETIME(AAccelByteWarsPlayerState, MissilesFired);
 	DOREPLIFETIME(AAccelByteWarsPlayerState, KillCount);
 	DOREPLIFETIME(AAccelByteWarsPlayerState, NumLivesLeft);
-	DOREPLIFETIME(AAccelByteWarsPlayerState, bPendingTeamAssignment);
-}
-
-void AAccelByteWarsPlayerState::RepNotify_PendingTeamAssignment()
-{
-	OnPendingTeamAssignmentChangedDelegates.Broadcast();
 }

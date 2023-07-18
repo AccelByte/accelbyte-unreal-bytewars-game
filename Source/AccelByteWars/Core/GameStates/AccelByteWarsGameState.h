@@ -5,7 +5,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "OnlineSessionSettings.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "GameFramework/GameStateBase.h"
 #include "AccelByteWarsGameState.generated.h"
@@ -64,9 +63,6 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void AssignGameMode(const FString& CodeName);
-
-	void AssignGameModeByThirdPartyCodeName(const FString& CodeName);
-	void AssignCustomGameMode(const FOnlineSessionSettings* Setting);
 
 	/**
 	 * @brief Get teams with at least one member have life count more than 1

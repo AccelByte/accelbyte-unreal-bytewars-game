@@ -125,30 +125,3 @@ FGameModeData UAccelByteWarsGameInstance::GetGameModeDataByCodeName(const FStrin
 	}
 	return Data;
 }
-
-FGameModeData UAccelByteWarsGameInstance::GetGameModeDataByThirdPartyCodeName(const FString CodeName) const
-{
-	FGameModeData Data;
-	if (ensure(GameModeDataTable))
-	{
-		TArray<FGameModeData*> GameModeDatas;
-		GameModeDataTable->GetAllRows("GetGameModeDataByThirdPartyCodeName", GameModeDatas);
-
-		if (GameModeDatas.Num() > 0)
-		{
-			FGameModeData** DataPtr = GameModeDatas.FindByPredicate([CodeName](const FGameModeData* GameModeData)
-			{
-				bool bMatch = false;
-				for (const FString& ThirdPartyCodeName : GameModeData->ThirdPartyCodeNames)
-				{
-					bMatch = ThirdPartyCodeName.Equals(CodeName);
-				}
-				return bMatch;
-			});
-
-			// if not found, use the first entry
-			Data = DataPtr ? **DataPtr : *GameModeDatas[0];
-		}
-	}
-	return Data;
-}
