@@ -94,7 +94,6 @@ void UTutorialModuleDataAsset::ValidateDataAssetProperties()
 	ValidateClassProperty(StarterUIClass, LastStarterUIClass, true);
 	ValidateClassProperty(StarterSubsystemClass, LastStarterSubsystemClass, true);
 
-#if WITH_EDITOR
 	// Clean up last generated widgets metadata to avoid duplication.
 	for (FTutorialModuleGeneratedWidget& LastGeneratedWidget : LastGeneratedWidgets)
 	{
@@ -186,7 +185,6 @@ void UTutorialModuleDataAsset::ValidateDataAssetProperties()
 	}
 
 	LastGeneratedWidgets = GeneratedWidgets;
-#endif
 }
 
 bool UTutorialModuleDataAsset::ValidateClassProperty(TSubclassOf<UAccelByteWarsActivatableWidget>& UIClass, TSubclassOf<UAccelByteWarsActivatableWidget>& LastUIClass, const bool IsStarterClass)
