@@ -27,7 +27,7 @@ void UP2PMatchmakingSubsystem::Deinitialize()
 	AAccelByteWarsGameMode::OnInitializeListenServer.RemoveAll(this);
 }
 
-bool UP2PMatchmakingSubsystem::TravelClient(FName SessionName, APlayerController* PC)
+bool UP2PMatchmakingSubsystem::TravelClient(FName SessionName, const int32 LocalUserNum)
 {
 	if (!IsGameSessionValid(SessionName))
 	{
@@ -54,17 +54,27 @@ bool UP2PMatchmakingSubsystem::TravelClient(FName SessionName, APlayerController
 		return false;
 	}
 
+	// Get PlayerController to be traveled.
+	APlayerController* PC = GetPlayerControllerFromLocalUserNum(LocalUserNum);
 	if (!ensure(PC))
 	{
-		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot travel the client to the host server. PlayerController is not valid."));
+		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot travel the client to the host. PlayerController is not valid."));
 		return false;
 	}
 
+	// Travel the client to the host via URL.
 	FString HostUrl{};
 	if (SessionInterface->GetResolvedConnectString(SessionName, HostUrl) && !HostUrl.IsEmpty())
 	{
+		const FUniqueNetIdPtr PlayerNetId = GetUniqueNetIdFromPlayerController(PC);
+		if (!ensure(PlayerNetId.IsValid())) 
+		{
+			UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot travel the client to the host. Player UniqueNetId is not valid."));
+			return false;
+		}
+
 		// If the game client is the host, then travel as listen server.
-		if (SessionInterface->IsPlayerP2PHost(GetPlayerUniqueNetId(PC).ToSharedRef().Get(), SessionName)) 
+		if (SessionInterface->IsPlayerP2PHost(PlayerNetId.ToSharedRef().Get(), SessionName)) 
 		{
 			PC->ClientTravel(TEXT("MainMenu?listen"), TRAVEL_Absolute);
 		}

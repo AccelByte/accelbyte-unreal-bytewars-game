@@ -55,7 +55,10 @@ protected:
 	void OnQuitGameButtonsClicked(APlayerController* PC);
 
 	bool IsGameSessionValid(FName SessionName);
-	FUniqueNetIdPtr GetPlayerUniqueNetId(APlayerController* PC) const;
+	FUniqueNetIdPtr GetUniqueNetIdFromPlayerController(const APlayerController* PC) const;
+	int32 GetLocalUserNumFromPlayerController(const APlayerController* PC) const;
+	APlayerController* GetPlayerControllerFromLocalUserNum(const int32 LocalUserNum) const;
+
 	void SetTeamMemberAccelByteInformation(APlayerController* PC, TDelegate<void(bool /*bIsSuccessful*/)> OnComplete);
 
 	TSharedPtr<FOnlineSessionSearch> CurrentMatchmakingSearchHandle;
@@ -63,6 +66,7 @@ protected:
 	FDelegateHandle CancelMatchmakingCompleteDelegateHandle;
 	FDelegateHandle JoinSessionCompleteDelegateHandle;
 	FDelegateHandle SessionServerUpdateDelegateHandle;
+	FDelegateHandle SessionServerErrorDelegateHandle;
 	FDelegateHandle BackfillProposalReceivedDelegateHandle;
 	FDelegateHandle OnServerReceivedSessionDelegateHandle;
 
