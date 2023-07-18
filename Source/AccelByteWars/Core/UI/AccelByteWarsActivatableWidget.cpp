@@ -28,14 +28,12 @@ void UAccelByteWarsActivatableWidget::NativePreConstruct()
 {
 	Super::NativePreConstruct();
 
-#if WITH_EDITOR
 	const UAccelByteWarsActivatableWidget* DefaultObj = Cast<UAccelByteWarsActivatableWidget>(GetClass()->GetDefaultObject());
 	if (DefaultObj)
 	{
 		AssociateTutorialModule = DefaultObj->AssociateTutorialModule;
 		GeneratedWidgets = DefaultObj->GeneratedWidgets;
 	}
-#endif
 }
 
 void UAccelByteWarsActivatableWidget::NativeOnActivated()
@@ -68,7 +66,6 @@ TOptional<FUIInputConfig> UAccelByteWarsActivatableWidget::GetDesiredInputConfig
 	}
 }
 
-#if WITH_EDITOR
 void UAccelByteWarsActivatableWidget::PostLoad()
 {
 	Super::PostLoad();
@@ -76,6 +73,7 @@ void UAccelByteWarsActivatableWidget::PostLoad()
 	ValidateGeneratedWidgets();
 }
 
+#if WITH_EDITOR
 void UAccelByteWarsActivatableWidget::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
