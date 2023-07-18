@@ -84,9 +84,9 @@ bool UMatchmakingEssentialsSubsystem::IsGameSessionValid(FName SessionName)
 	return (SessionName == NAME_GameSession);
 }
 
-FUniqueNetIdPtr UMatchmakingEssentialsSubsystem::GetPlayerUniqueNetId(APlayerController* PC) const
+FUniqueNetIdPtr UMatchmakingEssentialsSubsystem::GetUniqueNetIdFromPlayerController(const APlayerController* PC) const
 {
-	if (!ensure(PC)) 
+	if (!ensure(PC))
 	{
 		return nullptr;
 	}
@@ -98,6 +98,44 @@ FUniqueNetIdPtr UMatchmakingEssentialsSubsystem::GetPlayerUniqueNetId(APlayerCon
 	}
 
 	return LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId();
+}
+
+int32 UMatchmakingEssentialsSubsystem::GetLocalUserNumFromPlayerController(const APlayerController* PC) const
+{
+	if (!PC)
+	{
+		return INDEX_NONE;
+	}
+
+	const ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
+	if (!LocalPlayer)
+	{
+		return INDEX_NONE;
+	}
+
+	return LocalPlayer->GetControllerId();
+}
+
+APlayerController* UMatchmakingEssentialsSubsystem::GetPlayerControllerFromLocalUserNum(const int32 LocalUserNum) const
+{
+	for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
+	{
+		if (!Iterator->IsValid())
+		{
+			continue;
+		}
+
+		if (APlayerController* PC = Iterator->Get(); PC)
+		{
+			const int32 PlayerLocalUserNum = GetLocalUserNumFromPlayerController(PC);
+			if (LocalUserNum == PlayerLocalUserNum)
+			{
+				return PC;
+			}
+		}
+	}
+
+	return nullptr;
 }
 
 void UMatchmakingEssentialsSubsystem::OnServerReceivedSession(FName SessionName)
@@ -142,7 +180,7 @@ void UMatchmakingEssentialsSubsystem::SetTeamMemberAccelByteInformation(APlayerC
 	const FUniqueNetIdPtr PlayerNetId = PC->PlayerState->GetUniqueId().GetUniqueNetId();
 	if (!PlayerNetId.IsValid())
 	{
-		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Player Net Id is invalid. Cannot get player AccelByte's information."));
+		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot get player AccelByte's information. Player UniqueNetId is invalid."));
 		OnComplete.ExecuteIfBound(false);
 		return;
 	}
@@ -150,23 +188,33 @@ void UMatchmakingEssentialsSubsystem::SetTeamMemberAccelByteInformation(APlayerC
 	const FUniqueNetIdAccelByteUserPtr AccelBytePlayerNetId = StaticCastSharedPtr<const FUniqueNetIdAccelByteUser>(PlayerNetId);
 	if (!ensure(AccelBytePlayerNetId.IsValid()))
 	{
-		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Player's AccelByte Net Id us not valid. Cannot get player AccelByte's information."));
+		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot get player AccelByte's information. Player's AccelByte UniqueNetId is not valid."));
 		OnComplete.ExecuteIfBound(false);
 		return;
 	}
 
-	AAccelByteWarsPlayerState* PlayerState = StaticCast<AAccelByteWarsPlayerState*>(PC->PlayerState);
-	if (!PlayerState)
-	{
-		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Player State is null. Cannot get player's AccelByte information."));
-		OnComplete.ExecuteIfBound(false);
-		return;
-	}
+	int32 LocalUserNum = GetLocalUserNumFromPlayerController(PC);
 
 	FRegistry::User.BulkGetUserInfo(
 		{ AccelBytePlayerNetId->GetAccelByteId() },
-		THandler<FListBulkUserInfo>::CreateWeakLambda(this, [PlayerState, OnComplete](const FListBulkUserInfo& Result)
+		THandler<FListBulkUserInfo>::CreateWeakLambda(this, [this, LocalUserNum, OnComplete](const FListBulkUserInfo& Result)
 		{
+			const APlayerController* PC = GetPlayerControllerFromLocalUserNum(LocalUserNum);
+			if (!PC)
+			{
+				UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot get player's AccelByte information. PlayerController is null."));
+				OnComplete.ExecuteIfBound(false);
+				return;
+			}
+
+			AAccelByteWarsPlayerState* PlayerState = StaticCast<AAccelByteWarsPlayerState*>(PC->PlayerState);
+			if (!PlayerState)
+			{
+				UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot get player's AccelByte information. Player State is null."));
+				OnComplete.ExecuteIfBound(false);
+				return;
+			}
+
 			const FBaseUserInfo& PlayerInfo = Result.Data[0];
 			PlayerState->SetPlayerName(PlayerInfo.DisplayName);
 			PlayerState->AvatarURL = PlayerInfo.AvatarUrl;
@@ -235,15 +283,15 @@ void UMatchmakingEssentialsSubsystem::StartMatchmaking(APlayerController* PC, co
 	// If the player is already in a session, then destroy it first.
 	if (SessionInterface->GetNamedSession(NAME_GameSession))
 	{
-		const FOnDestroySessionCompleteDelegate OnDestroyToRematchmakingCompleteDelegate = FOnDestroySessionCompleteDelegate::CreateUObject(this, &ThisClass::OnDestroyToRematchmakingComplete, PC, MatchPool);
+		const FOnDestroySessionCompleteDelegate OnDestroyToRematchmakingCompleteDelegate = FOnDestroySessionCompleteDelegate::CreateUObject(this, &ThisClass::OnDestroyToRematchmakingComplete, GetLocalUserNumFromPlayerController(PC), MatchPool);
 		SessionInterface->DestroySession(NAME_GameSession, OnDestroyToRematchmakingCompleteDelegate);
 		return;
 	}
 
-	const FUniqueNetIdPtr LocalPlayerId = GetPlayerUniqueNetId(PC);
-	if (!ensure(LocalPlayerId.IsValid())) 
+	const FUniqueNetIdPtr PlayerNetId = GetUniqueNetIdFromPlayerController(PC);
+	if (!ensure(PlayerNetId.IsValid()))
 	{
-		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot start matchmaking. LocalPlayer NetId is not valid."));
+		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot start matchmaking. Player UniqueNetId is not valid."));
 		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed, FAILED_FIND_MATCH);
 		return;
 	}
@@ -262,11 +310,11 @@ void UMatchmakingEssentialsSubsystem::StartMatchmaking(APlayerController* PC, co
 	}
 
 	// Bind on-matchmaking complete delegate.
-	MatchmakingCompleteDelegateHandle = SessionInterface->AddOnMatchmakingCompleteDelegate_Handle(FOnMatchmakingCompleteDelegate::CreateUObject(this, &ThisClass::OnMatchmakingComplete, PC));
+	MatchmakingCompleteDelegateHandle = SessionInterface->AddOnMatchmakingCompleteDelegate_Handle(FOnMatchmakingCompleteDelegate::CreateUObject(this, &ThisClass::OnMatchmakingComplete, GetLocalUserNumFromPlayerController(PC)));
 
 	// Bind on-start matchmaking delegate and then start the matchmaking process.
 	const FOnStartMatchmakingComplete OnStartMatchmakingCompleteDelegate = FOnStartMatchmakingComplete::CreateUObject(this, &ThisClass::OnStartMatchmakingComplete);
-	if (SessionInterface->StartMatchmaking(USER_ID_TO_MATCHMAKING_USER_ARRAY(LocalPlayerId.ToSharedRef()), NAME_GameSession, FOnlineSessionSettings(), MatchmakingSearchHandle, OnStartMatchmakingCompleteDelegate))
+	if (SessionInterface->StartMatchmaking(USER_ID_TO_MATCHMAKING_USER_ARRAY(PlayerNetId.ToSharedRef()), NAME_GameSession, FOnlineSessionSettings(), MatchmakingSearchHandle, OnStartMatchmakingCompleteDelegate))
 	{
 		// If success, save the matchmaking search results.
 		CurrentMatchmakingSearchHandle = MatchmakingSearchHandle;
@@ -279,14 +327,15 @@ void UMatchmakingEssentialsSubsystem::StartMatchmaking(APlayerController* PC, co
 	}
 }
 
-void UMatchmakingEssentialsSubsystem::OnDestroyToRematchmakingComplete(FName SessionName, bool bWasSuccessful, APlayerController* PC, const FString LastMatchPool)
+void UMatchmakingEssentialsSubsystem::OnDestroyToRematchmakingComplete(FName SessionName, bool bWasSuccessful, const int32 LocalUserNum, const FString LastMatchPool)
 {
 	if (IsGameSessionValid(SessionName) && bWasSuccessful)
 	{
 		// Retry matchmaking.
+		APlayerController* PC = GetPlayerControllerFromLocalUserNum(LocalUserNum);
 		if (!ensure(PC))
 		{
-			UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Failed to rematchmaking. Player Controller is null."));
+			UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Failed to rematchmaking. PlayerController is null."));
 			OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed, FAILED_FIND_MATCH);
 			return;
 		}
@@ -319,7 +368,7 @@ void UMatchmakingEssentialsSubsystem::OnStartMatchmakingComplete(FName SessionNa
 	}
 }
 
-void UMatchmakingEssentialsSubsystem::OnMatchmakingComplete(FName SessionName, bool bWasSuccessful, APlayerController* PC)
+void UMatchmakingEssentialsSubsystem::OnMatchmakingComplete(FName SessionName, bool bWasSuccessful, const int32 LocalUserNum)
 {
 	if (!IsGameSessionValid(SessionName))
 	{
@@ -344,7 +393,7 @@ void UMatchmakingEssentialsSubsystem::OnMatchmakingComplete(FName SessionName, b
 	}
 
 	// Join the first session from matchmaking result.
-	JoinSession(CurrentMatchmakingSearchHandle->SearchResults[0], PC);
+	JoinSession(CurrentMatchmakingSearchHandle->SearchResults[0], LocalUserNum);
 	CurrentMatchmakingSearchHandle.Reset();
 }
 
@@ -356,18 +405,10 @@ void UMatchmakingEssentialsSubsystem::CancelMatchmaking(APlayerController* PC)
 		return;
 	}
 
-	ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
-	if (!ensure(LocalPlayer)) 
+	const FUniqueNetIdPtr PlayerNetId = GetUniqueNetIdFromPlayerController(PC);
+	if (!ensure(PlayerNetId.IsValid()))
 	{
-		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot cancel matchmaking. LocalPlayer is not valid."));
-		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed, FAILED_FIND_MATCH);
-		return;
-	}
-
-	const FUniqueNetIdPtr LocalPlayerId = LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId();
-	if (!ensure(LocalPlayerId.IsValid())) 
-	{
-		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot cancel matchmaking. LocalPlayer NetId is not valid."));
+		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot cancel matchmaking. Player UniqueNetId is not valid."));
 		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed, FAILED_FIND_MATCH);
 		return;
 	}
@@ -379,7 +420,7 @@ void UMatchmakingEssentialsSubsystem::CancelMatchmaking(APlayerController* PC)
 	// Bind on-cancel matchmaking completed and start matchmaking cancelation process.
 	OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::CancelingMatch, FAILED_MESSAGE_NONE);
 	CancelMatchmakingCompleteDelegateHandle = SessionInterface->AddOnCancelMatchmakingCompleteDelegate_Handle(FOnCancelMatchmakingCompleteDelegate::CreateUObject(this, &ThisClass::OnCancelMatchmakingComplete));
-	SessionInterface->CancelMatchmaking(LocalPlayerId.ToSharedRef().Get(), NAME_GameSession);
+	SessionInterface->CancelMatchmaking(PlayerNetId.ToSharedRef().Get(), NAME_GameSession);
 }
 
 void UMatchmakingEssentialsSubsystem::OnCancelMatchmakingComplete(FName SessionName, bool bWasSuccessful)
@@ -540,7 +581,7 @@ void UMatchmakingEssentialsSubsystem::OnBackfillProposalReceived(FAccelByteModel
 
 
 #pragma region Module.3c Function Definitions
-void UMatchmakingEssentialsSubsystem::JoinSession(const FOnlineSessionSearchResult& Session, APlayerController* PC)
+void UMatchmakingEssentialsSubsystem::JoinSession(const FOnlineSessionSearchResult& Session, const int32 LocalUserNum)
 {
 	if (!ensure(SessionInterface.IsValid()))
 	{
@@ -549,22 +590,14 @@ void UMatchmakingEssentialsSubsystem::JoinSession(const FOnlineSessionSearchResu
 		return;
 	}
 
-	const FUniqueNetIdPtr LocalPlayerId = GetPlayerUniqueNetId(PC);
-	if (!ensure(LocalPlayerId.IsValid())) 
-	{
-		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot join game session. LocalPlayer NetId is not valid."));
-		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::FindMatchFailed, FAILED_FIND_MATCH);
-		return;
-	}
-
 	OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::JoiningMatch, FAILED_MESSAGE_NONE);
 
 	// Bind on-join session completed and start join session process.
-	JoinSessionCompleteDelegateHandle = SessionInterface->AddOnJoinSessionCompleteDelegate_Handle(FOnJoinSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnJoinSessionComplete, PC));
-	SessionInterface->JoinSession(LocalPlayerId.ToSharedRef().Get(), NAME_GameSession, Session);
+	JoinSessionCompleteDelegateHandle = SessionInterface->AddOnJoinSessionCompleteDelegate_Handle(FOnJoinSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnJoinSessionComplete, LocalUserNum));
+	SessionInterface->JoinSession(LocalUserNum, NAME_GameSession, Session);
 }
 
-void UMatchmakingEssentialsSubsystem::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result, APlayerController* PC)
+void UMatchmakingEssentialsSubsystem::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result, const int32 LocalUserNum)
 {
 	if (!IsGameSessionValid(SessionName))
 	{
@@ -590,9 +623,9 @@ void UMatchmakingEssentialsSubsystem::OnJoinSessionComplete(FName SessionName, E
 		// When the player success to join the game session, it is possible that the game sesison already has server info.
 		// Therefore, try to travel the client to the server using the information available in the current game session first.
 		// If it fails, then bind a delegate to listen when the server is ready to travel.
-		if (!TravelClient(SessionName, PC))
+		if (!TravelClient(SessionName, LocalUserNum))
 		{
-			SessionServerUpdateDelegateHandle = SessionInterface->AddOnSessionServerUpdateDelegate_Handle(FOnSessionServerUpdateDelegate::CreateUObject(this, &ThisClass::OnSessionServerUpdate, PC));
+			SessionServerUpdateDelegateHandle = SessionInterface->AddOnSessionServerUpdateDelegate_Handle(FOnSessionServerUpdateDelegate::CreateUObject(this, &ThisClass::OnSessionServerUpdate, LocalUserNum));
 			SessionServerErrorDelegateHandle = SessionInterface->AddOnSessionServerErrorDelegate_Handle(FOnSessionServerErrorDelegate::CreateUObject(this, &ThisClass::OnSessionServerError));
 		}
 		else 
@@ -603,7 +636,7 @@ void UMatchmakingEssentialsSubsystem::OnJoinSessionComplete(FName SessionName, E
 	}
 }
 
-bool UMatchmakingEssentialsSubsystem::TravelClient(FName SessionName, APlayerController* PC)
+bool UMatchmakingEssentialsSubsystem::TravelClient(FName SessionName, const int32 LocalUserNum)
 {
 	if (!IsGameSessionValid(SessionName))
 	{
@@ -630,6 +663,8 @@ bool UMatchmakingEssentialsSubsystem::TravelClient(FName SessionName, APlayerCon
 		return false;
 	}
 
+	// Get PlayerController to be traveled.
+	APlayerController* PC = GetPlayerControllerFromLocalUserNum(LocalUserNum);
 	if (!ensure(PC))
 	{
 		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot travel the client to the game server. PlayerController is not valid."));
@@ -650,7 +685,7 @@ bool UMatchmakingEssentialsSubsystem::TravelClient(FName SessionName, APlayerCon
 	}
 }
 
-void UMatchmakingEssentialsSubsystem::OnSessionServerUpdate(FName SessionName, APlayerController* PC)
+void UMatchmakingEssentialsSubsystem::OnSessionServerUpdate(FName SessionName, const int32 LocalUserNum)
 {
 	if (!IsGameSessionValid(SessionName))
 	{
@@ -663,7 +698,7 @@ void UMatchmakingEssentialsSubsystem::OnSessionServerUpdate(FName SessionName, A
 	}
 
 	// The server is ready. Try to travel the game clients to the server.
-	if (TravelClient(SessionName, PC)) 
+	if (TravelClient(SessionName, LocalUserNum)) 
 	{
 		// The game client success to travel to the server. The whole matchmaking process is complete.
 		OnMatchmakingHandle.ExecuteIfBound(EMatchmakingState::MatchFound, FAILED_MESSAGE_NONE);

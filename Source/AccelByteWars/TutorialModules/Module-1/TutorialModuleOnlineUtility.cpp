@@ -27,7 +27,7 @@ bool UTutorialModuleOnlineUtility::IsAccelByteSDKInitialized(const UObject* Targ
         // Check server credentials.
         AccelByte::ServerSettings ServerCreds = AccelByte::FRegistry::ServerSettings;
         if (ServerCreds.ClientId.IsEmpty() || ServerCreds.ClientSecret.IsEmpty() ||
-            ServerCreds.Namespace.IsEmpty() || ServerCreds.PublisherNamespace.IsEmpty() || ServerCreds.BaseUrl.IsEmpty())
+            ServerCreds.Namespace.IsEmpty() || ServerCreds.BaseUrl.IsEmpty())
         {
             UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Server creds are empty or not filled properly. Please check your AccelByte SDK settings configuration."));
             IsSDKCredsEmpty = true;
@@ -38,7 +38,7 @@ bool UTutorialModuleOnlineUtility::IsAccelByteSDKInitialized(const UObject* Targ
         // Check client credentials.
         AccelByte::Settings ClientCreds = AccelByte::FRegistry::Settings;
         if (ClientCreds.ClientId.IsEmpty() || ClientCreds.Namespace.IsEmpty() ||
-            ClientCreds.PublisherNamespace.IsEmpty() || ClientCreds.BaseUrl.IsEmpty())
+            ClientCreds.BaseUrl.IsEmpty())
         {
             UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Client creds are empty or not filled properly. Please check your AccelByte SDK settings configuration."));
             IsSDKCredsEmpty = true;

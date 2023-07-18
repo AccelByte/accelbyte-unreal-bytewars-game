@@ -3,8 +3,10 @@
 // and restrictions contact your company contract manager.
 
 #include "TutorialModules/Module-5/CloudSaveSubsystem_Starter.h"
+#include "TutorialModules/Module-2/AuthEssentialsModels.h"
 #include "OnlineSubsystemAccelByte.h"
 #include "OnlineSubsystemUtils.h"
+#include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "Core/UI/MainMenu/HelpOptions/Options/OptionsWidget.h"
 

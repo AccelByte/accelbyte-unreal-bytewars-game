@@ -3,10 +3,8 @@
 // and restrictions contact your company contract manager.
 
 #include "TutorialModules/Module-7/UI/SinglePlatformAuthWidget.h"
-#include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "CommonButtonBase.h"
-
 #include "TutorialModules/Module-2/AuthEssentialsSubsystem.h"
 #include "TutorialModules/Module-2/UI/LoginWidget.h"
 #include "TutorialModules/Module-2/AuthEssentialsSubsystem_Starter.h"
@@ -16,6 +14,7 @@ void USinglePlatformAuthWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
+	Btn_LoginWithSinglePlatformAuth->OnClicked().Clear();
 	Btn_LoginWithSinglePlatformAuth->OnClicked().AddUObject(this, &ThisClass::OnLoginWithSinglePlatformAuthButtonClicked);
 
 	// Toggle the login button visibility if the default native platform exists.
@@ -39,26 +38,26 @@ void USinglePlatformAuthWidget::NativeDestruct()
 
 void USinglePlatformAuthWidget::OnLoginWithSinglePlatformAuthButtonClicked()
 {
-	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
-	ensure(GameInstance);
-	
-	UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget();
-	ensure(BaseUIWidget);
-
-	APlayerController* PC = GetWorld()->GetFirstPlayerController();
-	ensure(PC);
+	UCommonActivatableWidget* ParentWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
+	if (!ParentWidget)
+	{
+		return;
+	}
 
 	UTutorialModuleDataAsset* AuthEssentialsModule = UTutorialModuleUtility::GetTutorialModuleDataAsset(FPrimaryAssetId("TutorialModule:AUTHESSENTIALS"), this);
-	ensure(AuthEssentialsModule);
+	if (!AuthEssentialsModule) 
+	{
+		return;
+	}
 
 	// Use Auth Essentials's default files for login if starter mode is not active.
 	if (!AuthEssentialsModule->IsStarterModeActive()) 
 	{
-		UAuthEssentialsSubsystem* AuthSubsystem = GameInstance->GetSubsystem<UAuthEssentialsSubsystem>();
+		UAuthEssentialsSubsystem* AuthSubsystem = GetGameInstance()->GetSubsystem<UAuthEssentialsSubsystem>();
 		ensure(AuthSubsystem);
 
 		// Grab the login widget reference to show login state UI.
-		ULoginWidget* LoginWidget = Cast<ULoginWidget>(BaseUIWidget->Stacks[EBaseUIStackType::Menu]->GetActiveWidget());
+		ULoginWidget* LoginWidget = Cast<ULoginWidget>(ParentWidget);
 		ensure(LoginWidget);
 
 		LoginWidget->SetLoginState(ELoginState::LoggingIn);
@@ -67,16 +66,16 @@ void USinglePlatformAuthWidget::OnLoginWithSinglePlatformAuthButtonClicked()
 		// Login with single platform auth is considered as login with default native platform.
 		// Thus, it doesn't need username, token, nor the login method.
 		AuthSubsystem->SetAuthCredentials(EAccelByteLoginType::None, TEXT(""), TEXT(""));
-		AuthSubsystem->Login(PC, FAuthOnLoginCompleteDelegate::CreateUObject(LoginWidget, &ULoginWidget::OnLoginComplete));
+		AuthSubsystem->Login(GetOwningPlayer(), FAuthOnLoginCompleteDelegate::CreateUObject(LoginWidget, &ULoginWidget::OnLoginComplete));
 	}
 	// Use Auth Essentials's starter files for login if starter mode is active.
 	else 
 	{
-		UAuthEssentialsSubsystem_Starter* AuthSubsystem_Starter = GameInstance->GetSubsystem<UAuthEssentialsSubsystem_Starter>();
+		UAuthEssentialsSubsystem_Starter* AuthSubsystem_Starter = GetGameInstance()->GetSubsystem<UAuthEssentialsSubsystem_Starter>();
 		ensure(AuthSubsystem_Starter);
 
 		// Grab the login widget reference to show login state UI.
-		ULoginWidget_Starter* LoginWidget_Starter = Cast<ULoginWidget_Starter>(BaseUIWidget->Stacks[EBaseUIStackType::Menu]->GetActiveWidget());
+		ULoginWidget_Starter* LoginWidget_Starter = Cast<ULoginWidget_Starter>(ParentWidget);
 		ensure(LoginWidget_Starter);
 
 		LoginWidget_Starter->SetLoginState(ELoginState::LoggingIn);
@@ -85,6 +84,6 @@ void USinglePlatformAuthWidget::OnLoginWithSinglePlatformAuthButtonClicked()
 		// Login with single platform auth is considered as login with default native platform.
 		// Thus, it doesn't need username, token, nor the login method.
 		AuthSubsystem_Starter->SetAuthCredentials(EAccelByteLoginType::None, TEXT(""), TEXT(""));
-		AuthSubsystem_Starter->Login(PC, FAuthOnLoginCompleteDelegate_Starter::CreateUObject(LoginWidget_Starter, &ULoginWidget_Starter::OnLoginComplete));
+		AuthSubsystem_Starter->Login(GetOwningPlayer(), FAuthOnLoginCompleteDelegate_Starter::CreateUObject(LoginWidget_Starter, &ULoginWidget_Starter::OnLoginComplete));
 	}
 }

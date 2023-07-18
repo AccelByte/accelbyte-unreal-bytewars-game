@@ -18,5 +18,5 @@ public:
 	virtual void Deinitialize() override;
 
 protected:
-	virtual bool TravelClient(FName SessionName, APlayerController* PC) override;
+	virtual bool TravelClient(FName SessionName, const int32 LocalUserNum);
 };
