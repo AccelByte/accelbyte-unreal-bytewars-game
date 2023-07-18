@@ -14,6 +14,7 @@ void USinglePlatformAuthWidget_Starter::NativeConstruct()
 {
 	Super::NativeConstruct();
 
+	Btn_LoginWithSinglePlatformAuth->OnClicked().Clear();
 	Btn_LoginWithSinglePlatformAuth->OnClicked().AddUObject(this, &ThisClass::OnLoginWithSinglePlatformAuthButtonClicked);
 
 	// TODO: Put the auto login with single auth platform implementation here.

@@ -14,6 +14,7 @@ void USinglePlatformAuthWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
+	Btn_LoginWithSinglePlatformAuth->OnClicked().Clear();
 	Btn_LoginWithSinglePlatformAuth->OnClicked().AddUObject(this, &ThisClass::OnLoginWithSinglePlatformAuthButtonClicked);
 
 	// Toggle the login button visibility if the default native platform exists.
