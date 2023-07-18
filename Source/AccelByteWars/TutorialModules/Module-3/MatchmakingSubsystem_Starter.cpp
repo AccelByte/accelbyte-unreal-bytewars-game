@@ -249,6 +249,16 @@ void UMatchmakingSubsystem_Starter::OnQuitGameButtonsClicked(APlayerController* 
 
 #pragma region Module.3a Function Definitions
 
+void UMatchmakingSubsystem_Starter::StartMatchmaking(APlayerController* PC, const FString& MatchPool, const FOnMatchmakingStateChangedDelegate& OnMatchmaking)
+{
+	UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Start matchmaking is not yet implemented."));
+}
+
+void UMatchmakingSubsystem_Starter::CancelMatchmaking(APlayerController* PC)
+{
+	UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cancel matchmaking is not yet implemented."));
+}
+
 // TODO: Add your Module.3a function definitions here.
 
 #pragma endregion 

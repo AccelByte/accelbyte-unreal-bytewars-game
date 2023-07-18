@@ -14,6 +14,7 @@
 #include "Framework/Notifications/NotificationManager.h"
 
 const FPrimaryAssetType	UTutorialModuleDataAsset::TutorialModuleAssetType = TEXT("TutorialModule");
+TSet<FString> UTutorialModuleDataAsset::GeneratedWidgetUsedIds;
 
 FTutorialModuleData UTutorialModuleDataAsset::GetTutorialModuleDataByCodeName(const FString& InCodeName)
 {
@@ -58,11 +59,11 @@ TSubclassOf<UTutorialModuleSubsystem> UTutorialModuleDataAsset::GetTutorialModul
 bool UTutorialModuleDataAsset::IsActiveAndDependenciesChecked()
 {
 	bool bIsDependencySatisfied = true;
-	for (const UTutorialModuleDataAsset* Dependency : TutorialModuleDependencies)
+	for (UTutorialModuleDataAsset* Dependency : TutorialModuleDependencies)
 	{
 		if (!Dependency) continue;
 
-		if (!Dependency->bIsActive)
+		if (!Dependency->IsActiveAndDependenciesChecked())
 		{
 			bIsDependencySatisfied = false;
 			break;
@@ -83,54 +84,6 @@ void UTutorialModuleDataAsset::ResetOverrides()
 	bOverriden = false;
 }
 
-void UTutorialModuleDataAsset::UpdateDataAssetProperties()
-{
-	ValidateDataAssetProperties();
-
-#pragma region "Connect Other Tutorial Module Widgets to This Tutorial Module"
-	// Refresh "Other Tutorial Module Widgets to This Tutorial Module" connections.
-	for (FTutorialModuleWidgetConnection& Connection : OtherTutorialModuleWidgetsToThisModuleWidgetConnections)
-	{
-		Connection.bIsTargetUISelf = true;
-		Connection.TargetUIClass = GetTutorialModuleUIClass();
-	}
-#pragma endregion
-
-#pragma region "Connect This Tutorial Module Widgets to Non Tutorial Module"
-	// Reset Target UI Class of "This Tutorial Module Widgets to Non Tutorial Module" connections.
-	// This will makes sure the DefaultObject of TargetUIClass corretly points to this Tutorial Module.
-	for (FTutorialModuleWidgetConnection& LastConnection : LastThisTutorialModuleWidgetToNonModuleWidgetsConnections)
-	{
-		if (!LastConnection.TargetUIClass || !LastConnection.TargetUIClass.GetDefaultObject()) continue;
-		LastConnection.TargetUIClass.GetDefaultObject()->DissociateTutorialModuleWidgets.RemoveAll([this](const FTutorialModuleWidgetConnection& Temp)
-		{
-			return Temp.SourceTutorialModule == this;
-		});
-	}
-	for (FTutorialModuleWidgetConnection& Connection : ThisTutorialModuleWidgetToNonTutorialModuleWidgetsConnections)
-	{
-		if (!Connection.TargetUIClass || !Connection.TargetUIClass.GetDefaultObject()) continue;
-		Connection.TargetUIClass.GetDefaultObject()->DissociateTutorialModuleWidgets.RemoveAll([this](const FTutorialModuleWidgetConnection& Temp)
-		{
-			return Temp.SourceTutorialModule == this;
-		});
-	}
-
-	// Refresh "This Tutorial Module Widgets to Non Tutorial Module" connections.
-	for (FTutorialModuleWidgetConnection& Connection : ThisTutorialModuleWidgetToNonTutorialModuleWidgetsConnections)
-	{
-		Connection.bIsTargetUISelf = false;
-		Connection.SourceTutorialModule = this;
-
-		if (Connection.TargetUIClass && Connection.TargetUIClass.GetDefaultObject())
-		{
-			Connection.TargetUIClass.GetDefaultObject()->DissociateTutorialModuleWidgets.Add(Connection);
-		}
-	}
-	LastThisTutorialModuleWidgetToNonModuleWidgetsConnections = ThisTutorialModuleWidgetToNonTutorialModuleWidgetsConnections;
-#pragma endregion
-}
-
 void UTutorialModuleDataAsset::ValidateDataAssetProperties()
 {
 	// Validate Default's class properties.
@@ -140,6 +93,100 @@ void UTutorialModuleDataAsset::ValidateDataAssetProperties()
 	// Validate Starter's class properties.
 	ValidateClassProperty(StarterUIClass, LastStarterUIClass, true);
 	ValidateClassProperty(StarterSubsystemClass, LastStarterSubsystemClass, true);
+
+#if WITH_EDITOR
+	// Clean up last generated widgets metadata to avoid duplication.
+	for (FTutorialModuleGeneratedWidget& LastGeneratedWidget : LastGeneratedWidgets)
+	{
+		UTutorialModuleDataAsset::GeneratedWidgetUsedIds.Remove(LastGeneratedWidget.WidgetId);
+
+		LastGeneratedWidget.DefaultTutorialModuleWidgetClass = nullptr;
+		LastGeneratedWidget.StarterTutorialModuleWidgetClass = nullptr;
+
+		LastGeneratedWidget.OtherTutorialModule = nullptr;
+
+		for (TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : LastGeneratedWidget.TargetWidgetClasses)
+		{
+			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
+			{
+				continue;
+			}
+
+			TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.RemoveAll([this](const FTutorialModuleGeneratedWidget* Temp)
+			{
+				return Temp->OwnerTutorialModule == this;
+			});
+		}
+	}
+	for (FTutorialModuleGeneratedWidget& GeneratedWidget : GeneratedWidgets)
+	{
+		for (TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : GeneratedWidget.TargetWidgetClasses)
+		{
+			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
+			{
+				continue;
+			}
+
+			TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.RemoveAll([this](const FTutorialModuleGeneratedWidget* Temp)
+			{
+				return Temp->OwnerTutorialModule == this;
+			});
+		}
+	}
+
+	// Assign fresh generated widget to the target widget class.
+	for (FTutorialModuleGeneratedWidget& GeneratedWidget : GeneratedWidgets)
+	{
+		// Clean up unnecessary references.
+		if (GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::GENERIC_WIDGET_ENTRY_BUTTON &&
+			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::GENERIC_WIDGET)
+		{
+			GeneratedWidget.GenericWidgetClass = nullptr;
+		}
+		if (GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_BUTTON &&
+			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_WIDGET)
+		{
+			GeneratedWidget.OtherTutorialModule = nullptr;
+		}
+		if ((GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_ENTRY_BUTTON &&
+			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_WIDGET &&
+			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_BUTTON &&
+			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_WIDGET) ||
+			GeneratedWidget.TutorialModuleWidgetClassType != ETutorialModuleWidgetClassType::ASSOCIATE_WIDGET_CLASS)
+		{
+			GeneratedWidget.DefaultTutorialModuleWidgetClass = nullptr;
+			GeneratedWidget.StarterTutorialModuleWidgetClass = nullptr;
+		}
+
+		// Assign the owner of the generated widget metadata to this Tutorial Module.
+		GeneratedWidget.OwnerTutorialModule = this;
+
+		// Check if the widget id is already used.
+		if (UTutorialModuleDataAsset::GeneratedWidgetUsedIds.Contains(GeneratedWidget.WidgetId))
+		{
+#if UE_EDITOR
+			ShowPopupMessage(FString::Printf(TEXT("%s widget id is already used. Widget id must be unique."), *GeneratedWidget.WidgetId));
+#endif
+			GeneratedWidget.WidgetId = TEXT("");
+		}
+		else if (!GeneratedWidget.WidgetId.IsEmpty())
+		{
+			UTutorialModuleDataAsset::GeneratedWidgetUsedIds.Add(GeneratedWidget.WidgetId);
+		}
+
+		// Assign the generated widget to the target widget class.
+		for (TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : GeneratedWidget.TargetWidgetClasses)
+		{
+			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
+			{
+				continue;
+			}
+			TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.Add(&GeneratedWidget);
+		}
+	}
+
+	LastGeneratedWidgets = GeneratedWidgets;
+#endif
 }
 
 bool UTutorialModuleDataAsset::ValidateClassProperty(TSubclassOf<UAccelByteWarsActivatableWidget>& UIClass, TSubclassOf<UAccelByteWarsActivatableWidget>& LastUIClass, const bool IsStarterClass)
@@ -202,8 +249,7 @@ bool UTutorialModuleDataAsset::ValidateClassProperty(TSubclassOf<UTutorialModule
 	// Update the new class to points to this Tutorial Module
 	if (SubsystemClass.Get() && SubsystemClass.GetDefaultObject())
 	{
-		SubsystemClass.GetDefaultObject()->AssociateTutorialModule =
-			((IsStarterClass && IsStarterModeActive()) || (!IsStarterClass && !IsStarterModeActive())) ? this : nullptr;
+		SubsystemClass.GetDefaultObject()->AssociateTutorialModule = ((IsStarterClass && IsStarterModeActive()) || (!IsStarterClass && !IsStarterModeActive())) ? this : nullptr;
 	}
 
 	// Cache the class reference.
@@ -212,11 +258,53 @@ bool UTutorialModuleDataAsset::ValidateClassProperty(TSubclassOf<UTutorialModule
 	return SubsystemClass != nullptr;
 }
 
+void UTutorialModuleDataAsset::CleanUpDataAssetProperties()
+{
+	TutorialModuleDependencies.Empty();
+
+	for (FTutorialModuleGeneratedWidget& GeneratedWidget : GeneratedWidgets)
+	{
+		for (TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : GeneratedWidget.TargetWidgetClasses)
+		{
+			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
+			{
+				continue;
+			}
+
+			TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.RemoveAll([this](const FTutorialModuleGeneratedWidget* Temp)
+			{
+				return Temp->OwnerTutorialModule == this;
+			});
+		}
+	}
+	GeneratedWidgets.Empty();
+
+	if (DefaultUIClass.Get())
+	{
+		DefaultUIClass.GetDefaultObject()->AssociateTutorialModule = nullptr;
+	}
+
+	if (DefaultSubsystemClass.Get())
+	{
+		DefaultSubsystemClass.GetDefaultObject()->AssociateTutorialModule = nullptr;
+	}
+
+	if (StarterUIClass.Get())
+	{
+		StarterUIClass.GetDefaultObject()->AssociateTutorialModule = nullptr;
+	}
+
+	if (StarterSubsystemClass.Get())
+	{
+		StarterSubsystemClass.GetDefaultObject()->AssociateTutorialModule = nullptr;
+	}
+}
+
 void UTutorialModuleDataAsset::PostLoad()
 {
 	Super::PostLoad();
 
-	UpdateDataAssetProperties();
+	ValidateDataAssetProperties();
 }
 
 #if WITH_EDITOR
@@ -224,7 +312,7 @@ void UTutorialModuleDataAsset::PostEditChangeProperty(FPropertyChangedEvent& Pro
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 
-	UpdateDataAssetProperties();
+	ValidateDataAssetProperties();
 }
 
 void UTutorialModuleDataAsset::PostDuplicate(EDuplicateMode::Type DuplicateMode)
@@ -232,7 +320,14 @@ void UTutorialModuleDataAsset::PostDuplicate(EDuplicateMode::Type DuplicateMode)
 	Super::PostDuplicate(DuplicateMode);
 
 	CodeName = TEXT("");
-	UpdateDataAssetProperties();
+	ValidateDataAssetProperties();
+}
+
+void UTutorialModuleDataAsset::FinishDestroy()
+{
+	CleanUpDataAssetProperties();
+
+	Super::FinishDestroy();
 }
 
 void UTutorialModuleDataAsset::ShowPopupMessage(const FString& Message) const

@@ -104,4 +104,10 @@ void ULoginWidget_Starter::OnQuitGameButtonClicked()
 	);
 }
 
+void ULoginWidget_Starter::OnLoginComplete(bool bWasSuccessful, const FString& ErrorMessage)
+{
+	// TODO: Handle on login complete event.
+	UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("On login complete event is not yet implemented."));
+}
+
 #undef LOCTEXT_NAMESPACE

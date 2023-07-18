@@ -20,6 +20,8 @@ class ACCELBYTEWARS_API UMatchmakingSubsystem_Starter : public UTutorialModuleSu
 
 public:
 	// TODO: Add your public Module.3a function declarations here.
+	void StartMatchmaking(APlayerController* PC, const FString& MatchPool, const FOnMatchmakingStateChangedDelegate& OnMatchmaking);
+	void CancelMatchmaking(APlayerController* PC);
 
 protected:
 	// TODO: Add your protected Module.3a function declarations here.
