@@ -23,6 +23,7 @@ class ACCELBYTEWARS_API ULoginWidget_Starter : public UAccelByteWarsActivatableW
 	
 public:
 	void SetLoginState(const ELoginState NewState);
+	void OnLoginComplete(bool bWasSuccessful, const FString& ErrorMessage);
 
 	FOnRetryLogin OnRetryLoginDelegate;
 

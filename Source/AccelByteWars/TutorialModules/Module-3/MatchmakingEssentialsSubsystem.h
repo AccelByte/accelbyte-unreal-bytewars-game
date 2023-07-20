@@ -22,10 +22,10 @@ public:
 	void CancelMatchmaking(APlayerController* PC);
 
 protected:
-	void OnDestroyToRematchmakingComplete(FName SessionName, bool bWasSuccessful, APlayerController* PC, const FString LastMatchPool);
+	void OnDestroyToRematchmakingComplete(FName SessionName, bool bWasSuccessful, const int32 LocalUserNum, const FString LastMatchPool);
 	void OnStartMatchmakingComplete(FName SessionName, const FOnlineError& ErrorDetails, const FSessionMatchmakingResults& Results);
-	void OnMatchmakingComplete(FName SessionName, bool bWasSuccessful, APlayerController* PC);
-	void OnFindingMatchTimeout(APlayerController* PC);
+	void OnMatchmakingComplete(FName SessionName, bool bWasSuccessful, const int32 LocalUserNum);
+	void OnFindingMatchTimeout(const int32 LocalUserNum);
 	void OnCancelMatchmakingComplete(FName SessionName, bool bWasSuccessful);
 #pragma endregion
 
@@ -41,10 +41,10 @@ protected:
 
 #pragma region Module.3c Function Declarations
 protected:
-	void JoinSession(const FOnlineSessionSearchResult& Session, APlayerController* PC);
-	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result, APlayerController* PC);
-	virtual bool TravelClient(FName SessionName, APlayerController* PC);
-	void OnSessionServerUpdate(FName SessionName, APlayerController* PC);
+	void JoinSession(const FOnlineSessionSearchResult& Session, const int32 LocalUserNum);
+	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result, const int32 LocalUserNum);
+	virtual bool TravelClient(FName SessionName, const int32 LocalUserNum);
+	void OnSessionServerUpdate(FName SessionName, const int32 LocalUserNum);
 	void OnSessionServerError(FName SessionName, const FString& ErrorMessage);
 	void LeaveSession(APlayerController* PC);
 #pragma endregion
@@ -62,7 +62,10 @@ protected:
 	void OnQuitGameButtonsClicked(APlayerController* PC);
 
 	bool IsGameSessionValid(FName SessionName);
-	FUniqueNetIdPtr GetPlayerUniqueNetId(APlayerController* PC) const;
+	FUniqueNetIdPtr GetUniqueNetIdFromPlayerController(const APlayerController* PC) const;
+	int32 GetLocalUserNumFromPlayerController(const APlayerController* PC) const;
+	APlayerController* GetPlayerControllerFromLocalUserNum(const int32 LocalUserNum) const;
+
 	void SetTeamMemberAccelByteInformation(APlayerController* PC, TDelegate<void(bool /*bIsSuccessful*/)> OnComplete);
 
 	TSharedPtr<FOnlineSessionSearchAccelByte> CurrentMatchmakingSearchHandle;

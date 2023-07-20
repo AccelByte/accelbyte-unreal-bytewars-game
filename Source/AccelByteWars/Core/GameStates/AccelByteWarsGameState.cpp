@@ -74,7 +74,10 @@ void AAccelByteWarsGameState::AssignGameMode(const FString& CodeName)
 {
 	GameSetup = GameInstance->GetGameModeDataByCodeName(CodeName);
 
-	GAMESTATE_LOG(Log, TEXT("Game mode set to GameState: %s"), *GameSetup.CodeName);
+	GAMESTATE_LOG(Log, TEXT("Requested code name (%s) %s. Game mode set to GameState: %s"),
+		*CodeName,
+		*FString(CodeName.Equals(GameSetup.CodeName) ? "Found" : "Not Found"),
+		*GameSetup.CodeName);
 }
 
 TArray<int32> AAccelByteWarsGameState::GetRemainingTeams() const

@@ -37,6 +37,7 @@ void UMatchmakingSubsystem_Starter::Initialize(FSubsystemCollectionBase& Collect
 		return;
 	}
 
+	// Bind delegates to game events.
 	AAccelByteWarsGameMode::OnAddOnlineMemberDelegate.AddUObject(this, &ThisClass::SetTeamMemberAccelByteInformation);
 	UMatchLobbyWidget::OnQuitLobbyDelegate.AddUObject(this, &ThisClass::OnQuitGameButtonsClicked);
 	UPauseWidget::OnQuitGameDelegate.AddUObject(this, &ThisClass::OnQuitGameButtonsClicked);
@@ -56,6 +57,7 @@ void UMatchmakingSubsystem_Starter::Deinitialize()
 {
 	Super::Deinitialize();
 
+	// Unbind delegates from game events.
 	AAccelByteWarsGameMode::OnAddOnlineMemberDelegate.Clear();
 	UMatchLobbyWidget::OnQuitLobbyDelegate.Clear();
 	UPauseWidget::OnQuitGameDelegate.Clear();
@@ -82,7 +84,7 @@ bool UMatchmakingSubsystem_Starter::IsGameSessionValid(FName SessionName)
 	return (SessionName == NAME_GameSession);
 }
 
-FUniqueNetIdPtr UMatchmakingSubsystem_Starter::GetPlayerUniqueNetId(APlayerController* PC) const
+FUniqueNetIdPtr UMatchmakingSubsystem_Starter::GetUniqueNetIdFromPlayerController(const APlayerController* PC) const
 {
 	if (!ensure(PC))
 	{
@@ -96,6 +98,44 @@ FUniqueNetIdPtr UMatchmakingSubsystem_Starter::GetPlayerUniqueNetId(APlayerContr
 	}
 
 	return LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId();
+}
+
+int32 UMatchmakingSubsystem_Starter::GetLocalUserNumFromPlayerController(const APlayerController* PC) const
+{
+	if (!PC)
+	{
+		return INDEX_NONE;
+	}
+
+	const ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
+	if (!LocalPlayer)
+	{
+		return INDEX_NONE;
+	}
+
+	return LocalPlayer->GetControllerId();
+}
+
+APlayerController* UMatchmakingSubsystem_Starter::GetPlayerControllerFromLocalUserNum(const int32 LocalUserNum) const
+{
+	for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
+	{
+		if (!Iterator->IsValid())
+		{
+			continue;
+		}
+
+		if (APlayerController* PC = Iterator->Get(); PC)
+		{
+			const int32 PlayerLocalUserNum = GetLocalUserNumFromPlayerController(PC);
+			if (LocalUserNum == PlayerLocalUserNum)
+			{
+				return PC;
+			}
+		}
+	}
+
+	return nullptr;
 }
 
 void UMatchmakingSubsystem_Starter::OnServerReceivedSession(FName SessionName)
@@ -121,7 +161,7 @@ void UMatchmakingSubsystem_Starter::OnServerReceivedSession(FName SessionName)
 	}
 
 	AAccelByteWarsGameState* GameState = Cast<AAccelByteWarsGameState>(GetWorld()->GetGameState());
-	if (!ensure(GameState)) 
+	if (!ensure(GameState))
 	{
 		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Server cannot handle received game session. Game State is null."));
 		return;
@@ -140,7 +180,7 @@ void UMatchmakingSubsystem_Starter::SetTeamMemberAccelByteInformation(APlayerCon
 	const FUniqueNetIdPtr PlayerNetId = PC->PlayerState->GetUniqueId().GetUniqueNetId();
 	if (!PlayerNetId.IsValid())
 	{
-		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Player Net Id is invalid. Cannot get player AccelByte's information."));
+		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot get player AccelByte's information. Player UniqueNetId is invalid."));
 		OnComplete.ExecuteIfBound(false);
 		return;
 	}
@@ -148,23 +188,33 @@ void UMatchmakingSubsystem_Starter::SetTeamMemberAccelByteInformation(APlayerCon
 	const FUniqueNetIdAccelByteUserPtr AccelBytePlayerNetId = StaticCastSharedPtr<const FUniqueNetIdAccelByteUser>(PlayerNetId);
 	if (!ensure(AccelBytePlayerNetId.IsValid()))
 	{
-		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Player's AccelByte Net Id us not valid. Cannot get player AccelByte's information."));
+		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot get player AccelByte's information. Player's AccelByte UniqueNetId is not valid."));
 		OnComplete.ExecuteIfBound(false);
 		return;
 	}
 
-	AAccelByteWarsPlayerState* PlayerState = StaticCast<AAccelByteWarsPlayerState*>(PC->PlayerState);
-	if (!PlayerState)
-	{
-		UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Player State is null. Cannot get player's AccelByte information."));
-		OnComplete.ExecuteIfBound(false);
-		return;
-	}
+	int32 LocalUserNum = GetLocalUserNumFromPlayerController(PC);
 
 	FRegistry::User.BulkGetUserInfo(
 		{ AccelBytePlayerNetId->GetAccelByteId() },
-		THandler<FListBulkUserInfo>::CreateWeakLambda(this, [PlayerState, OnComplete](const FListBulkUserInfo& Result)
+		THandler<FListBulkUserInfo>::CreateWeakLambda(this, [this, LocalUserNum, OnComplete](const FListBulkUserInfo& Result)
 		{
+			const APlayerController* PC = GetPlayerControllerFromLocalUserNum(LocalUserNum);
+			if (!PC)
+			{
+				UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot get player's AccelByte information. PlayerController is null."));
+				OnComplete.ExecuteIfBound(false);
+				return;
+			}
+
+			AAccelByteWarsPlayerState* PlayerState = StaticCast<AAccelByteWarsPlayerState*>(PC->PlayerState);
+			if (!PlayerState)
+			{
+				UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cannot get player's AccelByte information. Player State is null."));
+				OnComplete.ExecuteIfBound(false);
+				return;
+			}
+
 			const FBaseUserInfo& PlayerInfo = Result.Data[0];
 			PlayerState->SetPlayerName(PlayerInfo.DisplayName);
 			PlayerState->AvatarURL = PlayerInfo.AvatarUrl;
@@ -198,6 +248,16 @@ void UMatchmakingSubsystem_Starter::OnQuitGameButtonsClicked(APlayerController* 
 
 
 #pragma region Module.3a Function Definitions
+
+void UMatchmakingSubsystem_Starter::StartMatchmaking(APlayerController* PC, const FString& MatchPool, const FOnMatchmakingStateChangedDelegate& OnMatchmaking)
+{
+	UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Start matchmaking is not yet implemented."));
+}
+
+void UMatchmakingSubsystem_Starter::CancelMatchmaking(APlayerController* PC)
+{
+	UE_LOG_MATCHMAKING_ESSENTIALS(Warning, TEXT("Cancel matchmaking is not yet implemented."));
+}
 
 // TODO: Add your Module.3a function definitions here.
 

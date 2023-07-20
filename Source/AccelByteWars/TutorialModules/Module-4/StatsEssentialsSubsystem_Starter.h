@@ -5,11 +5,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "OnlineStatisticInterfaceAccelByte.h"
 #include "StatsEssentialsSubsystem_Starter.generated.h"
 
 UCLASS()
-class ACCELBYTEWARS_API UStatsEssentialsSubsystem_Starter : public UGameInstanceSubsystem
+class ACCELBYTEWARS_API UStatsEssentialsSubsystem_Starter : public UTutorialModuleSubsystem
 {
 	GENERATED_BODY()
 

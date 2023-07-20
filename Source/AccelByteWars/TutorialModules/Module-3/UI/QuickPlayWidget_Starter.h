@@ -23,6 +23,7 @@ class ACCELBYTEWARS_API UQuickPlayWidget_Starter : public UAccelByteWarsActivata
 
 public:
 	// TODO: Add your Module.3c function declarations here.
+	void OnMatchmaking(EMatchmakingState MatchmakingState, FString ErrorMessage);
 
 #pragma endregion
 

@@ -3,6 +3,7 @@
 // and restrictions contact your company contract manager.
 
 #include "Core/UI/AccelByteWarsBaseUI.h"
+#include "Core/System/AccelByteWarsGameInstance.h"
 
 void UAccelByteWarsBaseUI::NativeOnInitialized()
 {
@@ -30,6 +31,28 @@ void UAccelByteWarsBaseUI::NativeOnInitialized()
 void UAccelByteWarsBaseUI::ToggleBackgroundBlur(const bool bShow) const
 {
 	BackgroundBlur->SetVisibility(bShow ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+}
+
+UCommonActivatableWidget* UAccelByteWarsBaseUI::GetActiveWidgetOfStack(const EBaseUIStackType TargetStack, const UObject* Context)
+{
+	if (!Context || !Context->GetWorld())
+	{
+		return nullptr;
+	}
+
+	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(Context->GetWorld()->GetGameInstance());
+	if (!GameInstance) 
+	{
+		return nullptr;
+	}
+
+	const UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget();
+	if (!BaseUIWidget) 
+	{
+		return nullptr;
+	}
+
+	return BaseUIWidget->Stacks[EBaseUIStackType::Menu]->GetActiveWidget();
 }
 
 UAccelByteWarsActivatableWidget* UAccelByteWarsBaseUI::PushWidgetToStack(EBaseUIStackType TargetStack, TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass)

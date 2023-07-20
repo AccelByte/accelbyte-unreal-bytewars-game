@@ -22,6 +22,9 @@ public:
 	void Initialize(FSubsystemCollectionBase& Collection) override;
 	void Deinitialize() override;
 
+	/** Login user using specified login method */
+	void Login(const APlayerController* PC, const FAuthOnLoginCompleteDelegate_Starter& OnLoginComplete);
+
 	/** Set auth credentials, including login method, id/username, and token/password.
 	 * @param Login method (e.g. Device Id, AccelByte, etc). Set to EAccelByteLoginType::None if login with default native platform.
 	 * @param Id Identity of the user logging in (email, display name, facebook id, etc).

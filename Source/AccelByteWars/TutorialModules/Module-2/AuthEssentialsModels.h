@@ -5,6 +5,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "UObject/NoExportTypes.h"
+#include "AuthEssentialsModels.generated.h"
 
 /** @brief login state enumeration. */
 enum class ELoginState 
@@ -22,4 +24,11 @@ enum EAuthStatus
 	LoggedIn
 };
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnLoginSuccess, const APlayerController* /*PlayerController*/);
 DECLARE_MULTICAST_DELEGATE(FOnRetryLogin);
+
+class UAuthEssentialsModels
+{
+public:
+	inline static FOnLoginSuccess OnLoginSuccessDelegate;
+};

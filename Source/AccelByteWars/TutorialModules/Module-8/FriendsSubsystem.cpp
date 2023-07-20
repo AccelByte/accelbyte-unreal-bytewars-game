@@ -302,7 +302,7 @@ void UFriendsSubsystem::GetInboundFriendRequestList(const APlayerController* PC,
             });
 
             TArray<UFriendData*> InboundFriendRequestList;
-            for (const TSharedRef<FOnlineFriend> TempData : CachedFriendList)
+            for (const TSharedRef<FOnlineFriend>& TempData : CachedFriendList)
             {
                 InboundFriendRequestList.Add(UFriendData::ConvertToFriendData(TempData));
             }
@@ -336,7 +336,7 @@ void UFriendsSubsystem::GetOutboundFriendRequestList(const APlayerController* PC
             });
 
             TArray<UFriendData*> OutbondFriendRequestList;
-            for (const TSharedRef<FOnlineFriend> TempData : CachedFriendList)
+            for (const TSharedRef<FOnlineFriend>& TempData : CachedFriendList)
             {
                 OutbondFriendRequestList.Add(UFriendData::ConvertToFriendData(TempData));
             }
@@ -483,7 +483,7 @@ void UFriendsSubsystem::GetFriendList(const APlayerController* PC, const FOnGetF
             });
 
             TArray<UFriendData*> AcceptedFriendList;
-            for (const TSharedRef<FOnlineFriend> TempData : CachedFriendList)
+            for (const TSharedRef<FOnlineFriend>& TempData : CachedFriendList)
             {
                 AcceptedFriendList.Add(UFriendData::ConvertToFriendData(TempData));
             }

@@ -20,6 +20,8 @@ class ACCELBYTEWARS_API UMatchmakingSubsystem_Starter : public UTutorialModuleSu
 
 public:
 	// TODO: Add your public Module.3a function declarations here.
+	void StartMatchmaking(APlayerController* PC, const FString& MatchPool, const FOnMatchmakingStateChangedDelegate& OnMatchmaking);
+	void CancelMatchmaking(APlayerController* PC);
 
 protected:
 	// TODO: Add your protected Module.3a function declarations here.
@@ -55,7 +57,10 @@ protected:
 	void OnQuitGameButtonsClicked(APlayerController* PC);
 
 	bool IsGameSessionValid(FName SessionName);
-	FUniqueNetIdPtr GetPlayerUniqueNetId(APlayerController* PC) const;
+	FUniqueNetIdPtr GetUniqueNetIdFromPlayerController(const APlayerController* PC) const;
+	int32 GetLocalUserNumFromPlayerController(const APlayerController* PC) const;
+	APlayerController* GetPlayerControllerFromLocalUserNum(const int32 LocalUserNum) const;
+
 	void SetTeamMemberAccelByteInformation(APlayerController* PC, TDelegate<void(bool /*bIsSuccessful*/)> OnComplete);
 
 	TSharedPtr<FOnlineSessionSearchAccelByte> CurrentMatchmakingSearchHandle;
@@ -63,6 +68,7 @@ protected:
 	FDelegateHandle CancelMatchmakingCompleteDelegateHandle;
 	FDelegateHandle JoinSessionCompleteDelegateHandle;
 	FDelegateHandle SessionServerUpdateDelegateHandle;
+	FDelegateHandle SessionServerErrorDelegateHandle;
 	FDelegateHandle BackfillProposalReceivedDelegateHandle;
 	FDelegateHandle OnServerReceivedSessionDelegateHandle;
 

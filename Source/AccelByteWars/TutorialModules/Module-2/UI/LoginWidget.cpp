@@ -113,6 +113,12 @@ void ULoginWidget::OnLoginComplete(bool bWasSuccessful, const FString& ErrorMess
 {
 	if (bWasSuccessful) 
 	{
+		// Broadcast on-login success event.
+		if (UAuthEssentialsModels::OnLoginSuccessDelegate.IsBound())
+		{
+			UAuthEssentialsModels::OnLoginSuccessDelegate.Broadcast(GetOwningPlayer());
+		}
+
 		// When login success, open Main Menu widget.
 		UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->GetBaseUIWidget());
 		ensure(BaseUIWidget);
