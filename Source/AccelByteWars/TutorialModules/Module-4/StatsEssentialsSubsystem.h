@@ -17,10 +17,10 @@ class ACCELBYTEWARS_API UStatsEssentialsSubsystem : public UTutorialModuleSubsys
 public:
 
 #pragma region Available stats code list
-	inline static FString StatsCode_HighestElimination = "ue-highestscore-elimintaion";
-	inline static FString StatsCode_HighestTeamDeathMatch = "ue-highestscore-teamdeathmatch";
-	inline static FString StatsCode_HighestSinglePlayer = "ue-highestscore-singleplayer";
-	inline static FString StatsCode_KillCount = "ue-killcount";
+	inline static FString StatsCode_HighestElimination = "unreal-highestscore-elimination";
+	inline static FString StatsCode_HighestTeamDeathMatch = "unreal-highestscore-teamdeathmatch";
+	inline static FString StatsCode_HighestSinglePlayer = "unreal-highestscore-singleplayer";
+	inline static FString StatsCode_KillCount = "unreal-killcount";
 #pragma endregion 
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
