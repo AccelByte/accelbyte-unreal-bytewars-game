@@ -10,7 +10,7 @@
 #include "OnlineUserInterfaceAccelByte.h"
 #include "OnlineFriendsInterfaceAccelByte.h"
 #include "TutorialModules/Module-8/FriendsEssentialsModels.h"
-#include "TutorialModules/Module-13/ManagingFriendsLog.h"
+#include "TutorialModules/Module-12/ManagingFriendsLog.h"
 #include "ManagingFriendsSubsystem.generated.h"
 
 class UPromptSubsystem;

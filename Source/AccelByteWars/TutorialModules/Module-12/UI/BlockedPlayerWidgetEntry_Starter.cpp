@@ -2,7 +2,7 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-#include "TutorialModules/Module-13/UI/BlockedPlayerWidgetEntry.h"
+#include "TutorialModules/Module-12/UI/BlockedPlayerWidgetEntry_Starter.h"
 #include "Core/Utilities/AccelByteWarsUtility.h"
 #include "CommonButtonBase.h"
 #include "Components/TextBlock.h"
@@ -10,18 +10,18 @@
 
 #define LOCTEXT_NAMESPACE "AccelByteWars"
 
-void UBlockedPlayerWidgetEntry::NativeConstruct()
+void UBlockedPlayerWidgetEntry_Starter::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	ManagingFriendsSubsystem = GetGameInstance()->GetSubsystem<UManagingFriendsSubsystem>();
+	ManagingFriendsSubsystem = GetGameInstance()->GetSubsystem<UManagingFriendsSubsystem_Starter>();
 	ensure(ManagingFriendsSubsystem);
 
 	Btn_Unblock->OnClicked().Clear();
 	Btn_Unblock->OnClicked().AddUObject(this, &ThisClass::OnUnblockButtonClicked);
 }
 
-void UBlockedPlayerWidgetEntry::NativeOnListItemObjectSet(UObject* ListItemObject)
+void UBlockedPlayerWidgetEntry_Starter::NativeOnListItemObjectSet(UObject* ListItemObject)
 {
 	Super::NativeOnListItemObjectSet(ListItemObject);
 
@@ -72,12 +72,9 @@ void UBlockedPlayerWidgetEntry::NativeOnListItemObjectSet(UObject* ListItemObjec
 	}
 }
 
-void UBlockedPlayerWidgetEntry::OnUnblockButtonClicked()
+void UBlockedPlayerWidgetEntry_Starter::OnUnblockButtonClicked()
 {
-	ensure(CachedBlockedPlayerData);
-	ensure(ManagingFriendsSubsystem);
-
-	ManagingFriendsSubsystem->UnblockPlayer(GetOwningPlayer(), CachedBlockedPlayerData->UserId);
+	// TODO: Call unblock player request here.
 }
 
 #undef LOCTEXT_NAMESPACE

@@ -6,13 +6,13 @@
 
 #include "CoreMinimal.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
-#include "TutorialModules/Module-13/ManagingFriendsSubsystem.h"
-#include "BlockedPlayersWidget.generated.h"
+#include "TutorialModules/Module-12/ManagingFriendsSubsystem_Starter.h"
+#include "BlockedPlayersWidget_Starter.generated.h"
 
 class UAccelByteWarsWidgetList;
 
 UCLASS(Abstract)
-class ACCELBYTEWARS_API UBlockedPlayersWidget : public UAccelByteWarsActivatableWidget
+class ACCELBYTEWARS_API UBlockedPlayersWidget_Starter : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
 	
@@ -23,7 +23,7 @@ protected:
 
 	void GetBlockedPlayerList();
 
-	UManagingFriendsSubsystem* ManagingFriendsSubsystem;
+	UManagingFriendsSubsystem_Starter* ManagingFriendsSubsystem;
 	FDelegateHandle OnBlockedPlayerListUpdatedDelegateHandle;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))

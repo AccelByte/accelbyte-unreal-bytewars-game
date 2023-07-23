@@ -2,7 +2,7 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-#include "TutorialModules/Module-13/ManagingFriendsSubsystem.h"
+#include "TutorialModules/Module-12/ManagingFriendsSubsystem.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "OnlineSubsystemUtils.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"

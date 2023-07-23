@@ -6,7 +6,7 @@
 
 #include "CoreMinimal.h"
 #include "Core/UI/Components/AccelByteWarsWidgetEntry.h"
-#include "TutorialModules/Module-13/ManagingFriendsSubsystem.h"
+#include "TutorialModules/Module-12/ManagingFriendsSubsystem.h"
 #include "BlockedPlayerWidgetEntry.generated.h"
 
 class UImage;

@@ -2,7 +2,7 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-#include "TutorialModules/Module-13/UI/BlockedPlayersWidget.h"
+#include "TutorialModules/Module-12/UI/BlockedPlayersWidget.h"
 #include "Core/UI/Components/AccelByteWarsWidgetList.h"
 
 void UBlockedPlayersWidget::NativeConstruct()
