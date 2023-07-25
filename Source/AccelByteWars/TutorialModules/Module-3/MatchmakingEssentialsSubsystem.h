@@ -25,6 +25,7 @@ protected:
 	void OnDestroyToRematchmakingComplete(FName SessionName, bool bWasSuccessful, const int32 LocalUserNum, const FString LastMatchPool);
 	void OnStartMatchmakingComplete(FName SessionName, const FOnlineError& ErrorDetails, const FSessionMatchmakingResults& Results);
 	void OnMatchmakingComplete(FName SessionName, bool bWasSuccessful, const int32 LocalUserNum);
+	void OnFindingMatchTimeout(const int32 LocalUserNum);
 	void OnCancelMatchmakingComplete(FName SessionName, bool bWasSuccessful);
 #pragma endregion
 
@@ -67,7 +68,7 @@ protected:
 
 	void SetTeamMemberAccelByteInformation(APlayerController* PC, TDelegate<void(bool /*bIsSuccessful*/)> OnComplete);
 
-	TSharedPtr<FOnlineSessionSearch> CurrentMatchmakingSearchHandle;
+	TSharedPtr<FOnlineSessionSearchAccelByte> CurrentMatchmakingSearchHandle;
 	FDelegateHandle MatchmakingCompleteDelegateHandle;
 	FDelegateHandle CancelMatchmakingCompleteDelegateHandle;
 	FDelegateHandle JoinSessionCompleteDelegateHandle;
@@ -75,6 +76,9 @@ protected:
 	FDelegateHandle SessionServerErrorDelegateHandle;
 	FDelegateHandle BackfillProposalReceivedDelegateHandle;
 	FDelegateHandle OnServerReceivedSessionDelegateHandle;
+
+	FTimerHandle FindMatchTimeoutHandle;
+	float FindMatchTimeout = 60.0f;
 
 	FOnMatchmakingStateChangedDelegate OnMatchmakingHandle;
 	FOnlineSessionV2AccelBytePtr SessionInterface;
