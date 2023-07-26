@@ -236,7 +236,9 @@ void UManagingFriendsSubsystem::GetBlockedPlayerList(const APlayerController* PC
             {
                 UserInterface->ClearOnQueryUserInfoCompleteDelegate_Handle(LocalUserNum, OnQueryUserInfoCompleteDelegateHandle);
 
-                // Refresh blocked players data with queried blocked players' user information.
+                /* Refresh blocked players data with queried blocked players' user information.
+                 * Then, return blocked players to the callback. */
+                TArray<UFriendData*> BlockedPlayers;
                 TArray<TSharedRef<FOnlineBlockedPlayer>> NewCachedBlockedPlayerList;
                 FriendsInterface->GetBlockedPlayers(PlayerNetId->AsShared().Get(), NewCachedBlockedPlayerList);
                 for (const TSharedRef<FOnlineBlockedPlayer>& NewCachedBlockedPlayer : NewCachedBlockedPlayerList)
@@ -245,14 +247,11 @@ void UManagingFriendsSubsystem::GetBlockedPlayerList(const APlayerController* PC
                     FString UserAvatarURL;
                     TSharedPtr<FOnlineUser> UserInfo = UserInterface->GetUserInfo(LocalUserNum, NewCachedBlockedPlayer.Get().GetUserId().Get());
                     UserInfo->GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, UserAvatarURL);
-                    StaticCastSharedRef<FOnlineBlockedPlayerAccelByte>(NewCachedBlockedPlayer).Get().SetUserLocalAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, UserAvatarURL);
-                }
 
-                // Return blocked players to the callback.
-                TArray<UFriendData*> BlockedPlayers;
-                for (const TSharedRef<FOnlineBlockedPlayer>& TempData : NewCachedBlockedPlayerList)
-                {
-                    BlockedPlayers.Add(UFriendData::ConvertToFriendData(TempData));
+                    // Add the updated blocked player to the list.
+                    UFriendData* BlockedPlayer = UFriendData::ConvertToFriendData(NewCachedBlockedPlayer);
+                    BlockedPlayer->AvatarURL = UserAvatarURL;
+                    BlockedPlayers.Add(BlockedPlayer);
                 }
 
                 OnComplete.ExecuteIfBound(true, BlockedPlayers, TEXT(""));
