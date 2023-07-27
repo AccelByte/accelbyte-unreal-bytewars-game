@@ -34,5 +34,9 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = Attributes, Replicated)
 	int32 NumLivesLeft = INDEX_NONE;
 
+	// Number of attempt the player was almost got killed attempt in a single-lifetime
+	UPROPERTY(BlueprintReadWrite, Category = Attributes, Replicated)
+	int32 NumKilledAttemptInSingleLifetime = 0;
+
 	bool bShouldKick = false;
 };
