@@ -5,28 +5,27 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Core/UI/AccelByteWarsActivatableWidget.h"
-#include "TutorialModules/Module-8/FriendsSubsystem.h"
-#include "FriendDetailsWidget.generated.h"
+#include "Core/UI/Components/AccelByteWarsWidgetEntry.h"
+#include "TutorialModules/Module-12/ManagingFriendsSubsystem.h"
+#include "BlockedPlayerWidgetEntry.generated.h"
 
-class UTextBlock;
 class UImage;
+class UTextBlock;
+class UCommonButtonBase;
 
 UCLASS(Abstract)
-class ACCELBYTEWARS_API UFriendDetailsWidget : public UAccelByteWarsActivatableWidget
+class ACCELBYTEWARS_API UBlockedPlayerWidgetEntry : public UAccelByteWarsWidgetEntry
 {
 	GENERATED_BODY()
 	
-public:
-	void InitData(UFriendData* FriendData);
-
-	UFriendData* GetCachedFriendData() const
-	{ 
-		return CachedFriendData; 
-	}
-
 protected:
-	UFriendData* CachedFriendData;
+	virtual void NativeConstruct() override;
+	virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;
+
+	void OnUnblockButtonClicked();
+
+	UManagingFriendsSubsystem* ManagingFriendsSubsystem;
+	UFriendData* CachedBlockedPlayerData;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UImage* Img_Avatar;
@@ -35,7 +34,7 @@ protected:
 	UTextBlock* Tb_DisplayName;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
-	UTextBlock* Tb_Presence;
+	UCommonButtonBase* Btn_Unblock;
 
 	FSlateBrush DefaultAvatarBrush;
 };

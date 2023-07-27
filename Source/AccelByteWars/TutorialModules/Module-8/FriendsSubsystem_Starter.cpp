@@ -45,15 +45,26 @@ void UFriendsSubsystem_Starter::Initialize(FSubsystemCollectionBase& Collection)
     ensure(PromptSubsystem);
 }
 
-FUniqueNetIdPtr UFriendsSubsystem_Starter::GetPlayerUniqueNetId(const APlayerController* PC) const
+void UFriendsSubsystem_Starter::Deinitialize()
 {
-    if (!ensure(PC))
+    Super::Deinitialize();
+
+    // Clear on friends changed delegate.
+    for (auto& DelegateHandle : OnFriendsChangeDelegateHandles)
+    {
+        FriendsInterface->ClearOnFriendsChangeDelegate_Handle(DelegateHandle.Key, DelegateHandle.Value);
+    }
+}
+
+FUniqueNetIdPtr UFriendsSubsystem_Starter::GetUniqueNetIdFromPlayerController(const APlayerController* PC) const
+{
+    if (!PC)
     {
         return nullptr;
     }
 
     ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
-    if (!ensure(LocalPlayer))
+    if (!LocalPlayer)
     {
         return nullptr;
     }
@@ -61,9 +72,14 @@ FUniqueNetIdPtr UFriendsSubsystem_Starter::GetPlayerUniqueNetId(const APlayerCon
     return LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId();
 }
 
-int32 UFriendsSubsystem_Starter::GetPlayerControllerId(const APlayerController* PC) const
+int32 UFriendsSubsystem_Starter::GetLocalUserNumFromPlayerController(const APlayerController* PC) const
 {
     int32 LocalUserNum = 0;
+
+    if (!PC)
+    {
+        return LocalUserNum;
+    }
 
     const ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
     if (LocalPlayer)
