@@ -63,7 +63,7 @@ protected:
 
 	void SetTeamMemberAccelByteInformation(APlayerController* PC, TDelegate<void(bool /*bIsSuccessful*/)> OnComplete);
 
-	TSharedPtr<FOnlineSessionSearch> CurrentMatchmakingSearchHandle;
+	TSharedPtr<FOnlineSessionSearchAccelByte> CurrentMatchmakingSearchHandle;
 	FDelegateHandle MatchmakingCompleteDelegateHandle;
 	FDelegateHandle CancelMatchmakingCompleteDelegateHandle;
 	FDelegateHandle JoinSessionCompleteDelegateHandle;
@@ -71,6 +71,9 @@ protected:
 	FDelegateHandle SessionServerErrorDelegateHandle;
 	FDelegateHandle BackfillProposalReceivedDelegateHandle;
 	FDelegateHandle OnServerReceivedSessionDelegateHandle;
+
+	FTimerHandle FindMatchTimeoutHandle;
+	float FindMatchTimeout = 60.0f;
 
 	FOnMatchmakingStateChangedDelegate OnMatchmakingHandle;
 	FOnlineSessionV2AccelBytePtr SessionInterface;
