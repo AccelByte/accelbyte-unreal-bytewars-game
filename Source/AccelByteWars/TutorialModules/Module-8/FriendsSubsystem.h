@@ -43,12 +43,12 @@ public:
 
 	void AcceptFriendRequest(const APlayerController* PC, const FUniqueNetIdRepl FriendUserId, const FOnAcceptFriendRequestComplete& OnComplete = FOnAcceptFriendRequestComplete());
 	void RejectFriendRequest(const APlayerController* PC, const FUniqueNetIdRepl FriendUserId, const FOnRejectFriendRequestComplete& OnComplete = FOnRejectFriendRequestComplete());
-	void RemoveFriend(const APlayerController* PC, const FUniqueNetIdRepl FriendUserId, const FOnRemoveFriendComplete& OnComplete = FOnRemoveFriendComplete());
+	void CancelFriendRequest(const APlayerController* PC, const FUniqueNetIdRepl FriendUserId, const FOnCancelFriendRequestComplete& OnComplete = FOnCancelFriendRequestComplete());
 
 protected:
 	void OnAcceptFriendRequestComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& FriendId, const FString& ListName, const FString& ErrorStr, const FOnAcceptFriendRequestComplete OnComplete);
 	void OnRejectFriendRequestComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& FriendId, const FString& ListName, const FString& ErrorStr, const FOnRejectFriendRequestComplete OnComplete);
-	void OnRemoveFriendComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& FriendId, const FString& ListName, const FString& ErrorStr, const FOnRemoveFriendComplete OnComplete);
+	void OnCancelFriendRequestComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& FriendId, const FString& ListName, const FString& ErrorStr, const FOnCancelFriendRequestComplete OnComplete);
 #pragma endregion
 
 #pragma region Module.8c Function Declarations
@@ -58,13 +58,14 @@ public:
 
 public:
 	void Initialize(FSubsystemCollectionBase& Collection) override;
+	void Deinitialize() override;
 
-	FUniqueNetIdPtr GetPlayerUniqueNetId(const APlayerController* PC) const;
-	int32 GetPlayerControllerId(const APlayerController* PC) const;
+	FUniqueNetIdPtr GetUniqueNetIdFromPlayerController(const APlayerController* PC) const;
+	int32 GetLocalUserNumFromPlayerController(const APlayerController* PC) const;
 
 	FDelegateHandle OnQueryUserInfoCompleteDelegateHandle;
 	FDelegateHandle OnRejectFriendRequestCompleteDelegateHandle;
-	FDelegateHandle OnRemoveFriendCompleteDelegateHandle;
+	FDelegateHandle OnCancelFriendRequestCompleteDelegateHandle;
 
 	TMap<int32, FDelegateHandle> OnFriendsChangeDelegateHandles;
 
