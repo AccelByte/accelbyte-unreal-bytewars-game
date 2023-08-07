@@ -27,7 +27,6 @@ void ULeaderboardWeeklyWidget_Starter::NativeOnActivated()
 	WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::NoEntry);
 
 	// TODO: Call functionalities to get and display leaderboard weekly rankings.
-	WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::NoEntry);
 }
 
 #pragma region Module.13 Function Definitions
