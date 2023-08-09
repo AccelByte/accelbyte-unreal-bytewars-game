@@ -184,9 +184,18 @@ void UPeriodicBoardSubsystem::OnGetPeriodicRankingsComplete(bool bWasSuccessful,
                     LeaderboardMember->GetDisplayName() :
                     FText::Format(DEFAULT_LEADERBOARD_DISPLAY_NAME, FText::FromString(Row.NickName.Left(5))).ToString();
 
-                // Get the member's stat value. The stat key is always "Point".
-                float Score;
-                Row.Columns[FName("Point")].GetValue(Score);
+                // Get the member's stat value.
+                float Score = 0;
+                if (Row.Columns.Contains(FName("Cycle_Point")))
+                {
+                    // The stat key is "Cycle_Point" if it was retrieved from FOnlineLeaderboardAccelByte::ReadLeaderboardCycleAroundRank().
+                    Row.Columns[FName("Cycle_Point")].GetValue(Score);
+                }
+                else if (Row.Columns.Contains(FName("Point")))
+                {
+                    // The stat key is "Point" if it was retrieved from FOnlineLeaderboardAccelByte::ReadLeaderboardsCycle()
+                    Row.Columns[FName("Point")].GetValue(Score);
+                }
 
                 // Add a new ranking object.
                 ULeaderboardRank* NewRanking = NewObject<ULeaderboardRank>();

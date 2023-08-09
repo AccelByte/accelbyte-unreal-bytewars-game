@@ -37,6 +37,7 @@ public:
 	 */
 	void GetPlayerPeriodicRanking(const APlayerController* PC, const FString& LeaderboardCode, const FString& CycleId, const FOnGetLeaderboardRankingComplete& OnComplete = FOnGetLeaderboardRankingComplete());
 
+protected:
 	/**
 	 * @brief Callback when get rankings of a periodic leaderboard is complete.
 	 * @param bWasSuccessful Whether the process was successful or not.
@@ -49,6 +50,7 @@ public:
 public:
 	void Initialize(FSubsystemCollectionBase& Collection) override;
 
+protected:
 	FUniqueNetIdPtr GetUniqueNetIdFromPlayerController(const APlayerController* PC) const;
 	int32 GetLocalUserNumFromPlayerController(const APlayerController* PC) const;
 

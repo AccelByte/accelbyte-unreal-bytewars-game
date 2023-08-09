@@ -29,6 +29,7 @@ protected:
 public:
 	void Initialize(FSubsystemCollectionBase& Collection) override;
 
+protected:
 	FUniqueNetIdPtr GetUniqueNetIdFromPlayerController(const APlayerController* PC) const;
 	int32 GetLocalUserNumFromPlayerController(const APlayerController* PC) const;
 

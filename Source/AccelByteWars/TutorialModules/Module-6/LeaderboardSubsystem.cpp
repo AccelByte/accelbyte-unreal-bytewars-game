@@ -184,9 +184,18 @@ void ULeaderboardSubsystem::OnGetRankingsComplete(bool bWasSuccessful, const int
                     LeaderboardMember->GetDisplayName() : 
                     FText::Format(DEFAULT_LEADERBOARD_DISPLAY_NAME, FText::FromString(Row.NickName.Left(5))).ToString();
 
-                // Get the member's stat value. The stat key is always "Point".
-                float Score;
-                Row.Columns[FName("Point")].GetValue(Score);
+                // Get the member's stat value.
+                float Score = 0;
+                if (Row.Columns.Contains(FName("AllTime_Point")))
+                {
+                    // The stat key is "AllTime_Point" if it was retrieved from FOnlineLeaderboardAccelByte::ReadLeaderboardsAroundRank().
+                    Row.Columns[FName("AllTime_Point")].GetValue(Score);
+                }
+                else if (Row.Columns.Contains(FName("Point")))
+                {
+                    // The stat key is "Point" if it was retrieved from FOnlineLeaderboardAccelByte::ReadLeaderboards()
+                    Row.Columns[FName("Point")].GetValue(Score);
+                }
 
                 // Add a new ranking object.
                 ULeaderboardRank* NewRanking = NewObject<ULeaderboardRank>();

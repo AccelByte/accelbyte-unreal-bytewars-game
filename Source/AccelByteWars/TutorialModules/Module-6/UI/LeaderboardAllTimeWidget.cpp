@@ -83,14 +83,8 @@ void ULeaderboardAllTimeWidget::GetPlayerRanking()
 		LeaderboardCode,
 		FOnGetLeaderboardRankingComplete::CreateWeakLambda(this, [this](bool bWasSuccessful, const TArray<ULeaderboardRank*> Rankings)
 		{
-			if (!bWasSuccessful)
-			{
-				WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::NoEntry);
-				return;
-			}
-
 			// Get and display the logged-in player's rank.
-			DisplayPlayerRank(Rankings.IsEmpty() ? nullptr : Rankings[0]);
+			DisplayPlayerRank((!bWasSuccessful || Rankings.IsEmpty()) ? nullptr : Rankings[0]);
 
 			// Display the rankings if it is not empty.
 			WidgetList->ChangeWidgetListState(WidgetList->GetListView()->GetNumItems() <= 0 ? EAccelByteWarsWidgetListState::NoEntry : EAccelByteWarsWidgetListState::EntryLoaded);
@@ -101,10 +95,11 @@ void ULeaderboardAllTimeWidget::GetPlayerRanking()
 void ULeaderboardAllTimeWidget::DisplayPlayerRank(const ULeaderboardRank* PlayerRank)
 {
 	// Display player rank information.
+	const bool bIsRanked = (PlayerRank && PlayerRank->Rank > 0);
 	ULeaderboardRank* PlayerRankToDisplay = NewObject<ULeaderboardRank>();
-	PlayerRankToDisplay->DisplayName = PlayerRank ? RANKED_MESSAGE.ToString() : UNRANKED_MESSAGE.ToString();
-	PlayerRankToDisplay->Rank = PlayerRank ? PlayerRank->Rank : -1;
-	PlayerRankToDisplay->Score = PlayerRank ? PlayerRank->Score : -1;
+	PlayerRankToDisplay->DisplayName = bIsRanked ? RANKED_MESSAGE.ToString() : UNRANKED_MESSAGE.ToString();
+	PlayerRankToDisplay->Rank = bIsRanked ? PlayerRank->Rank : -1;
+	PlayerRankToDisplay->Score = bIsRanked ? PlayerRank->Score : -1;
 
 	PlayerRankPanel->SetLeaderboardRank(PlayerRankToDisplay);
 	PlayerRankPanel->SetVisibility(ESlateVisibility::HitTestInvisible);

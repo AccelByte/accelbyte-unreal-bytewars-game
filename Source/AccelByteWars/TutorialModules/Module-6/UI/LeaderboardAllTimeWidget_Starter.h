@@ -17,11 +17,12 @@ class ACCELBYTEWARS_API ULeaderboardAllTimeWidget_Starter : public UAccelByteWar
 {
 	GENERATED_BODY()
 	
-protected:
 #pragma region Module.6 Function Declarations
-	// TODO: Add your public Module.6 function declarations here.
+protected:
+	// TODO: Add your protected Module.6 function declarations here.
 #pragma endregion
 
+protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeOnActivated() override;
 

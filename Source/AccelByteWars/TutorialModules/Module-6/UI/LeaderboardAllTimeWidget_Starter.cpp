@@ -27,9 +27,8 @@ void ULeaderboardAllTimeWidget_Starter::NativeOnActivated()
 	WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::NoEntry);
 
 	// TODO: Call functionalities to get and display leaderboard rankings.
-	WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::NoEntry);
 }
 
 #pragma region Module.6 Function Declarations
-// TODO: Add your public Module.6 function definitions here.
+// TODO: Add your Module.6 function definitions here.
 #pragma endregion

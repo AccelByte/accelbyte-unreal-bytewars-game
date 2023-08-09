@@ -21,11 +21,14 @@ class ACCELBYTEWARS_API ULeaderboardSubsystem_Starter : public UTutorialModuleSu
 #pragma region Module.6 Function Declarations
 public:
 	// TODO: Add your public Module.6 function declarations here.
+protected:
+	// TODO: Add your protected Module.6 function declarations here.
 #pragma endregion
 
 public:
 	void Initialize(FSubsystemCollectionBase& Collection) override;
 
+protected:
 	FUniqueNetIdPtr GetUniqueNetIdFromPlayerController(const APlayerController* PC) const;
 	int32 GetLocalUserNumFromPlayerController(const APlayerController* PC) const;
 

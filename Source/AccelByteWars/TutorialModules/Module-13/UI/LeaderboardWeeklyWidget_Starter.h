@@ -17,8 +17,8 @@ class ACCELBYTEWARS_API ULeaderboardWeeklyWidget_Starter : public UAccelByteWars
 {
 	GENERATED_BODY()
 
-protected:
 #pragma region Module.13 Function Declarations
+protected:
 	// TODO: Add your protected Module.13 function declarations here.
 #pragma endregion
 
