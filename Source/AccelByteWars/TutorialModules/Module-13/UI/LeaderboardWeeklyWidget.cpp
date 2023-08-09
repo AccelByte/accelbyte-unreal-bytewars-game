@@ -2,24 +2,24 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-#include "TutorialModules/Module-6/UI/LeaderboardAllTimeWidget.h"
+#include "TutorialModules/Module-13/UI/LeaderboardWeeklyWidget.h"
 #include "TutorialModules/Module-6/UI/LeaderboardsWidget.h"
 #include "TutorialModules/Module-6/UI/LeaderboardWidgetEntry.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/Components/AccelByteWarsWidgetList.h"
 
-void ULeaderboardAllTimeWidget::NativeConstruct()
+void ULeaderboardWeeklyWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
 	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
 	ensure(GameInstance);
 
-	LeaderboardSubsystem = GameInstance->GetSubsystem<ULeaderboardSubsystem>();
-	ensure(LeaderboardSubsystem);
+	PeriodicLeaderboardSubsystem = GameInstance->GetSubsystem<UPeriodicBoardSubsystem>();
+	ensure(PeriodicLeaderboardSubsystem);
 }
 
-void ULeaderboardAllTimeWidget::NativeOnActivated()
+void ULeaderboardWeeklyWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
@@ -29,70 +29,75 @@ void ULeaderboardAllTimeWidget::NativeOnActivated()
 	// Set leaderboard code based on board-unreal-highestscore-{gamemode} format. 
 	LeaderboardCode = FString::Printf(TEXT("board-unreal-highestscore-%s"), *ULeaderboardsWidget::GetLeaderboardGameMode());
 
-	// Get leaderboard rankings.
+	// Set cycle id to the weekly leaderboard’s cycle id.
+	CycleId = FString("55c5b1d5a4e14eaba45477cd70de9c15");
+
+	// Get leaderboard weekly rankings.
 	WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::NoEntry);
-	GetRankings();
+	GetWeeklyRankings();
 }
 
-void ULeaderboardAllTimeWidget::GetRankings()
+void ULeaderboardWeeklyWidget::GetWeeklyRankings()
 {
 	FUniqueNetIdRepl PlayerNetId = GetOwningPlayer()->GetLocalPlayer()->GetPreferredUniqueNetId();
-	if (!PlayerNetId.IsValid()) 
+	if (!PlayerNetId.IsValid())
 	{
 		return;
 	}
 
 	WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::LoadingEntry);
 
-	LeaderboardSubsystem->GetRankings(
-		GetOwningPlayer(), 
+	PeriodicLeaderboardSubsystem->GetPeriodicRankings(
+		GetOwningPlayer(),
 		LeaderboardCode,
+		CycleId,
 		ResultLimit,
 		FOnGetLeaderboardRankingComplete::CreateWeakLambda(this, [this, PlayerNetId](bool bWasSuccessful, const TArray<ULeaderboardRank*> Rankings)
 		{
-			if (!bWasSuccessful) 
+			if (!bWasSuccessful)
 			{
 				WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::NoEntry);
 				return;
 			}
 
-			// Add rankings to the leaderboard ranking list.
+			// Add rankings to the leaderboard weekly ranking list.
 			WidgetList->GetListView()->SetListItems(Rankings);
 
-			// Get the logged-in player's rank if it is not included in the leaderboard.
+			// Get the logged-in player's weekly rank if it is not included in the leaderboard.
 			const TArray<ULeaderboardRank*> FilteredRank = Rankings.FilterByPredicate([PlayerNetId](const ULeaderboardRank* Temp) { return Temp && Temp->UserId == PlayerNetId; });
 			const ULeaderboardRank* PlayerRank = FilteredRank.IsEmpty() ? nullptr : FilteredRank[0];
 			if (!PlayerRank)
-			{ 
-				GetPlayerRanking();
-			}
-			// Display the rankings if it is not empty.
-			else 
 			{
-				DisplayPlayerRank(PlayerRank);
+				GetPlayerWeeklyRanking();
+			}
+			// Display the weekly rankings if it is not empty.
+			else
+			{
+				DisplayPlayerWeeklyRank(PlayerRank);
 				WidgetList->ChangeWidgetListState(WidgetList->GetListView()->GetNumItems() <= 0 ? EAccelByteWarsWidgetListState::NoEntry : EAccelByteWarsWidgetListState::EntryLoaded);
 			}
 		}
 	));
 }
 
-void ULeaderboardAllTimeWidget::GetPlayerRanking()
+void ULeaderboardWeeklyWidget::GetPlayerWeeklyRanking()
 {
-	LeaderboardSubsystem->GetPlayerRanking(
+	PeriodicLeaderboardSubsystem->GetPlayerPeriodicRanking(
 		GetOwningPlayer(),
 		LeaderboardCode,
+		CycleId,
 		FOnGetLeaderboardRankingComplete::CreateWeakLambda(this, [this](bool bWasSuccessful, const TArray<ULeaderboardRank*> Rankings)
 		{
-			// Get and display the logged-in player's rank.
-			DisplayPlayerRank((!bWasSuccessful || Rankings.IsEmpty()) ? nullptr : Rankings[0]);
+			// Get and display the logged-in player's weekly rank.
+			DisplayPlayerWeeklyRank((!bWasSuccessful || Rankings.IsEmpty()) ? nullptr : Rankings[0]);
 
-			// Display the rankings if it is not empty.
+			// Display the weekly rankings if it is not empty.
 			WidgetList->ChangeWidgetListState(WidgetList->GetListView()->GetNumItems() <= 0 ? EAccelByteWarsWidgetListState::NoEntry : EAccelByteWarsWidgetListState::EntryLoaded);
 		}
 	));
 }
 
-void ULeaderboardAllTimeWidget::DisplayPlayerRank(const ULeaderboardRank* PlayerRank)
+void ULeaderboardWeeklyWidget::DisplayPlayerWeeklyRank(const ULeaderboardRank* PlayerRank)
 {
 	// Display player rank information.
 	const bool bIsRanked = (PlayerRank && PlayerRank->Rank > 0);

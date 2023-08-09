@@ -23,12 +23,12 @@ void ULeaderboardWidgetEntry::NativeOnListItemObjectSet(UObject* ListItemObject)
 
 	// Display the player's rank. If no rank, display it as #?.
 	Tb_Rank->SetText(FText::FromString(FString::Printf(TEXT("#%s"), 
-		LeaderboardRank->Rank < 0 ? TEXT("?") : *FString::FromInt(LeaderboardRank->Rank))));
+		LeaderboardRank->Rank <= 0 ? TEXT("?") : *FString::FromInt(LeaderboardRank->Rank))));
 
 	// Display the player's display name.
 	Tb_DisplayName->SetText(FText::FromString(LeaderboardRank->DisplayName));
 
 	// Display the player's score. If no score, display it as empty.
 	Tb_Score->SetText(FText::FromString(FString::Printf(TEXT("%s"),
-		LeaderboardRank->Score < 0 ? TEXT("") : *FString::FromInt((int32)LeaderboardRank->Score))));
+		LeaderboardRank->Score <= 0 ? TEXT("") : *FString::FromInt((int32)LeaderboardRank->Score))));
 }

@@ -9,20 +9,21 @@
 #include "OnlineSubsystemAccelByte.h"
 #include "OnlineUserInterfaceAccelByte.h"
 #include "OnlineLeaderboardInterfaceAccelByte.h"
-#include "TutorialModules/Module-6/LeaderboardEssentialsLog.h"
 #include "TutorialModules/Module-6/LeaderboardEssentialsModels.h"
-#include "LeaderboardSubsystem_Starter.generated.h"
+#include "TutorialModules/Module-13/PeriodicLeaderboardLog.h"
+#include "PeriodicBoardSubsystem_Starter.generated.h"
 
 UCLASS()
-class ACCELBYTEWARS_API ULeaderboardSubsystem_Starter : public UTutorialModuleSubsystem
+class ACCELBYTEWARS_API UPeriodicBoardSubsystem_Starter : public UTutorialModuleSubsystem
 {
 	GENERATED_BODY()
 	
-#pragma region Module.6 Function Declarations
+#pragma region Module.13 Function Declarations
 public:
-	// TODO: Add your public Module.6 function declarations here.
+	// TODO: Add your public Module.13 function declarations here.
+
 protected:
-	// TODO: Add your protected Module.6 function declarations here.
+	// TODO: Add your protected Module.13 function declarations here.
 #pragma endregion
 
 public:
