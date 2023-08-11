@@ -201,11 +201,58 @@ void UAccelByteWarsAssetManager::RemoveAssetFromCache(const FPrimaryAssetId& Ass
 
 void UAccelByteWarsAssetManager::TutorialModuleOverride()
 {
-	// Get values from DefaultEngine.ini
-	TArray<FString> ModuleOverrides;
-	GConfig->GetArray(TEXT("AccelByteTutorialModules"), TEXT("ForcedEnabledModules"), ModuleOverrides, GEngineIni);
+	// Get module override from launch parameters.
+	TArray<FString> CmdModuleOverrides;
+	FString CmdArgs = FCommandLine::Get();
+	if (CmdArgs.Contains(TEXT("-ENABLED_MODULES="), ESearchCase::IgnoreCase))
+	{
+		FString CmdModuleOverridesStr;
+		FParse::Value(FCommandLine::Get(), TEXT("-ENABLED_MODULES="), CmdModuleOverridesStr, false);
+
+		// Extract the module overrides.
+		CmdModuleOverridesStr = CmdModuleOverridesStr.Replace(TEXT(" "), TEXT(""));
+		CmdModuleOverridesStr = CmdModuleOverridesStr.Replace(TEXT("["), TEXT(""));
+		CmdModuleOverridesStr = CmdModuleOverridesStr.Replace(TEXT("]"), TEXT(""));
+		CmdModuleOverridesStr.ParseIntoArray(CmdModuleOverrides, TEXT(","));
+
+		// Module name must follow TutorialModule:MODULENAME format.
+		const FString ModulePrefix = TEXT("TutorialModule:");
+		for (FString& CmdModuleOverride : CmdModuleOverrides)
+		{
+			CmdModuleOverride.RemoveFromStart(ModulePrefix);
+			CmdModuleOverride = FString::Printf(TEXT("%s%s"), *ModulePrefix, *CmdModuleOverride.ToUpper());
+		}
+	}
+
+	// Get module override from DefaultEngine.ini
+	TArray<FString> IniModuleOverrides;
+	GConfig->GetArray(TEXT("AccelByteTutorialModules"), TEXT("ForcedEnabledModules"), IniModuleOverrides, GEngineIni);
+
+	// Combine module override from launch parameters and DefaultEngine.ini
+	TSet<FString> ModuleOverrides;
+	ModuleOverrides.Append(CmdModuleOverrides);
+	ModuleOverrides.Append(IniModuleOverrides);
+
+	// Get disable other module override (priority: launch param -> DefaultEngine.ini)
 	bool bDisableOtherModules = false;
-	GConfig->GetBool(TEXT("AccelByteTutorialModules"), TEXT("ForceDisabledOtherModules"), bDisableOtherModules, GEngineIni);
+	if (CmdArgs.Contains(TEXT("-DISABLE_OTHER_MODULES="), ESearchCase::IgnoreCase))
+	{
+		FString CmdDisableOtherModulesStr;
+		FParse::Value(FCommandLine::Get(), TEXT("-DISABLE_OTHER_MODULES="), CmdDisableOtherModulesStr);
+
+		if (CmdDisableOtherModulesStr.Equals(TEXT("TRUE"), ESearchCase::IgnoreCase))
+		{
+			bDisableOtherModules = true;
+		}
+		else if (CmdDisableOtherModulesStr.Equals(TEXT("FALSE"), ESearchCase::IgnoreCase))
+		{
+			bDisableOtherModules = false;
+		}
+	}
+	else
+	{
+		GConfig->GetBool(TEXT("AccelByteTutorialModules"), TEXT("ForceDisabledOtherModules"), bDisableOtherModules, GEngineIni);
+	}
 
 	// Consolidate all modules needed to be activated
 	TArray<FString> IdsToBeOverriden;
