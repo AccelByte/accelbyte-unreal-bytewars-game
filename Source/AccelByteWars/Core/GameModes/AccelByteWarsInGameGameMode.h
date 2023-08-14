@@ -9,6 +9,8 @@
 #include "Core/GameStates/AccelByteWarsInGameGameState.h"
 #include "AccelByteWarsInGameGameMode.generated.h"
 
+DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnPlayerDieDelegate, const APlayerController* /*Player*/, const AActor* /*PlayerActor*/, const APlayerController* /*Killer*/);
+
 UCLASS()
 class ACCELBYTEWARS_API AAccelByteWarsInGameGameMode : public AAccelByteWarsGameMode
 {
@@ -16,6 +18,7 @@ class ACCELBYTEWARS_API AAccelByteWarsInGameGameMode : public AAccelByteWarsGame
 
 public:
 	static inline FSimpleMulticastDelegate OnGameEndsDelegate;
+	static inline FOnPlayerDieDelegate OnPlayerDieDelegate;
 
 	//~AGameModeBase overridden functions
 	virtual void InitGameState() override;
@@ -51,6 +54,13 @@ public:
 		UAccelByteWarsGameplayObjectComponent* Ship,
 		const float MissileScore,
 		APlayerController* SourcePlayerController);
+
+	/**
+	 * @brief Increase the number of attempt the player was almost got killed in a single-lifetime.
+	 * @param TargetPlayer The player that was almost got killed.
+	 */
+	UFUNCTION(BlueprintCallable)
+	void IncreasePlayerKilledAttempt(const APlayerController* TargetPlayer);
 
 private:
 	UFUNCTION()

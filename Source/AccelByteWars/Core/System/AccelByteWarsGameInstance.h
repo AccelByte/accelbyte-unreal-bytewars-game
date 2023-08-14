@@ -47,6 +47,10 @@ public:
 	UPROPERTY(BlueprintReadWrite)
 	int32 NumLivesLeft = 1;
 
+	// Number of attempt the player was almost got killed in a single-lifetime
+	UPROPERTY(BlueprintReadWrite)
+	int32 NumKilledAttemptInSingleLifetime = 0;
+
 	bool operator==(const FGameplayPlayerData& Other) const
 	{
 		return UniqueNetId.IsValid() ? UniqueNetId == Other.UniqueNetId : ControllerId == Other.ControllerId;

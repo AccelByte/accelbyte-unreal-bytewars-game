@@ -201,9 +201,11 @@ int32 AAccelByteWarsInGameGameMode::DecreasePlayerLife(APlayerState* PlayerState
 
 	// decrease life num in PlayerState
 	AccelByteWarsPlayerState->NumLivesLeft -= Decrement;
+	AccelByteWarsPlayerState->NumKilledAttemptInSingleLifetime = 0;
 
 	// match life num in GameState to PlayerState
 	PlayerData->NumLivesLeft = AccelByteWarsPlayerState->NumLivesLeft;
+	PlayerData->NumKilledAttemptInSingleLifetime = AccelByteWarsPlayerState->NumKilledAttemptInSingleLifetime;
 
 	return AccelByteWarsPlayerState->NumLivesLeft;
 }
@@ -239,6 +241,9 @@ void AAccelByteWarsInGameGameMode::OnShipDestroyed(
 
 	AAccelByteWarsPlayerState* ShipPlayerState = Cast<AAccelByteWarsPlayerState>(ShipPC->PlayerState);
 	NULLPTR_CHECK(ShipPlayerState);
+
+	// Broadcast on-player die event.
+	OnPlayerDieDelegate.Broadcast(ShipPC, ShipActor, SourcePlayerController);
 
 	// FX logic
 	OnShipDestroyedFX(SourcePlayerController, ShipOwner->GetTransform(), ShipPlayerState);
@@ -288,6 +293,20 @@ void AAccelByteWarsInGameGameMode::OnShipDestroyed(
 			return;
 		}
 	}
+}
+
+void AAccelByteWarsInGameGameMode::IncreasePlayerKilledAttempt(const APlayerController* TargetPlayer)
+{
+	NULLPTR_CHECK(TargetPlayer);
+
+	AAccelByteWarsPlayerState* TargetPlayerState = Cast<AAccelByteWarsPlayerState>(TargetPlayer->PlayerState);
+	NULLPTR_CHECK(TargetPlayerState);
+
+	FGameplayPlayerData* PlayerData = ABInGameGameState->GetPlayerDataById(TargetPlayerState->GetUniqueId(), GetControllerId(TargetPlayerState));
+	NULLPTR_CHECK(PlayerData);
+
+	TargetPlayerState->NumKilledAttemptInSingleLifetime++;
+	PlayerData->NumKilledAttemptInSingleLifetime = TargetPlayerState->NumKilledAttemptInSingleLifetime;
 }
 
 void AAccelByteWarsInGameGameMode::RemoveFromActiveGameObjects(AActor* DestroyedActor)
