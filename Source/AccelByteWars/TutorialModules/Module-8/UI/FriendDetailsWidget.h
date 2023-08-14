@@ -10,7 +10,7 @@
 #include "FriendDetailsWidget.generated.h"
 
 class UTextBlock;
-class UBorder;
+class UImage;
 
 UCLASS(Abstract)
 class ACCELBYTEWARS_API UFriendDetailsWidget : public UAccelByteWarsActivatableWidget
@@ -20,11 +20,16 @@ class ACCELBYTEWARS_API UFriendDetailsWidget : public UAccelByteWarsActivatableW
 public:
 	void InitData(UFriendData* FriendData);
 
+	UFriendData* GetCachedFriendData() const
+	{ 
+		return CachedFriendData; 
+	}
+
 protected:
 	UFriendData* CachedFriendData;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
-	UBorder* Img_Avatar;
+	UImage* Img_Avatar;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Tb_DisplayName;

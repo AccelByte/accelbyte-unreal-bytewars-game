@@ -3,13 +3,11 @@
 // and restrictions contact your company contract manager.
 
 #include "TutorialModules/Module-8/UI/FriendWidgetEntry_Starter.h"
-#include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/Utilities/AccelByteWarsUtility.h"
-#include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "CommonButtonBase.h"
 #include "Components/WidgetSwitcher.h"
 #include "Components/TextBlock.h"
-#include "Components/Border.h"
+#include "Components/Image.h"
 
 #define LOCTEXT_NAMESPACE "AccelByteWars"
 
@@ -17,14 +15,13 @@ void UFriendWidgetEntry_Starter::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
-	ensure(GameInstance);
-
-	PromptSubsystem = GameInstance->GetSubsystem<UPromptSubsystem>();
-	ensure(PromptSubsystem);
-
-	FriendsSubsystem = GameInstance->GetSubsystem<UFriendsSubsystem_Starter>();
+	FriendsSubsystem = GetGameInstance()->GetSubsystem<UFriendsSubsystem_Starter>();
 	ensure(FriendsSubsystem);
+
+	Btn_Invite->OnClicked().Clear();
+	Btn_Accept->OnClicked().Clear();
+	Btn_Reject->OnClicked().Clear();
+	Btn_Cancel->OnClicked().Clear();
 
 	Btn_Invite->OnClicked().AddUObject(this, &ThisClass::OnInviteButtonClicked);
 	Btn_Accept->OnClicked().AddUObject(this, &ThisClass::OnAcceptButtonClicked);
@@ -54,7 +51,7 @@ void UFriendWidgetEntry_Starter::NativeOnListItemObjectSet(UObject* ListItemObje
 	// Store default brush to be used to reset the avatar brush if needed.
 	if (!DefaultAvatarBrush.GetResourceObject())
 	{
-		DefaultAvatarBrush = Img_Avatar->Background;
+		DefaultAvatarBrush = Img_Avatar->Brush;
 	}
 
 	// Display avatar image.
@@ -65,7 +62,6 @@ void UFriendWidgetEntry_Starter::NativeOnListItemObjectSet(UObject* ListItemObje
 	FCacheBrush CacheAvatarBrush = AccelByteWarsUtility::GetImageFromCache(AvatarId);
 	if (CacheAvatarBrush.IsValid())
 	{
-		Img_Avatar->SetBrushColor(FLinearColor::White);
 		Img_Avatar->SetBrush(*CacheAvatarBrush.Get());
 	}
 	// Set avatar image from URL if it is not exists in cache.
@@ -76,7 +72,6 @@ void UFriendWidgetEntry_Starter::NativeOnListItemObjectSet(UObject* ListItemObje
 			AvatarId,
 			FOnImageReceived::CreateWeakLambda(this, [this](const FCacheBrush ImageResult)
 			{
-				Img_Avatar->SetBrushColor(FLinearColor::White);
 				Img_Avatar->SetBrush(*ImageResult.Get());
 			})
 		);

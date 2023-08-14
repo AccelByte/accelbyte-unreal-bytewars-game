@@ -45,15 +45,26 @@ void UFriendsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
     ensure(PromptSubsystem);
 }
 
-FUniqueNetIdPtr UFriendsSubsystem::GetPlayerUniqueNetId(const APlayerController* PC) const
+void UFriendsSubsystem::Deinitialize()
 {
-    if (!ensure(PC))
+    Super::Deinitialize();
+
+    // Clear on friends changed delegate.
+    for (auto& DelegateHandle : OnFriendsChangeDelegateHandles)
+    {
+        FriendsInterface->ClearOnFriendsChangeDelegate_Handle(DelegateHandle.Key, DelegateHandle.Value);
+    }
+}
+
+FUniqueNetIdPtr UFriendsSubsystem::GetUniqueNetIdFromPlayerController(const APlayerController* PC) const
+{
+    if (!PC)
     {
         return nullptr;
     }
 
     ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
-    if (!ensure(LocalPlayer))
+    if (!LocalPlayer)
     {
         return nullptr;
     }
@@ -61,9 +72,14 @@ FUniqueNetIdPtr UFriendsSubsystem::GetPlayerUniqueNetId(const APlayerController*
     return LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId();
 }
 
-int32 UFriendsSubsystem::GetPlayerControllerId(const APlayerController* PC) const
+int32 UFriendsSubsystem::GetLocalUserNumFromPlayerController(const APlayerController* PC) const
 {
     int32 LocalUserNum = 0;
+
+    if (!PC)
+    {
+        return LocalUserNum;
+    }
 
     const ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
     if (LocalPlayer)
@@ -85,7 +101,7 @@ void UFriendsSubsystem::GetCacheFriendList(const APlayerController* PC, const FO
         return;
     }
 
-    const int32 LocalUserNum = GetPlayerControllerId(PC);
+    const int32 LocalUserNum = GetLocalUserNumFromPlayerController(PC);
     
     // Try to get cached friend list first.
     TArray<TSharedRef<FOnlineFriend>> CachedFriendList;
@@ -149,8 +165,8 @@ void UFriendsSubsystem::FindFriend(const APlayerController* PC, const FString& I
         return;
     }
     
-    const int32 LocalUserNum = GetPlayerControllerId(PC);
-    const FUniqueNetIdPtr LocalPlayerId = GetPlayerUniqueNetId(PC);
+    const int32 LocalUserNum = GetLocalUserNumFromPlayerController(PC);
+    const FUniqueNetIdPtr LocalPlayerId = GetUniqueNetIdFromPlayerController(PC);
     if (!ensure(LocalPlayerId.IsValid()))
     {
         UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Cannot find friends. LocalPlayer NetId is not valid."));
@@ -228,7 +244,7 @@ void UFriendsSubsystem::SendFriendRequest(const APlayerController* PC, const FUn
 
     PromptSubsystem->ShowLoading(SEND_FRIEND_REQUEST_MESSAGE);
 
-    const int32 LocalUserNum = GetPlayerControllerId(PC);
+    const int32 LocalUserNum = GetLocalUserNumFromPlayerController(PC);
     FriendsInterface->SendInvite(LocalUserNum, *FriendUserId.GetUniqueNetId().Get(), TEXT(""), FOnSendInviteComplete::CreateUObject(this, &ThisClass::OnSendFriendRequestComplete, OnComplete));
 }
 
@@ -262,7 +278,7 @@ void UFriendsSubsystem::BindOnCachedFriendsDataUpdated(const APlayerController* 
 {
     ensure(FriendsInterface);
 
-    const int32 LocalUserNum = GetPlayerControllerId(PC);
+    const int32 LocalUserNum = GetLocalUserNumFromPlayerController(PC);
 
     // Add on friends changed delegate.
     OnFriendsChangeDelegateHandles.Add(LocalUserNum, FriendsInterface->AddOnFriendsChangeDelegate_Handle(LocalUserNum, FOnFriendsChangeDelegate::CreateWeakLambda(this, [Delegate]() { Delegate.ExecuteIfBound(); })));
@@ -272,7 +288,7 @@ void UFriendsSubsystem::UnbindOnCachedFriendsDataUpdated(const APlayerController
 {
     ensure(FriendsInterface);
 
-    const int32 LocalUserNum = GetPlayerControllerId(PC);
+    const int32 LocalUserNum = GetLocalUserNumFromPlayerController(PC);
 
     // Clear on friends changed delegate.
     FDelegateHandle TempHandle = OnFriendsChangeDelegateHandles[LocalUserNum];
@@ -360,7 +376,7 @@ void UFriendsSubsystem::AcceptFriendRequest(const APlayerController* PC, const F
 
     PromptSubsystem->ShowLoading(ACCEPT_FRIEND_REQUEST_MESSAGE);
 
-    const int32 LocalUserNum = GetPlayerControllerId(PC);
+    const int32 LocalUserNum = GetLocalUserNumFromPlayerController(PC);
     FriendsInterface->AcceptInvite(LocalUserNum, FriendUserId.GetUniqueNetId().ToSharedRef().Get(), TEXT(""), FOnAcceptInviteComplete::CreateUObject(this, &ThisClass::OnAcceptFriendRequestComplete, OnComplete));
 }
 
@@ -394,7 +410,7 @@ void UFriendsSubsystem::RejectFriendRequest(const APlayerController* PC, const F
 
     PromptSubsystem->ShowLoading(REJECT_FRIEND_REQUEST_MESSAGE);
 
-    const int32 LocalUserNum = GetPlayerControllerId(PC);
+    const int32 LocalUserNum = GetLocalUserNumFromPlayerController(PC);
     OnRejectFriendRequestCompleteDelegateHandle = FriendsInterface->AddOnRejectInviteCompleteDelegate_Handle(LocalUserNum, FOnRejectInviteCompleteDelegate::CreateUObject(this, &ThisClass::OnRejectFriendRequestComplete, OnComplete));
     FriendsInterface->RejectInvite(LocalUserNum, FriendUserId.GetUniqueNetId().ToSharedRef().Get(), TEXT(""));
 }
@@ -421,37 +437,37 @@ void UFriendsSubsystem::OnRejectFriendRequestComplete(int32 LocalUserNum, bool b
     }
 }
 
-void UFriendsSubsystem::RemoveFriend(const APlayerController* PC, const FUniqueNetIdRepl FriendUserId, const FOnRemoveFriendComplete& OnComplete)
+void UFriendsSubsystem::CancelFriendRequest(const APlayerController* PC, const FUniqueNetIdRepl FriendUserId, const FOnCancelFriendRequestComplete& OnComplete)
 {
     if (!ensure(FriendsInterface) || !ensure(PromptSubsystem))
     {
-        UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Cannot remove friend to unfriend or cancel friend request. Friends Interface or Prompt Subsystem is not valid."));
+        UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Cannot cancel friend request. Friends Interface or Prompt Subsystem is not valid."));
         return;
     }
 
-    PromptSubsystem->ShowLoading(REMOVE_FRIEND_MESSAGE);
+    PromptSubsystem->ShowLoading(CANCEL_FRIEND_REQUEST_MESSAGE);
 
-    const int32 LocalUserNum = GetPlayerControllerId(PC);
-    OnRemoveFriendCompleteDelegateHandle = FriendsInterface->AddOnDeleteFriendCompleteDelegate_Handle(LocalUserNum, FOnDeleteFriendCompleteDelegate::CreateUObject(this, &ThisClass::OnRemoveFriendComplete, OnComplete));
+    const int32 LocalUserNum = GetLocalUserNumFromPlayerController(PC);
+    OnCancelFriendRequestCompleteDelegateHandle = FriendsInterface->AddOnDeleteFriendCompleteDelegate_Handle(LocalUserNum, FOnDeleteFriendCompleteDelegate::CreateUObject(this, &ThisClass::OnCancelFriendRequestComplete, OnComplete));
     FriendsInterface->DeleteFriend(LocalUserNum, FriendUserId.GetUniqueNetId().ToSharedRef().Get(), TEXT(""));
 }
 
-void UFriendsSubsystem::OnRemoveFriendComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& FriendId, const FString& ListName, const FString& ErrorStr, const FOnRemoveFriendComplete OnComplete)
+void UFriendsSubsystem::OnCancelFriendRequestComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& FriendId, const FString& ListName, const FString& ErrorStr, const FOnCancelFriendRequestComplete OnComplete)
 {
     PromptSubsystem->HideLoading();
 
-    FriendsInterface->ClearOnDeleteFriendCompleteDelegate_Handle(LocalUserNum, OnRemoveFriendCompleteDelegateHandle);
+    FriendsInterface->ClearOnDeleteFriendCompleteDelegate_Handle(LocalUserNum, OnCancelFriendRequestCompleteDelegateHandle);
 
     if (bWasSuccessful)
     {
-        UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Success to remove friend to unfriend or to cancel a friend request."));
+        UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Success to cancel a friend request."));
 
-        PromptSubsystem->ShowMessagePopUp(MESSAGE_PROMPT_TEXT, SUCCESS_REMOVE_FRIEND);
+        PromptSubsystem->ShowMessagePopUp(MESSAGE_PROMPT_TEXT, SUCCESS_CANCEL_FRIEND_REQUEST);
         OnComplete.ExecuteIfBound(true, TEXT(""));
     }
     else
     {
-        UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Failed to remove friend to unfriend or to cancel a friend request. Error: %s"), *ErrorStr);
+        UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Failed to cancel a friend request. Error: %s"), *ErrorStr);
 
         PromptSubsystem->ShowMessagePopUp(ERROR_PROMPT_TEXT, FText::FromString(ErrorStr));
         OnComplete.ExecuteIfBound(false, ErrorStr);

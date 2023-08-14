@@ -6,7 +6,7 @@
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/Utilities/AccelByteWarsUtility.h"
 #include "Components/TextBlock.h"
-#include "Components/Border.h"
+#include "Components/Image.h"
 
 #define LOCTEXT_NAMESPACE "AccelByteWars"
 
@@ -31,7 +31,7 @@ void UFriendDetailsWidget::InitData(UFriendData* FriendData)
 	// Store default brush to be used to reset the avatar brush if needed.
 	if (!DefaultAvatarBrush.GetResourceObject())
 	{
-		DefaultAvatarBrush = Img_Avatar->Background;
+		DefaultAvatarBrush = Img_Avatar->Brush;
 	}
 
 	// Display avatar image.
@@ -42,7 +42,6 @@ void UFriendDetailsWidget::InitData(UFriendData* FriendData)
 	FCacheBrush CacheAvatarBrush = AccelByteWarsUtility::GetImageFromCache(AvatarId);
 	if (CacheAvatarBrush.IsValid())
 	{
-		Img_Avatar->SetBrushColor(FLinearColor::White);
 		Img_Avatar->SetBrush(*CacheAvatarBrush.Get());
 	}
 	// Set avatar image from URL if it is not exists in cache.
@@ -53,7 +52,6 @@ void UFriendDetailsWidget::InitData(UFriendData* FriendData)
 			AvatarId,
 			FOnImageReceived::CreateWeakLambda(this, [this](const FCacheBrush ImageResult)
 			{
-				Img_Avatar->SetBrushColor(FLinearColor::White);
 				Img_Avatar->SetBrush(*ImageResult.Get());
 			})
 		);
