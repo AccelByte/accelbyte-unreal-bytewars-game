@@ -6,6 +6,8 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
+#include "Core/AssetManager/TutorialModules/TutorialModuleUtility.h"
+#include "Core/AssetManager/TutorialModules/TutorialModuleDataAsset.h"
 #include "TutorialModuleSubsystem.generated.h"
 
 class UTutorialModuleDataAsset;
