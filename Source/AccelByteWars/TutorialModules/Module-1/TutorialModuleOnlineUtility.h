@@ -30,5 +30,6 @@ public:
 private:
 	static void CheckForEnvironmentConfigOverride();
 	static ESettingsEnvironment ConvertStringEnvToAccelByteEnv(const FString& EnvironmentStr);
+	static FString ConvertAccelByteEnvToStringEnv(const ESettingsEnvironment& Environment);
 	static ESettingsEnvironment ConvertOSSEnvToAccelByteEnv(const EOnlineEnvironment::Type& Environment);
 };

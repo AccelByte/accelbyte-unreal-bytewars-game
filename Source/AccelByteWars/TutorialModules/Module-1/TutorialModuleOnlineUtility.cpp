@@ -66,12 +66,24 @@ void UTutorialModuleOnlineUtility::CheckForEnvironmentConfigOverride()
     FParse::Value(FCommandLine::Get(), TEXT("-TARGET_ENV="), EnvironmentStr);
     if (!EnvironmentStr.IsEmpty())
     {
-        ESettingsEnvironment ABEnvironment = ConvertStringEnvToAccelByteEnv(EnvironmentStr);
+        // Set AccelByte target environment.
+        const ESettingsEnvironment ABEnvironment = ConvertStringEnvToAccelByteEnv(EnvironmentStr);
         IAccelByteUe4SdkModuleInterface::Get().SetEnvironment(ABEnvironment);
+        
+        // Check current AccelByte target environment.
+        const ESettingsEnvironment CurrentABEnvironment = IAccelByteUe4SdkModuleInterface::Get().GetSettingsEnvironment();
+        if (CurrentABEnvironment != ESettingsEnvironment::Default)
+        {
+            UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Log, TEXT("Target environment is set by launch param to %s"), *ConvertAccelByteEnvToStringEnv(CurrentABEnvironment));
+        }
+        else
+        {
+            UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Cannot set target environment by launch param. Target environment %s is not valid. Fallback to the default environment."), *EnvironmentStr);
+        }
     }
     else
     {
-        UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Cannot change target environment. Desired target environment cannot be found from command line."));
+        UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Cannot set target environment by launch param. Desired target environment cannot be found. Fallback to the default environment."));
     }
 }
 
@@ -92,6 +104,22 @@ ESettingsEnvironment UTutorialModuleOnlineUtility::ConvertStringEnvToAccelByteEn
     else
     {
         return ESettingsEnvironment::Default;
+    }
+}
+
+FString UTutorialModuleOnlineUtility::ConvertAccelByteEnvToStringEnv(const ESettingsEnvironment& Environment)
+{
+    switch(Environment) 
+    {
+        case ESettingsEnvironment::Development:
+            return FString("Development");
+        case ESettingsEnvironment::Certification:
+            return FString("Certification");
+        case ESettingsEnvironment::Production:
+            return FString("Production");
+        case ESettingsEnvironment::Default:
+        default:
+            return FString("Default");
     }
 }
 
