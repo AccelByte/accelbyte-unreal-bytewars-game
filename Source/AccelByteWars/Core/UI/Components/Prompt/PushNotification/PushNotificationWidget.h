@@ -19,14 +19,15 @@ class ACCELBYTEWARS_API UPushNotificationWidget : public UAccelByteWarsActivatab
 	
 public:
 	void PushNotification(UPushNotification* Notification);
+	void RemoveNotification(UPushNotification* Notification);
 	void DismissAllNotifications();
 
 protected:
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
 
-	void OnNotificationLifeTimeEnds(UPushNotification* Notification, FTimerHandle* NotificationTimer);
 	void TryPushPendingNotifications();
+	void OnNotificationLifeTimeEnds(UPushNotification* Notification);
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UListView* Lv_PushNotification;
@@ -40,6 +41,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	uint32 MaxNotificationStack = 5;
 
-	TQueue<UPushNotification*> PendingNotifications;
-	TArray<FTimerHandle*> NotificationTimers;
+	TArray<UPushNotification*> PendingNotifications;
+	TMap<UPushNotification*, FTimerHandle*> NotificationTimers;
 };

@@ -3,10 +3,11 @@
 // and restrictions contact your company contract manager.
 
 #include "Core/UI/Components/Prompt/PushNotification/PushNotificationWidgetEntry.h"
+#include "Core/UI/AccelByteWarsBaseUI.h"
+#include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/Components/AccelByteWarsButtonBase.h"
 #include "Core/UI/Components/AccelByteWarsAsyncImageWidget.h"
 #include "Components/TextBlock.h"
-
 
 void UPushNotificationWidgetEntry::NativeConstruct()
 {
@@ -56,6 +57,7 @@ void UPushNotificationWidgetEntry::NativeOnListItemObjectSet(UObject* ListItemOb
 			continue;
 		}
 
+		ActionButtons[ActionButtonIndex]->SetButtonText(ActionButtonText);
 		ActionButtons[ActionButtonIndex]->SetVisibility(ESlateVisibility::Visible);
 		ActionButtons[ActionButtonIndex]->OnClicked().AddUObject(this, &ThisClass::SubmitActionResult, static_cast<EPushNotificationActionResult>(ActionButtonIndex));
 		ActionButtonIndex++;
@@ -71,4 +73,12 @@ void UPushNotificationWidgetEntry::SubmitActionResult(EPushNotificationActionRes
 
 	Notification->ActionButtonCallback.ExecuteIfBound(ActionButtonResult);
 	Notification->ActionButtonDynamicCallback.ExecuteIfBound(ActionButtonResult);
+
+	if (UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		if (UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->GetBaseUIWidget()))
+		{
+			BaseUIWidget->GetPushNotificationWidget()->RemoveNotification(Notification);
+		}
+	}
 }

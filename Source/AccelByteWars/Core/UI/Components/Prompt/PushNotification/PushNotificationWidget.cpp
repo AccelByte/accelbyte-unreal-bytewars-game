@@ -33,7 +33,7 @@ void UPushNotificationWidget::PushNotification(UPushNotification* Notification)
 	// Mark as pending notification if the max stack is reached.
 	if ((uint32)Lv_PushNotification->GetNumItems() >= MaxNotificationStack)
 	{
-		PendingNotifications.Enqueue(Notification);
+		PendingNotifications.Add(Notification);
 		return;
 	}
 
@@ -47,43 +47,40 @@ void UPushNotificationWidget::PushNotification(UPushNotification* Notification)
 
 	// Start notification lifetime.
 	FTimerHandle TimerHandle;
-	NotificationTimers.Add(&TimerHandle);
+	NotificationTimers.Add(Notification, &TimerHandle);
 
 	// Start notification lifetime.
-	GetWorld()->GetTimerManager().SetTimer(TimerHandle, FTimerDelegate::CreateUObject(this, &ThisClass::OnNotificationLifeTimeEnds, Notification, &TimerHandle), NotificationLifeTime, false);
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle, FTimerDelegate::CreateUObject(this, &ThisClass::OnNotificationLifeTimeEnds, Notification), NotificationLifeTime, false);
 }
 
-void UPushNotificationWidget::OnNotificationLifeTimeEnds(UPushNotification* Notification, FTimerHandle* NotificationTimer)
+void UPushNotificationWidget::RemoveNotification(UPushNotification* Notification)
 {
-	// Remove notification.
-	if (Notification) 
+	// Delete from pending notifications.
+	if (PendingNotifications.Contains(Notification)) 
 	{
-		Lv_PushNotification->RemoveItem(Notification);
+		PendingNotifications.Remove(Notification);
 	}
 
-	// Clear notification timer.
-	if (NotificationTimer)
+	// Delete notification timer.
+	if (NotificationTimers.Contains(Notification)) 
 	{
+		FTimerHandle* NotificationTimer = NotificationTimers[Notification];
 		GetWorld()->GetTimerManager().ClearTimer(*NotificationTimer);
-		NotificationTimers.Remove(NotificationTimer);
+		NotificationTimers.Remove(Notification);
 	}
 
-	// Push pending notification if any.
-	TryPushPendingNotifications();
+	// Delete from notification list.
+	Lv_PushNotification->RemoveItem(Notification);
+
+	// Dismiss the notification if empty.
+	if (PendingNotifications.IsEmpty() && Lv_PushNotification->GetNumItems() <= 0) 
+	{
+		DeactivateWidget();
+	}
 }
 
 void UPushNotificationWidget::TryPushPendingNotifications()
 {
-	// If no notifications left, deactivate the widget.
-	if (!PendingNotifications.Peek())
-	{
-		if (Lv_PushNotification->GetNumItems() <= 0) 
-		{
-			DeactivateWidget();
-		}
-		return;
-	}
-
 	// Push pending notifications.
 	int32 MaxToPush = MaxNotificationStack - Lv_PushNotification->GetNumItems();
 	for (int32 i = 0; i < MaxToPush; i++)
@@ -93,9 +90,15 @@ void UPushNotificationWidget::TryPushPendingNotifications()
 			break;
 		}
 
-		PushNotification(*PendingNotifications.Peek());
-		PendingNotifications.Pop();
+		PushNotification(PendingNotifications[0]);
+		PendingNotifications.RemoveAt(0);
 	}
+}
+
+void UPushNotificationWidget::OnNotificationLifeTimeEnds(UPushNotification* Notification)
+{
+	RemoveNotification(Notification);
+	TryPushPendingNotifications();
 }
 
 void UPushNotificationWidget::DismissAllNotifications()
@@ -104,12 +107,13 @@ void UPushNotificationWidget::DismissAllNotifications()
 	PendingNotifications.Empty();
 
 	// Clear dangling notification timers.
-	for (FTimerHandle* NotificationTimer : NotificationTimers)
+	for (const auto& NotificationTimer : NotificationTimers)
 	{
-		if (NotificationTimer)
+		if (NotificationTimer.Value)
 		{
-			GetWorld()->GetTimerManager().ClearTimer(*NotificationTimer);
+			GetWorld()->GetTimerManager().ClearTimer(*NotificationTimer.Value);
 		}
 	}
+
 	NotificationTimers.Empty();
 }
