@@ -4,8 +4,10 @@
 
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "Core/UI/Components/Prompt/Loading/LoadingWidget.h"
+#include "Core/UI/Components/Prompt/PushNotification/PushNotificationWidget.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
+#include "Core/GameModes/AccelByteWarsMainMenuGameMode.h"
 
 void UPromptSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -87,4 +89,46 @@ void UPromptSubsystem::HideLoading()
 	}
 
 	LoadingWidget->DeactivateWidget();
+}
+
+void UPromptSubsystem::PushNotification(UPushNotification* Notification)
+{
+	// Notification can only be displayed on Main Menu level.
+	if (!Cast<AAccelByteWarsMainMenuGameMode>(GetWorld()->GetAuthGameMode()))
+	{
+		return;
+	}
+
+	UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->GetBaseUIWidget());
+	ensure(BaseUIWidget);
+
+	BaseUIWidget->GetPushNotificationWidget()->PushNotification(Notification);
+}
+
+void UPromptSubsystem::PushNotification(const FString& IconImageURL, const FText Message, const FText ActionButton1, const FText ActionButton2, const FText ActionButton3, FPushNotificationDynamicDelegate ActionButtonCallback)
+{
+	UPushNotification* Notification = NewObject<UPushNotification>();
+	Notification->IconImageURL = IconImageURL;
+	Notification->Message = Message;
+	Notification->ActionButtonTexts.Add(ActionButton1);
+	Notification->ActionButtonTexts.Add(ActionButton2);
+	Notification->ActionButtonTexts.Add(ActionButton3);
+
+	Notification->ActionButtonDynamicCallback = ActionButtonCallback;
+	
+	PushNotification(Notification);
+}
+
+void UPromptSubsystem::PushNotification(const FString& IconImageURL, const FText& Message, const FText& ActionButton1, const FText& ActionButton2, const FText& ActionButton3, FPushNotificationDelegate ActionButtonCallback)
+{
+	UPushNotification* Notification = NewObject<UPushNotification>();
+	Notification->IconImageURL = IconImageURL;
+	Notification->Message = Message;
+	Notification->ActionButtonTexts.Add(ActionButton1);
+	Notification->ActionButtonTexts.Add(ActionButton2);
+	Notification->ActionButtonTexts.Add(ActionButton3);
+
+	Notification->ActionButtonCallback = ActionButtonCallback;
+
+	PushNotification(Notification);
 }
