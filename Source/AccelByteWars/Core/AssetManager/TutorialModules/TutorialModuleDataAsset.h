@@ -10,6 +10,7 @@
 #include "Core/AssetManager/TutorialModules/TutorialModuleUtility.h"
 #include "TutorialModuleDataAsset.generated.h"
 
+class UTutorialModuleOnlineSession;
 class UAccelByteWarsActivatableWidget;
 class UTutorialModuleSubsystem;
 
@@ -52,8 +53,8 @@ public:
 	UFUNCTION(BlueprintPure)
 	TSubclassOf<UTutorialModuleSubsystem> GetTutorialModuleSubsystemClass();
 	
-	bool IsActiveAndDependenciesChecked();
-	bool IsStarterModeActive() { return bIsStarterModeActive; }
+	bool IsActiveAndDependenciesChecked() const;
+	bool IsStarterModeActive() const { return bIsStarterModeActive; }
 
 	void OverridesIsActive(const bool bInIsActive);
 	void ResetOverrides();
@@ -63,6 +64,14 @@ public:
 	FString CodeName;
 
 	static const FPrimaryAssetType TutorialModuleAssetType;
+
+#pragma region "Online Session"
+	UFUNCTION(BlueprintPure)
+	bool GetIsOnlineSessionActivatable() const { return bOnlineSessionModule; }
+
+	UFUNCTION(BlueprintPure)
+	TSubclassOf<UTutorialModuleOnlineSession> GetTutorialModuleOnlineSessionClass();
+#pragma endregion 
 
 private:
 	UPROPERTY(EditAnywhere, AssetRegistrySearchable, Category = "Tutorial Module")
@@ -80,15 +89,29 @@ private:
 	UPROPERTY()
 	bool bOverriden = false;
 
-	UPROPERTY(EditAnywhere, meta = (EditCondition = "!bOverriden", HideEditConditionToggle), Category = "Tutorial Module")
+	UPROPERTY(EditAnywhere, AssetRegistrySearchable, meta = (EditCondition = "!bOverriden", HideEditConditionToggle), Category = "Tutorial Module")
 	bool bIsActive = true;
 
-	UPROPERTY(EditAnywhere, Category = "Tutorial Module Starter", meta = (EditCondition = "bIsActive"))
+	UPROPERTY(EditAnywhere, AssetRegistrySearchable, Category = "Tutorial Module Starter", meta = (EditCondition = "bIsActive"))
 	bool bIsStarterModeActive = false;
+
+#pragma region "Online Session"
+	UPROPERTY(EditAnywhere, AssetRegistrySearchable, Category = "Online Session Module")
+	bool bOnlineSessionModule = false;
+
+	UPROPERTY(EditAnywhere, AssetRegistrySearchable, Category = "Online Session Module", meta = (EditCondition = "bOnlineSessionModule", EditConditionHides = "true"))
+	TSubclassOf<UTutorialModuleOnlineSession> DefaultOnlineSessionClass;
+
+	UPROPERTY(EditAnywhere, AssetRegistrySearchable, Category = "Online Session Module", meta = (EditCondition = "bOnlineSessionModule", EditConditionHides = "true"))
+	TSubclassOf<UTutorialModuleOnlineSession> StarterOnlineSessionClass;
+#pragma endregion
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tutorial Module Dependencies", meta = (Tooltip = "Other Tutorial Modules that is required by this Tutorial Module", DisplayThumbnail = false, ShowOnlyInnerProperties))
 	TArray<UTutorialModuleDataAsset*> TutorialModuleDependencies;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tutorial Module Dependencies", meta = (Tooltip = "If set, this module will only be activated if one or more modules in this list is also active. Main purpose is to hide UIs.", DisplayThumbnail = false, ShowOnlyInnerProperties))
+	TArray<UTutorialModuleDataAsset*> TutorialModuleDependents;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tutorial Module Widgets", meta = (Tooltip = "Widgets that will be generated if this Tutorial Module active", ShowOnlyInnerProperties))
 	TArray<FTutorialModuleGeneratedWidget> GeneratedWidgets;
@@ -97,6 +120,9 @@ private:
 	void ValidateDataAssetProperties();
 	bool ValidateClassProperty(TSubclassOf<UAccelByteWarsActivatableWidget>& UIClass, TSubclassOf<UAccelByteWarsActivatableWidget>& LastUIClass, const bool IsStarterClass);
 	bool ValidateClassProperty(TSubclassOf<UTutorialModuleSubsystem>& SubsystemClass, TSubclassOf<UTutorialModuleSubsystem>& LastSubsystemClass, const bool IsStarterClass);
+#pragma region "Online Session"
+	bool ValidateClassProperty(TSubclassOf<UTutorialModuleOnlineSession>& OnlineSessionClass, TSubclassOf<UTutorialModuleOnlineSession>&LastOnlineSessionClass, const bool IsStarterClass);
+#pragma endregion 
 
 	void CleanUpDataAssetProperties();
 
@@ -109,6 +135,11 @@ private:
 
 	TSubclassOf<UAccelByteWarsActivatableWidget> LastStarterUIClass;
 	TSubclassOf<UTutorialModuleSubsystem> LastStarterSubsystemClass;
+
+#pragma region "Online Session"
+	TSubclassOf<UTutorialModuleOnlineSession> LastDefaultOnlineSessionClass;
+	TSubclassOf<UTutorialModuleOnlineSession> LastStarterOnlineSessionClass;
+#pragma endregion 
 
 	TArray<FTutorialModuleGeneratedWidget> LastGeneratedWidgets;
 

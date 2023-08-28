@@ -5,6 +5,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "OnlineSessionSettings.h"
 #include "GameFramework/PlayerController.h"
 #include "AccelByteWarsPlayerController.generated.h"
 
@@ -17,4 +18,8 @@ public:
 	// Trigger to start the game from game lobby.
 	UFUNCTION(Reliable, Server, meta = (WorldContext = "WorldContextObject"))
 	void TriggerLobbyStart();
+
+	void LoadingPlayerAssignment() const;
+
+	TSharedRef<FOnlineSessionSearch> SessionSearch = MakeShared<FOnlineSessionSearch>(FOnlineSessionSearch());
 };

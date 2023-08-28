@@ -24,7 +24,17 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FString CodeName;
 	
-	// Either the module is active or not
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bIsActive = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	bool bIsStarterModeActive = false;
+
+#pragma region "Online Session"
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	bool bOnlineSessionModule = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TSubclassOf<UOnlineSession> OnlineSessionClass;
+#pragma endregion 
 };

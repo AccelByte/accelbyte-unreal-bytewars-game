@@ -68,9 +68,9 @@ void UAccelByteWarsWidgetSwitcher::SetWidgetState(const EAccelByteWarsWidgetSwit
 		TargetTextBlock->SetText(TargetText);
 	}
 
-	if (HasUserFocus(GetOwningPlayer()))
+	if (UWidget* FocusTarget = GetFocusTargetBasedOnCurrentState(); HasUserFocus(GetOwningPlayer()) && FocusTarget)
 	{
-		GetFocusTargetBasedOnCurrentState()->SetUserFocus(GetOwningPlayer());
+		FocusTarget->SetUserFocus(GetOwningPlayer());
 	}
 }
 
