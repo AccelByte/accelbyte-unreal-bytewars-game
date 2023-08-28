@@ -6,6 +6,8 @@
 
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "OnlineSubsystemTypes.h"
+#include "Core/AccelByteEnvironment.h"
 #include "TutorialModuleOnlineUtility.generated.h"
 
 ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogAccelByteWarsTutorialModuleOnlineUtility, Log, All);
@@ -20,6 +22,14 @@ class ACCELBYTEWARS_API UTutorialModuleOnlineUtility : public UBlueprintFunction
 	GENERATED_BODY()
 	
 public:
+	UTutorialModuleOnlineUtility();
+
 	UFUNCTION(BlueprintCallable, Category = "Tutorial Module Online Utility", meta = (WorldContext = "WorldContextObject"))
 	static bool IsAccelByteSDKInitialized(const UObject* Target);
+
+private:
+	static void CheckForEnvironmentConfigOverride();
+	static ESettingsEnvironment ConvertStringEnvToAccelByteEnv(const FString& EnvironmentStr);
+	static FString ConvertAccelByteEnvToStringEnv(const ESettingsEnvironment& Environment);
+	static ESettingsEnvironment ConvertOSSEnvToAccelByteEnv(const EOnlineEnvironment::Type& Environment);
 };
