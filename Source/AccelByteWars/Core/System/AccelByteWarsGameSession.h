@@ -9,7 +9,6 @@
 #include "AccelByteWarsGameSession.generated.h"
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnRegisterServer, FName /*SessionName*/);
-
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnUnregisterServer, FName /*SessionName*/);
 
 UCLASS()
@@ -21,6 +20,8 @@ public:
 	virtual void RegisterServer() override;
 	void UnregisterServer();
 
-	static inline FOnRegisterServer OnRegisterServerDelegate;
-	static inline FOnUnregisterServer OnUnregisterServerDelegate;
+	/*virtual bool AtCapacity(bool bSpectator) override;*/
+
+	static inline FOnRegisterServer OnRegisterServerDelegates;
+	static inline FOnUnregisterServer OnUnregisterServerDelegates;
 };

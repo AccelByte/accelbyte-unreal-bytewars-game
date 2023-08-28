@@ -13,6 +13,7 @@ class ACCELBYTEWARS_API AAccelByteWarsPlayerState : public APlayerState
 
 	//~AActor overriden functions
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void ClientInitialize(AController* C) override;
 	//~End of AActor overriden functions
 
 public:
@@ -34,9 +35,13 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = Attributes, Replicated)
 	int32 NumLivesLeft = INDEX_NONE;
 
+	UFUNCTION()
+	void RepNotify_PendingTeamAssignment();
+
+	UPROPERTY(Replicated, ReplicatedUsing = "RepNotify_PendingTeamAssignment")
+	bool bPendingTeamAssignment = false;
+
 	// Number of attempt the player was almost got killed attempt in a single-lifetime
 	UPROPERTY(BlueprintReadWrite, Category = Attributes, Replicated)
 	int32 NumKilledAttemptInSingleLifetime = 0;
-
-	bool bShouldKick = false;
 };

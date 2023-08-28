@@ -49,6 +49,7 @@ public:
 	TArray<UPanelWidget*> GetGeneratedWidgetContainers();
 
 	// The Tutorial Module Data Asset associated with this widget.
+	UPROPERTY()
 	UTutorialModuleDataAsset* AssociateTutorialModule;
 
 	// The generated widget metadatas injected by one or more Tutorial Modules.
@@ -67,6 +68,27 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void SetInputModeToGameOnly();
 
+	/** Get the first outer with the specified class. Nullptr if not found. */
+	template<class WidgetClass>
+	WidgetClass* GetFirstOccurenceOuter()
+	{
+		UObject* CurrentIterationOuter = GetOuter();
+		WidgetClass* TargetOuter = nullptr;
+
+		while (!TargetOuter)
+		{
+			if (!CurrentIterationOuter)
+			{
+				break;
+			}
+
+			TargetOuter = Cast<WidgetClass>(CurrentIterationOuter);
+			CurrentIterationOuter = CurrentIterationOuter->GetOuter();
+		}
+
+		return TargetOuter;
+	}
+
 	/** The desired input mode to use while this UI is activated, for example do you want key presses to still reach the game/player controller? */
 	UPROPERTY(EditDefaultsOnly, Category = Input)
 	EAccelByteWarsWidgetInputMode InputConfig = EAccelByteWarsWidgetInputMode::Default;
@@ -82,5 +104,6 @@ private:
 	TWeakObjectPtr<UAccelByteWarsButtonBase> GenerateActionButton(FTutorialModuleGeneratedWidget& Metadata, UPanelWidget& WidgetContainer);
 	TWeakObjectPtr<UAccelByteWarsActivatableWidget> GenerateWidget(FTutorialModuleGeneratedWidget& Metadata, UPanelWidget& WidgetContainer);
 
+	UPROPERTY()
 	TArray<UUserWidget*> GeneratedWidgetPool;
 };

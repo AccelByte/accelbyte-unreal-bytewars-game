@@ -8,9 +8,6 @@
 #include "GameModeDataAsset.generated.h"
 
 
-/**
- * 
- */
 UCLASS()
 class ACCELBYTEWARS_API UGameModeDataAsset : public UAccelByteWarsDataAsset
 {
@@ -74,6 +71,22 @@ public:
 	// Default match time
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 MatchTime;
+
+	// Countdown used to start the game when on Lobby. Set to -1 to disable. Set to 0 to immediately starts.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 StartGameCountdown;
+
+	// Countdown used to shut the game down when the game ends. Set to -1 to disable.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 GameEndsShutdownCountdown;
+
+	// Minimum player count to prevent server to start the NotEnoughPlayerCountdown to shut the game down. Set to -1 to disable. DS only.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (EditCondition="NetworkType == EGameModeNetworkType::DS"))
+	int32 MinimumTeamCountToPreventAutoShutdown;
+
+	// Countdown used to shut the game down when currently connected player is less than MinimumTeamCountToPreventAutoShutdown. Set to -1 to disable. DS only.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (EditCondition="NetworkType == EGameModeNetworkType::DS"))
+	int32 NotEnoughPlayerCountdown;
 	
 	// Default score limit
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)

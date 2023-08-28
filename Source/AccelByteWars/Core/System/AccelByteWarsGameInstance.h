@@ -179,6 +179,10 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FLinearColor GetTeamColor(uint8 TeamId) const;
 
+#pragma region "Online Session Modules implementation"
+	virtual TSubclassOf<UOnlineSession> GetOnlineSessionClass() override;
+#pragma endregion 
+
 protected:
 	UPROPERTY()
 	UAccelByteWarsBaseUI* BaseUIWidget;

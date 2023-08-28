@@ -66,7 +66,7 @@ void UGameOverWidget::NativeOnActivated()
 	SetInputModeToUIOnly();
 
 	// countdown setup
-	if (GameState->GameSetup.NetworkType == EGameModeNetworkType::DS)
+	if (GameState->GameSetup.GameEndsShutdownCountdown != INDEX_NONE)
 	{
 		Widget_Countdown->SetupWidget(
 			FText::FromString(""),

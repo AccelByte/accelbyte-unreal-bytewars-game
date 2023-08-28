@@ -27,6 +27,8 @@ public:
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 	//~End of AGameModeBase overridden functions
 
+	virtual void DelayedPlayerTeamSetupWithPredefinedData(APlayerController* PlayerController) override;
+
 	/**
 	 * @brief Add player's score in GameState and PlayerState
 	 * @param PlayerState Target PlayerState
@@ -70,13 +72,14 @@ private:
 	void CloseGame(const FString& Reason) const;
 	void StartGame();
 	void SetupGameplayObject(AActor* Object) const;
-	bool CheckIfAllPlayersIsInOneTeam() const;
+	int32 GetLivingTeamCount() const;
 	void SpawnAndPossesPawn(APlayerState* PlayerState);
 	TArray<FVector> GetActiveGameObjectsPosition(const float SeparationFactor, const float ShipSeparationFactor) const;
 	FVector FindGoodPlanetPosition() const;
 	FVector FindGoodPlayerPosition() const;
 
 	// Countdown related
+	bool ShouldStartNotEnoughPlayerCountdown() const;
 	void NotEnoughPlayerCountdownCounting(const float& DeltaSeconds) const;
 	void SetupShutdownCountdownsValue() const;
 
@@ -113,6 +116,7 @@ protected:
 		const FTransform ShipTransform,
 		AAccelByteWarsPlayerState* ShipPlayerState);
 
+protected:
 	UPROPERTY(EditAnywhere)
 	TArray<TSubclassOf<AActor>> ObjectsToSpawn;
 };
