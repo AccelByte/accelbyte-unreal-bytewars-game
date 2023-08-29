@@ -1,5 +1,6 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
 
 #include "Core/AssetManager/AccelByteWarsAssetManager.h"
 
@@ -8,6 +9,8 @@
 #include "GameModes/GameModeTypeDataAsset.h"
 #include "TutorialModules/TutorialModuleDataAsset.h"
 #include "Widgets/Notifications/SNotificationList.h"
+
+DEFINE_LOG_CATEGORY(LogAccelByteWarsAssetManager);
 
 UAccelByteWarsAssetManager::UAccelByteWarsAssetManager() {
 
@@ -31,7 +34,7 @@ UAccelByteWarsAssetManager& UAccelByteWarsAssetManager::Get() {
 		return *Singleton;
 	}
 
-	UE_LOG(LogTemp, Fatal, TEXT("Invalid AssetManagerClassName in DefaultEngine.ini.  It must be set to AccelByteWarsAssetManager!"));
+	UE_LOG_ASSET_MANAGER(Fatal, TEXT("Invalid AssetManagerClassName in DefaultEngine.ini.  It must be set to AccelByteWarsAssetManager!"));
 
 	// Fatal error above prevents this from being called.
 	return *NewObject<UAccelByteWarsAssetManager>();
@@ -222,11 +225,66 @@ void UAccelByteWarsAssetManager::TutorialModuleOverride()
 	TArray<FString> SessionModuleFileNamesToBeOverriden;
 #endif
 
-	// Get values from DefaultEngine.ini
-	TArray<FString> ModuleOverrides;
-	GConfig->GetArray(TEXT("AccelByteTutorialModules"), TEXT("ForcedEnabledModules"), ModuleOverrides, GEngineIni);
+	// Get module override from launch parameters.
+	TArray<FString> CmdModuleOverrides;
+	FString CmdArgs = FCommandLine::Get();
+	if (CmdArgs.Contains(TEXT("-ENABLED_MODULES="), ESearchCase::IgnoreCase))
+	{
+		FString CmdModuleOverridesStr;
+		FParse::Value(FCommandLine::Get(), TEXT("-ENABLED_MODULES="), CmdModuleOverridesStr, false);
+
+		// Extract the module overrides.
+		CmdModuleOverridesStr = CmdModuleOverridesStr.Replace(TEXT(" "), TEXT(""));
+		CmdModuleOverridesStr = CmdModuleOverridesStr.Replace(TEXT("["), TEXT(""));
+		CmdModuleOverridesStr = CmdModuleOverridesStr.Replace(TEXT("]"), TEXT(""));
+		CmdModuleOverridesStr.ParseIntoArray(CmdModuleOverrides, TEXT(","));
+
+		// Module name must follow TutorialModule:MODULENAME format.
+		const FString ModulePrefix = TEXT("TutorialModule:");
+		for (FString& CmdModuleOverride : CmdModuleOverrides)
+		{
+			CmdModuleOverride.RemoveFromStart(ModulePrefix);
+			CmdModuleOverride = FString::Printf(TEXT("%s%s"), *ModulePrefix, *CmdModuleOverride.ToUpper());
+		}
+	}
+
+	// Get module override from DefaultEngine.ini
+	TArray<FString> IniModuleOverrides;
+	GConfig->GetArray(TEXT("AccelByteTutorialModules"), TEXT("ForcedEnabledModules"), IniModuleOverrides, GEngineIni);
+
+	// Combine module override from launch parameters and DefaultEngine.ini
+	TSet<FString> ModuleOverrides;
+	ModuleOverrides.Append(CmdModuleOverrides);
+	ModuleOverrides.Append(IniModuleOverrides);
+
+	// Get disable other module override (priority: launch param -> DefaultEngine.ini)
 	bool bDisableOtherModules = false;
-	GConfig->GetBool(TEXT("AccelByteTutorialModules"), TEXT("ForceDisabledOtherModules"), bDisableOtherModules, GEngineIni);
+	if (CmdArgs.Contains(TEXT("-DISABLE_OTHER_MODULES="), ESearchCase::IgnoreCase))
+	{
+		FString CmdDisableOtherModulesStr;
+		FParse::Value(FCommandLine::Get(), TEXT("-DISABLE_OTHER_MODULES="), CmdDisableOtherModulesStr);
+
+		if (CmdDisableOtherModulesStr.Equals(TEXT("TRUE"), ESearchCase::IgnoreCase))
+		{
+			bDisableOtherModules = true;
+		}
+		else if (CmdDisableOtherModulesStr.Equals(TEXT("FALSE"), ESearchCase::IgnoreCase))
+		{
+			bDisableOtherModules = false;
+		}
+
+		UE_LOG_ASSET_MANAGER(Log, 
+			TEXT("Launch param overrides the Disable Other Tutorial Modules config to %s."), 
+			bDisableOtherModules ? TEXT("TRUE") : TEXT("FALSE"));
+	}
+	else
+	{
+		GConfig->GetBool(TEXT("AccelByteTutorialModules"), TEXT("ForceDisabledOtherModules"), bDisableOtherModules, GEngineIni);
+
+		UE_LOG_ASSET_MANAGER(Log, 
+			TEXT("DefaultEngine.ini overrides the Disable Other Tutorial Modules config to %s."), 
+			bDisableOtherModules ? TEXT("TRUE") : TEXT("FALSE"));
+	}
 
 	// Consolidate all modules needed to be activated
 	TArray<FString> IdsToBeOverriden;
@@ -236,8 +294,31 @@ void UAccelByteWarsAssetManager::TutorialModuleOverride()
 		{
 			if (const UTutorialModuleDataAsset* TutorialModule = Cast<UTutorialModuleDataAsset>(DataAsset))
 			{
+				const bool bIsCmdOverride = CmdModuleOverrides.Contains(ModuleOverride);
+				const bool bIsIniOverride = IniModuleOverrides.Contains(ModuleOverride);
+				if (bIsCmdOverride && bIsIniOverride)
+				{
+					UE_LOG_ASSET_MANAGER(Log, TEXT("Either launch param or DefaultEngine.ini forces activate Tutorial Module: %s"), *ModuleOverride);
+				}
+				else if (bIsCmdOverride)
+				{
+					UE_LOG_ASSET_MANAGER(Log, TEXT("Launch param forces activate Tutorial Module: %s"), *ModuleOverride);
+				}
+				else if (bIsIniOverride)
+				{
+					UE_LOG_ASSET_MANAGER(Log, TEXT("DefaultEngine.ini forces activate Tutorial Module: %s"), *ModuleOverride);
+				}
+
 				RecursiveGetSelfAndDependencyIds(IdsToBeOverriden, TutorialModule);
 			}
+			else 
+			{
+				UE_LOG_ASSET_MANAGER(Log, TEXT("Cannot force activate Tutorial Module: %s. Tutorial Module Data Asset is not found."), *ModuleOverride);
+			}
+		}
+		else 
+		{
+			UE_LOG_ASSET_MANAGER(Log, TEXT("Cannot force activate Tutorial Module: %s. Tutorial Module Data Asset is not found."), *ModuleOverride);
 		}
 	}
 
