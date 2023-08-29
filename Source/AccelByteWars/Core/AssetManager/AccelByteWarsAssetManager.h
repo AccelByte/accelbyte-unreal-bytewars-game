@@ -57,6 +57,7 @@ protected:
 	//~End of UAssetManager interface
 #if WITH_EDITOR
 	virtual void PreBeginPIE(bool bStartSimulate) override;
+	virtual void EndPIE(bool bStartSimulate) override;
 #endif
 
 	void PopulateAssetCache();
@@ -68,11 +69,15 @@ protected:
 	void RemoveAssetFromCache(const FPrimaryAssetId& AssetId);
 
 	void TutorialModuleOverride();
+	void StarterOnlineSessionModulesChecker();
+	void DependentModuleOverride() const;
+	void ResetDependentModuleOverride() const;
 
 #if UE_EDITOR
 	virtual void PostInitialAssetScan() override;
 
 	TSharedPtr<SNotificationItem> OverrideNotificationItem;
+	TSharedPtr<SNotificationItem> OnlineSessionActiveNotificationItem;
 #endif
 
 private:
@@ -81,5 +86,5 @@ private:
 	
 	TMap<FPrimaryAssetType, FPrimaryAssetCache> PrimaryAssetCache;
 
-	void RecursiveGetSelfAndDependencyIds(TArray<FString>& OutIds, const UTutorialModuleDataAsset* TutorialModule) const;
+	static void RecursiveGetSelfAndDependencyIds(TArray<FString>& OutIds, const UTutorialModuleDataAsset* TutorialModule);
 };

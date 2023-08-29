@@ -3,13 +3,11 @@
 // and restrictions contact your company contract manager.
 
 #include "Core/AssetManager/TutorialModules/TutorialModuleDataAsset.h"
+
+#include "TutorialModuleOnlineSession.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
-#include "Widgets/SWidget.h"
 #include "Blueprint/UserWidget.h"
-#include "UObject/UObjectIterator.h"
-#include "UObject/PropertyPortFlags.h"
-#include "Components/PanelWidget.h"
 #include "Widgets/Notifications/SNotificationList.h"
 #include "Framework/Notifications/NotificationManager.h"
 
@@ -31,6 +29,19 @@ FTutorialModuleData UTutorialModuleDataAsset::GetTutorialModuleDataByCodeName(co
 	TutorialModuleData.DefaultUIClass = UAccelByteWarsActivatableWidget::StaticClass();
 
 	TutorialModuleData.bIsActive = UAccelByteWarsDataAsset::GetMetadataForAsset<bool>(GenerateAssetIdFromCodeName(InCodeName), GET_MEMBER_NAME_CHECKED(UTutorialModuleDataAsset, bIsActive));
+	TutorialModuleData.bIsStarterModeActive = UAccelByteWarsDataAsset::GetMetadataForAsset<bool>(GenerateAssetIdFromCodeName(InCodeName), GET_MEMBER_NAME_CHECKED(UTutorialModuleDataAsset, bIsStarterModeActive));
+
+#pragma region "Online Session"
+	TutorialModuleData.bOnlineSessionModule = UAccelByteWarsDataAsset::GetMetadataForAsset<bool>(GenerateAssetIdFromCodeName(InCodeName), GET_MEMBER_NAME_CHECKED(UTutorialModuleDataAsset, bOnlineSessionModule));
+
+	FString SessionClassString = TutorialModuleData.bIsStarterModeActive ?
+	   UAccelByteWarsDataAsset::GetMetadataForAsset<FString>(TutorialModuleAssetId, GET_MEMBER_NAME_CHECKED(UTutorialModuleDataAsset, StarterOnlineSessionClass)):
+	   UAccelByteWarsDataAsset::GetMetadataForAsset<FString>(TutorialModuleAssetId, GET_MEMBER_NAME_CHECKED(UTutorialModuleDataAsset, DefaultOnlineSessionClass));
+	if (TSoftClassPtr<UOnlineSession> SessionClassPtr = TSoftClassPtr<UOnlineSession>(SessionClassString))
+	{
+		TutorialModuleData.OnlineSessionClass = SessionClassPtr.Get();
+	}
+#pragma endregion 
 
 	return TutorialModuleData;
 }
@@ -56,10 +67,10 @@ TSubclassOf<UTutorialModuleSubsystem> UTutorialModuleDataAsset::GetTutorialModul
 	return IsStarterModeActive() ? StarterSubsystemClass : DefaultSubsystemClass;
 }
 
-bool UTutorialModuleDataAsset::IsActiveAndDependenciesChecked()
+bool UTutorialModuleDataAsset::IsActiveAndDependenciesChecked() const
 {
 	bool bIsDependencySatisfied = true;
-	for (UTutorialModuleDataAsset* Dependency : TutorialModuleDependencies)
+	for (const UTutorialModuleDataAsset* Dependency : TutorialModuleDependencies)
 	{
 		if (!Dependency) continue;
 
@@ -83,6 +94,13 @@ void UTutorialModuleDataAsset::ResetOverrides()
 {
 	bOverriden = false;
 }
+
+#pragma region "Online Session"
+TSubclassOf<UTutorialModuleOnlineSession> UTutorialModuleDataAsset::GetTutorialModuleOnlineSessionClass()
+{
+	return IsStarterModeActive() ? StarterOnlineSessionClass : DefaultOnlineSessionClass;
+}
+#pragma endregion
 
 void UTutorialModuleDataAsset::ValidateDataAssetProperties()
 {
@@ -185,6 +203,13 @@ void UTutorialModuleDataAsset::ValidateDataAssetProperties()
 	}
 
 	LastGeneratedWidgets = GeneratedWidgets;
+
+	// Validate Default's and Starter class properties for OnlineSession module
+	if (bOnlineSessionModule)
+	{
+		ValidateClassProperty(DefaultOnlineSessionClass, LastDefaultOnlineSessionClass, false);
+		ValidateClassProperty(StarterOnlineSessionClass, LastStarterOnlineSessionClass, true);
+	}
 }
 
 bool UTutorialModuleDataAsset::ValidateClassProperty(TSubclassOf<UAccelByteWarsActivatableWidget>& UIClass, TSubclassOf<UAccelByteWarsActivatableWidget>& LastUIClass, const bool IsStarterClass)
@@ -256,9 +281,45 @@ bool UTutorialModuleDataAsset::ValidateClassProperty(TSubclassOf<UTutorialModule
 	return SubsystemClass != nullptr;
 }
 
+bool UTutorialModuleDataAsset::ValidateClassProperty(TSubclassOf<UTutorialModuleOnlineSession>& OnlineSessionClass, TSubclassOf<UTutorialModuleOnlineSession>&LastOnlineSessionClass, const bool IsStarterClass)
+{
+	// Check if the class is used by other Tutorial Module or not.
+	if (OnlineSessionClass.Get() && OnlineSessionClass.GetDefaultObject()->AssociateTutorialModule != nullptr
+	   && OnlineSessionClass.GetDefaultObject()->AssociateTutorialModule != this)
+	{
+#if UE_EDITOR
+		ShowPopupMessage(
+		   FString::Printf(TEXT("Subsystem Class %s is already being used by %s Tutorial Module"),
+			  *OnlineSessionClass.Get()->GetName(),
+			  *OnlineSessionClass.GetDefaultObject()->AssociateTutorialModule->GetName()));
+#endif
+		OnlineSessionClass = nullptr;
+	}
+
+	// Reset the last class first to makes sure the references are clear.
+	if (LastOnlineSessionClass.Get() && LastOnlineSessionClass.GetDefaultObject()
+	   && LastOnlineSessionClass.GetDefaultObject()->AssociateTutorialModule == this)
+	{
+		LastOnlineSessionClass.GetDefaultObject()->AssociateTutorialModule = nullptr;
+	}
+
+	// Update the new class to points to this Tutorial Module
+	if (OnlineSessionClass.Get() && OnlineSessionClass.GetDefaultObject())
+	{
+		OnlineSessionClass.GetDefaultObject()->AssociateTutorialModule =
+		   ((IsStarterClass && IsStarterModeActive()) || (!IsStarterClass && !IsStarterModeActive())) ? this : nullptr;
+	}
+
+	// Cache the class reference.
+	LastOnlineSessionClass = OnlineSessionClass;
+
+	return OnlineSessionClass != nullptr;
+}
+
 void UTutorialModuleDataAsset::CleanUpDataAssetProperties()
 {
 	TutorialModuleDependencies.Empty();
+	TutorialModuleDependents.Empty();
 
 	for (FTutorialModuleGeneratedWidget& GeneratedWidget : GeneratedWidgets)
 	{

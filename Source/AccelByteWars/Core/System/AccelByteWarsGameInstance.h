@@ -47,6 +47,10 @@ public:
 	UPROPERTY(BlueprintReadWrite)
 	int32 NumLivesLeft = 1;
 
+	// Number of attempt the player was almost got killed in a single-lifetime
+	UPROPERTY(BlueprintReadWrite)
+	int32 NumKilledAttemptInSingleLifetime = 0;
+
 	bool operator==(const FGameplayPlayerData& Other) const
 	{
 		return UniqueNetId.IsValid() ? UniqueNetId == Other.UniqueNetId : ControllerId == Other.ControllerId;
@@ -174,6 +178,10 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable)
 	FLinearColor GetTeamColor(uint8 TeamId) const;
+
+#pragma region "Online Session Modules implementation"
+	virtual TSubclassOf<UOnlineSession> GetOnlineSessionClass() override;
+#pragma endregion 
 
 protected:
 	UPROPERTY()

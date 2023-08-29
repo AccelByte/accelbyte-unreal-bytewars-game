@@ -9,6 +9,8 @@
 #include "Core/GameStates/AccelByteWarsInGameGameState.h"
 #include "AccelByteWarsInGameGameMode.generated.h"
 
+DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnPlayerDieDelegate, const APlayerController* /*Player*/, const AActor* /*PlayerActor*/, const APlayerController* /*Killer*/);
+
 UCLASS()
 class ACCELBYTEWARS_API AAccelByteWarsInGameGameMode : public AAccelByteWarsGameMode
 {
@@ -16,6 +18,7 @@ class ACCELBYTEWARS_API AAccelByteWarsInGameGameMode : public AAccelByteWarsGame
 
 public:
 	static inline FSimpleMulticastDelegate OnGameEndsDelegate;
+	static inline FOnPlayerDieDelegate OnPlayerDieDelegate;
 
 	//~AGameModeBase overridden functions
 	virtual void InitGameState() override;
@@ -23,6 +26,8 @@ public:
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 	//~End of AGameModeBase overridden functions
+
+	virtual void DelayedPlayerTeamSetupWithPredefinedData(APlayerController* PlayerController) override;
 
 	/**
 	 * @brief Add player's score in GameState and PlayerState
@@ -52,6 +57,13 @@ public:
 		const float MissileScore,
 		APlayerController* SourcePlayerController);
 
+	/**
+	 * @brief Increase the number of attempt the player was almost got killed in a single-lifetime.
+	 * @param TargetPlayer The player that was almost got killed.
+	 */
+	UFUNCTION(BlueprintCallable)
+	void IncreasePlayerKilledAttempt(const APlayerController* TargetPlayer);
+
 private:
 	UFUNCTION()
 	void RemoveFromActiveGameObjects(AActor* DestroyedActor);
@@ -60,13 +72,14 @@ private:
 	void CloseGame(const FString& Reason) const;
 	void StartGame();
 	void SetupGameplayObject(AActor* Object) const;
-	bool CheckIfAllPlayersIsInOneTeam() const;
+	int32 GetLivingTeamCount() const;
 	void SpawnAndPossesPawn(APlayerState* PlayerState);
 	TArray<FVector> GetActiveGameObjectsPosition(const float SeparationFactor, const float ShipSeparationFactor) const;
 	FVector FindGoodPlanetPosition() const;
 	FVector FindGoodPlayerPosition() const;
 
 	// Countdown related
+	bool ShouldStartNotEnoughPlayerCountdown() const;
 	void NotEnoughPlayerCountdownCounting(const float& DeltaSeconds) const;
 	void SetupShutdownCountdownsValue() const;
 
@@ -103,6 +116,7 @@ protected:
 		const FTransform ShipTransform,
 		AAccelByteWarsPlayerState* ShipPlayerState);
 
+protected:
 	UPROPERTY(EditAnywhere)
 	TArray<TSubclassOf<AActor>> ObjectsToSpawn;
 };

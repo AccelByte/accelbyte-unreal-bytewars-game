@@ -7,6 +7,7 @@
 #include "CoreMinimal.h"
 #include "Components/BackgroundBlur.h"
 #include "Components/Prompt/Loading/LoadingWidget.h"
+#include "Core/UI/Components/Prompt/PushNotification/PushNotificationWidget.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
 #include "Widgets/CommonActivatableWidgetContainer.h"
 #include "AccelByteWarsBaseUI.generated.h"
@@ -42,6 +43,8 @@ public:
 	/** Push widget to target stack with init function. */
 	UAccelByteWarsActivatableWidget* PushWidgetToStack(EBaseUIStackType TargetStack, TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass, TFunctionRef<void(UAccelByteWarsActivatableWidget&)> InitFunc);
 
+	UPushNotificationWidget* GetPushNotificationWidget();
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Base UI Settings")
 	TMap<TEnumAsByte<EBaseUIStackType>, UCommonActivatableWidgetStack*> Stacks;
 
@@ -50,6 +53,9 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Prompt Settings")
 	TSubclassOf<ULoadingWidget> DefaultLoadingWidgetClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Prompt Settings")
+	TSubclassOf<UPushNotificationWidget> DefaultPushNotificationWidgetClass;
 
 private:
 	void OnWidgetTransitionChanged(UCommonActivatableWidgetContainerBase* Widget, bool bIsTransitioning);
@@ -68,4 +74,7 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonActivatableWidgetStack* PromptStack;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UCommonActivatableWidgetStack* PushNotificationStack;
 };

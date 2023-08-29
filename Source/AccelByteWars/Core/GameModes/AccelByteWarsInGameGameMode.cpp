@@ -84,7 +84,7 @@ void AAccelByteWarsInGameGameMode::Tick(float DeltaSeconds)
 	case EGameStatus::AWAITING_PLAYERS_MID_GAME:
 		if (IsRunningDedicatedServer())
 		{
-			if (CheckIfAllPlayersIsInOneTeam())
+			if (ShouldStartNotEnoughPlayerCountdown())
 			{
 				NotEnoughPlayerCountdownCounting(DeltaSeconds);
 			}
@@ -98,7 +98,7 @@ void AAccelByteWarsInGameGameMode::Tick(float DeltaSeconds)
 	case EGameStatus::GAME_STARTED:
 		if (IsRunningDedicatedServer())
 		{
-			if (CheckIfAllPlayersIsInOneTeam())
+			if (ShouldStartNotEnoughPlayerCountdown())
 			{
 				ABInGameGameState->GameStatus = EGameStatus::AWAITING_PLAYERS_MID_GAME;
 			}
@@ -120,12 +120,11 @@ void AAccelByteWarsInGameGameMode::Tick(float DeltaSeconds)
 		}
 		break;
 	case EGameStatus::GAME_ENDS:
-		if (IsRunningDedicatedServer())
+		if (IsRunningDedicatedServer() && ABInGameGameState->GameSetup.GameEndsShutdownCountdown != INDEX_NONE)
 		{
 			ABInGameGameState->PostGameCountdown -= DeltaSeconds;
 			if (ABInGameGameState->PostGameCountdown <= 0)
 			{
-				ABInGameGameState->GameStatus = EGameStatus::INVALID;
 				CloseGame("Game finished");
 			}
 		}
@@ -140,10 +139,48 @@ void AAccelByteWarsInGameGameMode::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
 
-	// Setup player if game has started
-	if (ABInGameGameState->HasGameStarted() && HasMatchStarted())
+	APlayerState* PlayerState = NewPlayer->PlayerState;
+	if (!PlayerState)
 	{
-		SpawnAndPossesPawn(NewPlayer->PlayerState);
+		return;
+	}
+
+	const AAccelByteWarsPlayerState* AbPlayerState = static_cast<AAccelByteWarsPlayerState*>(PlayerState);
+	if (!AbPlayerState)
+	{
+		return;
+	}
+
+	// Setup player if game has started and is not pending
+	if (ABInGameGameState->HasGameStarted() && HasMatchStarted() && !AbPlayerState->bPendingTeamAssignment)
+	{
+		SpawnAndPossesPawn(PlayerState);
+	}
+}
+
+void AAccelByteWarsInGameGameMode::DelayedPlayerTeamSetupWithPredefinedData(APlayerController* PlayerController)
+{
+	Super::DelayedPlayerTeamSetupWithPredefinedData(PlayerController);
+
+	APlayerState* PlayerState = PlayerController->PlayerState;
+	if (!PlayerState)
+	{
+		return;
+	}
+
+	const AAccelByteWarsPlayerState* AbPlayerState = static_cast<AAccelByteWarsPlayerState*>(PlayerState);
+	if (!AbPlayerState)
+	{
+		return;
+	}
+
+	if (
+		ABInGameGameState->HasGameStarted() &&
+		HasMatchStarted() &&
+		!AbPlayerState->bPendingTeamAssignment &&
+		!ABInGameGameState->HasGameEnded())
+	{
+		SpawnAndPossesPawn(PlayerState);
 	}
 }
 
@@ -201,9 +238,11 @@ int32 AAccelByteWarsInGameGameMode::DecreasePlayerLife(APlayerState* PlayerState
 
 	// decrease life num in PlayerState
 	AccelByteWarsPlayerState->NumLivesLeft -= Decrement;
+	AccelByteWarsPlayerState->NumKilledAttemptInSingleLifetime = 0;
 
 	// match life num in GameState to PlayerState
 	PlayerData->NumLivesLeft = AccelByteWarsPlayerState->NumLivesLeft;
+	PlayerData->NumKilledAttemptInSingleLifetime = AccelByteWarsPlayerState->NumKilledAttemptInSingleLifetime;
 
 	return AccelByteWarsPlayerState->NumLivesLeft;
 }
@@ -240,6 +279,9 @@ void AAccelByteWarsInGameGameMode::OnShipDestroyed(
 	AAccelByteWarsPlayerState* ShipPlayerState = Cast<AAccelByteWarsPlayerState>(ShipPC->PlayerState);
 	NULLPTR_CHECK(ShipPlayerState);
 
+	// Broadcast on-player die event.
+	OnPlayerDieDelegate.Broadcast(ShipPC, ShipActor, SourcePlayerController);
+
 	// FX logic
 	OnShipDestroyedFX(SourcePlayerController, ShipOwner->GetTransform(), ShipPlayerState);
 
@@ -268,7 +310,7 @@ void AAccelByteWarsInGameGameMode::OnShipDestroyed(
 	Ship->GetOwner()->Destroy();
 
 	// If only 1 team left, end game
-	if (CheckIfAllPlayersIsInOneTeam())
+	if (GetLivingTeamCount() <= 1)
 	{
 		EndGame("One team remains");
 		return;
@@ -290,6 +332,20 @@ void AAccelByteWarsInGameGameMode::OnShipDestroyed(
 	}
 }
 
+void AAccelByteWarsInGameGameMode::IncreasePlayerKilledAttempt(const APlayerController* TargetPlayer)
+{
+	NULLPTR_CHECK(TargetPlayer);
+
+	AAccelByteWarsPlayerState* TargetPlayerState = Cast<AAccelByteWarsPlayerState>(TargetPlayer->PlayerState);
+	NULLPTR_CHECK(TargetPlayerState);
+
+	FGameplayPlayerData* PlayerData = ABInGameGameState->GetPlayerDataById(TargetPlayerState->GetUniqueId(), GetControllerId(TargetPlayerState));
+	NULLPTR_CHECK(PlayerData);
+
+	TargetPlayerState->NumKilledAttemptInSingleLifetime++;
+	PlayerData->NumKilledAttemptInSingleLifetime = TargetPlayerState->NumKilledAttemptInSingleLifetime;
+}
+
 void AAccelByteWarsInGameGameMode::RemoveFromActiveGameObjects(AActor* DestroyedActor)
 {
 	if (UAccelByteWarsGameplayObjectComponent* Component =
@@ -303,6 +359,8 @@ void AAccelByteWarsInGameGameMode::RemoveFromActiveGameObjects(AActor* Destroyed
 void AAccelByteWarsInGameGameMode::CloseGame(const FString& Reason) const
 {
 	GAMEMODE_LOG(Warning, TEXT("Unregistering or shutting down server with reason: %s."), *Reason);
+
+	ABInGameGameState->GameStatus = EGameStatus::INVALID;
 
 	AAccelByteWarsGameSession* Session = Cast<AAccelByteWarsGameSession>(GameSession);
 	if (!Session)
@@ -358,11 +416,10 @@ void AAccelByteWarsInGameGameMode::SetupGameplayObject(AActor* Object) const
 	Object->OnDestroyed.AddDynamic(this, &ThisClass::RemoveFromActiveGameObjects);
 }
 
-bool AAccelByteWarsInGameGameMode::CheckIfAllPlayersIsInOneTeam() const
+int32 AAccelByteWarsInGameGameMode::GetLivingTeamCount() const
 {
 	// check currently connected player TeamId
-	int32 TeamId = INDEX_NONE;
-	bool bOneTeamConnected = true;
+	TArray<int32> ActiveTeams;
 
 	// check if all player in the same team or if there's no player at all
 	for (const TObjectPtr<APlayerState> Player : ABInGameGameState->PlayerArray)
@@ -377,21 +434,11 @@ bool AAccelByteWarsInGameGameMode::CheckIfAllPlayersIsInOneTeam() const
 			}
 
 			// set TeamId to the first 'living' player
-			if (TeamId == INDEX_NONE)
-			{
-				TeamId = ByteWarsPlayerState->TeamId;
-				continue;
-			}
-
-			if (TeamId != ByteWarsPlayerState->TeamId)
-			{
-				bOneTeamConnected = false;
-				break;
-			}
+			ActiveTeams.AddUnique(ByteWarsPlayerState->TeamId);
 		}
 	}
 
-	return bOneTeamConnected;
+	return ActiveTeams.Num();
 }
 
 void AAccelByteWarsInGameGameMode::SpawnAndPossesPawn(APlayerState* PlayerState)
@@ -400,6 +447,12 @@ void AAccelByteWarsInGameGameMode::SpawnAndPossesPawn(APlayerState* PlayerState)
 	{
 		// Only spawn if player have lives
 		if (PS->NumLivesLeft <= 0)
+		{
+			return;
+		}
+
+		// if team is not assigned, aka INDEX_NONE, do not spawn
+		if (PS->TeamId <= INDEX_NONE)
 		{
 			return;
 		}
@@ -475,6 +528,18 @@ FVector AAccelByteWarsInGameGameMode::FindGoodPlayerPosition() const
 #pragma endregion 
 
 #pragma region "Countdown related"
+bool AAccelByteWarsInGameGameMode::ShouldStartNotEnoughPlayerCountdown() const
+{
+	// check if the config is enabled in game setup
+	if (ABInGameGameState->GameSetup.NotEnoughPlayerShutdownCountdown == INDEX_NONE ||
+		ABInGameGameState->GameSetup.MinimumTeamCountToPreventAutoShutdown == INDEX_NONE)
+	{
+		return false;
+	}
+
+	return GetLivingTeamCount() < ABInGameGameState->GameSetup.MinimumTeamCountToPreventAutoShutdown;
+}
+
 void AAccelByteWarsInGameGameMode::NotEnoughPlayerCountdownCounting(const float& DeltaSeconds) const
 {
 	// start NotEnoughPlayerCountdown to trigger server shutdown
@@ -487,15 +552,8 @@ void AAccelByteWarsInGameGameMode::NotEnoughPlayerCountdownCounting(const float&
 
 void AAccelByteWarsInGameGameMode::SetupShutdownCountdownsValue() const
 {
-	// get specified ShutdownOnFinishedDelay timer value
-	FString ShutdownOnFinishedDelayString = "30";
-	FParse::Value(FCommandLine::Get(), TEXT("-ShutdownOnFinishedDelay="), ShutdownOnFinishedDelayString);
-	ABInGameGameState->PostGameCountdown = FCString::Atoi(*ShutdownOnFinishedDelayString);
-
-	// get specified ShutdownOnOneTeamOrLessDelay timer value
-	FString ShutdownOnOneTeamOrLessDelayString = "30";
-	FParse::Value(FCommandLine::Get(), TEXT("-ShutdownOnOneTeamOrLessDelay="), ShutdownOnOneTeamOrLessDelayString);
-	ABInGameGameState->NotEnoughPlayerCountdown = FCString::Atoi(*ShutdownOnOneTeamOrLessDelayString);
+	ABInGameGameState->PostGameCountdown = ABInGameGameState->GameSetup.GameEndsShutdownCountdown;
+	ABInGameGameState->NotEnoughPlayerCountdown = ABInGameGameState->GameSetup.NotEnoughPlayerShutdownCountdown;
 }
 #pragma endregion
 

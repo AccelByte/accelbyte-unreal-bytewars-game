@@ -55,7 +55,17 @@ void UAccelByteWarsAssetManager::PreBeginPIE(bool bStartSimulate)
 		
 		// Populate Asset Cache before playing in editor
 		PopulateAssetCache();
+
+		StarterOnlineSessionModulesChecker();
+		DependentModuleOverride();
 	}
+}
+
+void UAccelByteWarsAssetManager::EndPIE(bool bStartSimulate)
+{
+	Super::EndPIE(bStartSimulate);
+
+	ResetDependentModuleOverride();
 }
 #endif
 
@@ -158,6 +168,7 @@ void UAccelByteWarsAssetManager::LoadAssetsOfType(const TArray<FPrimaryAssetType
 		TSharedPtr<FStreamableHandle> Handle = LoadPrimaryAssetsWithType(AssetType);
 		if (Handle.IsValid())
 		{
+			// this will not be executed when starting PIE unless UnloadAssetsOfType called prior to this
 			Handle->WaitUntilComplete(0.0f, false);
 			
 			TArray<UObject*> LoadedAssets;
@@ -170,6 +181,11 @@ void UAccelByteWarsAssetManager::LoadAssetsOfType(const TArray<FPrimaryAssetType
 			}
 
 			TutorialModuleOverride();
+			StarterOnlineSessionModulesChecker();
+			if (IsRunningGame() || IsRunningDedicatedServer())
+			{
+				DependentModuleOverride();
+			}
 		}
 	}
 }
@@ -201,6 +217,11 @@ void UAccelByteWarsAssetManager::RemoveAssetFromCache(const FPrimaryAssetId& Ass
 
 void UAccelByteWarsAssetManager::TutorialModuleOverride()
 {
+#if UE_EDITOR
+	// Session Module override
+	TArray<FString> SessionModuleFileNamesToBeOverriden;
+#endif
+
 	// Get module override from launch parameters.
 	TArray<FString> CmdModuleOverrides;
 	FString CmdArgs = FCommandLine::Get();
@@ -276,6 +297,12 @@ void UAccelByteWarsAssetManager::TutorialModuleOverride()
 			if (IdsToBeOverriden.Find(TutorialModule->CodeName) != INDEX_NONE)
 			{
 				TutorialModule->OverridesIsActive(true);
+#if UE_EDITOR
+				if (TutorialModule->GetIsOnlineSessionActivatable())
+				{
+					SessionModuleFileNamesToBeOverriden.Add(Asset->GetName());
+				}
+#endif
 			}
 			else
 			{
@@ -288,7 +315,7 @@ void UAccelByteWarsAssetManager::TutorialModuleOverride()
 	}
 
 #if UE_EDITOR
-	if (!IsRunningGame())
+	if (!IsRunningGame() && !IsRunningDedicatedServer())
 	{
 		// Show notification if overriden
 		if (bDisableOtherModules || !IdsToBeOverriden.IsEmpty())
@@ -315,6 +342,32 @@ void UAccelByteWarsAssetManager::TutorialModuleOverride()
 					SubText += FString::Printf(TEXT("%s%s"), LINE_TERMINATOR, LINE_TERMINATOR);
 				}
 				SubText += "All unrelated modules are disabled";
+			}
+
+			// Show additional info if one / more overriden modules is a session module
+			if (SessionModuleFileNamesToBeOverriden.Num() == 1)
+			{
+				SubText += FString::Printf(TEXT("%s%s%s"),
+					LINE_TERMINATOR,
+					LINE_TERMINATOR,
+					*FString("Online Session Activatable module in override detected. Make sure this module is MANUALLY active."));
+
+				SubText += FString::Printf(TEXT("%s%s%s"),
+					LINE_TERMINATOR,
+					TCString<TCHAR>::Tab(1),
+					*SessionModuleFileNamesToBeOverriden[0]);
+			}
+			else if (SessionModuleFileNamesToBeOverriden.Num() > 1)
+			{
+				SubText += FString::Printf(TEXT("%s%s%s"),
+					LINE_TERMINATOR,
+					LINE_TERMINATOR,
+					*FString("Multiple Online Session Activatable module in override detected. Make sure this module is MANUALLY active."));
+
+				SubText += FString::Printf(TEXT("%s%s%s"),
+					LINE_TERMINATOR,
+					TCString<TCHAR>::Tab(1),
+					*FString("DA_SessionInclusiveEssentials"));
 			}
 			Info.SubText = FText::FromString(SubText);
 
@@ -344,6 +397,117 @@ void UAccelByteWarsAssetManager::TutorialModuleOverride()
 #endif
 }
 
+void UAccelByteWarsAssetManager::StarterOnlineSessionModulesChecker()
+{
+#if UE_EDITOR
+	TArray<FString> StarterSessionModuleFileNamesActive;
+
+	TArray<UAccelByteWarsDataAsset*> Assets = GetAllAssetsForTypeFromCache(UTutorialModuleDataAsset::TutorialModuleAssetType);
+	for (UAccelByteWarsDataAsset* Asset : Assets)
+	{
+		if (UTutorialModuleDataAsset* TutorialModule = Cast<UTutorialModuleDataAsset>(Asset))
+		{
+			if (TutorialModule->GetIsOnlineSessionActivatable() &&
+				TutorialModule->IsActiveAndDependenciesChecked() &&
+				TutorialModule->IsStarterModeActive())
+			{
+				StarterSessionModuleFileNamesActive.Add(Asset->GetName());
+			}
+		}
+	}
+
+	// show notification
+	if (StarterSessionModuleFileNamesActive.Num() > 1 && !IsRunningGame() && !IsRunningDedicatedServer())
+	{
+		FNotificationInfo Info(FText::FromString("Starter Online Session modules"));
+
+		// build info string
+		FString SubText = "Multiple Active Starter Online Session modules found:";
+
+		for (const FString& FileName : StarterSessionModuleFileNamesActive)
+		{
+			SubText += FString::Printf(TEXT("%s%s%s"),
+				LINE_TERMINATOR,
+				TCString<TCHAR>::Tab(1),
+				*FileName);
+		}
+
+		SubText += FString::Printf(TEXT("%s%s"),
+			LINE_TERMINATOR,
+			*FString("Game will only use the first found module's Online Session class"));
+
+		Info.SubText = FText::FromString(SubText);
+
+		Info.FadeInDuration = 0.25f;
+		Info.FadeOutDuration = 0.5f;
+		Info.bFireAndForget = false;
+		Info.ButtonDetails.Add(FNotificationButtonInfo(
+			FText::FromString("Dismiss"),
+			FText::FromString("Dismiss this notification"),
+			FSimpleDelegate::CreateWeakLambda(this, [this]()
+			{
+				OnlineSessionActiveNotificationItem->SetCompletionState(SNotificationItem::CS_None);
+				OnlineSessionActiveNotificationItem->ExpireAndFadeout();
+			}),
+			SNotificationItem::CS_None));
+
+		OnlineSessionActiveNotificationItem = FSlateNotificationManager::Get().AddNotification(Info);
+	}
+#endif
+}
+
+void UAccelByteWarsAssetManager::DependentModuleOverride() const
+{
+	TArray<UAccelByteWarsDataAsset*> Assets = GetAllAssetsForTypeFromCache(
+		UTutorialModuleDataAsset::TutorialModuleAssetType);
+	for (UAccelByteWarsDataAsset* Asset : Assets)
+	{
+		if (UTutorialModuleDataAsset* TutorialModule = Cast<UTutorialModuleDataAsset>(Asset))
+		{
+			if (!TutorialModule->IsActiveAndDependenciesChecked() || TutorialModule->TutorialModuleDependents.IsEmpty())
+			{
+				continue;
+			}
+
+			// disable module if ALL the dependants is not active
+			bool bDisableModule = true;
+			for (const UTutorialModuleDataAsset* Dependant : TutorialModule->TutorialModuleDependents)
+			{
+				if (Dependant->IsActiveAndDependenciesChecked())
+				{
+					bDisableModule = false;
+					break;
+				}
+			}
+
+			if (bDisableModule)
+			{
+				// no need to show notification, just disable it right away.
+				TutorialModule->OverridesIsActive(false);
+			}
+		}
+	}
+}
+
+void UAccelByteWarsAssetManager::ResetDependentModuleOverride() const
+{
+	TArray<UAccelByteWarsDataAsset*> Assets = GetAllAssetsForTypeFromCache(
+		UTutorialModuleDataAsset::TutorialModuleAssetType);
+	for (UAccelByteWarsDataAsset* Asset : Assets)
+	{
+		if (UTutorialModuleDataAsset* TutorialModule = Cast<UTutorialModuleDataAsset>(Asset))
+		{
+			if (TutorialModule->IsActiveAndDependenciesChecked() || TutorialModule->TutorialModuleDependents.IsEmpty())
+			{
+				continue;
+			}
+
+			TutorialModule->OverridesIsActive(true);
+			TutorialModule->ResetOverrides();
+		}
+	}
+}
+
 #if UE_EDITOR
 void UAccelByteWarsAssetManager::PostInitialAssetScan()
 {
@@ -358,7 +522,7 @@ void UAccelByteWarsAssetManager::PostInitialAssetScan()
 
 void UAccelByteWarsAssetManager::RecursiveGetSelfAndDependencyIds(
 	TArray<FString>& OutIds,
-	const UTutorialModuleDataAsset* TutorialModule) const
+	const UTutorialModuleDataAsset* TutorialModule)
 {
 	OutIds.AddUnique(TutorialModule->CodeName);
 	for (const UTutorialModuleDataAsset* Module : TutorialModule->TutorialModuleDependencies)

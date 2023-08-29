@@ -26,7 +26,8 @@ void UHUDWidget::NativeConstruct()
 	OnPreGameCountdownFinishedDelegateHandle =
 		Widget_PreGameCountdown->OnCountdownFinishedDelegate.AddUObject(this, &ThisClass::OnPreGameCountdownFinished);
 
-	if (ByteWarsGameState->GameSetup.NetworkType == EGameModeNetworkType::DS)
+	if (ByteWarsGameState->GameSetup.NotEnoughPlayerShutdownCountdown != INDEX_NONE &&
+		ByteWarsGameState->GameSetup.MinimumTeamCountToPreventAutoShutdown != INDEX_NONE)
 	{
 		// setup not enough player countdown
 		Widget_NotEnoughPlayerCountdown->SetupWidget(

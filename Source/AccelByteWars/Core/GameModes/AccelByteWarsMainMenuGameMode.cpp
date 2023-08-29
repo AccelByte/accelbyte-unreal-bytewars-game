@@ -53,6 +53,12 @@ void AAccelByteWarsMainMenuGameMode::BeginPlay()
 	{
 		UGameplayStatics::RemovePlayer(PlayerController, true);
 	}
+
+	// Setup game data
+	if (IsServer())
+	{
+		ABMainMenuGameState->LobbyCountdown = ABMainMenuGameState->GameSetup.StartGameCountdown;
+	}
 }
 
 APlayerController* AAccelByteWarsMainMenuGameMode::Login(
@@ -90,8 +96,7 @@ void AAccelByteWarsMainMenuGameMode::Tick(float DeltaSeconds)
 		switch (ABMainMenuGameState->LobbyStatus)
 		{
 		case ELobbyStatus::LOBBY_COUNTDOWN_STARTED:
-			// only countdown if on DS
-			if (IsRunningDedicatedServer())
+			if (ABMainMenuGameState->GameSetup.StartGameCountdown != INDEX_NONE)
 			{
 				if (ABMainMenuGameState->LobbyCountdown <= 0)
 				{
