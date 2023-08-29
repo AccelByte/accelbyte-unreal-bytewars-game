@@ -1,4 +1,6 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
 
 #pragma once
 
@@ -7,6 +9,12 @@
 #include "Core/AssetManager/AccelByteWarsAssetModels.h"
 #include "Core/Settings/GameModeDataAssets.h"
 #include "AccelByteWarsAssetManager.generated.h"
+
+ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogAccelByteWarsAssetManager, Log, All);
+#define UE_LOG_ASSET_MANAGER(Verbosity, Format, ...) \
+{ \
+	UE_LOG(LogAccelByteWarsAssetManager, Verbosity, TEXT("%s"), *FString::Printf(Format, ##__VA_ARGS__)); \
+}
 
 class UTutorialModuleDataAsset;
 
@@ -23,9 +31,6 @@ public:
 
 class UAccelByteWarsDataAsset;
 
-/**
- * 
- */
 UCLASS(BlueprintType, Blueprintable)
 class ACCELBYTEWARS_API UAccelByteWarsAssetManager : public UAssetManager
 {
