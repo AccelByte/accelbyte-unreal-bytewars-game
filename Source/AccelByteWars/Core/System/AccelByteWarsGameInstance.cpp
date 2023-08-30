@@ -153,6 +153,10 @@ TSubclassOf<UOnlineSession> UAccelByteWarsGameInstance::GetOnlineSessionClass()
 					else
 					{
 						bUseCompletedOnlineSession = true;
+						GAMEINSTANCE_LOG(
+							"Detected multiple Online Session module: %s and %s",
+							*OnlineSessionClass->GetPathName(),
+							*TutorialModule.OnlineSessionClass->GetPathName())
 						break;
 					}
 				}

@@ -518,6 +518,7 @@ void UAccelByteWarsAssetManager::DependentModuleOverride() const
 			{
 				// no need to show notification, just disable it right away.
 				TutorialModule->OverridesIsActive(false);
+				TutorialModule->bIsOverridenByDependents = true;
 			}
 		}
 	}
@@ -531,13 +532,14 @@ void UAccelByteWarsAssetManager::ResetDependentModuleOverride() const
 	{
 		if (UTutorialModuleDataAsset* TutorialModule = Cast<UTutorialModuleDataAsset>(Asset))
 		{
-			if (TutorialModule->IsActiveAndDependenciesChecked() || TutorialModule->TutorialModuleDependents.IsEmpty())
+			if (TutorialModule->TutorialModuleDependents.IsEmpty() || !TutorialModule->bIsOverridenByDependents)
 			{
 				continue;
 			}
 
 			TutorialModule->OverridesIsActive(true);
 			TutorialModule->ResetOverrides();
+			TutorialModule->bIsOverridenByDependents = false;
 		}
 	}
 }

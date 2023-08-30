@@ -37,6 +37,8 @@ public:
 	}
 
 	virtual void PostLoad() override;
+
+	bool bIsOverridenByDependents = false;
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 	virtual void PostDuplicate(EDuplicateMode::Type DuplicateMode) override;
