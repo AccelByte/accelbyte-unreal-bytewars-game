@@ -6,7 +6,7 @@
 
 #include "CoreMinimal.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
-#include "CreateSessionWidget.generated.h"
+#include "CreateSessionWidget_Starter.generated.h"
 
 class UAccelByteWarsOnlineSessionBase;
 class UAccelByteWarsWidgetSwitcher;
@@ -15,29 +15,22 @@ class UCommonButtonBase;
 class UTextBlock;
 
 UCLASS(Abstract)
-class ACCELBYTEWARS_API UCreateSessionWidget : public UAccelByteWarsActivatableWidget
+class ACCELBYTEWARS_API UCreateSessionWidget_Starter : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
 
-public:
+	public:
 	virtual void NativeOnActivated() override;
 
 protected:
 	virtual void NativeOnDeactivated() override;
 
-	UFUNCTION()
-	void CreateSession();
+#pragma region "Function declarations"
+	// TODO: Add your function declarations here
+#pragma endregion 
 
-	UFUNCTION()
-	void OnCreateSessionComplete(FName SessionName, bool bSucceeded);
-
-	UFUNCTION()
-	void LeaveSession();
-
-	UFUNCTION()
-	void OnLeaveSessionComplete(FName SessionName, bool bSucceeded);
-
-	const FString SessionTemplateName_Dummy = "unreal-elimination-none";
+	/* fill in your session template name from admin portal here */
+	const FString SessionTemplateName_Dummy = "";
 
 private:
 	UPROPERTY()
