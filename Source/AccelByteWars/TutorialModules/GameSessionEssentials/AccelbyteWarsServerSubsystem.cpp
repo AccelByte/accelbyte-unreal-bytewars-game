@@ -164,6 +164,8 @@ void UAccelbyteWarsServerSubsystem::OnRegisterServerComplete(bool bSucceeded)
 	{
 		bServerAlreadyRegister = true;
 	}
+
+	AAccelByteWarsGameMode::OnRegisterServerCompleteDelegates.Broadcast(bSucceeded);
 }
 
 void UAccelbyteWarsServerSubsystem::OnUnregisterServerComplete(bool bSucceeded)
