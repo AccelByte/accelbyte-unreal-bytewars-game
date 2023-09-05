@@ -73,6 +73,9 @@ private:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCountdownWidget* Widget_NotEnoughPlayerCountdown;
 
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UCountdownWidget* Widget_SimulateServerCrashCountdown;
+
 	UPROPERTY()
 	AAccelByteWarsInGameGameState* ByteWarsGameState;
 
@@ -94,6 +97,16 @@ private:
 	UFUNCTION()
 	void OnNotEnoughPlayerCountdownFinished();
 
+	UFUNCTION()
+	ECountdownState SetSimulateServerCrashCountdownState() const;
+
+	UFUNCTION()
+	int UpdateSimulateServerCrashCountdownValue() const;
+
+	UFUNCTION()
+	void OnSimulateServerCrashCountdownFinished();
+
 	FDelegateHandle OnPreGameCountdownFinishedDelegateHandle;
 	FDelegateHandle OnNotEnoughPlayerCountdownFinishedDelegateHandle;
+	FDelegateHandle OnSimulateServerCrashCountdownFinishedDelegateHandle;
 };

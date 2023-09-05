@@ -441,3 +441,61 @@ bool AAccelByteWarsGameMode::IsServer() const
 	const ENetMode NetMode = GetWorld()->GetNetMode();
 	return NetMode == ENetMode::NM_DedicatedServer || NetMode == ENetMode::NM_ListenServer;
 }
+
+void AAccelByteWarsGameMode::SetupSimulateServerCrashCountdownValue(const FString& SimulateServerCrashArg)
+{
+	if (!IsRunningDedicatedServer()) 
+	{
+		return;
+	}
+
+	bShouldSimulateServerCrash = false;
+
+	// Check simulate server crash argument from launch param.
+	const FString CmdArgs = FCommandLine::Get();
+	if (!CmdArgs.Contains(SimulateServerCrashArg, ESearchCase::IgnoreCase))
+	{
+		return;
+	}
+
+	// Set the default simulate server crash countdown.
+	ABGameState->SimulateServerCrashCountdown = 30;
+
+	// Override simulate server crash countdown value with the launch param value if any.
+	FString ParamValueStr;
+	int32 ParamValue;
+	FParse::Value(*CmdArgs, *FString::Printf(TEXT("%s="), *SimulateServerCrashArg), ParamValueStr);
+	if (!ParamValueStr.IsEmpty() && ParamValueStr.IsNumeric())
+	{
+		ParamValue = FCString::Atoi(*ParamValueStr);
+		if (ParamValue >= 0)
+		{
+			ABGameState->SimulateServerCrashCountdown = ParamValue;
+		}
+	}
+
+	bShouldSimulateServerCrash = true;
+}
+
+void AAccelByteWarsGameMode::SimulateServerCrashCountdownCounting(const float& DeltaSeconds) const
+{
+	if (!IsRunningDedicatedServer() || !bShouldSimulateServerCrash)
+	{
+		return;
+	}
+
+	float Countdown = ABGameState->SimulateServerCrashCountdown;
+	if (Countdown <= 0)
+	{
+		GAMEMODE_LOG(Warning, TEXT("Server is simulated to crash."));
+
+		// Simulating crash by accessing a null pointer.
+		const APlayerController* CrashPC = nullptr;
+		CrashPC->GetLocalPlayer()->GetPreferredUniqueNetId();
+
+		return;
+	}
+
+	GAMEMODE_LOG(Warning, TEXT("Simulating server crash in: %ds"), (int32)Countdown);
+	ABGameState->SimulateServerCrashCountdown -= DeltaSeconds;
+}

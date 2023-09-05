@@ -62,6 +62,7 @@ public:
 
 	inline static FOnPlayerPostLogin OnPlayerPostLoginDelegates;
 	inline static FOnInitializeListenServer OnInitializeListenServerDelegates;
+	inline static TMulticastDelegate<void(bool /*bSucceeded*/)> OnRegisterServerCompleteDelegates;
 
 protected:
 	/**
@@ -84,10 +85,18 @@ protected:
 	static int32 GetControllerId(const APlayerState* PlayerState);
 	bool IsServer() const;
 
+	// Countdown functionalities to simulate server crash.
+	void SetupSimulateServerCrashCountdownValue(const FString& SimulateServerCrashArg);
+	void SimulateServerCrashCountdownCounting(const float& DeltaSeconds) const;
+
 	UPROPERTY()
 	UAccelByteWarsGameInstance* GameInstance = nullptr;
 
 private:
 	UPROPERTY()
 	AAccelByteWarsGameState* ABGameState = nullptr;
+
+	/* Helper variable to check whether server should simulate 
+	 * crash or not based on the availability of launch param.*/
+	bool bShouldSimulateServerCrash = false;
 };

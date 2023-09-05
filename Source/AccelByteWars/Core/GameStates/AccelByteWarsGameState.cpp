@@ -15,6 +15,8 @@ void AAccelByteWarsGameState::GetLifetimeReplicatedProps(TArray<FLifetimePropert
 	DOREPLIFETIME(ThisClass, GameSetup);
 	DOREPLIFETIME(ThisClass, bIsServerTravelling);
 	DOREPLIFETIME(ThisClass, Teams);
+
+	DOREPLIFETIME(ThisClass, SimulateServerCrashCountdown);
 }
 
 void AAccelByteWarsGameState::EndPlay(const EEndPlayReason::Type EndPlayReason)
