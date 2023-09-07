@@ -59,6 +59,18 @@ void AAccelByteWarsMainMenuGameMode::BeginPlay()
 	{
 		ABMainMenuGameState->LobbyCountdown = ABMainMenuGameState->GameSetup.StartGameCountdown;
 	}
+
+	// Assign on-register server complete events.
+	OnRegisterServerCompleteDelegates.RemoveAll(this);
+	OnRegisterServerCompleteDelegates.AddWeakLambda(this, [this](bool bSucceeded)
+	{
+		if (bSucceeded) 
+		{
+			/* Set simulate server crash countdown.
+			 * The countdown will only be started in the main menu level.*/
+			SetupSimulateServerCrashCountdownValue(FString("-SIM_SERVER_CRASH_MAINMENU"));
+		}
+	});
 }
 
 APlayerController* AAccelByteWarsMainMenuGameMode::Login(
@@ -88,6 +100,11 @@ APlayerController* AAccelByteWarsMainMenuGameMode::Login(
 void AAccelByteWarsMainMenuGameMode::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+
+	if (IsRunningDedicatedServer())
+	{
+		SimulateServerCrashCountdownCounting(DeltaSeconds);
+	}
 
 #pragma region "Lobby Countdown Implementation"
 	// Run on server

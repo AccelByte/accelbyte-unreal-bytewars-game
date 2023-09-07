@@ -44,6 +44,24 @@ void UHUDWidget::NativeConstruct()
 	{
 		Widget_NotEnoughPlayerCountdown->SetVisibility(ESlateVisibility::Collapsed);
 	}
+
+	// Setup simulate crash countdown
+	if (ByteWarsGameState->SimulateServerCrashCountdown != INDEX_NONE)
+	{
+		Widget_SimulateServerCrashCountdown->SetupWidget(
+			FText::FromString(""),
+			FText::FromString(""),
+			FText::FromString("Simulating DS Crash in: "),
+			true);
+		Widget_SimulateServerCrashCountdown->CheckCountdownStateDelegate.BindUObject(this, &ThisClass::SetSimulateServerCrashCountdownState);
+		Widget_SimulateServerCrashCountdown->UpdateCountdownValueDelegate.BindUObject(this, &ThisClass::UpdateSimulateServerCrashCountdownValue);
+		OnSimulateServerCrashCountdownFinishedDelegateHandle =
+			Widget_SimulateServerCrashCountdown->OnCountdownFinishedDelegate.AddUObject(this, &ThisClass::OnSimulateServerCrashCountdownFinished);
+	}
+	else
+	{
+		Widget_SimulateServerCrashCountdown->SetVisibility(ESlateVisibility::Collapsed);
+	}
 }
 
 void UHUDWidget::NativeDestruct()
@@ -227,5 +245,29 @@ int UHUDWidget::UpdateNotEnoughPlayerCountdownValue() const
 }
 
 void UHUDWidget::OnNotEnoughPlayerCountdownFinished()
+{
+}
+
+ECountdownState UHUDWidget::SetSimulateServerCrashCountdownState() const
+{
+	ECountdownState State;
+	switch (ByteWarsGameState->GameStatus)
+	{
+	case EGameStatus::AWAITING_PLAYERS_MID_GAME:
+	case EGameStatus::GAME_STARTED:
+		State = ECountdownState::COUNTING;
+		break;
+	default:
+		State = ECountdownState::INVALID;
+	}
+	return State;
+}
+
+int UHUDWidget::UpdateSimulateServerCrashCountdownValue() const
+{
+	return UKismetMathLibrary::FFloor(ByteWarsGameState->SimulateServerCrashCountdown);
+}
+
+void UHUDWidget::OnSimulateServerCrashCountdownFinished()
 {
 }

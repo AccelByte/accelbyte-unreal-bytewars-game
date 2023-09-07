@@ -39,6 +39,10 @@ void AAccelByteWarsInGameGameMode::BeginPlay()
 	if (IsRunningDedicatedServer() && bIsGameplayLevel)
 	{
 		SetupShutdownCountdownsValue();
+
+		/* Set simulate server crash countdown.
+		 * The countdown will only be started in the gameplay level.*/
+		SetupSimulateServerCrashCountdownValue(FString("-SIM_SERVER_CRASH_GAMEPLAY"));
 	}
 #endif
 #pragma endregion
@@ -84,6 +88,8 @@ void AAccelByteWarsInGameGameMode::Tick(float DeltaSeconds)
 	case EGameStatus::AWAITING_PLAYERS_MID_GAME:
 		if (IsRunningDedicatedServer())
 		{
+			SimulateServerCrashCountdownCounting(DeltaSeconds);
+
 			if (ShouldStartNotEnoughPlayerCountdown())
 			{
 				NotEnoughPlayerCountdownCounting(DeltaSeconds);
@@ -98,6 +104,8 @@ void AAccelByteWarsInGameGameMode::Tick(float DeltaSeconds)
 	case EGameStatus::GAME_STARTED:
 		if (IsRunningDedicatedServer())
 		{
+			SimulateServerCrashCountdownCounting(DeltaSeconds);
+
 			if (ShouldStartNotEnoughPlayerCountdown())
 			{
 				ABInGameGameState->GameStatus = EGameStatus::AWAITING_PLAYERS_MID_GAME;
