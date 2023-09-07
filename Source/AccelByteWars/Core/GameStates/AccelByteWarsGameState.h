@@ -150,6 +150,10 @@ public:
 	 */
 	bool RemovePlayerFromTeam(FUniqueNetIdRepl UniqueNetId, const int32 ControllerId = 0);
 	
+	// Countdown to show that the server is simulated to crash.
+	UPROPERTY(Replicated)
+	float SimulateServerCrashCountdown = INDEX_NONE;
+
 private:
 
 	UPROPERTY()
