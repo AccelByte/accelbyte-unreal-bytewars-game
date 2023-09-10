@@ -8,11 +8,14 @@
 #include "Core/AssetManager/AccelByteWarsDataAsset.h"
 #include "Core/AssetManager/AccelByteWarsAssetModels.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleUtility.h"
+#include "Core/UI/Components/Prompt/FTUE/FTUEModels.h"
 #include "TutorialModuleDataAsset.generated.h"
 
 class UTutorialModuleOnlineSession;
 class UAccelByteWarsActivatableWidget;
 class UTutorialModuleSubsystem;
+
+class UBubbleDialogueWidget;
 
 UCLASS()
 class ACCELBYTEWARS_API UTutorialModuleDataAsset : public UAccelByteWarsDataAsset
@@ -118,8 +121,40 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tutorial Module Widgets", meta = (Tooltip = "Widgets that will be generated if this Tutorial Module active", ShowOnlyInnerProperties))
 	TArray<FTutorialModuleGeneratedWidget> GeneratedWidgets;
 
+#pragma region "First Time User Experience (FTUE)"
+	UPROPERTY(EditAnywhere, 
+		BlueprintReadOnly, 
+		AssetRegistrySearchable, 
+		Category = "First Time User Experience (FTUE)", 
+		meta = (Tooltip = "Whether this Tutorial Module has FTUE or not."))
+	bool bHasFTUE = false;
+
+	UPROPERTY(EditAnywhere, 
+		BlueprintReadOnly, 
+		AssetRegistrySearchable, 
+		Category = "First Time User Experience (FTUE)", 
+		meta = (
+			Tooltip = "Whether the FTUE should always be displayed when this Tutorial Module UI is displayed.", 
+			EditCondition = "bHasFTUE"))
+	bool bIsAlwaysActive = false;
+
+	UPROPERTY(EditAnywhere, 
+		BlueprintReadOnly, 
+		Category = "First Time User Experience (FTUE)", 
+		meta = (
+			Tooltip = "FTUE dialogue to be displayed when this Tutorial Module UI is displayed.", 
+			ShowOnlyInnerProperties, 
+			EditCondition = "bHasFTUE", 
+			EditConditionHides))
+	TArray<FFTUEDialogueModel> FTUEDialogues;
+#pragma endregion
+
 private:
 	void ValidateDataAssetProperties();
+
+	void ValidateGeneratedWidgets();
+	void ValidateFTUEDialogues();
+
 	bool ValidateClassProperty(TSubclassOf<UAccelByteWarsActivatableWidget>& UIClass, TSubclassOf<UAccelByteWarsActivatableWidget>& LastUIClass, const bool IsStarterClass);
 	bool ValidateClassProperty(TSubclassOf<UTutorialModuleSubsystem>& SubsystemClass, TSubclassOf<UTutorialModuleSubsystem>& LastSubsystemClass, const bool IsStarterClass);
 #pragma region "Online Session"
@@ -144,6 +179,7 @@ private:
 #pragma endregion 
 
 	TArray<FTutorialModuleGeneratedWidget> LastGeneratedWidgets;
-
 	static TSet<FString> GeneratedWidgetUsedIds;
+
+	TArray<FFTUEDialogueModel> LastFTUEDialogues;
 };

@@ -112,6 +112,19 @@ void UTutorialModuleDataAsset::ValidateDataAssetProperties()
 	ValidateClassProperty(StarterUIClass, LastStarterUIClass, true);
 	ValidateClassProperty(StarterSubsystemClass, LastStarterSubsystemClass, true);
 
+	// Validate Default's and Starter class properties for OnlineSession module
+	if (bOnlineSessionModule)
+	{
+		ValidateClassProperty(DefaultOnlineSessionClass, LastDefaultOnlineSessionClass, false);
+		ValidateClassProperty(StarterOnlineSessionClass, LastStarterOnlineSessionClass, true);
+	}
+
+	ValidateGeneratedWidgets();
+	ValidateFTUEDialogues();
+}
+
+void UTutorialModuleDataAsset::ValidateGeneratedWidgets()
+{
 	// Clean up last generated widgets metadata to avoid duplication.
 	for (FTutorialModuleGeneratedWidget& LastGeneratedWidget : LastGeneratedWidgets)
 	{
@@ -131,7 +144,7 @@ void UTutorialModuleDataAsset::ValidateDataAssetProperties()
 
 			TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.RemoveAll([this](const FTutorialModuleGeneratedWidget* Temp)
 			{
-				return Temp->OwnerTutorialModule == this;
+				return !Temp || Temp->OwnerTutorialModule == this;
 			});
 		}
 	}
@@ -146,7 +159,7 @@ void UTutorialModuleDataAsset::ValidateDataAssetProperties()
 
 			TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.RemoveAll([this](const FTutorialModuleGeneratedWidget* Temp)
 			{
-				return Temp->OwnerTutorialModule == this;
+				return !Temp || Temp->OwnerTutorialModule == this;
 			});
 		}
 	}
@@ -203,13 +216,58 @@ void UTutorialModuleDataAsset::ValidateDataAssetProperties()
 	}
 
 	LastGeneratedWidgets = GeneratedWidgets;
+}
 
-	// Validate Default's and Starter class properties for OnlineSession module
-	if (bOnlineSessionModule)
+void UTutorialModuleDataAsset::ValidateFTUEDialogues()
+{
+	// Clean up last FTUE dialogues metadata to avoid duplication.
+	for (auto& LastFTUEDialogue : LastFTUEDialogues)
 	{
-		ValidateClassProperty(DefaultOnlineSessionClass, LastDefaultOnlineSessionClass, false);
-		ValidateClassProperty(StarterOnlineSessionClass, LastStarterOnlineSessionClass, true);
+		for (auto& TargetWidgetClass : LastFTUEDialogue.TargetWidgetClasses)
+		{
+			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
+			{
+				continue;
+			}
+
+			TargetWidgetClass.GetDefaultObject()->FTUEDialogues.RemoveAll([this](const FFTUEDialogueModel Temp)
+			{
+				return Temp.OwnerTutorialModule == this;
+			});
+		}
 	}
+	for (auto& FTUEDialogue : FTUEDialogues)
+	{
+		for (auto& TargetWidgetClass : FTUEDialogue.TargetWidgetClasses)
+		{
+			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
+			{
+				continue;
+			}
+
+			TargetWidgetClass.GetDefaultObject()->FTUEDialogues.RemoveAll([this](const FFTUEDialogueModel Temp)
+			{
+				return Temp.OwnerTutorialModule == this;
+			});
+		}
+	}
+
+	// Assign fresh FTUE dialogue metadatas to the target widget class.
+	for (auto& FTUEDialogue : FTUEDialogues)
+	{
+		FTUEDialogue.OwnerTutorialModule = this;
+
+		for (auto& TargetWidgetClass : FTUEDialogue.TargetWidgetClasses)
+		{
+			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
+			{
+				continue;
+			}
+			TargetWidgetClass.GetDefaultObject()->FTUEDialogues.Add(FTUEDialogue);
+		}
+	}
+
+	LastFTUEDialogues = FTUEDialogues;
 }
 
 bool UTutorialModuleDataAsset::ValidateClassProperty(TSubclassOf<UAccelByteWarsActivatableWidget>& UIClass, TSubclassOf<UAccelByteWarsActivatableWidget>& LastUIClass, const bool IsStarterClass)

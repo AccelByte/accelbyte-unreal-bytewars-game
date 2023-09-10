@@ -17,6 +17,8 @@
 #include "Components/VerticalBoxSlot.h"
 #include "Components/HorizontalBoxSlot.h"
 
+#include "Core/UI/Components/Prompt/FTUE/BubbleDialogueWidget.h"
+
 #define LOCTEXT_NAMESPACE "AccelByteWars"
 
 UAccelByteWarsActivatableWidget::UAccelByteWarsActivatableWidget(const FObjectInitializer& ObjectInitializer)
@@ -32,7 +34,9 @@ void UAccelByteWarsActivatableWidget::NativePreConstruct()
 	if (DefaultObj)
 	{
 		AssociateTutorialModule = DefaultObj->AssociateTutorialModule;
+
 		GeneratedWidgets = DefaultObj->GeneratedWidgets;
+		FTUEDialogues = DefaultObj->FTUEDialogues;
 	}
 }
 
@@ -48,6 +52,23 @@ void UAccelByteWarsActivatableWidget::NativeOnActivated()
 	}
 
 	InitializeGeneratedWidgets();
+
+	InitializeFTEUDialogues();
+}
+
+void UAccelByteWarsActivatableWidget::NativeOnDeactivated()
+{
+	Super::NativeOnDeactivated();
+
+	// Try to deinitialize FTUE.
+	try
+	{
+		DeinitializeFTUEDialogues();
+	}
+	catch (const std::exception& Exception)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Failed to deinitialize FTUE as the widget is begin to tear down. Exception: %s"), *Exception.what());
+	}
 }
 
 TOptional<FUIInputConfig> UAccelByteWarsActivatableWidget::GetDesiredInputConfig() const
@@ -71,6 +92,7 @@ void UAccelByteWarsActivatableWidget::PostLoad()
 	Super::PostLoad();
 
 	ValidateGeneratedWidgets();
+	ValidateFTUEDialogues();
 }
 
 #if WITH_EDITOR
@@ -79,6 +101,7 @@ void UAccelByteWarsActivatableWidget::PostEditChangeProperty(FPropertyChangedEve
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 
 	ValidateGeneratedWidgets();
+	ValidateFTUEDialogues();
 }
 
 void UAccelByteWarsActivatableWidget::PostDuplicate(bool bDuplicateForPIE)
@@ -86,6 +109,7 @@ void UAccelByteWarsActivatableWidget::PostDuplicate(bool bDuplicateForPIE)
 	Super::PostDuplicate(bDuplicateForPIE);
 
 	ValidateGeneratedWidgets();
+	ValidateFTUEDialogues();
 }
 
 void UAccelByteWarsActivatableWidget::ValidateCompiledWidgetTree(const UWidgetTree& BlueprintWidgetTree, class IWidgetCompilerLog& CompileLog) const
@@ -386,6 +410,69 @@ TWeakObjectPtr<UAccelByteWarsActivatableWidget> UAccelByteWarsActivatableWidget:
 	GeneratedWidgetPool.Add(Widget.Get());
 
 	return Widget;
+}
+
+void UAccelByteWarsActivatableWidget::ValidateFTUEDialogues()
+{
+	// TODO: Refactor if necessary.
+
+	// Clear invalid FTUE dialogues.
+	FTUEDialogues.RemoveAll([](const FFTUEDialogueModel Temp)
+	{
+		return !Temp.OwnerTutorialModule;
+	});
+}
+
+void UAccelByteWarsActivatableWidget::InitializeFTEUDialogues()
+{
+	// TODO: Refactor if necessary.
+
+	if (!IsVisible())
+	{
+		return;
+	}
+
+	UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetWorld()->GetGameInstance());
+	if (!GameInstance)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cannot initialize FTUE dialogues. Game Instance is not valid."));
+		return;
+	}
+
+	UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget();
+	if (!BaseUIWidget)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cannot initialize FTUE dialogues. Base UI widget is not valid."));
+		return;
+	}
+
+	BaseUIWidget->W_FTUE->AddDialogues(FTUEDialogues);
+}
+
+void UAccelByteWarsActivatableWidget::DeinitializeFTUEDialogues()
+{
+	// TODO: Refactor if necessary.
+
+	UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetWorld()->GetGameInstance());
+	if (!GameInstance)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cannot deinitialize FTUE dialogues. Game Instance is not valid."));
+		return;
+	}
+
+	UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget();
+	if (!BaseUIWidget)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cannot deinitialize FTUE dialogues. Base UI widget is not valid."));
+		return;
+	}
+
+	if (!BaseUIWidget->W_FTUE) 
+	{
+		return;
+	}
+
+	BaseUIWidget->W_FTUE->RemoveAssociateDialogues(AssociateTutorialModule);
 }
 
 #undef LOCTEXT_NAMESPACE

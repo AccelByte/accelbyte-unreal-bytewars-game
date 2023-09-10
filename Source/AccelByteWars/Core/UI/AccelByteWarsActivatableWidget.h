@@ -6,8 +6,10 @@
 
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
+#include "Core/UI/AccelByteWarsWidgetInterface.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleUtility.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleDataAsset.h"
+#include "Core/UI/Components/Prompt/FTUE/FTUEModels.h"
 #include "AccelByteWarsActivatableWidget.generated.h"
 
 
@@ -25,7 +27,7 @@ class UAccelByteWarsButtonBase;
 class UPanelWidget;
 
 UCLASS(Abstract, Blueprintable)
-class ACCELBYTEWARS_API UAccelByteWarsActivatableWidget : public UCommonActivatableWidget
+class ACCELBYTEWARS_API UAccelByteWarsActivatableWidget : public UCommonActivatableWidget, public IAccelByteWarsWidgetInterface
 {
 	GENERATED_BODY()
 
@@ -33,6 +35,7 @@ public:
 	UAccelByteWarsActivatableWidget(const FObjectInitializer& ObjectInitializer);
 	virtual void NativePreConstruct() override;
 	virtual void NativeOnActivated() override;
+	virtual void NativeOnDeactivated() override;
 
 	virtual void PostLoad() override;
 #if WITH_EDITOR
@@ -54,6 +57,9 @@ public:
 
 	// The generated widget metadatas injected by one or more Tutorial Modules.
 	TArray<FTutorialModuleGeneratedWidget*> GeneratedWidgets;
+
+	// The FTUE dialogues to be shown when this widget is active.
+	TArray<FFTUEDialogueModel> FTUEDialogues;
 
 protected:
 	/** Change the owning player controller input mode to game only and also hide the mouse cursor */
@@ -103,6 +109,10 @@ private:
 	TWeakObjectPtr<UAccelByteWarsButtonBase> GenerateEntryButton(FTutorialModuleGeneratedWidget& Metadata, UPanelWidget& WidgetContainer);
 	TWeakObjectPtr<UAccelByteWarsButtonBase> GenerateActionButton(FTutorialModuleGeneratedWidget& Metadata, UPanelWidget& WidgetContainer);
 	TWeakObjectPtr<UAccelByteWarsActivatableWidget> GenerateWidget(FTutorialModuleGeneratedWidget& Metadata, UPanelWidget& WidgetContainer);
+
+	void ValidateFTUEDialogues();
+	void InitializeFTEUDialogues();
+	void DeinitializeFTUEDialogues();
 
 	UPROPERTY()
 	TArray<UUserWidget*> GeneratedWidgetPool;
