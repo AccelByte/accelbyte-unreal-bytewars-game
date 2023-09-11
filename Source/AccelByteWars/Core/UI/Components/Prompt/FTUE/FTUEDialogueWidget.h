@@ -20,7 +20,7 @@ class ACCELBYTEWARS_API UFTUEDialogueWidget : public UAccelByteWarsActivatableWi
 
 public:
 	void AddDialogues(TArray<FFTUEDialogueModel> Dialogues);
-	void RemoveAssociateDialogues(const UTutorialModuleDataAsset* TutorialModule);
+	void RemoveAssociateDialogues(const TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass);
 
 	void ShowDialogues();
 	void CloseDialogues();
@@ -30,11 +30,10 @@ public:
 
 protected:
 	virtual void NativeConstruct() override;
-	virtual void NativeOnActivated() override;
-	virtual void NativeOnDeactivated() override;
 
 	void InitializeDialogue(const FFTUEDialogueModel& Dialogue);
 	void InitializeActionButton(UAccelByteWarsButtonBase* Button, const FFTUEDialogueButtonModel& ButtonModel);
+	void ClearHighlightedWidget();
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCanvasPanel* Canvas_FTUE;

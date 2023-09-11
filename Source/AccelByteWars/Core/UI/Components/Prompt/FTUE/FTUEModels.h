@@ -126,7 +126,7 @@ struct FFTUEDialogueModel
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
         Tooltip = "The type of action buttons should be shown when the FTUE is shown."))
-    FFTUEDialogueButtonType ButtonType;
+    FFTUEDialogueButtonType ButtonType = FFTUEDialogueButtonType::NO_BUTTON;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
         EditCondition = "ButtonType!=FFTUEDialogueButtonType::NO_BUTTON", 

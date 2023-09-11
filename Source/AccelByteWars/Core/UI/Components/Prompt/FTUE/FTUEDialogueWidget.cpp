@@ -33,16 +33,6 @@ void UFTUEDialogueWidget::NativeConstruct()
 	W_FTUEInterupter->SetVisibility(ESlateVisibility::Collapsed);
 }
 
-void UFTUEDialogueWidget::NativeOnActivated()
-{
-	Super::NativeOnActivated();
-}
-
-void UFTUEDialogueWidget::NativeOnDeactivated()
-{
-	Super::NativeOnDeactivated();
-}
-
 void UFTUEDialogueWidget::AddDialogues(TArray<FFTUEDialogueModel> Dialogues)
 {
 	CachedDialogues.Append(Dialogues);
@@ -50,15 +40,14 @@ void UFTUEDialogueWidget::AddDialogues(TArray<FFTUEDialogueModel> Dialogues)
 	Btn_Open->SetVisibility(!CachedDialogues.IsEmpty() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 }
 
-void UFTUEDialogueWidget::RemoveAssociateDialogues(const UTutorialModuleDataAsset* TutorialModule)
+void UFTUEDialogueWidget::RemoveAssociateDialogues(const TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass)
 {
-	CachedDialogues.RemoveAll([TutorialModule](const FFTUEDialogueModel Temp)
+	CachedDialogues.RemoveAll([WidgetClass](const FFTUEDialogueModel Temp)
 	{
-		return Temp.OwnerTutorialModule == TutorialModule;
+		return Temp.TargetWidgetClasses.Contains(WidgetClass);
 	});
 
 	Btn_Open->SetVisibility(!CachedDialogues.IsEmpty() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-	NextDialogue();
 }
 
 void UFTUEDialogueWidget::ShowDialogues()
@@ -70,22 +59,17 @@ void UFTUEDialogueWidget::ShowDialogues()
 		return;
 	}
 
+	ClearHighlightedWidget();
+
+	W_FTUEDialogue->SetVisibility(ESlateVisibility::Visible);
+
 	CachedDialogues.Sort();
 	InitializeDialogue(CachedDialogues[DialogueIndex]);
-	W_FTUEDialogue->SetVisibility(ESlateVisibility::Visible);
 }
 
 void UFTUEDialogueWidget::CloseDialogues()
 {
-	// Clear last highlighted widget if any.
-	if (CachedHighlightedWidget)
-	{
-		IAccelByteWarsWidgetInterface* WidgetInterface = Cast<IAccelByteWarsWidgetInterface>(CachedHighlightedWidget);
-		if (WidgetInterface)
-		{
-			WidgetInterface->Execute_ToggleHighlight(CachedHighlightedWidget, false);
-		}
-	}
+	ClearHighlightedWidget();
 
 	// TODO: Might prefer to remove the widget instead of changing its visibility.
 	// Close the FTUE
@@ -118,35 +102,9 @@ void UFTUEDialogueWidget::NextDialogue()
 
 void UFTUEDialogueWidget::InitializeDialogue(const FFTUEDialogueModel& Dialogue)
 {
-	// Set navigation buttons.
-	Btn_Next->SetButtonText(
-		(DialogueIndex < CachedDialogues.Num() - 1) ?
-		LOCTEXT("Next", "Next") :
-		LOCTEXT("Close", "Close"));
-	Btn_Prev->SetVisibility(
-		(DialogueIndex > 0) ?
-		ESlateVisibility::Visible :
-		ESlateVisibility::Collapsed);
-
-	// Set dialogue message.
-	Txt_Message->SetText(Dialogue.Message);
-
-	// Setup the action buttons.
-	switch (Dialogue.ButtonType)
-	{
-	case FFTUEDialogueButtonType::TWO_BUTTONS:
-		InitializeActionButton(Btn_Action2, Dialogue.Button2);
-	case FFTUEDialogueButtonType::ONE_BUTTON:
-		InitializeActionButton(Btn_Action1, Dialogue.Button1);
-		break;
-	default:
-		Btn_Action1->SetVisibility(ESlateVisibility::Collapsed);
-		Btn_Action2->SetVisibility(ESlateVisibility::Collapsed);
-		break;
-	}
-
 	// Check for highlighted widget.
-	if (Dialogue.bHighlightWidget) 
+	ClearHighlightedWidget();
+	if (Dialogue.bHighlightWidget)
 	{
 		const FString WidgetToHighlightStr = Dialogue.TargetWidgetNameToHighlight;
 		TArray<UUserWidget*> FoundWidgets;
@@ -160,6 +118,7 @@ void UFTUEDialogueWidget::InitializeDialogue(const FFTUEDialogueModel& Dialogue)
 			}
 
 			// Highlight widget.
+			// TODO: check whether the widget is visible or not (there is wierd behavior in Unreal).
 			if (FoundWidget->GetName().Equals(WidgetToHighlightStr, ESearchCase::CaseSensitive))
 			{
 				IAccelByteWarsWidgetInterface* WidgetInterface = Cast<IAccelByteWarsWidgetInterface>(FoundWidget);
@@ -171,17 +130,54 @@ void UFTUEDialogueWidget::InitializeDialogue(const FFTUEDialogueModel& Dialogue)
 				break;
 			}
 		}
+	
+		// Skip the dialogue if the highlighted widget is not found or is invisible.
+		// TODO: check whether the widget is visible or not (there is wierd behavior in Unreal).
+		if (!CachedHighlightedWidget)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Cannot highlight widget. Skipping FTUE dialogue, highlighted widget is not found or invisible."));
+			NextDialogue();
+			return;
+		}
 	}
 
 	// Check if interrupting.
 	W_FTUEInterupter->SetVisibility(Dialogue.bIsInterrupting ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 
+	// Set navigation buttons.
+	Btn_Next->SetButtonText( 
+		(DialogueIndex < CachedDialogues.Num() - 1) ?
+		LOCTEXT("Next", "Next") :
+		LOCTEXT("Close", "Close"));
+	Btn_Prev->SetVisibility(
+		(DialogueIndex > 0) ?
+		ESlateVisibility::Visible :
+		ESlateVisibility::Collapsed);
+
+	// Set dialogue message.
+	FFormatNamedArguments Arg;
+	Txt_Message->SetText(FText::Format(Dialogue.Message, Arg));
+
+	// Setup the action buttons.
+	Btn_Action1->SetVisibility(ESlateVisibility::Collapsed);
+	Btn_Action2->SetVisibility(ESlateVisibility::Collapsed);
+	switch (Dialogue.ButtonType)
+	{
+	case FFTUEDialogueButtonType::TWO_BUTTONS:
+		InitializeActionButton(Btn_Action2, Dialogue.Button2);
+	case FFTUEDialogueButtonType::ONE_BUTTON:
+		InitializeActionButton(Btn_Action1, Dialogue.Button1);
+		break;
+	}
+
 	// Set dialogue position.
-	UCanvasPanelSlot* Widget = Canvas_FTUE->AddChildToCanvas(W_FTUEDialogue);
-	Widget->SetAutoSize(true);
-	Widget->SetAnchors(FAnchors(Dialogue.GetAnchor().X, Dialogue.GetAnchor().Y));
-	Widget->SetAlignment(Dialogue.GetAnchor());
-	Widget->SetPosition(Dialogue.Position);
+	if (UCanvasPanelSlot* WidgetSlot = Cast<UCanvasPanelSlot>(W_FTUEDialogue->Slot)) 
+	{
+		WidgetSlot->SetAutoSize(true);
+		WidgetSlot->SetAnchors(FAnchors(Dialogue.GetAnchor().X, Dialogue.GetAnchor().Y));
+		WidgetSlot->SetAlignment(Dialogue.GetAnchor());
+		WidgetSlot->SetPosition(Dialogue.Position);
+	}
 }
 
 void UFTUEDialogueWidget::InitializeActionButton(UAccelByteWarsButtonBase* Button, const FFTUEDialogueButtonModel& ButtonModel)
@@ -226,6 +222,20 @@ void UFTUEDialogueWidget::InitializeActionButton(UAccelByteWarsButtonBase* Butto
 			ButtonModel.ButtonActionDelegate.ExecuteIfBound();
 		});
 	}
+}
+
+void UFTUEDialogueWidget::ClearHighlightedWidget()
+{
+	if (CachedHighlightedWidget)
+	{
+		IAccelByteWarsWidgetInterface* WidgetInterface = Cast<IAccelByteWarsWidgetInterface>(CachedHighlightedWidget);
+		if (WidgetInterface)
+		{
+			WidgetInterface->Execute_ToggleHighlight(CachedHighlightedWidget, false);
+		}
+	}
+
+	CachedHighlightedWidget = nullptr;
 }
 
 #undef LOCTEXT_NAMESPACE

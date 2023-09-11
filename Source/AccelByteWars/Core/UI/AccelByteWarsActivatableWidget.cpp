@@ -215,6 +215,8 @@ void UAccelByteWarsActivatableWidget::InitializeGeneratedWidgets()
 	for (UUserWidget* OldGeneratedWidget : GeneratedWidgetPool)
 	{
 		OldGeneratedWidget->RemoveFromParent();
+		OldGeneratedWidget->ConditionalBeginDestroy();
+		OldGeneratedWidget->ConditionalFinishDestroy();
 	}
 	GeneratedWidgetPool.Empty();
 
@@ -318,6 +320,12 @@ TWeakObjectPtr<UAccelByteWarsButtonBase> UAccelByteWarsActivatableWidget::Genera
 	WidgetContainer.AddChild(Button.Get());
 	Metadata.GenerateWidgetRef = Button.Get();
 
+	// Rename the button based on its id.
+	if (!Metadata.WidgetId.IsEmpty())
+	{
+		Button->Rename(*Metadata.WidgetId);
+	}
+
 	// Refresh button alignment since the default alignment upon a widget is spawned is "Align_Fill".
 	UPanelSlot* ButtonSlot = WidgetContainer.AddChild(Button.Get());
 	if (UVerticalBoxSlot* VerticalSlot = StaticCast<UVerticalBoxSlot*>(ButtonSlot))
@@ -357,6 +365,12 @@ TWeakObjectPtr<UAccelByteWarsButtonBase> UAccelByteWarsActivatableWidget::Genera
 	});
 	WidgetContainer.AddChild(Button.Get());
 	Metadata.GenerateWidgetRef = Button.Get();
+
+	// Rename the button based on its id.
+	if (!Metadata.WidgetId.IsEmpty())
+	{
+		Button->Rename(*Metadata.WidgetId);
+	}
 
 	// Refresh button alignment since the default alignment upon a widget is spawned is "Align_Fill".
 	UPanelSlot* ButtonSlot = WidgetContainer.AddChild(Button.Get());
@@ -416,6 +430,12 @@ TWeakObjectPtr<UAccelByteWarsActivatableWidget> UAccelByteWarsActivatableWidget:
 	const TWeakObjectPtr<UAccelByteWarsActivatableWidget> Widget = MakeWeakObjectPtr<UAccelByteWarsActivatableWidget>(CreateWidget<UAccelByteWarsActivatableWidget>(this, WidgetClass.Get()));
 	WidgetContainer.AddChild(Widget.Get());
 	Metadata.GenerateWidgetRef = Widget.Get();
+
+	// Rename the widget based on its id.
+	if (!Metadata.WidgetId.IsEmpty())
+	{
+		Widget->Rename(*Metadata.WidgetId);
+	}
 
 	GeneratedWidgetPool.Add(Widget.Get());
 
@@ -492,7 +512,7 @@ void UAccelByteWarsActivatableWidget::DeinitializeFTUEDialogues()
 		return;
 	}
 
-	FTUEWidget->RemoveAssociateDialogues(AssociateTutorialModule);
+	FTUEWidget->RemoveAssociateDialogues(GetClass());
 }
 
 #pragma endregion
