@@ -48,6 +48,7 @@ public:
 	virtual TOptional<FUIInputConfig> GetDesiredInputConfig() const override;
 	//~End of UCommonActivatableWidget interface
 
+#pragma region "Tutorial Module"
 	UFUNCTION(BlueprintImplementableEvent, Category = "Tutorial Module Metadata")
 	TArray<UPanelWidget*> GetGeneratedWidgetContainers();
 
@@ -60,6 +61,7 @@ public:
 
 	// The FTUE dialogues to be shown when this widget is active.
 	TArray<FFTUEDialogueModel> FTUEDialogues;
+#pragma endregion
 
 protected:
 	/** Change the owning player controller input mode to game only and also hide the mouse cursor */
@@ -104,16 +106,24 @@ protected:
 	EMouseCaptureMode GameMouseCaptureMode = EMouseCaptureMode::CapturePermanently;
 
 private:
+#pragma region "Tutorial Module"
+	void ValidateAssociateTutorialModule();
+#pragma endregion
+
+#pragma region "Generated Widgets"
 	void ValidateGeneratedWidgets();
 	void InitializeGeneratedWidgets();
 	TWeakObjectPtr<UAccelByteWarsButtonBase> GenerateEntryButton(FTutorialModuleGeneratedWidget& Metadata, UPanelWidget& WidgetContainer);
 	TWeakObjectPtr<UAccelByteWarsButtonBase> GenerateActionButton(FTutorialModuleGeneratedWidget& Metadata, UPanelWidget& WidgetContainer);
 	TWeakObjectPtr<UAccelByteWarsActivatableWidget> GenerateWidget(FTutorialModuleGeneratedWidget& Metadata, UPanelWidget& WidgetContainer);
 
+	UPROPERTY()
+	TArray<UUserWidget*> GeneratedWidgetPool;
+#pragma endregion
+
+#pragma region "First Time User Experience (FTUE)"
 	void ValidateFTUEDialogues();
 	void InitializeFTEUDialogues();
 	void DeinitializeFTUEDialogues();
-
-	UPROPERTY()
-	TArray<UUserWidget*> GeneratedWidgetPool;
+#pragma endregion
 };

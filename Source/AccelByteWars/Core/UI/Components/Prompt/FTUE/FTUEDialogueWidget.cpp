@@ -2,7 +2,7 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-#include "Core/UI/Components/Prompt/FTUE/BubbleDialogueWidget.h"
+#include "Core/UI/Components/Prompt/FTUE/FTUEDialogueWidget.h"
 
 #include "Core/UI/Components/AccelByteWarsButtonBase.h"
 #include "Components/TextBlock.h"
@@ -11,47 +11,57 @@
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
 
-void UBubbleDialogueWidget::NativeConstruct()
+#define LOCTEXT_NAMESPACE "AccelByteWars"
+
+void UFTUEDialogueWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
 	Btn_Open->OnClicked().Clear();
 	Btn_Open->OnClicked().AddUObject(this, &ThisClass::ShowDialogues);
 
-	Btn_Close->OnClicked().Clear();
-	Btn_Close->OnClicked().AddUObject(this, &ThisClass::CloseDialogues);
+	Btn_Prev->OnClicked().Clear();
+	Btn_Prev->OnClicked().AddUObject(this, &ThisClass::PrevDialogue);
 
+	Btn_Next->OnClicked().Clear();
+	Btn_Next->OnClicked().AddUObject(this, &ThisClass::NextDialogue);
+
+	// TODO: Might prefer to remove the widget instead of changing its visibility.
 	// On initialize, close the FTUE.
-	W_FTUE->SetVisibility(ESlateVisibility::Collapsed);
+	Btn_Open->SetVisibility(ESlateVisibility::Collapsed);
+	W_FTUEDialogue->SetVisibility(ESlateVisibility::Collapsed);
 	W_FTUEInterupter->SetVisibility(ESlateVisibility::Collapsed);
 }
 
-void UBubbleDialogueWidget::NativeOnActivated()
+void UFTUEDialogueWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 }
 
-void UBubbleDialogueWidget::NativeOnDeactivated()
+void UFTUEDialogueWidget::NativeOnDeactivated()
 {
 	Super::NativeOnDeactivated();
 }
 
-void UBubbleDialogueWidget::AddDialogues(TArray<FFTUEDialogueModel> Dialogues)
+void UFTUEDialogueWidget::AddDialogues(TArray<FFTUEDialogueModel> Dialogues)
 {
 	CachedDialogues.Append(Dialogues);
+
+	Btn_Open->SetVisibility(!CachedDialogues.IsEmpty() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 }
 
-void UBubbleDialogueWidget::RemoveAssociateDialogues(const UTutorialModuleDataAsset* TutorialModule)
+void UFTUEDialogueWidget::RemoveAssociateDialogues(const UTutorialModuleDataAsset* TutorialModule)
 {
 	CachedDialogues.RemoveAll([TutorialModule](const FFTUEDialogueModel Temp)
 	{
 		return Temp.OwnerTutorialModule == TutorialModule;
 	});
 
-	CloseDialogues();
+	Btn_Open->SetVisibility(!CachedDialogues.IsEmpty() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	NextDialogue();
 }
 
-void UBubbleDialogueWidget::ShowDialogues()
+void UFTUEDialogueWidget::ShowDialogues()
 {
 	DialogueIndex = 0;
 
@@ -62,10 +72,10 @@ void UBubbleDialogueWidget::ShowDialogues()
 
 	CachedDialogues.Sort();
 	InitializeDialogue(CachedDialogues[DialogueIndex]);
-	W_FTUE->SetVisibility(ESlateVisibility::Visible);
+	W_FTUEDialogue->SetVisibility(ESlateVisibility::Visible);
 }
 
-void UBubbleDialogueWidget::CloseDialogues()
+void UFTUEDialogueWidget::CloseDialogues()
 {
 	// Clear last highlighted widget if any.
 	if (CachedHighlightedWidget)
@@ -77,31 +87,13 @@ void UBubbleDialogueWidget::CloseDialogues()
 		}
 	}
 
-	// If no dialogue left, close the FTUE.
-	if (DialogueIndex >= CachedDialogues.Num() - 1) 
-	{
-		W_FTUE->SetVisibility(ESlateVisibility::Collapsed);
-		W_FTUEInterupter->SetVisibility(ESlateVisibility::Collapsed);
-	}
-	// Else, open the next dialogue.
-	else 
-	{
-		NextDialogue();
-	}
+	// TODO: Might prefer to remove the widget instead of changing its visibility.
+	// Close the FTUE
+	W_FTUEDialogue->SetVisibility(ESlateVisibility::Collapsed);
+	W_FTUEInterupter->SetVisibility(ESlateVisibility::Collapsed);
 }
 
-void UBubbleDialogueWidget::NextDialogue()
-{
-	if (DialogueIndex >= CachedDialogues.Num() - 1) 
-	{
-		DialogueIndex = CachedDialogues.Num() - 1;
-		return;
-	}
-
-	InitializeDialogue(CachedDialogues[++DialogueIndex]);
-}
-
-void UBubbleDialogueWidget::PrevDialogue()
+void UFTUEDialogueWidget::PrevDialogue()
 {
 	if (DialogueIndex <= 0)
 	{
@@ -112,8 +104,30 @@ void UBubbleDialogueWidget::PrevDialogue()
 	InitializeDialogue(CachedDialogues[--DialogueIndex]);
 }
 
-void UBubbleDialogueWidget::InitializeDialogue(const FFTUEDialogueModel& Dialogue)
+void UFTUEDialogueWidget::NextDialogue()
 {
+	if (DialogueIndex >= CachedDialogues.Num() - 1)
+	{
+		DialogueIndex = CachedDialogues.Num() - 1;
+		CloseDialogues();
+		return;
+	}
+
+	InitializeDialogue(CachedDialogues[++DialogueIndex]);
+}
+
+void UFTUEDialogueWidget::InitializeDialogue(const FFTUEDialogueModel& Dialogue)
+{
+	// Set navigation buttons.
+	Btn_Next->SetButtonText(
+		(DialogueIndex < CachedDialogues.Num() - 1) ?
+		LOCTEXT("Next", "Next") :
+		LOCTEXT("Close", "Close"));
+	Btn_Prev->SetVisibility(
+		(DialogueIndex > 0) ?
+		ESlateVisibility::Visible :
+		ESlateVisibility::Collapsed);
+
 	// Set dialogue message.
 	Txt_Message->SetText(Dialogue.Message);
 
@@ -163,14 +177,14 @@ void UBubbleDialogueWidget::InitializeDialogue(const FFTUEDialogueModel& Dialogu
 	W_FTUEInterupter->SetVisibility(Dialogue.bIsInterrupting ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 
 	// Set dialogue position.
-	UCanvasPanelSlot* Widget = Canvas_FTUE->AddChildToCanvas(W_FTUE);
+	UCanvasPanelSlot* Widget = Canvas_FTUE->AddChildToCanvas(W_FTUEDialogue);
 	Widget->SetAutoSize(true);
 	Widget->SetAnchors(FAnchors(Dialogue.GetAnchor().X, Dialogue.GetAnchor().Y));
 	Widget->SetAlignment(Dialogue.GetAnchor());
 	Widget->SetPosition(Dialogue.Position);
 }
 
-void UBubbleDialogueWidget::InitializeActionButton(UAccelByteWarsButtonBase* Button, const FFTUEDialogueButtonModel& ButtonModel)
+void UFTUEDialogueWidget::InitializeActionButton(UAccelByteWarsButtonBase* Button, const FFTUEDialogueButtonModel& ButtonModel)
 {
 	if (!Button) 
 	{
@@ -213,3 +227,5 @@ void UBubbleDialogueWidget::InitializeActionButton(UAccelByteWarsButtonBase* But
 		});
 	}
 }
+
+#undef LOCTEXT_NAMESPACE

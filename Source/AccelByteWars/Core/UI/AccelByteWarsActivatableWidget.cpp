@@ -7,7 +7,7 @@
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "Core/UI/Components/AccelByteWarsButtonBase.h"
-
+ 
 #include "Editor/WidgetCompilerLog.h"
 #include "CommonInputModeTypes.h"
 #include "Input/UIActionBindingHandle.h"
@@ -17,7 +17,7 @@
 #include "Components/VerticalBoxSlot.h"
 #include "Components/HorizontalBoxSlot.h"
 
-#include "Core/UI/Components/Prompt/FTUE/BubbleDialogueWidget.h"
+#include "Core/UI/Components/Prompt/FTUE/FTUEDialogueWidget.h"
 
 #define LOCTEXT_NAMESPACE "AccelByteWars"
 
@@ -30,6 +30,7 @@ void UAccelByteWarsActivatableWidget::NativePreConstruct()
 {
 	Super::NativePreConstruct();
 
+	// Refresh Tutorial Module metadatas based on the default object.
 	const UAccelByteWarsActivatableWidget* DefaultObj = Cast<UAccelByteWarsActivatableWidget>(GetClass()->GetDefaultObject());
 	if (DefaultObj)
 	{
@@ -52,7 +53,6 @@ void UAccelByteWarsActivatableWidget::NativeOnActivated()
 	}
 
 	InitializeGeneratedWidgets();
-
 	InitializeFTEUDialogues();
 }
 
@@ -91,6 +91,7 @@ void UAccelByteWarsActivatableWidget::PostLoad()
 {
 	Super::PostLoad();
 
+	ValidateAssociateTutorialModule();
 	ValidateGeneratedWidgets();
 	ValidateFTUEDialogues();
 }
@@ -100,6 +101,7 @@ void UAccelByteWarsActivatableWidget::PostEditChangeProperty(FPropertyChangedEve
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 
+	ValidateAssociateTutorialModule();
 	ValidateGeneratedWidgets();
 	ValidateFTUEDialogues();
 }
@@ -108,6 +110,7 @@ void UAccelByteWarsActivatableWidget::PostDuplicate(bool bDuplicateForPIE)
 {
 	Super::PostDuplicate(bDuplicateForPIE);
 
+	ValidateAssociateTutorialModule();
 	ValidateGeneratedWidgets();
 	ValidateFTUEDialogues();
 }
@@ -182,12 +185,19 @@ void UAccelByteWarsActivatableWidget::SetInputModeToGameOnly()
 	PC->bShowMouseCursor = false;
 }
 
-void UAccelByteWarsActivatableWidget::ValidateGeneratedWidgets()
+#pragma region "Tutorial Module"
+void UAccelByteWarsActivatableWidget::ValidateAssociateTutorialModule()
 {
 	if (AssociateTutorialModule && AssociateTutorialModule->GetTutorialModuleUIClass() != GetClass())
 	{
 		AssociateTutorialModule = nullptr;
 	}
+}
+#pragma endregion
+
+#pragma region "Generated Widgets"
+void UAccelByteWarsActivatableWidget::ValidateGeneratedWidgets()
+{
 	GeneratedWidgets.RemoveAll([](const FTutorialModuleGeneratedWidget* Temp)
 	{
 		return Temp->OwnerTutorialModule == nullptr;
@@ -411,11 +421,12 @@ TWeakObjectPtr<UAccelByteWarsActivatableWidget> UAccelByteWarsActivatableWidget:
 
 	return Widget;
 }
+#pragma endregion
+
+#pragma region "First Time User Experience (FTUE)"
 
 void UAccelByteWarsActivatableWidget::ValidateFTUEDialogues()
 {
-	// TODO: Refactor if necessary.
-
 	// Clear invalid FTUE dialogues.
 	FTUEDialogues.RemoveAll([](const FFTUEDialogueModel Temp)
 	{
@@ -425,7 +436,7 @@ void UAccelByteWarsActivatableWidget::ValidateFTUEDialogues()
 
 void UAccelByteWarsActivatableWidget::InitializeFTEUDialogues()
 {
-	// TODO: Refactor if necessary.
+	// TODO: Refactor the log.
 
 	if (!IsVisible())
 	{
@@ -446,12 +457,19 @@ void UAccelByteWarsActivatableWidget::InitializeFTEUDialogues()
 		return;
 	}
 
-	BaseUIWidget->W_FTUE->AddDialogues(FTUEDialogues);
+	UFTUEDialogueWidget* FTUEWidget = BaseUIWidget->GetFTUEDialogueWidget();
+	if (!FTUEWidget) 
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cannot initialize FTUE dialogues. FTUE dialogue widget is not valid."));
+		return;
+	}
+
+	FTUEWidget->AddDialogues(FTUEDialogues);
 }
 
 void UAccelByteWarsActivatableWidget::DeinitializeFTUEDialogues()
 {
-	// TODO: Refactor if necessary.
+	// TODO: Refactor the log.
 
 	UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetWorld()->GetGameInstance());
 	if (!GameInstance)
@@ -467,12 +485,16 @@ void UAccelByteWarsActivatableWidget::DeinitializeFTUEDialogues()
 		return;
 	}
 
-	if (!BaseUIWidget->W_FTUE) 
+	UFTUEDialogueWidget* FTUEWidget = BaseUIWidget->GetFTUEDialogueWidget();
+	if (!FTUEWidget)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("Cannot deinitialize FTUE dialogues. FTUE dialogue widget is not valid."));
 		return;
 	}
 
-	BaseUIWidget->W_FTUE->RemoveAssociateDialogues(AssociateTutorialModule);
+	FTUEWidget->RemoveAssociateDialogues(AssociateTutorialModule);
 }
+
+#pragma endregion
 
 #undef LOCTEXT_NAMESPACE

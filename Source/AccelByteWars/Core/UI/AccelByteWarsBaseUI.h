@@ -13,7 +13,7 @@
 #include "AccelByteWarsBaseUI.generated.h"
 
 class UPopUpWidget;
-class UBubbleDialogueWidget;
+class UFTUEDialogueWidget;
 
 UENUM()
 enum EBaseUIStackType
@@ -46,6 +46,8 @@ public:
 
 	UPushNotificationWidget* GetPushNotificationWidget();
 
+	UFTUEDialogueWidget* GetFTUEDialogueWidget();
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Base UI Settings")
 	TMap<TEnumAsByte<EBaseUIStackType>, UCommonActivatableWidgetStack*> Stacks;
 
@@ -57,11 +59,6 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Prompt Settings")
 	TSubclassOf<UPushNotificationWidget> DefaultPushNotificationWidgetClass;
-
-#pragma region "First Time User Experience (FTUE)"
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UBubbleDialogueWidget* W_FTUE;
-#pragma endregion
 
 private:
 	void OnWidgetTransitionChanged(UCommonActivatableWidgetContainerBase* Widget, bool bIsTransitioning);
@@ -83,4 +80,7 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonActivatableWidgetStack* PushNotificationStack;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UFTUEDialogueWidget* W_FTUEDialogue;
 };

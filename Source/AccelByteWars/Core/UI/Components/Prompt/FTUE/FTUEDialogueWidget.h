@@ -7,14 +7,14 @@
 #include "CoreMinimal.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
 #include "Core/UI/Components/Prompt/FTUE/FTUEModels.h"
-#include "BubbleDialogueWidget.generated.h"
+#include "FTUEDialogueWidget.generated.h"
 
 class UAccelByteWarsButtonBase;
 class UTextBlock;
 class UCanvasPanel;
 
 UCLASS()
-class ACCELBYTEWARS_API UBubbleDialogueWidget : public UAccelByteWarsActivatableWidget
+class ACCELBYTEWARS_API UFTUEDialogueWidget : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
 
@@ -25,8 +25,8 @@ public:
 	void ShowDialogues();
 	void CloseDialogues();
 
-	void NextDialogue();
 	void PrevDialogue();
+	void NextDialogue();
 
 protected:
 	virtual void NativeConstruct() override;
@@ -40,7 +40,7 @@ protected:
 	UCanvasPanel* Canvas_FTUE;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UWidget* W_FTUE;
+	UWidget* W_FTUEDialogue;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UWidget* W_FTUEInterupter;
@@ -52,7 +52,10 @@ protected:
 	UAccelByteWarsButtonBase* Btn_Open;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
-	UAccelByteWarsButtonBase* Btn_Close;
+	UAccelByteWarsButtonBase* Btn_Prev;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
+	UAccelByteWarsButtonBase* Btn_Next;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UAccelByteWarsButtonBase* Btn_Action1;

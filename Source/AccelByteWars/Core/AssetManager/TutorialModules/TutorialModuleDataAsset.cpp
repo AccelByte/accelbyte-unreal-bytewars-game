@@ -123,153 +123,6 @@ void UTutorialModuleDataAsset::ValidateDataAssetProperties()
 	ValidateFTUEDialogues();
 }
 
-void UTutorialModuleDataAsset::ValidateGeneratedWidgets()
-{
-	// Clean up last generated widgets metadata to avoid duplication.
-	for (FTutorialModuleGeneratedWidget& LastGeneratedWidget : LastGeneratedWidgets)
-	{
-		UTutorialModuleDataAsset::GeneratedWidgetUsedIds.Remove(LastGeneratedWidget.WidgetId);
-
-		LastGeneratedWidget.DefaultTutorialModuleWidgetClass = nullptr;
-		LastGeneratedWidget.StarterTutorialModuleWidgetClass = nullptr;
-
-		LastGeneratedWidget.OtherTutorialModule = nullptr;
-
-		for (TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : LastGeneratedWidget.TargetWidgetClasses)
-		{
-			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
-			{
-				continue;
-			}
-
-			TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.RemoveAll([this](const FTutorialModuleGeneratedWidget* Temp)
-			{
-				return !Temp || Temp->OwnerTutorialModule == this;
-			});
-		}
-	}
-	for (FTutorialModuleGeneratedWidget& GeneratedWidget : GeneratedWidgets)
-	{
-		for (TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : GeneratedWidget.TargetWidgetClasses)
-		{
-			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
-			{
-				continue;
-			}
-
-			TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.RemoveAll([this](const FTutorialModuleGeneratedWidget* Temp)
-			{
-				return !Temp || Temp->OwnerTutorialModule == this;
-			});
-		}
-	}
-
-	// Assign fresh generated widget to the target widget class.
-	for (FTutorialModuleGeneratedWidget& GeneratedWidget : GeneratedWidgets)
-	{
-		// Clean up unnecessary references.
-		if (GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::GENERIC_WIDGET_ENTRY_BUTTON &&
-			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::GENERIC_WIDGET)
-		{
-			GeneratedWidget.GenericWidgetClass = nullptr;
-		}
-		if (GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_BUTTON &&
-			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_WIDGET)
-		{
-			GeneratedWidget.OtherTutorialModule = nullptr;
-		}
-		if ((GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_ENTRY_BUTTON &&
-			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_WIDGET &&
-			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_BUTTON &&
-			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_WIDGET) ||
-			GeneratedWidget.TutorialModuleWidgetClassType != ETutorialModuleWidgetClassType::ASSOCIATE_WIDGET_CLASS)
-		{
-			GeneratedWidget.DefaultTutorialModuleWidgetClass = nullptr;
-			GeneratedWidget.StarterTutorialModuleWidgetClass = nullptr;
-		}
-
-		// Assign the owner of the generated widget metadata to this Tutorial Module.
-		GeneratedWidget.OwnerTutorialModule = this;
-
-		// Check if the widget id is already used.
-		if (UTutorialModuleDataAsset::GeneratedWidgetUsedIds.Contains(GeneratedWidget.WidgetId))
-		{
-#if UE_EDITOR
-			ShowPopupMessage(FString::Printf(TEXT("%s widget id is already used. Widget id must be unique."), *GeneratedWidget.WidgetId));
-#endif
-			GeneratedWidget.WidgetId = TEXT("");
-		}
-		else if (!GeneratedWidget.WidgetId.IsEmpty())
-		{
-			UTutorialModuleDataAsset::GeneratedWidgetUsedIds.Add(GeneratedWidget.WidgetId);
-		}
-
-		// Assign the generated widget to the target widget class.
-		for (TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : GeneratedWidget.TargetWidgetClasses)
-		{
-			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
-			{
-				continue;
-			}
-			TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.Add(&GeneratedWidget);
-		}
-	}
-
-	LastGeneratedWidgets = GeneratedWidgets;
-}
-
-void UTutorialModuleDataAsset::ValidateFTUEDialogues()
-{
-	// Clean up last FTUE dialogues metadata to avoid duplication.
-	for (auto& LastFTUEDialogue : LastFTUEDialogues)
-	{
-		for (auto& TargetWidgetClass : LastFTUEDialogue.TargetWidgetClasses)
-		{
-			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
-			{
-				continue;
-			}
-
-			TargetWidgetClass.GetDefaultObject()->FTUEDialogues.RemoveAll([this](const FFTUEDialogueModel Temp)
-			{
-				return Temp.OwnerTutorialModule == this;
-			});
-		}
-	}
-	for (auto& FTUEDialogue : FTUEDialogues)
-	{
-		for (auto& TargetWidgetClass : FTUEDialogue.TargetWidgetClasses)
-		{
-			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
-			{
-				continue;
-			}
-
-			TargetWidgetClass.GetDefaultObject()->FTUEDialogues.RemoveAll([this](const FFTUEDialogueModel Temp)
-			{
-				return Temp.OwnerTutorialModule == this;
-			});
-		}
-	}
-
-	// Assign fresh FTUE dialogue metadatas to the target widget class.
-	for (auto& FTUEDialogue : FTUEDialogues)
-	{
-		FTUEDialogue.OwnerTutorialModule = this;
-
-		for (auto& TargetWidgetClass : FTUEDialogue.TargetWidgetClasses)
-		{
-			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
-			{
-				continue;
-			}
-			TargetWidgetClass.GetDefaultObject()->FTUEDialogues.Add(FTUEDialogue);
-		}
-	}
-
-	LastFTUEDialogues = FTUEDialogues;
-}
-
 bool UTutorialModuleDataAsset::ValidateClassProperty(TSubclassOf<UAccelByteWarsActivatableWidget>& UIClass, TSubclassOf<UAccelByteWarsActivatableWidget>& LastUIClass, const bool IsStarterClass)
 {
 	// Check if the class is used by other Tutorial Module or not.
@@ -416,6 +269,157 @@ void UTutorialModuleDataAsset::CleanUpDataAssetProperties()
 		StarterSubsystemClass.GetDefaultObject()->AssociateTutorialModule = nullptr;
 	}
 }
+
+#pragma region "Generated Widgets"
+void UTutorialModuleDataAsset::ValidateGeneratedWidgets()
+{
+	// Clean up last generated widgets metadata to avoid duplication.
+	for (FTutorialModuleGeneratedWidget& LastGeneratedWidget : LastGeneratedWidgets)
+	{
+		UTutorialModuleDataAsset::GeneratedWidgetUsedIds.Remove(LastGeneratedWidget.WidgetId);
+
+		LastGeneratedWidget.DefaultTutorialModuleWidgetClass = nullptr;
+		LastGeneratedWidget.StarterTutorialModuleWidgetClass = nullptr;
+
+		LastGeneratedWidget.OtherTutorialModule = nullptr;
+
+		for (TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : LastGeneratedWidget.TargetWidgetClasses)
+		{
+			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
+			{
+				continue;
+			}
+
+			TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.RemoveAll([this](const FTutorialModuleGeneratedWidget* Temp)
+			{
+				return !Temp || Temp->OwnerTutorialModule == this;
+			});
+		}
+	}
+	for (FTutorialModuleGeneratedWidget& GeneratedWidget : GeneratedWidgets)
+	{
+		for (TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : GeneratedWidget.TargetWidgetClasses)
+		{
+			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
+			{
+				continue;
+			}
+
+			TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.RemoveAll([this](const FTutorialModuleGeneratedWidget* Temp)
+			{
+				return !Temp || Temp->OwnerTutorialModule == this;
+			});
+		}
+	}
+
+	// Assign fresh generated widget to the target widget class.
+	for (FTutorialModuleGeneratedWidget& GeneratedWidget : GeneratedWidgets)
+	{
+		// Clean up unnecessary references.
+		if (GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::GENERIC_WIDGET_ENTRY_BUTTON &&
+			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::GENERIC_WIDGET)
+		{
+			GeneratedWidget.GenericWidgetClass = nullptr;
+		}
+		if (GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_BUTTON &&
+			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_WIDGET)
+		{
+			GeneratedWidget.OtherTutorialModule = nullptr;
+		}
+		if ((GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_ENTRY_BUTTON &&
+			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_WIDGET &&
+			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_BUTTON &&
+			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_WIDGET) ||
+			GeneratedWidget.TutorialModuleWidgetClassType != ETutorialModuleWidgetClassType::ASSOCIATE_WIDGET_CLASS)
+		{
+			GeneratedWidget.DefaultTutorialModuleWidgetClass = nullptr;
+			GeneratedWidget.StarterTutorialModuleWidgetClass = nullptr;
+		}
+
+		// Assign the owner of the generated widget metadata to this Tutorial Module.
+		GeneratedWidget.OwnerTutorialModule = this;
+
+		// Check if the widget id is already used.
+		if (UTutorialModuleDataAsset::GeneratedWidgetUsedIds.Contains(GeneratedWidget.WidgetId))
+		{
+#if UE_EDITOR
+			ShowPopupMessage(FString::Printf(TEXT("%s widget id is already used. Widget id must be unique."), *GeneratedWidget.WidgetId));
+#endif
+			GeneratedWidget.WidgetId = TEXT("");
+		}
+		else if (!GeneratedWidget.WidgetId.IsEmpty())
+		{
+			UTutorialModuleDataAsset::GeneratedWidgetUsedIds.Add(GeneratedWidget.WidgetId);
+		}
+
+		// Assign the generated widget to the target widget class.
+		for (TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : GeneratedWidget.TargetWidgetClasses)
+		{
+			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
+			{
+				continue;
+			}
+			TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.Add(&GeneratedWidget);
+		}
+	}
+
+	LastGeneratedWidgets = GeneratedWidgets;
+}
+#pragma endregion
+
+#pragma region "First Time User Experience (FTUE)"
+void UTutorialModuleDataAsset::ValidateFTUEDialogues()
+{
+	// Clean up last FTUE dialogues metadata to avoid duplication.
+	for (auto& LastFTUEDialogue : LastFTUEDialogues)
+	{
+		for (auto& TargetWidgetClass : LastFTUEDialogue.TargetWidgetClasses)
+		{
+			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
+			{
+				continue;
+			}
+
+			TargetWidgetClass.GetDefaultObject()->FTUEDialogues.RemoveAll([this](const FFTUEDialogueModel Temp)
+			{
+				return Temp.OwnerTutorialModule == this;
+			});
+		}
+	}
+	for (auto& FTUEDialogue : FTUEDialogues)
+	{
+		for (auto& TargetWidgetClass : FTUEDialogue.TargetWidgetClasses)
+		{
+			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
+			{
+				continue;
+			}
+
+			TargetWidgetClass.GetDefaultObject()->FTUEDialogues.RemoveAll([this](const FFTUEDialogueModel Temp)
+			{
+				return Temp.OwnerTutorialModule == this;
+			});
+		}
+	}
+
+	// Assign fresh FTUE dialogue metadatas to the target widget class.
+	for (auto& FTUEDialogue : FTUEDialogues)
+	{
+		FTUEDialogue.OwnerTutorialModule = this;
+
+		for (auto& TargetWidgetClass : FTUEDialogue.TargetWidgetClasses)
+		{
+			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
+			{
+				continue;
+			}
+			TargetWidgetClass.GetDefaultObject()->FTUEDialogues.Add(FTUEDialogue);
+		}
+	}
+
+	LastFTUEDialogues = FTUEDialogues;
+}
+#pragma endregion
 
 void UTutorialModuleDataAsset::PostLoad()
 {

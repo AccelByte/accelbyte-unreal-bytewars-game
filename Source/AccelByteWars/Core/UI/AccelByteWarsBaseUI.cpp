@@ -80,6 +80,11 @@ UPushNotificationWidget* UAccelByteWarsBaseUI::GetPushNotificationWidget()
 	return PushNotificationWidget;
 }
 
+UFTUEDialogueWidget* UAccelByteWarsBaseUI::GetFTUEDialogueWidget()
+{
+	return W_FTUEDialogue;
+}
+
 void UAccelByteWarsBaseUI::OnWidgetTransitionChanged(UCommonActivatableWidgetContainerBase* Widget, bool bIsTransitioning)
 {
 	// Set auto focus to top most stack widget.

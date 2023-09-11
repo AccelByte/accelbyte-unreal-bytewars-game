@@ -15,8 +15,6 @@ class UTutorialModuleOnlineSession;
 class UAccelByteWarsActivatableWidget;
 class UTutorialModuleSubsystem;
 
-class UBubbleDialogueWidget;
-
 UCLASS()
 class ACCELBYTEWARS_API UTutorialModuleDataAsset : public UAccelByteWarsDataAsset
 {
@@ -112,6 +110,7 @@ private:
 #pragma endregion
 
 public:
+#pragma region "Generated Widgets"
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tutorial Module Dependencies", meta = (Tooltip = "Other Tutorial Modules that is required by this Tutorial Module", DisplayThumbnail = false, ShowOnlyInnerProperties))
 	TArray<UTutorialModuleDataAsset*> TutorialModuleDependencies;
 
@@ -120,6 +119,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tutorial Module Widgets", meta = (Tooltip = "Widgets that will be generated if this Tutorial Module active", ShowOnlyInnerProperties))
 	TArray<FTutorialModuleGeneratedWidget> GeneratedWidgets;
+#pragma endregion
 
 #pragma region "First Time User Experience (FTUE)"
 	UPROPERTY(EditAnywhere, 
@@ -152,9 +152,6 @@ public:
 private:
 	void ValidateDataAssetProperties();
 
-	void ValidateGeneratedWidgets();
-	void ValidateFTUEDialogues();
-
 	bool ValidateClassProperty(TSubclassOf<UAccelByteWarsActivatableWidget>& UIClass, TSubclassOf<UAccelByteWarsActivatableWidget>& LastUIClass, const bool IsStarterClass);
 	bool ValidateClassProperty(TSubclassOf<UTutorialModuleSubsystem>& SubsystemClass, TSubclassOf<UTutorialModuleSubsystem>& LastSubsystemClass, const bool IsStarterClass);
 #pragma region "Online Session"
@@ -162,6 +159,14 @@ private:
 #pragma endregion 
 
 	void CleanUpDataAssetProperties();
+
+#pragma region "Generated Widgets"
+	void ValidateGeneratedWidgets();
+#pragma endregion
+
+#pragma region "First Time User Experience (FTUE)"
+	void ValidateFTUEDialogues();
+#pragma endregion
 
 #if WITH_EDITOR
 	void ShowPopupMessage(const FString& Message) const;
@@ -178,8 +183,12 @@ private:
 	TSubclassOf<UTutorialModuleOnlineSession> LastStarterOnlineSessionClass;
 #pragma endregion 
 
+#pragma region "Generated Widgets"
 	TArray<FTutorialModuleGeneratedWidget> LastGeneratedWidgets;
 	static TSet<FString> GeneratedWidgetUsedIds;
+#pragma endregion
 
+#pragma region "First Time User Experience (FTUE)"
 	TArray<FFTUEDialogueModel> LastFTUEDialogues;
+#pragma endregion
 };
