@@ -262,7 +262,10 @@ void UFTUEDialogueWidget::ValidateDialogues()
 	// Remove invalid dialogues.
 	CachedDialogues.RemoveAll([](const FFTUEDialogueModel* Temp)
 	{
-		return !Temp || Temp->bIsAlreadyShown;
+		return !Temp || 
+			Temp->bIsAlreadyShown || 
+			!Temp->OwnerTutorialModule || 
+			!Temp->OwnerTutorialModule->IsActiveAndDependenciesChecked();
 	});
 
 	Btn_Open->SetVisibility(!CachedDialogues.IsEmpty() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);

@@ -180,7 +180,7 @@ struct FFTUEDialogueModel
     UTutorialModuleDataAsset* OwnerTutorialModule = nullptr;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
-        Tooltip = "The message to be shown on the FTUE. If you need formatting, add the argument indexes. For example: \"Hello {0}{1}{2}\""))
+        Tooltip = "The message to be shown on the FTUE."))
     FText Message;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (

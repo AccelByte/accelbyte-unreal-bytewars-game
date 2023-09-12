@@ -30,11 +30,6 @@ UAccelByteWarsBaseUI* UAccelByteWarsGameInstance::GetBaseUIWidget()
 		BaseUIWidget = Cast<UAccelByteWarsBaseUI>(CreateWidget(this, BaseUIMenuWidgetClass));
 	}
 
-	if (!BaseUIWidget->IsActivated())
-	{
-		BaseUIWidget->ActivateWidget();
-	}
-
 	if (!BaseUIWidget->IsInViewport() && !bHasAddToViewportCalled)
 	{
 		/**
@@ -44,11 +39,6 @@ UAccelByteWarsBaseUI* UAccelByteWarsGameInstance::GetBaseUIWidget()
 		 * Hence why there's this custom flag.
 		 */
 		bHasAddToViewportCalled = true;
-		BaseUIWidget->OnDeactivated().AddWeakLambda(this, [this]()
-		{
-			bHasAddToViewportCalled = false;
-		});
-
 		BaseUIWidget->AddToViewport(10);
 	}
 

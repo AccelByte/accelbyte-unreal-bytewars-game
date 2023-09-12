@@ -58,15 +58,7 @@ void UAccelByteWarsActivatableWidget::NativeOnActivated()
 
 void UAccelByteWarsActivatableWidget::NativeOnDeactivated()
 {
-	// Try to deinitialize FTUE.
-	try
-	{
-		DeinitializeFTUEDialogues();
-	}
-	catch (const std::exception& Exception)
-	{
-		UE_LOG(LogTemp, Log, TEXT("Failed to deinitialize FTUE as the widget is begin to tear down. Exception: %s"), *Exception.what());
-	}
+	DeinitializeFTUEDialogues();
 
 	Super::NativeOnDeactivated();
 }
@@ -215,8 +207,10 @@ void UAccelByteWarsActivatableWidget::InitializeGeneratedWidgets()
 	for (UUserWidget* OldGeneratedWidget : GeneratedWidgetPool)
 	{
 		OldGeneratedWidget->RemoveFromParent();
-		OldGeneratedWidget->ConditionalBeginDestroy();
-		OldGeneratedWidget->ConditionalFinishDestroy();
+		if (!OldGeneratedWidget->IsUnreachable()) 
+		{
+			OldGeneratedWidget->ConditionalBeginDestroy();
+		}
 	}
 	GeneratedWidgetPool.Empty();
 
@@ -458,7 +452,7 @@ void UAccelByteWarsActivatableWidget::InitializeFTEUDialogues()
 {
 	// TODO: Refactor the log.
 
-	if (!IsVisible())
+	if (IsUnreachable())
 	{
 		return;
 	}
@@ -490,6 +484,11 @@ void UAccelByteWarsActivatableWidget::InitializeFTEUDialogues()
 void UAccelByteWarsActivatableWidget::DeinitializeFTUEDialogues()
 {
 	// TODO: Refactor the log.
+
+	if (IsUnreachable())
+	{
+		return;
+	}
 
 	UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetWorld()->GetGameInstance());
 	if (!GameInstance)

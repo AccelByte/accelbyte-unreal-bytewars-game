@@ -52,7 +52,7 @@ UCommonActivatableWidget* UAccelByteWarsBaseUI::GetActiveWidgetOfStack(const EBa
 		return nullptr;
 	}
 
-	return BaseUIWidget->Stacks[EBaseUIStackType::Menu]->GetActiveWidget();
+	return BaseUIWidget->Stacks[TargetStack]->GetActiveWidget();
 }
 
 UAccelByteWarsActivatableWidget* UAccelByteWarsBaseUI::PushWidgetToStack(EBaseUIStackType TargetStack, TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass)

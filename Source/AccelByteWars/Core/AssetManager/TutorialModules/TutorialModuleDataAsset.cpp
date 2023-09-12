@@ -292,7 +292,7 @@ void UTutorialModuleDataAsset::ValidateGeneratedWidgets()
 
 			TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.RemoveAll([this](const FTutorialModuleGeneratedWidget* Temp)
 			{
-				return !Temp || Temp->OwnerTutorialModule == this;
+				return !Temp || !Temp->OwnerTutorialModule || Temp->OwnerTutorialModule == this;
 			});
 		}
 	}
@@ -307,7 +307,7 @@ void UTutorialModuleDataAsset::ValidateGeneratedWidgets()
 
 			TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.RemoveAll([this](const FTutorialModuleGeneratedWidget* Temp)
 			{
-				return !Temp || Temp->OwnerTutorialModule == this;
+				return !Temp || !Temp->OwnerTutorialModule || Temp->OwnerTutorialModule == this;
 			});
 		}
 	}
@@ -353,13 +353,16 @@ void UTutorialModuleDataAsset::ValidateGeneratedWidgets()
 		}
 
 		// Assign the generated widget to the target widget class.
-		for (TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : GeneratedWidget.TargetWidgetClasses)
+		if (IsActiveAndDependenciesChecked())
 		{
-			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
+			for (TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : GeneratedWidget.TargetWidgetClasses)
 			{
-				continue;
+				if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
+				{
+					continue;
+				}
+				TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.Add(&GeneratedWidget);
 			}
-			TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.Add(&GeneratedWidget);
 		}
 	}
 
@@ -382,7 +385,7 @@ void UTutorialModuleDataAsset::ValidateFTUEDialogues()
 
 			TargetWidgetClass.GetDefaultObject()->FTUEDialogues.RemoveAll([this](const FFTUEDialogueModel Temp)
 			{
-				return Temp.OwnerTutorialModule == this;
+				return !Temp.OwnerTutorialModule || Temp.OwnerTutorialModule == this;
 			});
 		}
 	}
@@ -397,37 +400,37 @@ void UTutorialModuleDataAsset::ValidateFTUEDialogues()
 
 			TargetWidgetClass.GetDefaultObject()->FTUEDialogues.RemoveAll([this](const FFTUEDialogueModel Temp)
 			{
-				return Temp.OwnerTutorialModule == this;
+				return !Temp.OwnerTutorialModule || Temp.OwnerTutorialModule == this;
 			});
 		}
 	}
 
 	// Refresh FTUE dialogues metadata.
-	if (HasFTUE())
+	for (auto& FTUEDialogue : FTUEDialogues)
 	{
-		for (auto& FTUEDialogue : FTUEDialogues)
+		FTUEDialogue.OwnerTutorialModule = this;
+		FTUEDialogue.bIsAlreadyShown = false;
+
+		// Reset button metadata if not used.
+		switch (FTUEDialogue.ButtonType)
 		{
-			FTUEDialogue.OwnerTutorialModule = this;
-			FTUEDialogue.bIsAlreadyShown = false;
+		case FFTUEDialogueButtonType::NO_BUTTON:
+			FTUEDialogue.Button1.Reset();
+		case FFTUEDialogueButtonType::ONE_BUTTON:
+			FTUEDialogue.Button2.Reset();
+			break;
+		}
 
-			// Reset button metadata if not used.
-			switch (FTUEDialogue.ButtonType)
-			{
-			case FFTUEDialogueButtonType::NO_BUTTON:
-				FTUEDialogue.Button1.Reset();
-			case FFTUEDialogueButtonType::ONE_BUTTON:
-				FTUEDialogue.Button2.Reset();
-				break;
-			}
+		// Reset highlighted widget metadata if not used.
+		if (!FTUEDialogue.bHighlightWidget)
+		{
+			FTUEDialogue.TargetWidgetClassToHighlight = nullptr;
+			FTUEDialogue.TargetWidgetNameToHighlight = FString("");
+		}
 
-			// Reset highlighted widget metadata if not used.
-			if (!FTUEDialogue.bHighlightWidget)
-			{
-				FTUEDialogue.TargetWidgetClassToHighlight = nullptr;
-				FTUEDialogue.TargetWidgetNameToHighlight = FString("");
-			}
-
-			// Assign FTUE dialogue metadata to the target widget class.
+		// Assign FTUE dialogue metadata to the target widget class.
+		if (IsActiveAndDependenciesChecked() && HasFTUE())
+		{
 			for (auto& TargetWidgetClass : FTUEDialogue.TargetWidgetClasses)
 			{
 				if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())

@@ -5,15 +5,16 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "CommonUserWidget.h"
 #include "Components/BackgroundBlur.h"
 #include "Components/Prompt/Loading/LoadingWidget.h"
 #include "Core/UI/Components/Prompt/PushNotification/PushNotificationWidget.h"
-#include "Core/UI/AccelByteWarsActivatableWidget.h"
 #include "Widgets/CommonActivatableWidgetContainer.h"
 #include "AccelByteWarsBaseUI.generated.h"
 
 class UPopUpWidget;
 class UFTUEDialogueWidget;
+class AccelByteWarsActivatableWidget;
 
 UENUM()
 enum EBaseUIStackType
@@ -25,7 +26,7 @@ enum EBaseUIStackType
 };
 
 UCLASS()
-class ACCELBYTEWARS_API UAccelByteWarsBaseUI : public UAccelByteWarsActivatableWidget
+class ACCELBYTEWARS_API UAccelByteWarsBaseUI : public UCommonUserWidget
 {
 	GENERATED_BODY()
 
