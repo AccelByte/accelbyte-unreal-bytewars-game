@@ -180,8 +180,7 @@ bool UFTUEDialogueWidget::InitializeDialogue(FFTUEDialogueModel* Dialogue)
 		ESlateVisibility::Collapsed);
 
 	// Set dialogue message.
-	FFormatNamedArguments Arg;
-	Txt_Message->SetText(FText::Format(Dialogue->Message, Arg));
+	Txt_Message->SetText(Dialogue->GetFormattedMessage());
 
 	// Setup the action buttons.
 	Btn_Action1->SetVisibility(ESlateVisibility::Collapsed);
@@ -228,16 +227,17 @@ void UFTUEDialogueWidget::InitializeActionButton(UAccelByteWarsButtonBase* Butto
 	// Bind action to open hyperlink.
 	if (ButtonModel.ButtonActionType == EFTUEDialogueButtonActionType::HYPERLINK_BUTTON)
 	{
-		Button->OnClicked().AddWeakLambda(this, [ButtonModel]()
+		const FString URL = ButtonModel.GetFormattedURL();
+		Button->OnClicked().AddWeakLambda(this, [URL]()
 		{
-			if (ButtonModel.TargetURL.IsEmpty())
+			if (URL.IsEmpty())
 			{
 				// TODO: Refactor the logs.
 				UE_LOG(LogTemp, Warning, TEXT("Cannot open hyperlink. Dialogue button's hyperlink is empty."));
 				return;
 			}
 
-			FPlatformProcess::LaunchURL(*ButtonModel.TargetURL, nullptr, nullptr);
+			FPlatformProcess::LaunchURL(*URL, nullptr, nullptr);
 		});
 	}
 	// Bind action to execute custom function.

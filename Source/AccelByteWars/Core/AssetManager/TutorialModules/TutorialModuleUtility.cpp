@@ -3,12 +3,13 @@
 // and restrictions contact your company contract manager.
 
 #include "Core/AssetManager/TutorialModules/TutorialModuleUtility.h"
+
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/AssetManager/AssetManagementSubsystem.h"
 #include "Core/AssetManager/AccelByteWarsDataAsset.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleDataAsset.h"
+
 #include "Core/UI/AccelByteWarsBaseUI.h"
-#include "Blueprint/UserWidget.h"
 
 bool UTutorialModuleUtility::ActivateTutorialModuleWidget(UTutorialModuleDataAsset* TutorialModule, const UObject* Context)
 {

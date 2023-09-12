@@ -53,7 +53,27 @@ struct FFTUEDialogueButtonModel
         ButtonActionType = EFTUEDialogueButtonActionType::HYPERLINK_BUTTON;
         ButtonText = FText::GetEmpty();
         TargetURL = FString("");
+        bIsFormattedURL = false;
+        URLArguments.Empty();
         ButtonActionDelegate.Unbind();
+    }
+
+    FString GetFormattedURL() const
+    {
+        if (!bIsFormattedURL) 
+        {
+            return TargetURL;
+        }
+
+        FFormatNamedArguments Args;
+        int32 ArgIndex = 0;
+        for (auto& Arg : URLArguments)
+        {
+            Args.Add(FString::Printf(TEXT("%d"), ArgIndex), FText::FromString(Arg));
+            ArgIndex++;
+        }
+
+        return FText::Format(FText::FromString(TargetURL), Args).ToString();
     }
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
@@ -65,9 +85,22 @@ struct FFTUEDialogueButtonModel
     FText ButtonText;
 
     UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (
+        Tooltip = "URL to be opened when the button is clicked.",
         EditCondition = "ButtonActionType==EFTUEDialogueButtonActionType::HYPERLINK_BUTTON", 
-        EditConditionHides, Tooltip = "URL to be opened when the button is clicked."))
+        EditConditionHides))
     FString TargetURL;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
+        Tooltip = "Whether the URL should be formatted or not.",
+        EditCondition = "ButtonActionType==EFTUEDialogueButtonActionType::HYPERLINK_BUTTON",
+        EditConditionHides))
+    bool bIsFormattedURL = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
+        Tooltip = "List of argument to be inserted on the formatted URL. The order and the size of the arguments must follow the formatted URL.",
+        EditCondition = "bIsFormattedURL && ButtonActionType==EFTUEDialogueButtonActionType::HYPERLINK_BUTTON",
+        EditConditionHides))
+    TArray<FString> URLArguments;
 
     // Action button to be executed if the button action type is a custom action button.
     TDelegate<void()> ButtonActionDelegate;
@@ -117,9 +150,27 @@ struct FFTUEDialogueModel
         return FVector2D(Horizontal, Vertical);
     }
     
+    FText GetFormattedMessage() const
+    {
+        if (!bIsFormattedMessage)
+        {
+            return Message;
+        }
+
+        FFormatNamedArguments Args;
+        int32 ArgIndex = 0;
+        for (auto& Arg : MessageArguments)
+        {
+            Args.Add(FString::Printf(TEXT("%d"), ArgIndex), FText::FromString(Arg));
+            ArgIndex++;
+        }
+
+        return FText::Format(Message, Args);
+    }
+
     bool operator<(const FFTUEDialogueModel& Other) const
     {
-        return OrderPriority <= Other.OrderPriority;
+        return OrderPriority < Other.OrderPriority;
     }
 
     UPROPERTY(VisibleAnywhere, 
@@ -129,8 +180,18 @@ struct FFTUEDialogueModel
     UTutorialModuleDataAsset* OwnerTutorialModule = nullptr;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
-        Tooltip = "The message to be shown on the FTUE."))
+        Tooltip = "The message to be shown on the FTUE. If you need formatting, add the argument indexes. For example: \"Hello {0}{1}{2}\""))
     FText Message;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
+        Tooltip = "Whether the FTUE message should be formatted or not."))
+    bool bIsFormattedMessage = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
+        Tooltip = "List of argument to be inserted on the formatted message. The order and the size of the arguments must follow the formatted message.",
+        EditCondition = "bIsFormattedMessage",
+        EditConditionHides))
+    TArray<FString> MessageArguments;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
         Tooltip = "The type of action buttons should be shown when the FTUE is shown."))
