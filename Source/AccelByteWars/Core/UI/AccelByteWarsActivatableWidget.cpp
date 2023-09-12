@@ -58,8 +58,6 @@ void UAccelByteWarsActivatableWidget::NativeOnActivated()
 
 void UAccelByteWarsActivatableWidget::NativeOnDeactivated()
 {
-	Super::NativeOnDeactivated();
-
 	// Try to deinitialize FTUE.
 	try
 	{
@@ -69,6 +67,8 @@ void UAccelByteWarsActivatableWidget::NativeOnDeactivated()
 	{
 		UE_LOG(LogTemp, Log, TEXT("Failed to deinitialize FTUE as the widget is begin to tear down. Exception: %s"), *Exception.what());
 	}
+
+	Super::NativeOnDeactivated();
 }
 
 TOptional<FUIInputConfig> UAccelByteWarsActivatableWidget::GetDesiredInputConfig() const
@@ -513,6 +513,7 @@ void UAccelByteWarsActivatableWidget::DeinitializeFTUEDialogues()
 	}
 
 	FTUEWidget->RemoveAssociateDialogues(GetClass());
+	FTUEWidget->CloseDialogues();
 }
 
 #pragma endregion

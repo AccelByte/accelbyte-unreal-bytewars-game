@@ -19,7 +19,7 @@ class ACCELBYTEWARS_API UFTUEDialogueWidget : public UAccelByteWarsActivatableWi
 	GENERATED_BODY()
 
 public:
-	void AddDialogues(TArray<FFTUEDialogueModel> Dialogues);
+	void AddDialogues(TArray<FFTUEDialogueModel>& Dialogues);
 	void RemoveAssociateDialogues(const TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass);
 
 	void ShowDialogues();
@@ -31,8 +31,10 @@ public:
 protected:
 	virtual void NativeConstruct() override;
 
-	void InitializeDialogue(const FFTUEDialogueModel& Dialogue);
+	bool InitializeDialogue(FFTUEDialogueModel* Dialogue);
 	void InitializeActionButton(UAccelByteWarsButtonBase* Button, const FFTUEDialogueButtonModel& ButtonModel);
+
+	void ValidateDialogues();
 	void ClearHighlightedWidget();
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
@@ -63,7 +65,7 @@ protected:
 	UAccelByteWarsButtonBase* Btn_Action2;
 
 private:
-	TArray<FFTUEDialogueModel> CachedDialogues;
+	TArray<FFTUEDialogueModel*> CachedDialogues;
 	int32 DialogueIndex;
 
 	UUserWidget* CachedHighlightedWidget;

@@ -122,31 +122,32 @@ public:
 #pragma endregion
 
 #pragma region "First Time User Experience (FTUE)"
-	UPROPERTY(EditAnywhere, 
-		BlueprintReadOnly, 
-		AssetRegistrySearchable, 
+private:
+	UPROPERTY(EditAnywhere,
 		Category = "First Time User Experience (FTUE)", 
 		meta = (Tooltip = "Whether this Tutorial Module has FTUE or not."))
 	bool bHasFTUE = false;
 
-	UPROPERTY(EditAnywhere, 
-		BlueprintReadOnly, 
-		AssetRegistrySearchable, 
+	UPROPERTY(EditAnywhere,
 		Category = "First Time User Experience (FTUE)", 
 		meta = (
 			Tooltip = "Whether the FTUE should always be displayed when this Tutorial Module UI is displayed.", 
 			EditCondition = "bHasFTUE"))
-	bool bIsAlwaysActive = false;
+	bool bIsFTUEAlwaysActive = true;
 
-	UPROPERTY(EditAnywhere, 
-		BlueprintReadOnly, 
-		Category = "First Time User Experience (FTUE)", 
+	UPROPERTY(EditAnywhere,
+		Category = "First Time User Experience (FTUE)",
 		meta = (
-			Tooltip = "FTUE dialogue to be displayed when this Tutorial Module UI is displayed.", 
-			ShowOnlyInnerProperties, 
-			EditCondition = "bHasFTUE", 
+			Tooltip = "FTUE dialogue to be displayed when this Tutorial Module UI is displayed.",
+			ShowOnlyInnerProperties,
+			EditCondition = "bHasFTUE",
 			EditConditionHides))
 	TArray<FFTUEDialogueModel> FTUEDialogues;
+
+public:
+	bool HasFTUE() { return bHasFTUE; }
+	bool IsFTUEAlwaysActive() { return bIsFTUEAlwaysActive; }
+	TArray<FFTUEDialogueModel> GetFTUEDialogues() { return FTUEDialogues; }
 #pragma endregion
 
 private:

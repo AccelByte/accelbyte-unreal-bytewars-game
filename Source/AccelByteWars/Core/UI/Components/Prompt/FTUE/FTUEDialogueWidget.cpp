@@ -33,21 +33,25 @@ void UFTUEDialogueWidget::NativeConstruct()
 	W_FTUEInterupter->SetVisibility(ESlateVisibility::Collapsed);
 }
 
-void UFTUEDialogueWidget::AddDialogues(TArray<FFTUEDialogueModel> Dialogues)
+void UFTUEDialogueWidget::AddDialogues(TArray<FFTUEDialogueModel>& Dialogues)
 {
-	CachedDialogues.Append(Dialogues);
+	// Add dialogues to cache.
+	for (int i = 0; i < Dialogues.Num(); i++) 
+	{
+		CachedDialogues.Add(&Dialogues[i]);
+	}
 
-	Btn_Open->SetVisibility(!CachedDialogues.IsEmpty() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	ValidateDialogues();
 }
 
 void UFTUEDialogueWidget::RemoveAssociateDialogues(const TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass)
 {
-	CachedDialogues.RemoveAll([WidgetClass](const FFTUEDialogueModel Temp)
+	CachedDialogues.RemoveAll([WidgetClass](const FFTUEDialogueModel* Temp)
 	{
-		return Temp.TargetWidgetClasses.Contains(WidgetClass);
+		return !Temp || Temp->TargetWidgetClasses.Contains(WidgetClass);
 	});
 
-	Btn_Open->SetVisibility(!CachedDialogues.IsEmpty() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	ValidateDialogues();
 }
 
 void UFTUEDialogueWidget::ShowDialogues()
@@ -59,16 +63,18 @@ void UFTUEDialogueWidget::ShowDialogues()
 		return;
 	}
 
+	ValidateDialogues();
 	ClearHighlightedWidget();
-
-	W_FTUEDialogue->SetVisibility(ESlateVisibility::Visible);
 
 	CachedDialogues.Sort();
 	InitializeDialogue(CachedDialogues[DialogueIndex]);
+
+	W_FTUEDialogue->SetVisibility(ESlateVisibility::Visible);
 }
 
 void UFTUEDialogueWidget::CloseDialogues()
 {
+	ValidateDialogues();
 	ClearHighlightedWidget();
 
 	// TODO: Might prefer to remove the widget instead of changing its visibility.
@@ -85,7 +91,18 @@ void UFTUEDialogueWidget::PrevDialogue()
 		return;
 	}
 
-	InitializeDialogue(CachedDialogues[--DialogueIndex]);
+	// Try to init dialogue. If fails, fallback.
+	if (!InitializeDialogue(CachedDialogues[--DialogueIndex])) 
+	{
+		if (DialogueIndex <= 0) 
+		{
+			CloseDialogues();
+		}
+		else 
+		{
+			PrevDialogue();
+		}
+	}
 }
 
 void UFTUEDialogueWidget::NextDialogue()
@@ -97,18 +114,27 @@ void UFTUEDialogueWidget::NextDialogue()
 		return;
 	}
 
-	InitializeDialogue(CachedDialogues[++DialogueIndex]);
+	// Try to init dialogue. If fails, fallback.
+	if (!InitializeDialogue(CachedDialogues[++DialogueIndex])) 
+	{
+		NextDialogue();
+	}
 }
 
-void UFTUEDialogueWidget::InitializeDialogue(const FFTUEDialogueModel& Dialogue)
+bool UFTUEDialogueWidget::InitializeDialogue(FFTUEDialogueModel* Dialogue)
 {
+	if (!Dialogue) 
+	{
+		return false;
+	}
+
 	// Check for highlighted widget.
 	ClearHighlightedWidget();
-	if (Dialogue.bHighlightWidget)
+	if (Dialogue->bHighlightWidget)
 	{
-		const FString WidgetToHighlightStr = Dialogue.TargetWidgetNameToHighlight;
+		const FString WidgetToHighlightStr = Dialogue->TargetWidgetNameToHighlight;
 		TArray<UUserWidget*> FoundWidgets;
-		UWidgetBlueprintLibrary::GetAllWidgetsOfClass(this, FoundWidgets, Dialogue.TargetWidgetClassToHighlight.Get(), false);
+		UWidgetBlueprintLibrary::GetAllWidgetsOfClass(this, FoundWidgets, Dialogue->TargetWidgetClassToHighlight.Get(), false);
 
 		for (auto& FoundWidget : FoundWidgets)
 		{
@@ -131,18 +157,17 @@ void UFTUEDialogueWidget::InitializeDialogue(const FFTUEDialogueModel& Dialogue)
 			}
 		}
 	
-		// Skip the dialogue if the highlighted widget is not found or is invisible.
+		// Abort if the highlighted widget is not found or is invisible.
 		// TODO: check whether the widget is visible or not (there is wierd behavior in Unreal).
 		if (!CachedHighlightedWidget)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Cannot highlight widget. Skipping FTUE dialogue, highlighted widget is not found or invisible."));
-			NextDialogue();
-			return;
+			return false;
 		}
 	}
 
 	// Check if interrupting.
-	W_FTUEInterupter->SetVisibility(Dialogue.bIsInterrupting ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	W_FTUEInterupter->SetVisibility(Dialogue->bIsInterrupting ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 
 	// Set navigation buttons.
 	Btn_Next->SetButtonText( 
@@ -156,17 +181,17 @@ void UFTUEDialogueWidget::InitializeDialogue(const FFTUEDialogueModel& Dialogue)
 
 	// Set dialogue message.
 	FFormatNamedArguments Arg;
-	Txt_Message->SetText(FText::Format(Dialogue.Message, Arg));
+	Txt_Message->SetText(FText::Format(Dialogue->Message, Arg));
 
 	// Setup the action buttons.
 	Btn_Action1->SetVisibility(ESlateVisibility::Collapsed);
 	Btn_Action2->SetVisibility(ESlateVisibility::Collapsed);
-	switch (Dialogue.ButtonType)
+	switch (Dialogue->ButtonType)
 	{
 	case FFTUEDialogueButtonType::TWO_BUTTONS:
-		InitializeActionButton(Btn_Action2, Dialogue.Button2);
+		InitializeActionButton(Btn_Action2, Dialogue->Button2);
 	case FFTUEDialogueButtonType::ONE_BUTTON:
-		InitializeActionButton(Btn_Action1, Dialogue.Button1);
+		InitializeActionButton(Btn_Action1, Dialogue->Button1);
 		break;
 	}
 
@@ -174,10 +199,18 @@ void UFTUEDialogueWidget::InitializeDialogue(const FFTUEDialogueModel& Dialogue)
 	if (UCanvasPanelSlot* WidgetSlot = Cast<UCanvasPanelSlot>(W_FTUEDialogue->Slot)) 
 	{
 		WidgetSlot->SetAutoSize(true);
-		WidgetSlot->SetAnchors(FAnchors(Dialogue.GetAnchor().X, Dialogue.GetAnchor().Y));
-		WidgetSlot->SetAlignment(Dialogue.GetAnchor());
-		WidgetSlot->SetPosition(Dialogue.Position);
+		WidgetSlot->SetAnchors(FAnchors(Dialogue->GetAnchor().X, Dialogue->GetAnchor().Y));
+		WidgetSlot->SetAlignment(Dialogue->GetAnchor());
+		WidgetSlot->SetPosition(Dialogue->Position);
 	}
+
+	// Mark as shown if the dialogue is first time only.
+	if (Dialogue->OwnerTutorialModule && !Dialogue->OwnerTutorialModule->IsFTUEAlwaysActive())
+	{
+		Dialogue->bIsAlreadyShown = true;
+	}
+
+	return true;
 }
 
 void UFTUEDialogueWidget::InitializeActionButton(UAccelByteWarsButtonBase* Button, const FFTUEDialogueButtonModel& ButtonModel)
@@ -222,6 +255,17 @@ void UFTUEDialogueWidget::InitializeActionButton(UAccelByteWarsButtonBase* Butto
 			ButtonModel.ButtonActionDelegate.ExecuteIfBound();
 		});
 	}
+}
+
+void UFTUEDialogueWidget::ValidateDialogues()
+{
+	// Remove invalid dialogues.
+	CachedDialogues.RemoveAll([](const FFTUEDialogueModel* Temp)
+	{
+		return !Temp || Temp->bIsAlreadyShown;
+	});
+
+	Btn_Open->SetVisibility(!CachedDialogues.IsEmpty() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 }
 
 void UFTUEDialogueWidget::ClearHighlightedWidget()

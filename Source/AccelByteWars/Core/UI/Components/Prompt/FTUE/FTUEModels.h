@@ -48,6 +48,14 @@ struct FFTUEDialogueButtonModel
 {
     GENERATED_BODY()
 
+    void Reset() 
+    {
+        ButtonActionType = EFTUEDialogueButtonActionType::HYPERLINK_BUTTON;
+        ButtonText = FText::GetEmpty();
+        TargetURL = FString("");
+        ButtonActionDelegate.Unbind();
+    }
+
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
         Tooltip = "The action type that should be executed by the button."))
     EFTUEDialogueButtonActionType ButtonActionType = EFTUEDialogueButtonActionType::HYPERLINK_BUTTON;
@@ -177,4 +185,7 @@ struct FFTUEDialogueModel
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
         Tooltip = "Target widget where the FTUE should be shown."))
     TArray<TSubclassOf<UAccelByteWarsActivatableWidget>> TargetWidgetClasses;
+
+    // Flag to define whether this dialogue is already shown or not.
+    bool bIsAlreadyShown = false;
 };

@@ -402,18 +402,40 @@ void UTutorialModuleDataAsset::ValidateFTUEDialogues()
 		}
 	}
 
-	// Assign fresh FTUE dialogue metadatas to the target widget class.
-	for (auto& FTUEDialogue : FTUEDialogues)
+	// Refresh FTUE dialogues metadata.
+	if (HasFTUE())
 	{
-		FTUEDialogue.OwnerTutorialModule = this;
-
-		for (auto& TargetWidgetClass : FTUEDialogue.TargetWidgetClasses)
+		for (auto& FTUEDialogue : FTUEDialogues)
 		{
-			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
+			FTUEDialogue.OwnerTutorialModule = this;
+			FTUEDialogue.bIsAlreadyShown = false;
+
+			// Reset button metadata if not used.
+			switch (FTUEDialogue.ButtonType)
 			{
-				continue;
+			case FFTUEDialogueButtonType::NO_BUTTON:
+				FTUEDialogue.Button1.Reset();
+			case FFTUEDialogueButtonType::ONE_BUTTON:
+				FTUEDialogue.Button2.Reset();
+				break;
 			}
-			TargetWidgetClass.GetDefaultObject()->FTUEDialogues.Add(FTUEDialogue);
+
+			// Reset highlighted widget metadata if not used.
+			if (!FTUEDialogue.bHighlightWidget)
+			{
+				FTUEDialogue.TargetWidgetClassToHighlight = nullptr;
+				FTUEDialogue.TargetWidgetNameToHighlight = FString("");
+			}
+
+			// Assign FTUE dialogue metadata to the target widget class.
+			for (auto& TargetWidgetClass : FTUEDialogue.TargetWidgetClasses)
+			{
+				if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
+				{
+					continue;
+				}
+				TargetWidgetClass.GetDefaultObject()->FTUEDialogues.Add(FTUEDialogue);
+			}
 		}
 	}
 
