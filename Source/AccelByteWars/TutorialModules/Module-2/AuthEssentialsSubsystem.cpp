@@ -25,6 +25,17 @@ void UAuthEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
         UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("Identiy interface is not valid."));
         return;
     }
+
+    // TODO: This is dummy sample FTUE referencing through its id. Must be deleted later.
+    FFTUEDialogueModel* FTUEDialogue = FFTUEDialogueModel::GetMetadataById("test_ftue_2", AssociateTutorialModule->FTUEDialogues);
+    if (FTUEDialogue)
+    {
+        FTUEDialogue->Button1.ButtonActionDelegate.RemoveAll(this);
+        FTUEDialogue->Button1.ButtonActionDelegate.AddWeakLambda(this, []()
+        {
+            UE_LOG(LogTemp, Warning, TEXT("Hello World Nani Kore Wow 2!"));
+        });
+    }
 }
 
 void UAuthEssentialsSubsystem::Deinitialize()

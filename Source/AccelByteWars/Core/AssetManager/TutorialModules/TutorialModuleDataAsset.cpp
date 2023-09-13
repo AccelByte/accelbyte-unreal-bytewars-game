@@ -386,9 +386,9 @@ void UTutorialModuleDataAsset::ValidateFTUEDialogues()
 				continue;
 			}
 
-			TargetWidgetClass.GetDefaultObject()->FTUEDialogues.RemoveAll([this](const FFTUEDialogueModel Temp)
+			TargetWidgetClass.GetDefaultObject()->FTUEDialogues.RemoveAll([this](const FFTUEDialogueModel* Temp)
 			{
-				return !Temp.OwnerTutorialModule || Temp.OwnerTutorialModule == this;
+				return !Temp || !Temp->OwnerTutorialModule || Temp->OwnerTutorialModule == this;
 			});
 		}
 	}
@@ -401,9 +401,9 @@ void UTutorialModuleDataAsset::ValidateFTUEDialogues()
 				continue;
 			}
 
-			TargetWidgetClass.GetDefaultObject()->FTUEDialogues.RemoveAll([this](const FFTUEDialogueModel Temp)
+			TargetWidgetClass.GetDefaultObject()->FTUEDialogues.RemoveAll([this](const FFTUEDialogueModel* Temp)
 			{
-				return !Temp.OwnerTutorialModule || Temp.OwnerTutorialModule == this;
+				return !Temp || !Temp->OwnerTutorialModule || Temp->OwnerTutorialModule == this;
 			});
 		}
 	}
@@ -453,7 +453,7 @@ void UTutorialModuleDataAsset::ValidateFTUEDialogues()
 				{
 					continue;
 				}
-				TargetWidgetClass.GetDefaultObject()->FTUEDialogues.Add(FTUEDialogue);
+				TargetWidgetClass.GetDefaultObject()->FTUEDialogues.Add(&FTUEDialogue);
 			}
 		}
 	}

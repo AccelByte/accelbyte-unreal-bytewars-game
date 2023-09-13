@@ -26,7 +26,7 @@ class ACCELBYTEWARS_API UFTUEDialogueWidget : public UAccelByteWarsActivatableWi
 	GENERATED_BODY()
 
 public:
-	void AddDialogues(TArray<FFTUEDialogueModel>& Dialogues);
+	void AddDialogues(const TArray<FFTUEDialogueModel*>& Dialogues);
 	void RemoveAssociateDialogues(const TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass);
 
 	void ShowDialogues();

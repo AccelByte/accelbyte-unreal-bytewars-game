@@ -35,12 +35,12 @@ void UFTUEDialogueWidget::NativeConstruct()
 	W_FTUEInterupter->SetVisibility(ESlateVisibility::Collapsed);
 }
 
-void UFTUEDialogueWidget::AddDialogues(TArray<FFTUEDialogueModel>& Dialogues)
+void UFTUEDialogueWidget::AddDialogues(const TArray<FFTUEDialogueModel*>& Dialogues)
 {
 	// Add dialogues to cache.
 	for (int i = 0; i < Dialogues.Num(); i++) 
 	{
-		CachedDialogues.Add(&Dialogues[i]);
+		CachedDialogues.Add(Dialogues[i]);
 	}
 
 	ValidateDialogues();

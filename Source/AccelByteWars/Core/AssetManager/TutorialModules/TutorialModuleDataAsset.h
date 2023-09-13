@@ -135,6 +135,10 @@ private:
 			EditCondition = "bHasFTUE"))
 	bool bIsFTUEAlwaysActive = true;
 
+public:
+	bool HasFTUE() { return bHasFTUE; }
+	bool IsFTUEAlwaysActive() { return bIsFTUEAlwaysActive; }
+
 	UPROPERTY(EditAnywhere,
 		Category = "First Time User Experience (FTUE)",
 		meta = (
@@ -143,11 +147,6 @@ private:
 			EditCondition = "bHasFTUE",
 			EditConditionHides))
 	TArray<FFTUEDialogueModel> FTUEDialogues;
-
-public:
-	bool HasFTUE() { return bHasFTUE; }
-	bool IsFTUEAlwaysActive() { return bIsFTUEAlwaysActive; }
-	TArray<FFTUEDialogueModel> GetFTUEDialogues() { return FTUEDialogues; }
 #pragma endregion
 
 private:

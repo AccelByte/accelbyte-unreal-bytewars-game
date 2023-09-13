@@ -66,7 +66,7 @@ public:
 	TArray<FTutorialModuleGeneratedWidget*> GeneratedWidgets;
 
 	// The FTUE dialogues to be shown when this widget is active.
-	TArray<FFTUEDialogueModel> FTUEDialogues;
+	TArray<FFTUEDialogueModel*> FTUEDialogues;
 #pragma endregion
 
 protected:

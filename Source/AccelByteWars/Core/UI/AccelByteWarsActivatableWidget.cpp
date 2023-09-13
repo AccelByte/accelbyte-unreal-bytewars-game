@@ -194,7 +194,7 @@ void UAccelByteWarsActivatableWidget::ValidateGeneratedWidgets()
 {
 	GeneratedWidgets.RemoveAll([](const FTutorialModuleGeneratedWidget* Temp)
 	{
-		return Temp->OwnerTutorialModule == nullptr;
+		return !Temp || !Temp->OwnerTutorialModule;
 	});
 }
 
@@ -444,9 +444,9 @@ TWeakObjectPtr<UAccelByteWarsActivatableWidget> UAccelByteWarsActivatableWidget:
 void UAccelByteWarsActivatableWidget::ValidateFTUEDialogues()
 {
 	// Clear invalid FTUE dialogues.
-	FTUEDialogues.RemoveAll([](const FFTUEDialogueModel Temp)
+	FTUEDialogues.RemoveAll([](const FFTUEDialogueModel* Temp)
 	{
-		return !Temp.OwnerTutorialModule;
+		return !Temp || !Temp->OwnerTutorialModule;
 	});
 }
 
