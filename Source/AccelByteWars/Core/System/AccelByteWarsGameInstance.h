@@ -158,6 +158,12 @@ public:
 	void SetSFXVolume(float InVolume);
 
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = GameSettings)
+	bool GetFTUEAlwaysOnSetting();
+
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = GameSettings)
+	void SetFTUEAlwaysOnSetting(bool InValue);
+
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = GameSettings)
 	void LoadGameSettings();
 
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = GameSettings)

@@ -13,6 +13,7 @@ DECLARE_MULTICAST_DELEGATE_TwoParams(FOnOptionsMenuDeactivated, const APlayerCon
 
 class UAccelByteWarsGameInstance;
 class UOptionListEntry_Scalar;
+class UOptionListEntry_Toggler;
 
 UCLASS()
 class ACCELBYTEWARS_API UOptionsWidget : public UAccelByteWarsActivatableWidget
@@ -38,6 +39,9 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UOptionListEntry_Scalar* W_OptionSFXVolumeScalar;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UOptionListEntry_Toggler* W_OptionFTUEAlwaysOnToggler;
 
 	UAccelByteWarsGameInstance* GameInstance;
 };
