@@ -45,6 +45,8 @@ protected:
 	void DeinitializeLastDialogue();
 	void ClearHighlightedWidget();
 
+	bool IsWidgetVisible(UWidget* Widget);
+
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCanvasPanel* Canvas_FTUE;
 

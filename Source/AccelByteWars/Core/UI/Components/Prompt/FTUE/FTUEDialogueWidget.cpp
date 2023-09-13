@@ -145,10 +145,17 @@ bool UFTUEDialogueWidget::InitializeDialogue(FFTUEDialogueModel* Dialogue)
 				continue;
 			}
 
-			// Highlight widget.
-			// TODO: check whether the widget is visible or not (there is wierd behavior in Unreal).
+			// Highlight widget if visible.
 			if (FoundWidget->GetName().Equals(WidgetToHighlightStr, ESearchCase::CaseSensitive))
 			{
+				// Check whether the widget is visible or not. 
+				// TODO: There is wierd behavior in Unreal where is visible does not count the parent widget.
+				if (!FoundWidget->IsVisible()) 
+				{
+					UE_LOG_FTUEDIALOGUEWIDGET(Warning, TEXT("Cannot highlight widget. Skipping FTUE dialogue, highlighted widget is not found or invisible."));
+					return false;
+				}
+
 				IAccelByteWarsWidgetInterface* WidgetInterface = Cast<IAccelByteWarsWidgetInterface>(FoundWidget);
 				if (WidgetInterface)
 				{
@@ -157,14 +164,6 @@ bool UFTUEDialogueWidget::InitializeDialogue(FFTUEDialogueModel* Dialogue)
 				}
 				break;
 			}
-		}
-	
-		// Abort if the highlighted widget is not found or is invisible.
-		// TODO: check whether the widget is visible or not (there is wierd behavior in Unreal).
-		if (!CachedHighlightedWidget)
-		{
-			UE_LOG_FTUEDIALOGUEWIDGET(Warning, TEXT("Cannot highlight widget. Skipping FTUE dialogue, highlighted widget is not found or invisible."));
-			return false;
 		}
 	}
 

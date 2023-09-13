@@ -18,6 +18,7 @@ void USinglePlatformAuthWidget::NativeConstruct()
 	Btn_LoginWithSinglePlatformAuth->OnClicked().AddUObject(this, &ThisClass::OnLoginWithSinglePlatformAuthButtonClicked);
 
 	// Toggle the login button visibility if the default native platform exists.
+	Btn_LoginWithSinglePlatformAuth->SetVisibility(IOnlineSubsystem::GetByPlatform() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	SetVisibility(IOnlineSubsystem::GetByPlatform() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 
 	// Auto login with default native platform.
