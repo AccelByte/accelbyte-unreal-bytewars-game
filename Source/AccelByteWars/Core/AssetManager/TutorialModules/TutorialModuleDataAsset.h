@@ -191,5 +191,6 @@ private:
 
 #pragma region "First Time User Experience (FTUE)"
 	TArray<FFTUEDialogueModel> LastFTUEDialogues;
+	static TSet<FString> FTUEDialogueUsedIds;
 #pragma endregion
 };

@@ -6,12 +6,18 @@
 
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
+#include "Core/Utilities/AccelByteWarsUtilityLog.h"
 #include "Core/UI/AccelByteWarsWidgetInterface.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleUtility.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleDataAsset.h"
 #include "Core/UI/Components/Prompt/FTUE/FTUEModels.h"
 #include "AccelByteWarsActivatableWidget.generated.h"
 
+ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogAccelByteWarsActivatableWidget, Log, All);
+#define UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Verbosity, Format, ...) \
+{ \
+	UE_LOG_FUNC(LogAccelByteWarsActivatableWidget, Verbosity, Format, ##__VA_ARGS__) \
+}
 
 UENUM(BlueprintType)
 enum class EAccelByteWarsWidgetInputMode : uint8

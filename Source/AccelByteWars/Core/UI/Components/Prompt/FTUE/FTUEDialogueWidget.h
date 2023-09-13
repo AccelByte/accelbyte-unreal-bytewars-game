@@ -6,8 +6,15 @@
 
 #include "CoreMinimal.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
+#include "Core/Utilities/AccelByteWarsUtilityLog.h"
 #include "Core/UI/Components/Prompt/FTUE/FTUEModels.h"
 #include "FTUEDialogueWidget.generated.h"
+
+ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogFTUEDialogueWidget, Log, All);
+#define UE_LOG_FTUEDIALOGUEWIDGET(Verbosity, Format, ...) \
+{ \
+	UE_LOG_FUNC(LogFTUEDialogueWidget, Verbosity, Format, ##__VA_ARGS__) \
+}
 
 class UAccelByteWarsButtonBase;
 class UTextBlock;

@@ -19,6 +19,8 @@
 
 #include "Core/UI/Components/Prompt/FTUE/FTUEDialogueWidget.h"
 
+DEFINE_LOG_CATEGORY(LogAccelByteWarsActivatableWidget);
+
 #define LOCTEXT_NAMESPACE "AccelByteWars"
 
 UAccelByteWarsActivatableWidget::UAccelByteWarsActivatableWidget(const FObjectInitializer& ObjectInitializer)
@@ -132,7 +134,7 @@ void UAccelByteWarsActivatableWidget::MoveCameraToTargetLocation(const float Del
 	AActor* Camera = UGameplayStatics::GetActorOfClass(GetWorld(), ACameraActor::StaticClass());
 	if (Camera == nullptr) 
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Cannot move the camera to active menu. Camera is not found."));
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot move the camera to active menu. Camera is not found."));
 		return;
 	}
 
@@ -146,7 +148,7 @@ void UAccelByteWarsActivatableWidget::SetInputModeToUIOnly()
 	APlayerController* PC = GetOwningPlayer();
 	if (!PC)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Failed to change input mode. Player controller is not valid or already destroyed."));
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Failed to change input mode. Player controller is not valid or already destroyed."));
 		return;
 	}
 
@@ -167,7 +169,7 @@ void UAccelByteWarsActivatableWidget::SetInputModeToGameOnly()
 	APlayerController* PC = GetOwningPlayer();
 	if (!PC)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Failed to change input mode. Player controller is not valid or already destroyed."));
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Failed to change input mode. Player controller is not valid or already destroyed."));
 		return;
 	}
 
@@ -227,20 +229,20 @@ void UAccelByteWarsActivatableWidget::InitializeGeneratedWidgets()
 		if ((!GeneratedWidget->OwnerTutorialModule || !GeneratedWidget->OwnerTutorialModule->IsActiveAndDependenciesChecked()) ||
 			(GeneratedWidget->OtherTutorialModule && !GeneratedWidget->OtherTutorialModule->IsActiveAndDependenciesChecked()))
 		{
-			UE_LOG(LogTemp, Log, TEXT("Tutorial Module Data Asset is not active. Cannot initialize the generated widget."));
+			UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Log, TEXT("Tutorial Module Data Asset is not active. Cannot initialize the generated widget."));
 			continue;
 		}
 
 		// Get valid widget container.
 		if (!ensure(GetGeneratedWidgetContainers().IsValidIndex(GeneratedWidget->TargetWidgetContainerIndex)))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Tutorial Module widget's Target Widget Container index is out of bound. Cannot initialize the widget."));
+			UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Tutorial Module widget's Target Widget Container index is out of bound. Cannot initialize the widget."));
 			continue;
 		}
 		UPanelWidget* WidgetContainer = GetGeneratedWidgetContainers()[GeneratedWidget->TargetWidgetContainerIndex];
 		if (!ensure(WidgetContainer))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Tutorial Module widget's Target Widget Container is null. Cannot initialize the widget."));
+			UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Tutorial Module widget's Target Widget Container is null. Cannot initialize the widget."));
 			continue;
 		}
 
@@ -300,7 +302,7 @@ TWeakObjectPtr<UAccelByteWarsButtonBase> UAccelByteWarsActivatableWidget::Genera
 
 	if (!EntryWidgetClass)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Entry widget class is null. Cannot initialize the generated entry button."));
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Entry widget class is null. Cannot initialize the generated entry button."));
 		return nullptr;
 	}
 
@@ -352,7 +354,7 @@ TWeakObjectPtr<UAccelByteWarsButtonBase> UAccelByteWarsActivatableWidget::Genera
 	{
 		if (!Metadata.ButtonAction.IsBound())
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Tutorial Module's Button Action with id {%s} is clicked but doesn't have any action."), *Metadata.WidgetId);
+			UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Tutorial Module's Button Action with id {%s} is clicked but doesn't have any action."), *Metadata.WidgetId);
 		}
 
 		Metadata.ButtonAction.ExecuteIfBound();
@@ -416,7 +418,7 @@ TWeakObjectPtr<UAccelByteWarsActivatableWidget> UAccelByteWarsActivatableWidget:
 
 	if (!WidgetClass)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Widget class is null. Cannot initialize the generated the Tutorial Module's widget."));
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Widget class is null. Cannot initialize the generated the Tutorial Module's widget."));
 		return nullptr;
 	}
 
@@ -450,31 +452,30 @@ void UAccelByteWarsActivatableWidget::ValidateFTUEDialogues()
 
 void UAccelByteWarsActivatableWidget::InitializeFTEUDialogues()
 {
-	// TODO: Refactor the log.
-
 	if (IsUnreachable())
 	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot initialize FTUE dialogues as the widget begin to tear down."));
 		return;
 	}
 
 	UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetWorld()->GetGameInstance());
 	if (!GameInstance)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Cannot initialize FTUE dialogues. Game Instance is not valid."));
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot initialize FTUE dialogues. Game Instance is not valid."));
 		return;
 	}
 
 	UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget();
 	if (!BaseUIWidget)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Cannot initialize FTUE dialogues. Base UI widget is not valid."));
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot initialize FTUE dialogues. Base UI widget is not valid."));
 		return;
 	}
 
 	UFTUEDialogueWidget* FTUEWidget = BaseUIWidget->GetFTUEDialogueWidget();
 	if (!FTUEWidget) 
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Cannot initialize FTUE dialogues. FTUE dialogue widget is not valid."));
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot initialize FTUE dialogues. FTUE dialogue widget is not valid."));
 		return;
 	}
 
@@ -483,31 +484,30 @@ void UAccelByteWarsActivatableWidget::InitializeFTEUDialogues()
 
 void UAccelByteWarsActivatableWidget::DeinitializeFTUEDialogues()
 {
-	// TODO: Refactor the log.
-
 	if (IsUnreachable())
 	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot deinitialize FTUE dialogues as the widget begin to tear down."));
 		return;
 	}
 
 	UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetWorld()->GetGameInstance());
 	if (!GameInstance)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Cannot deinitialize FTUE dialogues. Game Instance is not valid."));
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot deinitialize FTUE dialogues. Game Instance is not valid."));
 		return;
 	}
 
 	UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget();
 	if (!BaseUIWidget)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Cannot deinitialize FTUE dialogues. Base UI widget is not valid."));
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot deinitialize FTUE dialogues. Base UI widget is not valid."));
 		return;
 	}
 
 	UFTUEDialogueWidget* FTUEWidget = BaseUIWidget->GetFTUEDialogueWidget();
 	if (!FTUEWidget)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Cannot deinitialize FTUE dialogues. FTUE dialogue widget is not valid."));
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot deinitialize FTUE dialogues. FTUE dialogue widget is not valid."));
 		return;
 	}
 

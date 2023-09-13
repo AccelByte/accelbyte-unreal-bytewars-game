@@ -48,34 +48,6 @@ struct FFTUEDialogueButtonModel
 {
     GENERATED_BODY()
 
-    void Reset() 
-    {
-        ButtonActionType = EFTUEDialogueButtonActionType::HYPERLINK_BUTTON;
-        ButtonText = FText::GetEmpty();
-        TargetURL = FString("");
-        bIsFormattedURL = false;
-        URLArguments.Empty();
-        ButtonActionDelegate.Unbind();
-    }
-
-    FString GetFormattedURL() const
-    {
-        if (!bIsFormattedURL) 
-        {
-            return TargetURL;
-        }
-
-        FFormatNamedArguments Args;
-        int32 ArgIndex = 0;
-        for (auto& Arg : URLArguments)
-        {
-            Args.Add(FString::Printf(TEXT("%d"), ArgIndex), FText::FromString(Arg));
-            ArgIndex++;
-        }
-
-        return FText::Format(FText::FromString(TargetURL), Args).ToString();
-    }
-
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
         Tooltip = "The action type that should be executed by the button."))
     EFTUEDialogueButtonActionType ButtonActionType = EFTUEDialogueButtonActionType::HYPERLINK_BUTTON;
@@ -103,7 +75,35 @@ struct FFTUEDialogueButtonModel
     TArray<FString> URLArguments;
 
     // Action button to be executed if the button action type is a custom action button.
-    TDelegate<void()> ButtonActionDelegate;
+    TMulticastDelegate<void()> ButtonActionDelegate;
+
+    void Reset()
+    {
+        ButtonActionType = EFTUEDialogueButtonActionType::HYPERLINK_BUTTON;
+        ButtonText = FText::GetEmpty();
+        TargetURL = FString("");
+        bIsFormattedURL = false;
+        URLArguments.Empty();
+        ButtonActionDelegate.Clear();
+    }
+
+    FString GetFormattedURL() const
+    {
+        if (!bIsFormattedURL)
+        {
+            return TargetURL;
+        }
+
+        FFormatNamedArguments Args;
+        int32 ArgIndex = 0;
+        for (auto& Arg : URLArguments)
+        {
+            Args.Add(FString::Printf(TEXT("%d"), ArgIndex), FText::FromString(Arg));
+            ArgIndex++;
+        }
+
+        return FText::Format(FText::FromString(TargetURL), Args).ToString();
+    }
 };
 
 USTRUCT(BlueprintType)
@@ -111,73 +111,15 @@ struct FFTUEDialogueModel
 {
     GENERATED_BODY()
 
-    FVector2D GetAnchor() const
-    {
-        float Horizontal, Vertical;
-
-        switch (HorizontalAnchor)
-        {
-        case EFTUEDialogueHorizontalAnchor::MIDDLE:
-            Horizontal = 0.5f;
-            break;
-        case EFTUEDialogueHorizontalAnchor::LEFT:
-            Horizontal = 0.0f;
-            break;
-        case EFTUEDialogueHorizontalAnchor::RIGHT:
-            Horizontal = 1.0f;
-            break;
-        default:
-            Horizontal = 0.5f;
-            break;
-        }
-
-        switch (VerticalAnchor)
-        {
-        case EFTUEDialogueVerticalAnchor::MIDDLE:
-            Vertical = 0.5f;
-            break;
-        case EFTUEDialogueVerticalAnchor::TOP:
-            Vertical = 0.0f;
-            break;
-        case EFTUEDialogueVerticalAnchor::BOTTOM:
-            Vertical = 1.0f;
-            break;
-        default:
-            Vertical = 0.5f;
-            break;
-        }
-
-        return FVector2D(Horizontal, Vertical);
-    }
-    
-    FText GetFormattedMessage() const
-    {
-        if (!bIsFormattedMessage)
-        {
-            return Message;
-        }
-
-        FFormatNamedArguments Args;
-        int32 ArgIndex = 0;
-        for (auto& Arg : MessageArguments)
-        {
-            Args.Add(FString::Printf(TEXT("%d"), ArgIndex), FText::FromString(Arg));
-            ArgIndex++;
-        }
-
-        return FText::Format(Message, Args);
-    }
-
-    bool operator<(const FFTUEDialogueModel& Other) const
-    {
-        return OrderPriority < Other.OrderPriority;
-    }
-
     UPROPERTY(VisibleAnywhere, 
         BlueprintReadOnly, meta = (
             Tooltip = "The Tutorial Module who owns the metadata of the FTUE.", 
             DisplayThumbnail = false))
     UTutorialModuleDataAsset* OwnerTutorialModule = nullptr;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
+        Tooltip = "(Optional) The id to identify the FTUE. Useful when you want to get the reference to the FTUE from the source code."))
+    FString FTUEId;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
         Tooltip = "The message to be shown on the FTUE."))
@@ -249,4 +191,82 @@ struct FFTUEDialogueModel
 
     // Flag to define whether this dialogue is already shown or not.
     bool bIsAlreadyShown = false;
+
+    FVector2D GetAnchor() const
+    {
+        float Horizontal, Vertical;
+
+        switch (HorizontalAnchor)
+        {
+        case EFTUEDialogueHorizontalAnchor::MIDDLE:
+            Horizontal = 0.5f;
+            break;
+        case EFTUEDialogueHorizontalAnchor::LEFT:
+            Horizontal = 0.0f;
+            break;
+        case EFTUEDialogueHorizontalAnchor::RIGHT:
+            Horizontal = 1.0f;
+            break;
+        default:
+            Horizontal = 0.5f;
+            break;
+        }
+
+        switch (VerticalAnchor)
+        {
+        case EFTUEDialogueVerticalAnchor::MIDDLE:
+            Vertical = 0.5f;
+            break;
+        case EFTUEDialogueVerticalAnchor::TOP:
+            Vertical = 0.0f;
+            break;
+        case EFTUEDialogueVerticalAnchor::BOTTOM:
+            Vertical = 1.0f;
+            break;
+        default:
+            Vertical = 0.5f;
+            break;
+        }
+
+        return FVector2D(Horizontal, Vertical);
+    }
+
+    FText GetFormattedMessage() const
+    {
+        if (!bIsFormattedMessage)
+        {
+            return Message;
+        }
+
+        FFormatNamedArguments Args;
+        int32 ArgIndex = 0;
+        for (auto& Arg : MessageArguments)
+        {
+            Args.Add(FString::Printf(TEXT("%d"), ArgIndex), FText::FromString(Arg));
+            ArgIndex++;
+        }
+
+        return FText::Format(Message, Args);
+    }
+
+    static FFTUEDialogueModel* GetMetadataById(const FString& FTUEId, TArray<FFTUEDialogueModel*>& FTUEDialogues)
+    {
+        return *FTUEDialogues.FindByPredicate([FTUEId](const FFTUEDialogueModel* Temp)
+        {
+            return Temp->FTUEId == FTUEId;
+        });
+    }
+
+    static FFTUEDialogueModel* GetMetadataById(const FString& FTUEId, TArray<FFTUEDialogueModel>& FTUEDialogues)
+    {
+        return FTUEDialogues.FindByPredicate([FTUEId](const FFTUEDialogueModel& Temp)
+        {
+            return Temp.FTUEId == FTUEId;
+        });
+    }
+
+    bool operator<(const FFTUEDialogueModel& Other) const
+    {
+        return OrderPriority < Other.OrderPriority;
+    }
 };

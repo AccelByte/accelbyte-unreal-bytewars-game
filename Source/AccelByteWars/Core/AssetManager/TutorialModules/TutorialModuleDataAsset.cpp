@@ -13,6 +13,7 @@
 
 const FPrimaryAssetType	UTutorialModuleDataAsset::TutorialModuleAssetType = TEXT("TutorialModule");
 TSet<FString> UTutorialModuleDataAsset::GeneratedWidgetUsedIds;
+TSet<FString> UTutorialModuleDataAsset::FTUEDialogueUsedIds;
 
 FTutorialModuleData UTutorialModuleDataAsset::GetTutorialModuleDataByCodeName(const FString& InCodeName)
 {
@@ -376,6 +377,8 @@ void UTutorialModuleDataAsset::ValidateFTUEDialogues()
 	// Clean up last FTUE dialogues metadata to avoid duplication.
 	for (auto& LastFTUEDialogue : LastFTUEDialogues)
 	{
+		UTutorialModuleDataAsset::FTUEDialogueUsedIds.Remove(LastFTUEDialogue.FTUEId);
+
 		for (auto& TargetWidgetClass : LastFTUEDialogue.TargetWidgetClasses)
 		{
 			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
@@ -426,6 +429,19 @@ void UTutorialModuleDataAsset::ValidateFTUEDialogues()
 		{
 			FTUEDialogue.TargetWidgetClassToHighlight = nullptr;
 			FTUEDialogue.TargetWidgetNameToHighlight = FString("");
+		}
+
+		// Check if the FTUE id is already used.
+		if (UTutorialModuleDataAsset::FTUEDialogueUsedIds.Contains(FTUEDialogue.FTUEId))
+		{
+#if UE_EDITOR
+			ShowPopupMessage(FString::Printf(TEXT("%s FTUE id is already used. FTUE id must be unique."), *FTUEDialogue.FTUEId));
+#endif
+			FTUEDialogue.FTUEId = TEXT("");
+		}
+		else if (!FTUEDialogue.FTUEId.IsEmpty())
+		{
+			UTutorialModuleDataAsset::FTUEDialogueUsedIds.Add(FTUEDialogue.FTUEId);
 		}
 
 		// Assign FTUE dialogue metadata to the target widget class.

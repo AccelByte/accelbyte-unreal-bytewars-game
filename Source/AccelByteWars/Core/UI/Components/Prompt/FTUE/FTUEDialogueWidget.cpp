@@ -11,6 +11,8 @@
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
 
+DEFINE_LOG_CATEGORY(LogFTUEDialogueWidget);
+
 #define LOCTEXT_NAMESPACE "AccelByteWars"
 
 void UFTUEDialogueWidget::NativeConstruct()
@@ -161,7 +163,7 @@ bool UFTUEDialogueWidget::InitializeDialogue(FFTUEDialogueModel* Dialogue)
 		// TODO: check whether the widget is visible or not (there is wierd behavior in Unreal).
 		if (!CachedHighlightedWidget)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Cannot highlight widget. Skipping FTUE dialogue, highlighted widget is not found or invisible."));
+			UE_LOG_FTUEDIALOGUEWIDGET(Warning, TEXT("Cannot highlight widget. Skipping FTUE dialogue, highlighted widget is not found or invisible."));
 			return false;
 		}
 	}
@@ -232,8 +234,7 @@ void UFTUEDialogueWidget::InitializeActionButton(UAccelByteWarsButtonBase* Butto
 		{
 			if (URL.IsEmpty())
 			{
-				// TODO: Refactor the logs.
-				UE_LOG(LogTemp, Warning, TEXT("Cannot open hyperlink. Dialogue button's hyperlink is empty."));
+				UE_LOG_FTUEDIALOGUEWIDGET(Warning, TEXT("Cannot open hyperlink. Dialogue button's hyperlink is empty."));
 				return;
 			}
 
@@ -247,12 +248,11 @@ void UFTUEDialogueWidget::InitializeActionButton(UAccelByteWarsButtonBase* Butto
 		{
 			if (!ButtonModel.ButtonActionDelegate.IsBound()) 
 			{
-				// TODO: Refactor the logs.
-				UE_LOG(LogTemp, Warning, TEXT("Cannot execute custom action. Dialogue button is not bound to any event."));
+				UE_LOG_FTUEDIALOGUEWIDGET(Warning, TEXT("Cannot execute custom action. Dialogue button is not bound to any event."));
 				return;
 			}
 
-			ButtonModel.ButtonActionDelegate.ExecuteIfBound();
+			ButtonModel.ButtonActionDelegate.Broadcast();
 		});
 	}
 }
