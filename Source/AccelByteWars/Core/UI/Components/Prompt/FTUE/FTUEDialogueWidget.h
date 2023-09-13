@@ -42,6 +42,7 @@ protected:
 	void InitializeActionButton(UAccelByteWarsButtonBase* Button, const FFTUEDialogueButtonModel& ButtonModel);
 
 	void ValidateDialogues();
+	void DeinitializeLastDialogue();
 	void ClearHighlightedWidget();
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
@@ -75,5 +76,6 @@ private:
 	TArray<FFTUEDialogueModel*> CachedDialogues;
 	int32 DialogueIndex;
 
+	FFTUEDialogueModel* CachedLastDialogue;
 	UUserWidget* CachedHighlightedWidget;
 };

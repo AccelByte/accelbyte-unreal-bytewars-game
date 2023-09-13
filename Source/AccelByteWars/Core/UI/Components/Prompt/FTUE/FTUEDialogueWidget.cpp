@@ -28,11 +28,8 @@ void UFTUEDialogueWidget::NativeConstruct()
 	Btn_Next->OnClicked().Clear();
 	Btn_Next->OnClicked().AddUObject(this, &ThisClass::NextDialogue);
 
-	// TODO: Might prefer to remove the widget instead of changing its visibility.
 	// On initialize, close the FTUE.
-	Btn_Open->SetVisibility(ESlateVisibility::Collapsed);
-	W_FTUEDialogue->SetVisibility(ESlateVisibility::Collapsed);
-	W_FTUEInterupter->SetVisibility(ESlateVisibility::Collapsed);
+	CloseDialogues();
 }
 
 void UFTUEDialogueWidget::AddDialogues(const TArray<FFTUEDialogueModel*>& Dialogues)
@@ -58,28 +55,31 @@ void UFTUEDialogueWidget::RemoveAssociateDialogues(const TSubclassOf<UAccelByteW
 
 void UFTUEDialogueWidget::ShowDialogues()
 {
-	DialogueIndex = 0;
-
 	if (CachedDialogues.IsEmpty()) 
 	{
 		return;
 	}
 
-	ValidateDialogues();
+	// Initialize FTUE.
 	ClearHighlightedWidget();
+	ValidateDialogues();
+	DialogueIndex = 0;
+	CachedLastDialogue = nullptr;
 
+	// Show FTUE.
 	CachedDialogues.Sort();
 	InitializeDialogue(CachedDialogues[DialogueIndex]);
-
 	W_FTUEDialogue->SetVisibility(ESlateVisibility::Visible);
 }
 
 void UFTUEDialogueWidget::CloseDialogues()
 {
-	ValidateDialogues();
+	// Tear down FTUE.
 	ClearHighlightedWidget();
+	DeinitializeLastDialogue();
+	ValidateDialogues();
+	CachedLastDialogue = nullptr;
 
-	// TODO: Might prefer to remove the widget instead of changing its visibility.
 	// Close the FTUE
 	W_FTUEDialogue->SetVisibility(ESlateVisibility::Collapsed);
 	W_FTUEInterupter->SetVisibility(ESlateVisibility::Collapsed);
@@ -210,6 +210,15 @@ bool UFTUEDialogueWidget::InitializeDialogue(FFTUEDialogueModel* Dialogue)
 	{
 		Dialogue->bIsAlreadyShown = true;
 	}
+	
+	// Execute last dialogue's on-deactivate event.
+	DeinitializeLastDialogue();
+
+	// Execute current dialogue's on-activated event.
+	if (Dialogue->OnActivateDelegate.IsBound()) 
+	{
+		Dialogue->OnActivateDelegate.Broadcast();
+	}
 
 	return true;
 }
@@ -269,6 +278,36 @@ void UFTUEDialogueWidget::ValidateDialogues()
 	});
 
 	Btn_Open->SetVisibility(!CachedDialogues.IsEmpty() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+}
+
+void UFTUEDialogueWidget::DeinitializeLastDialogue()
+{
+	if (!CachedLastDialogue) 
+	{
+		return;
+	}
+
+	// Execute last dialogue's on-deactivate event.
+	if (CachedLastDialogue->OnDeactivateDelegate.IsBound()) 
+	{
+		CachedLastDialogue->OnDeactivateDelegate.Broadcast();
+	}
+
+	// Update last dialogue cache.
+	CachedLastDialogue = CachedDialogues[DialogueIndex];
+	
+	//if (DialogueIndex >= CachedDialogues.Num() - 1) 
+	//{
+	//	CachedLastDialogue = nullptr;
+	//}
+	//else if (DialogueIndex <= 0)
+	//{
+	//	CachedLastDialogue = nullptr;
+	//}
+	//else 
+	//{
+	//	CachedLastDialogue = CachedDialogues[DialogueIndex];
+	//}
 }
 
 void UFTUEDialogueWidget::ClearHighlightedWidget()

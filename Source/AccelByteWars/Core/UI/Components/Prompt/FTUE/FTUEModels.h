@@ -192,6 +192,12 @@ struct FFTUEDialogueModel
     // Flag to define whether this dialogue is already shown or not.
     bool bIsAlreadyShown = false;
 
+    // Event to be executed when the FTUE is shown to the screen.
+    TMulticastDelegate<void()> OnActivateDelegate;
+
+    // Event to be executed when the FTUE is dismissed from the screen.
+    TMulticastDelegate<void()> OnDeactivateDelegate;
+
     FVector2D GetAnchor() const
     {
         float Horizontal, Vertical;
