@@ -27,6 +27,14 @@ void ULeaderboardWeeklyWidget_Starter::NativeOnActivated()
 	WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::NoEntry);
 
 	// TODO: Call functionalities to get and display leaderboard weekly rankings.
+
+	// Set FTUE to open periodic leaderboard config based on selected game mode.
+	if (FFTUEDialogueModel* FTUELeaderboard =
+		FFTUEDialogueModel::GetMetadataById("ftue_weekly_leaderboard", AssociateTutorialModule->FTUEDialogues))
+	{
+		FTUELeaderboard->Button1.URLArguments[0] = LeaderboardCode;
+		FTUELeaderboard->Button1.URLArguments[1] = CycleId;
+	}
 }
 
 #pragma region Module.13 Function Definitions

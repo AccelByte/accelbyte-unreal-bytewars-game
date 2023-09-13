@@ -27,6 +27,13 @@ void ULeaderboardAllTimeWidget_Starter::NativeOnActivated()
 	WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::NoEntry);
 
 	// TODO: Call functionalities to get and display leaderboard rankings.
+
+	// Set FTUE to open all-time leaderboard config based on selected game mode.
+	if (FFTUEDialogueModel* FTUELeaderboard =
+		FFTUEDialogueModel::GetMetadataById("ftue_alltime_leaderboard", AssociateTutorialModule->FTUEDialogues))
+	{
+		FTUELeaderboard->Button1.URLArguments[0] = LeaderboardCode;
+	}
 }
 
 #pragma region Module.6 Function Declarations

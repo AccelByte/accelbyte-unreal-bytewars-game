@@ -32,6 +32,13 @@ void ULeaderboardAllTimeWidget::NativeOnActivated()
 	// Get leaderboard rankings.
 	WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::NoEntry);
 	GetRankings();
+
+	// Set FTUE to open all-time leaderboard config based on selected game mode.
+	if (FFTUEDialogueModel* FTUELeaderboard =
+		FFTUEDialogueModel::GetMetadataById("ftue_alltime_leaderboard", AssociateTutorialModule->FTUEDialogues))
+	{
+		FTUELeaderboard->Button1.URLArguments[0] = LeaderboardCode;
+	}
 }
 
 void ULeaderboardAllTimeWidget::GetRankings()

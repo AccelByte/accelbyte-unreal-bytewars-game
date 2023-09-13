@@ -40,17 +40,6 @@ void ULoginWidget::NativeOnActivated()
 	Btn_RetryLogin->OnClicked().AddUObject(this, &ThisClass::OnRetryLoginButtonClicked);
 	Btn_QuitGame->OnClicked().AddUObject(this, &ThisClass::OnQuitGameButtonClicked);
 
-	// TODO: This is dummy sample FTUE referencing through its id. Must be deleted later.
-	FFTUEDialogueModel* FTUEDialogue = FFTUEDialogueModel::GetMetadataById("test_ftue", FTUEDialogues);
-	if (FTUEDialogue) 
-	{
-		FTUEDialogue->Button1.ButtonActionDelegate.RemoveAll(this);
-		FTUEDialogue->Button1.ButtonActionDelegate.AddWeakLambda(this, []()
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Hello World Nani Kore Wow!"));
-		});
-	}
-
 	AutoLoginCmd();
 }
 
