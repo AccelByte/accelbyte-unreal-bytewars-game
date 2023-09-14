@@ -27,7 +27,7 @@ class ACCELBYTEWARS_API UFriendData : public UObject
 public:
 	UFriendData() : bIsOnline(false), bCannotBeInvited(false) {}
 
-	FUniqueNetIdRepl UserId;
+	FUniqueNetIdPtr UserId;
 	FString DisplayName;
 	FString AvatarURL;
 	EFriendStatus Status = EFriendStatus::Unknown;

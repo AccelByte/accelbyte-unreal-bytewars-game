@@ -7,6 +7,7 @@
 #include "CommonButtonBase.h"
 #include "Components/TextBlock.h"
 #include "Components/Image.h"
+#include "TutorialModules/Module-1/TutorialModuleOnlineUtility.h"
 
 #define LOCTEXT_NAMESPACE "AccelByteWars"
 
@@ -34,7 +35,8 @@ void UBlockedPlayerWidgetEntry_Starter::NativeOnListItemObjectSet(UObject* ListI
 	}
 	else
 	{
-		Tb_DisplayName->SetText(LOCTEXT("Byte Wars Player", "Byte Wars Player"));
+		Tb_DisplayName->SetText(FText::FromString(
+			UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(CachedBlockedPlayerData->UserId.ToSharedRef().Get())));
 	}
 
 	// Store default brush to be used to reset the avatar brush if needed.

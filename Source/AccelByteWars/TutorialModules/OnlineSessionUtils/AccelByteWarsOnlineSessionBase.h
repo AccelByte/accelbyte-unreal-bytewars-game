@@ -160,4 +160,58 @@ public:
 protected:
 	virtual void OnFindSessionsComplete(bool bSucceeded){}
 #pragma endregion 
+
+#pragma region "Party Essentials"
+public:
+	virtual TArray<FUniqueNetIdRef> GetPartyMembers() { return TArray<FUniqueNetIdRef>(); }
+	virtual FUniqueNetIdPtr GetPartyLeader() { return nullptr; }
+	virtual bool IsInParty(const FUniqueNetIdPtr UserId) { return false; };
+	virtual bool IsPartyLeader(const FUniqueNetIdPtr UserId) { return false; };
+
+	virtual void CreateParty(const int32 LocalUserNum) {}
+	virtual void LeaveParty(const int32 LocalUserNum) {}
+
+	virtual void SendPartyInvite(const int32 LocalUserNum, const FUniqueNetIdPtr& Invitee) {}
+	virtual void JoinParty(const int32 LocalUserNum, const FOnlineSessionSearchResult& PartySessionResult) {}
+	virtual void RejectPartyInvite(const int32 LocalUserNum, const FOnlineSessionInviteAccelByte& PartyInvite) {}
+
+	virtual void KickPlayerFromParty(const int32 LocalUserNum, const FUniqueNetIdPtr& KickedPlayer) {}
+
+	virtual void PromotePartyLeader(const int32 LocalUserNum, const FUniqueNetIdPtr& NewLeader) {}
+
+	virtual FOnCreateSessionComplete* GetOnCreatePartyCompleteDelegates() { return nullptr; }
+	virtual FOnDestroySessionComplete* GetOnLeavePartyCompleteDelegates() { return nullptr; }
+
+	virtual FOnSendSessionInviteComplete* GetOnSendPartyInviteCompleteDelegates() { return nullptr; }
+	virtual FOnJoinSessionComplete* GetOnJoinPartyCompleteDelegates() { return nullptr; }
+	virtual FOnRejectSessionInviteComplete* GetOnRejectPartyInviteCompleteDelegate() { return nullptr; }
+	virtual FOnSessionInviteRejected* GetOnPartyInviteRejectedDelegates() { return nullptr; }
+	virtual FOnV2SessionInviteReceivedDelegate* GetOnPartyInviteReceivedDelegate() { return nullptr; }
+
+	virtual FOnKickPlayerComplete* GetOnKickPlayerFromPartyDelegate() { return nullptr; }
+	virtual FOnKickedFromSession* GetOnKickedFromPartyDelegates() { return nullptr; }
+
+	virtual FOnPromotePartySessionLeaderComplete* GetOnPromotePartyLeaderCompleteDelegate() { return nullptr; }
+
+	virtual FOnSessionParticipantsChange* GetOnPartyMembersChangeDelegates() { return nullptr; }
+	virtual FOnSessionUpdateReceived* GetOnPartySessionUpdateReceivedDelegates() { return nullptr; }
+
+protected:
+	virtual void OnCreatePartyComplete(FName SessionName, bool bSucceeded) {}
+	virtual void OnLeavePartyComplete(FName SessionName, bool bSucceeded) {}
+
+	virtual void OnSendPartyInviteComplete(const FUniqueNetId& Sender, FName SessionName, bool bWasSuccessful, const FUniqueNetId& Invitee) {}
+	virtual void OnJoinPartyComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result) {}
+	virtual void OnRejectPartyInviteComplete(bool bWasSuccessful) {}
+	virtual void OnPartyInviteRejected(FName SessionName, const FUniqueNetId& RejecterId) {}
+	virtual void OnPartyInviteReceived(const FUniqueNetId& UserId, const FUniqueNetId& FromId, const FOnlineSessionInviteAccelByte& PartyInvite) {}
+
+	virtual void OnKickPlayerFromPartyComplete(bool bWasSuccessful, const FUniqueNetId& KickedPlayer) {}
+	virtual void OnKickedFromParty(FName SessionName) {}
+
+	virtual void OnPromotePartyLeaderComplete(const FUniqueNetId& NewLeader, const FOnlineError& Result) {}
+
+	virtual void OnPartyMembersChange(FName SessionName, const FUniqueNetId& Member, bool bJoined) {}
+	virtual void OnPartySessionUpdateReceived(FName SessionName) {}
+#pragma endregion
 };

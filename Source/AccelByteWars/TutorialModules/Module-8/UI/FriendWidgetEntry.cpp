@@ -8,6 +8,7 @@
 #include "Components/WidgetSwitcher.h"
 #include "Components/TextBlock.h"
 #include "Components/Image.h"
+#include "TutorialModules/Module-1/TutorialModuleOnlineUtility.h"
 
 #define LOCTEXT_NAMESPACE "AccelByteWars"
 
@@ -42,7 +43,8 @@ void UFriendWidgetEntry::NativeOnListItemObjectSet(UObject* ListItemObject)
 	}
 	else 
 	{
-		Tb_DisplayName->SetText(LOCTEXT("Byte Wars Player", "Byte Wars Player"));
+		Tb_DisplayName->SetText(FText::FromString(
+			UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(CachedFriendData->UserId.ToSharedRef().Get())));
 	}
 	
 	// Display presence.

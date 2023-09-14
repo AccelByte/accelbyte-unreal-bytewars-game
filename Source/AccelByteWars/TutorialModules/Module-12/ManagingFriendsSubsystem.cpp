@@ -44,7 +44,7 @@ void UManagingFriendsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
     // Assign action button to unfriend.
     FTutorialModuleGeneratedWidget* UnfriendButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_unfriend"), AssociateTutorialModule->GeneratedWidgets);
     ensure(UnfriendButtonMetadata);
-    UnfriendButtonMetadata->ButtonAction.BindWeakLambda(this, [this]()
+    UnfriendButtonMetadata->ButtonAction.AddWeakLambda(this, [this]()
     {
         UCommonActivatableWidget* ParentWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
         if (!ParentWidget)
@@ -83,7 +83,7 @@ void UManagingFriendsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
     // Assign action button to block a player.
     FTutorialModuleGeneratedWidget* BlockPlayerButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_block_player"), AssociateTutorialModule->GeneratedWidgets);
     ensure(BlockPlayerButtonMetadata);
-    BlockPlayerButtonMetadata->ButtonAction.BindWeakLambda(this, [this]()
+    BlockPlayerButtonMetadata->ButtonAction.AddWeakLambda(this, [this]()
     {
         UCommonActivatableWidget* ParentWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
         if (!ParentWidget)
