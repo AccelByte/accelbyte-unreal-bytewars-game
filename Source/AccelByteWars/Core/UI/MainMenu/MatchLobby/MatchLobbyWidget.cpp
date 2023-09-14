@@ -163,34 +163,11 @@ void UMatchLobbyWidget::GenerateMultiplayerTeamEntries()
 
 			// Spawn player entry and set the default username.
 			const TWeakObjectPtr<UPlayerEntryWidget> PlayerEntry = MakeWeakObjectPtr<UPlayerEntryWidget>(CreateWidget<UPlayerEntryWidget>(this, PlayerEntryWidget.Get()));
-			PlayerEntry->SetUsername(FText::FromString(PlayerName));
 			TeamEntry->AddPlayerEntry(PlayerEntry.Get());
-			PlayerEntry->SetAvatarTint(TeamColor);
+			PlayerEntry->SetUsername(FText::FromString(PlayerName));
+			PlayerEntry->SetAvatar(Member.AvatarURL);
+			PlayerEntry->SetAvatarTint(Member.AvatarURL.IsEmpty() ? TeamColor : FLinearColor::White);
 			PlayerEntry->SetTextColor(TeamColor);
-
-			const FString AvatarUrl = Member.AvatarURL;
-			const FString AvatarId = FBase64::Encode(AvatarUrl);
-
-			// Try to set avatar image from cache.
-			FCacheBrush CacheAvatarBrush = AccelByteWarsUtility::GetImageFromCache(AvatarId);
-			if (CacheAvatarBrush.IsValid())
-			{
-				PlayerEntry->SetAvatarTint(FLinearColor::White);
-				PlayerEntry->SetAvatar(*CacheAvatarBrush.Get());
-			}
-			// Set avatar image from URL if it is not exists in cache.
-			else if (!AvatarUrl.IsEmpty()) 
-			{
-				AccelByteWarsUtility::GetImageFromURL(
-					AvatarUrl,
-					AvatarId,
-					FOnImageReceived::CreateLambda([PlayerEntry](const FCacheBrush ImageResult)
-					{
-						PlayerEntry->SetAvatarTint(FLinearColor::White);
-						PlayerEntry->SetAvatar(*ImageResult.Get());
-					})
-				);
-			}
 		}
 	}
 }

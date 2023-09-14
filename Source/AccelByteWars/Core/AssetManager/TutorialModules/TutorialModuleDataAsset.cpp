@@ -112,6 +112,13 @@ void UTutorialModuleDataAsset::ValidateDataAssetProperties()
 	ValidateClassProperty(StarterUIClass, LastStarterUIClass, true);
 	ValidateClassProperty(StarterSubsystemClass, LastStarterSubsystemClass, true);
 
+	// Validate Default's and Starter class properties for OnlineSession module
+	if (bOnlineSessionModule)
+	{
+		ValidateClassProperty(DefaultOnlineSessionClass, LastDefaultOnlineSessionClass, false);
+		ValidateClassProperty(StarterOnlineSessionClass, LastStarterOnlineSessionClass, true);
+	}
+
 	// Clean up last generated widgets metadata to avoid duplication.
 	for (FTutorialModuleGeneratedWidget& LastGeneratedWidget : LastGeneratedWidgets)
 	{
@@ -203,13 +210,6 @@ void UTutorialModuleDataAsset::ValidateDataAssetProperties()
 	}
 
 	LastGeneratedWidgets = GeneratedWidgets;
-
-	// Validate Default's and Starter class properties for OnlineSession module
-	if (bOnlineSessionModule)
-	{
-		ValidateClassProperty(DefaultOnlineSessionClass, LastDefaultOnlineSessionClass, false);
-		ValidateClassProperty(StarterOnlineSessionClass, LastStarterOnlineSessionClass, true);
-	}
 }
 
 bool UTutorialModuleDataAsset::ValidateClassProperty(TSubclassOf<UAccelByteWarsActivatableWidget>& UIClass, TSubclassOf<UAccelByteWarsActivatableWidget>& LastUIClass, const bool IsStarterClass)

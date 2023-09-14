@@ -231,6 +231,8 @@ void UAccelByteWarsActivatableWidget::InitializeGeneratedWidgets()
 		{
 			GenerateActionButton(*GeneratedWidget, *WidgetContainer);
 		}
+	
+		GeneratedWidget->OnWidgetGenerated.Broadcast();
 	}
 }
 
@@ -317,9 +319,10 @@ TWeakObjectPtr<UAccelByteWarsButtonBase> UAccelByteWarsActivatableWidget::Genera
 		if (!Metadata.ButtonAction.IsBound())
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Tutorial Module's Button Action with id {%s} is clicked but doesn't have any action."), *Metadata.WidgetId);
+			return;
 		}
 
-		Metadata.ButtonAction.ExecuteIfBound();
+		Metadata.ButtonAction.Broadcast();
 	});
 	WidgetContainer.AddChild(Button.Get());
 	Metadata.GenerateWidgetRef = Button.Get();

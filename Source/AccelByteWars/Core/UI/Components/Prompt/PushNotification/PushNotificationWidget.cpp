@@ -71,9 +71,10 @@ void UPushNotificationWidget::RemoveNotification(UPushNotification* Notification
 
 	// Delete from notification list.
 	Lv_PushNotification->RemoveItem(Notification);
+	Lv_PushNotification->RequestRefresh();
 
 	// Dismiss the notification if empty.
-	if (PendingNotifications.IsEmpty() && Lv_PushNotification->GetNumItems() <= 0) 
+	if (PendingNotifications.IsEmpty() && Lv_PushNotification->GetNumItems() <= 0)
 	{
 		DeactivateWidget();
 	}
