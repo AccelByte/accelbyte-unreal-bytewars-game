@@ -10,6 +10,7 @@
 
 class UTextBlock;
 class UBorder;
+class UAccelByteWarsAsyncImageWidget;
 
 UCLASS()
 class ACCELBYTEWARS_API UPlayerEntryWidget : public UAccelByteWarsActivatableWidget
@@ -21,17 +22,17 @@ public:
 	void SetUsername(const FText& Username);
 
 	UFUNCTION(BlueprintCallable)
-	void SetAvatar(const FSlateBrush& Avatar);
+	void SetAvatar(const FString& AvatarURL);
 
 	UFUNCTION(BlueprintCallable)
-	void SetTextColor(const FLinearColor Color);
+	void SetTextColor(const FLinearColor& Color);
 
 	UFUNCTION(BlueprintCallable)
-	void SetAvatarTint(const FLinearColor Color);
+	void SetAvatarTint(const FLinearColor& Color);
 	
 private:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UBorder* Img_Avatar;
+	UAccelByteWarsAsyncImageWidget* Img_Avatar;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Tb_Username;

@@ -6,9 +6,9 @@
 
 #include "CoreMinimal.h"
 #include "OnlineSessionClient.h"
+#include "Core/AssetManager/TutorialModules/TutorialModuleUtility.h"
+#include "Core/AssetManager/TutorialModules/TutorialModuleDataAsset.h"
 #include "TutorialModuleOnlineSession.generated.h"
-
-class UTutorialModuleDataAsset;
 
 UCLASS(Abstract)
 class ACCELBYTEWARS_API UTutorialModuleOnlineSession : public UOnlineSessionClient
@@ -16,10 +16,10 @@ class ACCELBYTEWARS_API UTutorialModuleOnlineSession : public UOnlineSessionClie
 	GENERATED_BODY()
 
 public:
-	// The Tutorial Module Data Asset associated with this subsystem.
-	UTutorialModuleDataAsset* AssociateTutorialModule;
-
 	virtual void RegisterOnlineDelegates() override;
+	virtual void ClearOnlineDelegates() override;
+
+	UTutorialModuleDataAsset* AssociateTutorialModule;
 
 protected:
 	void ExecuteNextTick(const FSimpleDelegate& Delegate) const;
