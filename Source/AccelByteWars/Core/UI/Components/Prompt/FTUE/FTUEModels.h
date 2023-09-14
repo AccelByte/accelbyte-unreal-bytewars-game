@@ -237,6 +237,9 @@ struct FFTUEDialogueModel
     bool bIsAlreadyShown = false;
 
     // Event to be executed when the FTUE is shown to the screen.
+    TDelegate<bool()> OnValidateDelegate;
+
+    // Event to be executed when the FTUE is shown to the screen.
     TMulticastDelegate<void()> OnActivateDelegate;
 
     // Event to be executed when the FTUE is dismissed from the screen.

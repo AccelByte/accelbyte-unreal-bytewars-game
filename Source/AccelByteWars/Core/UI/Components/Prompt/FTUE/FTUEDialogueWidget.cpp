@@ -125,7 +125,7 @@ void UFTUEDialogueWidget::NextDialogue()
 
 bool UFTUEDialogueWidget::InitializeDialogue(FFTUEDialogueModel* Dialogue)
 {
-	if (!Dialogue) 
+	if (!Dialogue)
 	{
 		return false;
 	}
@@ -273,7 +273,8 @@ void UFTUEDialogueWidget::ValidateDialogues()
 		return !Temp || 
 			Temp->bIsAlreadyShown || 
 			!Temp->OwnerTutorialModule || 
-			!Temp->OwnerTutorialModule->IsActiveAndDependenciesChecked();
+			!Temp->OwnerTutorialModule->IsActiveAndDependenciesChecked() ||
+			(Temp->OnValidateDelegate.IsBound() && !Temp->OnValidateDelegate.Execute());
 	});
 
 	Btn_Open->SetVisibility(!CachedDialogues.IsEmpty() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);

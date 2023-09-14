@@ -66,6 +66,18 @@ void UMatchLobbyWidget::NativeOnActivated()
 	{
 		Btn_Start->SetVisibility(GetOwningPlayer()->HasAuthority() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	}
+
+	// Only show session FTUE on online session.
+	if (FFTUEDialogueModel* FTUESession =
+		FFTUEDialogueModel::GetMetadataById("ftue_session_details", FTUEDialogues))
+	{
+		EGameModeNetworkType NetMode = GameState->GameSetup.NetworkType;
+		FTUESession->OnValidateDelegate.Unbind();
+		FTUESession->OnValidateDelegate.BindWeakLambda(this, [NetMode]()
+		{
+			return NetMode != EGameModeNetworkType::LOCAL;
+		});
+	}
 }
 
 void UMatchLobbyWidget::NativeOnDeactivated()
