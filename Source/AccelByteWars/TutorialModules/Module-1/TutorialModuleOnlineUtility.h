@@ -7,7 +7,11 @@
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "OnlineSubsystemTypes.h"
+#include "OnlineSessionSettings.h"
+#include "OnlineSubsystemAccelByteTypes.h"
+#include "OnlineSubsystemAccelByteSessionSettings.h"
 #include "Core/AccelByteEnvironment.h"
+#include "Core/UI/Components/Prompt/FTUE/FTUEModels.h"
 #include "TutorialModuleOnlineUtility.generated.h"
 
 ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogAccelByteWarsTutorialModuleOnlineUtility, Log, All);
@@ -32,4 +36,9 @@ private:
 	static ESettingsEnvironment ConvertStringEnvToAccelByteEnv(const FString& EnvironmentStr);
 	static FString ConvertAccelByteEnvToStringEnv(const ESettingsEnvironment& Environment);
 	static ESettingsEnvironment ConvertOSSEnvToAccelByteEnv(const EOnlineEnvironment::Type& Environment);
+
+	FString GetFTUEPredefinedArgument(const FTUEPredifinedArgument Keyword);
+	FUniqueNetIdAccelByteUserPtr GetCurrentPlayer();
+	FNamedOnlineSession* GetOnlineSession(const FName SessionName);
+	FAccelByteModelsV2GameSessionDSInformation GetDedicatedServer();
 };

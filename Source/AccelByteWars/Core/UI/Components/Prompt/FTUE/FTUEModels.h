@@ -43,6 +43,40 @@ enum class FFTUEDialogueButtonType : uint8
     TWO_BUTTONS UMETA(DisplayName = "Two Buttons")
 };
 
+UENUM(BlueprintType)
+enum class FTUEPredifinedArgument : uint8
+{
+    PLAYER_ID = 0 UMETA(DisplayName = "Player Id"),
+    GAME_SESSION_ID UMETA(DisplayName = "Game Session Id"),
+    PARTY_SESSION_ID UMETA(DisplayName = "Party Session Id"),
+    DEDICATED_SERVER_ID UMETA(DisplayName = "Dedicated Server Id")
+};
+
+USTRUCT(BlueprintType)
+struct FTUEArgumentModel 
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (
+        Tooltip = "Whether to use predefined argument or not."))
+    bool bUsePredefinedArgument = false;
+
+    UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (
+        Tooltip = "User defined string argument.",
+        EditCondition = "!bUsePredefinedArgument",
+        EditConditionHides))
+    FString Argument;
+
+    UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (
+        Tooltip = "Predefined argument.",
+        EditCondition = "bUsePredefinedArgument",
+        EditConditionHides))
+    FTUEPredifinedArgument PredefinedArgument = FTUEPredifinedArgument::PLAYER_ID;
+
+    // Event to get predefined argument from online tutorial modules branch.
+    inline static TDelegate<FString(const FTUEPredifinedArgument /*Keyword*/)> OnGetPredefinedArgument;
+};
+
 USTRUCT(BlueprintType)
 struct FFTUEDialogueButtonModel
 {
@@ -72,7 +106,7 @@ struct FFTUEDialogueButtonModel
         Tooltip = "List of argument to be inserted on the formatted URL. The order and the size of the arguments must follow the formatted URL.",
         EditCondition = "bIsFormattedURL && ButtonActionType==EFTUEDialogueButtonActionType::HYPERLINK_BUTTON",
         EditConditionHides))
-    TArray<FString> URLArguments;
+    TArray<FTUEArgumentModel> URLArguments;
 
     // Action button to be executed if the button action type is a custom action button.
     TMulticastDelegate<void()> ButtonActionDelegate;
@@ -98,7 +132,17 @@ struct FFTUEDialogueButtonModel
         int32 ArgIndex = 0;
         for (auto& Arg : URLArguments)
         {
-            Args.Add(FString::Printf(TEXT("%d"), ArgIndex), FText::FromString(Arg));
+            FString ArgStr = FString("");
+            if (Arg.bUsePredefinedArgument && Arg.OnGetPredefinedArgument.IsBound())
+            {
+                ArgStr = Arg.OnGetPredefinedArgument.Execute(Arg.PredefinedArgument);
+            }
+            else
+            {
+                ArgStr = Arg.Argument;
+            }
+
+            Args.Add(FString::Printf(TEXT("%d"), ArgIndex), FText::FromString(ArgStr));
             ArgIndex++;
         }
 
@@ -133,7 +177,7 @@ struct FFTUEDialogueModel
         Tooltip = "List of argument to be inserted on the formatted message. The order and the size of the arguments must follow the formatted message.",
         EditCondition = "bIsFormattedMessage",
         EditConditionHides))
-    TArray<FString> MessageArguments;
+    TArray<FTUEArgumentModel> MessageArguments;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
         Tooltip = "The type of action buttons should be shown when the FTUE is shown."))
@@ -248,7 +292,17 @@ struct FFTUEDialogueModel
         int32 ArgIndex = 0;
         for (auto& Arg : MessageArguments)
         {
-            Args.Add(FString::Printf(TEXT("%d"), ArgIndex), FText::FromString(Arg));
+            FString ArgStr = FString("");
+            if (Arg.bUsePredefinedArgument && Arg.OnGetPredefinedArgument.IsBound())
+            {
+                ArgStr = Arg.OnGetPredefinedArgument.Execute(Arg.PredefinedArgument);
+            }
+            else 
+            {
+                ArgStr = Arg.Argument;
+            }
+            
+            Args.Add(FString::Printf(TEXT("%d"), ArgIndex), FText::FromString(ArgStr));
             ArgIndex++;
         }
 

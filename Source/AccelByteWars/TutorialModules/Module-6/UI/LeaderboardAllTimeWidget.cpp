@@ -37,7 +37,7 @@ void ULeaderboardAllTimeWidget::NativeOnActivated()
 	if (FFTUEDialogueModel* FTUELeaderboard =
 		FFTUEDialogueModel::GetMetadataById("ftue_alltime_leaderboard", AssociateTutorialModule->FTUEDialogues))
 	{
-		FTUELeaderboard->Button1.URLArguments[0] = LeaderboardCode;
+		FTUELeaderboard->Button1.URLArguments[0].Argument = LeaderboardCode;
 	}
 }
 

@@ -4,7 +4,11 @@
 
 #include "TutorialModules/Module-1/TutorialModuleOnlineUtility.h"
 #include "Core/Utilities/AccelByteWarsBlueprintFunctionLibrary.h"
+
 #include "OnlineSubsystemUtils.h"
+#include "OnlineIdentityInterfaceAccelByte.h"
+#include "OnlineSessionInterfaceV2AccelByte.h"
+
 #include "Core/AccelByteRegistry.h"
 #include "AccelByteUe4SdkModule.h"
 
@@ -13,6 +17,8 @@ DEFINE_LOG_CATEGORY(LogAccelByteWarsTutorialModuleOnlineUtility);
 UTutorialModuleOnlineUtility::UTutorialModuleOnlineUtility()
 {
     CheckForEnvironmentConfigOverride();
+
+    FTUEArgumentModel::OnGetPredefinedArgument.BindUObject(this, &ThisClass::GetFTUEPredefinedArgument);
 }
 
 bool UTutorialModuleOnlineUtility::IsAccelByteSDKInitialized(const UObject* Target)
@@ -137,4 +143,111 @@ ESettingsEnvironment UTutorialModuleOnlineUtility::ConvertOSSEnvToAccelByteEnv(c
         default:
             return ESettingsEnvironment::Default;
     }
+}
+
+FString UTutorialModuleOnlineUtility::GetFTUEPredefinedArgument(const FTUEPredifinedArgument Keyword)
+{
+    FString Result = FString("");
+
+    if (Keyword == FTUEPredifinedArgument::PLAYER_ID) 
+    {
+        if (FUniqueNetIdAccelByteUserPtr UserABId = GetCurrentPlayer())
+        {
+            Result = UserABId->GetAccelByteId();
+        }
+    }
+    else if (Keyword == FTUEPredifinedArgument::GAME_SESSION_ID) 
+    {
+        if (FNamedOnlineSession* Session = GetOnlineSession(NAME_GameSession))
+        {
+            Result = Session->GetSessionIdStr();
+        }
+    }
+    else if (Keyword == FTUEPredifinedArgument::PARTY_SESSION_ID)
+    {
+        if (FNamedOnlineSession* Session = GetOnlineSession(NAME_PartySession))
+        {
+            Result = Session->GetSessionIdStr();
+        }
+    }
+    else if (Keyword == FTUEPredifinedArgument::DEDICATED_SERVER_ID) 
+    {
+        Result = GetDedicatedServer().Server.Pod_name;
+    }
+
+    return Result;
+}
+
+FUniqueNetIdAccelByteUserPtr UTutorialModuleOnlineUtility::GetCurrentPlayer()
+{
+    const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+    if (!Subsystem)
+    {
+        return nullptr;
+    }
+
+    const FOnlineIdentityAccelBytePtr IdentityInterface = StaticCastSharedPtr<FOnlineIdentityAccelByte>(Subsystem->GetIdentityInterface());
+    if (!IdentityInterface)
+    {
+        return nullptr;
+    }
+
+    const FUniqueNetIdAccelByteUserPtr UserABId = StaticCastSharedPtr<const FUniqueNetIdAccelByteUser>(IdentityInterface->GetUniquePlayerId(0));
+    return UserABId;
+}
+
+FNamedOnlineSession* UTutorialModuleOnlineUtility::GetOnlineSession(const FName SessionName)
+{
+    const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+    if (!Subsystem)
+    {
+        return nullptr;
+    }
+
+    const FOnlineSessionV2AccelBytePtr SessionInterface = StaticCastSharedPtr<FOnlineSessionV2AccelByte>(Subsystem->GetSessionInterface());
+    if (!SessionInterface)
+    {
+        return nullptr;
+    }
+
+    return SessionInterface->GetNamedSession(SessionName);
+}
+
+FAccelByteModelsV2GameSessionDSInformation UTutorialModuleOnlineUtility::GetDedicatedServer()
+{
+    FAccelByteModelsV2GameSessionDSInformation DSInformation{};
+
+    const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+    if (!Subsystem)
+    {
+        return DSInformation;
+    }
+
+    FOnlineSessionV2AccelBytePtr SessionInterface = StaticCastSharedPtr<FOnlineSessionV2AccelByte>(Subsystem->GetSessionInterface());
+    if (!SessionInterface)
+    {
+        return DSInformation;
+    }
+
+    FNamedOnlineSession* Session = SessionInterface->GetNamedSession(NAME_GameSession);
+    if (!Session) 
+    {
+        return DSInformation;
+    }
+
+    TSharedPtr<FOnlineSessionInfoAccelByteV2> SessionInfo = StaticCastSharedPtr<FOnlineSessionInfoAccelByteV2>(Session->SessionInfo);
+    if (!SessionInfo) 
+    {
+        return DSInformation;
+    }
+
+    TSharedPtr<FAccelByteModelsV2GameSession> SessionData = SessionInfo->GetBackendSessionDataAsGameSession();
+    if (!SessionData)
+    {
+        return DSInformation;
+    }
+
+    DSInformation = SessionData->DSInformation;
+
+    return DSInformation;
 }

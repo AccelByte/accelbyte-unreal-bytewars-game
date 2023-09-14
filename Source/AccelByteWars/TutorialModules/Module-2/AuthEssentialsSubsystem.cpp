@@ -84,18 +84,6 @@ void UAuthEssentialsSubsystem::OnLoginComplete(int32 LocalUserNum, bool bLoginWa
 {
     if (bLoginWasSuccessful)
     {
-        // Set FTUE to open related auth hyperlinks by injecting the currently logged-in user's id.
-        // TODO: Might need better code placement.
-        if (FFTUEDialogueModel* FTUESuccessLogin =
-            FFTUEDialogueModel::GetMetadataById("ftue_success_login", AssociateTutorialModule->FTUEDialogues))
-        {
-            const FUniqueNetIdAccelByteUserRef UserABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(UserId.AsShared());
-            if (UserABId->IsValid())
-            {
-                FTUESuccessLogin->Button1.URLArguments[0] = UserABId->GetAccelByteId();
-            }
-        }
-
         UE_LOG_AUTH_ESSENTIALS(Log, TEXT("Login user successful."));
     }
     else
