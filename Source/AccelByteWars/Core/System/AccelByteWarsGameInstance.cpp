@@ -18,7 +18,7 @@ void UAccelByteWarsGameInstance::Shutdown()
 	Super::Shutdown();
 }
 
-UAccelByteWarsBaseUI* UAccelByteWarsGameInstance::GetBaseUIWidget()
+UAccelByteWarsBaseUI* UAccelByteWarsGameInstance::GetBaseUIWidget(bool bAutoActivate)
 {
 	if (IsRunningDedicatedServer())
 	{
@@ -30,15 +30,8 @@ UAccelByteWarsBaseUI* UAccelByteWarsGameInstance::GetBaseUIWidget()
 		BaseUIWidget = Cast<UAccelByteWarsBaseUI>(CreateWidget(this, BaseUIMenuWidgetClass));
 	}
 
-	if (!BaseUIWidget->IsInViewport() && !bHasAddToViewportCalled)
+	if (bAutoActivate && !BaseUIWidget->IsInViewport())
 	{
-		/**
-		 * somwhow, when this is called multiple times before the BaseUIWidget finish constructing, 
-		 * IsInViewport will always return false, but the AddToViewport will be still be called that many times.
-		 * Resulting in the widget to be added multiple times to viewport despite using the IsInViewport flag.
-		 * Hence why there's this custom flag.
-		 */
-		bHasAddToViewportCalled = true;
 		BaseUIWidget->AddToViewport(10);
 	}
 

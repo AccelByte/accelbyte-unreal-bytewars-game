@@ -452,7 +452,7 @@ void UAccelByteWarsActivatableWidget::ValidateFTUEDialogues()
 
 void UAccelByteWarsActivatableWidget::InitializeFTEUDialogues()
 {
-	if (IsUnreachable())
+	if (!IsActivated() || IsUnreachable())
 	{
 		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot initialize FTUE dialogues as the widget begin to tear down."));
 		return;
@@ -497,7 +497,7 @@ void UAccelByteWarsActivatableWidget::DeinitializeFTUEDialogues()
 		return;
 	}
 
-	UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget();
+	UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget(false);
 	if (!BaseUIWidget)
 	{
 		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot deinitialize FTUE dialogues. Base UI widget is not valid."));

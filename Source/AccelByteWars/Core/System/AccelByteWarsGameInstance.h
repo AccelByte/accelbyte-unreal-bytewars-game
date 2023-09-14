@@ -169,8 +169,8 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = GameSettings)
 	void SaveGameSettings();
 
-	UFUNCTION(BlueprintCallable, BlueprintCosmetic)
-	UAccelByteWarsBaseUI* GetBaseUIWidget();
+	UFUNCTION(BlueprintCallable, BlueprintPure)
+	UAccelByteWarsBaseUI* GetBaseUIWidget(bool bAutoActivate = true);
 
 	UFUNCTION(BlueprintPure)
 	TSubclassOf<UAccelByteWarsButtonBase> GetDefaultButtonClass() const { return DefaultButtonClass; }
