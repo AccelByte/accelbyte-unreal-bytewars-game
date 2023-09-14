@@ -175,7 +175,7 @@ void AAccelByteWarsGameMode::PlayerTeamSetup(APlayerController* PlayerController
 	}
 	else
 	{
-		if (OnPlayerPostLoginDelegates.IsBound())
+		if (OnPlayerPostLoginDelegates.IsBound() && IsServer())
 		{
 			// notify client
 			AbPlayerState->bPendingTeamAssignment = true;
