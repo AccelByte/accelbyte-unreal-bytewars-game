@@ -142,11 +142,11 @@ public:
 	UPROPERTY(EditAnywhere,
 		Category = "First Time User Experience (FTUE)",
 		meta = (
-			Tooltip = "FTUE dialogue to be displayed when this Tutorial Module UI is displayed.",
+			Tooltip = "FTUE dialogue group to be displayed when this Tutorial Module is active.",
 			ShowOnlyInnerProperties,
 			EditCondition = "bHasFTUE",
 			EditConditionHides))
-	TArray<FFTUEDialogueModel> FTUEDialogues;
+	TArray<FTUEDialogueGroup> FTUEDialogueGroups;
 #pragma endregion
 
 private:
@@ -189,7 +189,7 @@ private:
 #pragma endregion
 
 #pragma region "First Time User Experience (FTUE)"
-	TArray<FFTUEDialogueModel> LastFTUEDialogues;
+	TArray<FTUEDialogueGroup> LastFTUEDialogueGroups;
 	static TSet<FString> FTUEDialogueUsedIds;
 #pragma endregion
 };

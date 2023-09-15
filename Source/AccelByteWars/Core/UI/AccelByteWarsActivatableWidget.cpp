@@ -480,6 +480,7 @@ void UAccelByteWarsActivatableWidget::InitializeFTEUDialogues()
 	}
 
 	FTUEWidget->AddDialogues(FTUEDialogues);
+	FTUEWidget->ShowDialoguesFirstTime();
 }
 
 void UAccelByteWarsActivatableWidget::DeinitializeFTUEDialogues()
@@ -511,8 +512,11 @@ void UAccelByteWarsActivatableWidget::DeinitializeFTUEDialogues()
 		return;
 	}
 
-	FTUEWidget->RemoveAssociateDialogues(GetClass());
-	FTUEWidget->CloseDialogues();
+	// Only close the FTUE dialogue if this widget ever added dialogues to it.
+	if (FTUEWidget->RemoveAssociateDialogues(GetClass())) 
+	{
+		FTUEWidget->CloseDialogues();
+	}
 }
 
 #pragma endregion

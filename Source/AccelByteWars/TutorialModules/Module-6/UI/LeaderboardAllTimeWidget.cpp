@@ -21,24 +21,24 @@ void ULeaderboardAllTimeWidget::NativeConstruct()
 
 void ULeaderboardAllTimeWidget::NativeOnActivated()
 {
+	// Set leaderboard code based on board-unreal-highestscore-{gamemode} format. 
+	LeaderboardCode = FString::Printf(TEXT("board-unreal-highestscore-%s"), *ULeaderboardsWidget::GetLeaderboardGameMode());
+
+	// Set FTUE to open all-time leaderboard config based on selected game mode.
+	if (FFTUEDialogueModel* FTUELeaderboard =
+		FTUEDialogueGroup::GetMetadataById("ftue_alltime_leaderboard", AssociateTutorialModule->FTUEDialogueGroups))
+	{
+		FTUELeaderboard->Button1.URLArguments[0].Argument = LeaderboardCode;
+	}
+
 	Super::NativeOnActivated();
 
 	// Hides the logged-in player rank panel.
 	PlayerRankPanel->SetVisibility(ESlateVisibility::Collapsed);
 
-	// Set leaderboard code based on board-unreal-highestscore-{gamemode} format. 
-	LeaderboardCode = FString::Printf(TEXT("board-unreal-highestscore-%s"), *ULeaderboardsWidget::GetLeaderboardGameMode());
-
 	// Get leaderboard rankings.
 	WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::NoEntry);
 	GetRankings();
-
-	// Set FTUE to open all-time leaderboard config based on selected game mode.
-	if (FFTUEDialogueModel* FTUELeaderboard =
-		FFTUEDialogueModel::GetMetadataById("ftue_alltime_leaderboard", AssociateTutorialModule->FTUEDialogues))
-	{
-		FTUELeaderboard->Button1.URLArguments[0].Argument = LeaderboardCode;
-	}
 }
 
 void ULeaderboardAllTimeWidget::GetRankings()

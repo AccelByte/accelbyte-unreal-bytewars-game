@@ -21,8 +21,6 @@ void ULeaderboardWeeklyWidget::NativeConstruct()
 
 void ULeaderboardWeeklyWidget::NativeOnActivated()
 {
-	Super::NativeOnActivated();
-
 	// Hides the logged-in player rank panel.
 	PlayerRankPanel->SetVisibility(ESlateVisibility::Collapsed);
 
@@ -32,17 +30,19 @@ void ULeaderboardWeeklyWidget::NativeOnActivated()
 	// Set cycle id to the weekly leaderboard’s cycle id.
 	CycleId = FString("55c5b1d5a4e14eaba45477cd70de9c15");
 
-	// Get leaderboard weekly rankings.
-	WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::NoEntry);
-	GetWeeklyRankings();
-
 	// Set FTUE to open periodic leaderboard config based on selected game mode.
 	if (FFTUEDialogueModel* FTUELeaderboard =
-		FFTUEDialogueModel::GetMetadataById("ftue_weekly_leaderboard", AssociateTutorialModule->FTUEDialogues))
+		FFTUEDialogueModel::GetMetadataById("ftue_weekly_leaderboard", FTUEDialogues))
 	{
 		FTUELeaderboard->Button1.URLArguments[0].Argument = LeaderboardCode;
 		FTUELeaderboard->Button1.URLArguments[1].Argument = CycleId;
 	}
+
+	Super::NativeOnActivated();
+
+	// Get leaderboard weekly rankings.
+	WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::NoEntry);
+	GetWeeklyRankings();
 }
 
 void ULeaderboardWeeklyWidget::GetWeeklyRankings()

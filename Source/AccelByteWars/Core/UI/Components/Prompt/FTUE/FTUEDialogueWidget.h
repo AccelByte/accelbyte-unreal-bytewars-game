@@ -27,7 +27,9 @@ class ACCELBYTEWARS_API UFTUEDialogueWidget : public UAccelByteWarsActivatableWi
 
 public:
 	void AddDialogues(const TArray<FFTUEDialogueModel*>& Dialogues);
-	void RemoveAssociateDialogues(const TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass);
+	bool RemoveAssociateDialogues(const TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass);
+
+	void ShowDialoguesFirstTime();
 
 	void ShowDialogues();
 	void CloseDialogues();
@@ -46,6 +48,9 @@ protected:
 	void ClearHighlightedWidget();
 
 	bool IsWidgetVisible(UWidget* Widget);
+
+	UPROPERTY(EditDefaultsOnly)
+	bool bIsAbleToNavigate = false;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCanvasPanel* Canvas_FTUE;

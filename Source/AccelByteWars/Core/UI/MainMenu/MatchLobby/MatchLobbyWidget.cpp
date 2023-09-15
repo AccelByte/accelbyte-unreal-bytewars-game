@@ -46,6 +46,18 @@ void UMatchLobbyWidget::NativeConstruct()
 	{
 		CountdownWidget->SetVisibility(ESlateVisibility::Collapsed);
 	}
+
+	// Only show session FTUE on online session.
+	if (FFTUEDialogueModel* FTUESession =
+		FFTUEDialogueModel::GetMetadataById("ftue_session_details", FTUEDialogues))
+	{
+		EGameModeNetworkType NetMode = GameState->GameSetup.NetworkType;
+		FTUESession->OnValidateDelegate.Unbind();
+		FTUESession->OnValidateDelegate.BindWeakLambda(this, [NetMode]()
+		{
+			return NetMode != EGameModeNetworkType::LOCAL;
+		});
+	}
 }
 
 void UMatchLobbyWidget::NativeOnActivated()
@@ -65,18 +77,6 @@ void UMatchLobbyWidget::NativeOnActivated()
 	if (GameState->GameSetup.NetworkType == EGameModeNetworkType::P2P)
 	{
 		Btn_Start->SetVisibility(GetOwningPlayer()->HasAuthority() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-	}
-
-	// Only show session FTUE on online session.
-	if (FFTUEDialogueModel* FTUESession =
-		FFTUEDialogueModel::GetMetadataById("ftue_session_details", FTUEDialogues))
-	{
-		EGameModeNetworkType NetMode = GameState->GameSetup.NetworkType;
-		FTUESession->OnValidateDelegate.Unbind();
-		FTUESession->OnValidateDelegate.BindWeakLambda(this, [NetMode]()
-		{
-			return NetMode != EGameModeNetworkType::LOCAL;
-		});
 	}
 }
 

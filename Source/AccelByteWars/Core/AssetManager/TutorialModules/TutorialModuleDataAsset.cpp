@@ -375,77 +375,31 @@ void UTutorialModuleDataAsset::ValidateGeneratedWidgets()
 void UTutorialModuleDataAsset::ValidateFTUEDialogues()
 {
 	// Clean up last FTUE dialogues metadata to avoid duplication.
-	for (auto& LastFTUEDialogue : LastFTUEDialogues)
+	for (auto& LastFTUEDialogueGroup : LastFTUEDialogueGroups)
 	{
-		UTutorialModuleDataAsset::FTUEDialogueUsedIds.Remove(LastFTUEDialogue.FTUEId);
-
-		for (auto& TargetWidgetClass : LastFTUEDialogue.TargetWidgetClasses)
+		// Clean up each dialogues for each dialogue groups.
+		for (auto& LastFTUEDialogue : LastFTUEDialogueGroup.Dialogues) 
 		{
-			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
-			{
-				continue;
-			}
+			UTutorialModuleDataAsset::FTUEDialogueUsedIds.Remove(LastFTUEDialogue.FTUEId);
 
-			TargetWidgetClass.GetDefaultObject()->FTUEDialogues.RemoveAll([this](const FFTUEDialogueModel* Temp)
+			for (auto& TargetWidgetClass : LastFTUEDialogue.TargetWidgetClasses)
 			{
-				return !Temp || !Temp->OwnerTutorialModule || Temp->OwnerTutorialModule == this;
-			});
+				if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
+				{
+					continue;
+				}
+
+				TargetWidgetClass.GetDefaultObject()->FTUEDialogues.RemoveAll([this](const FFTUEDialogueModel* Temp)
+				{
+					return !Temp || !Temp->OwnerTutorialModule || Temp->OwnerTutorialModule == this;
+				});
+			}
 		}
 	}
-	for (auto& FTUEDialogue : FTUEDialogues)
+	for (auto& FTUEDialogueGroup : FTUEDialogueGroups)
 	{
-		for (auto& TargetWidgetClass : FTUEDialogue.TargetWidgetClasses)
-		{
-			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
-			{
-				continue;
-			}
-
-			TargetWidgetClass.GetDefaultObject()->FTUEDialogues.RemoveAll([this](const FFTUEDialogueModel* Temp)
-			{
-				return !Temp || !Temp->OwnerTutorialModule || Temp->OwnerTutorialModule == this;
-			});
-		}
-	}
-
-	// Refresh FTUE dialogues metadata.
-	for (auto& FTUEDialogue : FTUEDialogues)
-	{
-		FTUEDialogue.OwnerTutorialModule = this;
-		FTUEDialogue.bIsAlreadyShown = false;
-
-		// Reset button metadata if not used.
-		switch (FTUEDialogue.ButtonType)
-		{
-		case FFTUEDialogueButtonType::NO_BUTTON:
-			FTUEDialogue.Button1.Reset();
-		case FFTUEDialogueButtonType::ONE_BUTTON:
-			FTUEDialogue.Button2.Reset();
-			break;
-		}
-
-		// Reset highlighted widget metadata if not used.
-		if (!FTUEDialogue.bHighlightWidget)
-		{
-			FTUEDialogue.TargetWidgetClassToHighlight = nullptr;
-			FTUEDialogue.TargetWidgetNameToHighlight = FString("");
-		}
-
-		// Check if the FTUE id is already used.
-		if (UTutorialModuleDataAsset::FTUEDialogueUsedIds.Contains(FTUEDialogue.FTUEId))
-		{
-#if UE_EDITOR
-			ShowPopupMessage(FString::Printf(TEXT("%s FTUE id is already used. FTUE id must be unique."), *FTUEDialogue.FTUEId));
-#endif
-			FTUEDialogue.FTUEId = TEXT("");
-		}
-		else if (!FTUEDialogue.FTUEId.IsEmpty())
-		{
-			UTutorialModuleDataAsset::FTUEDialogueUsedIds.Add(FTUEDialogue.FTUEId);
-		}
-
-		// Assign FTUE dialogue metadata to the target widget class.
-		if (IsActiveAndDependenciesChecked() && HasFTUE())
+		// Clean up each dialogues for each dialogue groups.
+		for (auto& FTUEDialogue : FTUEDialogueGroup.Dialogues)
 		{
 			for (auto& TargetWidgetClass : FTUEDialogue.TargetWidgetClasses)
 			{
@@ -453,12 +407,78 @@ void UTutorialModuleDataAsset::ValidateFTUEDialogues()
 				{
 					continue;
 				}
-				TargetWidgetClass.GetDefaultObject()->FTUEDialogues.Add(&FTUEDialogue);
+
+				TargetWidgetClass.GetDefaultObject()->FTUEDialogues.RemoveAll([this](const FFTUEDialogueModel* Temp)
+				{
+					return !Temp || !Temp->OwnerTutorialModule || Temp->OwnerTutorialModule == this;
+				});
 			}
 		}
 	}
 
-	LastFTUEDialogues = FTUEDialogues;
+	// Refresh FTUE dialogues metadata.
+	int32 DialogueIndex = INDEX_NONE;
+	for (auto& FTUEDialogueGroup : FTUEDialogueGroups)
+	{
+		DialogueIndex = INDEX_NONE;
+
+		// Set up each dialogues for each dialogue groups.
+		for (auto& FTUEDialogue : FTUEDialogueGroup.Dialogues)
+		{
+			FTUEDialogue.OwnerTutorialModule = this;
+			FTUEDialogue.bIsAlreadyShown = false;
+
+			// Set dialogue order priority.
+			FTUEDialogue.GroupOrderPriority = FTUEDialogueGroup.OrderPriority;
+			FTUEDialogue.OrderPriority = ++DialogueIndex;
+
+			// Reset button metadata if not used.
+			switch (FTUEDialogue.ButtonType)
+			{
+			case FFTUEDialogueButtonType::NO_BUTTON:
+				FTUEDialogue.Button1.Reset();
+			case FFTUEDialogueButtonType::ONE_BUTTON:
+				FTUEDialogue.Button2.Reset();
+				break;
+			}
+
+			// Reset highlighted widget metadata if not used.
+			if (!FTUEDialogue.bHighlightWidget)
+			{
+				FTUEDialogue.TargetWidgetClassToHighlight = nullptr;
+				FTUEDialogue.TargetWidgetNameToHighlight = FString("");
+			}
+
+			// Check if the FTUE id is already used.
+			if (UTutorialModuleDataAsset::FTUEDialogueUsedIds.Contains(FTUEDialogue.FTUEId))
+			{
+#if UE_EDITOR
+				ShowPopupMessage(FString::Printf(TEXT("%s FTUE id is already used. FTUE id must be unique."), *FTUEDialogue.FTUEId));
+#endif
+				FTUEDialogue.FTUEId = TEXT("");
+			}
+			else if (!FTUEDialogue.FTUEId.IsEmpty())
+			{
+				UTutorialModuleDataAsset::FTUEDialogueUsedIds.Add(FTUEDialogue.FTUEId);
+			}
+
+			// Assign FTUE dialogue metadata to the target widget class.
+			if (IsActiveAndDependenciesChecked() && HasFTUE())
+			{
+				for (auto& TargetWidgetClass : FTUEDialogue.TargetWidgetClasses)
+				{
+					if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
+					{
+						continue;
+					}
+					TargetWidgetClass.GetDefaultObject()->FTUEDialogues.Add(&FTUEDialogue);
+				}
+			}
+		}
+	}
+
+	// Save dialogues cache for clean-up later.
+	LastFTUEDialogueGroups = FTUEDialogueGroups;
 }
 #pragma endregion
 

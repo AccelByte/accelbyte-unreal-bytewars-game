@@ -156,6 +156,13 @@ FString UTutorialModuleOnlineUtility::GetFTUEPredefinedArgument(const FTUEPredif
             Result = UserABId->GetAccelByteId();
         }
     }
+    else if (Keyword == FTUEPredifinedArgument::PLAYER_DISPLAY_NAME)
+    {
+        if (FUniqueNetIdAccelByteUserPtr UserABId = GetCurrentPlayer())
+        {
+            Result = GetUserDefaultDisplayName(UserABId.ToSharedRef().Get());
+        }
+    }
     else if (Keyword == FTUEPredifinedArgument::GAME_SESSION_ID) 
     {
         if (FNamedOnlineSession* Session = GetOnlineSession(NAME_GameSession))

@@ -43,14 +43,35 @@ void UFTUEDialogueWidget::AddDialogues(const TArray<FFTUEDialogueModel*>& Dialog
 	ValidateDialogues();
 }
 
-void UFTUEDialogueWidget::RemoveAssociateDialogues(const TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass)
+bool UFTUEDialogueWidget::RemoveAssociateDialogues(const TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass)
 {
-	CachedDialogues.RemoveAll([WidgetClass](const FFTUEDialogueModel* Temp)
+	int32 Removed = CachedDialogues.RemoveAll([WidgetClass](const FFTUEDialogueModel* Temp)
 	{
 		return !Temp || Temp->TargetWidgetClasses.Contains(WidgetClass);
 	});
 
 	ValidateDialogues();
+
+	return Removed > 0;
+}
+
+void UFTUEDialogueWidget::ShowDialoguesFirstTime()
+{
+	ValidateDialogues();
+	
+	// Check for already shown dialogues.
+	TArray<FFTUEDialogueModel*> AlreadyShown = CachedDialogues.FilterByPredicate([](const FFTUEDialogueModel* Temp)
+	{
+		return Temp && Temp->bIsAlreadyShown;
+	});
+
+	// Abort if all dialogues is already show.
+	if (AlreadyShown.Num() == CachedDialogues.Num())
+	{
+		return;
+	}
+
+	ShowDialogues();
 }
 
 void UFTUEDialogueWidget::ShowDialogues()
@@ -67,9 +88,12 @@ void UFTUEDialogueWidget::ShowDialogues()
 	CachedLastDialogue = nullptr;
 
 	// Show FTUE.
+	Btn_Open->SetVisibility(ESlateVisibility::Collapsed);
+	W_FTUEDialogue->SetVisibility(ESlateVisibility::Visible);
+
+	// Initialize FTUE.
 	CachedDialogues.Sort();
 	InitializeDialogue(CachedDialogues[DialogueIndex]);
-	W_FTUEDialogue->SetVisibility(ESlateVisibility::Visible);
 }
 
 void UFTUEDialogueWidget::CloseDialogues()
@@ -81,6 +105,7 @@ void UFTUEDialogueWidget::CloseDialogues()
 	CachedLastDialogue = nullptr;
 
 	// Close the FTUE
+	Btn_Open->SetVisibility(ESlateVisibility::Visible);
 	W_FTUEDialogue->SetVisibility(ESlateVisibility::Collapsed);
 	W_FTUEInterupter->SetVisibility(ESlateVisibility::Collapsed);
 }
@@ -171,12 +196,12 @@ bool UFTUEDialogueWidget::InitializeDialogue(FFTUEDialogueModel* Dialogue)
 	W_FTUEInterupter->SetVisibility(Dialogue->bIsInterrupting ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 
 	// Set navigation buttons.
-	Btn_Next->SetButtonText( 
-		(DialogueIndex < CachedDialogues.Num() - 1) ?
+	Btn_Next->SetButtonText(
+		(bIsAbleToNavigate && DialogueIndex < CachedDialogues.Num() - 1) ?
 		LOCTEXT("Next", "Next") :
-		LOCTEXT("Close", "Close"));
+		LOCTEXT("X", "X"));
 	Btn_Prev->SetVisibility(
-		(DialogueIndex > 0) ?
+		(bIsAbleToNavigate && DialogueIndex > 0) ?
 		ESlateVisibility::Visible :
 		ESlateVisibility::Collapsed);
 
@@ -203,12 +228,6 @@ bool UFTUEDialogueWidget::InitializeDialogue(FFTUEDialogueModel* Dialogue)
 		WidgetSlot->SetAlignment(Dialogue->GetAnchor());
 		WidgetSlot->SetPosition(Dialogue->Position);
 	}
-
-	// Mark as shown if the dialogue is first time only.
-	if (Dialogue->OwnerTutorialModule && !Dialogue->OwnerTutorialModule->IsFTUEAlwaysActive())
-	{
-		Dialogue->bIsAlreadyShown = true;
-	}
 	
 	// Execute last dialogue's on-deactivate event.
 	DeinitializeLastDialogue();
@@ -218,6 +237,9 @@ bool UFTUEDialogueWidget::InitializeDialogue(FFTUEDialogueModel* Dialogue)
 	{
 		Dialogue->OnActivateDelegate.Broadcast();
 	}
+
+	// Mark as shown.
+	Dialogue->bIsAlreadyShown = true;
 
 	return true;
 }
@@ -271,13 +293,15 @@ void UFTUEDialogueWidget::ValidateDialogues()
 	CachedDialogues.RemoveAll([](const FFTUEDialogueModel* Temp)
 	{
 		return !Temp || 
-			Temp->bIsAlreadyShown || 
 			!Temp->OwnerTutorialModule || 
 			!Temp->OwnerTutorialModule->IsActiveAndDependenciesChecked() ||
 			(Temp->OnValidateDelegate.IsBound() && !Temp->OnValidateDelegate.Execute());
 	});
 
-	Btn_Open->SetVisibility(!CachedDialogues.IsEmpty() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	if (!W_FTUEDialogue->IsVisible()) 
+	{
+		Btn_Open->SetVisibility(!CachedDialogues.IsEmpty() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	}
 }
 
 void UFTUEDialogueWidget::DeinitializeLastDialogue()

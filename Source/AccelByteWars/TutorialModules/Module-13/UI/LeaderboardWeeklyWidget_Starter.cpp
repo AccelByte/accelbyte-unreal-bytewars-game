@@ -21,20 +21,20 @@ void ULeaderboardWeeklyWidget_Starter::NativeConstruct()
 
 void ULeaderboardWeeklyWidget_Starter::NativeOnActivated()
 {
+	// Set FTUE to open periodic leaderboard config based on selected game mode.
+	if (FFTUEDialogueModel* FTUELeaderboard =
+		FTUEDialogueGroup::GetMetadataById("ftue_weekly_leaderboard", AssociateTutorialModule->FTUEDialogueGroups))
+	{
+		FTUELeaderboard->Button1.URLArguments[0].Argument = LeaderboardCode;
+		FTUELeaderboard->Button1.URLArguments[1].Argument = CycleId;
+	}
+
 	Super::NativeOnActivated();
 
 	PlayerRankPanel->SetVisibility(ESlateVisibility::Collapsed);
 	WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::NoEntry);
 
 	// TODO: Call functionalities to get and display leaderboard weekly rankings.
-
-	// Set FTUE to open periodic leaderboard config based on selected game mode.
-	if (FFTUEDialogueModel* FTUELeaderboard =
-		FFTUEDialogueModel::GetMetadataById("ftue_weekly_leaderboard", AssociateTutorialModule->FTUEDialogues))
-	{
-		FTUELeaderboard->Button1.URLArguments[0].Argument = LeaderboardCode;
-		FTUELeaderboard->Button1.URLArguments[1].Argument = CycleId;
-	}
 }
 
 #pragma region Module.13 Function Definitions

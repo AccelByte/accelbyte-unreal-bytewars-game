@@ -70,9 +70,9 @@ void UHUDWidget::NativeConstruct()
 		EGameModeNetworkType NetMode = ByteWarsGameState->GameSetup.NetworkType;
 		FTUEDedicatedServer->OnValidateDelegate.Unbind();
 		FTUEDedicatedServer->OnValidateDelegate.BindWeakLambda(this, [NetMode]()
-			{
-				return NetMode == EGameModeNetworkType::DS;
-			});
+		{
+			return NetMode == EGameModeNetworkType::DS;
+		});
 	}
 }
 

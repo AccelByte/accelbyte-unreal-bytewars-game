@@ -47,6 +47,7 @@ UENUM(BlueprintType)
 enum class FTUEPredifinedArgument : uint8
 {
     PLAYER_ID = 0 UMETA(DisplayName = "Player Id"),
+    PLAYER_DISPLAY_NAME UMETA(DisplayName = "Player Display Name"),
     GAME_SESSION_ID UMETA(DisplayName = "Game Session Id"),
     PARTY_SESSION_ID UMETA(DisplayName = "Party Session Id"),
     DEDICATED_SERVER_ID UMETA(DisplayName = "Dedicated Server Id")
@@ -222,16 +223,16 @@ struct FFTUEDialogueModel
     FVector2D Position = FVector2D(0.0f, 0.0f);
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
-        Tooltip = "The order when the FTUE should be shown."))
-    int32 OrderPriority = 0;
-
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
         Tooltip = "Whether the FTUE should lock player's accessibility to access other UIs when the FTUE is shown."))
     bool bIsInterrupting = true;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
         Tooltip = "Target widget where the FTUE should be shown."))
     TArray<TSubclassOf<UAccelByteWarsActivatableWidget>> TargetWidgetClasses;
+
+    // Helper variable to sort the dialogues.
+    int32 GroupOrderPriority = 0;
+    int32 OrderPriority = 0;
 
     // Flag to define whether this dialogue is already shown or not.
     bool bIsAlreadyShown = false;
@@ -329,6 +330,70 @@ struct FFTUEDialogueModel
     }
 
     bool operator<(const FFTUEDialogueModel& Other) const
+    {
+        return GroupOrderPriority < Other.GroupOrderPriority || OrderPriority < Other.OrderPriority;
+    }
+};
+
+USTRUCT(BlueprintType)
+struct FTUEDialogueGroup
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
+        Tooltip = "The order when the FTUE group should be shown."))
+    int32 OrderPriority = 0;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
+        Tooltip = "List of FTUE dialogues in the group."))
+    TArray<FFTUEDialogueModel> Dialogues;
+
+    //static FFTUEDialogueModel* GetMetadataById(const FString& FTUEId, TArray<FTUEDialogueGroup*>& FTUEDialogueGroups)
+    //{
+    //    FFTUEDialogueModel* Result = nullptr;
+
+    //    for (auto& Group : FTUEDialogueGroups)
+    //    {
+    //        if (!Group) 
+    //        {
+    //            continue;
+    //        }
+
+    //        Result = Group->Dialogues.FindByPredicate([FTUEId](const FFTUEDialogueModel* Temp)
+    //        {
+    //            return Temp->FTUEId == FTUEId;
+    //        });
+
+    //        if (Result) 
+    //        {
+    //            break;
+    //        }
+    //    }
+
+    //    return Result;
+    //}
+
+    static FFTUEDialogueModel* GetMetadataById(const FString& FTUEId, TArray<FTUEDialogueGroup>& FTUEDialogueGroups)
+    {
+        FFTUEDialogueModel* Result = nullptr;
+
+        for (auto& Group : FTUEDialogueGroups)
+        {
+            Result = Group.Dialogues.FindByPredicate([FTUEId](const FFTUEDialogueModel& Temp)
+            {
+                return Temp.FTUEId == FTUEId;
+            });
+
+            if (Result)
+            {
+                break;
+            }
+        }
+
+        return Result;
+    }
+
+    bool operator<(const FTUEDialogueGroup& Other) const
     {
         return OrderPriority < Other.OrderPriority;
     }
