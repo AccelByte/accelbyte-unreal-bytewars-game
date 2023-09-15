@@ -65,13 +65,6 @@ void UAccelbyteWarsServerSubsystem::OnAuthenticatePlayerComplete_PrePlayerSetup(
 }
 #pragma endregion 
 
-void UAccelbyteWarsServerSubsystem::Deinitialize()
-{
-	Super::Deinitialize();
-
-	GetABSessionInt()->OnServerReceivedSessionDelegates.RemoveAll(this);
-}
-
 void UAccelbyteWarsServerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
@@ -87,94 +80,11 @@ void UAccelbyteWarsServerSubsystem::Initialize(FSubsystemCollectionBase& Collect
 	GetABSessionInt()->OnServerReceivedSessionDelegates.AddUObject(this, &ThisClass::OnServerSessionReceived);
 }
 
-void UAccelbyteWarsServerSubsystem::RegisterServer(const FName SessionName)
+void UAccelbyteWarsServerSubsystem::Deinitialize()
 {
-	UE_LOG_GAMESESSION(Verbose, TEXT("called"))
+	Super::Deinitialize();
 
-	// safety
-	if (!GetABSessionInt())
-	{
-		UE_LOG_GAMESESSION(Warning, TEXT("Session interface null"))
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this]()
-		{
-			OnRegisterServerComplete(false);
-		}));
-		return;
-	}
-
-	if (!IsRunningDedicatedServer())
-	{
-		UE_LOG_GAMESESSION(Warning, TEXT("Is not DS"));
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this]()
-		{
-			OnRegisterServerComplete(false);
-		}));
-		return;
-	}
-
-	if (bServerAlreadyRegister)
-	{
-		UE_LOG_GAMESESSION(Warning, TEXT("Already registered"));
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this]()
-		{
-			OnRegisterServerComplete(false);
-		}));
-		return;
-	}
-
-	GetABSessionInt()->RegisterServer(SessionName, FOnRegisterServerComplete::CreateUObject(
-		this, &ThisClass::OnRegisterServerComplete));
-}
-
-void UAccelbyteWarsServerSubsystem::UnregisterServer(const FName SessionName)
-{
-	UE_LOG_GAMESESSION(Verbose, TEXT("called"))
-
-	// safety
-	if (!GetABSessionInt())
-	{
-		UE_LOG_GAMESESSION(Warning, TEXT("Session interface null"))
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this]()
-		{
-			OnUnregisterServerComplete(false);
-		}));
-		return;
-	}
-
-	if (!IsRunningDedicatedServer())
-	{
-		UE_LOG_GAMESESSION(Warning, TEXT("Is not DS"));
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this]()
-		{
-			OnUnregisterServerComplete(false);
-		}));
-		return;
-	}
-
-	GetABSessionInt()->UnregisterServer(SessionName, FOnUnregisterServerComplete::CreateUObject(
-		this, &ThisClass::OnUnregisterServerComplete));
-	bUnregisterServerRunning = true;
-}
-
-void UAccelbyteWarsServerSubsystem::OnRegisterServerComplete(bool bSucceeded)
-{
-	UE_LOG_GAMESESSION(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
-
-	if (bSucceeded)
-	{
-		bServerAlreadyRegister = true;
-	}
-
-	AAccelByteWarsGameMode::OnRegisterServerCompleteDelegates.Broadcast(bSucceeded);
-}
-
-void UAccelbyteWarsServerSubsystem::OnUnregisterServerComplete(bool bSucceeded)
-{
-	UE_LOG_GAMESESSION(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
-
-	bUnregisterServerRunning = false;
-
-	FPlatformMisc::RequestExit(false);
+	GetABSessionInt()->OnServerReceivedSessionDelegates.RemoveAll(this);
 }
 
 void UAccelbyteWarsServerSubsystem::OnServerSessionReceived(FName SessionName)
