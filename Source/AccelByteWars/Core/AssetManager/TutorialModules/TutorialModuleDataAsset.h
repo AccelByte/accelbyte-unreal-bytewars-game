@@ -54,6 +54,9 @@ public:
 	
 	UFUNCTION(BlueprintPure)
 	TSubclassOf<UTutorialModuleSubsystem> GetTutorialModuleSubsystemClass();
+
+	UFUNCTION(BlueprintPure)
+	TArray<TSubclassOf<UTutorialModuleSubsystem>> GetAdditionalTutorialModuleSubsystemClasses();
 	
 	bool IsActiveAndDependenciesChecked() const;
 	bool IsStarterModeActive() const { return bIsStarterModeActive; }
@@ -82,11 +85,17 @@ private:
 	UPROPERTY(EditAnywhere, AssetRegistrySearchable, Category = "Tutorial Module")
 	TSubclassOf<UTutorialModuleSubsystem> DefaultSubsystemClass;
 
+	UPROPERTY(EditAnywhere, AssetRegistrySearchable, Category = "Tutorial Module")
+	TArray<TSubclassOf<UTutorialModuleSubsystem>> AdditionalDefaultSubsystemClasses;
+
 	UPROPERTY(EditAnywhere, AssetRegistrySearchable, Category = "Tutorial Module Starter")
 	TSubclassOf<UAccelByteWarsActivatableWidget> StarterUIClass;
 
 	UPROPERTY(EditAnywhere, AssetRegistrySearchable, Category = "Tutorial Module Starter")
 	TSubclassOf<UTutorialModuleSubsystem> StarterSubsystemClass;
+
+	UPROPERTY(EditAnywhere, AssetRegistrySearchable, Category = "Tutorial Module Starter")
+	TArray<TSubclassOf<UTutorialModuleSubsystem>> AdditionalStarterSubsystemClasses;
 
 	UPROPERTY()
 	bool bOverriden = false;
@@ -134,9 +143,11 @@ private:
 
 	TSubclassOf<UAccelByteWarsActivatableWidget> LastDefaultUIClass;
 	TSubclassOf<UTutorialModuleSubsystem> LastDefaultSubsystemClass;
+	TArray<TSubclassOf<UTutorialModuleSubsystem>> LastAdditionalDefaultSubsystemClasses;
 
 	TSubclassOf<UAccelByteWarsActivatableWidget> LastStarterUIClass;
 	TSubclassOf<UTutorialModuleSubsystem> LastStarterSubsystemClass;
+	TArray<TSubclassOf<UTutorialModuleSubsystem>> LastAdditionalStarterSubsystemClasses;
 
 #pragma region "Online Session"
 	TSubclassOf<UTutorialModuleOnlineSession> LastDefaultOnlineSessionClass;

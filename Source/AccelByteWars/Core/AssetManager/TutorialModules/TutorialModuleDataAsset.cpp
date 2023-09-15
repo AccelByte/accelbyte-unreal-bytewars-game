@@ -67,6 +67,11 @@ TSubclassOf<UTutorialModuleSubsystem> UTutorialModuleDataAsset::GetTutorialModul
 	return IsStarterModeActive() ? StarterSubsystemClass : DefaultSubsystemClass;
 }
 
+TArray<TSubclassOf<UTutorialModuleSubsystem>> UTutorialModuleDataAsset::GetAdditionalTutorialModuleSubsystemClasses()
+{
+	return IsStarterModeActive() ? AdditionalStarterSubsystemClasses : AdditionalDefaultSubsystemClasses;
+}
+
 bool UTutorialModuleDataAsset::IsActiveAndDependenciesChecked() const
 {
 	bool bIsDependencySatisfied = true;
@@ -108,10 +113,30 @@ void UTutorialModuleDataAsset::ValidateDataAssetProperties()
 	ValidateClassProperty(DefaultUIClass, LastDefaultUIClass, false);
 	ValidateClassProperty(DefaultSubsystemClass, LastDefaultSubsystemClass, false);
 
+	LastAdditionalDefaultSubsystemClasses.Empty();
+	LastAdditionalDefaultSubsystemClasses.AddUninitialized(AdditionalDefaultSubsystemClasses.Num());
+	for (int i = 0; i < AdditionalDefaultSubsystemClasses.Num(); ++i)
+	{
+		ValidateClassProperty(
+			AdditionalDefaultSubsystemClasses[i],
+			LastAdditionalDefaultSubsystemClasses[i],
+			false);
+	}
+	
 	// Validate Starter's class properties.
 	ValidateClassProperty(StarterUIClass, LastStarterUIClass, true);
 	ValidateClassProperty(StarterSubsystemClass, LastStarterSubsystemClass, true);
 
+	LastAdditionalStarterSubsystemClasses.Empty();
+	LastAdditionalStarterSubsystemClasses.AddUninitialized(AdditionalStarterSubsystemClasses.Num());
+	for (int i = 0; i < AdditionalStarterSubsystemClasses.Num(); ++i)
+	{
+		ValidateClassProperty(
+			AdditionalStarterSubsystemClasses[i],
+			LastAdditionalStarterSubsystemClasses[i],
+			true);
+	}
+	
 	// Validate Default's and Starter class properties for OnlineSession module
 	if (bOnlineSessionModule)
 	{
@@ -348,6 +373,11 @@ void UTutorialModuleDataAsset::CleanUpDataAssetProperties()
 		DefaultSubsystemClass.GetDefaultObject()->AssociateTutorialModule = nullptr;
 	}
 
+	for (const TSubclassOf<UTutorialModuleSubsystem>& Class : AdditionalDefaultSubsystemClasses)
+	{
+		Class.GetDefaultObject()->AssociateTutorialModule = nullptr;
+	}
+
 	if (StarterUIClass.Get())
 	{
 		StarterUIClass.GetDefaultObject()->AssociateTutorialModule = nullptr;
@@ -356,6 +386,11 @@ void UTutorialModuleDataAsset::CleanUpDataAssetProperties()
 	if (StarterSubsystemClass.Get())
 	{
 		StarterSubsystemClass.GetDefaultObject()->AssociateTutorialModule = nullptr;
+	}
+
+	for (const TSubclassOf<UTutorialModuleSubsystem>& Class : AdditionalStarterSubsystemClasses)
+	{
+		Class.GetDefaultObject()->AssociateTutorialModule = nullptr;
 	}
 }
 
