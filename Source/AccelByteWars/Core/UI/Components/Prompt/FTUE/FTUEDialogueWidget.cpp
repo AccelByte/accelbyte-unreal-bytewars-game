@@ -86,7 +86,7 @@ void UFTUEDialogueWidget::ShowDialoguesFirstTime()
 
 void UFTUEDialogueWidget::ShowDialogues()
 {
-	if (CachedDialogues.IsEmpty()) 
+	if (CachedDialogues.IsEmpty() || W_FTUEDialogue->IsVisible())
 	{
 		return;
 	}
@@ -108,6 +108,11 @@ void UFTUEDialogueWidget::ShowDialogues()
 
 void UFTUEDialogueWidget::CloseDialogues()
 {
+	if (!W_FTUEDialogue->IsVisible()) 
+	{
+		return;
+	}
+
 	// Tear down FTUE.
 	ClearHighlightedWidget();
 	DeinitializeLastDialogue();
@@ -122,6 +127,11 @@ void UFTUEDialogueWidget::CloseDialogues()
 
 void UFTUEDialogueWidget::PrevDialogue()
 {
+	if (!W_FTUEDialogue->IsVisible()) 
+	{
+		return;
+	}
+
 	if (DialogueIndex <= 0)
 	{
 		DialogueIndex = 0;
@@ -144,6 +154,11 @@ void UFTUEDialogueWidget::PrevDialogue()
 
 void UFTUEDialogueWidget::NextDialogue()
 {
+	if (!W_FTUEDialogue->IsVisible())
+	{
+		return;
+	}
+
 	if (DialogueIndex >= CachedDialogues.Num() - 1)
 	{
 		DialogueIndex = CachedDialogues.Num() - 1;

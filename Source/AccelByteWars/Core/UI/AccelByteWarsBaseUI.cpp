@@ -46,7 +46,7 @@ UCommonActivatableWidget* UAccelByteWarsBaseUI::GetActiveWidgetOfStack(const EBa
 		return nullptr;
 	}
 
-	const UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget();
+	const UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget(false);
 	if (!BaseUIWidget) 
 	{
 		return nullptr;
