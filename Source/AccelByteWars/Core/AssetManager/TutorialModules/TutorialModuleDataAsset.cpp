@@ -114,7 +114,7 @@ void UTutorialModuleDataAsset::ValidateDataAssetProperties()
 	ValidateClassProperty(DefaultSubsystemClass, LastDefaultSubsystemClass, false);
 
 	LastAdditionalDefaultSubsystemClasses.Empty();
-	LastAdditionalDefaultSubsystemClasses.AddUninitialized(AdditionalDefaultSubsystemClasses.Num());
+	LastAdditionalDefaultSubsystemClasses.AddDefaulted(AdditionalDefaultSubsystemClasses.Num());
 	for (int i = 0; i < AdditionalDefaultSubsystemClasses.Num(); ++i)
 	{
 		ValidateClassProperty(
@@ -128,7 +128,7 @@ void UTutorialModuleDataAsset::ValidateDataAssetProperties()
 	ValidateClassProperty(StarterSubsystemClass, LastStarterSubsystemClass, true);
 
 	LastAdditionalStarterSubsystemClasses.Empty();
-	LastAdditionalStarterSubsystemClasses.AddUninitialized(AdditionalStarterSubsystemClasses.Num());
+	LastAdditionalStarterSubsystemClasses.AddDefaulted(AdditionalStarterSubsystemClasses.Num());
 	for (int i = 0; i < AdditionalStarterSubsystemClasses.Num(); ++i)
 	{
 		ValidateClassProperty(
