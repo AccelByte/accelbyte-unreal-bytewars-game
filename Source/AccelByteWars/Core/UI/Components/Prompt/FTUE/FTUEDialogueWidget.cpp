@@ -239,7 +239,14 @@ bool UFTUEDialogueWidget::InitializeDialogue(FFTUEDialogueModel* Dialogue)
 	}
 
 	// Mark as shown.
-	Dialogue->bIsAlreadyShown = true;
+	if (Dialogue->bIsTerminator && Dialogue->Group)
+	{
+		Dialogue->Group->SetAlreadyShown(true);
+		if (Dialogue->Group->OwnerTutorialModule) 
+		{
+			Dialogue->Group->OwnerTutorialModule->SaveAttributesToLocal();
+		}
+	}
 
 	return true;
 }

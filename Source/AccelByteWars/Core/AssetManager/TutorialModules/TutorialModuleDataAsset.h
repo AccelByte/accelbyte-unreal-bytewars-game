@@ -11,6 +11,9 @@
 #include "Core/UI/Components/Prompt/FTUE/FTUEModels.h"
 #include "TutorialModuleDataAsset.generated.h"
 
+// Keys to access attributes saved in local file.
+#define KEY_FTUEGROUPSTATE "FTUEDialogueGroupStates"
+
 class UTutorialModuleOnlineSession;
 class UAccelByteWarsActivatableWidget;
 class UTutorialModuleSubsystem;
@@ -68,6 +71,18 @@ public:
 
 	static const FPrimaryAssetType TutorialModuleAssetType;
 
+	// Get the relative path where the attributes is saved in a local file.
+	FString GetAttributesLocalFilePath(const FString& TutorialModuleCodeName);
+
+	// Save attributes to local file as JSON literals.
+	bool SaveAttributesToLocal();
+
+	// Load attributes from local JSON file.
+	bool LoadAttributesFromLocal();
+
+	// Get attributes loaded from local file as JSON object.
+	TSharedPtr<FJsonObject> GetLocalAttributes() { return AttributesJsonObject; }
+
 #pragma region "Online Session"
 	UFUNCTION(BlueprintPure)
 	bool GetIsOnlineSessionActivatable() const { return bOnlineSessionModule; }
@@ -97,6 +112,12 @@ private:
 
 	UPROPERTY(EditAnywhere, AssetRegistrySearchable, Category = "Tutorial Module Starter", meta = (EditCondition = "bIsActive"))
 	bool bIsStarterModeActive = false;
+
+	// Helper to track whether the Tutorial Module code name is changed.
+	FString LastCodeName;
+
+	// Helper to store attributes loaded from local file.
+	TSharedPtr<FJsonObject> AttributesJsonObject;
 
 #pragma region "Online Session"
 	UPROPERTY(EditAnywhere, AssetRegistrySearchable, Category = "Online Session Module")

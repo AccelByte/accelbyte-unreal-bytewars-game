@@ -10,6 +10,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Widgets/Notifications/SNotificationList.h"
 #include "Framework/Notifications/NotificationManager.h"
+#include "JsonObjectConverter.h"
 
 const FPrimaryAssetType	UTutorialModuleDataAsset::TutorialModuleAssetType = TEXT("TutorialModule");
 TSet<FString> UTutorialModuleDataAsset::GeneratedWidgetUsedIds;
@@ -96,6 +97,87 @@ void UTutorialModuleDataAsset::ResetOverrides()
 	bOverriden = false;
 }
 
+FString UTutorialModuleDataAsset::GetAttributesLocalFilePath(const FString& TutorialModuleCodeName)
+{
+	return FPaths::Combine(FPaths::ProjectSavedDir(), FString::Printf(TEXT("TutorialModuleCache/%s.json"), *TutorialModuleCodeName));
+}
+
+bool UTutorialModuleDataAsset::SaveAttributesToLocal()
+{
+	// Delete last local file if the code name is changed.
+	if (!LastCodeName.IsEmpty() && LastCodeName != CodeName)
+	{
+		FPlatformFileManager::Get().GetPlatformFile().DeleteFile(*GetAttributesLocalFilePath(LastCodeName));
+	}
+
+	AttributesJsonObject = MakeShareable(new FJsonObject);
+
+#pragma region "First Time User Experience (FTUE)"
+	TArray<TSharedPtr<FJsonValue>> FTUEGroupStates;
+	for (auto& FTUEDialogueGroup : FTUEDialogueGroups)
+	{
+		TSharedPtr<FJsonValue> GroupState = MakeShareable(new FJsonValueBoolean(FTUEDialogueGroup.bIsAlreadyShown));
+		FTUEGroupStates.Add(GroupState);
+	}
+	AttributesJsonObject->SetArrayField(KEY_FTUEGROUPSTATE, FTUEGroupStates);
+#pragma endregion
+
+	// Write module local file.
+	FString JsonStr;
+	TSharedRef<TJsonWriter<TCHAR>> JsonWriter = TJsonWriterFactory<TCHAR>::Create(&JsonStr);
+	if (FJsonSerializer::Serialize(AttributesJsonObject.ToSharedRef(), JsonWriter))
+	{
+		if (FFileHelper::SaveStringToFile(JsonStr, *GetAttributesLocalFilePath(CodeName)))
+		{
+			// TODO: Add log. Success to write.
+			return true;
+		}
+		else
+		{
+			// TODO: Add log. Failed to write.
+		}
+	}
+	else
+	{
+		// TODO: Add log. Failed to write.
+	}
+
+	return false;
+}
+
+bool UTutorialModuleDataAsset::LoadAttributesFromLocal()
+{
+	// Delete last local file if the code name is changed.
+	if (!LastCodeName.IsEmpty() && LastCodeName != CodeName)
+	{
+		FPlatformFileManager::Get().GetPlatformFile().DeleteFile(*GetAttributesLocalFilePath(LastCodeName));
+	}
+
+	// Load from local file.
+	FString JsonStr;
+	if (FFileHelper::LoadFileToString(JsonStr, *GetAttributesLocalFilePath(CodeName)))
+	{
+		AttributesJsonObject = MakeShareable(new FJsonObject);
+
+		TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(JsonStr);
+		if (FJsonSerializer::Deserialize(JsonReader, AttributesJsonObject))
+		{
+			// TODO: Add log. Success to load.
+			return true;
+		}
+		else
+		{
+			// TODO: Add log. Failed to load.
+		}
+	}
+	else
+	{
+		// TODO: Add log. Failed to load.
+	}
+
+	return false;
+}
+
 #pragma region "Online Session"
 TSubclassOf<UTutorialModuleOnlineSession> UTutorialModuleDataAsset::GetTutorialModuleOnlineSessionClass()
 {
@@ -105,6 +187,8 @@ TSubclassOf<UTutorialModuleOnlineSession> UTutorialModuleDataAsset::GetTutorialM
 
 void UTutorialModuleDataAsset::ValidateDataAssetProperties()
 {
+	LoadAttributesFromLocal();
+
 	// Validate Default's class properties.
 	ValidateClassProperty(DefaultUIClass, LastDefaultUIClass, false);
 	ValidateClassProperty(DefaultSubsystemClass, LastDefaultSubsystemClass, false);
@@ -122,10 +206,15 @@ void UTutorialModuleDataAsset::ValidateDataAssetProperties()
 
 	ValidateGeneratedWidgets();
 	ValidateFTUEDialogues();
+
+	LastCodeName = CodeName;
 }
 
 bool UTutorialModuleDataAsset::ValidateClassProperty(TSubclassOf<UAccelByteWarsActivatableWidget>& UIClass, TSubclassOf<UAccelByteWarsActivatableWidget>& LastUIClass, const bool IsStarterClass)
 {
+	// Delete local file.
+	FPlatformFileManager::Get().GetPlatformFile().DeleteFile(*GetAttributesLocalFilePath(CodeName));
+
 	// Check if the class is used by other Tutorial Module or not.
 	if (UIClass.Get() && UIClass.GetDefaultObject()->AssociateTutorialModule != nullptr
 		&& UIClass.GetDefaultObject()->AssociateTutorialModule != this)
@@ -416,21 +505,34 @@ void UTutorialModuleDataAsset::ValidateFTUEDialogues()
 		}
 	}
 
+	// Get FTUE states from local file to set whether it is already shown before or not.
+	TArray<TSharedPtr<FJsonValue>> FTUEGroupStates;
+	if (GetLocalAttributes())
+	{
+		FTUEGroupStates = GetLocalAttributes()->GetArrayField(KEY_FTUEGROUPSTATE);
+	}
+
 	// Refresh FTUE dialogues metadata.
-	int32 DialogueIndex = INDEX_NONE;
+	int32 GroupIndex = INDEX_NONE;
 	for (auto& FTUEDialogueGroup : FTUEDialogueGroups)
 	{
-		DialogueIndex = INDEX_NONE;
+		GroupIndex++;
+		FTUEDialogueGroup.OwnerTutorialModule = this;
 
 		// Set up each dialogues for each dialogue groups.
+		int32 DialogueIndex = INDEX_NONE;
 		for (auto& FTUEDialogue : FTUEDialogueGroup.Dialogues)
 		{
+			DialogueIndex++;
 			FTUEDialogue.OwnerTutorialModule = this;
-			FTUEDialogue.bIsAlreadyShown = false;
 
 			// Set dialogue order priority.
+			FTUEDialogue.Group = &FTUEDialogueGroup;
 			FTUEDialogue.GroupOrderPriority = FTUEDialogueGroup.OrderPriority;
-			FTUEDialogue.OrderPriority = ++DialogueIndex;
+			FTUEDialogue.OrderPriority = DialogueIndex;
+
+			// Set dialogue statuses.
+			FTUEDialogue.bIsTerminator = (DialogueIndex >= FTUEDialogueGroup.Dialogues.Num() - 1);
 
 			// Reset button metadata if not used.
 			switch (FTUEDialogue.ButtonType)
@@ -475,6 +577,11 @@ void UTutorialModuleDataAsset::ValidateFTUEDialogues()
 				}
 			}
 		}
+
+		// Set dialogue group state.
+		FTUEDialogueGroup.SetAlreadyShown(
+			FTUEGroupStates.IsValidIndex(GroupIndex) && FTUEGroupStates[GroupIndex] ? 
+			FTUEGroupStates[GroupIndex]->AsBool() : false);
 	}
 
 	// Save dialogues cache for clean-up later.

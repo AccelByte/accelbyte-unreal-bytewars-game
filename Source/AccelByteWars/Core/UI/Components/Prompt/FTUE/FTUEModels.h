@@ -156,9 +156,9 @@ struct FFTUEDialogueModel
 {
     GENERATED_BODY()
 
-    UPROPERTY(VisibleAnywhere, 
+    UPROPERTY(VisibleAnywhere,
         BlueprintReadOnly, meta = (
-            Tooltip = "The Tutorial Module who owns the metadata of the FTUE.", 
+            Tooltip = "The Tutorial Module who owns the metadata of the FTUE.",
             DisplayThumbnail = false))
     UTutorialModuleDataAsset* OwnerTutorialModule = nullptr;
 
@@ -231,11 +231,19 @@ struct FFTUEDialogueModel
     TArray<TSubclassOf<UAccelByteWarsActivatableWidget>> TargetWidgetClasses;
 
     // Helper variable to sort the dialogues.
-    int32 GroupOrderPriority = 0;
     int32 OrderPriority = 0;
 
     // Flag to define whether this dialogue is already shown or not.
     bool bIsAlreadyShown = false;
+
+    // Which group owns thi dialogue (if any).
+    FTUEDialogueGroup* Group = nullptr;
+
+    // The order priority if this dialogue's group.
+    int32 GroupOrderPriority = 0;
+
+    // Flat to define whether this dialogue is the last dialogue in the group.
+    bool bIsTerminator = false;
 
     // Event to be executed when the FTUE is shown to the screen.
     TDelegate<bool()> OnValidateDelegate;
@@ -339,6 +347,12 @@ USTRUCT(BlueprintType)
 struct FTUEDialogueGroup
 {
     GENERATED_BODY()
+    
+    UPROPERTY(VisibleAnywhere,
+        BlueprintReadOnly, meta = (
+            Tooltip = "The Tutorial Module who owns the metadata of the FTUE group.",
+            DisplayThumbnail = false))
+    UTutorialModuleDataAsset* OwnerTutorialModule = nullptr;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
         Tooltip = "The order when the FTUE group should be shown."))
@@ -348,30 +362,18 @@ struct FTUEDialogueGroup
         Tooltip = "List of FTUE dialogues in the group."))
     TArray<FFTUEDialogueModel> Dialogues;
 
-    //static FFTUEDialogueModel* GetMetadataById(const FString& FTUEId, TArray<FTUEDialogueGroup*>& FTUEDialogueGroups)
-    //{
-    //    FFTUEDialogueModel* Result = nullptr;
+    // Flag to define whether this dialogue group is already shown or not.
+    bool bIsAlreadyShown = false;
 
-    //    for (auto& Group : FTUEDialogueGroups)
-    //    {
-    //        if (!Group) 
-    //        {
-    //            continue;
-    //        }
+    void SetAlreadyShown(bool bIsShown) 
+    {
+        for(auto& Dialogue : Dialogues) 
+        {
+            Dialogue.bIsAlreadyShown = bIsShown;
+        }
 
-    //        Result = Group->Dialogues.FindByPredicate([FTUEId](const FFTUEDialogueModel* Temp)
-    //        {
-    //            return Temp->FTUEId == FTUEId;
-    //        });
-
-    //        if (Result) 
-    //        {
-    //            break;
-    //        }
-    //    }
-
-    //    return Result;
-    //}
+        bIsAlreadyShown = bIsShown;
+    }
 
     static FFTUEDialogueModel* GetMetadataById(const FString& FTUEId, TArray<FTUEDialogueGroup>& FTUEDialogueGroups)
     {
