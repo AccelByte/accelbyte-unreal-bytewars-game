@@ -16,6 +16,7 @@ ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogFTUEDialogueWidget, Log, All);
 	UE_LOG_FUNC(LogFTUEDialogueWidget, Verbosity, Format, ##__VA_ARGS__) \
 }
 
+class UAccelByteWarsGameInstance;
 class UAccelByteWarsButtonBase;
 class UTextBlock;
 class UCanvasPanel;
@@ -78,6 +79,8 @@ protected:
 	
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UAccelByteWarsButtonBase* Btn_Action2;
+
+	UAccelByteWarsGameInstance* GameInstance;
 
 private:
 	TArray<FFTUEDialogueModel*> CachedDialogues;

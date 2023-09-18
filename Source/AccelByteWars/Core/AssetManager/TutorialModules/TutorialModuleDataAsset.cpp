@@ -212,9 +212,6 @@ void UTutorialModuleDataAsset::ValidateDataAssetProperties()
 
 bool UTutorialModuleDataAsset::ValidateClassProperty(TSubclassOf<UAccelByteWarsActivatableWidget>& UIClass, TSubclassOf<UAccelByteWarsActivatableWidget>& LastUIClass, const bool IsStarterClass)
 {
-	// Delete local file.
-	FPlatformFileManager::Get().GetPlatformFile().DeleteFile(*GetAttributesLocalFilePath(CodeName));
-
 	// Check if the class is used by other Tutorial Module or not.
 	if (UIClass.Get() && UIClass.GetDefaultObject()->AssociateTutorialModule != nullptr
 		&& UIClass.GetDefaultObject()->AssociateTutorialModule != this)

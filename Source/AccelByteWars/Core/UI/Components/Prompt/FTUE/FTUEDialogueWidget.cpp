@@ -4,6 +4,7 @@
 
 #include "Core/UI/Components/Prompt/FTUE/FTUEDialogueWidget.h"
 
+#include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/Components/AccelByteWarsButtonBase.h"
 #include "Components/TextBlock.h"
 
@@ -18,6 +19,8 @@ DEFINE_LOG_CATEGORY(LogFTUEDialogueWidget);
 void UFTUEDialogueWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+
+	GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
 
 	Btn_Open->OnClicked().Clear();
 	Btn_Open->OnClicked().AddUObject(this, &ThisClass::ShowDialogues);
@@ -59,6 +62,13 @@ void UFTUEDialogueWidget::ShowDialoguesFirstTime()
 {
 	ValidateDialogues();
 	
+	// Check if dialogues should always be shown.
+	if (GameInstance && GameInstance->GetFTUEAlwaysOnSetting())
+	{
+		ShowDialogues();
+		return;
+	}
+
 	// Check for already shown dialogues.
 	TArray<FFTUEDialogueModel*> AlreadyShown = CachedDialogues.FilterByPredicate([](const FFTUEDialogueModel* Temp)
 	{
@@ -326,19 +336,6 @@ void UFTUEDialogueWidget::DeinitializeLastDialogue()
 
 	// Update last dialogue cache.
 	CachedLastDialogue = CachedDialogues[DialogueIndex];
-	
-	//if (DialogueIndex >= CachedDialogues.Num() - 1) 
-	//{
-	//	CachedLastDialogue = nullptr;
-	//}
-	//else if (DialogueIndex <= 0)
-	//{
-	//	CachedLastDialogue = nullptr;
-	//}
-	//else 
-	//{
-	//	CachedLastDialogue = CachedDialogues[DialogueIndex];
-	//}
 }
 
 void UFTUEDialogueWidget::ClearHighlightedWidget()
