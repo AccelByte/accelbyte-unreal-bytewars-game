@@ -480,7 +480,11 @@ void UAccelByteWarsActivatableWidget::InitializeFTEUDialogues()
 	}
 
 	FTUEWidget->AddDialogues(FTUEDialogues);
-	FTUEWidget->ShowDialoguesFirstTime();
+
+	if (bHandleAutoShowFTUE) 
+	{
+		FTUEWidget->ShowDialoguesFirstTime();
+	}
 }
 
 void UAccelByteWarsActivatableWidget::DeinitializeFTUEDialogues()

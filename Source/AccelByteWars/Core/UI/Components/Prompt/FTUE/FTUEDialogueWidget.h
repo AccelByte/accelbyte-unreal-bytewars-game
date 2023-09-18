@@ -38,6 +38,8 @@ public:
 	void PrevDialogue();
 	void NextDialogue();
 
+	void TryToggleHelpDev(bool bShow);
+
 protected:
 	virtual void NativeConstruct() override;
 

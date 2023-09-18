@@ -111,6 +111,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = Input)
 	EMouseCaptureMode GameMouseCaptureMode = EMouseCaptureMode::CapturePermanently;
 
+	UPROPERTY(EditAnywhere, Category = FTUE)
+	bool bHandleAutoShowFTUE = true;
+
 private:
 #pragma region "Tutorial Module"
 	void ValidateAssociateTutorialModule();

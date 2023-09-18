@@ -61,7 +61,7 @@ bool UFTUEDialogueWidget::RemoveAssociateDialogues(const TSubclassOf<UAccelByteW
 void UFTUEDialogueWidget::ShowDialoguesFirstTime()
 {
 	ValidateDialogues();
-	
+
 	// Check if dialogues should always be shown.
 	if (GameInstance && GameInstance->GetFTUEAlwaysOnSetting())
 	{
@@ -97,13 +97,13 @@ void UFTUEDialogueWidget::ShowDialogues()
 	DialogueIndex = 0;
 	CachedLastDialogue = nullptr;
 
-	// Show FTUE.
-	Btn_Open->SetVisibility(ESlateVisibility::Collapsed);
-	W_FTUEDialogue->SetVisibility(ESlateVisibility::Visible);
-
 	// Initialize FTUE.
 	CachedDialogues.Sort();
 	InitializeDialogue(CachedDialogues[DialogueIndex]);
+
+	// Show FTUE.
+	W_FTUEDialogue->SetVisibility(ESlateVisibility::Visible);
+	TryToggleHelpDev(false);
 }
 
 void UFTUEDialogueWidget::CloseDialogues()
@@ -115,9 +115,9 @@ void UFTUEDialogueWidget::CloseDialogues()
 	CachedLastDialogue = nullptr;
 
 	// Close the FTUE
-	Btn_Open->SetVisibility(ESlateVisibility::Visible);
 	W_FTUEDialogue->SetVisibility(ESlateVisibility::Collapsed);
 	W_FTUEInterupter->SetVisibility(ESlateVisibility::Collapsed);
+	TryToggleHelpDev(true);
 }
 
 void UFTUEDialogueWidget::PrevDialogue()
@@ -156,6 +156,19 @@ void UFTUEDialogueWidget::NextDialogue()
 	{
 		NextDialogue();
 	}
+}
+
+void UFTUEDialogueWidget::TryToggleHelpDev(bool bShow)
+{
+	// Always hide the help button if the FTUE is visible or there is no dialogues.
+	if (W_FTUEDialogue->IsVisible() || CachedDialogues.IsEmpty())
+	{
+		Btn_Open->SetVisibility(ESlateVisibility::Collapsed);
+		return;
+	}
+
+	// Set visibility based on the given toggle status.
+	Btn_Open->SetVisibility(bShow ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 }
 
 bool UFTUEDialogueWidget::InitializeDialogue(FFTUEDialogueModel* Dialogue)
@@ -203,7 +216,8 @@ bool UFTUEDialogueWidget::InitializeDialogue(FFTUEDialogueModel* Dialogue)
 	}
 
 	// Check if interrupting.
-	W_FTUEInterupter->SetVisibility(Dialogue->bIsInterrupting ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	W_FTUEInterupter->SetVisibility(
+		Dialogue->bIsInterrupting ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 
 	// Set navigation buttons.
 	Btn_Next->SetButtonText(
@@ -246,16 +260,6 @@ bool UFTUEDialogueWidget::InitializeDialogue(FFTUEDialogueModel* Dialogue)
 	if (Dialogue->OnActivateDelegate.IsBound()) 
 	{
 		Dialogue->OnActivateDelegate.Broadcast();
-	}
-
-	// Mark as shown.
-	if (Dialogue->bIsTerminator && Dialogue->Group)
-	{
-		Dialogue->Group->SetAlreadyShown(true);
-		if (Dialogue->Group->OwnerTutorialModule) 
-		{
-			Dialogue->Group->OwnerTutorialModule->SaveAttributesToLocal();
-		}
 	}
 
 	return true;
@@ -315,10 +319,7 @@ void UFTUEDialogueWidget::ValidateDialogues()
 			(Temp->OnValidateDelegate.IsBound() && !Temp->OnValidateDelegate.Execute());
 	});
 
-	if (!W_FTUEDialogue->IsVisible()) 
-	{
-		Btn_Open->SetVisibility(!CachedDialogues.IsEmpty() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-	}
+	TryToggleHelpDev(!CachedDialogues.IsEmpty());
 }
 
 void UFTUEDialogueWidget::DeinitializeLastDialogue()
@@ -326,6 +327,16 @@ void UFTUEDialogueWidget::DeinitializeLastDialogue()
 	if (!CachedLastDialogue) 
 	{
 		return;
+	}
+
+	// Mark last dialogue as shown.
+	if (!CachedLastDialogue->bIsAlreadyShown && CachedLastDialogue->bIsTerminator && CachedLastDialogue->Group)
+	{
+		CachedLastDialogue->Group->SetAlreadyShown(true);
+		if (CachedLastDialogue->Group->OwnerTutorialModule)
+		{
+			CachedLastDialogue->Group->OwnerTutorialModule->SaveAttributesToLocal();
+		}
 	}
 
 	// Execute last dialogue's on-deactivate event.

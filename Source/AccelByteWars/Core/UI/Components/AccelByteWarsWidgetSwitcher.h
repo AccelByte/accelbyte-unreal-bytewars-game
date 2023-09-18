@@ -6,6 +6,12 @@
 #include "CommonActivatableWidget.h"
 #include "AccelByteWarsWidgetSwitcher.generated.h"
 
+ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogAccelByteWarsWidgetSwitcher, Log, All);
+#define UE_LOG_ACCELBYTEWARSWIDGETSWITCHER(Verbosity, Format, ...) \
+{ \
+	UE_LOG_FUNC(LogAccelByteWarsWidgetSwitcher, Verbosity, Format, ##__VA_ARGS__) \
+}
+
 class UNamedSlot;
 class UWidget;
 class UWidgetSwitcher;
@@ -78,7 +84,9 @@ protected:
 
 	UFUNCTION(BlueprintCallable)
 	UWidget* GetFocusTargetBasedOnCurrentState() const;
-
+	
+	void HandleFTUE();
+	
 private:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UWidgetSwitcher* Ws_Root;
