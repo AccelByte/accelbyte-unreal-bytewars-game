@@ -277,6 +277,8 @@ bool UFTUEDialogueWidget::InitializeDialogue(FFTUEDialogueModel* Dialogue)
 		Dialogue->OnActivateDelegate.Broadcast();
 	}
 
+	CachedLastDialogue = CachedDialogues[DialogueIndex];
+
 	return true;
 }
 
@@ -359,9 +361,6 @@ void UFTUEDialogueWidget::DeinitializeLastDialogue()
 	{
 		CachedLastDialogue->OnDeactivateDelegate.Broadcast();
 	}
-
-	// Update last dialogue cache.
-	CachedLastDialogue = CachedDialogues[DialogueIndex];
 }
 
 void UFTUEDialogueWidget::ClearHighlightedWidget()
