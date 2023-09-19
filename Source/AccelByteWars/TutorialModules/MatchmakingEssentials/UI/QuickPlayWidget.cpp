@@ -40,6 +40,7 @@ void UQuickPlayWidget::SwitchContent(const EContentType State)
 		WidgetTarget = W_SelectGameMode;
 		BackButtonTarget = Btn_SelectGameMode_Back;
 		CameraTargetY = 600.0f;
+		InitializeFTEUDialogues(true);
 		break;
 	case EContentType::SELECTSERVERTYPE:
 		bShowBackButton = true;
@@ -55,6 +56,7 @@ void UQuickPlayWidget::SwitchContent(const EContentType State)
 		BackButtonTarget = Btn_Processing_Back;
 		ProcessingState = EAccelByteWarsWidgetSwitcherState::Loading;
 		CameraTargetY = 800.0f;
+		DeinitializeFTUEDialogues();
 		break;
 	case EContentType::ERROR:
 		bShowBackButton = true;
@@ -63,6 +65,7 @@ void UQuickPlayWidget::SwitchContent(const EContentType State)
 		BackButtonTarget = Btn_Processing_Back;
 		ProcessingState = EAccelByteWarsWidgetSwitcherState::Error;
 		CameraTargetY = 800.0f;
+		DeinitializeFTUEDialogues();
 		break;
 	case EContentType::SUCCESS:
 		bShowBackButton = false;

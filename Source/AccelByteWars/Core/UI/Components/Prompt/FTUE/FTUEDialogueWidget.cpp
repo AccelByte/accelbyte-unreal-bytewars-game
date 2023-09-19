@@ -40,7 +40,7 @@ void UFTUEDialogueWidget::AddDialogues(const TArray<FFTUEDialogueModel*>& Dialog
 	// Add dialogues to cache.
 	for (int i = 0; i < Dialogues.Num(); i++) 
 	{
-		CachedDialogues.Add(Dialogues[i]);
+		CachedDialogues.AddUnique(Dialogues[i]);
 	}
 
 	ValidateDialogues();
