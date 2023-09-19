@@ -9,7 +9,8 @@
 #include "TutorialModules/Module-12/ManagingFriendsSubsystem_Starter.h"
 #include "BlockedPlayersWidget_Starter.generated.h"
 
-class UAccelByteWarsWidgetList;
+class UAccelByteWarsWidgetSwitcher;
+class UListView;
 
 UCLASS(Abstract)
 class ACCELBYTEWARS_API UBlockedPlayersWidget_Starter : public UAccelByteWarsActivatableWidget
@@ -27,5 +28,8 @@ protected:
 	FDelegateHandle OnBlockedPlayerListUpdatedDelegateHandle;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
-	UAccelByteWarsWidgetList* WidgetList;
+	UAccelByteWarsWidgetSwitcher* Ws_BlockedPlayers;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
+	UListView* Lv_BlockedPlayers;
 };

@@ -3,7 +3,8 @@
 // and restrictions contact your company contract manager.
 
 #include "TutorialModules/Module-12/UI/BlockedPlayersWidget.h"
-#include "Core/UI/Components/AccelByteWarsWidgetList.h"
+#include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
+#include "Components/ListView.h"
 
 void UBlockedPlayersWidget::NativeConstruct()
 {
@@ -16,6 +17,10 @@ void UBlockedPlayersWidget::NativeConstruct()
 void UBlockedPlayersWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
+
+	// Reset widgets.
+	Ws_BlockedPlayers->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Empty);
+	Lv_BlockedPlayers->ClearListItems();
 
 	ManagingFriendsSubsystem->BindOnCachedBlockedPlayersDataUpdated(GetOwningPlayer(), FOnGetCacheBlockedPlayersDataUpdated::CreateUObject(this, &ThisClass::GetBlockedPlayerList));
 	GetBlockedPlayerList();
@@ -32,24 +37,26 @@ void UBlockedPlayersWidget::GetBlockedPlayerList()
 {
 	ensure(ManagingFriendsSubsystem);
 
-	WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::LoadingEntry);
+	Ws_BlockedPlayers->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Loading);
 
 	ManagingFriendsSubsystem->GetBlockedPlayerList(
 		GetOwningPlayer(),
 		FOnGetBlockedPlayerListComplete::CreateWeakLambda(this, [this](bool bWasSuccessful, TArray<UFriendData*> BlockedPlayers, const FString& ErrorMessage)
 		{
-			WidgetList->GetListView()->SetUserFocus(GetOwningPlayer());
-			WidgetList->GetListView()->ClearListItems();
+			Lv_BlockedPlayers->SetUserFocus(GetOwningPlayer());
+			Lv_BlockedPlayers->ClearListItems();
 
 			if (bWasSuccessful)
 			{
-				WidgetList->GetListView()->SetListItems(BlockedPlayers);
-				WidgetList->ChangeWidgetListState(BlockedPlayers.IsEmpty() ? EAccelByteWarsWidgetListState::NoEntry : EAccelByteWarsWidgetListState::EntryLoaded);
+				Lv_BlockedPlayers->SetListItems(BlockedPlayers);
+				Ws_BlockedPlayers->SetWidgetState(BlockedPlayers.IsEmpty() ?
+					EAccelByteWarsWidgetSwitcherState::Empty :
+					EAccelByteWarsWidgetSwitcherState::Not_Empty);
 			}
 			else
 			{
-				WidgetList->SetFailedMessage(FText::FromString(ErrorMessage));
-				WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::Error);
+				Ws_BlockedPlayers->ErrorMessage = FText::FromString(ErrorMessage);
+				Ws_BlockedPlayers->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Error);
 			}
 		}
 	));

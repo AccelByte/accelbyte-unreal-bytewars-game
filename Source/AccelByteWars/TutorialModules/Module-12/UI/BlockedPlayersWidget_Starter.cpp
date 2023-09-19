@@ -3,7 +3,8 @@
 // and restrictions contact your company contract manager.
 
 #include "TutorialModules/Module-12/UI/BlockedPlayersWidget_Starter.h"
-#include "Core/UI/Components/AccelByteWarsWidgetList.h"
+#include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
+#include "Components/ListView.h"
 
 void UBlockedPlayersWidget_Starter::NativeConstruct()
 {
@@ -16,6 +17,10 @@ void UBlockedPlayersWidget_Starter::NativeConstruct()
 void UBlockedPlayersWidget_Starter::NativeOnActivated()
 {
 	Super::NativeOnActivated();
+
+	// Reset widgets.
+	Ws_BlockedPlayers->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Empty);
+	Lv_BlockedPlayers->ClearListItems();
 
 	// TODO: Bind event to refresh blocked player list here.
 
