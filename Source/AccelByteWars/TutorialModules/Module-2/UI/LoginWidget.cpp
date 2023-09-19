@@ -58,15 +58,21 @@ void ULoginWidget::SetLoginState(const ELoginState NewState)
 
 	switch (NewState)
 	{
-		case ELoginState::Default:
-			Btn_LoginWithDeviceId->SetUserFocus(GetOwningPlayer());
-			break;
-		case ELoginState::Failed:
-			Btn_RetryLogin->SetUserFocus(GetOwningPlayer());
-			break;
-		default:
-			Btn_LoginWithDeviceId->SetUserFocus(GetOwningPlayer());
-			break;
+	case ELoginState::Default:
+		Btn_LoginWithDeviceId->SetUserFocus(GetOwningPlayer());
+		InitializeFTEUDialogues(true);
+		break;
+	case ELoginState::LoggingIn:
+		DeinitializeFTUEDialogues();
+		break;
+	case ELoginState::Failed:
+		Btn_RetryLogin->SetUserFocus(GetOwningPlayer());
+		DeinitializeFTUEDialogues();
+		break;
+	default:
+		Btn_LoginWithDeviceId->SetUserFocus(GetOwningPlayer());
+		InitializeFTEUDialogues(true);
+		break;
 	}
 }
 
