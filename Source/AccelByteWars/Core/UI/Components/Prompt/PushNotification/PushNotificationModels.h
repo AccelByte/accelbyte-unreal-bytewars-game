@@ -22,6 +22,7 @@ class ACCELBYTEWARS_API UPushNotification : public UObject
 
 public:
 	FString IconImageURL;
+	bool bUseDefaultIconOnEmpty = false;
 	FText Message;
 	TArray<FText> ActionButtonTexts;
 	FPushNotificationDelegate ActionButtonCallback;

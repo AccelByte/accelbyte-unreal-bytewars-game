@@ -56,9 +56,6 @@ protected:
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 	virtual UWidget* NativeGetDesiredFocusTarget() const override;
 
-	void SetSessionIdText(const FString& SessionId) const;
-	void SetLoadingMessage(const FText& Text) const;
-	void SetErrorMessage(const FText& Text, const bool bShowRetryButton = false) const;
 	void SwitchContent(const EContentType Type);
 
 private:

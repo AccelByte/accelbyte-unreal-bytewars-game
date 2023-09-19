@@ -20,9 +20,8 @@ void UAccelByteWarsAsyncImageWidget::LoadImage(const FString& ImageUrl)
 	const FCacheBrush CacheAvatarBrush = AccelByteWarsUtility::GetImageFromCache(ImageId);
 	if (CacheAvatarBrush.IsValid())
 	{
-		B_Loaded->SetBrushColor(FLinearColor::White);
 		B_Loaded->SetBrush(*CacheAvatarBrush.Get());
-
+		SetImageTint(FLinearColor::White);
 		Ws_Root->SetActiveWidget(B_Loaded);
 	}
 	// Set avatar image from URL if it is not exists in cache.
@@ -35,9 +34,8 @@ void UAccelByteWarsAsyncImageWidget::LoadImage(const FString& ImageUrl)
 			{
 				if (ImageResult.IsValid())
 				{
-					B_Loaded->SetBrushColor(FLinearColor::White);
 					B_Loaded->SetBrush(*ImageResult.Get());
-
+					SetImageTint(FLinearColor::White);
 					Ws_Root->SetActiveWidget(B_Loaded);
 				}
 				else
@@ -54,6 +52,12 @@ void UAccelByteWarsAsyncImageWidget::LoadImage(const FString& ImageUrl)
 	}
 }
 
+void UAccelByteWarsAsyncImageWidget::SetImageTint(const FLinearColor& Color)
+{
+	B_Default->SetBrushColor(Color);
+	B_Loaded->SetBrushColor(Color);
+}
+
 void UAccelByteWarsAsyncImageWidget::NativePreConstruct()
 {
 	Super::NativePreConstruct();
@@ -62,4 +66,5 @@ void UAccelByteWarsAsyncImageWidget::NativePreConstruct()
 	Sb_RootOuter->SetStretchDirection(StretchDirection);
 
 	B_Default->SetBrush(DefaultBrush);
+	SetImageTint(FLinearColor::White);
 }

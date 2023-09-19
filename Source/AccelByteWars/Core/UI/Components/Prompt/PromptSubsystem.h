@@ -45,10 +45,10 @@ public:
 
 	/* Push a notification (Blueprint). */
 	UFUNCTION(BlueprintCallable)
-	void PushNotification(const FString& IconImageURL, const FText Message, const FText ActionButton1, const FText ActionButton2, const FText ActionButton3, FPushNotificationDynamicDelegate ActionButtonCallback);
+	void PushNotification(const FText Message, const FString& IconImageURL, const bool bUseDefaultIconOnEmpty, const FText ActionButton1, const FText ActionButton2, const FText ActionButton3, FPushNotificationDynamicDelegate ActionButtonCallback);
 
 	/* Push a notification (C++). */
-	void PushNotification(const FString& IconImageURL, const FText& Message, const FText& ActionButton1 = FText::FromString(""), const FText& ActionButton2 = FText::FromString(""), const FText& ActionButton3 = FText::FromString(""), FPushNotificationDelegate ActionButtonCallback = FPushNotificationDelegate());
+	void PushNotification(const FText& Message, const FString& IconImageURL = FString(""), const bool bUseDefaultIconOnEmpty = false, const FText& ActionButton1 = FText::FromString(""), const FText& ActionButton2 = FText::FromString(""), const FText& ActionButton3 = FText::FromString(""), FPushNotificationDelegate ActionButtonCallback = FPushNotificationDelegate());
 
 private:
 	UAccelByteWarsGameInstance* GameInstance;

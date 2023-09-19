@@ -17,8 +17,8 @@ void UCreateSessionWidget::NativeOnActivated()
 	Super::NativeOnActivated();
 
 #pragma region "UI related"
-	Btn_CreateSession->OnClicked().AddUObject(this, &ThisClass::CreateSession);
 	Btn_Back->OnClicked().AddUObject(this, &ThisClass::DeactivateWidget);
+	Btn_CreateSession->OnClicked().AddUObject(this, &ThisClass::CreateSession);
 	Btn_Leave->OnClicked().AddUObject(this, &ThisClass::LeaveSession);
 	Ws_Processing->OnRetryClicked.AddUObject(this, &ThisClass::CreateSession);
 #pragma endregion 
@@ -32,6 +32,7 @@ void UCreateSessionWidget::NativeOnActivated()
 	SessionOnlineSession->GetOnCreateSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnCreateSessionComplete);
 	SessionOnlineSession->GetOnLeaveSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnLeaveSessionComplete);
 
+	// Change UI state based on the current player's session status
 	const FNamedOnlineSession* OnlineSession = SessionOnlineSession->GetSession(
 		SessionOnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession));
 	SwitchContent(OnlineSession ? EContentType::SUCCESS : EContentType::CREATE);
@@ -62,7 +63,7 @@ void UCreateSessionWidget::CreateSession()
 		return;
 	}
 
-	SetLoadingMessage(TEXT_REQUESTING_SESSION_CREATION);
+	Ws_Processing->LoadingMessage = TEXT_REQUESTING_SESSION_CREATION;
 	SwitchContent(EContentType::LOADING);
 
 	SessionOnlineSession->CreateSession(
@@ -79,13 +80,14 @@ void UCreateSessionWidget::OnCreateSessionComplete(FName SessionName, bool bSucc
 	{
 		// Get session id
 		const FNamedOnlineSession* OnlineSession = SessionOnlineSession->GetSession(SessionName);
-		SetSessionIdText(OnlineSession->GetSessionIdStr());
+		Tb_SessionId->SetText(FText::FromString(OnlineSession->GetSessionIdStr()));
 
 		SwitchContent(EContentType::SUCCESS);
 	}
 	else
 	{
-		SetErrorMessage(TEXT_FAILED_TO_CREATE_SESSION, true);
+		Ws_Processing->ErrorMessage = TEXT_FAILED_TO_CREATE_SESSION;
+		Ws_Processing->bShowRetryButtonOnError = true;
 		SwitchContent(EContentType::ERROR);
 	}
 }
@@ -97,7 +99,7 @@ void UCreateSessionWidget::LeaveSession()
 		return;
 	}
 
-	SetLoadingMessage(TEXT_LEAVING_SESSION);
+	Ws_Processing->LoadingMessage = TEXT_LEAVING_SESSION;
 	SwitchContent(EContentType::LOADING);
 
 	SessionOnlineSession->LeaveSession(
@@ -112,7 +114,8 @@ void UCreateSessionWidget::OnLeaveSessionComplete(FName SessionName, bool bSucce
 	}
 	else
 	{
-		SetErrorMessage(TEXT_FAILED_TO_LEAVE_SESSION, false);
+		Ws_Processing->ErrorMessage = TEXT_FAILED_TO_LEAVE_SESSION;
+		Ws_Processing->bShowRetryButtonOnError = false;
 		SwitchContent(EContentType::ERROR);
 	}
 }
@@ -130,25 +133,10 @@ UWidget* UCreateSessionWidget::NativeGetDesiredFocusTarget() const
 	return Btn_Back;
 }
 
-void UCreateSessionWidget::SetSessionIdText(const FString& SessionId) const
-{
-	Tb_SessionId->SetText(FText::FromString(SessionId));
-}
-
-void UCreateSessionWidget::SetLoadingMessage(const FText& Text) const
-{
-	Ws_Processing->LoadingMessage = Text;
-}
-
-void UCreateSessionWidget::SetErrorMessage(const FText& Text, const bool bShowRetryButton) const
-{
-	Ws_Processing->ErrorMessage = Text;
-	Ws_Processing->bShowRetryButtonOnError = bShowRetryButton;
-}
-
 void UCreateSessionWidget::SwitchContent(const EContentType Type)
 {
 	UWidget* ContentTarget = nullptr;
+	UWidget* FocusTarget = nullptr;
 	EAccelByteWarsWidgetSwitcherState ProcessingWidgetState = EAccelByteWarsWidgetSwitcherState::Empty;
 	bool bEnableBackButton = true;
 
@@ -156,6 +144,7 @@ void UCreateSessionWidget::SwitchContent(const EContentType Type)
 	{
 	case EContentType::CREATE:
 		ContentTarget = W_Selection;
+		FocusTarget = Btn_CreateSession;
 		break;
 	case EContentType::LOADING:
 		ContentTarget = Ws_Processing;
@@ -165,10 +154,12 @@ void UCreateSessionWidget::SwitchContent(const EContentType Type)
 	case EContentType::SUCCESS:
 		ContentTarget = Ws_Processing;
 		ProcessingWidgetState = EAccelByteWarsWidgetSwitcherState::Not_Empty;
+		FocusTarget = Btn_Leave;
 		break;
 	case EContentType::ERROR:
 		ContentTarget = Ws_Processing;
 		ProcessingWidgetState = EAccelByteWarsWidgetSwitcherState::Error;
+		FocusTarget = Btn_Back;
 		break;
 	default: ;
 	}
@@ -181,5 +172,10 @@ void UCreateSessionWidget::SwitchContent(const EContentType Type)
 
 	Btn_Back->SetIsEnabled(bEnableBackButton);
 	bIsBackHandler = bEnableBackButton;
+
+	if (FocusTarget)
+	{
+		FocusTarget->SetUserFocus(GetOwningPlayer());
+	}
 }
 #pragma endregion 

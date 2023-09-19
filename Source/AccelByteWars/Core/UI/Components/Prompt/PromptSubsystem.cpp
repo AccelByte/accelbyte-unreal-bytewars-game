@@ -105,11 +105,12 @@ void UPromptSubsystem::PushNotification(UPushNotification* Notification)
 	BaseUIWidget->GetPushNotificationWidget()->PushNotification(Notification);
 }
 
-void UPromptSubsystem::PushNotification(const FString& IconImageURL, const FText Message, const FText ActionButton1, const FText ActionButton2, const FText ActionButton3, FPushNotificationDynamicDelegate ActionButtonCallback)
+void UPromptSubsystem::PushNotification(const FText Message, const FString& IconImageURL, const bool bUseDefaultIconOnEmpty, const FText ActionButton1, const FText ActionButton2, const FText ActionButton3, FPushNotificationDynamicDelegate ActionButtonCallback)
 {
 	UPushNotification* Notification = NewObject<UPushNotification>();
-	Notification->IconImageURL = IconImageURL;
 	Notification->Message = Message;
+	Notification->IconImageURL = IconImageURL;
+	Notification->bUseDefaultIconOnEmpty = bUseDefaultIconOnEmpty;
 	Notification->ActionButtonTexts.Add(ActionButton1);
 	Notification->ActionButtonTexts.Add(ActionButton2);
 	Notification->ActionButtonTexts.Add(ActionButton3);
@@ -119,11 +120,12 @@ void UPromptSubsystem::PushNotification(const FString& IconImageURL, const FText
 	PushNotification(Notification);
 }
 
-void UPromptSubsystem::PushNotification(const FString& IconImageURL, const FText& Message, const FText& ActionButton1, const FText& ActionButton2, const FText& ActionButton3, FPushNotificationDelegate ActionButtonCallback)
+void UPromptSubsystem::PushNotification(const FText& Message, const FString& IconImageURL, const bool bUseDefaultIconOnEmpty, const FText& ActionButton1, const FText& ActionButton2, const FText& ActionButton3, FPushNotificationDelegate ActionButtonCallback)
 {
 	UPushNotification* Notification = NewObject<UPushNotification>();
-	Notification->IconImageURL = IconImageURL;
 	Notification->Message = Message;
+	Notification->IconImageURL = IconImageURL;
+	Notification->bUseDefaultIconOnEmpty = bUseDefaultIconOnEmpty;
 	Notification->ActionButtonTexts.Add(ActionButton1);
 	Notification->ActionButtonTexts.Add(ActionButton2);
 	Notification->ActionButtonTexts.Add(ActionButton3);

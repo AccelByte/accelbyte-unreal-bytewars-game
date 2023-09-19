@@ -30,14 +30,11 @@ void UPushNotificationWidgetEntry::NativeOnListItemObjectSet(UObject* ListItemOb
 	}
 
 	// Set image icon.
-	if (Notification->IconImageURL.IsEmpty()) 
+	W_Icon->SetVisibility(ESlateVisibility::Visible);
+	W_Icon->LoadImage(Notification->IconImageURL);
+	if (Notification->IconImageURL.IsEmpty() && !Notification->bUseDefaultIconOnEmpty)
 	{
 		W_Icon->SetVisibility(ESlateVisibility::Collapsed);
-	}
-	else 
-	{
-		W_Icon->LoadImage(Notification->IconImageURL);
-		W_Icon->SetVisibility(ESlateVisibility::Visible);
 	}
 	
 	// Set entry message.

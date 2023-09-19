@@ -20,6 +20,7 @@ ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogAccelByteWarsTutorialModuleOnli
 	UE_LOG(LogAccelByteWarsTutorialModuleOnlineUtility, Verbosity, TEXT("%s"), *FString::Printf(Format, ##__VA_ARGS__)); \
 }
 
+
 #define BYTEWARS_LOCTEXT_NAMESPACE "AccelByteWars"
 #define DEFAULT_USER_DISPLAYNAME NSLOCTEXT(BYTEWARS_LOCTEXT_NAMESPACE, "Player-{0}", "Player-{0}")
 #define UNKNOWN_USER_DISPLAYNAME NSLOCTEXT(BYTEWARS_LOCTEXT_NAMESPACE, "Unknown Player", "Unknown")
@@ -35,7 +36,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Tutorial Module Online Utility", meta = (WorldContext = "WorldContextObject"))
 	static bool IsAccelByteSDKInitialized(const UObject* Target);
 
-	/* Get user default display name.
+	/* Get user default display name. 
 	 * Return first 5 character of the AccelByte Id with "Player" prefix. Example: Player-a523f
 	 * When fails to get the AccelByte Id, returns "Unknown" instead. */
 	static const FString GetUserDefaultDisplayName(const FUniqueNetId& UserId)
@@ -45,6 +46,7 @@ public:
 		{
 			return UNKNOWN_USER_DISPLAYNAME.ToString();
 		}
+
 		return FText::Format(DEFAULT_USER_DISPLAYNAME, FText::FromString(UserABId->GetAccelByteId().Left(5))).ToString();
 	}
 

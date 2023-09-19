@@ -19,26 +19,17 @@ class ACCELBYTEWARS_API UAccelbyteWarsServerSubsystem final : public UAccelByteW
 #pragma endregion 
 
 public:
-	virtual void Deinitialize() override;
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	virtual void Deinitialize() override;
 	virtual TSubclassOf<UTutorialModuleOnlineSession> GetOnlineSessionClass() const override
 	{
 		return UAccelByteWarsOnlineSession::StaticClass();
 	}
 
-	virtual void RegisterServer(const FName SessionName) override;
-	virtual void UnregisterServer(const FName SessionName) override;
-
 protected:
-	virtual void OnRegisterServerComplete(bool bSucceeded) override;
-	virtual void OnUnregisterServerComplete(bool bSucceeded) override;
-	
 	virtual void OnServerSessionReceived(FName SessionName) override;
 
 private:
-	bool bServerAlreadyRegister = false;
-	bool bUnregisterServerRunning = false;
-
 	UPROPERTY()
 	UAccelByteWarsOnlineSession* OnlineSession;
 };

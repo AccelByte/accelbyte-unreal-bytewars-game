@@ -7,7 +7,8 @@
 #include "CoreMinimal.h"
 #include "TutorialModuleUtility.generated.h"
 
-DECLARE_DELEGATE(FOnTutorialModuleButtonClicked);
+DECLARE_MULTICAST_DELEGATE(FOnTutorialModuleActionButtonClicked);
+DECLARE_MULTICAST_DELEGATE(FOnTutorialModuleWidgetGenerated);
 
 class UUserWidget;
 class UTutorialModuleDataAsset;
@@ -64,7 +65,8 @@ struct FTutorialModuleGeneratedWidget
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (Tooltip = "The text that will be displayed on the entry button", EditCondition = "WidgetType==ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_ENTRY_BUTTON||WidgetType==ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_BUTTON||WidgetType==ETutorialModuleGeneratedWidgetType::GENERIC_WIDGET_ENTRY_BUTTON||WidgetType==ETutorialModuleGeneratedWidgetType::ACTION_BUTTON", EditConditionHides))
 	FText ButtonText;
 
-	FOnTutorialModuleButtonClicked ButtonAction;
+	FOnTutorialModuleActionButtonClicked ButtonAction;
+	FOnTutorialModuleWidgetGenerated OnWidgetGenerated;
 
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (Tooltip = "The Target Widget where the generated widget will be spawned"))
 	TArray<TSubclassOf<UAccelByteWarsActivatableWidget>> TargetWidgetClasses;

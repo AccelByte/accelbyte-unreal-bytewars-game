@@ -3,11 +3,10 @@
 // and restrictions contact your company contract manager.
 
 
-#include "TutorialModules/SessionEssentials/SessionEssentialsOnlineSession.h"
+#include "SessionEssentialsOnlineSession.h"
 
 #include "OnlineSubsystemAccelByteSessionSettings.h"
-#include "OnlineSubsystemUtils.h"
-#include "TutorialModules/OnlineSessionUtils/AccelByteWarsOnlineSessionLog.h"
+#include "SessionEssentialsLog.h"
 
 void USessionEssentialsOnlineSession::RegisterOnlineDelegates()
 {
@@ -20,6 +19,8 @@ void USessionEssentialsOnlineSession::RegisterOnlineDelegates()
 
 void USessionEssentialsOnlineSession::ClearOnlineDelegates()
 {
+	Super::ClearOnlineDelegates();
+
 	GetSessionInt()->ClearOnCreateSessionCompleteDelegates(this);
 	GetSessionInt()->ClearOnJoinSessionCompleteDelegates(this);
 	GetSessionInt()->ClearOnDestroySessionCompleteDelegates(this);
@@ -68,12 +69,12 @@ void USessionEssentialsOnlineSession::CreateSession(
 	const EAccelByteV2SessionType SessionType,
 	const FString& SessionTemplateName)
 {
-	UE_LOG_ONLINESESSION(Verbose, TEXT("called"))
+	UE_LOG_SESSIONESSENTIALS(Verbose, TEXT("called"))
 
 	// safety
 	if (!GetSessionInt())
 	{
-		UE_LOG_ONLINESESSION(Warning, TEXT("Session interface is null"))
+		UE_LOG_SESSIONESSENTIALS(Warning, TEXT("Session interface is null"))
 		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnCreateSessionComplete(SessionName, false);
@@ -82,7 +83,7 @@ void USessionEssentialsOnlineSession::CreateSession(
 	}
 	if (SessionTemplateName.IsEmpty())
 	{
-		UE_LOG_ONLINESESSION(Warning, TEXT("Session Template Name can't be empty"))
+		UE_LOG_SESSIONESSENTIALS(Warning, TEXT("Session Template Name can't be empty"))
 		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnCreateSessionComplete(SessionName, false);
@@ -108,7 +109,7 @@ void USessionEssentialsOnlineSession::CreateSession(
 		FParse::Value(FCommandLine::Get(), TEXT("-ServerName="), ServerName);
 		if (!ServerName.IsEmpty())
 		{
-			UE_LOG_ONLINESESSION(Log, TEXT("Requesting to use server with name: %s"), *ServerName)
+			UE_LOG_SESSIONESSENTIALS(Log, TEXT("Requesting to use server with name: %s"), *ServerName)
 			SessionSettings.Set(SETTING_GAMESESSION_SERVERNAME, ServerName);
 		}
 	}
@@ -117,7 +118,7 @@ void USessionEssentialsOnlineSession::CreateSession(
 	// if session exist locally -> destroy session first
 	if (GetSession(SessionName))
 	{
-		UE_LOG_ONLINESESSION(Log, TEXT("Session exist locally, leaving session first"))
+		UE_LOG_SESSIONESSENTIALS(Log, TEXT("Session exist locally, leaving session first"))
 
 		// remove from delegate if exist
 		if (OnLeaveSessionForCreateSessionCompleteDelegateHandle.IsValid())
@@ -133,7 +134,7 @@ void USessionEssentialsOnlineSession::CreateSession(
 	{
 		if (!GetSessionInt()->CreateSession(LocalUserNum, SessionName, SessionSettings))
 		{
-			UE_LOG_ONLINESESSION(Warning, TEXT("Failed to execute"))
+			UE_LOG_SESSIONESSENTIALS(Warning, TEXT("Failed to execute"))
 			ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
 			{
 				OnCreateSessionComplete(SessionName, false);
@@ -147,12 +148,12 @@ void USessionEssentialsOnlineSession::JoinSession(
 	FName SessionName,
 	const FOnlineSessionSearchResult& SearchResult)
 {
-	UE_LOG_ONLINESESSION(Verbose, TEXT("called"))
+	UE_LOG_SESSIONESSENTIALS(Verbose, TEXT("called"))
 
 	// safety
 	if (!GetSessionInt())
 	{
-		UE_LOG_ONLINESESSION(Warning, TEXT("Session interface null"))
+		UE_LOG_SESSIONESSENTIALS(Warning, TEXT("Session interface null"))
 		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnJoinSessionComplete(SessionName, EOnJoinSessionCompleteResult::UnknownError);
@@ -177,7 +178,7 @@ void USessionEssentialsOnlineSession::JoinSession(
 	{
 		if (!GetSessionInt()->JoinSession(LocalUserNum, SessionName, SearchResult))
 		{
-			UE_LOG_ONLINESESSION(Warning, TEXT("Failed to execute"))
+			UE_LOG_SESSIONESSENTIALS(Warning, TEXT("Failed to execute"))
 			ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
 			{
 				OnJoinSessionComplete(SessionName, EOnJoinSessionCompleteResult::UnknownError);
@@ -188,12 +189,12 @@ void USessionEssentialsOnlineSession::JoinSession(
 
 void USessionEssentialsOnlineSession::LeaveSession(FName SessionName)
 {
-	UE_LOG_ONLINESESSION(Verbose, TEXT("called"))
+	UE_LOG_SESSIONESSENTIALS(Verbose, TEXT("called"))
 
 	// safety
 	if (!GetSessionInt())
 	{
-		UE_LOG_ONLINESESSION(Warning, TEXT("Session interface null"))
+		UE_LOG_SESSIONESSENTIALS(Warning, TEXT("Session interface null"))
 		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnLeaveSessionComplete(SessionName, false);
@@ -205,7 +206,7 @@ void USessionEssentialsOnlineSession::LeaveSession(FName SessionName)
 	{
 		if (!GetABSessionInt()->DestroySession(SessionName))
 		{
-			UE_LOG_ONLINESESSION(Warning, TEXT("Failed to execute"))
+			UE_LOG_SESSIONESSENTIALS(Warning, TEXT("Failed to execute"))
 			ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
 			{
 				OnLeaveSessionComplete(SessionName, false);
@@ -218,7 +219,7 @@ void USessionEssentialsOnlineSession::LeaveSession(FName SessionName)
 	}
 	else
 	{
-		UE_LOG_ONLINESESSION(Log, TEXT("Not in session"))
+		UE_LOG_SESSIONESSENTIALS(Log, TEXT("Not in session"))
 		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnLeaveSessionComplete(SessionName, true);
@@ -228,21 +229,21 @@ void USessionEssentialsOnlineSession::LeaveSession(FName SessionName)
 
 void USessionEssentialsOnlineSession::OnCreateSessionComplete(FName SessionName, bool bSucceeded)
 {
-	UE_LOG_ONLINESESSION(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
+	UE_LOG_SESSIONESSENTIALS(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
 
 	OnCreateSessionCompleteDelegates.Broadcast(SessionName, bSucceeded);
 }
 
 void USessionEssentialsOnlineSession::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
 {
-	UE_LOG_ONLINESESSION(Log, TEXT("succeeded: %s"), *FString(Result == EOnJoinSessionCompleteResult::Success ? "TRUE" : "FALSE"))
+	UE_LOG_SESSIONESSENTIALS(Log, TEXT("succeeded: %s"), *FString(Result == EOnJoinSessionCompleteResult::Success ? "TRUE" : "FALSE"))
 
 	OnJoinSessionCompleteDelegates.Broadcast(SessionName, Result);
 }
 
 void USessionEssentialsOnlineSession::OnLeaveSessionComplete(FName SessionName, bool bSucceeded)
 {
-	UE_LOG_ONLINESESSION(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
+	UE_LOG_SESSIONESSENTIALS(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
 
 	bLeaveSessionRunning = false;
 	OnLeaveSessionCompleteDelegates.Broadcast(SessionName, bSucceeded);
@@ -254,27 +255,21 @@ void USessionEssentialsOnlineSession::OnLeaveSessionForCreateSessionComplete(
 	const int32 LocalUserNum,
 	const FOnlineSessionSettings SessionSettings)
 {
-	UE_LOG_ONLINESESSION(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
+	UE_LOG_SESSIONESSENTIALS(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
 	OnLeaveSessionCompleteDelegates.Remove(OnLeaveSessionForCreateSessionCompleteDelegateHandle);
 
 	if (bSucceeded)
 	{
 		if (!GetSessionInt()->CreateSession(LocalUserNum, SessionName, SessionSettings))
 		{
-			UE_LOG_ONLINESESSION(Warning, TEXT("Failed to execute"))
-			ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
-			{
-				OnCreateSessionComplete(SessionName, false);
-			}));
+			UE_LOG_SESSIONESSENTIALS(Warning, TEXT("Failed to execute"))
+			OnCreateSessionComplete(SessionName, false);
 		}
 	}
 	else
 	{
 		// Leave Session failed, execute complete delegate as failed
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
-		{
-			OnCreateSessionComplete(SessionName, false);
-		}));
+		OnCreateSessionComplete(SessionName, false);
 	}
 }
 
@@ -284,26 +279,20 @@ void USessionEssentialsOnlineSession::OnLeaveSessionForJoinSessionComplete(
 	const int32 LocalUserNum,
 	const FOnlineSessionSearchResult SearchResult)
 {
-	UE_LOG_ONLINESESSION(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
+	UE_LOG_SESSIONESSENTIALS(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
 	OnLeaveSessionCompleteDelegates.Remove(OnLeaveSessionForJoinSessionCompleteDelegateHandle);
 
 	if (bSucceeded)
 	{
 		if (!GetSessionInt()->JoinSession(LocalUserNum, SessionName, SearchResult))
 		{
-			UE_LOG_ONLINESESSION(Warning, TEXT("failed to execute"))
-			ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
-			{
-				OnJoinSessionComplete(SessionName, EOnJoinSessionCompleteResult::UnknownError);
-			}));
+			UE_LOG_SESSIONESSENTIALS(Warning, TEXT("failed to execute"))
+			OnJoinSessionComplete(SessionName, EOnJoinSessionCompleteResult::UnknownError);
 		}
 	}
 	else
 	{
 		// Leave Session failed, execute complete delegate as failed
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
-		{
-			OnJoinSessionComplete(SessionName, EOnJoinSessionCompleteResult::UnknownError);
-		}));
+		OnJoinSessionComplete(SessionName, EOnJoinSessionCompleteResult::UnknownError);
 	}
 }

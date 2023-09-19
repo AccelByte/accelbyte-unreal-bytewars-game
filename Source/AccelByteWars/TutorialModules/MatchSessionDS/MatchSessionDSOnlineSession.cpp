@@ -125,7 +125,7 @@ void UMatchSessionDSOnlineSession::DSQueryUserInfo(
 			}
 		}
 
-		FRegistry::User.BulkGetUserInfo(
+		AccelByte::FRegistry::User.BulkGetUserInfo(
 			AbUserIds,
 			THandler<FListBulkUserInfo>::CreateWeakLambda(this, [OnComplete, this](FListBulkUserInfo UserInfo)
 			{

@@ -23,6 +23,7 @@ class ACCELBYTEWARS_API UAccelByteWarsAsyncImageWidget final : public UCommonUse
 
 public:
 	void LoadImage(const FString& ImageUrl);
+	void SetImageTint(const FLinearColor& Color);
 
 	/** The stretching rule to apply when content is stretched */
 	UPROPERTY(EditAnywhere)

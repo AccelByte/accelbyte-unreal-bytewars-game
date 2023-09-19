@@ -7,11 +7,11 @@
 
 void UTutorialModuleOnlineSession::RegisterOnlineDelegates()
 {
-	Super::RegisterOnlineDelegates();
-
-	// Assign AssociateTutorialModule based on default object.
-	AssociateTutorialModule = GetClass()->GetDefaultObject<UTutorialModuleOnlineSession>()->AssociateTutorialModule;
+    // Assign associate Tutorial Module based on default object.
+    AssociateTutorialModule = GetClass()->GetDefaultObject<UTutorialModuleOnlineSession>()->AssociateTutorialModule;
 }
+
+void UTutorialModuleOnlineSession::ClearOnlineDelegates() {}
 
 void UTutorialModuleOnlineSession::ExecuteNextTick(const FSimpleDelegate& Delegate) const
 {
