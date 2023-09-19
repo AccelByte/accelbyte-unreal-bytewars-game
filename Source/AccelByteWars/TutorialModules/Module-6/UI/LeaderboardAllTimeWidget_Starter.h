@@ -9,8 +9,9 @@
 #include "TutorialModules/Module-6/LeaderboardSubsystem_Starter.h"
 #include "LeaderboardAllTimeWidget_Starter.generated.h"
 
-class UAccelByteWarsWidgetList;
+class UAccelByteWarsWidgetSwitcher;
 class ULeaderboardWidgetEntry;
+class UListView;
 
 UCLASS(Abstract)
 class ACCELBYTEWARS_API ULeaderboardAllTimeWidget_Starter : public UAccelByteWarsActivatableWidget
@@ -33,7 +34,10 @@ protected:
 	int32 ResultLimit = 10;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
-	UAccelByteWarsWidgetList* WidgetList;
+	UAccelByteWarsWidgetSwitcher* Ws_Leaderboard;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
+	UListView* Lv_Leaderboard;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	ULeaderboardWidgetEntry* PlayerRankPanel;

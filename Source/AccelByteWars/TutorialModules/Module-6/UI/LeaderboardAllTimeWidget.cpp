@@ -32,14 +32,14 @@ void ULeaderboardAllTimeWidget::NativeOnActivated()
 		FTUELeaderboard->Button1.URLArguments[0].Argument = LeaderboardCode;
 	}
 
-	Super::NativeOnActivated();
-
-	// Hides the logged-in player rank panel.
+	// Reset widgets.
 	PlayerRankPanel->SetVisibility(ESlateVisibility::Collapsed);
-
-	// Get leaderboard rankings.
 	Ws_Leaderboard->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Empty);
 	Lv_Leaderboard->ClearListItems();
+
+	Super::NativeOnActivated();
+
+	// Get leaderboard rankings.
 	GetRankings();
 }
 
