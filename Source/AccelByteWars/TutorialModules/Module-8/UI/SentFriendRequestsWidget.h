@@ -9,8 +9,8 @@
 #include "TutorialModules/Module-8/FriendsSubsystem.h"
 #include "SentFriendRequestsWidget.generated.h"
 
-class UAccelByteWarsGameInstance;
-class UAccelByteWarsWidgetList;
+class UAccelByteWarsWidgetSwitcher;
+class UListView;
 
 UCLASS(Abstract)
 class ACCELBYTEWARS_API USentFriendRequestsWidget : public UAccelByteWarsActivatableWidget
@@ -28,5 +28,8 @@ protected:
 	FDelegateHandle OnFriendListUpdatedDelegateHandle;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
-	UAccelByteWarsWidgetList* WidgetList;
+	UAccelByteWarsWidgetSwitcher* Ws_FriendRequests;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
+	UListView* Lv_FriendRequests;
 };

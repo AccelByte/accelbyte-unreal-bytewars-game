@@ -5,7 +5,8 @@
 #include "TutorialModules/Module-8/UI/FriendsWidget.h"
 #include "TutorialModules/Module-8/UI/FriendDetailsWidget.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
-#include "Core/UI/Components/AccelByteWarsWidgetList.h"
+#include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
+#include "Components/TileView.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "CommonButtonBase.h"
 
@@ -24,7 +25,11 @@ void UFriendsWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
-	WidgetList->GetListView()->OnItemClicked().AddUObject(this, &ThisClass::OnFriendEntryClicked);
+	// Reset widgets.
+	Ws_Friends->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Empty);
+	Tv_Friends->ClearListItems();
+
+	Tv_Friends->OnItemClicked().AddUObject(this, &ThisClass::OnFriendEntryClicked);
 	
 	FriendsSubsystem->BindOnCachedFriendsDataUpdated(GetOwningPlayer(), FOnCachedFriendsDataUpdated::CreateUObject(this, &ThisClass::GetFriendList));
 	GetFriendList();
@@ -32,7 +37,7 @@ void UFriendsWidget::NativeOnActivated()
 
 void UFriendsWidget::NativeOnDeactivated()
 {
-	WidgetList->GetListView()->OnItemClicked().Clear();
+	Tv_Friends->OnItemClicked().Clear();
 
 	FriendsSubsystem->UnbindOnCachedFriendsDataUpdated(GetOwningPlayer());
 
@@ -43,24 +48,26 @@ void UFriendsWidget::GetFriendList()
 {
 	ensure(FriendsSubsystem);
 
-	WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::LoadingEntry);
+	Ws_Friends->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Loading);
 
 	FriendsSubsystem->GetFriendList(
 		GetOwningPlayer(),
 		FOnGetFriendListComplete::CreateWeakLambda(this, [this](bool bWasSuccessful, TArray<UFriendData*> Friends, const FString& ErrorMessage)
 		{
-			WidgetList->GetListView()->SetUserFocus(GetOwningPlayer());
-			WidgetList->GetListView()->ClearListItems();
+			Tv_Friends->SetUserFocus(GetOwningPlayer());
+			Tv_Friends->ClearListItems();
 
 			if (bWasSuccessful) 
 			{
-				WidgetList->GetListView()->SetListItems(Friends);
-				WidgetList->ChangeWidgetListState(Friends.IsEmpty() ? EAccelByteWarsWidgetListState::NoEntry : EAccelByteWarsWidgetListState::EntryLoaded);
+				Tv_Friends->SetListItems(Friends);
+				Ws_Friends->SetWidgetState(Friends.IsEmpty() ?
+					EAccelByteWarsWidgetSwitcherState::Empty :
+					EAccelByteWarsWidgetSwitcherState::Not_Empty);
 			}
 			else
 			{
-				WidgetList->SetFailedMessage(FText::FromString(ErrorMessage));
-				WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::Error);
+				Ws_Friends->ErrorMessage = FText::FromString(ErrorMessage);
+				Ws_Friends->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Error);
 			}
 		}
 	));

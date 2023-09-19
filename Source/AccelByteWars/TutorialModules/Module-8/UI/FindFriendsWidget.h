@@ -9,7 +9,8 @@
 #include "TutorialModules/Module-8/FriendsSubsystem.h"
 #include "FindFriendsWidget.generated.h"
 
-class UAccelByteWarsWidgetList;
+class UAccelByteWarsWidgetSwitcher;
+class UListView;
 class UEditableText;
 
 UCLASS(Abstract)
@@ -32,5 +33,8 @@ protected:
 	UEditableText* Edt_SearchBar;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
-	UAccelByteWarsWidgetList* WidgetList;
+	UAccelByteWarsWidgetSwitcher* Ws_FindFriends;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
+	UListView* Lv_FindFriends;
 };

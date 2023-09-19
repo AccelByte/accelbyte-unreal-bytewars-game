@@ -4,7 +4,8 @@
 
 #include "TutorialModules/Module-8/UI/FriendRequestsWidget_Starter.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
-#include "Core/UI/Components/AccelByteWarsWidgetList.h"
+#include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
+#include "Components/ListView.h"
 
 void UFriendRequestsWidget_Starter::NativeConstruct()
 {
@@ -20,6 +21,10 @@ void UFriendRequestsWidget_Starter::NativeConstruct()
 void UFriendRequestsWidget_Starter::NativeOnActivated()
 {
 	Super::NativeOnActivated();
+
+	// Reset widgets.
+	Ws_FriendRequests->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Empty);
+	Lv_FriendRequests->ClearListItems();
 
 	// TODO: Bind event to refresh friend request list here.
 

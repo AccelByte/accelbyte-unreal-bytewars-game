@@ -5,7 +5,8 @@
 #include "TutorialModules/Module-8/UI/FriendsWidget_Starter.h"
 #include "TutorialModules/Module-8/UI/FriendDetailsWidget_Starter.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
-#include "Core/UI/Components/AccelByteWarsWidgetList.h"
+#include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
+#include "Components/TileView.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "CommonButtonBase.h"
 
@@ -24,7 +25,11 @@ void UFriendsWidget_Starter::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
-	WidgetList->GetListView()->OnItemClicked().AddUObject(this, &ThisClass::OnFriendEntryClicked);
+	// Reset widgets.
+	Ws_Friends->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Empty);
+	Tv_Friends->ClearListItems();
+
+	Tv_Friends->OnItemClicked().AddUObject(this, &ThisClass::OnFriendEntryClicked);
 
 	// TODO: Bind event to refresh friend list here.
 
@@ -33,7 +38,7 @@ void UFriendsWidget_Starter::NativeOnActivated()
 
 void UFriendsWidget_Starter::NativeOnDeactivated()
 {
-	WidgetList->GetListView()->OnItemClicked().Clear();
+	Tv_Friends->OnItemClicked().Clear();
 
 	// TODO: Unbind event to refresh friend list here.
 

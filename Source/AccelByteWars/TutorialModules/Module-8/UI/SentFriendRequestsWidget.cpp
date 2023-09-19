@@ -4,7 +4,8 @@
 
 #include "TutorialModules/Module-8/UI/SentFriendRequestsWidget.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
-#include "Core/UI/Components/AccelByteWarsWidgetList.h"
+#include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
+#include "Components/ListView.h"
 
 void USentFriendRequestsWidget::NativeConstruct()
 {
@@ -21,6 +22,10 @@ void USentFriendRequestsWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
+	// Reset widgets.
+	Ws_FriendRequests->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Empty);
+	Lv_FriendRequests->ClearListItems();
+
 	FriendsSubsystem->BindOnCachedFriendsDataUpdated(GetOwningPlayer(), FOnCachedFriendsDataUpdated::CreateUObject(this, &ThisClass::GetSentFriendRequestList));
 	GetSentFriendRequestList();
 }
@@ -36,24 +41,26 @@ void USentFriendRequestsWidget::GetSentFriendRequestList()
 {
 	ensure(FriendsSubsystem);
 
-	WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::LoadingEntry);
+	Ws_FriendRequests->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Loading);
 
 	FriendsSubsystem->GetOutboundFriendRequestList(
 		GetOwningPlayer(),
-		FOnGetOutboundFriendRequestListComplete::CreateWeakLambda(this, [this](bool bWasSuccessful, TArray<UFriendData*> Friends, const FString& ErrorMessage)
+		FOnGetOutboundFriendRequestListComplete::CreateWeakLambda(this, [this](bool bWasSuccessful, TArray<UFriendData*> FriendRequests, const FString& ErrorMessage)
 		{
-			WidgetList->GetListView()->SetUserFocus(GetOwningPlayer());
-			WidgetList->GetListView()->ClearListItems();
+			Lv_FriendRequests->SetUserFocus(GetOwningPlayer());
+			Lv_FriendRequests->ClearListItems();
 
 			if (bWasSuccessful)
 			{
-				WidgetList->GetListView()->SetListItems(Friends);
-				WidgetList->ChangeWidgetListState(Friends.IsEmpty() ? EAccelByteWarsWidgetListState::NoEntry : EAccelByteWarsWidgetListState::EntryLoaded);
+				Lv_FriendRequests->SetListItems(FriendRequests);
+				Ws_FriendRequests->SetWidgetState(FriendRequests.IsEmpty() ?
+					EAccelByteWarsWidgetSwitcherState::Empty :
+					EAccelByteWarsWidgetSwitcherState::Not_Empty);
 			}
 			else
 			{
-				WidgetList->SetFailedMessage(FText::FromString(ErrorMessage));
-				WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::Error);
+				Ws_FriendRequests->ErrorMessage = FText::FromString(ErrorMessage);
+				Ws_FriendRequests->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Error);
 			}
 		}
 	));

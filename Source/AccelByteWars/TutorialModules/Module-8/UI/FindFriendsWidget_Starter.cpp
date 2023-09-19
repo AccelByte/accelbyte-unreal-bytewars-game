@@ -4,7 +4,8 @@
 
 #include "TutorialModules/Module-8/UI/FindFriendsWidget_Starter.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
-#include "Core/UI/Components/AccelByteWarsWidgetList.h"
+#include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
+#include "Components/ListView.h"
 #include "Components/EditableText.h"
 
 void UFindFriendsWidget_Starter::NativeConstruct()
@@ -25,7 +26,9 @@ void UFindFriendsWidget_Starter::NativeOnActivated()
 	Edt_SearchBar->SetText(FText::FromString(TEXT("")));
 	Edt_SearchBar->OnTextCommitted.AddDynamic(this, &ThisClass::OnSearchBarCommitted);
 
-	WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::NoEntry);
+	// Reset widgets.
+	Ws_FindFriends->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Empty);
+	Lv_FindFriends->ClearListItems();
 }
 
 void UFindFriendsWidget_Starter::NativeOnDeactivated()

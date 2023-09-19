@@ -4,7 +4,8 @@
 
 #include "TutorialModules/Module-8/UI/FindFriendsWidget.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
-#include "Core/UI/Components/AccelByteWarsWidgetList.h"
+#include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
+#include "Components/ListView.h"
 #include "Components/EditableText.h"
 
 void UFindFriendsWidget::NativeConstruct()
@@ -25,7 +26,9 @@ void UFindFriendsWidget::NativeOnActivated()
 	Edt_SearchBar->SetText(FText::FromString(TEXT("")));
 	Edt_SearchBar->OnTextCommitted.AddDynamic(this, &ThisClass::OnSearchBarCommitted);
 
-	WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::NoEntry);
+	// Reset widgets.
+	Ws_FindFriends->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Empty);
+	Lv_FindFriends->ClearListItems();
 }
 
 void UFindFriendsWidget::NativeOnDeactivated()
@@ -44,28 +47,28 @@ void UFindFriendsWidget::OnSearchBarCommitted(const FText& Text, ETextCommit::Ty
 
 	ensure(FriendsSubsystem);
 
-	WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::LoadingEntry);
+	Ws_FindFriends->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Loading);
 
 	FriendsSubsystem->FindFriend(
 		GetOwningPlayer(),
 		Text.ToString(), 
 		FOnFindFriendComplete::CreateWeakLambda(this, [this](bool bWasSuccessful, UFriendData* FriendData, const FString& ErrorMessage)
 		{
-			WidgetList->GetListView()->SetUserFocus(GetOwningPlayer());
-			WidgetList->GetListView()->ClearListItems();
+			Lv_FindFriends->SetUserFocus(GetOwningPlayer());
+			Lv_FindFriends->ClearListItems();
 
 			if (bWasSuccessful)
 			{
 				// Reset the status to be "searched", because the data is retrieved from find friend result.
 				FriendData->Status = EFriendStatus::Searched;
-				WidgetList->GetListView()->AddItem(FriendData);
-				WidgetList->GetListView()->RequestRefresh();
-				WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::EntryLoaded);
+				Lv_FindFriends->AddItem(FriendData);
+				Lv_FindFriends->RequestRefresh();
+				Ws_FindFriends->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Not_Empty);
 			}
 			else
 			{
-				WidgetList->SetFailedMessage(FText::FromString(ErrorMessage));
-				WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::Error);
+				Ws_FindFriends->ErrorMessage = FText::FromString(ErrorMessage);
+				Ws_FindFriends->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Error);
 			}
 		}
 	));

@@ -10,7 +10,8 @@
 #include "FriendsWidget.generated.h"
 
 class UAccelByteWarsGameInstance;
-class UAccelByteWarsWidgetList;
+class UAccelByteWarsWidgetSwitcher;
+class UTileView;
 
 UCLASS(Abstract)
 class ACCELBYTEWARS_API UFriendsWidget : public UAccelByteWarsActivatableWidget
@@ -30,7 +31,10 @@ protected:
 	FDelegateHandle OnFriendListUpdatedDelegateHandle;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
-	UAccelByteWarsWidgetList* WidgetList;
+	UAccelByteWarsWidgetSwitcher* Ws_Friends;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
+	UTileView* Tv_Friends;
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UAccelByteWarsActivatableWidget> FriendDetailsWidgetClass;
