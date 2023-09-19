@@ -165,6 +165,11 @@ UWidget* UAccelByteWarsWidgetSwitcher::GetFocusTargetBasedOnCurrentState() const
 
 void UAccelByteWarsWidgetSwitcher::HandleFTUE()
 {
+	if (!bOnLoadedInitializeFTUE) 
+	{
+		return;
+	}
+
 	UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetWorld()->GetGameInstance());
 	if (!GameInstance)
 	{

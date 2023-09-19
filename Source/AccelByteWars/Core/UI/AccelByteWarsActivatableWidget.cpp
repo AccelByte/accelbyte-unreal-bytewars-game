@@ -55,7 +55,7 @@ void UAccelByteWarsActivatableWidget::NativeOnActivated()
 	}
 
 	InitializeGeneratedWidgets();
-	InitializeFTEUDialogues();
+	InitializeFTEUDialogues(bOnActivatedInitializeFTUE);
 }
 
 void UAccelByteWarsActivatableWidget::NativeOnDeactivated()
@@ -453,7 +453,7 @@ void UAccelByteWarsActivatableWidget::ValidateFTUEDialogues()
 	});
 }
 
-void UAccelByteWarsActivatableWidget::InitializeFTEUDialogues()
+void UAccelByteWarsActivatableWidget::InitializeFTEUDialogues(bool bShowOnInitialize)
 {
 	if (!IsActivated() || IsUnreachable())
 	{
@@ -482,12 +482,15 @@ void UAccelByteWarsActivatableWidget::InitializeFTEUDialogues()
 		return;
 	}
 
-	// Try to auto show the FTUE dialogues.
+	// Assign FTUE dialogues.
 	FTUEWidget->AddDialogues(FTUEDialogues);
-	if (bHandleAutoShowFTUE) 
+	if (!bShowOnInitialize) 
 	{
-		FTUEWidget->ShowDialoguesFirstTime();
+		return;
 	}
+
+	// Try to auto show the FTUE dialogues.
+	FTUEWidget->ShowDialoguesFirstTime();
 
 	// If the activated widget is in prompt stack, try to pause FTUE dialogues.
 	if (auto* Widget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Prompt, this))

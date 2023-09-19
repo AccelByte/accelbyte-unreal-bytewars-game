@@ -111,8 +111,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = Input)
 	EMouseCaptureMode GameMouseCaptureMode = EMouseCaptureMode::CapturePermanently;
 
-	UPROPERTY(EditAnywhere, Category = FTUE)
-	bool bHandleAutoShowFTUE = true;
+	UPROPERTY(EditAnywhere, Category = FTUE, meta = (ToolTip = "Whether this widget should initialize FTUE on activated."))
+	bool bOnActivatedInitializeFTUE = true;
 
 private:
 #pragma region "Tutorial Module"
@@ -132,7 +132,7 @@ private:
 
 #pragma region "First Time User Experience (FTUE)"
 	void ValidateFTUEDialogues();
-	void InitializeFTEUDialogues();
+	void InitializeFTEUDialogues(bool bShowOnInitialize);
 	void DeinitializeFTUEDialogues();
 #pragma endregion
 };

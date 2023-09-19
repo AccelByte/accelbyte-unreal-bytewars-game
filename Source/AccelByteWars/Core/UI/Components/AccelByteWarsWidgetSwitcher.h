@@ -77,6 +77,9 @@ public:
 	FButtonEvent OnRetryClicked;
 	FButtonEvent OnCancelClicked;
 
+	UPROPERTY(EditAnywhere, Category = FTUE, meta = (ToolTip = "Whether should initialize FTUE when the switcher is in loaded/not-empty state."))
+	bool bOnLoadedInitializeFTUE = false;
+
 protected:
 	virtual void NativePreConstruct() override;
 	virtual void NativeConstruct() override;
