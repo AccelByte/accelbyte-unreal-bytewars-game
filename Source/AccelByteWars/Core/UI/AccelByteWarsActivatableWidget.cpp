@@ -490,17 +490,7 @@ void UAccelByteWarsActivatableWidget::InitializeFTEUDialogues(bool bShowOnInitia
 	}
 
 	// Try to auto show the FTUE dialogues.
-	FTUEWidget->ShowDialoguesFirstTime();
-
-	// If the activated widget is in prompt stack, try to pause FTUE dialogues.
-	if (auto* Widget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Prompt, this))
-	{
-		if (Widget->IsActivated())
-		{
-			FTUEWidget->CloseDialogues();
-			FTUEWidget->TryToggleHelpDev(false);
-		}
-	}
+	FTUEWidget->ShowDialogues(true);
 }
 
 void UAccelByteWarsActivatableWidget::DeinitializeFTUEDialogues()
@@ -536,15 +526,6 @@ void UAccelByteWarsActivatableWidget::DeinitializeFTUEDialogues()
 	if (FTUEWidget->RemoveAssociateDialogues(GetClass())) 
 	{
 		FTUEWidget->CloseDialogues();
-	}
-
-	// If the deactivated widget is in prompt stack, try to resume FTUE dialogues.
-	if (auto* Widget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Prompt, this))
-	{
-		if (!Widget->IsActivated()) 
-		{
-			FTUEWidget->ShowDialoguesFirstTime();
-		}
 	}
 }
 

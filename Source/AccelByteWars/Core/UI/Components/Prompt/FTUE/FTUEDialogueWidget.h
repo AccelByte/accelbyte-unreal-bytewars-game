@@ -30,14 +30,26 @@ public:
 	void AddDialogues(const TArray<FFTUEDialogueModel*>& Dialogues);
 	bool RemoveAssociateDialogues(const TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass);
 
-	void ShowDialoguesFirstTime();
+	// Show FTUE dialogue from start.
+	void ShowDialogues(bool bFirstTime = false);
 
-	void ShowDialogues();
+	// Close FTUE dialogue and reset from start.
 	void CloseDialogues();
 
+	// Close FTUE dialogue but not reset from start.
+	void PauseDialogues();
+
+	// Show FTUE dialogue from last shown dialogue.
+	void ResumeDialogues();
+
+	// Go to next dialogue. Only work if the FTUE is shown.
 	void PrevDialogue();
+
+	// Go to previous dialogue. Only work if the FTUE is shown.
 	void NextDialogue();
 
+	// Toggle show/hide help button. 
+	// If the FTUE is hidden or no FTUE dialogues to be shown, it will force to hide the help button.
 	void TryToggleHelpDev(bool bShow);
 
 protected:

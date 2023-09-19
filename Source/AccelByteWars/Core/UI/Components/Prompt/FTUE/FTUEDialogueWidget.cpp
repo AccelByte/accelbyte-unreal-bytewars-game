@@ -23,7 +23,7 @@ void UFTUEDialogueWidget::NativeConstruct()
 	GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
 
 	Btn_Open->OnClicked().Clear();
-	Btn_Open->OnClicked().AddUObject(this, &ThisClass::ShowDialogues);
+	Btn_Open->OnClicked().AddUObject(this, &ThisClass::ShowDialogues, false);
 
 	Btn_Prev->OnClicked().Clear();
 	Btn_Prev->OnClicked().AddUObject(this, &ThisClass::PrevDialogue);
@@ -58,46 +58,35 @@ bool UFTUEDialogueWidget::RemoveAssociateDialogues(const TSubclassOf<UAccelByteW
 	return Removed > 0;
 }
 
-void UFTUEDialogueWidget::ShowDialoguesFirstTime()
-{
-	ValidateDialogues();
-
-	// Check if dialogues should always be shown.
-	if (GameInstance && GameInstance->GetFTUEAlwaysOnSetting())
-	{
-		ShowDialogues();
-		return;
-	}
-
-	// Check for already shown dialogues.
-	TArray<FFTUEDialogueModel*> AlreadyShown = CachedDialogues.FilterByPredicate([](const FFTUEDialogueModel* Temp)
-	{
-		return Temp && Temp->bIsAlreadyShown;
-	});
-
-	// Abort if all dialogues is already show.
-	if (AlreadyShown.Num() == CachedDialogues.Num())
-	{
-		return;
-	}
-
-	ShowDialogues();
-}
-
-void UFTUEDialogueWidget::ShowDialogues()
+void UFTUEDialogueWidget::ShowDialogues(bool bFirstTime)
 {
 	if (CachedDialogues.IsEmpty() || W_FTUEDialogue->IsVisible())
 	{
 		return;
 	}
 
-	// Initialize FTUE.
-	ClearHighlightedWidget();
 	ValidateDialogues();
-	DialogueIndex = 0;
-	CachedLastDialogue = nullptr;
+
+	// Check whether should remove dialogues that already shown.
+	if (bFirstTime && !(GameInstance && GameInstance->GetFTUEAlwaysOnSetting())) 
+	{
+		// Remove all already shown dialogues.
+		TArray<FFTUEDialogueModel*> AlreadyShown = CachedDialogues.FilterByPredicate([](const FFTUEDialogueModel* Temp)
+		{
+			return Temp && Temp->bIsAlreadyShown;
+		});
+
+		// Abort if all dialogues is already show.
+		if (AlreadyShown.Num() == CachedDialogues.Num())
+		{
+			return;
+		}
+	}
 
 	// Initialize FTUE.
+	ClearHighlightedWidget();
+	DialogueIndex = 0;
+	CachedLastDialogue = nullptr;
 	CachedDialogues.Sort();
 	InitializeDialogue(CachedDialogues[DialogueIndex]);
 
@@ -123,6 +112,18 @@ void UFTUEDialogueWidget::CloseDialogues()
 	W_FTUEDialogue->SetVisibility(ESlateVisibility::Collapsed);
 	W_FTUEInterupter->SetVisibility(ESlateVisibility::Collapsed);
 	TryToggleHelpDev(true);
+}
+
+void UFTUEDialogueWidget::PauseDialogues()
+{
+	W_FTUEDialogue->SetVisibility(ESlateVisibility::Collapsed);
+	TryToggleHelpDev(false);
+}
+
+void UFTUEDialogueWidget::ResumeDialogues()
+{
+	W_FTUEDialogue->SetVisibility(ESlateVisibility::Visible);
+	TryToggleHelpDev(false);
 }
 
 void UFTUEDialogueWidget::PrevDialogue()
