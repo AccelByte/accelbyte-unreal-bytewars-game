@@ -566,6 +566,7 @@ void UTutorialModuleDataAsset::ValidateFTUEDialogues()
 			FTUEDialogue.OrderPriority = DialogueIndex;
 
 			// Set dialogue statuses.
+			FTUEDialogue.bIsInstigator = (DialogueIndex == 0);
 			FTUEDialogue.bIsTerminator = (DialogueIndex >= FTUEDialogueGroup.Dialogues.Num() - 1);
 
 			// Reset button metadata if not used.

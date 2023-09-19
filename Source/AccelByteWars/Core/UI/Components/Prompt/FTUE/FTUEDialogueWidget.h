@@ -97,8 +97,10 @@ protected:
 	UAccelByteWarsGameInstance* GameInstance;
 
 private:
+	bool IsAllDialoguesAlreadyShown();
+
 	TArray<FFTUEDialogueModel*> CachedDialogues;
-	int32 DialogueIndex;
+	int32 DialogueIndex = INDEX_NONE;
 
 	FFTUEDialogueModel* CachedLastDialogue;
 	UUserWidget* CachedHighlightedWidget;

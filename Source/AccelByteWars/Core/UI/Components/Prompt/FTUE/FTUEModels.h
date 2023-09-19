@@ -242,7 +242,10 @@ struct FFTUEDialogueModel
     // The order priority if this dialogue's group.
     int32 GroupOrderPriority = 0;
 
-    // Flat to define whether this dialogue is the last dialogue in the group.
+    // Helper to define whether this dialogue is the first dialogue in the group.
+    bool bIsInstigator = false;
+
+    // Helper to define whether this dialogue is the last dialogue in the group.
     bool bIsTerminator = false;
 
     // Event to be executed when the FTUE is shown to the screen.

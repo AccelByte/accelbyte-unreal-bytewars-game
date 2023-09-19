@@ -489,6 +489,16 @@ void UAccelByteWarsActivatableWidget::InitializeFTEUDialogues(bool bShowOnInitia
 		return;
 	}
 
+	// If prompt is active, pause the dialogue.
+	if (auto* PromptWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Prompt, this)) 
+	{
+		if (PromptWidget->IsActivated()) 
+		{
+			FTUEWidget->PauseDialogues();
+			return;
+		}
+	}
+
 	// Try to auto show the FTUE dialogues.
 	FTUEWidget->ShowDialogues(true);
 }
@@ -520,6 +530,15 @@ void UAccelByteWarsActivatableWidget::DeinitializeFTUEDialogues()
 	{
 		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot deinitialize FTUE dialogues. FTUE dialogue widget is not valid."));
 		return;
+	}
+
+	// If prompt is deactivating, resume the dialogue.
+	if (auto* PromptWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Prompt, this))
+	{
+		if (!PromptWidget->IsActivated())
+		{
+			FTUEWidget->ResumeDialogues();
+		}
 	}
 
 	// Only close the FTUE dialogue if this widget ever added dialogues to it.

@@ -67,20 +67,11 @@ void UFTUEDialogueWidget::ShowDialogues(bool bFirstTime)
 
 	ValidateDialogues();
 
-	// Check whether should remove dialogues that already shown.
-	if (bFirstTime && !(GameInstance && GameInstance->GetFTUEAlwaysOnSetting())) 
+	// Check whether should abort if all dialogues are already shown.
+	if (bFirstTime && IsAllDialoguesAlreadyShown() &&
+		!(GameInstance && GameInstance->GetFTUEAlwaysOnSetting()))
 	{
-		// Remove all already shown dialogues.
-		TArray<FFTUEDialogueModel*> AlreadyShown = CachedDialogues.FilterByPredicate([](const FFTUEDialogueModel* Temp)
-		{
-			return Temp && Temp->bIsAlreadyShown;
-		});
-
-		// Abort if all dialogues is already show.
-		if (AlreadyShown.Num() == CachedDialogues.Num())
-		{
-			return;
-		}
+		return;
 	}
 
 	// Initialize FTUE.
@@ -88,11 +79,13 @@ void UFTUEDialogueWidget::ShowDialogues(bool bFirstTime)
 	DialogueIndex = 0;
 	CachedLastDialogue = nullptr;
 	CachedDialogues.Sort();
-	InitializeDialogue(CachedDialogues[DialogueIndex]);
 
 	// Show FTUE.
-	W_FTUEDialogue->SetVisibility(ESlateVisibility::Visible);
-	TryToggleHelpDev(false);
+	if (InitializeDialogue(CachedDialogues[DialogueIndex])) 
+	{
+		W_FTUEDialogue->SetVisibility(ESlateVisibility::Visible);
+		TryToggleHelpDev(false);
+	}
 }
 
 void UFTUEDialogueWidget::CloseDialogues()
@@ -106,6 +99,7 @@ void UFTUEDialogueWidget::CloseDialogues()
 	ClearHighlightedWidget();
 	DeinitializeLastDialogue();
 	ValidateDialogues();
+	DialogueIndex = INDEX_NONE;
 	CachedLastDialogue = nullptr;
 
 	// Close the FTUE
@@ -116,13 +110,34 @@ void UFTUEDialogueWidget::CloseDialogues()
 
 void UFTUEDialogueWidget::PauseDialogues()
 {
+	// Simple hide FTUE to pause dialogues.
 	W_FTUEDialogue->SetVisibility(ESlateVisibility::Collapsed);
+	W_FTUEInterupter->SetVisibility(ESlateVisibility::Collapsed);
 	TryToggleHelpDev(false);
 }
 
 void UFTUEDialogueWidget::ResumeDialogues()
 {
+	// If dialogue index is out of range, initialize.
+	if (DialogueIndex < 0 || DialogueIndex > CachedDialogues.Num() - 1)
+	{
+		ShowDialogues(true);
+		return;
+	}
+
+	// Only able to resume dialogues if the dialogues are not already shown.
+	if (IsAllDialoguesAlreadyShown()) 
+	{
+		return;
+	}
+
+	// Show FTUE to resume dialogues.
 	W_FTUEDialogue->SetVisibility(ESlateVisibility::Visible);
+	if (CachedLastDialogue)
+	{
+		W_FTUEInterupter->SetVisibility(
+			CachedLastDialogue->bIsInterrupting ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	}
 	TryToggleHelpDev(false);
 }
 
@@ -198,10 +213,10 @@ bool UFTUEDialogueWidget::InitializeDialogue(FFTUEDialogueModel* Dialogue)
 	ClearHighlightedWidget();
 	if (Dialogue->bHighlightWidget)
 	{
+		// Look for widget to highlight.
 		const FString WidgetToHighlightStr = Dialogue->TargetWidgetNameToHighlight;
 		TArray<UUserWidget*> FoundWidgets;
 		UWidgetBlueprintLibrary::GetAllWidgetsOfClass(this, FoundWidgets, Dialogue->TargetWidgetClassToHighlight.Get(), false);
-
 		for (auto& FoundWidget : FoundWidgets)
 		{
 			if (!FoundWidget)
@@ -212,22 +227,30 @@ bool UFTUEDialogueWidget::InitializeDialogue(FFTUEDialogueModel* Dialogue)
 			// Highlight widget if visible.
 			if (FoundWidget->GetName().Equals(WidgetToHighlightStr, ESearchCase::CaseSensitive))
 			{
-				// Check whether the widget is visible or not. 
-				// TODO: There is wierd behavior in Unreal where is visible does not count the parent widget.
-				if (!FoundWidget->IsVisible()) 
+				// Highlighted is invisible, abort. 
+				if (FoundWidget->GetVisibility() == ESlateVisibility::Collapsed) 
 				{
-					UE_LOG_FTUEDIALOGUEWIDGET(Warning, TEXT("Cannot highlight widget. Skipping FTUE dialogue, highlighted widget is not found or invisible."));
+					UE_LOG_FTUEDIALOGUEWIDGET(Warning, TEXT("Cannot highlight widget. Skipping FTUE dialogue, highlighted widget is invisible."));
 					return false;
 				}
 
+				// Highlight widget.
 				IAccelByteWarsWidgetInterface* WidgetInterface = Cast<IAccelByteWarsWidgetInterface>(FoundWidget);
 				if (WidgetInterface)
 				{
 					CachedHighlightedWidget = FoundWidget;
 					WidgetInterface->Execute_ToggleHighlight(FoundWidget, true);
 				}
+
 				break;
 			}
+		}
+
+		// Highlighted widget is not found, abort.
+		if (!CachedHighlightedWidget)
+		{
+			UE_LOG_FTUEDIALOGUEWIDGET(Warning, TEXT("Cannot highlight widget. Skipping FTUE dialogue, highlighted widget is not found."));
+			return false;
 		}
 	}
 
@@ -282,12 +305,12 @@ bool UFTUEDialogueWidget::InitializeDialogue(FFTUEDialogueModel* Dialogue)
 	 * This way, all siblings in the dialogue group requires 
 	 * to be shown until the last dialogue in the group.
 	 * Later once it is done, the group will be marked as shown. */
-	if (Dialogue->bIsAlreadyShown && Dialogue->Group)
+	if (Dialogue->bIsAlreadyShown && Dialogue->bIsInstigator && Dialogue->Group)
 	{
 		Dialogue->Group->SetAlreadyShown(false);
 	}
 
-	CachedLastDialogue = CachedDialogues[DialogueIndex];
+	CachedLastDialogue = Dialogue;
 
 	return true;
 }
@@ -385,6 +408,16 @@ void UFTUEDialogueWidget::ClearHighlightedWidget()
 	}
 
 	CachedHighlightedWidget = nullptr;
+}
+
+bool UFTUEDialogueWidget::IsAllDialoguesAlreadyShown()
+{
+	TArray<FFTUEDialogueModel*> AlreadyShown = CachedDialogues.FilterByPredicate([](const FFTUEDialogueModel* Temp)
+	{
+		return Temp && Temp->bIsAlreadyShown;
+	});
+
+	return AlreadyShown.Num() == CachedDialogues.Num();
 }
 
 #undef LOCTEXT_NAMESPACE
