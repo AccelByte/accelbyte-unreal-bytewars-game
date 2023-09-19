@@ -11,6 +11,12 @@
 #include "Core/UI/Components/Prompt/FTUE/FTUEModels.h"
 #include "TutorialModuleDataAsset.generated.h"
 
+ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogTutorialModuleDataAsset, Log, All);
+#define UE_LOG_TUTORIALMODULEDATAASSET(Verbosity, Format, ...) \
+{ \
+	UE_LOG_FUNC(LogTutorialModuleDataAsset, Verbosity, Format, ##__VA_ARGS__) \
+}
+
 // Keys to access attributes saved in local file.
 #define KEY_FTUEGROUPSTATE "FTUEDialogueGroupStates"
 

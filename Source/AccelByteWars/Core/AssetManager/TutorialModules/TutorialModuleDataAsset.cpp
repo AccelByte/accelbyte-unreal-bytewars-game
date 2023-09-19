@@ -12,6 +12,8 @@
 #include "Framework/Notifications/NotificationManager.h"
 #include "JsonObjectConverter.h"
 
+DEFINE_LOG_CATEGORY(LogTutorialModuleDataAsset);
+
 const FPrimaryAssetType	UTutorialModuleDataAsset::TutorialModuleAssetType = TEXT("TutorialModule");
 TSet<FString> UTutorialModuleDataAsset::GeneratedWidgetUsedIds;
 TSet<FString> UTutorialModuleDataAsset::FTUEDialogueUsedIds;
@@ -134,17 +136,17 @@ bool UTutorialModuleDataAsset::SaveAttributesToLocal()
 	{
 		if (FFileHelper::SaveStringToFile(JsonStr, *GetAttributesLocalFilePath(CodeName)))
 		{
-			// TODO: Add log. Success to write.
+			UE_LOG_TUTORIALMODULEDATAASSET(Log, TEXT("Success to save Tutorial Module attributes to: %s"), *GetAttributesLocalFilePath(CodeName));
 			return true;
 		}
 		else
 		{
-			// TODO: Add log. Failed to write.
+			UE_LOG_TUTORIALMODULEDATAASSET(Warning, TEXT("Failed to save Tutorial Module attributes to: %s"), *GetAttributesLocalFilePath(CodeName));
 		}
 	}
 	else
 	{
-		// TODO: Add log. Failed to write.
+		UE_LOG_TUTORIALMODULEDATAASSET(Warning, TEXT("Failed to save Tutorial Module attributes to: %s"), *GetAttributesLocalFilePath(CodeName));
 	}
 
 	return false;
@@ -167,17 +169,17 @@ bool UTutorialModuleDataAsset::LoadAttributesFromLocal()
 		TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(JsonStr);
 		if (FJsonSerializer::Deserialize(JsonReader, AttributesJsonObject))
 		{
-			// TODO: Add log. Success to load.
+			UE_LOG_TUTORIALMODULEDATAASSET(Log, TEXT("Success to load Tutorial Module attributes from: %s"), *GetAttributesLocalFilePath(CodeName));
 			return true;
 		}
 		else
 		{
-			// TODO: Add log. Failed to load.
+			UE_LOG_TUTORIALMODULEDATAASSET(Warning, TEXT("Failed to load Tutorial Module attributes from: %s"), *GetAttributesLocalFilePath(CodeName));
 		}
 	}
 	else
 	{
-		// TODO: Add log. Failed to load.
+		UE_LOG_TUTORIALMODULEDATAASSET(Warning, TEXT("Failed to load Tutorial Module attributes from: %s"), *GetAttributesLocalFilePath(CodeName));
 	}
 
 	return false;
