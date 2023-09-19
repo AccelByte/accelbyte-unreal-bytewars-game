@@ -9,9 +9,8 @@
 #include "TutorialModules/Module-13/PeriodicBoardSubsystem_Starter.h"
 #include "LeaderboardWeeklyWidget_Starter.generated.h"
 
-class UAccelByteWarsWidgetSwitcher;
+class UAccelByteWarsWidgetList;
 class ULeaderboardWidgetEntry;
-class UListView;
 
 UCLASS()
 class ACCELBYTEWARS_API ULeaderboardWeeklyWidget_Starter : public UAccelByteWarsActivatableWidget
@@ -35,10 +34,7 @@ protected:
 	int32 ResultLimit = 10;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
-	UAccelByteWarsWidgetSwitcher* Ws_Leaderboard;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
-	UListView* Lv_Leaderboard;
+	UAccelByteWarsWidgetList* WidgetList;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	ULeaderboardWidgetEntry* PlayerRankPanel;

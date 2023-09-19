@@ -6,8 +6,7 @@
 #include "TutorialModules/Module-6/UI/LeaderboardsWidget.h"
 #include "TutorialModules/Module-6/UI/LeaderboardWidgetEntry.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
-#include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
-#include "Components/ListView.h"
+#include "Core/UI/Components/AccelByteWarsWidgetList.h"
 
 void ULeaderboardWeeklyWidget::NativeConstruct()
 {
@@ -22,28 +21,19 @@ void ULeaderboardWeeklyWidget::NativeConstruct()
 
 void ULeaderboardWeeklyWidget::NativeOnActivated()
 {
+	Super::NativeOnActivated();
+
+	// Hides the logged-in player rank panel.
+	PlayerRankPanel->SetVisibility(ESlateVisibility::Collapsed);
+
 	// Set leaderboard code based on board-unreal-highestscore-{gamemode} format. 
 	LeaderboardCode = FString::Printf(TEXT("board-unreal-highestscore-%s"), *ULeaderboardsWidget::GetLeaderboardGameMode());
 
 	// Set cycle id to the weekly leaderboard’s cycle id.
 	CycleId = FString("55c5b1d5a4e14eaba45477cd70de9c15");
 
-	// Set FTUE to open periodic leaderboard config based on selected game mode.
-	if (FFTUEDialogueModel* FTUELeaderboard =
-		FFTUEDialogueModel::GetMetadataById("ftue_weekly_leaderboard", FTUEDialogues))
-	{
-		FTUELeaderboard->Button1.URLArguments[0].Argument = LeaderboardCode;
-		FTUELeaderboard->Button1.URLArguments[1].Argument = CycleId;
-	}
-
-	// Reset widgets.
-	PlayerRankPanel->SetVisibility(ESlateVisibility::Collapsed);
-	Ws_Leaderboard->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Empty);
-	Lv_Leaderboard->ClearListItems();
-
-	Super::NativeOnActivated();
-
 	// Get leaderboard weekly rankings.
+	WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::NoEntry);
 	GetWeeklyRankings();
 }
 
@@ -55,7 +45,7 @@ void ULeaderboardWeeklyWidget::GetWeeklyRankings()
 		return;
 	}
 
-	Ws_Leaderboard->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Loading);
+	WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::LoadingEntry);
 
 	PeriodicLeaderboardSubsystem->GetPeriodicRankings(
 		GetOwningPlayer(),
@@ -66,12 +56,12 @@ void ULeaderboardWeeklyWidget::GetWeeklyRankings()
 		{
 			if (!bWasSuccessful)
 			{
-				Ws_Leaderboard->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Empty);
+				WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::NoEntry);
 				return;
 			}
 
 			// Add rankings to the leaderboard weekly ranking list.
-			Lv_Leaderboard->SetListItems(Rankings);
+			WidgetList->GetListView()->SetListItems(Rankings);
 
 			// Get the logged-in player's weekly rank if it is not included in the leaderboard.
 			const TArray<ULeaderboardRank*> FilteredRank = Rankings.FilterByPredicate([PlayerNetId](const ULeaderboardRank* Temp) { return Temp && Temp->UserId == PlayerNetId; });
@@ -84,11 +74,7 @@ void ULeaderboardWeeklyWidget::GetWeeklyRankings()
 			else
 			{
 				DisplayPlayerWeeklyRank(PlayerRank);
-				Ws_Leaderboard->SetWidgetState(
-					Lv_Leaderboard->GetNumItems() <= 0 ?
-					EAccelByteWarsWidgetSwitcherState::Empty :
-					EAccelByteWarsWidgetSwitcherState::Not_Empty
-				);
+				WidgetList->ChangeWidgetListState(WidgetList->GetListView()->GetNumItems() <= 0 ? EAccelByteWarsWidgetListState::NoEntry : EAccelByteWarsWidgetListState::EntryLoaded);
 			}
 		}
 	));
@@ -106,11 +92,7 @@ void ULeaderboardWeeklyWidget::GetPlayerWeeklyRanking()
 			DisplayPlayerWeeklyRank((!bWasSuccessful || Rankings.IsEmpty()) ? nullptr : Rankings[0]);
 
 			// Display the weekly rankings if it is not empty.
-			Ws_Leaderboard->SetWidgetState(
-				Lv_Leaderboard->GetNumItems() <= 0 ?
-				EAccelByteWarsWidgetSwitcherState::Empty :
-				EAccelByteWarsWidgetSwitcherState::Not_Empty
-			);
+			WidgetList->ChangeWidgetListState(WidgetList->GetListView()->GetNumItems() <= 0 ? EAccelByteWarsWidgetListState::NoEntry : EAccelByteWarsWidgetListState::EntryLoaded);
 		}
 	));
 }

@@ -6,8 +6,7 @@
 #include "TutorialModules/Module-6/UI/LeaderboardsWidget.h"
 #include "TutorialModules/Module-6/UI/LeaderboardWidgetEntry.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
-#include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
-#include "Components/ListView.h"
+#include "Core/UI/Components/AccelByteWarsWidgetList.h"
 
 void ULeaderboardAllTimeWidget_Starter::NativeConstruct()
 {
@@ -22,19 +21,10 @@ void ULeaderboardAllTimeWidget_Starter::NativeConstruct()
 
 void ULeaderboardAllTimeWidget_Starter::NativeOnActivated()
 {
-	// Set FTUE to open all-time leaderboard config based on selected game mode.
-	if (FFTUEDialogueModel* FTUELeaderboard =
-		FTUEDialogueGroup::GetMetadataById("ftue_alltime_leaderboard", AssociateTutorialModule->FTUEDialogueGroups))
-	{
-		FTUELeaderboard->Button1.URLArguments[0].Argument = LeaderboardCode;
-	}
-
-	// Reset widgets.
-	PlayerRankPanel->SetVisibility(ESlateVisibility::Collapsed);
-	Ws_Leaderboard->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Empty);
-	Lv_Leaderboard->ClearListItems();
-
 	Super::NativeOnActivated();
+
+	PlayerRankPanel->SetVisibility(ESlateVisibility::Collapsed);
+	WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::NoEntry);
 
 	// TODO: Call functionalities to get and display leaderboard rankings.
 }

@@ -6,8 +6,7 @@
 #include "TutorialModules/Module-6/UI/LeaderboardsWidget.h"
 #include "TutorialModules/Module-6/UI/LeaderboardWidgetEntry.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
-#include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
-#include "Components/ListView.h"
+#include "Core/UI/Components/AccelByteWarsWidgetList.h"
 
 void ULeaderboardAllTimeWidget::NativeConstruct()
 {
@@ -22,24 +21,16 @@ void ULeaderboardAllTimeWidget::NativeConstruct()
 
 void ULeaderboardAllTimeWidget::NativeOnActivated()
 {
+	Super::NativeOnActivated();
+
+	// Hides the logged-in player rank panel.
+	PlayerRankPanel->SetVisibility(ESlateVisibility::Collapsed);
+
 	// Set leaderboard code based on board-unreal-highestscore-{gamemode} format. 
 	LeaderboardCode = FString::Printf(TEXT("board-unreal-highestscore-%s"), *ULeaderboardsWidget::GetLeaderboardGameMode());
 
-	// Set FTUE to open all-time leaderboard config based on selected game mode.
-	if (FFTUEDialogueModel* FTUELeaderboard =
-		FTUEDialogueGroup::GetMetadataById("ftue_alltime_leaderboard", AssociateTutorialModule->FTUEDialogueGroups))
-	{
-		FTUELeaderboard->Button1.URLArguments[0].Argument = LeaderboardCode;
-	}
-
-	// Reset widgets.
-	PlayerRankPanel->SetVisibility(ESlateVisibility::Collapsed);
-	Ws_Leaderboard->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Empty);
-	Lv_Leaderboard->ClearListItems();
-
-	Super::NativeOnActivated();
-
 	// Get leaderboard rankings.
+	WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::NoEntry);
 	GetRankings();
 }
 
@@ -51,7 +42,7 @@ void ULeaderboardAllTimeWidget::GetRankings()
 		return;
 	}
 
-	Ws_Leaderboard->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Loading);
+	WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::LoadingEntry);
 
 	LeaderboardSubsystem->GetRankings(
 		GetOwningPlayer(), 
@@ -61,12 +52,12 @@ void ULeaderboardAllTimeWidget::GetRankings()
 		{
 			if (!bWasSuccessful) 
 			{
-				Ws_Leaderboard->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Empty);
+				WidgetList->ChangeWidgetListState(EAccelByteWarsWidgetListState::NoEntry);
 				return;
 			}
 
 			// Add rankings to the leaderboard ranking list.
-			Lv_Leaderboard->SetListItems(Rankings);
+			WidgetList->GetListView()->SetListItems(Rankings);
 
 			// Get the logged-in player's rank if it is not included in the leaderboard.
 			const TArray<ULeaderboardRank*> FilteredRank = Rankings.FilterByPredicate([PlayerNetId](const ULeaderboardRank* Temp) { return Temp && Temp->UserId == PlayerNetId; });
@@ -79,11 +70,7 @@ void ULeaderboardAllTimeWidget::GetRankings()
 			else 
 			{
 				DisplayPlayerRank(PlayerRank);
-				Ws_Leaderboard->SetWidgetState(
-					Lv_Leaderboard->GetNumItems() <= 0 ?
-					EAccelByteWarsWidgetSwitcherState::Empty :
-					EAccelByteWarsWidgetSwitcherState::Not_Empty
-				);
+				WidgetList->ChangeWidgetListState(WidgetList->GetListView()->GetNumItems() <= 0 ? EAccelByteWarsWidgetListState::NoEntry : EAccelByteWarsWidgetListState::EntryLoaded);
 			}
 		}
 	));
@@ -100,11 +87,7 @@ void ULeaderboardAllTimeWidget::GetPlayerRanking()
 			DisplayPlayerRank((!bWasSuccessful || Rankings.IsEmpty()) ? nullptr : Rankings[0]);
 
 			// Display the rankings if it is not empty.
-			Ws_Leaderboard->SetWidgetState(
-				Lv_Leaderboard->GetNumItems() <= 0 ?
-				EAccelByteWarsWidgetSwitcherState::Empty :
-				EAccelByteWarsWidgetSwitcherState::Not_Empty
-			);
+			WidgetList->ChangeWidgetListState(WidgetList->GetListView()->GetNumItems() <= 0 ? EAccelByteWarsWidgetListState::NoEntry : EAccelByteWarsWidgetListState::EntryLoaded);
 		}
 	));
 }
