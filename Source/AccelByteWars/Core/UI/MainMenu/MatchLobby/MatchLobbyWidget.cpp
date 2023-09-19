@@ -105,6 +105,7 @@ void UMatchLobbyWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTim
 
 void UMatchLobbyWidget::ShowLoading()
 {
+	DeinitializeFTUEDialogues();
 	SetMatchLobbyState(EMatchLobbyState::GameStarted);
 }
 
