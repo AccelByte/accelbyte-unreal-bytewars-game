@@ -278,6 +278,15 @@ bool UFTUEDialogueWidget::InitializeDialogue(FFTUEDialogueModel* Dialogue)
 		Dialogue->OnActivateDelegate.Broadcast();
 	}
 
+	/* Reset mark already shown.
+	 * This way, all siblings in the dialogue group requires 
+	 * to be shown until the last dialogue in the group.
+	 * Later once it is done, the group will be marked as shown. */
+	if (Dialogue->bIsAlreadyShown && Dialogue->Group)
+	{
+		Dialogue->Group->SetAlreadyShown(false);
+	}
+
 	CachedLastDialogue = CachedDialogues[DialogueIndex];
 
 	return true;
