@@ -91,6 +91,17 @@ struct FFTUEDialogueButtonModel
         Tooltip = "The text to be shown on the button."))
     FText ButtonText;
 
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
+        Tooltip = "Whether the button text should be formatted or not.",
+        EditConditionHides))
+    bool bIsFormattedButtonText = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
+        Tooltip = "List of argument to be inserted on the formatted button text. The order and the size of the arguments must follow the formatted button text.",
+        EditCondition = "bIsFormattedButtonText",
+        EditConditionHides))
+    TArray<FTUEArgumentModel> ButtonTextArguments;
+
     UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (
         Tooltip = "URL to be opened when the button is clicked.",
         EditCondition = "ButtonActionType==EFTUEDialogueButtonActionType::HYPERLINK_BUTTON", 
@@ -120,6 +131,34 @@ struct FFTUEDialogueButtonModel
         bIsFormattedURL = false;
         URLArguments.Empty();
         ButtonActionDelegate.Clear();
+    }
+
+    FText GetFormattedButtonText() const
+    {
+        if (!bIsFormattedButtonText)
+        {
+            return ButtonText;
+        }
+
+        FFormatNamedArguments Args;
+        int32 ArgIndex = 0;
+        for (auto& Arg : ButtonTextArguments)
+        {
+            FString ArgStr = FString("");
+            if (Arg.bUsePredefinedArgument && Arg.OnGetPredefinedArgument.IsBound())
+            {
+                ArgStr = Arg.OnGetPredefinedArgument.Execute(Arg.PredefinedArgument);
+            }
+            else
+            {
+                ArgStr = Arg.Argument;
+            }
+
+            Args.Add(FString::Printf(TEXT("%d"), ArgIndex), FText::FromString(ArgStr));
+            ArgIndex++;
+        }
+
+        return FText::Format(ButtonText, Args);
     }
 
     FString GetFormattedURL() const
@@ -242,7 +281,10 @@ struct FFTUEDialogueModel
     // The order priority if this dialogue's group.
     int32 GroupOrderPriority = 0;
 
-    // Flat to define whether this dialogue is the last dialogue in the group.
+    // Helper to define whether this dialogue is the first dialogue in the group.
+    bool bIsInstigator = false;
+
+    // Helper to define whether this dialogue is the last dialogue in the group.
     bool bIsTerminator = false;
 
     // Event to be executed when the FTUE is shown to the screen.

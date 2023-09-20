@@ -131,8 +131,11 @@ private:
 #pragma endregion
 
 #pragma region "First Time User Experience (FTUE)"
-	void ValidateFTUEDialogues();
+protected:
 	void InitializeFTEUDialogues(bool bShowOnInitialize);
 	void DeinitializeFTUEDialogues();
+
+private:
+	void ValidateFTUEDialogues();
 #pragma endregion
 };

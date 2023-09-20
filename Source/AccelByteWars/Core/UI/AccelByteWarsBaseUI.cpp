@@ -55,6 +55,44 @@ UCommonActivatableWidget* UAccelByteWarsBaseUI::GetActiveWidgetOfStack(const EBa
 	return BaseUIWidget->Stacks[TargetStack]->GetActiveWidget();
 }
 
+TArray<UCommonActivatableWidget*> UAccelByteWarsBaseUI::GetAllWidgetsBelowStacks(const EBaseUIStackType CurrentStack)
+{
+	// Get all widgets below given stack.
+	TArray<UCommonActivatableWidget*> Result;
+	int32 StackInt = (int32)CurrentStack;
+	for (int32 i = StackInt; i <= EBaseUIStackType::InGameHUD; i++)
+	{
+		if (i == (int32)CurrentStack) 
+		{
+			continue;
+		}
+
+		UCommonActivatableWidget* ActiveStack = Stacks[static_cast<EBaseUIStackType>(i)]->GetActiveWidget();
+		if (ActiveStack) 
+		{
+			Result.Add(ActiveStack);
+		}
+	}
+
+	return Result;
+}
+
+EBaseUIStackType UAccelByteWarsBaseUI::GetTopMostActiveStack()
+{
+	EBaseUIStackType StackType = EBaseUIStackType::Prompt;
+	
+	for (int i = EBaseUIStackType::Prompt; i <= EBaseUIStackType::InGameHUD; i++)
+	{
+		StackType = static_cast<EBaseUIStackType>(i);
+		if (Stacks[StackType]->GetActiveWidget())
+		{
+			break;
+		}
+	}
+
+	return StackType;
+}
+
 UAccelByteWarsActivatableWidget* UAccelByteWarsBaseUI::PushWidgetToStack(EBaseUIStackType TargetStack, TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass)
 {
 	return PushWidgetToStack(TargetStack, WidgetClass, [](UCommonActivatableWidget&) {});
