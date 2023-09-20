@@ -25,6 +25,9 @@ class ACCELBYTEWARS_API UItemPurchaseWidget : public UAccelByteWarsActivatableWi
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
 
+public:
+	inline static TMulticastDelegate<void(const APlayerController*)> OnPurchaseCompleteMulticastDelegate;
+
 private:
 	UPROPERTY()
 	UStoreItemPurchaseSubsystem* PurchaseSubsystem;

@@ -5,7 +5,7 @@
 
 #include "StoreItemPriceListEntry.h"
 
-#include "StoreItemModel.h"
+#include "Core/UI/MainMenu/Store/StoreItemModel.h"
 #include "Components/TextBlock.h"
 
 void UStoreItemPriceListEntry::NativeOnListItemObjectSet(UObject* ListItemObject)

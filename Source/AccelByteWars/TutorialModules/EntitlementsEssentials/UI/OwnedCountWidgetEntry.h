@@ -6,6 +6,7 @@
 
 #include "CoreMinimal.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
+#include "Blueprint/IUserObjectListEntry.h"
 #include "OwnedCountWidgetEntry.generated.h"
 
 class UTextBlock;

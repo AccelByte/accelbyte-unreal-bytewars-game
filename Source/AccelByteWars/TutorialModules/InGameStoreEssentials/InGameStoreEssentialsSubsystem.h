@@ -22,7 +22,7 @@ class ACCELBYTEWARS_API UInGameStoreEssentialsSubsystem : public UTutorialModule
 public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	
-	FOnQueryOfferComplete OnQueryOfferByCategoryCompleteDelegate;
+	FOnQueryOfferComplete OnQueryOfferCompleteDelegate;
 
 	bool IsQueryRunning() const { return bIsQueryRunning; }
 

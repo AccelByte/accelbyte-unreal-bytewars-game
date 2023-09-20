@@ -6,13 +6,13 @@
 #include "StoreItemDetailWidget.h"
 
 #include "CommonButtonBase.h"
-#include "Core/UI/MainMenu/Store/StoreItemListEntry.h"
+#include "Core/UI/MainMenu/Store/Components/StoreItemListEntry.h"
 #include "TutorialModules/WalletEssentials/UI/WalletBalanceWidget.h"
 
 void UStoreItemDetailWidget::Setup(UStoreItemDataObject* Object)
 {
 	StoreItemDataObject = Object;
-	W_ItemDetail->Setup(Object);
+	W_ItemDetail->Setup(StoreItemDataObject);
 }
 
 void UStoreItemDetailWidget::NativeOnActivated()

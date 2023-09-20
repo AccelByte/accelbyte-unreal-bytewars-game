@@ -7,7 +7,7 @@
 
 #include "Components/TextBlock.h"
 #include "TutorialModules/EntitlementsEssentials/EntitlementsEssentialsSubsystem.h"
-#include "Core/UI/MainMenu/Store/StoreItemListEntry.h"
+#include "Core/UI/MainMenu/Store/Components/StoreItemListEntry.h"
 
 void UOwnedCountWidgetEntry::NativeOnActivated()
 {
@@ -19,17 +19,19 @@ void UOwnedCountWidgetEntry::NativeOnActivated()
 	SetVisibility(ESlateVisibility::Collapsed);
 	if (EntitlementsSubsystem->GetIsQueryRunning())
 	{
-		EntitlementsSubsystem->OnQueryUserEntitlementsCompleteDelegates.AddWeakLambda(
-			this,
-			[this](const FOnlineError& Error, const TArray<UItemDataObject*> Entitlements)
-		{
-			ShowOwnedCount();
-		});
+		Tb_OwnedCount->SetText(FText::FromString("..."));
 	}
 	else
 	{
 		ShowOwnedCount();
 	}
+
+	EntitlementsSubsystem->OnQueryUserEntitlementsCompleteDelegates.AddWeakLambda(
+		this,
+		[this](const FOnlineError& Error, const TArray<UItemDataObject*> Entitlements)
+		{
+			ShowOwnedCount();
+		});
 }
 
 void UOwnedCountWidgetEntry::NativeOnDeactivated()
@@ -54,6 +56,8 @@ void UOwnedCountWidgetEntry::ShowOwnedCount()
 		{
 			return;
 		}
+
+		UE_LOG(LogTemp, Warning, TEXT("Amogus: %s %s: %d"), *GetOuter()->GetName(), *EntitlementData->Id, EntitlementData->Count);
 
 		FText Text;
 		if (EntitlementData->bConsumable && EntitlementData->Count > 0)

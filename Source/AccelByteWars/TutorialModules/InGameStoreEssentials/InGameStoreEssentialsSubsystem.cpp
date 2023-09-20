@@ -77,7 +77,7 @@ void UInGameStoreEssentialsSubsystem::OnQueryOffersComplete(
 	TArray<FOnlineStoreOfferRef> Offers;
 	StoreInterface->GetOffers(Offers);
 
-	OnQueryOfferByCategoryCompleteDelegate.Broadcast(bWasSuccessful, Error);
+	OnQueryOfferCompleteDelegate.Broadcast(bWasSuccessful, Error);
 }
 
 FUniqueNetIdPtr UInGameStoreEssentialsSubsystem::GetUniqueNetIdFromPlayerController(const APlayerController* PlayerController) const

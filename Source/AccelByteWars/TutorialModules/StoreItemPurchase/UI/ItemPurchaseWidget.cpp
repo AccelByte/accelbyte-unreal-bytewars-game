@@ -51,6 +51,7 @@ void UItemPurchaseWidget::OnClickPurchase(const FString& CurrencyCode) const
 
 void UItemPurchaseWidget::OnPurchaseComplete(const FOnlineError& Error) const
 {
+	OnPurchaseCompleteMulticastDelegate.Broadcast(GetOwningPlayer());
 	Ws_Root->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Not_Empty);
 
 	if (Error.bSucceeded)

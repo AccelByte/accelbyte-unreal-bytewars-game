@@ -10,7 +10,7 @@
 #include "Components/TextBlock.h"
 #include "Core/UI/Components/AccelByteWarsAsyncImageWidget.h"
 #include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
-#include "Core/UI/MainMenu/Store/StoreItemListEntry.h"
+#include "Core/UI/MainMenu/Store/Components/StoreItemListEntry.h"
 #include "TutorialModules/EntitlementsEssentials/EntitlementsEssentialsSubsystem.h"
 
 void UInventoryWidget::NativeOnActivated()

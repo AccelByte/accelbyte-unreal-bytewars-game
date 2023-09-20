@@ -22,13 +22,14 @@ class ACCELBYTEWARS_API UShopWidget final : public UAccelByteWarsActivatableWidg
 {
 	GENERATED_BODY()
 
-public:
 	virtual void NativeOnActivated() override;
-
-protected:
 	virtual void NativeOnDeactivated() override;
 	virtual void NativeConstruct() override;
 
+public:
+	inline static TMulticastDelegate<void(const APlayerController*)> OnActivatedMulticastDelegate;
+
+protected:
 	void LoadStoreItems();
 	void OnQueryOffersComplete(bool bWasSuccessful, FString ErrorMessage);
 

@@ -5,9 +5,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "StoreItemModel.h"
 #include "Blueprint/IUserObjectListEntry.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
+#include "Core/UI/MainMenu/Store/StoreItemModel.h"
 #include "StoreItemListEntry.generated.h"
 
 class UTextBlock;
@@ -19,14 +19,14 @@ class ACCELBYTEWARS_API UStoreItemListEntry final : public UAccelByteWarsActivat
 {
 	GENERATED_BODY()
 
-public:
 	virtual void NativePreConstruct() override;
+	virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;
+	virtual void NativeOnEntryReleased() override;
+
+public:
 	void Setup(UItemDataObject* Object);
 	void Setup(UStoreItemDataObject* Object);
 	UItemDataObject* GetItemData() const { return ItemData; }
-
-protected:
-	virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;
 
 private:
 	UPROPERTY(EditAnywhere)

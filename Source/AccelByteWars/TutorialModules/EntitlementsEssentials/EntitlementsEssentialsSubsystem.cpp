@@ -6,6 +6,8 @@
 #include "EntitlementsEssentialsSubsystem.h"
 
 #include "OnlineSubsystemUtils.h"
+#include "TutorialModules/InGameStoreEssentials/UI/ShopWidget.h"
+#include "TutorialModules/StoreItemPurchase/UI/ItemPurchaseWidget.h"
 
 void UEntitlementsEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -15,6 +17,9 @@ void UEntitlementsEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Coll
 	ensure(EntitlementsInterface);
 
 	EntitlementsInterface->OnQueryEntitlementsCompleteDelegates.AddUObject(this, &ThisClass::OnQueryEntitlementComplete);
+
+	UShopWidget::OnActivatedMulticastDelegate.AddUObject(this, &ThisClass::QueryUserEntitlement);
+	UItemPurchaseWidget::OnPurchaseCompleteMulticastDelegate.AddUObject(this, &ThisClass::QueryUserEntitlement);
 }
 
 void UEntitlementsEssentialsSubsystem::Deinitialize()
@@ -22,6 +27,8 @@ void UEntitlementsEssentialsSubsystem::Deinitialize()
 	Super::Deinitialize();
 
 	EntitlementsInterface->OnQueryEntitlementsCompleteDelegates.RemoveAll(this);
+	UShopWidget::OnActivatedMulticastDelegate.RemoveAll(this);
+	UItemPurchaseWidget::OnPurchaseCompleteMulticastDelegate.RemoveAll(this);
 }
 
 UItemDataObject* UEntitlementsEssentialsSubsystem::GetItemEntitlement(
@@ -46,6 +53,13 @@ UItemDataObject* UEntitlementsEssentialsSubsystem::GetItemEntitlement(
 
 void UEntitlementsEssentialsSubsystem::QueryUserEntitlement(const APlayerController* OwningPlayer)
 {
+	if (bIsQueryRunning)
+	{
+		return;
+	}
+	
+	UE_LOG(LogTemp, Warning, TEXT("Amogus Query"))
+
 	bIsQueryRunning = true;
 	EntitlementsInterface->QueryEntitlements(
 		*GetLocalPlayerUniqueNetId(OwningPlayer).Get(),
@@ -58,6 +72,7 @@ void UEntitlementsEssentialsSubsystem::OnQueryEntitlementComplete(
 	const FString& Namespace,
 	const FString& Error)
 {
+	UE_LOG(LogTemp, Warning, TEXT("Amogus QueryComplete"))
 	bIsQueryRunning = false;
 
 	TArray<UItemDataObject*> Items;

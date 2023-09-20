@@ -19,7 +19,7 @@ void UShopWidget::NativeOnActivated()
 	Super::NativeOnActivated();
 
 	Btn_Back->OnClicked().AddUObject(this, &ThisClass::DeactivateWidget);
-	StoreSubsystem->OnQueryOfferByCategoryCompleteDelegate.AddUObject(this, &ThisClass::OnQueryOffersComplete);
+	StoreSubsystem->OnQueryOfferCompleteDelegate.AddUObject(this, &ThisClass::OnQueryOffersComplete);
 
 	Tv_ContentOuter->OnItemClicked().AddUObject(this, &ThisClass::OnStoreItemClicked);
 
@@ -28,6 +28,8 @@ void UShopWidget::NativeOnActivated()
 	{
 		StoreSubsystem->QueryOffers(GetOwningPlayer());
 	}
+
+	OnActivatedMulticastDelegate.Broadcast(GetOwningPlayer());
 }
 
 void UShopWidget::NativeOnDeactivated()
@@ -35,7 +37,7 @@ void UShopWidget::NativeOnDeactivated()
 	Super::NativeOnDeactivated();
 
 	Btn_Back->OnClicked().RemoveAll(this);
-	StoreSubsystem->OnQueryOfferByCategoryCompleteDelegate.RemoveAll(this);
+	StoreSubsystem->OnQueryOfferCompleteDelegate.RemoveAll(this);
 	Tv_ContentOuter->OnItemClicked().RemoveAll(this);
 
 	SwitchContent(EAccelByteWarsWidgetSwitcherState::Loading);
@@ -85,6 +87,10 @@ void UShopWidget::OnQueryOffersComplete(bool bWasSuccessful, FString ErrorMessag
 
 void UShopWidget::OnStoreItemClicked(UObject* Item) const
 {
+	Tv_ContentOuter->ClearListItems();
+	Tv_ContentOuter->RegenerateAllEntries();
+	Ws_Loader->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Loading);
+
 	UStoreItemDataObject* StoreItemDataObject = Cast<UStoreItemDataObject>(Item);
 	if (!StoreItemDataObject)
 	{
