@@ -24,7 +24,7 @@ TArray<UStoreItemDataObject*> UInGameStoreEssentialsSubsystem::GetOffersByCatego
 
 	TArray<FOnlineStoreOfferRef> Offers;
 	StoreInterface->GetOffers(Offers);
-	for (const FOnlineStoreOfferRef Offer : Offers)
+	for (const FOnlineStoreOfferRef& Offer : Offers)
 	{
 		if (Offer->DynamicFields.Find(TEXT("Category"))->Find(Category) == 0)
 		{
@@ -32,7 +32,7 @@ TArray<UStoreItemDataObject*> UInGameStoreEssentialsSubsystem::GetOffersByCatego
 		}
 	}
 
-	for (const TSharedRef<FOnlineStoreOffer> Offer : FilteredOffers)
+	for (const TSharedRef<FOnlineStoreOffer>& Offer : FilteredOffers)
 	{
 		StoreItems.Add(ConvertStoreData(Offer.Get()));
 	}

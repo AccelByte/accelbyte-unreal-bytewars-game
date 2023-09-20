@@ -73,7 +73,7 @@ void UEntitlementsEssentialsSubsystem::OnQueryEntitlementComplete(
 			"",
 			Entitlements);
 
-		for (const TSharedRef<FOnlineEntitlement> Entitlement : Entitlements)
+		for (const TSharedRef<FOnlineEntitlement>& Entitlement : Entitlements)
 		{
 			UItemDataObject* Item = NewObject<UItemDataObject>();
 			Item->Id = Entitlement->ItemId;
