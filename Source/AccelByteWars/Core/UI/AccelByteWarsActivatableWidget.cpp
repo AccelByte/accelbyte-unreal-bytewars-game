@@ -489,13 +489,31 @@ void UAccelByteWarsActivatableWidget::InitializeFTEUDialogues(bool bShowOnInitia
 		return;
 	}
 
-	// If prompt is active, pause the dialogue.
-	if (auto* PromptWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Prompt, this)) 
+	// If prompt is active, pause the FTUE.
+	EBaseUIStackType TopMostActiveStack = BaseUIWidget->GetTopMostActiveStack();
+	if (TopMostActiveStack == EBaseUIStackType::Prompt) 
 	{
-		if (PromptWidget->IsActivated()) 
+		if (auto* PromptWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(TopMostActiveStack, this))
 		{
-			FTUEWidget->PauseDialogues();
-			return;
+			if (PromptWidget->IsActivated())
+			{
+				FTUEWidget->PauseDialogues();
+				return;
+			}
+		}
+	}
+	// Deinitialize FTUE for other widgets below the current active stack.
+	else 
+	{
+		for (auto& WidgetBelow : BaseUIWidget->GetAllWidgetsBelowStacks(TopMostActiveStack))
+		{
+			UAccelByteWarsActivatableWidget* OtherWidget = Cast<UAccelByteWarsActivatableWidget>(WidgetBelow);
+			if (!OtherWidget || OtherWidget == this)
+			{
+				continue;
+			}
+
+			OtherWidget->DeinitializeFTUEDialogues();
 		}
 	}
 
@@ -532,19 +550,37 @@ void UAccelByteWarsActivatableWidget::DeinitializeFTUEDialogues()
 		return;
 	}
 
-	// If prompt is deactivating, resume the dialogue.
-	if (auto* PromptWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Prompt, this))
-	{
-		if (!PromptWidget->IsActivated())
-		{
-			FTUEWidget->ResumeDialogues();
-		}
-	}
-
 	// Only close the FTUE dialogue if this widget ever added dialogues to it.
 	if (FTUEWidget->RemoveAssociateDialogues(GetClass())) 
 	{
 		FTUEWidget->CloseDialogues();
+	}
+
+	// If prompt is deactivating, resume the dialogue.
+	EBaseUIStackType TopMostActiveStack = BaseUIWidget->GetTopMostActiveStack();
+	if (TopMostActiveStack == EBaseUIStackType::Prompt)
+	{
+		if (auto* PromptWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(TopMostActiveStack, this))
+		{
+			if (!PromptWidget->IsActivated())
+			{
+				FTUEWidget->ResumeDialogues();
+			}
+		}
+	}
+	// Initialize FTUE for other widgets below the current active stack.
+	else
+	{
+		for (auto& WidgetBelow : BaseUIWidget->GetAllWidgetsBelowStacks(TopMostActiveStack))
+		{
+			UAccelByteWarsActivatableWidget* OtherWidget = Cast<UAccelByteWarsActivatableWidget>(WidgetBelow);
+			if (!OtherWidget || OtherWidget == this)
+			{
+				continue;
+			}
+
+			OtherWidget->InitializeFTEUDialogues(true);
+		}
 	}
 }
 

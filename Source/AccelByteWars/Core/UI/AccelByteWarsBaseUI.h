@@ -38,6 +38,10 @@ public:
 
 	static UCommonActivatableWidget* GetActiveWidgetOfStack(const EBaseUIStackType TargetStack, const UObject* Context);
 
+	TArray<UCommonActivatableWidget*> GetAllWidgetsBelowStacks(const EBaseUIStackType CurrentStack);
+
+	EBaseUIStackType GetTopMostActiveStack();
+
 	/** Push widget to target stack. */
 	UFUNCTION(BlueprintCallable)
 	UAccelByteWarsActivatableWidget* PushWidgetToStack(EBaseUIStackType TargetStack, TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass);
