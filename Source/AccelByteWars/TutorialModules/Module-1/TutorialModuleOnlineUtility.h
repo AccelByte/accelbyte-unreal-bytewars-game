@@ -57,7 +57,10 @@ private:
 	static ESettingsEnvironment ConvertOSSEnvToAccelByteEnv(const EOnlineEnvironment::Type& Environment);
 
 	FString GetFTUEPredefinedArgument(const FTUEPredifinedArgument Keyword);
-	FUniqueNetIdAccelByteUserPtr GetCurrentPlayer();
-	FNamedOnlineSession* GetOnlineSession(const FName SessionName);
-	FAccelByteModelsV2GameSessionDSInformation GetDedicatedServer();
+
+	static FNamedOnlineSession* GetOnlineSession(const FName SessionName, const UObject* Context);
+	static FAccelByteModelsV2GameSessionDSInformation GetDedicatedServer(const UObject* Context);
+
+	inline static FString CurrentPlayerUserIdStr = FString("");
+	inline static FString CurrentPlayerDisplayName = FString("");
 };

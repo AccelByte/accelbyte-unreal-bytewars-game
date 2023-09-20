@@ -12,13 +12,63 @@
 #include "Core/AccelByteRegistry.h"
 #include "AccelByteUe4SdkModule.h"
 
+#include "TutorialModules/Module-2/AuthEssentialsModels.h"
+
 DEFINE_LOG_CATEGORY(LogAccelByteWarsTutorialModuleOnlineUtility);
+
+//UTutorialModuleOnlineUtility::CurrentPlayerUserIdStr = FString("");
+//UTutorialModuleOnlineUtility::CurrentPlayerDisplayName = FString("");
 
 UTutorialModuleOnlineUtility::UTutorialModuleOnlineUtility()
 {
     CheckForEnvironmentConfigOverride();
 
+    // Trigger to get general predefined argument.
     FTUEArgumentModel::OnGetPredefinedArgument.BindUObject(this, &ThisClass::GetFTUEPredefinedArgument);
+
+    // Save general logged-in player information.
+    UAuthEssentialsModels::OnLoginSuccessDelegate.AddWeakLambda(this, [this](const APlayerController* PC)
+    {
+        const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+        if (!Subsystem)
+        {
+            return;
+        }
+
+        const FOnlineIdentityAccelBytePtr IdentityInterface = 
+            StaticCastSharedPtr<FOnlineIdentityAccelByte>(Subsystem->GetIdentityInterface());
+        if (!IdentityInterface)
+        {
+            return;
+        }
+
+        const ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
+        if (!LocalPlayer)
+        {
+            return;
+        }
+
+        const FUniqueNetIdAccelByteUserPtr UserABId = 
+            StaticCastSharedPtr<const FUniqueNetIdAccelByteUser>(LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId());
+        if (!UserABId) 
+        {
+            return;
+        }
+
+        // Save player's AccelByte user id.
+        CurrentPlayerUserIdStr = UserABId->GetAccelByteId();
+
+        // Save player's display name.
+        TSharedPtr<FUserOnlineAccount> UserAccount = IdentityInterface->GetUserAccount(UserABId.ToSharedRef().Get());
+        if (UserAccount) 
+        {
+            CurrentPlayerDisplayName = UserAccount->GetDisplayName();
+            if (CurrentPlayerDisplayName.IsEmpty()) 
+            {
+                CurrentPlayerDisplayName = GetUserDefaultDisplayName(UserABId.ToSharedRef().Get());
+            }
+        }
+    });
 }
 
 bool UTutorialModuleOnlineUtility::IsAccelByteSDKInitialized(const UObject* Target)
@@ -151,61 +201,42 @@ FString UTutorialModuleOnlineUtility::GetFTUEPredefinedArgument(const FTUEPredif
 
     if (Keyword == FTUEPredifinedArgument::PLAYER_ID) 
     {
-        if (FUniqueNetIdAccelByteUserPtr UserABId = GetCurrentPlayer())
-        {
-            Result = UserABId->GetAccelByteId();
-        }
+        Result = CurrentPlayerUserIdStr;
     }
     else if (Keyword == FTUEPredifinedArgument::PLAYER_DISPLAY_NAME)
     {
-        if (FUniqueNetIdAccelByteUserPtr UserABId = GetCurrentPlayer())
-        {
-            Result = GetUserDefaultDisplayName(UserABId.ToSharedRef().Get());
-        }
+        Result = CurrentPlayerDisplayName;
     }
     else if (Keyword == FTUEPredifinedArgument::GAME_SESSION_ID) 
     {
-        if (FNamedOnlineSession* Session = GetOnlineSession(NAME_GameSession))
+        if (FNamedOnlineSession* Session = GetOnlineSession(NAME_GameSession, this))
         {
             Result = Session->GetSessionIdStr();
         }
     }
     else if (Keyword == FTUEPredifinedArgument::PARTY_SESSION_ID)
     {
-        if (FNamedOnlineSession* Session = GetOnlineSession(NAME_PartySession))
+        if (FNamedOnlineSession* Session = GetOnlineSession(NAME_PartySession, this))
         {
             Result = Session->GetSessionIdStr();
         }
     }
     else if (Keyword == FTUEPredifinedArgument::DEDICATED_SERVER_ID) 
     {
-        Result = GetDedicatedServer().Server.Pod_name;
+        Result = GetDedicatedServer(this).Server.Pod_name;
     }
 
     return Result;
 }
 
-FUniqueNetIdAccelByteUserPtr UTutorialModuleOnlineUtility::GetCurrentPlayer()
+FNamedOnlineSession* UTutorialModuleOnlineUtility::GetOnlineSession(const FName SessionName, const UObject* Context)
 {
-    const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
-    if (!Subsystem)
+    if (!Context) 
     {
         return nullptr;
     }
 
-    const FOnlineIdentityAccelBytePtr IdentityInterface = StaticCastSharedPtr<FOnlineIdentityAccelByte>(Subsystem->GetIdentityInterface());
-    if (!IdentityInterface)
-    {
-        return nullptr;
-    }
-
-    const FUniqueNetIdAccelByteUserPtr UserABId = StaticCastSharedPtr<const FUniqueNetIdAccelByteUser>(IdentityInterface->GetUniquePlayerId(0));
-    return UserABId;
-}
-
-FNamedOnlineSession* UTutorialModuleOnlineUtility::GetOnlineSession(const FName SessionName)
-{
-    const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+    const IOnlineSubsystem* Subsystem = Online::GetSubsystem(Context->GetWorld());
     if (!Subsystem)
     {
         return nullptr;
@@ -220,11 +251,16 @@ FNamedOnlineSession* UTutorialModuleOnlineUtility::GetOnlineSession(const FName 
     return SessionInterface->GetNamedSession(SessionName);
 }
 
-FAccelByteModelsV2GameSessionDSInformation UTutorialModuleOnlineUtility::GetDedicatedServer()
+FAccelByteModelsV2GameSessionDSInformation UTutorialModuleOnlineUtility::GetDedicatedServer(const UObject* Context)
 {
     FAccelByteModelsV2GameSessionDSInformation DSInformation{};
 
-    const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+    if (!Context)
+    {
+        return DSInformation;
+    }
+
+    const IOnlineSubsystem* Subsystem = Online::GetSubsystem(Context->GetWorld());
     if (!Subsystem)
     {
         return DSInformation;
