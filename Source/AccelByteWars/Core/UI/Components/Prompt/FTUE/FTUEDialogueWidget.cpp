@@ -382,7 +382,7 @@ void UFTUEDialogueWidget::InitializeActionButton(UAccelByteWarsButtonBase* Butto
 void UFTUEDialogueWidget::ValidateDialogues()
 {
 	// Remove invalid dialogues.
-	DialoguesInternal.RemoveAll([](const FFTUEDialogueModel* Temp)
+	DialoguesOrigin.RemoveAll([](const FFTUEDialogueModel* Temp)
 	{
 		return !Temp || 
 			!Temp->OwnerTutorialModule || 

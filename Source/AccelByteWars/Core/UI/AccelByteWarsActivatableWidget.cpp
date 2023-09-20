@@ -315,7 +315,6 @@ TWeakObjectPtr<UAccelByteWarsButtonBase> UAccelByteWarsActivatableWidget::Genera
 	{
 		BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, EntryWidgetClass);
 	});
-	WidgetContainer.AddChild(Button.Get());
 	Metadata.GenerateWidgetRef = Button.Get();
 
 	// Rename the button based on its id.
@@ -362,7 +361,6 @@ TWeakObjectPtr<UAccelByteWarsButtonBase> UAccelByteWarsActivatableWidget::Genera
 
 		Metadata.ButtonAction.Broadcast();
 	});
-	WidgetContainer.AddChild(Button.Get());
 	Metadata.GenerateWidgetRef = Button.Get();
 
 	// Rename the button based on its id.
