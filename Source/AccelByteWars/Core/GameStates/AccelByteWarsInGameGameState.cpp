@@ -17,6 +17,8 @@ void AAccelByteWarsInGameGameState::GetLifetimeReplicatedProps(TArray<FLifetimeP
 	DOREPLIFETIME(ThisClass, GameStatus);
 	DOREPLIFETIME(ThisClass, MinGameBound);
 	DOREPLIFETIME(ThisClass, MaxGameBound);
+	DOREPLIFETIME(ThisClass, MinStarsGameBound);
+	DOREPLIFETIME(ThisClass, MaxStarsGameBound);
 }
 
 bool AAccelByteWarsInGameGameState::HasGameStarted() const

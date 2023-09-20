@@ -4,6 +4,7 @@
 
 #include "Core/GameModes/AccelByteWarsInGameGameMode.h"
 
+#include "Core/Player/AccelByteWarsPlayerPawn.h"
 #include "Core/Components/AccelByteWarsGameplayObjectComponent.h"
 #include "Core/Player/AccelByteWarsPlayerState.h"
 #include "Core/System/AccelByteWarsGameSession.h"
@@ -290,6 +291,14 @@ void AAccelByteWarsInGameGameMode::OnShipDestroyed(
 	// Broadcast on-player die event.
 	OnPlayerDieDelegate.Broadcast(ShipPC, ShipActor, SourcePlayerController);
 
+	// Let the ABPawn know they've been destroyed to cleanup UI
+	const AAccelByteWarsPlayerPawn* ABPawn = Cast<AAccelByteWarsPlayerPawn>(ShipOwner);
+	NULLPTR_CHECK(ABPawn);
+	const_cast<AAccelByteWarsPlayerPawn*>(ABPawn)->Client_OnDestroyed();
+
+	// Reset Missile Fired Count
+	SourcePlayerState->MissilesFired = 0;
+
 	// FX logic
 	OnShipDestroyedFX(SourcePlayerController, ShipOwner->GetTransform(), ShipPlayerState);
 
@@ -478,6 +487,27 @@ void AAccelByteWarsInGameGameMode::SpawnAndPossesPawn(APlayerState* PlayerState)
 	}
 }
 
+APawn* AAccelByteWarsInGameGameMode::CreatePlayerPawn(const FVector& Location, const FLinearColor& Color, APlayerController* PlayerController)
+{
+	if (PlayerController == nullptr)
+		return nullptr;
+
+	FActorSpawnParameters spawn_parameters;
+	spawn_parameters.Owner = PlayerController;
+	spawn_parameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	UClass* generic_class = StaticLoadClass(AActor::StaticClass(), this, *PawnBlueprintPath);
+
+	AAccelByteWarsPlayerPawn* new_player_pawn = PlayerController->GetWorld()->SpawnActor<AAccelByteWarsPlayerPawn>(generic_class, FTransform(FRotator::ZeroRotator, Location), spawn_parameters);
+	if (new_player_pawn == nullptr)
+		return nullptr;
+
+	new_player_pawn->SetReplicates(true);
+	new_player_pawn->Server_SetColor(Color);
+
+	return new_player_pawn;
+}
+
 TArray<FVector> AAccelByteWarsInGameGameMode::GetActiveGameObjectsPosition(
 	const float SeparationFactor,
 	const float ShipSeparationFactor) const
@@ -503,33 +533,24 @@ TArray<FVector> AAccelByteWarsInGameGameMode::GetActiveGameObjectsPosition(
 
 FVector AAccelByteWarsInGameGameMode::FindGoodPlanetPosition() const
 {
-	FVector Position;
+	FVector Position = FVector::ZeroVector;
 
-	const FVector2D Position2 = FindGoodSpawnLocation(GetActiveGameObjectsPosition(4.0f, 4.0f));
-	Position.X = Position2.X;
-	Position.Y = Position2.Y;
+	const TArray<FVector> ActiveGameObjectLocations = GetActiveGameObjectsPosition(1.5f, 25.0f);
+	FVector2D Position2D = FindGoodSpawnLocation(ActiveGameObjectLocations, true);
+	Position.X = Position2D.X;
+	Position.Y = Position2D.Y;
 
 	return Position;
 }
 
 FVector AAccelByteWarsInGameGameMode::FindGoodPlayerPosition() const
 {
-	FVector Position;
+	FVector Position = FVector::ZeroVector;
 
 	const TArray<FVector> ActiveGameObjectLocations = GetActiveGameObjectsPosition(1.5f, 25.0f);
-
-	// attempt to find location without line of sight. If failed, use the last attempt
-	for (int i = 0; i <= 7; ++i)
-	{
-		const FVector2D Position2 = FindGoodSpawnLocation(ActiveGameObjectLocations);
-		Position.X = Position2.X;
-		Position.Y = Position2.Y;
-
-		if (!LocationHasLineOfSightToOtherShip(Position))
-		{
-			break;
-		}
-	}
+	FVector2D Position2D = FindGoodSpawnLocation(ActiveGameObjectLocations, false);
+	Position.X = Position2D.X;
+	Position.Y = Position2D.Y;
 
 	return Position;
 }
@@ -566,10 +587,16 @@ void AAccelByteWarsInGameGameMode::SetupShutdownCountdownsValue() const
 #pragma endregion
 
 #pragma region "Gameplay logic math helper"
-FVector2D AAccelByteWarsInGameGameMode::FindGoodSpawnLocation(const TArray<FVector>& ActiveGameObjectsCoords) const
+FVector2D AAccelByteWarsInGameGameMode::FindGoodSpawnLocation(const TArray<FVector>& ActiveGameObjectsCoords, bool ForStars /* = false */) const
 {
 	FVector2D& MaxBound = ABInGameGameState->MaxGameBound;
-	const FVector2D& MinBound = ABInGameGameState->MinGameBound;
+	FVector2D& MinBound = ABInGameGameState->MinGameBound;
+
+	if (ForStars)
+	{
+		MaxBound = ABInGameGameState->MaxStarsGameBound;
+		MinBound = ABInGameGameState->MinStarsGameBound;
+	}
 
 	// Calculate prohibited area size
 	double AreaProhibited = 0.0;
