@@ -164,16 +164,8 @@ private:
 		meta = (Tooltip = "Whether this Tutorial Module has FTUE or not."))
 	bool bHasFTUE = false;
 
-	UPROPERTY(EditAnywhere,
-		Category = "First Time User Experience (FTUE)", 
-		meta = (
-			Tooltip = "Whether the FTUE should always be displayed when this Tutorial Module UI is displayed.", 
-			EditCondition = "bHasFTUE"))
-	bool bIsFTUEAlwaysActive = true;
-
 public:
 	bool HasFTUE() { return bHasFTUE; }
-	bool IsFTUEAlwaysActive() { return bIsFTUEAlwaysActive; }
 
 	UPROPERTY(EditAnywhere,
 		Category = "First Time User Experience (FTUE)",

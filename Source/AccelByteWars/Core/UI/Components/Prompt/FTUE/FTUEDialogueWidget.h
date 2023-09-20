@@ -99,8 +99,14 @@ protected:
 private:
 	bool IsAllDialoguesAlreadyShown();
 
-	TArray<FFTUEDialogueModel*> CachedDialogues;
+	// Helper as cursor to navigate between dialogues.
 	int32 DialogueIndex = INDEX_NONE;
+
+	// List of dialogues used to display FTUE in this widget. Intended to be modified.
+	TArray<FFTUEDialogueModel*> DialoguesInternal;
+
+	// The original list of dialogues injected by other UIs without modification.
+	TArray<FFTUEDialogueModel*> DialoguesOrigin;
 
 	FFTUEDialogueModel* CachedLastDialogue;
 	UUserWidget* CachedHighlightedWidget;

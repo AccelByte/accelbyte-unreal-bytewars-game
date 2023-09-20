@@ -40,7 +40,7 @@ void UFTUEDialogueWidget::AddDialogues(const TArray<FFTUEDialogueModel*>& Dialog
 	// Add dialogues to cache.
 	for (int i = 0; i < Dialogues.Num(); i++) 
 	{
-		CachedDialogues.AddUnique(Dialogues[i]);
+		DialoguesOrigin.AddUnique(Dialogues[i]);
 	}
 
 	ValidateDialogues();
@@ -48,7 +48,7 @@ void UFTUEDialogueWidget::AddDialogues(const TArray<FFTUEDialogueModel*>& Dialog
 
 bool UFTUEDialogueWidget::RemoveAssociateDialogues(const TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass)
 {
-	int32 Removed = CachedDialogues.RemoveAll([WidgetClass](const FFTUEDialogueModel* Temp)
+	int32 Removed = DialoguesOrigin.RemoveAll([WidgetClass](const FFTUEDialogueModel* Temp)
 	{
 		return !Temp || Temp->TargetWidgetClasses.Contains(WidgetClass);
 	});
@@ -60,16 +60,46 @@ bool UFTUEDialogueWidget::RemoveAssociateDialogues(const TSubclassOf<UAccelByteW
 
 void UFTUEDialogueWidget::ShowDialogues(bool bFirstTime)
 {
-	if (CachedDialogues.IsEmpty() || W_FTUEDialogue->IsVisible())
+	if (W_FTUEDialogue->IsVisible())
 	{
 		return;
 	}
 
 	ValidateDialogues();
-
+	
 	// Check whether should abort if all dialogues are already shown.
-	if (bFirstTime && IsAllDialoguesAlreadyShown() &&
-		!(GameInstance && GameInstance->GetFTUEAlwaysOnSetting()))
+	if (bFirstTime)
+	{
+		// Reset is already shown dialogue statuses if always show FTUE.
+		if (GameInstance && GameInstance->GetFTUEAlwaysOnSetting())
+		{
+			TArray<FFTUEDialogueModel*> Instigators = DialoguesInternal.FilterByPredicate([](const FFTUEDialogueModel* Temp)
+			{
+				return Temp && Temp->bIsInstigator;
+			});
+			for (auto Instigator : Instigators)
+			{
+				if (Instigator->Group)
+				{
+					Instigator->Group->SetAlreadyShown(false);
+				}
+			}
+
+			DialoguesInternal.RemoveAll([](const FFTUEDialogueModel* Temp)
+			{
+				return !Temp || Temp->bIsAlreadyShown;
+			});
+		}
+
+		// Abort if all dialogues is already shown.
+		if (IsAllDialoguesAlreadyShown()) 
+		{
+			return;
+		}
+	}
+
+	// Abort if after validation, the dialogues turns out to be empty.
+	if (DialoguesInternal.IsEmpty()) 
 	{
 		return;
 	}
@@ -78,10 +108,10 @@ void UFTUEDialogueWidget::ShowDialogues(bool bFirstTime)
 	ClearHighlightedWidget();
 	DialogueIndex = 0;
 	CachedLastDialogue = nullptr;
-	CachedDialogues.Sort();
+	DialoguesInternal.Sort();
 
 	// Show FTUE.
-	if (InitializeDialogue(CachedDialogues[DialogueIndex])) 
+	if (InitializeDialogue(DialoguesInternal[DialogueIndex]))
 	{
 		W_FTUEDialogue->SetVisibility(ESlateVisibility::Visible);
 		TryToggleHelpDev(false);
@@ -119,7 +149,7 @@ void UFTUEDialogueWidget::PauseDialogues()
 void UFTUEDialogueWidget::ResumeDialogues()
 {
 	// If dialogue index is out of range, initialize.
-	if (DialogueIndex < 0 || DialogueIndex > CachedDialogues.Num() - 1)
+	if (DialogueIndex < 0 || DialogueIndex > DialoguesInternal.Num() - 1)
 	{
 		ShowDialogues(true);
 		return;
@@ -155,7 +185,7 @@ void UFTUEDialogueWidget::PrevDialogue()
 	}
 
 	// Try to init dialogue. If fails, fallback.
-	if (!InitializeDialogue(CachedDialogues[--DialogueIndex])) 
+	if (!InitializeDialogue(DialoguesInternal[--DialogueIndex]))
 	{
 		if (DialogueIndex <= 0) 
 		{
@@ -175,15 +205,15 @@ void UFTUEDialogueWidget::NextDialogue()
 		return;
 	}
 
-	if (DialogueIndex >= CachedDialogues.Num() - 1)
+	if (DialogueIndex >= DialoguesInternal.Num() - 1)
 	{
-		DialogueIndex = CachedDialogues.Num() - 1;
+		DialogueIndex = DialoguesInternal.Num() - 1;
 		CloseDialogues();
 		return;
 	}
 
 	// Try to init dialogue. If fails, fallback.
-	if (!InitializeDialogue(CachedDialogues[++DialogueIndex])) 
+	if (!InitializeDialogue(DialoguesInternal[++DialogueIndex]))
 	{
 		NextDialogue();
 	}
@@ -192,7 +222,7 @@ void UFTUEDialogueWidget::NextDialogue()
 void UFTUEDialogueWidget::TryToggleHelpDev(bool bShow)
 {
 	// Always hide the help button if the FTUE is visible or there is no dialogues.
-	if (W_FTUEDialogue->IsVisible() || CachedDialogues.IsEmpty())
+	if (W_FTUEDialogue->IsVisible() || DialoguesInternal.IsEmpty())
 	{
 		Btn_Open->SetVisibility(ESlateVisibility::Collapsed);
 		return;
@@ -260,7 +290,7 @@ bool UFTUEDialogueWidget::InitializeDialogue(FFTUEDialogueModel* Dialogue)
 
 	// Set navigation buttons.
 	Btn_Next->SetButtonText(
-		(bIsAbleToNavigate && DialogueIndex < CachedDialogues.Num() - 1) ?
+		(bIsAbleToNavigate && DialogueIndex < DialoguesInternal.Num() - 1) ?
 		LOCTEXT("Next", "Next") :
 		LOCTEXT("X", "X"));
 	Btn_Prev->SetVisibility(
@@ -299,15 +329,6 @@ bool UFTUEDialogueWidget::InitializeDialogue(FFTUEDialogueModel* Dialogue)
 	if (Dialogue->OnActivateDelegate.IsBound()) 
 	{
 		Dialogue->OnActivateDelegate.Broadcast();
-	}
-
-	/* Reset mark already shown.
-	 * This way, all siblings in the dialogue group requires 
-	 * to be shown until the last dialogue in the group.
-	 * Later once it is done, the group will be marked as shown. */
-	if (Dialogue->bIsAlreadyShown && Dialogue->bIsInstigator && Dialogue->Group)
-	{
-		Dialogue->Group->SetAlreadyShown(false);
 	}
 
 	CachedLastDialogue = Dialogue;
@@ -361,7 +382,7 @@ void UFTUEDialogueWidget::InitializeActionButton(UAccelByteWarsButtonBase* Butto
 void UFTUEDialogueWidget::ValidateDialogues()
 {
 	// Remove invalid dialogues.
-	CachedDialogues.RemoveAll([](const FFTUEDialogueModel* Temp)
+	DialoguesInternal.RemoveAll([](const FFTUEDialogueModel* Temp)
 	{
 		return !Temp || 
 			!Temp->OwnerTutorialModule || 
@@ -369,7 +390,8 @@ void UFTUEDialogueWidget::ValidateDialogues()
 			(Temp->OnValidateDelegate.IsBound() && !Temp->OnValidateDelegate.Execute());
 	});
 
-	TryToggleHelpDev(!CachedDialogues.IsEmpty());
+	DialoguesInternal = DialoguesOrigin;
+	TryToggleHelpDev(!DialoguesInternal.IsEmpty());
 }
 
 void UFTUEDialogueWidget::DeinitializeLastDialogue()
@@ -412,12 +434,12 @@ void UFTUEDialogueWidget::ClearHighlightedWidget()
 
 bool UFTUEDialogueWidget::IsAllDialoguesAlreadyShown()
 {
-	TArray<FFTUEDialogueModel*> AlreadyShown = CachedDialogues.FilterByPredicate([](const FFTUEDialogueModel* Temp)
+	TArray<FFTUEDialogueModel*> AlreadyShown = DialoguesInternal.FilterByPredicate([](const FFTUEDialogueModel* Temp)
 	{
 		return Temp && Temp->bIsAlreadyShown;
 	});
 
-	return AlreadyShown.Num() == CachedDialogues.Num();
+	return AlreadyShown.Num() == DialoguesInternal.Num();
 }
 
 #undef LOCTEXT_NAMESPACE
