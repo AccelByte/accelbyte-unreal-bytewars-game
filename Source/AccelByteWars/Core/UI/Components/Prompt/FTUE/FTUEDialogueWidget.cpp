@@ -346,7 +346,7 @@ void UFTUEDialogueWidget::InitializeActionButton(UAccelByteWarsButtonBase* Butto
 	Button->OnClicked().Clear();
 
 	Button->SetVisibility(ESlateVisibility::Visible);
-	Button->SetButtonText(ButtonModel.ButtonText);
+	Button->SetButtonText(ButtonModel.GetFormattedButtonText());
 
 	// Bind action to open hyperlink.
 	if (ButtonModel.ButtonActionType == EFTUEDialogueButtonActionType::HYPERLINK_BUTTON)
