@@ -37,6 +37,7 @@ void UInventoryWidget::NativeOnActivated()
 	EmptyData->Title = TEXT_NOTHING_SELECTED;
 	SelectedItem = EmptyData;
 	W_SelectedItem_Preview->LoadImage(SelectedItem->IconUrl);
+	Tb_SelectedItem_Title->SetText(SelectedItem->Title);
 	Btn_Equip->SetIsInteractionEnabled(false);
 }
 

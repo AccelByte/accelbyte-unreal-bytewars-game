@@ -29,6 +29,9 @@ private:
 	UPROPERTY()
 	UEntitlementsEssentialsSubsystem* EntitlementsSubsystem;
 
+	UPROPERTY(EditAnywhere)
+	bool bIsConsumable = true;
+
 	void ShowEntitlements(const FOnlineError& Error, const TArray<UItemDataObject*> Entitlements) const;
 
 #pragma region "UI Related"
@@ -42,9 +45,6 @@ private:
 
 	UPROPERTY()
 	UItemDataObject* SelectedItem;
-
-	UPROPERTY(EditAnywhere)
-	bool bIsConsumable = true;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UAccelByteWarsWidgetSwitcher* Ws_Root;
