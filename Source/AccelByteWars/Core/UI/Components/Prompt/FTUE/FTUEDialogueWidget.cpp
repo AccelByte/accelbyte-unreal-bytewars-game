@@ -247,23 +247,25 @@ bool UFTUEDialogueWidget::InitializeDialogue(FFTUEDialogueModel* Dialogue)
 		const FString WidgetToHighlightStr = Dialogue->TargetWidgetNameToHighlight;
 		TArray<UUserWidget*> FoundWidgets;
 		UWidgetBlueprintLibrary::GetAllWidgetsOfClass(this, FoundWidgets, Dialogue->TargetWidgetClassToHighlight.Get(), false);
+
+		// Eliminate invalid found widgets.
+		FoundWidgets.RemoveAll([WidgetToHighlightStr](const UUserWidget* Temp)
+		{
+			return !Temp || !Temp->GetName().Equals(WidgetToHighlightStr) || !Temp->IsVisible();
+		});
+
+		// Try to highlight widget.
 		for (auto& FoundWidget : FoundWidgets)
 		{
-			if (!FoundWidget)
+			// Skip if invalid.
+			if (!FoundWidget || !FoundWidget->IsVisible())
 			{
 				continue;
 			}
 
-			// Highlight widget if visible.
+			// Widget found, highlight widget.
 			if (FoundWidget->GetName().Equals(WidgetToHighlightStr, ESearchCase::CaseSensitive))
 			{
-				// Highlighted is invisible, abort. 
-				if (FoundWidget->GetVisibility() == ESlateVisibility::Collapsed) 
-				{
-					UE_LOG_FTUEDIALOGUEWIDGET(Warning, TEXT("Cannot highlight widget. Skipping FTUE dialogue, highlighted widget is invisible."));
-					return false;
-				}
-
 				// Highlight widget.
 				IAccelByteWarsWidgetInterface* WidgetInterface = Cast<IAccelByteWarsWidgetInterface>(FoundWidget);
 				if (WidgetInterface)
@@ -279,7 +281,7 @@ bool UFTUEDialogueWidget::InitializeDialogue(FFTUEDialogueModel* Dialogue)
 		// Highlighted widget is not found, abort.
 		if (!CachedHighlightedWidget)
 		{
-			UE_LOG_FTUEDIALOGUEWIDGET(Warning, TEXT("Cannot highlight widget. Skipping FTUE dialogue, highlighted widget is not found."));
+			UE_LOG_FTUEDIALOGUEWIDGET(Warning, TEXT("Cannot highlight widget. Skipping FTUE dialogue, highlighted widget is not found or invisible."));
 			return false;
 		}
 	}
