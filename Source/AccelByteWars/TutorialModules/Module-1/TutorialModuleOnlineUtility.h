@@ -50,6 +50,11 @@ public:
 		return FText::Format(DEFAULT_USER_DISPLAYNAME, FText::FromString(UserABId->GetAccelByteId().Left(5))).ToString();
 	}
 
+	static const FString GetUserDefaultDisplayName(const FString& UserId)
+	{
+		return FText::Format(DEFAULT_USER_DISPLAYNAME, FText::FromString(UserId.Left(5))).ToString();
+	}
+
 private:
 	static void CheckForEnvironmentConfigOverride();
 	static ESettingsEnvironment ConvertStringEnvToAccelByteEnv(const FString& EnvironmentStr);

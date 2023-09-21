@@ -63,10 +63,10 @@ UTutorialModuleOnlineUtility::UTutorialModuleOnlineUtility()
         if (UserAccount) 
         {
             CurrentPlayerDisplayName = UserAccount->GetDisplayName();
-            if (CurrentPlayerDisplayName.IsEmpty()) 
-            {
-                CurrentPlayerDisplayName = GetUserDefaultDisplayName(UserABId.ToSharedRef().Get());
-            }
+        }
+        if (CurrentPlayerDisplayName.IsEmpty())
+        {
+            CurrentPlayerDisplayName = GetUserDefaultDisplayName(CurrentPlayerUserIdStr);
         }
     });
 }
