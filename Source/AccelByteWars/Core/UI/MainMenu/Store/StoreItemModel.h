@@ -7,7 +7,7 @@
 #include "StoreItemModel.generated.h"
 
 #define TEXT_PRICE_FREE NSLOCTEXT("AccelByteWars", "free", "Free")
-#define TEXT_PURCHASE NSLOCTEXT("AccelByteWars", "purchase-with", "Purchse with")
+#define TEXT_PURCHASE NSLOCTEXT("AccelByteWars", "purchase-with", "Purchase with")
 
 UCLASS()
 class UItemDataObject : public UObject
