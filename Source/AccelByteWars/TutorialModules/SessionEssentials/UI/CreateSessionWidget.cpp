@@ -145,21 +145,25 @@ void UCreateSessionWidget::SwitchContent(const EContentType Type)
 	case EContentType::CREATE:
 		ContentTarget = W_Selection;
 		FocusTarget = Btn_CreateSession;
+		DeinitializeFTUEDialogues();
 		break;
 	case EContentType::LOADING:
 		ContentTarget = Ws_Processing;
 		ProcessingWidgetState = EAccelByteWarsWidgetSwitcherState::Loading;
 		bEnableBackButton = false;
+		DeinitializeFTUEDialogues();
 		break;
 	case EContentType::SUCCESS:
 		ContentTarget = Ws_Processing;
 		ProcessingWidgetState = EAccelByteWarsWidgetSwitcherState::Not_Empty;
 		FocusTarget = Btn_Leave;
+		InitializeFTEUDialogues(true);
 		break;
 	case EContentType::ERROR:
 		ContentTarget = Ws_Processing;
 		ProcessingWidgetState = EAccelByteWarsWidgetSwitcherState::Error;
 		FocusTarget = Btn_Back;
+		DeinitializeFTUEDialogues();
 		break;
 	default: ;
 	}
