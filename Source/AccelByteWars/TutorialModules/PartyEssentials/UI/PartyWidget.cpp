@@ -86,7 +86,8 @@ void UPartyWidget::DisplayParty()
 			}
 			for (int32 i = 0; i < UsersInfo.Num(); i++) 
 			{
-				if (!UsersInfo[i]->GetUserId()->IsValid() || 
+				if (!UsersInfo[i]->GetUserId()->IsValid() ||
+					!PartyOnlineSession->GetPartyMembers()[i]->IsValid() ||
 					PartyOnlineSession->GetPartyMembers()[i].Get() != UsersInfo[i]->GetUserId().Get())
 				{
 					DisplayParty();

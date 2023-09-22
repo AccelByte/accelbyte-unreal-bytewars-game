@@ -59,7 +59,7 @@ void UPartyWidgetEntry::SetPartyMember(const FUserOnlineAccountAccelByte& PartyM
 
 	// Set cached party member data as friend data.
 	// Will be used to open player action menu widget.
-	if (!CachedFriendData) 
+	if (!CachedFriendData)
 	{
 		CachedFriendData = NewObject<UFriendData>();
 	}
@@ -116,7 +116,10 @@ void UPartyWidgetEntry::OpenPlayerActionMenu()
 		return;
 	}
 
-	if (!CachedFriendData || !CachedFriendData->UserId)
+	if (!CachedFriendData || 
+		!CachedFriendData->UserId ||
+		!CachedFriendData->UserId.IsValid() ||
+		CachedFriendData->UserId.GetSharedReferenceCount() <= 0)
 	{
 		UE_LOG_PARTYESSENTIALS(Warning, TEXT("Cannot open player action menu. Cached party member NetId is not valid."));
 		return;
@@ -125,7 +128,8 @@ void UPartyWidgetEntry::OpenPlayerActionMenu()
 	// Cannot open player action menu for the current logged-in player.
 	const FUniqueNetIdPtr UserId = PartyOnlineSession->GetLocalPlayerUniqueNetId(GetOwningPlayer());
 	const FUniqueNetIdPtr CachedUserId = CachedFriendData->UserId;
-	if (!UserId || !CachedUserId) 
+	if (!UserId || !UserId.IsValid() ||
+		!CachedUserId || !CachedUserId.IsValid())
 	{
 		UE_LOG_PARTYESSENTIALS(Warning, TEXT("Cannot open player action menu. Cached party member NetId is not valid."));
 		return;

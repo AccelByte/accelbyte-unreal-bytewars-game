@@ -1278,20 +1278,24 @@ FUniqueNetIdPtr UAccelByteWarsOnlineSession::GetCurrentDisplayedFriendId()
     FUniqueNetIdRepl FriendUserId = nullptr;
     if (const UFriendDetailsWidget* FriendDetailsWidget = Cast<UFriendDetailsWidget>(ParentWidget))
     {
-        if (FriendDetailsWidget->GetCachedFriendData())
+        if (FriendDetailsWidget->GetCachedFriendData() &&
+            FriendDetailsWidget->GetCachedFriendData()->UserId &&
+            FriendDetailsWidget->GetCachedFriendData()->UserId.IsValid())
         {
             FriendUserId = FriendDetailsWidget->GetCachedFriendData()->UserId;
         }
     }
     else if (const UFriendDetailsWidget_Starter* FriendDetailsWidget_Starter = Cast<UFriendDetailsWidget_Starter>(ParentWidget))
     {
-        if (FriendDetailsWidget_Starter->GetCachedFriendData())
+        if (FriendDetailsWidget_Starter->GetCachedFriendData() &&
+            FriendDetailsWidget_Starter->GetCachedFriendData()->UserId &&
+            FriendDetailsWidget_Starter->GetCachedFriendData()->UserId.IsValid())
         {
             FriendUserId = FriendDetailsWidget_Starter->GetCachedFriendData()->UserId;
         }
     }
 
-    if (!FriendUserId.IsValid())
+    if (FriendUserId == nullptr || !FriendUserId.IsValid())
     {
         return nullptr;
     }
