@@ -7,6 +7,7 @@
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
+#include "Core/UI/Components/AccelByteWarsButtonBase.h"
 
 #include "TutorialModules/Module-1/TutorialModuleOnlineUtility.h"
 #include "TutorialModules/Module-2/AuthEssentialsModels.h"
@@ -137,19 +138,19 @@ void UPartyOnlineSession_Starter::InitializePartyGeneratedWidgets()
         return;
     }
     InviteToPartyButtonMetadata->ButtonAction.AddWeakLambda(this, [this]()
+    {
+        const UCommonActivatableWidget* ParentWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
+        if (!ParentWidget)
         {
-            const UCommonActivatableWidget* ParentWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
-            if (!ParentWidget)
-            {
-                return;
-            }
+            return;
+        }
 
-            const FUniqueNetIdPtr FriendUserId = GetCurrentDisplayedFriendId();
-            if (FriendUserId)
-            {
-                OnInviteToPartyButtonClicked(GetLocalUserNumFromPlayerController(ParentWidget->GetOwningPlayer()), FriendUserId);
-            }
-        });
+        const FUniqueNetIdPtr FriendUserId = GetCurrentDisplayedFriendId();
+        if (FriendUserId)
+        {
+            OnInviteToPartyButtonClicked(GetLocalUserNumFromPlayerController(ParentWidget->GetOwningPlayer()), FriendUserId);
+        }
+    });
     InviteToPartyButtonMetadata->OnWidgetGenerated.AddUObject(this, &ThisClass::UpdatePartyGeneratedWidgets);
 
     // Assign action button to kick player from the party.
@@ -159,19 +160,19 @@ void UPartyOnlineSession_Starter::InitializePartyGeneratedWidgets()
         return;
     }
     KickPlayerFromPartyButtonMetadata->ButtonAction.AddWeakLambda(this, [this]()
+    {
+        const UCommonActivatableWidget* ParentWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
+        if (!ParentWidget)
         {
-            const UCommonActivatableWidget* ParentWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
-            if (!ParentWidget)
-            {
-                return;
-            }
+            return;
+        }
 
-            const FUniqueNetIdPtr FriendUserId = GetCurrentDisplayedFriendId();
-            if (FriendUserId)
-            {
-                OnKickPlayerFromPartyButtonClicked(GetLocalUserNumFromPlayerController(ParentWidget->GetOwningPlayer()), FriendUserId);
-            }
-        });
+        const FUniqueNetIdPtr FriendUserId = GetCurrentDisplayedFriendId();
+        if (FriendUserId)
+        {
+            OnKickPlayerFromPartyButtonClicked(GetLocalUserNumFromPlayerController(ParentWidget->GetOwningPlayer()), FriendUserId);
+        }
+    });
     KickPlayerFromPartyButtonMetadata->OnWidgetGenerated.AddUObject(this, &ThisClass::UpdatePartyGeneratedWidgets);
 
     // Assign action button to promote party leader.
@@ -231,24 +232,45 @@ void UPartyOnlineSession_Starter::UpdatePartyGeneratedWidgets()
     const bool bIsFriendInParty = IsInParty(FriendUserId);
 
     // Display invite to party button if in a party.
-    if (InviteToPartyButtonMetadata && InviteToPartyButtonMetadata->GenerateWidgetRef)
+    if (InviteToPartyButtonMetadata)
     {
-        InviteToPartyButtonMetadata->GenerateWidgetRef->
-            SetVisibility((bIsInParty && !bIsFriendInParty) ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+        if (UAccelByteWarsButtonBase* Button =
+            Cast<UAccelByteWarsButtonBase>(InviteToPartyButtonMetadata->GenerateWidgetRef))
+        {
+            Button->SetIsInteractionEnabled(true);
+            Button->SetVisibility(
+                (bIsInParty && !bIsFriendInParty) ?
+                ESlateVisibility::Visible :
+                ESlateVisibility::Collapsed);
+        }
     }
 
     // Display promote leader button if in a party and is the party leader.
-    if (PromotePartyLeaderButtonMetadata && PromotePartyLeaderButtonMetadata->GenerateWidgetRef)
+    if (PromotePartyLeaderButtonMetadata)
     {
-        PromotePartyLeaderButtonMetadata->GenerateWidgetRef->
-            SetVisibility((bIsInParty && bIsFriendInParty && bIsLeader) ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+        if (UAccelByteWarsButtonBase* Button =
+            Cast<UAccelByteWarsButtonBase>(PromotePartyLeaderButtonMetadata->GenerateWidgetRef))
+        {
+            Button->SetIsInteractionEnabled(true);
+            Button->SetVisibility(
+                (bIsInParty && bIsFriendInParty && bIsLeader) ?
+                ESlateVisibility::Visible :
+                ESlateVisibility::Collapsed);
+        }
     }
 
     // Display kick player button if in a party and is the party leader.
-    if (KickPlayerFromPartyButtonMetadata && KickPlayerFromPartyButtonMetadata->GenerateWidgetRef)
+    if (KickPlayerFromPartyButtonMetadata)
     {
-        KickPlayerFromPartyButtonMetadata->GenerateWidgetRef->
-            SetVisibility((bIsInParty && bIsFriendInParty && bIsLeader) ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+        if (UAccelByteWarsButtonBase* Button =
+            Cast<UAccelByteWarsButtonBase>(KickPlayerFromPartyButtonMetadata->GenerateWidgetRef))
+        {
+            Button->SetIsInteractionEnabled(true);
+            Button->SetVisibility(
+                (bIsInParty && bIsFriendInParty && bIsLeader) ?
+                ESlateVisibility::Visible :
+                ESlateVisibility::Collapsed);
+        }
     }
 }
 

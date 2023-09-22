@@ -14,6 +14,7 @@
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
+#include "Core/UI/Components/AccelByteWarsButtonBase.h"
 
 #include "TutorialModules/Module-1/TutorialModuleOnlineUtility.h"
 #include "TutorialModules/Module-2/AuthEssentialsModels.h"
@@ -1194,24 +1195,45 @@ void UAccelByteWarsOnlineSession::UpdatePartyGeneratedWidgets()
     const bool bIsFriendInParty = IsInParty(FriendUserId);
 
     // Display invite to party button if in a party.
-    if (InviteToPartyButtonMetadata && InviteToPartyButtonMetadata->GenerateWidgetRef)
+    if (InviteToPartyButtonMetadata)
     {
-        InviteToPartyButtonMetadata->GenerateWidgetRef->
-            SetVisibility((bIsInParty && !bIsFriendInParty) ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+        if (UAccelByteWarsButtonBase* Button =
+            Cast<UAccelByteWarsButtonBase>(InviteToPartyButtonMetadata->GenerateWidgetRef))
+        {
+            Button->SetIsInteractionEnabled(true);
+            Button->SetVisibility(
+                (bIsInParty && !bIsFriendInParty) ?
+                ESlateVisibility::Visible :
+                ESlateVisibility::Collapsed);
+        }
     }
 
     // Display promote leader button if in a party and is the party leader.
-    if (PromotePartyLeaderButtonMetadata && PromotePartyLeaderButtonMetadata->GenerateWidgetRef)
+    if (PromotePartyLeaderButtonMetadata)
     {
-        PromotePartyLeaderButtonMetadata->GenerateWidgetRef->
-            SetVisibility((bIsInParty && bIsFriendInParty && bIsLeader) ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+        if (UAccelByteWarsButtonBase* Button =
+            Cast<UAccelByteWarsButtonBase>(PromotePartyLeaderButtonMetadata->GenerateWidgetRef))
+        {
+            Button->SetIsInteractionEnabled(true);
+            Button->SetVisibility(
+                (bIsInParty && bIsFriendInParty && bIsLeader) ?
+                ESlateVisibility::Visible :
+                ESlateVisibility::Collapsed);
+        }
     }
 
     // Display kick player button if in a party and is the party leader.
-    if (KickPlayerFromPartyButtonMetadata && KickPlayerFromPartyButtonMetadata->GenerateWidgetRef)
+    if (KickPlayerFromPartyButtonMetadata)
     {
-        KickPlayerFromPartyButtonMetadata->GenerateWidgetRef->
-            SetVisibility((bIsInParty && bIsFriendInParty && bIsLeader) ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+        if (UAccelByteWarsButtonBase* Button =
+            Cast<UAccelByteWarsButtonBase>(KickPlayerFromPartyButtonMetadata->GenerateWidgetRef))
+        {
+            Button->SetIsInteractionEnabled(true);
+            Button->SetVisibility(
+                (bIsInParty && bIsFriendInParty && bIsLeader) ?
+                ESlateVisibility::Visible :
+                ESlateVisibility::Collapsed);
+        }
     }
 }
 
@@ -1301,16 +1323,46 @@ void UAccelByteWarsOnlineSession::OnLoginSuccess(const APlayerController* PC)
 
 void UAccelByteWarsOnlineSession::OnInviteToPartyButtonClicked(const int32 LocalUserNum, const FUniqueNetIdPtr& Invitee)
 {
+    // Disable the button to avoid spamming.
+    if (InviteToPartyButtonMetadata)
+    {
+        if (UAccelByteWarsButtonBase* Button =
+            Cast<UAccelByteWarsButtonBase>(InviteToPartyButtonMetadata->GenerateWidgetRef))
+        {
+            Button->SetIsInteractionEnabled(false);
+        }
+    }
+
     SendPartyInvite(LocalUserNum, Invitee);
 }
 
 void UAccelByteWarsOnlineSession::OnKickPlayerFromPartyButtonClicked(const int32 LocalUserNum, const FUniqueNetIdPtr& KickedPlayer)
 {
+    // Disable the button to avoid spamming.
+    if (KickPlayerFromPartyButtonMetadata)
+    {
+        if (UAccelByteWarsButtonBase* Button =
+            Cast<UAccelByteWarsButtonBase>(KickPlayerFromPartyButtonMetadata->GenerateWidgetRef))
+        {
+            Button->SetIsInteractionEnabled(false);
+        }
+    }
+
     KickPlayerFromParty(LocalUserNum, KickedPlayer);
 }
 
 void UAccelByteWarsOnlineSession::OnPromotePartyLeaderButtonClicked(const int32 LocalUserNum, const FUniqueNetIdPtr& NewLeader)
 {
+    // Disable the button to avoid spamming.
+    if (PromotePartyLeaderButtonMetadata)
+    {
+        if (UAccelByteWarsButtonBase* Button =
+            Cast<UAccelByteWarsButtonBase>(PromotePartyLeaderButtonMetadata->GenerateWidgetRef))
+        {
+            Button->SetIsInteractionEnabled(false);
+        }
+    }
+
     PromotePartyLeader(LocalUserNum, NewLeader);
 }
 
@@ -1755,6 +1807,8 @@ void UAccelByteWarsOnlineSession::OnSendPartyInviteComplete(const FUniqueNetId& 
         GetPromptSubystem()->PushNotification(bWasSuccessful ? SUCCESS_SEND_PARTY_INVITE : FAILED_SEND_PARTY_INVITE);
     }
 
+    UpdatePartyGeneratedWidgets();
+
     OnSendPartyInviteCompleteDelegates.Broadcast(Sender, SessionName, bWasSuccessful, Invitee);
 }
 
@@ -1851,7 +1905,7 @@ void UAccelByteWarsOnlineSession::OnPartyInviteReceived(const FUniqueNetId& User
         return;
     }
 
-    const FUniqueNetIdAccelByteUserRef SenderABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(UserId.AsShared());
+    const FUniqueNetIdAccelByteUserRef SenderABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(FromId.AsShared());
     UE_LOG_ONLINESESSION(Log, TEXT("Receives party invitation from %s"),
         SenderABId->IsValid() ? *SenderABId->GetAccelByteId() : TEXT("Unknown"));
 
