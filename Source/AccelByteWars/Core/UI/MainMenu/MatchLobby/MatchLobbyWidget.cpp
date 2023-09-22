@@ -27,7 +27,10 @@ void UMatchLobbyWidget::NativeConstruct()
 
 	GameState = Cast<AAccelByteWarsMainMenuGameState>(GetWorld()->GetGameState());
 	ensure(GameState);
+}
 
+void UMatchLobbyWidget::NativeOnActivated()
+{
 	// show loading screen on server start travel
 	GameState->OnIsServerTravellingChanged.AddDynamic(this, &ThisClass::ShowLoading);
 
@@ -35,8 +38,8 @@ void UMatchLobbyWidget::NativeConstruct()
 	{
 		// Setup Countdown
 		CountdownWidget->SetupWidget(
-			FText::FromString("Starting Countdown"), 
-			FText::FromString("Starting Match"), 
+			FText::FromString("Starting Countdown"),
+			FText::FromString("Starting Match"),
 			FText::FromString("Match Starts In: "));
 		CountdownWidget->CheckCountdownStateDelegate.BindUObject(this, &UMatchLobbyWidget::SetCountdownState);
 		CountdownWidget->UpdateCountdownValueDelegate.BindUObject(this, &UMatchLobbyWidget::UpdateCountdownValue);
@@ -58,10 +61,7 @@ void UMatchLobbyWidget::NativeConstruct()
 			return NetMode != EGameModeNetworkType::LOCAL;
 		});
 	}
-}
 
-void UMatchLobbyWidget::NativeOnActivated()
-{
 	Super::NativeOnActivated();
 
 	GenerateMultiplayerTeamEntries();
