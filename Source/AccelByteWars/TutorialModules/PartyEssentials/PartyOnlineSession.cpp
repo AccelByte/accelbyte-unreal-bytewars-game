@@ -259,6 +259,12 @@ void UPartyOnlineSession::InitializePartyGeneratedWidgets()
 
 void UPartyOnlineSession::UpdatePartyGeneratedWidgets()
 {
+    // Abort if not in a party session.
+    if (!GetABSessionInt()->IsInPartySession())
+    {
+        return;
+    }
+
     // Take local user id reference from active widget.
     FUniqueNetIdPtr LocalUserABId = nullptr;
     if (UCommonActivatableWidget* ActiveWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this))

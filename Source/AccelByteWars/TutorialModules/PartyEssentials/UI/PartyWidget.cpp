@@ -28,6 +28,10 @@ void UPartyWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
+	Ws_Party->OnRetryClicked.Clear();
+	Ws_Party->OnRetryClicked.AddUObject(this, &ThisClass::OnRetryButtonClicked);
+
+	Btn_Leave->OnClicked().Clear();
 	Btn_Leave->OnClicked().AddUObject(this, &ThisClass::OnLeaveButtonClicked);
 	
 	// Update the displayed party members on any changes.
@@ -132,6 +136,21 @@ void UPartyWidget::DisplayParty()
 			}
 		}
 	));
+}
+
+void UPartyWidget::OnRetryButtonClicked()
+{
+	if (!PartyOnlineSession) 
+	{
+		return;
+	}
+
+	const int32 LocalUserNum = 
+		PartyOnlineSession->GetLocalUserNumFromPlayerController(GetOwningPlayer());
+
+	Ws_Party->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Loading);
+
+	PartyOnlineSession->CreateParty(LocalUserNum);
 }
 
 void UPartyWidget::OnLeaveButtonClicked()

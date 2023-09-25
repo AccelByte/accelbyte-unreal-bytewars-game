@@ -26,6 +26,7 @@ protected:
 	virtual void NativeOnDeactivated() override;
 
 	void DisplayParty();
+	void OnRetryButtonClicked();
 	void OnLeaveButtonClicked();
 
 	UPROPERTY(EditDefaultsOnly)

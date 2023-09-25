@@ -12,7 +12,7 @@
 class UPromptSubsystem;
 
 UCLASS()
-class ACCELBYTEWARS_API UPartyOnlineSession final : public USessionEssentialsOnlineSession
+class ACCELBYTEWARS_API UPartyOnlineSession : public USessionEssentialsOnlineSession
 {
 	GENERATED_BODY()
 	
