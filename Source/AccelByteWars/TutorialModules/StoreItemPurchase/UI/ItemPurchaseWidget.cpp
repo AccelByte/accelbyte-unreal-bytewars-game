@@ -34,6 +34,8 @@ void UItemPurchaseWidget::NativeOnActivated()
 
 	// setup delegate
 	PurchaseSubsystem->OnCheckoutCompleteDelegates.AddUObject(this, &ThisClass::OnPurchaseComplete);
+
+	FTUESetup();
 }
 
 void UItemPurchaseWidget::NativeOnDeactivated()
@@ -71,6 +73,17 @@ void UItemPurchaseWidget::OnPurchaseComplete(const FOnlineError& Error) const
 
 		Tb_Success->SetVisibility(ESlateVisibility::Collapsed);
 		Tb_Error->SetVisibility(ESlateVisibility::Visible);
+	}
+}
+
+void UItemPurchaseWidget::FTUESetup() const
+{
+	if (W_Parent)
+	{
+		if (FFTUEDialogueModel* FTUE = FFTUEDialogueModel::GetMetadataById("ftue_purchase_itemid", W_Parent->FTUEDialogues))
+		{
+			FTUE->Button1.URLArguments[0].Argument = StoreItemDataObject->ItemData->Id;
+		}
 	}
 }
 

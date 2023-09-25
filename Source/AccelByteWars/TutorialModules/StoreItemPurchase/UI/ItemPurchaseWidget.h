@@ -41,6 +41,11 @@ private:
 	void OnClickPurchase(const FString& CurrencyCode) const;
 	void OnPurchaseComplete(const FOnlineError& Error) const;
 
+#pragma region "FTUE"
+private:
+	void FTUESetup() const;
+#pragma endregion 
+
 #pragma region "UI Related"
 protected:
 	virtual UWidget* NativeGetDesiredFocusTarget() const override;
