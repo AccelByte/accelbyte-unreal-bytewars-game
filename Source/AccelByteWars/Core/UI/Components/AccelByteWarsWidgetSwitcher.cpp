@@ -191,7 +191,8 @@ void UAccelByteWarsWidgetSwitcher::HandleFTUE()
 		return;
 	}
 
-	if (CurrentState == EAccelByteWarsWidgetSwitcherState::Not_Empty)
+	if (CurrentState == EAccelByteWarsWidgetSwitcherState::Not_Empty ||
+		CurrentState == EAccelByteWarsWidgetSwitcherState::Empty)
 	{
 		FTUEWidget->ShowDialogues(true);
 	}
