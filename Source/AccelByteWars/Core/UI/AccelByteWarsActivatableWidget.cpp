@@ -311,8 +311,15 @@ TWeakObjectPtr<UAccelByteWarsButtonBase> UAccelByteWarsActivatableWidget::Genera
 	// Spawn the entry button.
 	const TWeakObjectPtr<UAccelByteWarsButtonBase> Button = MakeWeakObjectPtr<UAccelByteWarsButtonBase>(CreateWidget<UAccelByteWarsButtonBase>(this, DefaultButtonClass.Get()));
 	Button->SetButtonText(Metadata.ButtonText);
-	Button->OnClicked().AddWeakLambda(this, [BaseUIWidget, EntryWidgetClass]()
+	Button->OnClicked().AddWeakLambda(this, [Metadata, BaseUIWidget, EntryWidgetClass]()
 	{
+		// Check if action is valid.
+		if (Metadata.ValidateButtonAction.IsBound() && !Metadata.ValidateButtonAction.Execute())
+		{
+			return;
+		}
+
+		// Execute action.
 		BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, EntryWidgetClass);
 	});
 	Metadata.GenerateWidgetRef = Button.Get();
@@ -353,6 +360,13 @@ TWeakObjectPtr<UAccelByteWarsButtonBase> UAccelByteWarsActivatableWidget::Genera
 	Button->SetButtonText(Metadata.ButtonText);
 	Button->OnClicked().AddWeakLambda(this, [&Metadata]()
 	{
+		// Check if action is valid.
+		if (Metadata.ValidateButtonAction.IsBound() && !Metadata.ValidateButtonAction.Execute()) 
+		{
+			return;
+		}
+
+		// Execute action.
 		if (!Metadata.ButtonAction.IsBound())
 		{
 			UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Tutorial Module's Button Action with id {%s} is clicked but doesn't have any action."), *Metadata.WidgetId);

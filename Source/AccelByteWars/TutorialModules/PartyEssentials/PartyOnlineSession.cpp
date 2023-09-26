@@ -1054,7 +1054,7 @@ void UPartyOnlineSession::OnPartyInviteReceived(const FUniqueNetId& UserId, cons
 void UPartyOnlineSession::DisplayJoinPartyConfirmation(const int32 LocalUserNum, const FOnlineSessionInviteAccelByte& PartyInvite)
 {
     // Join the party if not in any party yet.
-    if (!GetABSessionInt()->IsInPartySession())
+    if (!GetABSessionInt()->IsInPartySession() || GetPartyMembers().Num() <= 1)
     {
         JoinParty(LocalUserNum, PartyInvite.Session);
         return;

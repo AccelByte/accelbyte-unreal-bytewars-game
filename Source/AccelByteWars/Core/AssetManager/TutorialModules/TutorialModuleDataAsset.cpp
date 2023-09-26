@@ -16,6 +16,7 @@ DEFINE_LOG_CATEGORY(LogTutorialModuleDataAsset);
 
 const FPrimaryAssetType	UTutorialModuleDataAsset::TutorialModuleAssetType = TEXT("TutorialModule");
 TSet<FString> UTutorialModuleDataAsset::GeneratedWidgetUsedIds;
+TArray<FTutorialModuleGeneratedWidget*> UTutorialModuleDataAsset::CachedGeneratedWidgets;
 TSet<FString> UTutorialModuleDataAsset::FTUEDialogueUsedIds;
 
 FTutorialModuleData UTutorialModuleDataAsset::GetTutorialModuleDataByCodeName(const FString& InCodeName)
@@ -437,6 +438,10 @@ void UTutorialModuleDataAsset::ValidateGeneratedWidgets()
 	}
 
 	// Assign fresh generated widget to the target widget class.
+	CachedGeneratedWidgets.RemoveAll([](const FTutorialModuleGeneratedWidget* Temp)
+	{
+		return !Temp;
+	});
 	for (FTutorialModuleGeneratedWidget& GeneratedWidget : GeneratedWidgets)
 	{
 		// Clean up unnecessary references.
@@ -486,6 +491,7 @@ void UTutorialModuleDataAsset::ValidateGeneratedWidgets()
 					continue;
 				}
 				TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.Add(&GeneratedWidget);
+				CachedGeneratedWidgets.Add(&GeneratedWidget);
 			}
 		}
 	}

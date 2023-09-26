@@ -373,4 +373,16 @@ private:
 	FOnSessionParticipantsChange OnPartyMembersChangeDelegates;
 	FOnSessionUpdateReceived OnPartySessionUpdateReceivedDelegates;
 #pragma endregion
+
+#pragma region "Playing With Party"
+protected:
+	virtual void OnStartPartyMatchmakingComplete();
+	virtual void OnPartyMatchmakingComplete(FName SessionName, bool bSucceeded);
+	virtual void OnCancelPartyMatchmakingComplete(FName SessionName, bool bSucceeded);
+	virtual void OnPartyMatchmakingExpired();
+
+	virtual void OnCreatePartyMatchComplete(FName SessionName, bool bSucceeded);
+	virtual void OnJoinPartyMatchComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
+	virtual void OnPartyMatchInviteReceived(const FUniqueNetId& UserId, const FUniqueNetId& FromId, const FOnlineSessionInviteAccelByte& Invite);
+#pragma endregion
 };

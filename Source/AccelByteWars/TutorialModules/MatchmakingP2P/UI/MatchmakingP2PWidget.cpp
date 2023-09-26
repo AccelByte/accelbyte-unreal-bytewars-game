@@ -5,8 +5,11 @@
 
 #include "MatchmakingP2PWidget.h"
 
-#include "CommonButtonBase.h"
+#include "Core/System/AccelByteWarsGameInstance.h"
+#include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
+#include "CommonButtonBase.h"
+
 #include "TutorialModules/MatchmakingEssentials/MatchmakingEssentialsModels.h"
 #include "TutorialModules/MatchmakingEssentials/UI/QuickPlayWidget.h"
 #include "TutorialModules/OnlineSessionUtils/AccelByteWarsOnlineSessionBase.h"
@@ -53,6 +56,29 @@ void UMatchmakingP2PWidget::NativeDestruct()
 
 void UMatchmakingP2PWidget::StartMatchmaking() const
 {
+	/* Cannot start matchmaking in Elimination game mode if the player is in party.
+     * Since Elimination game mode is matchmaking between individual players, not teams. */
+	if (const UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance()))
+	{
+		if (OnlineSession)
+		{
+			const bool bIsInParty = OnlineSession->GetPartyMembers().Num() > 1;
+			UPromptSubsystem* PromptSubsystem = GameInstance->GetSubsystem<UPromptSubsystem>();
+
+			if (bIsInParty &&
+				W_Parent->GetSelectedGameModeType() == EGameModeType::FFA &&
+				PromptSubsystem)
+			{
+				// TODO: Make it localizable.
+				PromptSubsystem->PushNotification(
+					FText::FromString("Cannot matchmake in Elimination mode when in a party"),
+					FString(""));
+				return;
+			}
+		}
+	}
+
+	// Otherwise, start matchmaking.
 	W_Parent->SetLoadingMessage(TEXT_FINDING_MATCH, false);
 	W_Parent->SwitchContent(UQuickPlayWidget::EContentType::LOADING);
 

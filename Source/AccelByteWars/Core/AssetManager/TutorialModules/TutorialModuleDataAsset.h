@@ -147,6 +147,11 @@ private:
 
 public:
 #pragma region "Generated Widgets"
+	static TArray<FTutorialModuleGeneratedWidget*> GetCachedGeneratedWidgets()
+	{
+		return CachedGeneratedWidgets;
+	}
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tutorial Module Dependencies", meta = (Tooltip = "Other Tutorial Modules that is required by this Tutorial Module", DisplayThumbnail = false, ShowOnlyInnerProperties))
 	TArray<UTutorialModuleDataAsset*> TutorialModuleDependencies;
 
@@ -216,6 +221,7 @@ private:
 #pragma region "Generated Widgets"
 	TArray<FTutorialModuleGeneratedWidget> LastGeneratedWidgets;
 	static TSet<FString> GeneratedWidgetUsedIds;
+	static TArray<FTutorialModuleGeneratedWidget*> CachedGeneratedWidgets;
 #pragma endregion
 
 #pragma region "First Time User Experience (FTUE)"

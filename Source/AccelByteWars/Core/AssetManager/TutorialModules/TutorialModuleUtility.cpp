@@ -80,3 +80,13 @@ bool UTutorialModuleUtility::IsTutorialModuleActive(const FPrimaryAssetId Tutori
 	UTutorialModuleDataAsset* TutorialModule = GetTutorialModuleDataAsset(TutorialModuleCodeName, Context);
 	return (TutorialModule && TutorialModule->IsActiveAndDependenciesChecked());
 }
+
+FTutorialModuleGeneratedWidget* FTutorialModuleGeneratedWidget::GetMetadataById(const FString& WidgetId)
+{
+	return *UTutorialModuleDataAsset::GetCachedGeneratedWidgets().
+		FindByPredicate([WidgetId](const FTutorialModuleGeneratedWidget* Temp)
+		{
+			return Temp->WidgetId == WidgetId;
+		}
+	);
+}

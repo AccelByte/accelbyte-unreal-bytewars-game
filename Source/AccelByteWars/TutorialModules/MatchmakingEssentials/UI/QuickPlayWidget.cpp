@@ -3,9 +3,15 @@
 // and restrictions contact your company contract manager.
 
 #include "TutorialModules/MatchmakingEssentials/UI/QuickPlayWidget.h"
+
+#include "TutorialModules/OnlineSessionUtils/AccelByteWarsOnlineSessionBase.h"
+
+#include "Core/System/AccelByteWarsGameInstance.h"
+#include "Core/UI/Components/Prompt/PromptSubsystem.h"
+#include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
+
 #include "CommonButtonBase.h"
 #include "Components/WidgetSwitcher.h"
-#include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
 
 EGameModeType UQuickPlayWidget::GetSelectedGameModeType() const
 {
@@ -123,6 +129,30 @@ UWidget* UQuickPlayWidget::NativeGetDesiredFocusTarget() const
 
 void UQuickPlayWidget::SelectGameMode(EGameModeType GameModeType)
 {
+	/* Cannot start matchmaking in Elimination game mode if the player is in party.
+	 * Since Elimination game mode is matchmaking between individual players, not teams. */
+	if (const UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance()))
+	{
+		if (UAccelByteWarsOnlineSessionBase* OnlineSession =
+			Cast<UAccelByteWarsOnlineSessionBase>(GetGameInstance()->GetOnlineSession())) 
+		{
+			const bool bIsInParty = OnlineSession->GetPartyMembers().Num() > 1;
+			UPromptSubsystem* PromptSubsystem = GameInstance->GetSubsystem<UPromptSubsystem>();
+
+			if (bIsInParty &&
+				GameModeType == EGameModeType::FFA && 
+				PromptSubsystem) 
+			{
+				// TODO: Make it localizable.
+				PromptSubsystem->PushNotification(
+					FText::FromString("Cannot matchmake in Elimination mode when in a party"),
+					FString(""));
+				return;
+			}
+		}
+	}
+
+	// Otherwise, set game mode and select server type.
 	SelectedGameModeType = GameModeType;
 	SwitchContent(EContentType::SELECTSERVERTYPE);
 }
