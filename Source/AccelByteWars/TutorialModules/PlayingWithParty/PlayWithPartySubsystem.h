@@ -6,8 +6,13 @@
 
 #include "CoreMinimal.h"
 #include "OnlineSessionInterfaceV2AccelByte.h"
+#include "OnlineIdentityInterfaceAccelByte.h"
+#include "OnlineUserInterfaceAccelByte.h"
+#include "OnlinePresenceInterfaceAccelByte.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "PlayWithPartySubsystem.generated.h"
+
+#define GAME_SESSION_ID "GAME_SESSION_ID"
 
 class UAccelByteWarsOnlineSessionBase;
 class UPromptSubsystem;
@@ -22,19 +27,24 @@ public:
 	void Deinitialize() override;
 
 protected:
-	virtual void OnStartPartyMatchmakingComplete();
-	virtual void OnPartyMatchmakingComplete(FName SessionName, bool bSucceeded);
-	virtual void OnPartyMatchmakingCanceled();
-	virtual void OnPartyMatchmakingExpired();
+	void OnStartPartyMatchmakingComplete();
+	void OnPartyMatchmakingComplete(FName SessionName, bool bSucceeded);
+	void OnPartyMatchmakingCanceled();
+	void OnPartyMatchmakingExpired();
 
-	virtual void OnCreatePartyMatchComplete(FName SessionName, bool bSucceeded);
-	virtual void OnJoinPartyMatchComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
-	virtual void OnPartyMatchInviteReceived(const FUniqueNetId& UserId, const FUniqueNetId& FromId, const FOnlineSessionInviteAccelByte& Invite);
+	void OnCreatePartyMatchComplete(FName SessionName, bool bSucceeded);
+	void OnJoinPartyMatchComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
+	void OnPartyMatchInviteReceived(const FUniqueNetId& UserId, const FUniqueNetId& FromId, const FOnlineSessionInviteAccelByte& Invite);
+	void OnLeavePartyMatchComplete(FName SessionName, bool bSucceeded);
 
-	UAccelByteWarsOnlineSessionBase* GetOnlineSession();
-	FOnlineSessionV2AccelBytePtr GetABSessionInt();
-	IOnlineIdentityPtr GetIdentityInt() const;
-	IOnlineUserPtr GetUserInt() const;
+	bool IsGameSessionDifferFromParty(FUniqueNetIdPtr MemberUserId);
+	void UpdatePartyMemberGameSession(FUniqueNetIdPtr MemberUserId);
+
+	UAccelByteWarsOnlineSessionBase* GetOnlineSession() const;
+	FOnlineSessionV2AccelBytePtr GetSessionInterface() const;
+	FOnlineIdentityAccelBytePtr GetIdentityInterface() const;
+	FOnlineUserAccelBytePtr GetUserInterface() const;
+	FOnlinePresenceAccelBytePtr GetPresenceInterface() const;
 
 	UPromptSubsystem* GetPromptSubystem();
 };
