@@ -34,8 +34,10 @@ protected:
 
 	void OnCreatePartyMatchComplete(FName SessionName, bool bSucceeded);
 	void OnJoinPartyMatchComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
-	void OnPartyMatchInviteReceived(const FUniqueNetId& UserId, const FUniqueNetId& FromId, const FOnlineSessionInviteAccelByte& Invite);
 	void OnLeavePartyMatchComplete(FName SessionName, bool bSucceeded);
+
+	void InvitePartyMembersToJoinPartyMatch(const FUniqueNetIdPtr LeaderUserId);
+	void OnPartyMatchInviteReceived(const FUniqueNetId& UserId, const FUniqueNetId& FromId, const FOnlineSessionInviteAccelByte& Invite);
 
 	bool IsGameSessionDifferFromParty(FUniqueNetIdPtr MemberUserId);
 	void UpdatePartyMemberGameSession(FUniqueNetIdPtr MemberUserId);
