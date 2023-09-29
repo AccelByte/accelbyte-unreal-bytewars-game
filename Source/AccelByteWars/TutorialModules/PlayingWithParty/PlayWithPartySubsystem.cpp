@@ -119,28 +119,6 @@ FOnlineIdentityAccelBytePtr UPlayWithPartySubsystem::GetIdentityInterface() cons
     return StaticCastSharedPtr<FOnlineIdentityAccelByte>(Online::GetIdentityInterface(World));
 }
 
-FOnlineUserAccelBytePtr UPlayWithPartySubsystem::GetUserInterface() const
-{
-    const UWorld* World = GetWorld();
-    if (!ensure(World))
-    {
-        return nullptr;
-    }
-
-    return StaticCastSharedPtr<FOnlineUserAccelByte>(Online::GetUserInterface(World));
-}
-
-FOnlinePresenceAccelBytePtr UPlayWithPartySubsystem::GetPresenceInterface() const
-{
-    const UWorld* World = GetWorld();
-    if (!ensure(World))
-    {
-        return nullptr;
-    }
-
-    return StaticCastSharedPtr<FOnlinePresenceAccelByte>(Online::GetPresenceInterface(World));
-}
-
 UPromptSubsystem* UPlayWithPartySubsystem::GetPromptSubystem()
 {
     if (UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance()))
@@ -424,7 +402,7 @@ void UPlayWithPartySubsystem::InvitePartyMembersToJoinPartyMatch(const FUniqueNe
         if (FUniqueNetIdAccelByteUserPtr MemberABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(Member))
         {
             UE_LOG(LogTemp, Log, TEXT("Send party match invitation to: %s."), *MemberABId->GetAccelByteId());
-            GetSessionInterface()->SendSessionInviteToFriend(LeaderUserId.ToSharedRef().Get(), NAME_PartySession, Member.Get());
+            GetSessionInterface()->SendSessionInviteToFriend(LeaderUserId.ToSharedRef().Get(), NAME_GameSession, Member.Get());
         }
     }
 }
@@ -567,7 +545,7 @@ void UPlayWithPartySubsystem::UpdatePartyMemberGameSession(FUniqueNetIdPtr Membe
     }
 
     // Construct party game session data.
-    const FUniqueNetIdAccelByteUserRef MemberABUserId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(MemberUserId.ToSharedRef());
+    const FUniqueNetIdAccelByteUserRef MemberUserABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(MemberUserId.ToSharedRef());
     TSharedPtr<FJsonObject> MembersGameSessionId = MakeShareable(new FJsonObject);
     FOnlineSessionSetting PartyGameSessionSetting;
     if (PartySession->SessionSettings.Settings.Contains(PARTY_MEMBERS_GAME_SESSION_ID))
@@ -587,8 +565,32 @@ void UPlayWithPartySubsystem::UpdatePartyMemberGameSession(FUniqueNetIdPtr Membe
         UE_LOG(LogTemp, Warning, TEXT("Cannot update party member game session. Failed to parse party members game session."));
         return;
     }
-    MembersGameSessionId->RemoveField(MemberABUserId->GetAccelByteId());
-    MembersGameSessionId->SetStringField(MemberABUserId->GetAccelByteId(), GameSessionId);
+    MembersGameSessionId->RemoveField(MemberUserABId->GetAccelByteId());
+    if (!GameSessionId.IsEmpty()) 
+    {
+        MembersGameSessionId->SetStringField(MemberUserABId->GetAccelByteId(), GameSessionId);
+    }
+
+    // Remove invalid party member data.
+    for (auto Pair : MembersGameSessionId->Values)
+    {
+        bool bIsValidMember = false;
+
+        for (auto& ValidMember : PartySession->RegisteredPlayers)
+        {
+            const FUniqueNetIdAccelByteUserRef ValidMemberUserABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(ValidMember);
+            if (Pair.Key.Equals(ValidMemberUserABId->GetAccelByteId()))
+            {
+                bIsValidMember = true;
+                break;
+            }
+        }
+        
+        if (!bIsValidMember) 
+        {
+            MembersGameSessionId->RemoveField(Pair.Key);
+        }
+    }
 
     // Update party game session data to the party session settings.
     FString MembersGameSessionIdStr;
@@ -619,7 +621,7 @@ bool UPlayWithPartySubsystem::ValidateToStartPartyMatch()
     if (GetOnlineSession() && !GetOnlineSession()->IsPartyLeader(UserId))
     {
         // TODO: Make it localizable
-        if (GetPromptSubystem()) 
+        if (GetPromptSubystem())
         {
             GetPromptSubystem()->PushNotification(
                 FText::FromString("Only party leader can start online session"),
@@ -637,7 +639,7 @@ bool UPlayWithPartySubsystem::ValidateToStartPartyMatch()
     if (!bResult && GetPromptSubystem())
     {
         GetPromptSubystem()->PushNotification(
-            FText::FromString("Cannot play online session as other party members are still on other game session"),
+            FText::FromString("Cannot play online session since party members are on other session"),
             FString(""));
     }
 

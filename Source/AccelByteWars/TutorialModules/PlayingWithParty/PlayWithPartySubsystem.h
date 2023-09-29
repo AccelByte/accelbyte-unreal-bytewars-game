@@ -7,8 +7,6 @@
 #include "CoreMinimal.h"
 #include "OnlineSessionInterfaceV2AccelByte.h"
 #include "OnlineIdentityInterfaceAccelByte.h"
-#include "OnlineUserInterfaceAccelByte.h"
-#include "OnlinePresenceInterfaceAccelByte.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "PlayWithPartySubsystem.generated.h"
 
@@ -47,8 +45,6 @@ protected:
 	UAccelByteWarsOnlineSessionBase* GetOnlineSession() const;
 	FOnlineSessionV2AccelBytePtr GetSessionInterface() const;
 	FOnlineIdentityAccelBytePtr GetIdentityInterface() const;
-	FOnlineUserAccelBytePtr GetUserInterface() const;
-	FOnlinePresenceAccelBytePtr GetPresenceInterface() const;
 
 	UPromptSubsystem* GetPromptSubystem();
 };
