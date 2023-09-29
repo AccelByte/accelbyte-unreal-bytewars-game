@@ -12,7 +12,7 @@
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "PlayWithPartySubsystem.generated.h"
 
-#define GAME_SESSION_ID "GAME_SESSION_ID"
+#define PARTY_MEMBERS_GAME_SESSION_ID "PARTY_MEMBERS_GAME_SESSION_ID"
 
 class UAccelByteWarsOnlineSessionBase;
 class UPromptSubsystem;
@@ -39,6 +39,8 @@ protected:
 
 	bool IsGameSessionDifferFromParty(FUniqueNetIdPtr MemberUserId);
 	void UpdatePartyMemberGameSession(FUniqueNetIdPtr MemberUserId);
+
+	bool ValidateToStartPartyMatch();
 
 	UAccelByteWarsOnlineSessionBase* GetOnlineSession() const;
 	FOnlineSessionV2AccelBytePtr GetSessionInterface() const;
