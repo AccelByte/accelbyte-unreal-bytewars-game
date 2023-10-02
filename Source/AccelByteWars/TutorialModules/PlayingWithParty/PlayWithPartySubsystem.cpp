@@ -752,7 +752,7 @@ bool UPlayWithPartySubsystem::ValidateToJoinSession(const FOnlineSessionSearchRe
     }).Num();
     
     bool bResult = 
-        (SessionSearchResult.Session.SessionSettings.NumPublicConnections - ActiveMemberCount) < 
+        (SessionSearchResult.Session.SessionSettings.NumPublicConnections - ActiveMemberCount) >=
         GetOnlineSession()->GetPartyMembers().Num();
 
     // Notify that no more slots to join the session.
