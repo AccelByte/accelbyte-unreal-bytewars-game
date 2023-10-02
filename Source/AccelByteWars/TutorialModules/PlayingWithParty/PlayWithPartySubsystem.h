@@ -8,6 +8,8 @@
 #include "OnlineSessionInterfaceV2AccelByte.h"
 #include "OnlineIdentityInterfaceAccelByte.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
+#include "TutorialModules/PlayingWithParty/PlayWithPartyLog.h"
+#include "TutorialModules/PlayingWithParty/PlayWithPartyModels.h"
 #include "PlayWithPartySubsystem.generated.h"
 
 #define PARTY_MEMBERS_GAME_SESSION_ID "PARTY_MEMBERS_GAME_SESSION_ID"
