@@ -77,6 +77,12 @@ void UBrowseMatchDSWidget::FindSessions(const bool bForce) const
 
 void UBrowseMatchDSWidget::JoinSession(const FOnlineSessionSearchResult& SessionSearchResult) const
 {
+	if (OnlineSession->ValidateToJoinSession.IsBound() &&
+		!OnlineSession->ValidateToJoinSession.Execute(SessionSearchResult))
+	{
+		return;
+	}
+
 	W_Parent->SetLoadingMessage(TEXT_JOINING_SESSION, false, false);
 	W_Parent->SwitchContent(UBrowseMatchWidget::EContentType::JOIN_LOADING);
 

@@ -54,6 +54,12 @@ void UCreateMatchSessionP2PWidget::NativeDestruct()
 
 void UCreateMatchSessionP2PWidget::CreateSession() const
 {
+	if (OnlineSession->ValidateToCreateSession.IsBound() &&
+		!OnlineSession->ValidateToCreateSession.Execute())
+	{
+		return;
+	}
+
 	W_Parent->SetLoadingMessage(TEXT_REQUESTING_SESSION_CREATION, false);
 	W_Parent->SwitchContent(UCreateMatchSessionWidget::EContentType::LOADING);
 

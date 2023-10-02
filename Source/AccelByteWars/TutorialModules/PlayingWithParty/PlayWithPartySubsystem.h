@@ -43,6 +43,8 @@ protected:
 	void UpdatePartyMemberGameSession(FUniqueNetIdPtr MemberUserId);
 
 	bool ValidateToStartPartyMatch();
+	bool ValidateToStartMatchmaking(const EGameModeType GameModeType);
+	bool ValidateToJoinSession(const FOnlineSessionSearchResult& SessionSearchResult);
 
 	UAccelByteWarsOnlineSessionBase* GetOnlineSession() const;
 	FOnlineSessionV2AccelBytePtr GetSessionInterface() const;

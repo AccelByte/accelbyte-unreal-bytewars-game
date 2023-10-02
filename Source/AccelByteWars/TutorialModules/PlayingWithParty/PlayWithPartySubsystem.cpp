@@ -32,40 +32,17 @@ void UPlayWithPartySubsystem::Initialize(FSubsystemCollectionBase& Collection)
         GetSessionInterface()->OnDestroySessionCompleteDelegates.AddUObject(this, &ThisClass::OnLeavePartyMatchComplete);
     }
 
-    // Add validation to online session related UIs
-    if (FTutorialModuleGeneratedWidget* PlayOnlineButtonMetadata =
-        FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_play_online")))
+    // Add party validation to online session related UIs.
+    if (GetOnlineSession()) 
     {
-        PlayOnlineButtonMetadata->ValidateButtonAction.Unbind();
-        PlayOnlineButtonMetadata->ValidateButtonAction.BindUObject(this, &ThisClass::ValidateToStartPartyMatch);
-    }
-    
-    if (FTutorialModuleGeneratedWidget* QuickPlayButtonMetadata =
-        FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_quick_play")))
-    {
-        QuickPlayButtonMetadata->ValidateButtonAction.Unbind();
-        QuickPlayButtonMetadata->ValidateButtonAction.BindUObject(this, &ThisClass::ValidateToStartPartyMatch);
-    }
-    
-    if (FTutorialModuleGeneratedWidget* CreateMatchSessionButtonMetadata =
-        FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_create_match_session")))
-    {
-        CreateMatchSessionButtonMetadata->ValidateButtonAction.Unbind();
-        CreateMatchSessionButtonMetadata->ValidateButtonAction.BindUObject(this, &ThisClass::ValidateToStartPartyMatch);
-    }
+        GetOnlineSession()->ValidateToCreateSession.Unbind();
+        GetOnlineSession()->ValidateToCreateSession.BindUObject(this, &ThisClass::ValidateToStartPartyMatch);
 
-    if (FTutorialModuleGeneratedWidget* CreateSessionButtonMetadata =
-        FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_create_session")))
-    {
-        CreateSessionButtonMetadata->ValidateButtonAction.Unbind();
-        CreateSessionButtonMetadata->ValidateButtonAction.BindUObject(this, &ThisClass::ValidateToStartPartyMatch);
-    }
+        GetOnlineSession()->ValidateToStartMatchmaking.Unbind();
+        GetOnlineSession()->ValidateToStartMatchmaking.BindUObject(this, &ThisClass::ValidateToStartMatchmaking);
 
-    if (FTutorialModuleGeneratedWidget* BrowseMatchButtonMetadata =
-        FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_browse_match")))
-    {
-        BrowseMatchButtonMetadata->ValidateButtonAction.Unbind();
-        BrowseMatchButtonMetadata->ValidateButtonAction.BindUObject(this, &ThisClass::ValidateToStartPartyMatch);
+        GetOnlineSession()->ValidateToJoinSession.Unbind();
+        GetOnlineSession()->ValidateToJoinSession.BindUObject(this, &ThisClass::ValidateToJoinSession);
     }
 }
 
@@ -84,6 +61,25 @@ void UPlayWithPartySubsystem::Deinitialize()
         GetSessionInterface()->OnJoinSessionCompleteDelegates.RemoveAll(this);
         GetSessionInterface()->OnV2SessionInviteReceivedDelegates.RemoveAll(this);
         GetSessionInterface()->OnDestroySessionCompleteDelegates.RemoveAll(this);
+    }
+
+    // Remove party validation to online session related UIs.
+    if (GetOnlineSession())
+    {
+        if (GetOnlineSession()->ValidateToCreateSession.GetUObject() == this) 
+        {
+            GetOnlineSession()->ValidateToCreateSession.Unbind();
+        }
+
+        if (GetOnlineSession()->ValidateToStartMatchmaking.GetUObject() == this)
+        {
+            GetOnlineSession()->ValidateToStartMatchmaking.Unbind();
+        }
+
+        if (GetOnlineSession()->ValidateToJoinSession.GetUObject() == this)
+        {
+            GetOnlineSession()->ValidateToJoinSession.Unbind();
+        }
     }
 }
 
@@ -346,8 +342,17 @@ void UPlayWithPartySubsystem::OnJoinPartyMatchComplete(FName SessionName, EOnJoi
     // Show relevant notification if the one who joined the session is party member.
     else 
     {
-        // Show notification if failed to join party match.
-        if (Result != EOnJoinSessionCompleteResult::Type::Success)
+        if (Result == EOnJoinSessionCompleteResult::Type::Success)
+        {
+            UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Success to join party match."));
+
+            if (GetPromptSubystem())
+            {
+                GetPromptSubystem()->HideLoading();
+                GetPromptSubystem()->PushNotification(JOIN_PARTY_MATCH_SUCCESS_MESSAGE, FString(""));
+            }
+        }
+        else
         {
             UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Failed to join party match."));
 
@@ -677,7 +682,7 @@ bool UPlayWithPartySubsystem::ValidateToStartPartyMatch()
     {
         if (GetPromptSubystem())
         {
-            GetPromptSubystem()->PushNotification(PARTY_MATCH_LEADER_SAFEGUARD_MESSAGE, FString(""));
+            GetPromptSubystem()->PushNotification(PARTY_MATCH_MEMBER_SAFEGUARD_MESSAGE, FString(""));
         }
         return false;
     }
@@ -689,7 +694,71 @@ bool UPlayWithPartySubsystem::ValidateToStartPartyMatch()
      * if other party members are in other game session.*/
     if (!bResult && GetPromptSubystem())
     {
-        GetPromptSubystem()->PushNotification(PARTY_MATCH_MEMBER_SAFEGUARD_MESSAGE, FString(""));
+        GetPromptSubystem()->PushNotification(PARTY_MATCH_LEADER_SAFEGUARD_MESSAGE, FString(""));
+    }
+
+    return bResult;
+}
+
+bool UPlayWithPartySubsystem::ValidateToStartMatchmaking(const EGameModeType GameModeType)
+{
+    if (!ValidateToStartPartyMatch())
+    {
+        return false;
+    }
+
+    bool bResult = GameModeType == EGameModeType::FFA;
+
+    // Notify cannot matchmaking using the specified game mode.
+    if (!bResult && GetPromptSubystem())
+    {
+        GetPromptSubystem()->PushNotification(PARTY_MATCHMAKING_SAFEGUARD_MESSAGE, FString(""));
+    }
+
+    return bResult;
+}
+
+bool UPlayWithPartySubsystem::ValidateToJoinSession(const FOnlineSessionSearchResult& SessionSearchResult)
+{
+    if (!ValidateToStartPartyMatch())
+    {
+        return false;
+    }
+
+    if (!GetSessionInterface() || !GetOnlineSession())
+    {
+        UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot validate to join session. Interfaces or online session are not valid."));
+        return false;
+    }
+
+    TSharedPtr<FOnlineSessionInfoAccelByteV2> SessionInfo = StaticCastSharedPtr<FOnlineSessionInfoAccelByteV2>(SessionSearchResult.Session.SessionInfo);
+    if (!SessionInfo)
+    {
+        UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot validate to join session. Session is not valid."));
+        return false;
+    }
+
+    TSharedPtr<FAccelByteModelsV2BaseSession> SessionData = SessionInfo->GetBackendSessionData();
+    if (!SessionData)
+    {
+        UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot validate to join session. Session data is not valid."));
+        return false;
+    }
+
+    // Check if session slots is sufficient to join with party
+    int32 ActiveMemberCount = SessionData->Members.FilterByPredicate([](FAccelByteModelsV2SessionUser Temp)
+    {
+        return Temp.StatusV2 == EAccelByteV2SessionMemberStatus::JOINED;
+    }).Num();
+    
+    bool bResult = 
+        (SessionSearchResult.Session.SessionSettings.NumPublicConnections - ActiveMemberCount) < 
+        GetOnlineSession()->GetPartyMembers().Num();
+
+    // Notify that no more slots to join the session.
+    if (!bResult && GetPromptSubystem())
+    {
+        GetPromptSubystem()->PushNotification(JOIN_PARTY_MATCH_SAFEGUARD_MESSAGE, FString(""));
     }
 
     return bResult;

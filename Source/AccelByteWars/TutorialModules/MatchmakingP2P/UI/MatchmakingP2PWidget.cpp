@@ -56,26 +56,10 @@ void UMatchmakingP2PWidget::NativeDestruct()
 
 void UMatchmakingP2PWidget::StartMatchmaking() const
 {
-	/* Cannot start matchmaking in Elimination game mode if the player is in party.
-     * Since Elimination game mode is matchmaking between individual players, not teams. */
-	if (const UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance()))
+	if (OnlineSession->ValidateToStartMatchmaking.IsBound() &&
+		!OnlineSession->ValidateToStartMatchmaking.Execute(W_Parent->GetSelectedGameModeType()))
 	{
-		if (OnlineSession)
-		{
-			const bool bIsInParty = OnlineSession->GetPartyMembers().Num() > 1;
-			UPromptSubsystem* PromptSubsystem = GameInstance->GetSubsystem<UPromptSubsystem>();
-
-			if (bIsInParty &&
-				W_Parent->GetSelectedGameModeType() == EGameModeType::FFA &&
-				PromptSubsystem)
-			{
-				// TODO: Make it localizable.
-				PromptSubsystem->PushNotification(
-					FText::FromString("Cannot matchmake in Elimination mode when in a party"),
-					FString(""));
-				return;
-			}
-		}
+		return;
 	}
 
 	// Otherwise, start matchmaking.

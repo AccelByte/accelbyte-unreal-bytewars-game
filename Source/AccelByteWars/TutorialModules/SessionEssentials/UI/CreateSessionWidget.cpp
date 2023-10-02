@@ -63,6 +63,12 @@ void UCreateSessionWidget::CreateSession()
 		return;
 	}
 
+	if (SessionOnlineSession->ValidateToCreateSession.IsBound() &&
+		!SessionOnlineSession->ValidateToCreateSession.Execute())
+	{
+		return;
+	}
+
 	Ws_Processing->LoadingMessage = TEXT_REQUESTING_SESSION_CREATION;
 	SwitchContent(EContentType::LOADING);
 

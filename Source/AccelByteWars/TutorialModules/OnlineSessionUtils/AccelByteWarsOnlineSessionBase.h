@@ -214,4 +214,11 @@ protected:
 	virtual void OnPartyMembersChange(FName SessionName, const FUniqueNetId& Member, bool bJoined) {}
 	virtual void OnPartySessionUpdateReceived(FName SessionName) {}
 #pragma endregion
+
+#pragma region "Playing With Party"
+public:
+	TDelegate<bool()> ValidateToCreateSession;
+	TDelegate<bool(const EGameModeType GameModeType)> ValidateToStartMatchmaking;
+	TDelegate<bool(const FOnlineSessionSearchResult& SessionSearchResult)> ValidateToJoinSession;
+#pragma endregion
 };
