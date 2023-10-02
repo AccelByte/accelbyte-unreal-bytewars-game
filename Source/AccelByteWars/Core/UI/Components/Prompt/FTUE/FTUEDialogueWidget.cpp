@@ -245,21 +245,31 @@ bool UFTUEDialogueWidget::InitializeDialogue(FFTUEDialogueModel* Dialogue)
 	{
 		// Look for widget to highlight.
 		const FString WidgetToHighlightStr = Dialogue->TargetWidgetNameToHighlight;
+		UE_LOG_FTUEDIALOGUEWIDGET(Log, TEXT("Widget to highlight: %s"), *WidgetToHighlightStr);
+
 		TArray<UUserWidget*> FoundWidgets;
 		UWidgetBlueprintLibrary::GetAllWidgetsOfClass(this, FoundWidgets, Dialogue->TargetWidgetClassToHighlight.Get(), false);
+		UE_LOG_FTUEDIALOGUEWIDGET(Log, TEXT("Found potential widgets to highlight: %d"), FoundWidgets.Num());
 
 		// Eliminate invalid found widgets.
 		FoundWidgets.RemoveAll([WidgetToHighlightStr](const UUserWidget* Temp)
 		{
 			return !Temp || !Temp->GetName().Equals(WidgetToHighlightStr) || !Temp->IsVisible();
 		});
+		UE_LOG_FTUEDIALOGUEWIDGET(Log, TEXT("Potential widgets to highlight after validation: %d"), FoundWidgets.Num());
 
 		// Try to highlight widget.
 		for (auto& FoundWidget : FoundWidgets)
 		{
 			// Skip if invalid.
-			if (!FoundWidget || !FoundWidget->IsVisible())
+			if (!FoundWidget)
 			{
+				UE_LOG_FTUEDIALOGUEWIDGET(Warning, TEXT("Highlighted widget is found but it is not valid."));
+				continue;
+			}
+			if (!FoundWidget->IsVisible())
+			{
+				UE_LOG_FTUEDIALOGUEWIDGET(Warning, TEXT("Highlighted widget is found but it is invisible."));
 				continue;
 			}
 
@@ -272,6 +282,12 @@ bool UFTUEDialogueWidget::InitializeDialogue(FFTUEDialogueModel* Dialogue)
 				{
 					CachedHighlightedWidget = FoundWidget;
 					WidgetInterface->Execute_ToggleHighlight(FoundWidget, true);
+
+					UE_LOG_FTUEDIALOGUEWIDGET(Log, TEXT("Highlighted widget found."));
+				}
+				else 
+				{
+					UE_LOG_FTUEDIALOGUEWIDGET(Warning, TEXT("Highlighted widget is found but it is not implementing widget highlighting interface."));
 				}
 
 				break;
