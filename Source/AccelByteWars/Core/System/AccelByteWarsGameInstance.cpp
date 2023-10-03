@@ -11,6 +11,13 @@
 
 #define GAMEINSTANCE_LOG(FormatString, ...) UE_LOG(LogAccelByteWarsGameInstance, Log, TEXT(FormatString), __VA_ARGS__);
 
+void UAccelByteWarsGameInstance::Init()
+{
+	Super::Init();
+
+	GEngine->NetworkFailureEvent.AddUObject(this, &ThisClass::OnNetworkFailure);
+}
+
 void UAccelByteWarsGameInstance::Shutdown()
 {
 	OnGameInstanceShutdownDelegate.Broadcast();
@@ -36,6 +43,32 @@ UAccelByteWarsBaseUI* UAccelByteWarsGameInstance::GetBaseUIWidget(bool bAutoActi
 	}
 
 	return BaseUIWidget;
+}
+
+bool UAccelByteWarsGameInstance::GetIsPendingFailureNotification(
+	ENetworkFailure::Type& OutFailureType,
+	FString& OutFailureMessage)
+{
+	if (bPendingFailureNotification)
+	{
+		OutFailureType = LastFailureType;
+		OutFailureMessage = LastFailureMessage;
+		bPendingFailureNotification = false;
+		return true;
+	}
+
+	return false;
+}
+
+void UAccelByteWarsGameInstance::OnNetworkFailure(
+	UWorld* World,
+	UNetDriver* NetDriver,
+	ENetworkFailure::Type FailureType,
+	const FString& Message)
+{
+	bPendingFailureNotification = true;
+	LastFailureType = FailureType;
+	LastFailureMessage = Message;
 }
 
 int32 UAccelByteWarsGameInstance::AddLocalPlayer(ULocalPlayer* NewLocalPlayer, FPlatformUserId UserId)

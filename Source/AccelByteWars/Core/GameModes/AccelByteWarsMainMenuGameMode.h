@@ -9,6 +9,8 @@
 #include "Core/GameStates/AccelByteWarsMainMenuGameState.h"
 #include "AccelByteWarsMainMenuGameMode.generated.h"
 
+#define TEXT_CONNECTION_FAILED NSLOCTEXT("AccelByteWars", "connection_failed", "Connection Failed")
+
 UCLASS()
 class ACCELBYTEWARS_API AAccelByteWarsMainMenuGameMode : public AAccelByteWarsGameMode
 {

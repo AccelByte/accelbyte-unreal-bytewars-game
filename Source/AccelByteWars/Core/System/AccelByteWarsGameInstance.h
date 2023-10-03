@@ -116,6 +116,7 @@ class ACCELBYTEWARS_API UAccelByteWarsGameInstance : public UGameInstance
 {
 	GENERATED_BODY()
 
+	virtual void Init() override;
 	virtual void Shutdown() override;
 	
 public:
@@ -135,10 +136,18 @@ public:
 	 * @brief Called on GameInstance::Shutdown | Just before the actual game exit. Will also be called on exit PIE.
 	 */
 	FOnGameInstanceShutdown OnGameInstanceShutdownDelegate;
-	
+
+	bool GetIsPendingFailureNotification(ENetworkFailure::Type& OutFailureType, FString& OutFailureMessage);
+
 private:
 	/** This is the primary player*/
 	TWeakObjectPtr<ULocalPlayer> PrimaryPlayer;
+
+	ENetworkFailure::Type LastFailureType;
+	FString LastFailureMessage;
+	bool bPendingFailureNotification = false;
+
+	void OnNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType, const FString& Message);
 
 public:
 	virtual int32 AddLocalPlayer(ULocalPlayer* NewLocalPlayer, FPlatformUserId UserId) override;

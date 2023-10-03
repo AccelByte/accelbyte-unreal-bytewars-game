@@ -3,7 +3,7 @@
 
 #include "Core/GameModes/AccelByteWarsMainMenuGameMode.h"
 
-#include "Core/AssetManager/TutorialModules/TutorialModuleDataAsset.h"
+#include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "Core/UI/MainMenu/MatchLobby/MatchLobbyWidget.h"
 #include "GameFramework/PlayerState.h"
 #include "Kismet/GameplayStatics.h"
@@ -71,6 +71,17 @@ void AAccelByteWarsMainMenuGameMode::BeginPlay()
 			SetupSimulateServerCrashCountdownValue(FString("-SIM_SERVER_CRASH_MAINMENU"));
 		}
 	});
+
+	// check if last connection was failed
+	ENetworkFailure::Type FailureType;
+	FString FailureMessage;
+	if (GameInstance->GetIsPendingFailureNotification(FailureType, FailureMessage))
+	{
+		if (UPromptSubsystem* PromptSubsystem = GetGameInstance()->GetSubsystem<UPromptSubsystem>())
+		{
+			PromptSubsystem->ShowMessagePopUp(TEXT_CONNECTION_FAILED, FText::FromString(FailureMessage));
+		}
+	}
 }
 
 APlayerController* AAccelByteWarsMainMenuGameMode::Login(
