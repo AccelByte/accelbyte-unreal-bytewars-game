@@ -57,8 +57,6 @@ void UOwnedCountWidgetEntry::ShowOwnedCount()
 			return;
 		}
 
-		UE_LOG(LogTemp, Warning, TEXT("Amogus: %s %s: %d"), *GetOuter()->GetName(), *EntitlementData->Id, EntitlementData->Count);
-
 		FText Text;
 		if (EntitlementData->bConsumable && EntitlementData->Count > 0)
 		{

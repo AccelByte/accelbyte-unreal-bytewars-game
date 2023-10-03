@@ -57,8 +57,6 @@ void UEntitlementsEssentialsSubsystem::QueryUserEntitlement(const APlayerControl
 	{
 		return;
 	}
-	
-	UE_LOG(LogTemp, Warning, TEXT("Amogus Query"))
 
 	bIsQueryRunning = true;
 	EntitlementsInterface->QueryEntitlements(
@@ -72,7 +70,6 @@ void UEntitlementsEssentialsSubsystem::OnQueryEntitlementComplete(
 	const FString& Namespace,
 	const FString& Error)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Amogus QueryComplete"))
 	bIsQueryRunning = false;
 
 	TArray<UItemDataObject*> Items;
