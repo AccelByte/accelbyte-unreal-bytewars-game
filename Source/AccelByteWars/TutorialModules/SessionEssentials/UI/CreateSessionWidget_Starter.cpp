@@ -24,10 +24,16 @@ void UCreateSessionWidget_Starter::NativeOnActivated()
 
 	// TODO: Bind delegates
 
-	// Change UI state based on the current player's session status
-	const FNamedOnlineSession* OnlineSession = SessionOnlineSession->GetSession(
-		SessionOnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession));
-	SwitchContent(OnlineSession ? EContentType::SUCCESS : EContentType::CREATE);
+	// Set initial UI state.
+	SwitchContent(EContentType::CREATE);
+
+	// Set UI state to success if already in a session.
+	const FName SessionName = SessionOnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession);
+	const FNamedOnlineSession* OnlineSession = SessionOnlineSession->GetSession(SessionName);
+	if (OnlineSession)
+	{
+		// TODO: Call function to set the success state.
+	}
 }
 
 void UCreateSessionWidget_Starter::NativeOnDeactivated()
@@ -74,25 +80,21 @@ void UCreateSessionWidget_Starter::SwitchContent(const EContentType Type)
 	case EContentType::CREATE:
 		ContentTarget = W_Selection;
 		FocusTarget = Btn_CreateSession;
-		DeinitializeFTUEDialogues();
 		break;
 	case EContentType::LOADING:
 		ContentTarget = Ws_Processing;
 		ProcessingWidgetState = EAccelByteWarsWidgetSwitcherState::Loading;
 		bEnableBackButton = false;
-		DeinitializeFTUEDialogues();
 		break;
 	case EContentType::SUCCESS:
 		ContentTarget = Ws_Processing;
 		ProcessingWidgetState = EAccelByteWarsWidgetSwitcherState::Not_Empty;
 		FocusTarget = Btn_Leave;
-		InitializeFTEUDialogues(true);
 		break;
 	case EContentType::ERROR:
 		ContentTarget = Ws_Processing;
 		ProcessingWidgetState = EAccelByteWarsWidgetSwitcherState::Error;
 		FocusTarget = Btn_Back;
-		DeinitializeFTUEDialogues();
 		break;
 	default: ;
 	}
@@ -109,6 +111,16 @@ void UCreateSessionWidget_Starter::SwitchContent(const EContentType Type)
 	if (FocusTarget)
 	{
 		FocusTarget->SetUserFocus(GetOwningPlayer());
+	}
+
+	// Set FTUEs
+	if (Type == EContentType::SUCCESS)
+	{
+		InitializeFTEUDialogues(true);
+	}
+	else
+	{
+		DeinitializeFTUEDialogues();
 	}
 }
 #pragma endregion 
