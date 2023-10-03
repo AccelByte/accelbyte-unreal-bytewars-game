@@ -126,4 +126,14 @@ void UBrowseMatchWidget::SwitchContent(const EContentType Type)
 		Btn_Joining_Back->SetVisibility(bJoin_ShowBackButton ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 		Ws_Joining->SetWidgetState(State);
 	}
+
+	// Set FTUE
+	if (Type == EContentType::BROWSE_EMPTY || Type == EContentType::BROWSE_NOT_EMPTY) 
+	{
+		InitializeFTEUDialogues(true);
+	}
+	else 
+	{
+		DeinitializeFTUEDialogues();
+	}
 }
