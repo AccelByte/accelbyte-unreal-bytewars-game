@@ -10,6 +10,8 @@
 #define TEXT_REJECT_INVITE NSLOCTEXT("AccelByteWars", "reject", "Reject")
 #define TEXT_FORMAT_INVITE_REJECTED NSLOCTEXT("AccelByteWars", "invite_rejected_format", "{0} rejected your invite")
 #define TEXT_FORMAT_JOINED NSLOCTEXT("AccelByteWars", "joined_format", "{0} joined")
+#define TEXT_FORMAT_LEADER_CHANGED NSLOCTEXT("AccelByteWars", "leader_changed_format", "{0} is now the session leader")
+#define TEXT_YOU_ARE NSLOCTEXT("AccelByteWars", "you_are", "You are")
 #define TEXT_FORMAT_LEFT NSLOCTEXT("AccelByteWars", "left_format", "{0} left")
 #define TEXT_LEAVING_SESSION NSLOCTEXT("AccelByteWars", "leaving_session", "Leaving Session")
 #define TEXT_JOIN_NEW_SESSION_CONFIRMATION NSLOCTEXT("AccelByteWars", "join_new_session_confirmation", "Are you sure want to leave current game session and join a new one?")

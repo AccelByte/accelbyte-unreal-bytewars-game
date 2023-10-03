@@ -35,11 +35,14 @@ private:
 	UPROPERTY()
 	UAccelByteWarsOnlineSessionBase* OnlineSession;
 
+	FUniqueNetIdPtr LeaderId;
+	bool bLeaderChanged = false;
+
 	void OnSendGameSessionInviteComplete(
 		const FUniqueNetId& LocalSenderId,
 		FName SessionName,
 		bool bSucceeded,
-		const FUniqueNetId& InviteeId);
+		const FUniqueNetId& InviteeId) const;
 	void OnRejectGameSessionInviteComplete(bool bSucceeded) const;
 
 	void OnGameSessionInviteReceived(
@@ -60,7 +63,7 @@ private:
 		FName SessionName,
 		const bool bJoined);
 
-	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type CompletionType);
+	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type CompletionType) const;
 
 	FUniqueNetIdRef GetSessionOwnerUniqueNetId(const FName SessionName) const;
 	UPromptSubsystem* GetPromptSubsystem() const;
