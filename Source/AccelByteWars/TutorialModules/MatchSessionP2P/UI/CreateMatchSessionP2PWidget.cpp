@@ -54,8 +54,8 @@ void UCreateMatchSessionP2PWidget::NativeDestruct()
 
 void UCreateMatchSessionP2PWidget::CreateSession() const
 {
-	if (OnlineSession->ValidateToCreateSession.IsBound() &&
-		!OnlineSession->ValidateToCreateSession.Execute())
+	if (OnlineSession->ValidateToStartSession.IsBound() &&
+		!OnlineSession->ValidateToStartSession.Execute())
 	{
 		return;
 	}

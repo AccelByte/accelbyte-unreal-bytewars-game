@@ -42,7 +42,7 @@ protected:
 	bool IsGameSessionDifferFromParty(FUniqueNetIdPtr MemberUserId);
 	void UpdatePartyMemberGameSession(FUniqueNetIdPtr MemberUserId);
 
-	bool ValidateToStartPartyMatch();
+	bool ValidateToStartSession();
 	bool ValidateToStartMatchmaking(const EGameModeType GameModeType);
 	bool ValidateToJoinSession(const FOnlineSessionSearchResult& SessionSearchResult);
 

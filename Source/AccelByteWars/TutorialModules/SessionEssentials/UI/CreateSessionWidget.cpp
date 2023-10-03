@@ -63,8 +63,8 @@ void UCreateSessionWidget::CreateSession()
 		return;
 	}
 
-	if (SessionOnlineSession->ValidateToCreateSession.IsBound() &&
-		!SessionOnlineSession->ValidateToCreateSession.Execute())
+	if (SessionOnlineSession->ValidateToStartSession.IsBound() &&
+		!SessionOnlineSession->ValidateToStartSession.Execute())
 	{
 		return;
 	}
