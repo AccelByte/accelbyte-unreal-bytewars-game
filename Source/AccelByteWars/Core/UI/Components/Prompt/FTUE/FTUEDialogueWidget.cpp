@@ -71,7 +71,7 @@ void UFTUEDialogueWidget::ShowDialogues(bool bFirstTime)
 	if (bFirstTime)
 	{
 		// Reset is already shown dialogue statuses if always show FTUE.
-		if (GameInstance && GameInstance->GetFTUEAlwaysOnSetting())
+		if (IsAlwaysShow())
 		{
 			TArray<FFTUEDialogueModel*> Instigators = DialoguesInternal.FilterByPredicate([](const FFTUEDialogueModel* Temp)
 			{
@@ -448,6 +448,59 @@ void UFTUEDialogueWidget::ClearHighlightedWidget()
 	}
 
 	CachedHighlightedWidget = nullptr;
+}
+
+bool UFTUEDialogueWidget::IsAlwaysShow()
+{
+	bool bIsAlwaysShow = false;
+
+	// Set user preference setting as the initial value.
+	bIsAlwaysShow = (GameInstance && GameInstance->GetFTUEAlwaysOnSetting());
+
+	const FString OverrideKeyword = TEXT("ForceEnableFTUE");
+	const FString CmdKeyword = FString::Printf(TEXT("-%s="), *OverrideKeyword);
+
+	// Check for launch param override.
+	const FString CmdArgs = FCommandLine::Get();
+	if (CmdArgs.Contains(*CmdKeyword, ESearchCase::IgnoreCase))
+	{
+		FString CmdIsAlwaysShowStr;
+		FParse::Value(*CmdArgs, *CmdKeyword, CmdIsAlwaysShowStr);
+
+		const bool bTemp = bIsAlwaysShow;
+		if (CmdIsAlwaysShowStr.Equals(TEXT("TRUE"), ESearchCase::IgnoreCase))
+		{
+			bIsAlwaysShow = true;
+		}
+		else if (CmdIsAlwaysShowStr.Equals(TEXT("FALSE"), ESearchCase::IgnoreCase))
+		{
+			bIsAlwaysShow = false;
+		}
+
+		// Show log only if the config is overridden.
+		if (bIsAlwaysShow != bTemp)
+		{
+			UE_LOG_FTUEDIALOGUEWIDGET(Log,
+				TEXT("Launch param overrides the Always Show FTUE config to %s."),
+				bIsAlwaysShow ? TEXT("TRUE") : TEXT("FALSE"));
+		}
+	}
+	// Check for DefaultEngine.ini override.
+	else 
+	{
+		const bool bTemp = bIsAlwaysShow;
+		bIsAlwaysShow = GConfig->GetBoolOrDefault(TEXT("AccelByteTutorialModules"), *OverrideKeyword, bIsAlwaysShow, GEngineIni);
+
+		// Show log only if the config is overridden.
+		if (bIsAlwaysShow != bTemp) 
+		{
+			UE_LOG_FTUEDIALOGUEWIDGET(Log,
+				TEXT("DefaultEngine.ini overrides the Always Show FTUE config to %s."),
+				bIsAlwaysShow ? TEXT("TRUE") : TEXT("FALSE"));
+		}
+	}
+
+	return bIsAlwaysShow;
 }
 
 bool UFTUEDialogueWidget::IsAllDialoguesAlreadyShown()
