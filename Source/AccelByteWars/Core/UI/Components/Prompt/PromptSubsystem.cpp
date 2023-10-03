@@ -94,7 +94,7 @@ void UPromptSubsystem::HideLoading()
 void UPromptSubsystem::PushNotification(UPushNotification* Notification)
 {
 	// Notification can only be displayed on Main Menu level.
-	if (!Cast<AAccelByteWarsMainMenuGameMode>(GetWorld()->GetAuthGameMode()))
+	if (!Cast<AAccelByteWarsMainMenuGameState>(GetWorld()->GetGameState()))
 	{
 		return;
 	}
