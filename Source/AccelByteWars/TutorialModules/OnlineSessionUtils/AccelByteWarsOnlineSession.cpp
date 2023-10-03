@@ -26,9 +26,19 @@ void UAccelByteWarsOnlineSession::RegisterOnlineDelegates()
 	Super::RegisterOnlineDelegates();
 
 	// Session Essentials
-	GetSessionInt()->AddOnCreateSessionCompleteDelegate_Handle(FOnCreateSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnCreateSessionComplete));
-	GetSessionInt()->AddOnJoinSessionCompleteDelegate_Handle(FOnJoinSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnJoinSessionComplete));
-	GetSessionInt()->AddOnDestroySessionCompleteDelegate_Handle(FOnDestroySessionCompleteDelegate::CreateUObject(this, &ThisClass::OnLeaveSessionComplete));
+	GetSessionInt()->AddOnCreateSessionCompleteDelegate_Handle(
+		FOnCreateSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnCreateSessionComplete));
+	GetSessionInt()->AddOnJoinSessionCompleteDelegate_Handle(
+		FOnJoinSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnJoinSessionComplete));
+	GetABSessionInt()->AddOnSendSessionInviteCompleteDelegate_Handle(
+		FOnSendSessionInviteCompleteDelegate::CreateUObject(this, &ThisClass::OnSendSessionInviteComplete));
+	GetSessionInt()->AddOnDestroySessionCompleteDelegate_Handle(
+		FOnDestroySessionCompleteDelegate::CreateUObject(this, &ThisClass::OnLeaveSessionComplete));
+
+	GetABSessionInt()->AddOnV2SessionInviteReceivedDelegate_Handle(
+		FOnV2SessionInviteReceivedDelegate::CreateUObject(this, &ThisClass::OnSessionInviteReceived));
+	GetABSessionInt()->AddOnSessionParticipantsChangeDelegate_Handle(
+		FOnSessionParticipantsChangeDelegate::CreateUObject(this, &ThisClass::OnSessionParticipantsChange));
 
 	// Game Session Essentials
 	GetABSessionInt()->OnSessionServerUpdateDelegates.AddUObject(this, &ThisClass::OnSessionServerUpdateReceived);
@@ -71,7 +81,11 @@ void UAccelByteWarsOnlineSession::ClearOnlineDelegates()
 	// Session Essentials
 	GetSessionInt()->ClearOnCreateSessionCompleteDelegates(this);
 	GetSessionInt()->ClearOnJoinSessionCompleteDelegates(this);
+	GetABSessionInt()->ClearOnSendSessionInviteCompleteDelegates(this);
 	GetSessionInt()->ClearOnDestroySessionCompleteDelegates(this);
+
+	GetABSessionInt()->ClearOnV2SessionInviteReceivedDelegates(this);
+	GetABSessionInt()->ClearOnSessionParticipantsChangeDelegates(this);
 
 	// Game Session Essentials
 	GetABSessionInt()->OnSessionServerUpdateDelegates.RemoveAll(this);
@@ -264,6 +278,41 @@ void UAccelByteWarsOnlineSession::JoinSession(
 	}
 }
 
+void UAccelByteWarsOnlineSession::SendSessionInvite(
+	const int32 LocalUserNum,
+	FName SessionName,
+	const FUniqueNetIdPtr Invitee)
+{
+	UE_LOG_ONLINESESSION(Verbose, TEXT("Called"));
+
+	if (!Invitee.IsValid())
+	{
+		UE_LOG_ONLINESESSION(Log, TEXT("Invitee net id is invalid. Cancelling operation"));
+		return;
+	}
+
+	GetABSessionInt()->SendSessionInviteToFriend(LocalUserNum, SessionName, *Invitee.Get());
+}
+
+void UAccelByteWarsOnlineSession::RejectSessionInvite(
+	const int32 LocalUserNum,
+	const FOnlineSessionInviteAccelByte& Invite)
+{
+	UE_LOG_ONLINESESSION(Verbose, TEXT("Called"));
+
+	const FUniqueNetIdPtr LocalUserNetId = GetLocalPlayerUniqueNetId(GetPlayerControllerByLocalUserNum(LocalUserNum));
+	if (!LocalUserNetId.IsValid())
+	{
+		UE_LOG_ONLINESESSION(Log, TEXT("Local User net id is invalid. Cancelling operation"));
+		return;
+	}
+
+	GetABSessionInt()->RejectInvite(
+		*LocalUserNetId.Get(),
+		Invite,
+		FOnRejectSessionInviteComplete::CreateUObject(this, &ThisClass::OnRejectSessionInviteComplete));
+}
+
 void UAccelByteWarsOnlineSession::LeaveSession(FName SessionName)
 {
 	UE_LOG_ONLINESESSION(Verbose, TEXT("called"))
@@ -340,6 +389,24 @@ void UAccelByteWarsOnlineSession::OnJoinSessionComplete(FName SessionName, EOnJo
 	OnJoinSessionCompleteDelegates.Broadcast(SessionName, Result);
 }
 
+void UAccelByteWarsOnlineSession::OnSendSessionInviteComplete(
+	const FUniqueNetId& LocalSenderId,
+	FName SessionName,
+	bool bSucceeded,
+	const FUniqueNetId& InviteeId)
+{
+	UE_LOG_ONLINESESSION(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE" : "FALSE"))
+
+	OnSendSessionInviteCompleteDelegates.Broadcast(LocalSenderId, SessionName, bSucceeded, InviteeId);
+}
+
+void UAccelByteWarsOnlineSession::OnRejectSessionInviteComplete(bool bSucceeded)
+{
+	UE_LOG_ONLINESESSION(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE" : "FALSE"))
+
+	OnRejectSessionInviteCompleteDelegates.Broadcast(bSucceeded);
+}
+
 void UAccelByteWarsOnlineSession::OnLeaveSessionComplete(FName SessionName, bool bSucceeded)
 {
 	UE_LOG_ONLINESESSION(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
@@ -353,6 +420,29 @@ void UAccelByteWarsOnlineSession::OnLeaveSessionComplete(FName SessionName, bool
 
 	bLeaveSessionRunning = false;
 	OnLeaveSessionCompleteDelegates.Broadcast(SessionName, bSucceeded);
+}
+
+void UAccelByteWarsOnlineSession::OnSessionInviteReceived(
+	const FUniqueNetId& UserId,
+	const FUniqueNetId& FromId,
+	const FOnlineSessionInviteAccelByte& Invite)
+{
+	UE_LOG_ONLINESESSION(Log, TEXT("from: %s"), *FromId.ToDebugString())
+
+	OnSessionInviteReceivedDelegates.Broadcast(UserId, FromId, Invite);
+}
+
+void UAccelByteWarsOnlineSession::OnSessionParticipantsChange(FName SessionName, const FUniqueNetId& Member,
+	bool bJoined)
+{
+	UE_LOG_ONLINESESSION(
+		Log,
+		TEXT("session name: %s | Member: %s [%s]"),
+		*SessionName.ToString(),
+		*Member.ToDebugString(),
+		*FString(bJoined ? "Joined" : "Left"))
+
+	OnSessionParticipantsChangeDelegates.Broadcast(SessionName, Member, bJoined);
 }
 
 void UAccelByteWarsOnlineSession::OnLeaveSessionForCreateSessionComplete(

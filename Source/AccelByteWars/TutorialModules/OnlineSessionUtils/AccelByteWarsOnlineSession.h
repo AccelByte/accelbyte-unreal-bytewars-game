@@ -42,6 +42,8 @@ public:
 		const EAccelByteV2SessionType SessionType,
 		const FString& SessionTemplateName) override;
 	virtual void JoinSession(const int32 LocalUserNum, FName SessionName, const FOnlineSessionSearchResult& SearchResult) override;
+	virtual void SendSessionInvite(const int32 LocalUserNum, FName SessionName, const FUniqueNetIdPtr Invitee) override;
+	virtual void RejectSessionInvite(const int32 LocalUserNum, const FOnlineSessionInviteAccelByte& Invite) override;
 	virtual void LeaveSession(FName SessionName) override;
 
 	virtual FOnCreateSessionComplete* GetOnCreateSessionCompleteDelegates() override
@@ -52,9 +54,26 @@ public:
 	{
 		return &OnJoinSessionCompleteDelegates;
 	}
+	virtual FOnSendSessionInviteComplete* GetOnSendSessionInviteCompleteDelegates() override
+	{
+		return &OnSendSessionInviteCompleteDelegates;
+	}
+	virtual FOnRejectSessionInviteCompleteMulticast* GetOnRejectSessionInviteCompleteDelegate() override
+	{
+		return &OnRejectSessionInviteCompleteDelegates;
+	}
 	virtual FOnDestroySessionComplete* GetOnLeaveSessionCompleteDelegates() override
 	{
 		return &OnLeaveSessionCompleteDelegates;
+	}
+
+	virtual FOnV2SessionInviteReceived* GetOnSessionInviteReceivedDelegates() override
+	{
+		return &OnSessionInviteReceivedDelegates;
+	}
+	virtual FOnSessionParticipantsChange* GetOnSessionParticipantsChange() override
+	{
+		return &OnSessionParticipantsChangeDelegates;
 	}
 
 protected:
@@ -63,7 +82,19 @@ protected:
 	virtual void OnCreateSessionComplete(FName SessionName, bool bSucceeded) override;
 	/*The parent's function with the same name will not be used. Ignore the "hides a non-function" warning*/
 	virtual void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result) override;
+	virtual void OnSendSessionInviteComplete(
+		const FUniqueNetId& LocalSenderId,
+		FName SessionName,
+		bool bSucceeded,
+		const FUniqueNetId& InviteeId) override;
+	virtual void OnRejectSessionInviteComplete(bool bSucceeded) override;
 	virtual void OnLeaveSessionComplete(FName SessionName, bool bSucceeded) override;
+
+	virtual void OnSessionInviteReceived(
+		const FUniqueNetId& UserId,
+		const FUniqueNetId& FromId,
+		const FOnlineSessionInviteAccelByte& Invite) override;
+	virtual void OnSessionParticipantsChange(FName SessionName, const FUniqueNetId& Member, bool bJoined) override;
 
 private:
 	const FName GameSessionName = NAME_GameSession;
@@ -71,7 +102,12 @@ private:
 
 	FOnCreateSessionComplete OnCreateSessionCompleteDelegates;
 	FOnJoinSessionComplete OnJoinSessionCompleteDelegates;
+	FOnSendSessionInviteComplete OnSendSessionInviteCompleteDelegates;
+	FOnRejectSessionInviteCompleteMulticast OnRejectSessionInviteCompleteDelegates;
 	FOnDestroySessionComplete OnLeaveSessionCompleteDelegates;
+
+	FOnV2SessionInviteReceived OnSessionInviteReceivedDelegates;
+	FOnSessionParticipantsChange OnSessionParticipantsChangeDelegates;
 
 	void OnLeaveSessionForCreateSessionComplete(
 		FName SessionName,

@@ -12,9 +12,19 @@ void USessionEssentialsOnlineSession::RegisterOnlineDelegates()
 {
 	Super::RegisterOnlineDelegates();
 
-	GetSessionInt()->AddOnCreateSessionCompleteDelegate_Handle(FOnCreateSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnCreateSessionComplete));
-	GetSessionInt()->AddOnJoinSessionCompleteDelegate_Handle(FOnJoinSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnJoinSessionComplete));
-	GetSessionInt()->AddOnDestroySessionCompleteDelegate_Handle(FOnDestroySessionCompleteDelegate::CreateUObject(this, &ThisClass::OnLeaveSessionComplete));
+	GetSessionInt()->AddOnCreateSessionCompleteDelegate_Handle(
+		FOnCreateSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnCreateSessionComplete));
+	GetSessionInt()->AddOnJoinSessionCompleteDelegate_Handle(
+		FOnJoinSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnJoinSessionComplete));
+	GetABSessionInt()->AddOnSendSessionInviteCompleteDelegate_Handle(
+		FOnSendSessionInviteCompleteDelegate::CreateUObject(this, &ThisClass::OnSendSessionInviteComplete));
+	GetSessionInt()->AddOnDestroySessionCompleteDelegate_Handle(
+		FOnDestroySessionCompleteDelegate::CreateUObject(this, &ThisClass::OnLeaveSessionComplete));
+
+	GetABSessionInt()->AddOnV2SessionInviteReceivedDelegate_Handle(
+		FOnV2SessionInviteReceivedDelegate::CreateUObject(this, &ThisClass::OnSessionInviteReceived));
+	GetABSessionInt()->AddOnSessionParticipantsChangeDelegate_Handle(
+		FOnSessionParticipantsChangeDelegate::CreateUObject(this, &ThisClass::OnSessionParticipantsChange));
 }
 
 void USessionEssentialsOnlineSession::ClearOnlineDelegates()
@@ -23,7 +33,11 @@ void USessionEssentialsOnlineSession::ClearOnlineDelegates()
 
 	GetSessionInt()->ClearOnCreateSessionCompleteDelegates(this);
 	GetSessionInt()->ClearOnJoinSessionCompleteDelegates(this);
+	GetABSessionInt()->ClearOnSendSessionInviteCompleteDelegates(this);
 	GetSessionInt()->ClearOnDestroySessionCompleteDelegates(this);
+
+	GetABSessionInt()->ClearOnV2SessionInviteReceivedDelegates(this);
+	GetABSessionInt()->ClearOnSessionParticipantsChangeDelegates(this);
 }
 
 FNamedOnlineSession* USessionEssentialsOnlineSession::GetSession(const FName SessionName)
@@ -187,6 +201,41 @@ void USessionEssentialsOnlineSession::JoinSession(
 	}
 }
 
+void USessionEssentialsOnlineSession::SendSessionInvite(
+	const int32 LocalUserNum,
+	FName SessionName,
+	const FUniqueNetIdPtr Invitee)
+{
+	UE_LOG_SESSIONESSENTIALS(Verbose, TEXT("Called"));
+
+	if (!Invitee.IsValid())
+	{
+		UE_LOG_SESSIONESSENTIALS(Log, TEXT("Invitee net id is invalid. Cancelling operation"));
+		return;
+	}
+
+	GetABSessionInt()->SendSessionInviteToFriend(LocalUserNum, SessionName, *Invitee.Get());
+}
+
+void USessionEssentialsOnlineSession::RejectSessionInvite(
+	const int32 LocalUserNum,
+	const FOnlineSessionInviteAccelByte& Invite)
+{
+	UE_LOG_SESSIONESSENTIALS(Verbose, TEXT("Called"));
+
+	const FUniqueNetIdPtr LocalUserNetId = GetLocalPlayerUniqueNetId(GetPlayerControllerByLocalUserNum(LocalUserNum));
+	if (!LocalUserNetId.IsValid())
+	{
+		UE_LOG_SESSIONESSENTIALS(Log, TEXT("Local User net id is invalid. Cancelling operation"));
+		return;
+	}
+
+	GetABSessionInt()->RejectInvite(
+		*LocalUserNetId.Get(),
+		Invite,
+		FOnRejectSessionInviteComplete::CreateUObject(this, &ThisClass::OnRejectSessionInviteComplete));
+}
+
 void USessionEssentialsOnlineSession::LeaveSession(FName SessionName)
 {
 	UE_LOG_SESSIONESSENTIALS(Verbose, TEXT("called"))
@@ -241,12 +290,55 @@ void USessionEssentialsOnlineSession::OnJoinSessionComplete(FName SessionName, E
 	OnJoinSessionCompleteDelegates.Broadcast(SessionName, Result);
 }
 
+void USessionEssentialsOnlineSession::OnSendSessionInviteComplete(
+	const FUniqueNetId& LocalSenderId,
+	FName SessionName,
+	bool bSucceeded,
+	const FUniqueNetId& InviteeId)
+{
+	UE_LOG_SESSIONESSENTIALS(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE" : "FALSE"))
+
+	OnSendSessionInviteCompleteDelegates.Broadcast(LocalSenderId, SessionName, bSucceeded, InviteeId);
+}
+
+void USessionEssentialsOnlineSession::OnRejectSessionInviteComplete(bool bSucceeded)
+{
+	UE_LOG_SESSIONESSENTIALS(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE" : "FALSE"))
+
+	OnRejectSessionInviteCompleteDelegates.Broadcast(bSucceeded);
+}
+
 void USessionEssentialsOnlineSession::OnLeaveSessionComplete(FName SessionName, bool bSucceeded)
 {
 	UE_LOG_SESSIONESSENTIALS(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
 
 	bLeaveSessionRunning = false;
 	OnLeaveSessionCompleteDelegates.Broadcast(SessionName, bSucceeded);
+}
+
+void USessionEssentialsOnlineSession::OnSessionInviteReceived(
+	const FUniqueNetId& UserId,
+	const FUniqueNetId& FromId,
+	const FOnlineSessionInviteAccelByte& Invite)
+{
+	UE_LOG_SESSIONESSENTIALS(Log, TEXT("from: %s"), *FromId.ToDebugString())
+
+	OnSessionInviteReceivedDelegates.Broadcast(UserId, FromId, Invite);
+}
+
+void USessionEssentialsOnlineSession::OnSessionParticipantsChange(
+	FName SessionName,
+	const FUniqueNetId& Member,
+	bool bJoined)
+{
+	UE_LOG_SESSIONESSENTIALS(
+		Log,
+		TEXT("session name: %s | Member: %s [%s]"),
+		*SessionName.ToString(),
+		*Member.ToDebugString(),
+		*FString(bJoined ? "Joined" : "Left"))
+
+	OnSessionParticipantsChangeDelegates.Broadcast(SessionName, Member, bJoined);
 }
 
 void USessionEssentialsOnlineSession::OnLeaveSessionForCreateSessionComplete(

@@ -52,17 +52,36 @@ public:
 		const EAccelByteV2SessionType SessionType,
 		const FString& SessionTemplateName){}
 	virtual void JoinSession(const int32 LocalUserNum, FName SessionName, const FOnlineSessionSearchResult& SearchResult){}
+	virtual void SendSessionInvite(const int32 LocalUserNum, FName SessionName, const FUniqueNetIdPtr Invitee){}
+	virtual void RejectSessionInvite(const int32 LocalUserNum, const FOnlineSessionInviteAccelByte& Invite){}
 	virtual void LeaveSession(FName SessionName){}
 
 	virtual FOnCreateSessionComplete* GetOnCreateSessionCompleteDelegates(){ return nullptr; }
 	virtual FOnJoinSessionComplete* GetOnJoinSessionCompleteDelegates(){ return nullptr; }
+	virtual FOnSendSessionInviteComplete* GetOnSendSessionInviteCompleteDelegates(){ return nullptr; }
+	virtual FOnRejectSessionInviteCompleteMulticast* GetOnRejectSessionInviteCompleteDelegate() { return nullptr; }
 	virtual FOnDestroySessionComplete* GetOnLeaveSessionCompleteDelegates(){ return nullptr; }
+
+	virtual FOnV2SessionInviteReceived* GetOnSessionInviteReceivedDelegates(){ return nullptr; }
+	virtual FOnSessionParticipantsChange* GetOnSessionParticipantsChange() { return nullptr; }
 
 protected:
 	virtual void OnCreateSessionComplete(FName SessionName, bool bSucceeded){}
 	/*The parent's function with the same name will not be used. Ignore the "hides a non-function" warning*/
 	virtual void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result){}
+	virtual void OnSendSessionInviteComplete(
+		const FUniqueNetId& LocalSenderId,
+		FName SessionName,
+		bool bWasSuccessful,
+		const FUniqueNetId& InviteeId){}
+	virtual void OnRejectSessionInviteComplete(bool bSucceeded){}
 	virtual void OnLeaveSessionComplete(FName SessionName, bool bSucceeded){}
+
+	virtual void OnSessionInviteReceived(
+		const FUniqueNetId& UserId,
+		const FUniqueNetId& FromId,
+		const FOnlineSessionInviteAccelByte& Invite){}
+	virtual void OnSessionParticipantsChange(FName SessionName, const FUniqueNetId& Member, bool bJoined){}
 #pragma endregion
 
 #pragma region "Game Session Essentials"
@@ -182,8 +201,10 @@ public:
 	virtual FOnCreateSessionComplete* GetOnCreatePartyCompleteDelegates() { return nullptr; }
 	virtual FOnDestroySessionComplete* GetOnLeavePartyCompleteDelegates() { return nullptr; }
 
-	virtual FOnSendSessionInviteComplete* GetOnSendPartyInviteCompleteDelegates() { return nullptr; }
 	virtual FOnJoinSessionComplete* GetOnJoinPartyCompleteDelegates() { return nullptr; }
+
+	// TODO: Change usage to use the session essentials delegates instead of these
+	virtual FOnSendSessionInviteComplete* GetOnSendPartyInviteCompleteDelegates() { return nullptr; }
 	virtual FOnRejectSessionInviteComplete* GetOnRejectPartyInviteCompleteDelegate() { return nullptr; }
 	virtual FOnSessionInviteRejected* GetOnPartyInviteRejectedDelegates() { return nullptr; }
 	virtual FOnV2SessionInviteReceivedDelegate* GetOnPartyInviteReceivedDelegate() { return nullptr; }
@@ -200,6 +221,7 @@ protected:
 	virtual void OnCreatePartyComplete(FName SessionName, bool bSucceeded) {}
 	virtual void OnLeavePartyComplete(FName SessionName, bool bSucceeded) {}
 
+	// TODO: Change usage to use the session essentials virtual function instead
 	virtual void OnSendPartyInviteComplete(const FUniqueNetId& Sender, FName SessionName, bool bWasSuccessful, const FUniqueNetId& Invitee) {}
 	virtual void OnJoinPartyComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result) {}
 	virtual void OnRejectPartyInviteComplete(bool bWasSuccessful) {}

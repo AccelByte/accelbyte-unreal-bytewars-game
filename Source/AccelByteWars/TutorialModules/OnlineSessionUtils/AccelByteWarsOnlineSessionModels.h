@@ -13,6 +13,10 @@
 
 #define BYTEWARS_LOCTEXT_NAMESPACE "AccelByteWars"
 
+#pragma region "Session Essentials"
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnRejectSessionInviteCompleteMulticast, bool /*bSucceeded*/)
+#pragma endregion 
+
 #pragma region "Game Session Essentials"
 DECLARE_DELEGATE_TwoParams(FOnQueryUsersInfoComplete, const bool /*bSucceeded*/, const TArray<FUserOnlineAccountAccelByte*>& /*UsersInfo*/);
 DECLARE_DELEGATE_TwoParams(FOnDSQueryUsersInfoComplete, const bool /*bSucceeded*/, const TArray<const FBaseUserInfo*> /*UsersInfo*/)
