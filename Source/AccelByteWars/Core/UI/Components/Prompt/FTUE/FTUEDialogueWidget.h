@@ -62,8 +62,6 @@ protected:
 	void DeinitializeLastDialogue();
 	void ClearHighlightedWidget();
 
-	bool IsWidgetVisible(UWidget* Widget);
-
 	UPROPERTY(EditDefaultsOnly)
 	bool bIsAbleToNavigate = false;
 

@@ -16,9 +16,6 @@
 
 DEFINE_LOG_CATEGORY(LogAccelByteWarsTutorialModuleOnlineUtility);
 
-//UTutorialModuleOnlineUtility::CurrentPlayerUserIdStr = FString("");
-//UTutorialModuleOnlineUtility::CurrentPlayerDisplayName = FString("");
-
 UTutorialModuleOnlineUtility::UTutorialModuleOnlineUtility()
 {
     CheckForEnvironmentConfigOverride();

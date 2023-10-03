@@ -170,7 +170,7 @@ private:
 	bool bHasFTUE = false;
 
 public:
-	bool HasFTUE() { return bHasFTUE; }
+	bool HasFTUE();
 
 	UPROPERTY(EditAnywhere,
 		Category = "First Time User Experience (FTUE)",

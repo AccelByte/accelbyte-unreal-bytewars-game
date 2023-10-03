@@ -55,8 +55,8 @@ void UCreateMatchSessionDSWidget::NativeDestruct()
 
 void UCreateMatchSessionDSWidget::CreateSession() const
 {
-	if (OnlineSession->ValidateToCreateSession.IsBound() &&
-		!OnlineSession->ValidateToCreateSession.Execute())
+	if (OnlineSession->ValidateToStartSession.IsBound() &&
+		!OnlineSession->ValidateToStartSession.Execute())
 	{
 		return;
 	}

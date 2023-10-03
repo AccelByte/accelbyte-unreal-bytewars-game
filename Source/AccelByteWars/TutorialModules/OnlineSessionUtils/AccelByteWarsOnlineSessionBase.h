@@ -239,7 +239,7 @@ protected:
 
 #pragma region "Playing With Party"
 public:
-	TDelegate<bool()> ValidateToCreateSession;
+	TDelegate<bool()> ValidateToStartSession;
 	TDelegate<bool(const EGameModeType GameModeType)> ValidateToStartMatchmaking;
 	TDelegate<bool(const FOnlineSessionSearchResult& SessionSearchResult)> ValidateToJoinSession;
 #pragma endregion

@@ -707,6 +707,7 @@ void UAccelByteWarsOnlineSession::OnQueryUserInfoComplete(
 		if (!RetrieveUserInfoCache(UserIds, OnlineUsers))
 		{
 			CacheUserInfo(LocalUserNum, UserIds);
+            OnlineUsers.Empty();
 
 			/**
 			 * Only include valid users info, in the case of invalid user ids, doesn't exist in backend,
@@ -716,12 +717,10 @@ void UAccelByteWarsOnlineSession::OnQueryUserInfoComplete(
 			for (const FUniqueNetIdRef& UserId : UserIds)
 			{
 				TSharedPtr<FOnlineUser> OnlineUserPtr = GetUserInt()->GetUserInfo(LocalUserNum, UserId.Get());
-				if (OnlineUserPtr.IsValid())
+				if (TSharedPtr<FUserOnlineAccountAccelByte> AbUserPtr = StaticCastSharedPtr<FUserOnlineAccountAccelByte>(OnlineUserPtr))
 				{
-					TSharedPtr<FUserOnlineAccountAccelByte> AbUserPtr = StaticCastSharedPtr<
-						FUserOnlineAccountAccelByte>(OnlineUserPtr);
 					OnlineUsers.AddUnique(AbUserPtr.Get());
-				}
+                }
 			}
 		}
 		OnComplete.ExecuteIfBound(true, OnlineUsers);
@@ -1118,7 +1117,7 @@ void UAccelByteWarsOnlineSession::OnFindSessionsComplete(bool bSucceeded)
 		// trigger Query User info
 		QueryUserInfo(
 			LocalUserNumSearching,
-			UserIds,
+            UserIds,
 			FOnQueryUsersInfoComplete::CreateUObject(this, &ThisClass::OnQueryUserInfoForFindSessionComplete));
 	}
 	else

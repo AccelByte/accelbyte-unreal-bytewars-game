@@ -35,8 +35,8 @@ void UPlayWithPartySubsystem::Initialize(FSubsystemCollectionBase& Collection)
     // Add party validation to online session related UIs.
     if (GetOnlineSession()) 
     {
-        GetOnlineSession()->ValidateToCreateSession.Unbind();
-        GetOnlineSession()->ValidateToCreateSession.BindUObject(this, &ThisClass::ValidateToStartPartyMatch);
+        GetOnlineSession()->ValidateToStartSession.Unbind();
+        GetOnlineSession()->ValidateToStartSession.BindUObject(this, &ThisClass::ValidateToStartSession);
 
         GetOnlineSession()->ValidateToStartMatchmaking.Unbind();
         GetOnlineSession()->ValidateToStartMatchmaking.BindUObject(this, &ThisClass::ValidateToStartMatchmaking);
@@ -66,9 +66,9 @@ void UPlayWithPartySubsystem::Deinitialize()
     // Remove party validation to online session related UIs.
     if (GetOnlineSession())
     {
-        if (GetOnlineSession()->ValidateToCreateSession.GetUObject() == this) 
+        if (GetOnlineSession()->ValidateToStartSession.GetUObject() == this) 
         {
-            GetOnlineSession()->ValidateToCreateSession.Unbind();
+            GetOnlineSession()->ValidateToStartSession.Unbind();
         }
 
         if (GetOnlineSession()->ValidateToStartMatchmaking.GetUObject() == this)
@@ -662,7 +662,7 @@ void UPlayWithPartySubsystem::UpdatePartyMemberGameSession(FUniqueNetIdPtr Membe
         PartySession->SessionSettings);
 }
 
-bool UPlayWithPartySubsystem::ValidateToStartPartyMatch()
+bool UPlayWithPartySubsystem::ValidateToStartSession()
 {
     if (!GetSessionInterface() || !GetOnlineSession())
     {
@@ -702,7 +702,7 @@ bool UPlayWithPartySubsystem::ValidateToStartPartyMatch()
 
 bool UPlayWithPartySubsystem::ValidateToStartMatchmaking(const EGameModeType GameModeType)
 {
-    if (!ValidateToStartPartyMatch())
+    if (!ValidateToStartSession())
     {
         return false;
     }
@@ -720,7 +720,7 @@ bool UPlayWithPartySubsystem::ValidateToStartMatchmaking(const EGameModeType Gam
 
 bool UPlayWithPartySubsystem::ValidateToJoinSession(const FOnlineSessionSearchResult& SessionSearchResult)
 {
-    if (!ValidateToStartPartyMatch())
+    if (!ValidateToStartSession())
     {
         return false;
     }
