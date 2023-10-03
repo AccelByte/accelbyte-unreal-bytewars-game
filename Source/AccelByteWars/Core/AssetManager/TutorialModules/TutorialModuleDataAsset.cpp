@@ -501,6 +501,59 @@ void UTutorialModuleDataAsset::ValidateGeneratedWidgets()
 #pragma endregion
 
 #pragma region "First Time User Experience (FTUE)"
+bool UTutorialModuleDataAsset::HasFTUE()
+{
+	// Set the data asset value as the initial value.
+	bool bResult = bHasFTUE;
+
+	const FString OverrideKeyword = TEXT("ForceEnableFTUE");
+	const FString CmdKeyword = FString::Printf(TEXT("-%s="), *OverrideKeyword);
+
+	// Check for launch param override.
+	const FString CmdArgs = FCommandLine::Get();
+	if (CmdArgs.Contains(*CmdKeyword, ESearchCase::IgnoreCase))
+	{
+		FString CmdIsAlwaysShowStr;
+		FParse::Value(*CmdArgs, *CmdKeyword, CmdIsAlwaysShowStr);
+
+		const bool bTemp = bResult;
+		if (CmdIsAlwaysShowStr.Equals(TEXT("TRUE"), ESearchCase::IgnoreCase))
+		{
+			bResult = true;
+		}
+		else if (CmdIsAlwaysShowStr.Equals(TEXT("FALSE"), ESearchCase::IgnoreCase))
+		{
+			bResult = false;
+		}
+
+		// Show log only if the config is overridden.
+		if (bResult != bTemp)
+		{
+			UE_LOG_TUTORIALMODULEDATAASSET(Log,
+				TEXT("Launch param overrides Tutorial Module %s's enable FTUE config to %s."),
+				*CodeName, 
+				bResult ? TEXT("TRUE") : TEXT("FALSE"));
+		}
+	}
+	// Check for DefaultEngine.ini override.
+	else
+	{
+		const bool bTemp = bResult;
+		bResult = GConfig->GetBoolOrDefault(TEXT("AccelByteTutorialModules"), *OverrideKeyword, bResult, GEngineIni);
+
+		// Show log only if the config is overridden.
+		if (bResult != bTemp)
+		{
+			UE_LOG_TUTORIALMODULEDATAASSET(Log,
+				TEXT("DefaultEngine.ini overrides Tutorial Module %s's enable FTUE config to %s."),
+				*CodeName,
+				bResult ? TEXT("TRUE") : TEXT("FALSE"));
+		}
+	}
+
+	return bResult;
+}
+
 void UTutorialModuleDataAsset::ValidateFTUEDialogues()
 {
 	// Clean up last FTUE dialogues metadata to avoid duplication.
