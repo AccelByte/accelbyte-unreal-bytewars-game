@@ -214,27 +214,23 @@ void UMatchSessionP2POnlineSession::OnQueryUserInfoComplete(
 
 	if (bSucceeded)
 	{
-		TArray<FUserOnlineAccountAccelByte*> OnlineUsers;
-		if (!RetrieveUserInfoCache(UserIds, OnlineUsers))
-		{
-			CacheUserInfo(LocalUserNum, UserIds);
+		// Cache the result.
+		CacheUserInfo(LocalUserNum, UserIds);
 
-			/**
-			 * Only include valid users info, in the case of invalid user ids, doesn't exist in backend,
-			 * their data simply would not exist in the OnComplete delegate.
-			 * Asuumes data does not exist in backend if users info is not in the OnComplete's parameter.
-			 */
-			for (const FUniqueNetIdRef& UserId : UserIds)
-			{
-				TSharedPtr<FOnlineUser> OnlineUserPtr = GetUserInt()->GetUserInfo(LocalUserNum, UserId.Get());
-				if (OnlineUserPtr.IsValid())
-				{
-					TSharedPtr<FUserOnlineAccountAccelByte> AbUserPtr = StaticCastSharedPtr<
-						FUserOnlineAccountAccelByte>(OnlineUserPtr);
-					OnlineUsers.AddUnique(AbUserPtr.Get());
-				}
-			}
-		}
+		// Retrieve the result from cache.
+		TArray<FUserOnlineAccountAccelByte*> OnlineUsers;
+		RetrieveUserInfoCache(UserIds, OnlineUsers);
+
+		// Only include valid users info only.
+		OnlineUsers.RemoveAll([](const FUserOnlineAccountAccelByte* Temp)
+		{
+			return !Temp || !Temp->GetUserId()->IsValid();
+		});
+
+		UE_LOG_MATCHSESSIONP2P(Log,
+			TEXT("Queried users info: %d, found valid users info: %d"),
+			UserIds.Num(), OnlineUsers.Num());
+
 		OnComplete.ExecuteIfBound(true, OnlineUsers);
 	}
 	else
