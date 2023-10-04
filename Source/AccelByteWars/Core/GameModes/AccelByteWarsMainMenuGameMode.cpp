@@ -74,12 +74,43 @@ void AAccelByteWarsMainMenuGameMode::BeginPlay()
 
 	// check if last connection was failed
 	ENetworkFailure::Type FailureType;
-	FString FailureMessage;
-	if (GameInstance->GetIsPendingFailureNotification(FailureType, FailureMessage))
+	if (GameInstance->GetIsPendingFailureNotification(FailureType))
 	{
 		if (UPromptSubsystem* PromptSubsystem = GetGameInstance()->GetSubsystem<UPromptSubsystem>())
 		{
-			PromptSubsystem->ShowMessagePopUp(TEXT_CONNECTION_FAILED, FText::FromString(FailureMessage));
+			FText FailureMessage;
+
+			switch (FailureType)
+			{
+			case ENetworkFailure::NetDriverAlreadyExists:
+				FailureMessage = TEXT_ERROR_NET_DRIVER_EXIST;
+				break;
+			case ENetworkFailure::NetDriverCreateFailure:
+				FailureMessage = TEXT_ERROR_NET_DRIVER_INIT;
+				break;
+			case ENetworkFailure::NetDriverListenFailure:
+				FailureMessage = TEXT_ERROR_NET_DRIVER_LISTEN;
+				break;
+			case ENetworkFailure::ConnectionLost:
+				FailureMessage = TEXT_CONNECTION_LOST;
+				break;
+			case ENetworkFailure::ConnectionTimeout:
+				FailureMessage = TEXT_CONNECTION_TIMEOUT;
+				break;
+			case ENetworkFailure::OutdatedClient:
+				FailureMessage = TEXT_CLIENT_OUTDATED;
+				break;
+			case ENetworkFailure::OutdatedServer:
+				FailureMessage = TEXT_SERVER_OUTDATED;
+				break;
+			case ENetworkFailure::PendingConnectionFailure:
+				FailureMessage = TEXT_PENDING_CONNECTION_FAILED;
+				break;
+			default:
+				FailureMessage = TEXT_CONNECTION_FAILED_GENERIC;
+			}
+
+			PromptSubsystem->ShowMessagePopUp(TEXT_CONNECTION_FAILED, FailureMessage);
 		}
 	}
 }
