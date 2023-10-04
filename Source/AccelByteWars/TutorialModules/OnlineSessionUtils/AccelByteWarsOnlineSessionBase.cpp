@@ -133,6 +133,12 @@ bool UAccelByteWarsOnlineSessionBase::CompareAccelByteUniqueId(
 	}
 
 	// if false, attempt to compare AB User Id first
+	if (!FirstUniqueNetId->GetType().IsEqual(ACCELBYTE_USER_ID_TYPE) ||
+		!SecondUniqueNetId->GetType().IsEqual(ACCELBYTE_USER_ID_TYPE))
+	{
+		return false;
+	}
+	
 	const FUniqueNetIdAccelByteUserPtr FirstAbUniqueNetId = FUniqueNetIdAccelByteUser::TryCast(*FirstUniqueNetId);
 	const FUniqueNetIdAccelByteUserPtr SecondAbUniqueNetId = FUniqueNetIdAccelByteUser::TryCast(*SecondUniqueNetId);
 
