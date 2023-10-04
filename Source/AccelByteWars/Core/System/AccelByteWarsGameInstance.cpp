@@ -45,14 +45,11 @@ UAccelByteWarsBaseUI* UAccelByteWarsGameInstance::GetBaseUIWidget(bool bAutoActi
 	return BaseUIWidget;
 }
 
-bool UAccelByteWarsGameInstance::GetIsPendingFailureNotification(
-	ENetworkFailure::Type& OutFailureType,
-	FString& OutFailureMessage)
+bool UAccelByteWarsGameInstance::GetIsPendingFailureNotification(ENetworkFailure::Type& OutFailureType)
 {
 	if (bPendingFailureNotification)
 	{
 		OutFailureType = LastFailureType;
-		OutFailureMessage = LastFailureMessage;
 		bPendingFailureNotification = false;
 		return true;
 	}
@@ -66,9 +63,12 @@ void UAccelByteWarsGameInstance::OnNetworkFailure(
 	ENetworkFailure::Type FailureType,
 	const FString& Message)
 {
-	bPendingFailureNotification = true;
-	LastFailureType = FailureType;
-	LastFailureMessage = Message;
+	// This will trigger twice when a connection failed. Treat the first one as the "truth".
+	if (!bPendingFailureNotification)
+	{
+		bPendingFailureNotification = true;
+		LastFailureType = FailureType;
+	}
 }
 
 int32 UAccelByteWarsGameInstance::AddLocalPlayer(ULocalPlayer* NewLocalPlayer, FPlatformUserId UserId)

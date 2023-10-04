@@ -137,14 +137,13 @@ public:
 	 */
 	FOnGameInstanceShutdown OnGameInstanceShutdownDelegate;
 
-	bool GetIsPendingFailureNotification(ENetworkFailure::Type& OutFailureType, FString& OutFailureMessage);
+	bool GetIsPendingFailureNotification(ENetworkFailure::Type& OutFailureType);
 
 private:
 	/** This is the primary player*/
 	TWeakObjectPtr<ULocalPlayer> PrimaryPlayer;
 
 	ENetworkFailure::Type LastFailureType;
-	FString LastFailureMessage;
 	bool bPendingFailureNotification = false;
 
 	void OnNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType, const FString& Message);

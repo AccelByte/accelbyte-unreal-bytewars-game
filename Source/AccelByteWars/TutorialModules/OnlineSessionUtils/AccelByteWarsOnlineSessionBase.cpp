@@ -157,7 +157,7 @@ bool UAccelByteWarsOnlineSessionBase::CompareAccelByteUniqueId(
 	const FUniqueNetIdRepl& FirstUniqueNetId,
 	const FString& SecondAbUserId) const
 {
-	if (!FirstUniqueNetId.IsValid())
+	if (!FirstUniqueNetId.IsValid() || !FirstUniqueNetId->GetType().IsEqual(ACCELBYTE_USER_ID_TYPE))
 	{
 		return false;
 	}
