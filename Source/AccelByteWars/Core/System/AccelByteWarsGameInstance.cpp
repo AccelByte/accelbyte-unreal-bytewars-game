@@ -1,4 +1,6 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
 
 
 #include "Core/System/AccelByteWarsGameInstance.h"
@@ -63,9 +65,10 @@ void UAccelByteWarsGameInstance::OnNetworkFailure(
 	ENetworkFailure::Type FailureType,
 	const FString& Message)
 {
-	// This will trigger twice when a connection failed. Treat the first one as the "truth".
-	if (!bPendingFailureNotification)
+	// Only change the FailureType if the Message is different
+	if (!LastFailureMessage.Compare(Message))
 	{
+		LastFailureMessage = Message;
 		bPendingFailureNotification = true;
 		LastFailureType = FailureType;
 	}
