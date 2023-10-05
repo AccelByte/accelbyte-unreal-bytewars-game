@@ -7,10 +7,13 @@
 #include "UObject/NoExportTypes.h"
 #include "CoreMinimal.h"
 
+#define PARTY_MEMBERS_GAME_SESSION_ID "PARTY_MEMBERS_GAME_SESSION_ID"
+
 #define ACCELBYTEWARS_LOCTEXT_NAMESPACE "AccelByteWars"
 
 #define PARTY_MATCHMAKING_STARTED_MESSAGE NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "Party Matchmaking Started", "Party Matchmaking Started by Party Leader")
-#define PARTY_MATCHMAKING_FOUND_MESSAGE NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "Party Matchmaking Found", "Party Matchmaking Found, Joining Match")
+#define PARTY_MATCHMAKING_SUCCESS_MESSAGE NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "Party Matchmaking Success", "Party Matchmaking Found, Joining Match")
+#define PARTY_MATCHMAKING_FAILED_MESSAGE NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "Party Matchmaking Failed", "Party Matchmaking Failed")
 #define PARTY_MATCHMAKING_CANCELED_MESSAGE NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "Party Matchmaking Canceled", "Party Matchmaking is Canceled by Party Leader")
 #define PARTY_MATCHMAKING_EXPIRED_MESSAGE NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "Party Matchmaking Expired", "Party Matchmaking Expired")
 #define PARTY_MATCHMAKING_SAFEGUARD_MESSAGE NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "Party Matchmaking Safeguard", "Matchmaking with this game mode is not supported when in a party")
