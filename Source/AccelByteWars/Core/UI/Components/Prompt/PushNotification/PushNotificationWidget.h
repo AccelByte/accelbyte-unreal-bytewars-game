@@ -29,6 +29,8 @@ protected:
 	void TryPushPendingNotifications();
 	void OnNotificationLifeTimeEnds(UPushNotification* Notification);
 
+	void CleanObjects();
+
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UListView* Lv_PushNotification;
 
@@ -41,6 +43,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	uint32 MaxNotificationStack = 5;
 
+	UPROPERTY()
 	TArray<UPushNotification*> PendingNotifications;
-	TMap<UPushNotification*, FTimerHandle*> NotificationTimers;
+
+	UPROPERTY()
+	TMap<UPushNotification*, FTimerHandle> NotificationTimers;
 };
