@@ -71,6 +71,7 @@ void UAccelByteWarsOnlineSession::RegisterOnlineDelegates()
     GetABSessionInt()->OnSessionParticipantsChangeDelegates.AddUObject(this, &ThisClass::OnPartyMembersChange);
     GetABSessionInt()->OnSessionUpdateReceivedDelegates.AddUObject(this, &ThisClass::OnPartySessionUpdateReceived);
     GetABIdentityInt()->OnConnectLobbyCompleteDelegates->AddUObject(this, &ThisClass::OnConnectLobbyComplete);
+    InitializePartyGeneratedWidgets();
 }
 
 void UAccelByteWarsOnlineSession::ClearOnlineDelegates()
