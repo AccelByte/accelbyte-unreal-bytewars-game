@@ -1172,16 +1172,8 @@ void UAccelByteWarsOnlineSession::OnLeavePartyToTriggerEvent(FName SessionName, 
 
 void UAccelByteWarsOnlineSession::InitializePartyGeneratedWidgets()
 {
-    UTutorialModuleDataAsset* PartyEssentialsModule =
-        UTutorialModuleUtility::GetTutorialModuleDataAsset(FPrimaryAssetId("TutorialModule:PARTYESSENTIALS"), this);
-    if (!ensure(PartyEssentialsModule))
-    {
-        return;
-    }
-    TArray<FTutorialModuleGeneratedWidget>* GeneratedWidgetMetadatas = &PartyEssentialsModule->GeneratedWidgets;
-
     // Assign action button to invite player to the party.
-    InviteToPartyButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_invite_to_party"), *GeneratedWidgetMetadatas);
+    InviteToPartyButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_invite_to_party"));
     if (!ensure(InviteToPartyButtonMetadata))
     {
         return;
@@ -1203,7 +1195,7 @@ void UAccelByteWarsOnlineSession::InitializePartyGeneratedWidgets()
     InviteToPartyButtonMetadata->OnWidgetGenerated.AddUObject(this, &ThisClass::UpdatePartyGeneratedWidgets);
 
     // Assign action button to kick player from the party.
-    KickPlayerFromPartyButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_kick_from_party"), *GeneratedWidgetMetadatas);
+    KickPlayerFromPartyButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_kick_from_party"));
     if (!ensure(KickPlayerFromPartyButtonMetadata))
     {
         return;
@@ -1225,7 +1217,7 @@ void UAccelByteWarsOnlineSession::InitializePartyGeneratedWidgets()
     KickPlayerFromPartyButtonMetadata->OnWidgetGenerated.AddUObject(this, &ThisClass::UpdatePartyGeneratedWidgets);
 
     // Assign action button to promote party leader.
-    PromotePartyLeaderButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_promote_party_leader"), *GeneratedWidgetMetadatas);
+    PromotePartyLeaderButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_promote_party_leader"));
     if (!ensure(PromotePartyLeaderButtonMetadata))
     {
         return;
