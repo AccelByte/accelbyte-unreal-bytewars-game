@@ -6,6 +6,7 @@
 
 #include "CoreMinimal.h"
 #include "AccelByteWarsOnlineSessionModels.h"
+#include "OnlineIdentityInterfaceAccelByte.h"
 #include "OnlineSessionInterfaceV2AccelByte.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleOnlineSession.h"
 #include "Core/Settings/GameModeDataAssets.h"
@@ -27,6 +28,7 @@ protected:
 protected:
 	FOnlineSessionV2AccelBytePtr GetABSessionInt();
 	IOnlineIdentityPtr GetIdentityInt() const;
+	FOnlineIdentityAccelBytePtr GetABIdentityInt() const;
 	IOnlineUserPtr GetUserInt() const;
 
 public:

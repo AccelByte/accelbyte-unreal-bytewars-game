@@ -105,7 +105,6 @@ protected:
 	void DeinitializePartyGeneratedWidgets();
 	FUniqueNetIdPtr GetCurrentDisplayedFriendId();
 
-	void OnLoginSuccess(const APlayerController* PC);
 	void OnInviteToPartyButtonClicked(const int32 LocalUserNum, const FUniqueNetIdPtr& Invitee);
 	void OnKickPlayerFromPartyButtonClicked(const int32 LocalUserNum, const FUniqueNetIdPtr& KickedPlayer);
 	void OnPromotePartyLeaderButtonClicked(const int32 LocalUserNum, const FUniqueNetIdPtr& NewLeader);
@@ -132,6 +131,8 @@ protected:
 
 	virtual void OnPartyMembersChange(FName SessionName, const FUniqueNetId& Member, bool bJoined) override;
 	virtual void OnPartySessionUpdateReceived(FName SessionName) override;
+
+	void OnConnectLobbyComplete(int32 LocalUserNum, bool bSucceeded, const FUniqueNetId& UserId, const FString& Error);
 
 #pragma endregion
 

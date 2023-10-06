@@ -4,13 +4,14 @@
 
 #include "TutorialModules/PartyEssentials/PartyOnlineSession.h"
 
+#include "OnlineSubsystemUtils.h"
+
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "Core/UI/Components/AccelByteWarsButtonBase.h"
 
 #include "TutorialModules/Module-1/TutorialModuleOnlineUtility.h"
-#include "TutorialModules/Module-2/AuthEssentialsModels.h"
 #include "TutorialModules/Module-8/UI/FriendDetailsWidget.h"
 #include "TutorialModules/Module-8/UI/FriendDetailsWidget_Starter.h"
 
@@ -18,52 +19,56 @@ void UPartyOnlineSession::RegisterOnlineDelegates()
 {
     Super::RegisterOnlineDelegates();
 
-    UAuthEssentialsModels::OnLoginSuccessDelegate.AddUObject(this, &ThisClass::OnLoginSuccess);
     InitializePartyGeneratedWidgets();
 
-    if (!ensure(GetABSessionInt())) 
+    if (GetABSessionInt()) 
     {
-        return;
+        GetABSessionInt()->OnCreateSessionCompleteDelegates.AddUObject(this, &ThisClass::OnCreatePartyComplete);
+        GetABSessionInt()->OnDestroySessionCompleteDelegates.AddUObject(this, &ThisClass::OnLeavePartyComplete);
+
+        GetABSessionInt()->OnSendSessionInviteCompleteDelegates.AddUObject(this, &ThisClass::OnSendPartyInviteComplete);
+        GetABSessionInt()->OnJoinSessionCompleteDelegates.AddUObject(this, &ThisClass::OnJoinPartyComplete);
+        GetABSessionInt()->OnSessionInviteRejectedDelegates.AddUObject(this, &ThisClass::OnPartyInviteRejected);
+        GetABSessionInt()->OnV2SessionInviteReceivedDelegates.AddUObject(this, &ThisClass::OnPartyInviteReceived);
+
+        GetABSessionInt()->OnKickedFromSessionDelegates.AddUObject(this, &ThisClass::OnKickedFromParty);
+
+        GetABSessionInt()->OnSessionParticipantsChangeDelegates.AddUObject(this, &ThisClass::OnPartyMembersChange);
+        GetABSessionInt()->OnSessionUpdateReceivedDelegates.AddUObject(this, &ThisClass::OnPartySessionUpdateReceived);
     }
 
-    GetABSessionInt()->OnCreateSessionCompleteDelegates.AddUObject(this, &ThisClass::OnCreatePartyComplete);
-    GetABSessionInt()->OnDestroySessionCompleteDelegates.AddUObject(this, &ThisClass::OnLeavePartyComplete);
-
-    GetABSessionInt()->OnSendSessionInviteCompleteDelegates.AddUObject(this, &ThisClass::OnSendPartyInviteComplete);
-    GetABSessionInt()->OnJoinSessionCompleteDelegates.AddUObject(this, &ThisClass::OnJoinPartyComplete);
-    GetABSessionInt()->OnSessionInviteRejectedDelegates.AddUObject(this, &ThisClass::OnPartyInviteRejected);
-    GetABSessionInt()->OnV2SessionInviteReceivedDelegates.AddUObject(this, &ThisClass::OnPartyInviteReceived);
-
-    GetABSessionInt()->OnKickedFromSessionDelegates.AddUObject(this, &ThisClass::OnKickedFromParty);
-
-    GetABSessionInt()->OnSessionParticipantsChangeDelegates.AddUObject(this, &ThisClass::OnPartyMembersChange);
-    GetABSessionInt()->OnSessionUpdateReceivedDelegates.AddUObject(this, &ThisClass::OnPartySessionUpdateReceived);
+    if (GetABIdentityInt())
+    {
+        GetABIdentityInt()->OnConnectLobbyCompleteDelegates->AddUObject(this, &ThisClass::OnConnectLobbyComplete);
+    }
 }
 
 void UPartyOnlineSession::ClearOnlineDelegates()
 {
     Super::ClearOnlineDelegates();
 
-    UAuthEssentialsModels::OnLoginSuccessDelegate.RemoveAll(this);
     DeinitializePartyGeneratedWidgets();
 
-    if (!ensure(GetABSessionInt()))
+    if (GetABSessionInt())
     {
-        return;
+        GetABSessionInt()->OnCreateSessionCompleteDelegates.RemoveAll(this);
+        GetABSessionInt()->OnDestroySessionCompleteDelegates.RemoveAll(this);
+
+        GetABSessionInt()->OnSendSessionInviteCompleteDelegates.RemoveAll(this);
+        GetABSessionInt()->OnJoinSessionCompleteDelegates.RemoveAll(this);
+        GetABSessionInt()->OnSessionInviteRejectedDelegates.RemoveAll(this);
+        GetABSessionInt()->OnV2SessionInviteReceivedDelegates.RemoveAll(this);
+
+        GetABSessionInt()->OnKickedFromSessionDelegates.RemoveAll(this);
+
+        GetABSessionInt()->OnSessionParticipantsChangeDelegates.RemoveAll(this);
+        GetABSessionInt()->OnSessionUpdateReceivedDelegates.RemoveAll(this);
     }
 
-    GetABSessionInt()->OnCreateSessionCompleteDelegates.RemoveAll(this);
-    GetABSessionInt()->OnDestroySessionCompleteDelegates.RemoveAll(this);
-
-    GetABSessionInt()->OnSendSessionInviteCompleteDelegates.RemoveAll(this);
-    GetABSessionInt()->OnJoinSessionCompleteDelegates.RemoveAll(this);
-    GetABSessionInt()->OnSessionInviteRejectedDelegates.RemoveAll(this);
-    GetABSessionInt()->OnV2SessionInviteReceivedDelegates.RemoveAll(this);
-
-    GetABSessionInt()->OnKickedFromSessionDelegates.RemoveAll(this);
-
-    GetABSessionInt()->OnSessionParticipantsChangeDelegates.RemoveAll(this);
-    GetABSessionInt()->OnSessionUpdateReceivedDelegates.RemoveAll(this);
+    if (GetABIdentityInt())
+    {
+        GetABIdentityInt()->OnConnectLobbyCompleteDelegates->RemoveAll(this);
+    }
 }
 
 void UPartyOnlineSession::QueryUserInfo(const int32 LocalUserNum, const TArray<FUniqueNetIdRef>& UserIds, const FOnQueryUsersInfoComplete& OnComplete)
@@ -383,26 +388,6 @@ FUniqueNetIdPtr UPartyOnlineSession::GetCurrentDisplayedFriendId()
     }
 
     return FriendUserId.GetUniqueNetId();
-}
-
-void UPartyOnlineSession::OnLoginSuccess(const APlayerController* PC)
-{
-    if (!PC)
-    {
-        UE_LOG_PARTYESSENTIALS(Warning, TEXT("Cannot initialize party. PlayerController is null."));
-        return;
-    }
-
-    const int32 LocalUserNum = GetLocalUserNumFromPlayerController(PC);
-
-    // Automatically create a new party when got kicked from a party.
-    GetOnKickedFromPartyDelegates()->AddWeakLambda(this, [this, LocalUserNum](FName SessionName)
-    {
-        CreateParty(LocalUserNum);
-    });
-
-    // Initiate a new party.
-    CreateParty(LocalUserNum);
 }
 
 void UPartyOnlineSession::OnInviteToPartyButtonClicked(const int32 LocalUserNum, const FUniqueNetIdPtr& Invitee)
@@ -1248,6 +1233,24 @@ void UPartyOnlineSession::OnPartySessionUpdateReceived(FName SessionName)
     DisplayCurrentPartyLeader();
 
     OnPartySessionUpdateReceivedDelegates.Broadcast(SessionName);
+}
+
+void UPartyOnlineSession::OnConnectLobbyComplete(int32 LocalUserNum, bool bSucceeded, const FUniqueNetId& UserId, const FString& Error)
+{
+    if (!bSucceeded)
+    {
+        UE_LOG_PARTYESSENTIALS(Warning, TEXT("Cannot initialize party. Failed to connect to lobby. Error: %s."), *Error);
+        return;
+    }
+
+    // Automatically create a new party when got kicked from a party.
+    GetOnKickedFromPartyDelegates()->AddWeakLambda(this, [this, LocalUserNum](FName SessionName)
+    {
+        CreateParty(LocalUserNum);
+    });
+
+    // Initiate a new party.
+    CreateParty(LocalUserNum);
 }
 
 #pragma endregion

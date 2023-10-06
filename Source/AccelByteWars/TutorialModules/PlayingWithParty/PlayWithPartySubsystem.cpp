@@ -786,7 +786,7 @@ bool UPlayWithPartySubsystem::ValidateToStartMatchmaking(const EGameModeType Gam
         return false;
     }
 
-    bool bResult = GameModeType == EGameModeType::FFA;
+    bool bResult = GameModeType != EGameModeType::FFA;
 
     // Notify cannot matchmaking using the specified game mode.
     if (!bResult && GetPromptSubystem())

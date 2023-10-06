@@ -10,7 +10,6 @@
 #include "Core/UI/Components/AccelByteWarsButtonBase.h"
 
 #include "TutorialModules/Module-1/TutorialModuleOnlineUtility.h"
-#include "TutorialModules/Module-2/AuthEssentialsModels.h"
 #include "TutorialModules/Module-8/UI/FriendDetailsWidget.h"
 #include "TutorialModules/Module-8/UI/FriendDetailsWidget_Starter.h"
 
@@ -18,7 +17,6 @@ void UPartyOnlineSession_Starter::RegisterOnlineDelegates()
 {
 	Super::RegisterOnlineDelegates();
 
-    UAuthEssentialsModels::OnLoginSuccessDelegate.AddUObject(this, &ThisClass::OnLoginSuccess);
     InitializePartyGeneratedWidgets();
 
     // TODO: Bind your party event delegates here.
@@ -28,7 +26,6 @@ void UPartyOnlineSession_Starter::ClearOnlineDelegates()
 {
 	Super::ClearOnlineDelegates();
 
-    UAuthEssentialsModels::OnLoginSuccessDelegate.RemoveAll(this);
     DeinitializePartyGeneratedWidgets();
 
     // TODO: Unbind your party event delegates here.
@@ -340,11 +337,6 @@ FUniqueNetIdPtr UPartyOnlineSession_Starter::GetCurrentDisplayedFriendId()
     }
 
     return FriendUserId.GetUniqueNetId();
-}
-
-void UPartyOnlineSession_Starter::OnLoginSuccess(const APlayerController* PC)
-{
-    // TODO: Initialize a new party on success login.
 }
 
 void UPartyOnlineSession_Starter::OnInviteToPartyButtonClicked(const int32 LocalUserNum, const FUniqueNetIdPtr& Invitee)

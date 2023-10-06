@@ -25,6 +25,17 @@ IOnlineIdentityPtr UAccelByteWarsOnlineSessionBase::GetIdentityInt() const
 	return Online::GetIdentityInterface(World);
 }
 
+FOnlineIdentityAccelBytePtr UAccelByteWarsOnlineSessionBase::GetABIdentityInt() const
+{
+	const UWorld* World = GetWorld();
+	if (!ensure(World))
+	{
+		return nullptr;
+	}
+
+	return StaticCastSharedPtr<FOnlineIdentityAccelByte>(Online::GetIdentityInterface(World));
+}
+
 IOnlineUserPtr UAccelByteWarsOnlineSessionBase::GetUserInt() const
 {
 	const UWorld* World = GetWorld();

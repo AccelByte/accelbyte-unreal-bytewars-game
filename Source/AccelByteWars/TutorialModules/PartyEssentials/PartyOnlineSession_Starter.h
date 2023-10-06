@@ -36,7 +36,6 @@ protected:
 	void DeinitializePartyGeneratedWidgets();
 	FUniqueNetIdPtr GetCurrentDisplayedFriendId();
 
-	void OnLoginSuccess(const APlayerController* PC);
 	void OnInviteToPartyButtonClicked(const int32 LocalUserNum, const FUniqueNetIdPtr& Invitee);
 	void OnKickPlayerFromPartyButtonClicked(const int32 LocalUserNum, const FUniqueNetIdPtr& KickedPlayer);
 	void OnPromotePartyLeaderButtonClicked(const int32 LocalUserNum, const FUniqueNetIdPtr& NewLeader);

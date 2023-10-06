@@ -17,7 +17,6 @@
 #include "Core/UI/Components/AccelByteWarsButtonBase.h"
 
 #include "TutorialModules/Module-1/TutorialModuleOnlineUtility.h"
-#include "TutorialModules/Module-2/AuthEssentialsModels.h"
 #include "TutorialModules/Module-8/UI/FriendDetailsWidget.h"
 #include "TutorialModules/Module-8/UI/FriendDetailsWidget_Starter.h"
 
@@ -71,7 +70,7 @@ void UAccelByteWarsOnlineSession::RegisterOnlineDelegates()
     GetABSessionInt()->OnKickedFromSessionDelegates.AddUObject(this, &ThisClass::OnKickedFromParty);
     GetABSessionInt()->OnSessionParticipantsChangeDelegates.AddUObject(this, &ThisClass::OnPartyMembersChange);
     GetABSessionInt()->OnSessionUpdateReceivedDelegates.AddUObject(this, &ThisClass::OnPartySessionUpdateReceived);
-    UAuthEssentialsModels::OnLoginSuccessDelegate.AddUObject(this, &ThisClass::OnLoginSuccess);
+    GetABIdentityInt()->OnConnectLobbyCompleteDelegates->AddUObject(this, &ThisClass::OnConnectLobbyComplete);
 }
 
 void UAccelByteWarsOnlineSession::ClearOnlineDelegates()
@@ -112,7 +111,7 @@ void UAccelByteWarsOnlineSession::ClearOnlineDelegates()
 	GetABSessionInt()->OnKickedFromSessionDelegates.RemoveAll(this);
 	GetABSessionInt()->OnSessionParticipantsChangeDelegates.RemoveAll(this);
 	GetABSessionInt()->OnSessionUpdateReceivedDelegates.RemoveAll(this);
-	UAuthEssentialsModels::OnLoginSuccessDelegate.RemoveAll(this);
+    GetABIdentityInt()->OnConnectLobbyCompleteDelegates->RemoveAll(this);
 	DeinitializePartyGeneratedWidgets();
 }
 
@@ -1395,28 +1394,6 @@ FUniqueNetIdPtr UAccelByteWarsOnlineSession::GetCurrentDisplayedFriendId()
     return FriendUserId.GetUniqueNetId();
 }
 
-void UAccelByteWarsOnlineSession::OnLoginSuccess(const APlayerController* PC)
-{
-    InitializePartyGeneratedWidgets();
-
-    if (!PC)
-    {
-        UE_LOG_ONLINESESSION(Warning, TEXT("Cannot initialize party. PlayerController is null."));
-        return;
-    }
-
-    const int32 LocalUserNum = GetLocalUserNumFromPlayerController(PC);
-
-    // Automatically create a new party when got kicked from a party.
-    GetOnKickedFromPartyDelegates()->AddWeakLambda(this, [this, LocalUserNum](FName SessionName)
-    {
-        CreateParty(LocalUserNum);
-    });
-
-    // Initiate a new party.
-    CreateParty(LocalUserNum);
-}
-
 void UAccelByteWarsOnlineSession::OnInviteToPartyButtonClicked(const int32 LocalUserNum, const FUniqueNetIdPtr& Invitee)
 {
     // Disable the button to avoid spamming.
@@ -2258,5 +2235,23 @@ void UAccelByteWarsOnlineSession::OnPartySessionUpdateReceived(FName SessionName
     DisplayCurrentPartyLeader();
 
     OnPartySessionUpdateReceivedDelegates.Broadcast(SessionName);
+}
+
+void UAccelByteWarsOnlineSession::OnConnectLobbyComplete(int32 LocalUserNum, bool bSucceeded, const FUniqueNetId& UserId, const FString& Error)
+{
+    if (!bSucceeded)
+    {
+        UE_LOG_ONLINESESSION(Warning, TEXT("Cannot initialize party. Failed to connect to lobby. Error: %s."), *Error);
+        return;
+    }
+
+    // Automatically create a new party when got kicked from a party.
+    GetOnKickedFromPartyDelegates()->AddWeakLambda(this, [this, LocalUserNum](FName SessionName)
+    {
+        CreateParty(LocalUserNum);
+    });
+
+    // Initiate a new party.
+    CreateParty(LocalUserNum);
 }
 #pragma endregion
