@@ -146,8 +146,6 @@ public:
 	 */
 	FSimpleMulticastDelegate OnDelayedClientTravelStartedDelegates;
 
-	void OnLocalPlayerBeginPlay();
-
 	bool GetIsPendingFailureNotification(ENetworkFailure::Type& OutFailureType);
 
 private:
