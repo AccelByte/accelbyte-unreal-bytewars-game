@@ -8,6 +8,7 @@
 #include "AccelByteWarsOnlineSessionLog.h"
 #include "OnlineSubsystemAccelByteSessionSettings.h"
 #include "OnlineSubsystemUtils.h"
+#include "Core/Player/AccelByteWarsPlayerController.h"
 #include "Core/UI/InGameMenu/Pause/PauseWidget.h"
 #include "Core/UI/MainMenu/MatchLobby/MatchLobbyWidget.h"
 
@@ -649,6 +650,13 @@ bool UAccelByteWarsOnlineSession::TravelToSession(const FName SessionName)
 		return false;
 	}
 
+	AAccelByteWarsPlayerController* AbPlayerController = Cast<AAccelByteWarsPlayerController>(PlayerController);
+	if (!AbPlayerController)
+	{
+		UE_LOG_ONLINESESSION(Warning, TEXT("Player controller is not (derived from) AAccelByteWarsPlayerController"));
+		return false;
+	}
+
 	// Find address
 #pragma region "Adapted for P2P and DS"
 	FString ServerAddress = "";
@@ -677,7 +685,7 @@ bool UAccelByteWarsOnlineSession::TravelToSession(const FName SessionName)
 
 	if (!bIsInSessionServer)
 	{
-		PlayerController->ClientTravel(ServerAddress, TRAVEL_Absolute);
+		AbPlayerController->DelayedClientTravel(ServerAddress, TRAVEL_Absolute);
 		bIsInSessionServer = true;
 	}
 	else

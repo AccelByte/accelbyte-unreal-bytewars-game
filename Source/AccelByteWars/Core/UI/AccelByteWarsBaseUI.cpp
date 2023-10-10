@@ -28,6 +28,21 @@ void UAccelByteWarsBaseUI::NativeOnInitialized()
 	}
 }
 
+void UAccelByteWarsBaseUI::ClearWidgets()
+{
+	MenuStack->ClearWidgets();
+	InGameMenuStack->ClearWidgets();
+	InGameHUDStack->ClearWidgets();
+	PushNotificationStack->ClearWidgets();
+
+	bStacksCleared = true;
+}
+
+void UAccelByteWarsBaseUI::ResetWidget()
+{
+	bStacksCleared = false;
+}
+
 void UAccelByteWarsBaseUI::ToggleBackgroundBlur(const bool bShow) const
 {
 	BackgroundBlur->SetVisibility(bShow ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
@@ -108,6 +123,11 @@ UAccelByteWarsActivatableWidget* UAccelByteWarsBaseUI::PushWidgetToStack(EBaseUI
 
 UPushNotificationWidget* UAccelByteWarsBaseUI::GetPushNotificationWidget()
 {
+	if (bStacksCleared)
+	{
+		return nullptr;
+	}
+
 	UPushNotificationWidget* PushNotificationWidget = Cast<UPushNotificationWidget>(PushNotificationStack->GetActiveWidget());
 
 	if (!PushNotificationWidget)

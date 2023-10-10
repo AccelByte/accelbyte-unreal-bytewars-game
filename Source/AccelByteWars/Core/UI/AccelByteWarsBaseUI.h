@@ -33,6 +33,9 @@ class ACCELBYTEWARS_API UAccelByteWarsBaseUI : public UCommonUserWidget
 public:
 	void NativeOnInitialized() override;
 
+	void ClearWidgets();
+	void ResetWidget();
+
 	UFUNCTION(BlueprintCallable)
 	void ToggleBackgroundBlur(const bool bShow) const;
 
@@ -66,6 +69,8 @@ public:
 	TSubclassOf<UPushNotificationWidget> DefaultPushNotificationWidgetClass;
 
 private:
+	bool bStacksCleared = false;
+
 	void OnWidgetTransitionChanged(UCommonActivatableWidgetContainerBase* Widget, bool bIsTransitioning);
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))

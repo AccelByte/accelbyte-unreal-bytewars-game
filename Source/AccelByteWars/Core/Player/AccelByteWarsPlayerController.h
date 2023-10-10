@@ -21,5 +21,13 @@ public:
 
 	void LoadingPlayerAssignment() const;
 
+	UFUNCTION(BlueprintCallable)
+	void DelayedClientTravel(TSoftObjectPtr<UWorld> Level);
+
+	void DelayedClientTravel(const FString& Url, const ETravelType TravelType);
+
 	TSharedRef<FOnlineSessionSearch> SessionSearch = MakeShared<FOnlineSessionSearch>(FOnlineSessionSearch());
+
+private:
+	bool bDelayedClientTravelStarted = false;
 };

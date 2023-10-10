@@ -7,6 +7,7 @@
 
 #include "MatchmakingDSLog.h"
 #include "OnlineSubsystemAccelByteSessionSettings.h"
+#include "Core/Player/AccelByteWarsPlayerController.h"
 #include "Core/Settings/GameModeDataAssets.h"
 #include "Core/UI/InGameMenu/Pause/PauseWidget.h"
 #include "Core/UI/MainMenu/MatchLobby/MatchLobbyWidget.h"
@@ -191,6 +192,13 @@ bool UMatchmakingDSOnlineSession::TravelToSession(const FName SessionName)
 		return false;
 	}
 
+	AAccelByteWarsPlayerController* AbPlayerController = Cast<AAccelByteWarsPlayerController>(PlayerController);
+	if (!AbPlayerController)
+	{
+		UE_LOG_MATCHMAKINGDS(Warning, TEXT("Player controller is not (derived from) AAccelByteWarsPlayerController"));
+		return false;
+	}
+
 	// Make sure this is not a P2P session
 	if (GetABSessionInt()->IsPlayerP2PHost(GetLocalPlayerUniqueNetId(PlayerController).ToSharedRef().Get(), SessionName)) 
 	{
@@ -209,7 +217,7 @@ bool UMatchmakingDSOnlineSession::TravelToSession(const FName SessionName)
 
 	if (!bIsInSessionServer)
 	{
-		PlayerController->ClientTravel(ServerAddress, TRAVEL_Absolute);
+		AbPlayerController->DelayedClientTravel(ServerAddress, TRAVEL_Absolute);
 		bIsInSessionServer = true;
 	}
 	else

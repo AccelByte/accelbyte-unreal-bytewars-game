@@ -7,6 +7,7 @@
 
 #include "MatchmakingP2PLog.h"
 #include "OnlineSubsystemAccelByteSessionSettings.h"
+#include "Core/Player/AccelByteWarsPlayerController.h"
 #include "Core/Settings/GameModeDataAssets.h"
 #include "Core/UI/InGameMenu/Pause/PauseWidget.h"
 #include "Core/UI/MainMenu/MatchLobby/MatchLobbyWidget.h"
@@ -158,6 +159,13 @@ bool UMatchmakingP2POnlineSession::TravelToSession(const FName SessionName)
 		return false;
 	}
 
+	AAccelByteWarsPlayerController* AbPlayerController = Cast<AAccelByteWarsPlayerController>(PlayerController);
+	if (!AbPlayerController)
+	{
+		UE_LOG_MATCHMAKINGP2P(Warning, TEXT("Player controller is not (derived from) AAccelByteWarsPlayerController"));
+		return false;
+	}
+
 	FString ServerAddress = "";
 
 	// If local user is not the P2P host -> connect to host
@@ -179,7 +187,7 @@ bool UMatchmakingP2POnlineSession::TravelToSession(const FName SessionName)
 
 	if (!bIsInSessionServer)
 	{
-		PlayerController->ClientTravel(ServerAddress, TRAVEL_Absolute);
+		AbPlayerController->DelayedClientTravel(ServerAddress, TRAVEL_Absolute);
 		bIsInSessionServer = true;
 	}
 	else

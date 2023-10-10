@@ -5,6 +5,7 @@
 #include "Core/UI/Components/Prompt/PushNotification/PushNotificationWidget.h"
 #include "Components/ListView.h"
 #include "CommonButtonBase.h"
+#include "Core/UI/AccelByteWarsBaseUI.h"
 
 void UPushNotificationWidget::NativeOnActivated()
 {
@@ -55,9 +56,6 @@ void UPushNotificationWidget::PushNotification(UPushNotification* Notification)
 
 void UPushNotificationWidget::RemoveNotification(UPushNotification* Notification)
 {
-	// clear nullptr object
-	CleanObjects();
-
 	if (!Notification)
 	{
 		return;
@@ -77,18 +75,27 @@ void UPushNotificationWidget::RemoveNotification(UPushNotification* Notification
 		NotificationTimers.Remove(Notification);
 	}
 
-	// Delete from notification list.
-	Lv_PushNotification->RemoveItem(Notification);
-
-	// Dismiss the notification if empty.
-	if (PendingNotifications.IsEmpty() && Lv_PushNotification->GetNumItems() <= 0)
+	if (IsActivated() && !IsUnreachable())
 	{
-		DeactivateWidget();
+		// Delete from notification list.
+		Lv_PushNotification->RemoveItem(Notification);
+
+		// Dismiss the notification if empty.
+		if (PendingNotifications.IsEmpty() && Lv_PushNotification->GetNumItems() <= 0)
+		{
+			DeactivateWidget();
+		}
 	}
 }
 
 void UPushNotificationWidget::TryPushPendingNotifications()
 {
+	if (!IsActivated() || IsUnreachable())
+	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot access the push notification UI as the widget begin to tear down."));
+		return;
+	}
+
 	// Push pending notifications.
 	const int32 MaxToPush = MaxNotificationStack - Lv_PushNotification->GetNumItems();
 	for (int32 i = 0; i < MaxToPush; i++)
@@ -107,23 +114,6 @@ void UPushNotificationWidget::OnNotificationLifeTimeEnds(UPushNotification* Noti
 {
 	RemoveNotification(Notification);
 	TryPushPendingNotifications();
-}
-
-void UPushNotificationWidget::CleanObjects()
-{
-	PendingNotifications.RemoveAll([](UPushNotification* Item)
-	{
-		return !Item;
-	});
-
-	for (TMap<UPushNotification*, FTimerHandle>::TIterator It = NotificationTimers.CreateIterator(); It; ++It)
-	{
-		if (!It.Key())
-		{
-			GetWorld()->GetTimerManager().ClearTimer(It.Value());
-			It.RemoveCurrent();
-		}
-	}
 }
 
 void UPushNotificationWidget::DismissAllNotifications()

@@ -75,7 +75,10 @@ void UPushNotificationWidgetEntry::SubmitActionResult(EPushNotificationActionRes
 	{
 		if (UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->GetBaseUIWidget()))
 		{
-			BaseUIWidget->GetPushNotificationWidget()->RemoveNotification(Notification);
+			if (UPushNotificationWidget* NotificationWidget = BaseUIWidget->GetPushNotificationWidget())
+			{
+				NotificationWidget->RemoveNotification(Notification);
+			}
 		}
 	}
 }
