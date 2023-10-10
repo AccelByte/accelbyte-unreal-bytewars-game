@@ -30,19 +30,19 @@ protected:
 	void OnPartyMatchmakingCanceled();
 	void OnPartyMatchmakingExpired();
 
-	void InvitePartyMembersToJoinPartyMatch(const FUniqueNetIdPtr LeaderUserId);
-	void OnPartyMatchInviteReceived(const FUniqueNetId& UserId, const FUniqueNetId& FromId, const FOnlineSessionInviteAccelByte& Invite);
+	void InvitePartyMembersToJoinPartyGameSession(const FUniqueNetIdPtr LeaderUserId);
+	void OnPartyGameSessionInviteReceived(const FUniqueNetId& UserId, const FUniqueNetId& FromId, const FOnlineSessionInviteAccelByte& Invite);
 	
 	void UpdatePartyMemberGameSession(const FUniqueNetIdPtr MemberUserId);
 	bool IsGameSessionDifferFromParty(const FUniqueNetIdPtr MemberUserId);
 
-	void OnCreatePartyMatchComplete(FName SessionName, bool bSucceeded);
-	void OnJoinPartyMatchComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
-	void OnLeavePartyMatchComplete(FName SessionName, bool bSucceeded);
+	void OnCreatePartyGameSessionComplete(FName SessionName, bool bSucceeded);
+	void OnJoinPartyGameSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
+	void OnLeavePartyGameSessionComplete(FName SessionName, bool bSucceeded);
 
-	bool ValidateToStartSession();
-	bool ValidateToJoinSession(const FOnlineSessionSearchResult& SessionSearchResult);
-	bool ValidateToStartMatchmaking(const EGameModeType GameModeType);
+	bool ValidateToStartPartyGameSession();
+	bool ValidateToJoinPartyGameSession(const FOnlineSessionSearchResult& SessionSearchResult);
+	bool ValidateToStartPartyMatchmaking(const EGameModeType GameModeType);
 
 	UAccelByteWarsOnlineSessionBase* GetOnlineSession() const;
 	FOnlineSessionV2AccelBytePtr GetSessionInterface() const;

@@ -28,23 +28,23 @@ void UPlayWithPartySubsystem::Initialize(FSubsystemCollectionBase& Collection)
         GetSessionInterface()->OnMatchmakingExpiredDelegates.AddUObject(this, &ThisClass::OnPartyMatchmakingExpired);
 
         // Bind party game session events.
-        GetSessionInterface()->OnCreateSessionCompleteDelegates.AddUObject(this, &ThisClass::OnCreatePartyMatchComplete);
-        GetSessionInterface()->OnJoinSessionCompleteDelegates.AddUObject(this, &ThisClass::OnJoinPartyMatchComplete);
-        GetSessionInterface()->OnV2SessionInviteReceivedDelegates.AddUObject(this, &ThisClass::OnPartyMatchInviteReceived);
-        GetSessionInterface()->OnDestroySessionCompleteDelegates.AddUObject(this, &ThisClass::OnLeavePartyMatchComplete);
+        GetSessionInterface()->OnCreateSessionCompleteDelegates.AddUObject(this, &ThisClass::OnCreatePartyGameSessionComplete);
+        GetSessionInterface()->OnJoinSessionCompleteDelegates.AddUObject(this, &ThisClass::OnJoinPartyGameSessionComplete);
+        GetSessionInterface()->OnV2SessionInviteReceivedDelegates.AddUObject(this, &ThisClass::OnPartyGameSessionInviteReceived);
+        GetSessionInterface()->OnDestroySessionCompleteDelegates.AddUObject(this, &ThisClass::OnLeavePartyGameSessionComplete);
     }
 
     // Add party validation to online session related UIs.
     if (GetOnlineSession()) 
     {
         GetOnlineSession()->ValidateToStartSession.Unbind();
-        GetOnlineSession()->ValidateToStartSession.BindUObject(this, &ThisClass::ValidateToStartSession);
+        GetOnlineSession()->ValidateToStartSession.BindUObject(this, &ThisClass::ValidateToStartPartyGameSession);
 
         GetOnlineSession()->ValidateToStartMatchmaking.Unbind();
-        GetOnlineSession()->ValidateToStartMatchmaking.BindUObject(this, &ThisClass::ValidateToStartMatchmaking);
+        GetOnlineSession()->ValidateToStartMatchmaking.BindUObject(this, &ThisClass::ValidateToStartPartyMatchmaking);
 
         GetOnlineSession()->ValidateToJoinSession.Unbind();
-        GetOnlineSession()->ValidateToJoinSession.BindUObject(this, &ThisClass::ValidateToJoinSession);
+        GetOnlineSession()->ValidateToJoinSession.BindUObject(this, &ThisClass::ValidateToJoinPartyGameSession);
     }
 }
 
@@ -137,7 +137,7 @@ void UPlayWithPartySubsystem::OnStartPartyMatchmakingComplete()
         return;
     }
 
-    // Abort if not a party match.
+    // Abort if not a party matchmaking.
     if (!GetSessionInterface()->IsInPartySession() ||
         GetOnlineSession()->GetPartyMembers().Num() <= 1)
     {
@@ -172,7 +172,7 @@ void UPlayWithPartySubsystem::OnPartyMatchmakingComplete(FName SessionName, bool
         return;
     }
 
-    // Abort if not a party match.
+    // Abort if not a party matchmaking.
     if (!GetSessionInterface()->IsInPartySession() ||
         GetOnlineSession()->GetPartyMembers().Num() <= 1 ||
         !GetOnlineSession()->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession).IsEqual(SessionName))
@@ -223,7 +223,7 @@ void UPlayWithPartySubsystem::OnPartyMatchmakingCanceled()
         return;
     }
 
-    // Abort if not a party match.
+    // Abort if not a party matchmaking.
     if (!GetSessionInterface()->IsInPartySession() ||
         GetOnlineSession()->GetPartyMembers().Num() <= 1)
     {
@@ -259,7 +259,7 @@ void UPlayWithPartySubsystem::OnPartyMatchmakingExpired()
         return;
     }
 
-    // Abort if not a party match.
+    // Abort if not a party matchmaking.
     if (!GetSessionInterface()->IsInPartySession() ||
         GetOnlineSession()->GetPartyMembers().Num() <= 1)
     {
@@ -287,33 +287,33 @@ void UPlayWithPartySubsystem::OnPartyMatchmakingExpired()
     }
 }
 
-void UPlayWithPartySubsystem::InvitePartyMembersToJoinPartyMatch(const FUniqueNetIdPtr LeaderUserId)
+void UPlayWithPartySubsystem::InvitePartyMembersToJoinPartyGameSession(const FUniqueNetIdPtr LeaderUserId)
 {
     if (!LeaderUserId)
     {
-        UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot invite party members to join party match. Party leader is not valid."));
+        UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot invite party members to join party game session. Party leader is not valid."));
         return;
     }
 
     if (!GetSessionInterface() || !GetOnlineSession())
     {
-        UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot handle on invite party members to join party match. Interfaces or online session are not valid."));
+        UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot handle on invite party members to join party game session. Interfaces or online session are not valid."));
         return;
     }
 
     if (!GetOnlineSession()->IsPartyLeader(LeaderUserId))
     {
-        UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot invite party members to join party match. Inviter is not the party leader."));
+        UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot invite party members to join party game session. Inviter is not the party leader."));
         return;
     }
 
-    // Not necessary to send party match invitation if there is only one member.
+    // Not necessary to send party game session invitation if there is only one member.
     if (GetOnlineSession()->GetPartyMembers().Num() <= 1)
     {
         return;
     }
 
-    // Send party match invitation to each party members.
+    // Send party game session invitation to each party members.
     for (auto& Member : GetOnlineSession()->GetPartyMembers())
     {
         if (GetOnlineSession()->IsPartyLeader(Member))
@@ -323,7 +323,7 @@ void UPlayWithPartySubsystem::InvitePartyMembersToJoinPartyMatch(const FUniqueNe
 
         if (FUniqueNetIdAccelByteUserPtr MemberABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(Member))
         {
-            UE_LOG_PLAYINGWITHPARTY(Log, TEXT("Send party match invitation to: %s."), *MemberABId->GetAccelByteId());
+            UE_LOG_PLAYINGWITHPARTY(Log, TEXT("Send party game session invitation to: %s."), *MemberABId->GetAccelByteId());
             GetSessionInterface()->SendSessionInviteToFriend(
                 LeaderUserId.ToSharedRef().Get(),
                 GetOnlineSession()->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession),
@@ -332,15 +332,15 @@ void UPlayWithPartySubsystem::InvitePartyMembersToJoinPartyMatch(const FUniqueNe
     }
 }
 
-void UPlayWithPartySubsystem::OnPartyMatchInviteReceived(const FUniqueNetId& UserId, const FUniqueNetId& FromId, const FOnlineSessionInviteAccelByte& Invite)
+void UPlayWithPartySubsystem::OnPartyGameSessionInviteReceived(const FUniqueNetId& UserId, const FUniqueNetId& FromId, const FOnlineSessionInviteAccelByte& Invite)
 {
     if (!GetSessionInterface() || !GetOnlineSession())
     {
-        UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot handle on party match invite received. Interfaces or online session are not valid."));
+        UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot handle on party game session invite received. Interfaces or online session are not valid."));
         return;
     }
 
-    // Abort if not a party match and if the invitation is not from the party leader.
+    // Abort if not a party game session and if the invitation is not from the party leader.
     if (Invite.SessionType != EAccelByteV2SessionType::GameSession ||
         !GetOnlineSession()->IsPartyLeader(FromId.AsShared()) ||
         GetOnlineSession()->GetPartyMembers().Num() <= 1)
@@ -354,21 +354,21 @@ void UPlayWithPartySubsystem::OnPartyMatchInviteReceived(const FUniqueNetId& Use
         return;
     }
 
-    // Join party match.
+    // Join party game session.
     const APlayerController* PC = GetOnlineSession()->GetPlayerControllerByUniqueNetId(UserId.AsShared());
     if (!PC)
     {
-        UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot join a party match invitation from party leader. PlayerController is not valid."));
+        UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot join a party game session invitation from party leader. PlayerController is not valid."));
         return;
     }
 
     const int32 LocalUserNum = GetOnlineSession()->GetLocalUserNumFromPlayerController(PC);
 
-    UE_LOG_PLAYINGWITHPARTY(Log, TEXT("Received a party match invitation from party leader. Joining the party match."));
+    UE_LOG_PLAYINGWITHPARTY(Log, TEXT("Received a party game session invitation from party leader. Joining the party game session."));
 
     if (GetPromptSubystem())
     {
-        GetPromptSubystem()->ShowLoading(JOIN_PARTY_MATCH_MESSAGE);
+        GetPromptSubystem()->ShowLoading(JOIN_PARTY_GAME_SESSION_MESSAGE);
     }
 
     GetOnlineSession()->JoinSession(LocalUserNum,
@@ -548,15 +548,15 @@ bool UPlayWithPartySubsystem::IsGameSessionDifferFromParty(const FUniqueNetIdPtr
     return bResult;
 }
 
-void UPlayWithPartySubsystem::OnCreatePartyMatchComplete(FName SessionName, bool bSucceeded)
+void UPlayWithPartySubsystem::OnCreatePartyGameSessionComplete(FName SessionName, bool bSucceeded)
 {
     if (!GetSessionInterface() || !GetOnlineSession())
     {
-        UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot handle on create party match completed. Interfaces or online session are not valid."));
+        UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot handle on create party game session completed. Interfaces or online session are not valid."));
         return;
     }
 
-    // Abort if not a party match.
+    // Abort if not a party game session.
     if (!GetOnlineSession()->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession).IsEqual(SessionName) ||
         !GetSessionInterface()->IsInPartySession())
     {
@@ -565,11 +565,11 @@ void UPlayWithPartySubsystem::OnCreatePartyMatchComplete(FName SessionName, bool
 
     if (bSucceeded) 
     {
-        UE_LOG_PLAYINGWITHPARTY(Log, TEXT("Success to create party match."));
+        UE_LOG_PLAYINGWITHPARTY(Log, TEXT("Success to create party game session."));
     }
     else 
     {
-        UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Failed to create party match."));
+        UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Failed to create party game session."));
     }
 
     // Update party member game session id.
@@ -581,22 +581,22 @@ void UPlayWithPartySubsystem::OnCreatePartyMatchComplete(FName SessionName, bool
         UpdatePartyMemberGameSession(UserId);
     }
 
-    // Invite party members to join the party match.
+    // Invite party members to join the party game session.
     if (GetOnlineSession()->IsPartyLeader(UserId)) 
     {
-        InvitePartyMembersToJoinPartyMatch(UserId);
+        InvitePartyMembersToJoinPartyGameSession(UserId);
     }
 }
 
-void UPlayWithPartySubsystem::OnJoinPartyMatchComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
+void UPlayWithPartySubsystem::OnJoinPartyGameSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
 {
     if (!GetSessionInterface() || !GetOnlineSession())
     {
-        UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot handle on join party match completed. Interfaces or online session are not valid."));
+        UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot handle on join party game session completed. Interfaces or online session are not valid."));
         return;
     }
 
-    // Abort if not a party match.
+    // Abort if not a party game session.
     if (!GetOnlineSession()->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession).IsEqual(SessionName) ||
         !GetSessionInterface()->IsInPartySession())
     {
@@ -605,11 +605,11 @@ void UPlayWithPartySubsystem::OnJoinPartyMatchComplete(FName SessionName, EOnJoi
 
     if (Result == EOnJoinSessionCompleteResult::Type::Success)
     {
-        UE_LOG_PLAYINGWITHPARTY(Log, TEXT("Success to join party match."));
+        UE_LOG_PLAYINGWITHPARTY(Log, TEXT("Success to join party game session."));
     }
     else
     {
-        UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Failed to join party match."));
+        UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Failed to join party game session."));
     }
 
     // Update party member game session id.
@@ -632,7 +632,7 @@ void UPlayWithPartySubsystem::OnJoinPartyMatchComplete(FName SessionName, EOnJoi
     {
         if (Result == EOnJoinSessionCompleteResult::Type::Success) 
         {
-            InvitePartyMembersToJoinPartyMatch(UserId);
+            InvitePartyMembersToJoinPartyGameSession(UserId);
         }
     }
     // Show relevant notification if the one who joined the session is party member.
@@ -643,7 +643,7 @@ void UPlayWithPartySubsystem::OnJoinPartyMatchComplete(FName SessionName, EOnJoi
             if (GetPromptSubystem())
             {
                 GetPromptSubystem()->HideLoading();
-                GetPromptSubystem()->PushNotification(JOIN_PARTY_MATCH_SUCCESS_MESSAGE, FString(""));
+                GetPromptSubystem()->PushNotification(JOIN_PARTY_GAME_SESSION_SUCCESS_MESSAGE, FString(""));
             }
         }
         else
@@ -651,21 +651,21 @@ void UPlayWithPartySubsystem::OnJoinPartyMatchComplete(FName SessionName, EOnJoi
             if (GetPromptSubystem())
             {
                 GetPromptSubystem()->HideLoading();
-                GetPromptSubystem()->PushNotification(JOIN_PARTY_MATCH_FAILED_MESSAGE, FString(""));
+                GetPromptSubystem()->PushNotification(JOIN_PARTY_GAME_SESSION_FAILED_MESSAGE, FString(""));
             }
         }
     }
 }
 
-void UPlayWithPartySubsystem::OnLeavePartyMatchComplete(FName SessionName, bool bSucceeded)
+void UPlayWithPartySubsystem::OnLeavePartyGameSessionComplete(FName SessionName, bool bSucceeded)
 {
     if (!GetSessionInterface() || !GetOnlineSession())
     {
-        UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot handle on leave party match completed. Interfaces or online session are not valid."));
+        UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot handle on leave party game session completed. Interfaces or online session are not valid."));
         return;
     }
 
-    // Abort if not a party match.
+    // Abort if not a party game session.
     if (!GetOnlineSession()->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession).IsEqual(SessionName) ||
         !GetSessionInterface()->IsInPartySession())
     {
@@ -675,7 +675,7 @@ void UPlayWithPartySubsystem::OnLeavePartyMatchComplete(FName SessionName, bool 
     FNamedOnlineSession* PartySession = GetSessionInterface()->GetPartySession();
     if (!PartySession)
     {
-        UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot clear party member game session upon leaving the party match. Party session is not valid."));
+        UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot clear party member game session upon leaving the party game session. Party session is not valid."));
         return;
     }
 
@@ -692,14 +692,14 @@ void UPlayWithPartySubsystem::OnLeavePartyMatchComplete(FName SessionName, bool 
     // Update party session to clear game session data.
     UpdatePartyMemberGameSession(UserId);
 
-    UE_LOG_PLAYINGWITHPARTY(Log, TEXT("Success to leave party match."));
+    UE_LOG_PLAYINGWITHPARTY(Log, TEXT("Success to leave party game session."));
 }
 
-bool UPlayWithPartySubsystem::ValidateToStartSession()
+bool UPlayWithPartySubsystem::ValidateToStartPartyGameSession()
 {
     if (!GetSessionInterface() || !GetOnlineSession())
     {
-        UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot validate to start party match. Interfaces or online session are not valid."));
+        UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot validate to start party game session. Interfaces or online session are not valid."));
         return false;
     }
 
@@ -710,32 +710,32 @@ bool UPlayWithPartySubsystem::ValidateToStartSession()
         UserId = GetIdentityInterface()->GetUniquePlayerId(0);
     }
 
-    // Only party leader is able to start party match.
+    // Only party leader is able to start party game session.
     if (GetOnlineSession() && !GetOnlineSession()->IsPartyLeader(UserId))
     {
         if (GetPromptSubystem())
         {
-            GetPromptSubystem()->PushNotification(PARTY_MATCH_MEMBER_SAFEGUARD_MESSAGE, FString(""));
+            GetPromptSubystem()->PushNotification(PARTY_GAME_SESSION_MEMBER_SAFEGUARD_MESSAGE, FString(""));
         }
         return false;
     }
 
-    // Only able to start party match if other party members are not in other game session.
+    // Only able to start party game session if other party members are not in other game session.
     bool bResult = !IsGameSessionDifferFromParty(UserId);
 
     /* Show notification that unable to start any game session
      * if other party members are in other game session.*/
     if (!bResult && GetPromptSubystem())
     {
-        GetPromptSubystem()->PushNotification(PARTY_MATCH_LEADER_SAFEGUARD_MESSAGE, FString(""));
+        GetPromptSubystem()->PushNotification(PARTY_GAME_SESSION_LEADER_SAFEGUARD_MESSAGE, FString(""));
     }
 
     return bResult;
 }
 
-bool UPlayWithPartySubsystem::ValidateToJoinSession(const FOnlineSessionSearchResult& SessionSearchResult)
+bool UPlayWithPartySubsystem::ValidateToJoinPartyGameSession(const FOnlineSessionSearchResult& SessionSearchResult)
 {
-    if (!ValidateToStartSession())
+    if (!ValidateToStartPartyGameSession())
     {
         return false;
     }
@@ -773,15 +773,15 @@ bool UPlayWithPartySubsystem::ValidateToJoinSession(const FOnlineSessionSearchRe
     // Notify that no more slots to join the session.
     if (!bResult && GetPromptSubystem())
     {
-        GetPromptSubystem()->PushNotification(JOIN_PARTY_MATCH_SAFEGUARD_MESSAGE, FString(""));
+        GetPromptSubystem()->PushNotification(JOIN_PARTY_GAME_SESSION_SAFEGUARD_MESSAGE, FString(""));
     }
 
     return bResult;
 }
 
-bool UPlayWithPartySubsystem::ValidateToStartMatchmaking(const EGameModeType GameModeType)
+bool UPlayWithPartySubsystem::ValidateToStartPartyMatchmaking(const EGameModeType GameModeType)
 {
-    if (!ValidateToStartSession())
+    if (!ValidateToStartPartyGameSession())
     {
         return false;
     }

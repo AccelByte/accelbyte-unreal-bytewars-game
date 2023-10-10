@@ -18,10 +18,10 @@
 #define PARTY_MATCHMAKING_EXPIRED_MESSAGE NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "Party Matchmaking Expired", "Party Matchmaking Expired")
 #define PARTY_MATCHMAKING_SAFEGUARD_MESSAGE NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "Party Matchmaking Safeguard", "Matchmaking with this game mode is not supported when in a party")
 
-#define JOIN_PARTY_MATCH_MESSAGE NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "Join Party Match", "Joining Party Leader Match")
-#define JOIN_PARTY_MATCH_SUCCESS_MESSAGE NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "Join Party Match Success", "Success to Join Party Match")
-#define JOIN_PARTY_MATCH_FAILED_MESSAGE NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "Join Party Match Failed", "Failed to Join Party Match")
-#define JOIN_PARTY_MATCH_SAFEGUARD_MESSAGE NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "Join Party Match Safeguard", "Cannot join session. Insufficient slots to join with party")
+#define JOIN_PARTY_GAME_SESSION_MESSAGE NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "Join Party Game Session", "Joining Party Leader Game Session")
+#define JOIN_PARTY_GAME_SESSION_SUCCESS_MESSAGE NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "Join Party Game Session Success", "Success to Join Party Game Session")
+#define JOIN_PARTY_GAME_SESSION_FAILED_MESSAGE NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "Join Party Game Session Failed", "Failed to Join Party Game Session")
+#define JOIN_PARTY_GAME_SESSION_SAFEGUARD_MESSAGE NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "Join Party Game Session Safeguard", "Cannot join session. Insufficient slots to join with party")
 
-#define PARTY_MATCH_LEADER_SAFEGUARD_MESSAGE NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "Party Match Leader Safeguard", "Cannot play online session since party members are on other session")
-#define PARTY_MATCH_MEMBER_SAFEGUARD_MESSAGE NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "Party Match Member Safeguard", "Only party leader can start online session")
+#define PARTY_GAME_SESSION_LEADER_SAFEGUARD_MESSAGE NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "Party Game Session Leader Safeguard", "Cannot play online session since party members are on other session")
+#define PARTY_GAME_SESSION_MEMBER_SAFEGUARD_MESSAGE NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "Party Game Session Member Safeguard", "Only party leader can start online session")
