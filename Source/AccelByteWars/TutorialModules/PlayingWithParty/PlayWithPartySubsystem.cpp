@@ -781,13 +781,9 @@ bool UPlayWithPartySubsystem::ValidateToJoinPartyGameSession(const FOnlineSessio
 
 bool UPlayWithPartySubsystem::ValidateToStartPartyMatchmaking(const EGameModeType GameModeType)
 {
-    if (!ValidateToStartPartyGameSession())
-    {
-        return false;
-    }
-
-    bool bResult = GameModeType != EGameModeType::FFA;
-
+    // Check whether matchmaking with party is supported using the specified game mode.
+    bool bResult = ValidateToStartPartyGameSession() || (GameModeType != EGameModeType::FFA);
+    
     // Notify cannot matchmaking using the specified game mode.
     if (!bResult && GetPromptSubystem())
     {
