@@ -172,6 +172,11 @@ private:
 public:
 	bool HasFTUE();
 
+	static TArray<FFTUEDialogueModel*> GetCachedFTUEDialogues()
+	{
+		return CachedFTUEDialogues;
+	}
+
 	UPROPERTY(EditAnywhere,
 		Category = "First Time User Experience (FTUE)",
 		meta = (
@@ -227,5 +232,6 @@ private:
 #pragma region "First Time User Experience (FTUE)"
 	TArray<FTUEDialogueGroup> LastFTUEDialogueGroups;
 	static TSet<FString> FTUEDialogueUsedIds;
+	static TArray<FFTUEDialogueModel*> CachedFTUEDialogues;
 #pragma endregion
 };

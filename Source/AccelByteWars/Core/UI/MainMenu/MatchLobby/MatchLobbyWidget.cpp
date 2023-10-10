@@ -52,7 +52,7 @@ void UMatchLobbyWidget::NativeOnActivated()
 
 	// Only show session FTUE on online session.
 	if (FFTUEDialogueModel* FTUESession =
-		FFTUEDialogueModel::GetMetadataById("ftue_session_details", FTUEDialogues))
+		FFTUEDialogueModel::GetMetadataById("ftue_session_details"))
 	{
 		EGameModeNetworkType NetMode = GameState->GameSetup.NetworkType;
 		FTUESession->OnValidateDelegate.Unbind();

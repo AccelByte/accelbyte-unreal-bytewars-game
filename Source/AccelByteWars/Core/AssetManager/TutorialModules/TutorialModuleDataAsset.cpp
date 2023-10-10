@@ -15,9 +15,12 @@
 DEFINE_LOG_CATEGORY(LogTutorialModuleDataAsset);
 
 const FPrimaryAssetType	UTutorialModuleDataAsset::TutorialModuleAssetType = TEXT("TutorialModule");
+
 TSet<FString> UTutorialModuleDataAsset::GeneratedWidgetUsedIds;
 TArray<FTutorialModuleGeneratedWidget*> UTutorialModuleDataAsset::CachedGeneratedWidgets;
+
 TSet<FString> UTutorialModuleDataAsset::FTUEDialogueUsedIds;
+TArray<FFTUEDialogueModel*> UTutorialModuleDataAsset::CachedFTUEDialogues;
 
 FTutorialModuleData UTutorialModuleDataAsset::GetTutorialModuleDataByCodeName(const FString& InCodeName)
 {
@@ -606,6 +609,10 @@ void UTutorialModuleDataAsset::ValidateFTUEDialogues()
 	}
 
 	// Refresh FTUE dialogues metadata.
+	CachedFTUEDialogues.RemoveAll([](const FFTUEDialogueModel* Temp)
+	{
+		return !Temp;
+	});
 	int32 GroupIndex = INDEX_NONE;
 	for (auto& FTUEDialogueGroup : FTUEDialogueGroups)
 	{
@@ -668,6 +675,7 @@ void UTutorialModuleDataAsset::ValidateFTUEDialogues()
 						continue;
 					}
 					TargetWidgetClass.GetDefaultObject()->FTUEDialogues.Add(&FTUEDialogue);
+					CachedFTUEDialogues.Add(&FTUEDialogue);
 				}
 			}
 		}

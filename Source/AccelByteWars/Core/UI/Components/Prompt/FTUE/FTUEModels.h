@@ -363,12 +363,16 @@ struct FFTUEDialogueModel
         return FText::Format(Message, Args);
     }
 
+    static FFTUEDialogueModel* GetMetadataById(const FString& FTUEId);
+
     static FFTUEDialogueModel* GetMetadataById(const FString& FTUEId, TArray<FFTUEDialogueModel*>& FTUEDialogues)
     {
-        return *FTUEDialogues.FindByPredicate([FTUEId](const FFTUEDialogueModel* Temp)
+        const auto Result = FTUEDialogues.FindByPredicate([FTUEId](const FFTUEDialogueModel* Temp)
         {
             return Temp->FTUEId == FTUEId;
         });
+
+        return Result ? *Result : nullptr;
     }
 
     static FFTUEDialogueModel* GetMetadataById(const FString& FTUEId, TArray<FFTUEDialogueModel>& FTUEDialogues)

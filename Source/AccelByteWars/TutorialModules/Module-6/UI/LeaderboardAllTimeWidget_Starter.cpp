@@ -25,7 +25,7 @@ void ULeaderboardAllTimeWidget_Starter::NativeOnActivated()
 	// Set leaderboard code based on board-unreal-highestscore-{gamemode} format. 
 	LeaderboardCode = FString::Printf(TEXT("board-unreal-highestscore-%s"), *ULeaderboardsWidget::GetLeaderboardGameMode());
 
-	if (FFTUEDialogueModel* FTUELeaderboard = FFTUEDialogueModel::GetMetadataById("ftue_alltime_leaderboard", FTUEDialogues))
+	if (FFTUEDialogueModel* FTUELeaderboard = FFTUEDialogueModel::GetMetadataById("ftue_alltime_leaderboard"))
 	{
 		FTUELeaderboard->Button1.URLArguments[0].Argument = LeaderboardCode;
 	}

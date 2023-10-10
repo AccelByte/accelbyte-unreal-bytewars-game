@@ -28,7 +28,7 @@ void ULeaderboardWeeklyWidget::NativeOnActivated()
 	// Set cycle id to the weekly leaderboard’s cycle id.
 	CycleId = FString("55c5b1d5a4e14eaba45477cd70de9c15");
 
-	if (FFTUEDialogueModel* FTUELeaderboard = FFTUEDialogueModel::GetMetadataById("ftue_weekly_leaderboard", FTUEDialogues))
+	if (FFTUEDialogueModel* FTUELeaderboard = FFTUEDialogueModel::GetMetadataById("ftue_weekly_leaderboard"))
 	{
 		FTUELeaderboard->Button1.URLArguments[0].Argument = LeaderboardCode;
 		FTUELeaderboard->Button1.URLArguments[1].Argument = CycleId;
