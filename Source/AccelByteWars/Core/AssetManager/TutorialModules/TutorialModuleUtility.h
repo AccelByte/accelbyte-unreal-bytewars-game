@@ -81,10 +81,12 @@ struct FTutorialModuleGeneratedWidget
 
 	static FTutorialModuleGeneratedWidget* GetMetadataById(const FString& WidgetId, TArray<FTutorialModuleGeneratedWidget*>& GeneratedWidgets)
 	{
-		return *GeneratedWidgets.FindByPredicate([WidgetId](const FTutorialModuleGeneratedWidget* Temp)
+		const auto Result = GeneratedWidgets.FindByPredicate([WidgetId](const FTutorialModuleGeneratedWidget* Temp)
 		{
 			return Temp->WidgetId == WidgetId;
 		});
+
+		return Result ? *Result : nullptr;
 	}
 
 	static FTutorialModuleGeneratedWidget* GetMetadataById(const FString& WidgetId, TArray<FTutorialModuleGeneratedWidget>& GeneratedWidgets)
