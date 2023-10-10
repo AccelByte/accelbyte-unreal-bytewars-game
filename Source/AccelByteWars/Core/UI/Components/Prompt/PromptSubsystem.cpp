@@ -102,7 +102,10 @@ void UPromptSubsystem::PushNotification(UPushNotification* Notification)
 	UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->GetBaseUIWidget());
 	ensure(BaseUIWidget);
 
-	BaseUIWidget->GetPushNotificationWidget()->PushNotification(Notification);
+	if (UPushNotificationWidget* NotificationWidget = BaseUIWidget->GetPushNotificationWidget())
+	{
+		NotificationWidget->PushNotification(Notification);
+	}
 }
 
 void UPromptSubsystem::PushNotification(const FText Message, const FString& IconImageURL, const bool bUseDefaultIconOnEmpty, const FText ActionButton1, const FText ActionButton2, const FText ActionButton3, FPushNotificationDynamicDelegate ActionButtonCallback)

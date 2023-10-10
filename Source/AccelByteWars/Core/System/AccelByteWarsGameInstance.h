@@ -139,6 +139,13 @@ public:
 	 */
 	FOnGameInstanceShutdown OnGameInstanceShutdownDelegate;
 
+	void OnDelayedClientTravelStarted();
+
+	/**
+	 * @brief Called on AAccelByteWarsPlayerController::DelayedClientTravel | Few seconds before the actual ClientTravel.
+	 */
+	FSimpleMulticastDelegate OnDelayedClientTravelStartedDelegates;
+
 	bool GetIsPendingFailureNotification(ENetworkFailure::Type& OutFailureType);
 
 private:

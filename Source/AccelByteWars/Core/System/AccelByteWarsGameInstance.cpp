@@ -42,9 +42,17 @@ UAccelByteWarsBaseUI* UAccelByteWarsGameInstance::GetBaseUIWidget(bool bAutoActi
 	if (bAutoActivate && !BaseUIWidget->IsInViewport())
 	{
 		BaseUIWidget->AddToViewport(10);
+		BaseUIWidget->ResetWidget();
 	}
 
 	return BaseUIWidget;
+}
+
+void UAccelByteWarsGameInstance::OnDelayedClientTravelStarted()
+{
+	OnDelayedClientTravelStartedDelegates.Broadcast();
+
+	BaseUIWidget->ClearWidgets();
 }
 
 bool UAccelByteWarsGameInstance::GetIsPendingFailureNotification(ENetworkFailure::Type& OutFailureType)

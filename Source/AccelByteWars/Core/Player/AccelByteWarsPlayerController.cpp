@@ -8,7 +8,6 @@
 #include "Core/GameStates/AccelByteWarsMainMenuGameState.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
-#include "Core/Utilities/AccelByteWarsUtilityLog.h"
 
 void AAccelByteWarsPlayerController::TriggerLobbyStart_Implementation()
 {
@@ -33,4 +32,50 @@ void AAccelByteWarsPlayerController::LoadingPlayerAssignment() const
 			PromptSubsystem->HideLoading();
 		}
 	}
+}
+
+void AAccelByteWarsPlayerController::DelayedClientTravel(TSoftObjectPtr<UWorld> Level)
+{
+	const FString Url = Level.GetLongPackageName();
+	DelayedClientTravel(Url, ETravelType::TRAVEL_Absolute);
+}
+
+void AAccelByteWarsPlayerController::DelayedClientTravel(const FString& Url, const ETravelType TravelType)
+{
+	if (bDelayedClientTravelStarted)
+	{
+		UE_LOG(LogPlayerController, Warning, TEXT("DelayedClientTravel already called. Cancelling travel to %s"), *Url);
+		return;
+	}
+
+	bDelayedClientTravelStarted = true;
+	if (UPromptSubsystem* PromptSubsystem = GetGameInstance()->GetSubsystem<UPromptSubsystem>())
+	{
+		PromptSubsystem->HideLoading();
+		PromptSubsystem->ShowLoading(NSLOCTEXT("AccelByteWars", "travelling", "Travelling"));
+	}
+	else
+	{
+		UE_LOG(LogPlayerController, Warning, TEXT("Prompt Subsystem null."));
+	}
+
+	if (UAccelByteWarsGameInstance* AbGameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance()))
+	{
+		AbGameInstance->OnDelayedClientTravelStarted();
+	}
+	else
+	{
+		UE_LOG(LogPlayerController, Warning, TEXT("GameInstance is not (derived from) UAccelByteWarsGameInstance."));
+	}
+
+	FTimerHandle TimerHandle;
+	GetWorldTimerManager().SetTimer(
+		TimerHandle,
+		FTimerDelegate::CreateWeakLambda(this, [this, Url, TravelType]()
+		{
+			ClientTravel(Url, TravelType);
+		}),
+		3.0f,
+		false,
+		3.0f);
 }

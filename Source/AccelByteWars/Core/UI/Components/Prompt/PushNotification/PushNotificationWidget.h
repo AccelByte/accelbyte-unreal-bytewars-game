@@ -29,8 +29,6 @@ protected:
 	void TryPushPendingNotifications();
 	void OnNotificationLifeTimeEnds(UPushNotification* Notification);
 
-	void CleanObjects();
-
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UListView* Lv_PushNotification;
 
