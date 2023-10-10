@@ -2230,6 +2230,55 @@ void UAccelByteWarsOnlineSession::OnPartySessionUpdateReceived(FName SessionName
     OnPartySessionUpdateReceivedDelegates.Broadcast(SessionName);
 }
 
+void UAccelByteWarsOnlineSession::OnLeaveRestoredPartyToTriggerEvent(const FUniqueNetId& LocalUserId, const FOnlineError& Result, const TDelegate<void(bool bSucceeded)> OnComplete)
+{
+    // Abort if failed to restore sessions.
+    if (!Result.bSucceeded)
+    {
+        UE_LOG_ONLINESESSION(Warning, TEXT("Failed to leave restored party sessions. Error: %s"), *Result.ErrorMessage.ToString());
+        OnComplete.ExecuteIfBound(false);
+        return;
+    }
+
+    // Safety.
+    if (!GetABSessionInt())
+    {
+        UE_LOG_ONLINESESSION(Warning, TEXT("Failed to leave restored party sessions. Session Interface is not valid."));
+        OnComplete.ExecuteIfBound(false);
+        return;
+    }
+
+    const TArray<FOnlineRestoredSessionAccelByte> RestoredParties = GetABSessionInt()->GetAllRestoredPartySessions();
+
+    // If empty, no need to leave the restored party sessions.
+    if (RestoredParties.IsEmpty())
+    {
+        UE_LOG_ONLINESESSION(Log, TEXT("No need to leave party session, restored party sessions are empty."));
+        OnComplete.ExecuteIfBound(true);
+        return;
+    }
+
+    // Leave the restored party session then invoke the on-complete event.
+    // Since player can only be in a single party, then leave the first restored party session.
+    GetABSessionInt()->LeaveRestoredSession(
+        LocalUserId,
+        RestoredParties[0],
+        FOnLeaveSessionComplete::CreateWeakLambda(this, [this, OnComplete](bool bWasSuccessful, FString SessionId)
+        {
+            if (bWasSuccessful)
+            {
+                UE_LOG_ONLINESESSION(Log, TEXT("Success to leave restored party session %s"), *SessionId);
+            }
+            else
+            {
+                UE_LOG_ONLINESESSION(Warning, TEXT("Failed to leave restored party session %s"), *SessionId);
+            }
+
+            OnComplete.ExecuteIfBound(bWasSuccessful);
+        }
+    ));
+}
+
 void UAccelByteWarsOnlineSession::OnConnectLobbyComplete(int32 LocalUserNum, bool bSucceeded, const FUniqueNetId& UserId, const FString& Error)
 {
     if (!bSucceeded)
@@ -2238,13 +2287,25 @@ void UAccelByteWarsOnlineSession::OnConnectLobbyComplete(int32 LocalUserNum, boo
         return;
     }
 
-    // Automatically create a new party when got kicked from a party.
+    // Bind event to create a new party when got kicked.
     GetOnKickedFromPartyDelegates()->AddWeakLambda(this, [this, LocalUserNum](FName SessionName)
     {
         CreateParty(LocalUserNum);
     });
 
-    // Initiate a new party.
-    CreateParty(LocalUserNum);
+    // Restore and leave party, then create a new party.
+    GetABSessionInt()->RestoreActiveSessions(
+        UserId,
+        FOnRestoreActiveSessionsComplete::CreateUObject(
+            this,
+            &ThisClass::OnLeaveRestoredPartyToTriggerEvent,
+            TDelegate<void(bool)>::CreateWeakLambda(this, [this, LocalUserNum](bool bWasSuccessful)
+            {
+                if (bWasSuccessful)
+                {
+                    CreateParty(LocalUserNum);
+                }
+            })
+    ));
 }
 #pragma endregion
