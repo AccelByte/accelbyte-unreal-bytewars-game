@@ -20,6 +20,8 @@ UTutorialModuleOnlineUtility::UTutorialModuleOnlineUtility()
 {
     CheckForEnvironmentConfigOverride();
 
+    CheckForSDKConfigOverride();
+
     // Trigger to get general predefined argument.
     FTUEArgumentModel::OnGetPredefinedArgument.BindUObject(this, &ThisClass::GetFTUEPredefinedArgument);
 
@@ -105,6 +107,79 @@ bool UTutorialModuleOnlineUtility::IsAccelByteSDKInitialized(const UObject* Targ
     }
 
     return IsOSSEnabled && !IsSDKCredsEmpty;
+}
+
+void UTutorialModuleOnlineUtility::CheckForSDKConfigOverride()
+{
+    bool bIsOverridden = false;
+
+    // Try to override client SDK config from launch param.
+    bIsOverridden = OverrideSDKConfigFromLaunchParam() || bIsOverridden;
+    
+    // Try to override server SDK config from launch param.
+    bIsOverridden = OverrideSDKConfigFromLaunchParam(true) || bIsOverridden;
+
+    /* Overridden SDK config is placed at the default environment.
+     * Thus, update the environment to use the default environment.*/
+    if (bIsOverridden) 
+    {
+        IAccelByteUe4SdkModuleInterface::Get().SetEnvironment(ESettingsEnvironment::Default);
+    }
+}
+
+bool UTutorialModuleOnlineUtility::OverrideSDKConfigFromLaunchParam(const bool bIsServer)
+{
+    const FString ClientSectionPath = FString("/Script/AccelByteUe4Sdk.AccelByteSettings");
+    const FString ServerSectionPath = FString("/Script/AccelByteUe4Sdk.AccelByteServerSettings");
+
+    const FString ClientPrefix = FString("-Client_");
+    const FString ServerPrefix = FString("-Server_");
+
+    TArray<FString> ConfigKeys =
+    {
+        FString("ClientId"),
+        FString("ClientSecret"),
+        FString("Namespace"),
+        FString("PublisherNamespace"),
+        FString("BaseUrl"),
+        FString("RedirectURI")
+    };
+
+    // Check launch param and override the SDK config.
+    bool bIsOverridden = false;
+    const FString CmdArgs = FCommandLine::Get();
+    const FString ConfigPrefix = bIsServer ? ServerPrefix : ClientPrefix;
+    const FString SectionPath = bIsServer ? ServerSectionPath : ClientSectionPath;
+    for (const FString& Config : ConfigKeys)
+    {
+        const FString CmdStr = FString::Printf(TEXT("%s%s="), *ConfigPrefix, *Config, false);
+        if (CmdArgs.Contains(CmdStr, ESearchCase::IgnoreCase))
+        {
+            FString CmdValue;
+            FParse::Value(*CmdArgs, *CmdStr, CmdValue);
+            if (CmdValue.IsEmpty())
+            {
+                UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(
+                    Warning, 
+                    TEXT("Unable to override %s SDK config %s using launch param. Empty or invalid value."), 
+                    bIsServer ? TEXT("Server") : TEXT("Client"),
+                    *Config);
+                continue;
+            }
+
+            GConfig->SetString(*SectionPath, *Config, *CmdValue, GEngineIni);
+            UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(
+                Log, 
+                TEXT("%s SDK config %s is overridden by launch param to %s"), 
+                bIsServer ? TEXT("Server") : TEXT("Client"), 
+                *Config, 
+                *CmdValue);
+
+            bIsOverridden = true;
+        }
+    }
+    
+    return bIsOverridden;
 }
 
 void UTutorialModuleOnlineUtility::CheckForEnvironmentConfigOverride()

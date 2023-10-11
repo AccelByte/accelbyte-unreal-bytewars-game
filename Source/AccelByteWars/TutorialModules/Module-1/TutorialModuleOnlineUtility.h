@@ -56,6 +56,9 @@ public:
 	}
 
 private:
+	static void CheckForSDKConfigOverride();
+	static bool OverrideSDKConfigFromLaunchParam(const bool bIsServer = false);
+
 	static void CheckForEnvironmentConfigOverride();
 	static ESettingsEnvironment ConvertStringEnvToAccelByteEnv(const FString& EnvironmentStr);
 	static FString ConvertAccelByteEnvToStringEnv(const ESettingsEnvironment& Environment);
