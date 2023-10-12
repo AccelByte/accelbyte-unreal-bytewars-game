@@ -85,6 +85,12 @@ void UMatchmakingDSWidget::CancelMatchmaking() const
 
 void UMatchmakingDSWidget::OnStartMatchmakingComplete(FName SessionName, bool bSucceeded) const
 {
+	// Abort if not a game session.
+	if (!SessionName.IsEqual(MatchmakingOnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession)))
+	{
+		return;
+	}
+
 	if (bSucceeded)
 	{
 		W_Parent->SetLoadingMessage(TEXT_FINDING_MATCH, true);
@@ -99,6 +105,12 @@ void UMatchmakingDSWidget::OnStartMatchmakingComplete(FName SessionName, bool bS
 
 void UMatchmakingDSWidget::OnCancelMatchmakingComplete(FName SessionName, bool bSucceeded) const
 {
+	// Abort if not a game session.
+	if (!SessionName.IsEqual(MatchmakingOnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession)))
+	{
+		return;
+	}
+
 	if (bSucceeded)
 	{
 		W_Parent->SwitchContent(UQuickPlayWidget::EContentType::SELECTSERVERTYPE);
@@ -112,6 +124,12 @@ void UMatchmakingDSWidget::OnCancelMatchmakingComplete(FName SessionName, bool b
 
 void UMatchmakingDSWidget::OnMatchmakingComplete(FName SessionName, bool bSucceeded) const
 {
+	// Abort if not a game session.
+	if (!SessionName.IsEqual(MatchmakingOnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession)))
+	{
+		return;
+	}
+
 	if (bSucceeded)
 	{
 		W_Parent->SetLoadingMessage(TEXT_JOINING_MATCH, false);

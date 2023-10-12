@@ -1182,69 +1182,66 @@ void UAccelByteWarsOnlineSession::InitializePartyGeneratedWidgets()
 {
     // Assign action button to invite player to the party.
     InviteToPartyButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_invite_to_party"));
-    if (!ensure(InviteToPartyButtonMetadata))
+    if (ensure(InviteToPartyButtonMetadata))
     {
-        return;
-    }
-    InviteToPartyButtonMetadata->ButtonAction.AddWeakLambda(this, [this]()
-    {
-        const UCommonActivatableWidget* ParentWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
-        if (!ParentWidget)
+        InviteToPartyButtonMetadata->ButtonAction.AddWeakLambda(this, [this]()
         {
-            return;
-        }
+            const UCommonActivatableWidget* ParentWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
+            if (!ParentWidget)
+            {
+                return;
+            }
 
-        const FUniqueNetIdPtr FriendUserId = GetCurrentDisplayedFriendId();
-        if (FriendUserId)
-        {
-            OnInviteToPartyButtonClicked(GetLocalUserNumFromPlayerController(ParentWidget->GetOwningPlayer()), FriendUserId);
-        }
-    });
-    InviteToPartyButtonMetadata->OnWidgetGenerated.AddUObject(this, &ThisClass::UpdatePartyGeneratedWidgets);
+            const FUniqueNetIdPtr FriendUserId = GetCurrentDisplayedFriendId();
+            if (FriendUserId)
+            {
+                OnInviteToPartyButtonClicked(GetLocalUserNumFromPlayerController(ParentWidget->GetOwningPlayer()), FriendUserId);
+            }
+        });
+        InviteToPartyButtonMetadata->OnWidgetGenerated.AddUObject(this, &ThisClass::UpdatePartyGeneratedWidgets);
+    }
 
     // Assign action button to kick player from the party.
     KickPlayerFromPartyButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_kick_from_party"));
-    if (!ensure(KickPlayerFromPartyButtonMetadata))
+    if (ensure(KickPlayerFromPartyButtonMetadata))
     {
-        return;
-    }
-    KickPlayerFromPartyButtonMetadata->ButtonAction.AddWeakLambda(this, [this]()
-    {
-        const UCommonActivatableWidget* ParentWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
-        if (!ParentWidget)
+        KickPlayerFromPartyButtonMetadata->ButtonAction.AddWeakLambda(this, [this]()
         {
-            return;
-        }
+            const UCommonActivatableWidget* ParentWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
+            if (!ParentWidget)
+            {
+                return;
+            }
 
-        const FUniqueNetIdPtr FriendUserId = GetCurrentDisplayedFriendId();
-        if (FriendUserId)
-        {
-            OnKickPlayerFromPartyButtonClicked(GetLocalUserNumFromPlayerController(ParentWidget->GetOwningPlayer()), FriendUserId);
-        }
-    });
-    KickPlayerFromPartyButtonMetadata->OnWidgetGenerated.AddUObject(this, &ThisClass::UpdatePartyGeneratedWidgets);
+            const FUniqueNetIdPtr FriendUserId = GetCurrentDisplayedFriendId();
+            if (FriendUserId)
+            {
+                OnKickPlayerFromPartyButtonClicked(GetLocalUserNumFromPlayerController(ParentWidget->GetOwningPlayer()), FriendUserId);
+            }
+        });
+        KickPlayerFromPartyButtonMetadata->OnWidgetGenerated.AddUObject(this, &ThisClass::UpdatePartyGeneratedWidgets);
+    }
 
     // Assign action button to promote party leader.
     PromotePartyLeaderButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_promote_party_leader"));
-    if (!ensure(PromotePartyLeaderButtonMetadata))
+    if (ensure(PromotePartyLeaderButtonMetadata))
     {
-        return;
-    }
-    PromotePartyLeaderButtonMetadata->ButtonAction.AddWeakLambda(this, [this]()
-    {
-        const UCommonActivatableWidget* ParentWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
-        if (!ParentWidget)
+        PromotePartyLeaderButtonMetadata->ButtonAction.AddWeakLambda(this, [this]()
         {
-            return;
-        }
+            const UCommonActivatableWidget* ParentWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
+            if (!ParentWidget)
+            {
+                return;
+            }
 
-        const FUniqueNetIdPtr FriendUserId = GetCurrentDisplayedFriendId();
-        if (FriendUserId)
-        {
-            OnPromotePartyLeaderButtonClicked(GetLocalUserNumFromPlayerController(ParentWidget->GetOwningPlayer()), FriendUserId);
-        }
-    });
-    PromotePartyLeaderButtonMetadata->OnWidgetGenerated.AddUObject(this, &ThisClass::UpdatePartyGeneratedWidgets);
+            const FUniqueNetIdPtr FriendUserId = GetCurrentDisplayedFriendId();
+            if (FriendUserId)
+            {
+                OnPromotePartyLeaderButtonClicked(GetLocalUserNumFromPlayerController(ParentWidget->GetOwningPlayer()), FriendUserId);
+            }
+        });
+        PromotePartyLeaderButtonMetadata->OnWidgetGenerated.AddUObject(this, &ThisClass::UpdatePartyGeneratedWidgets);
+    }
 
     // On party member update events, update the generated widget.
     if (GetOnPartyMembersChangeDelegates())
@@ -2238,7 +2235,7 @@ void UAccelByteWarsOnlineSession::OnPartySessionUpdateReceived(FName SessionName
     OnPartySessionUpdateReceivedDelegates.Broadcast(SessionName);
 }
 
-void UAccelByteWarsOnlineSession::OnLeaveRestoredPartyToTriggerEvent(const FUniqueNetId& LocalUserId, const FOnlineError& Result, const TDelegate<void(bool bSucceeded)> OnComplete)
+void UAccelByteWarsOnlineSession::LeaveRestoredPartyToTriggerEvent(const FUniqueNetId& LocalUserId, const FOnlineError& Result, const TDelegate<void(bool bSucceeded)> OnComplete)
 {
     // Abort if failed to restore sessions.
     if (!Result.bSucceeded)
@@ -2271,20 +2268,21 @@ void UAccelByteWarsOnlineSession::OnLeaveRestoredPartyToTriggerEvent(const FUniq
     GetABSessionInt()->LeaveRestoredSession(
         LocalUserId,
         RestoredParties[0],
-        FOnLeaveSessionComplete::CreateWeakLambda(this, [this, OnComplete](bool bWasSuccessful, FString SessionId)
-        {
-            if (bWasSuccessful)
-            {
-                UE_LOG_ONLINESESSION(Log, TEXT("Success to leave restored party session %s"), *SessionId);
-            }
-            else
-            {
-                UE_LOG_ONLINESESSION(Warning, TEXT("Failed to leave restored party session %s"), *SessionId);
-            }
+        FOnLeaveSessionComplete::CreateUObject(this, &ThisClass::OnLeaveRestoredPartyToTriggerEventComplete, OnComplete));
+}
 
-            OnComplete.ExecuteIfBound(bWasSuccessful);
-        }
-    ));
+void UAccelByteWarsOnlineSession::OnLeaveRestoredPartyToTriggerEventComplete(bool bSucceeded, FString SessionId, const TDelegate<void(bool bSucceeded)> OnComplete)
+{
+    if (bSucceeded)
+    {
+        UE_LOG_ONLINESESSION(Log, TEXT("Success to leave restored party session %s"), *SessionId);
+    }
+    else
+    {
+        UE_LOG_ONLINESESSION(Warning, TEXT("Failed to leave restored party session %s"), *SessionId);
+    }
+
+    OnComplete.ExecuteIfBound(bSucceeded);
 }
 
 void UAccelByteWarsOnlineSession::OnConnectLobbyComplete(int32 LocalUserNum, bool bSucceeded, const FUniqueNetId& UserId, const FString& Error)
@@ -2298,7 +2296,11 @@ void UAccelByteWarsOnlineSession::OnConnectLobbyComplete(int32 LocalUserNum, boo
     // Bind event to create a new party when got kicked.
     GetOnKickedFromPartyDelegates()->AddWeakLambda(this, [this, LocalUserNum](FName SessionName)
     {
-        CreateParty(LocalUserNum);
+        if (SessionName.IsEqual(GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession))) 
+        {
+            UE_LOG_ONLINESESSION(Log, TEXT("Creating new party after got kicked from the last party"));
+            CreateParty(LocalUserNum);
+        }
     });
 
     // Restore and leave party, then create a new party.
@@ -2306,12 +2308,17 @@ void UAccelByteWarsOnlineSession::OnConnectLobbyComplete(int32 LocalUserNum, boo
         UserId,
         FOnRestoreActiveSessionsComplete::CreateUObject(
             this,
-            &ThisClass::OnLeaveRestoredPartyToTriggerEvent,
-            TDelegate<void(bool)>::CreateWeakLambda(this, [this, LocalUserNum](bool bWasSuccessful)
+            &ThisClass::LeaveRestoredPartyToTriggerEvent,
+            TDelegate<void(bool)>::CreateWeakLambda(this, [this, LocalUserNum](bool bSucceeded)
             {
-                if (bWasSuccessful)
+                if (bSucceeded)
                 {
+                    UE_LOG_ONLINESESSION(Log, TEXT("Creating an initial party."));
                     CreateParty(LocalUserNum);
+                }
+                else 
+                {
+                    UE_LOG_ONLINESESSION(Warning, TEXT("Failed to create an initial party. Restoring party session was failed."));
                 }
             })
     ));

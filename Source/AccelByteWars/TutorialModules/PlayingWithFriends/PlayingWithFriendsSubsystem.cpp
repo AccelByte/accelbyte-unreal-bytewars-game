@@ -119,8 +119,12 @@ void UPlayingWithFriendsSubsystem::OnGameSessionInviteReceived(
 	const FUniqueNetId& FromId,
 	const FOnlineSessionInviteAccelByte& Invite)
 {
-	// make sure this is a game session
-	if (Invite.SessionType != EAccelByteV2SessionType::GameSession)
+	/* Make sure it is a game session.
+	 * Also check if the inviter is not from party leader.
+	 * Since the party members will automatically join, thus no need to show game session invitation notif.*/
+	if (UserId == FromId || 
+		Invite.SessionType != EAccelByteV2SessionType::GameSession ||
+		OnlineSession->IsPartyLeader(FromId.AsShared()))
 	{
 		return;
 	}

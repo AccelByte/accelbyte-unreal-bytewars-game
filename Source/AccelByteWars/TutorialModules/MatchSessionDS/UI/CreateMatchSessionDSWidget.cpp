@@ -81,6 +81,12 @@ void UCreateMatchSessionDSWidget::CancelJoiningSession() const
 
 void UCreateMatchSessionDSWidget::OnCreateSessionComplete(FName SessionName, bool bSucceeded) const
 {
+	// Abort if not a game session.
+	if (!SessionName.IsEqual(OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession))) 
+	{
+		return;
+	}
+
 	if (bSucceeded)
 	{
 		W_Parent->SetLoadingMessage(TEXT_JOINING_SESSION, true);
@@ -95,6 +101,12 @@ void UCreateMatchSessionDSWidget::OnCreateSessionComplete(FName SessionName, boo
 
 void UCreateMatchSessionDSWidget::OnCancelJoiningSessionComplete(FName SessionName, bool bSucceeded) const
 {
+	// Abort if not a game session.
+	if (!SessionName.IsEqual(OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession)))
+	{
+		return;
+	}
+
 	if (bSucceeded)
 	{
 		W_Parent->SwitchContent(UCreateMatchSessionWidget::EContentType::SELECT_GAMEMODE);
@@ -111,6 +123,12 @@ void UCreateMatchSessionDSWidget::OnSessionServerUpdateReceived(
 	const FOnlineError& Error,
 	const bool bHasClientTravelTriggered) const
 {
+	// Abort if not a game session.
+	if (!SessionName.IsEqual(OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession)))
+	{
+		return;
+	}
+
 	if (Error.bSucceeded && !bHasClientTravelTriggered)
 	{
 		// waiting for further update

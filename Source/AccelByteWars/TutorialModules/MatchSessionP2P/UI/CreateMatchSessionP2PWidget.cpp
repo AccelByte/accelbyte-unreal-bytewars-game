@@ -80,6 +80,12 @@ void UCreateMatchSessionP2PWidget::CancelJoiningSession() const
 
 void UCreateMatchSessionP2PWidget::OnCreateSessionComplete(FName SessionName, bool bSucceeded) const
 {
+	// Abort if not a game session.
+	if (!SessionName.IsEqual(OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession)))
+	{
+		return;
+	}
+
 	if (bSucceeded)
 	{
 		W_Parent->SetLoadingMessage(TEXT_JOINING_SESSION, true);
@@ -94,6 +100,12 @@ void UCreateMatchSessionP2PWidget::OnCreateSessionComplete(FName SessionName, bo
 
 void UCreateMatchSessionP2PWidget::OnCancelJoiningSessionComplete(FName SessionName, bool bSucceeded) const
 {
+	// Abort if not a game session.
+	if (!SessionName.IsEqual(OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession)))
+	{
+		return;
+	}
+
 	if (bSucceeded)
 	{
 		W_Parent->SwitchContent(UCreateMatchSessionWidget::EContentType::SELECT_GAMEMODE);
@@ -110,6 +122,12 @@ void UCreateMatchSessionP2PWidget::OnSessionServerUpdateReceived(
 	const FOnlineError& Error,
 	const bool bHasClientTravelTriggered) const
 {
+	// Abort if not a game session.
+	if (!SessionName.IsEqual(OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession)))
+	{
+		return;
+	}
+
 	if (Error.bSucceeded && !bHasClientTravelTriggered)
 	{
 		// waiting for further update

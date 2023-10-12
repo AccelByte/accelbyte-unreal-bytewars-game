@@ -88,6 +88,12 @@ void UCreateSessionWidget::CreateSession()
 
 void UCreateSessionWidget::OnCreateSessionComplete(FName SessionName, bool bSucceeded)
 {
+	// Abort if not a game session.
+	if (!SessionName.IsEqual(SessionOnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession)))
+	{
+		return;
+	}
+
 	if (bSucceeded)
 	{
 		// Get session id
@@ -120,6 +126,12 @@ void UCreateSessionWidget::LeaveSession()
 
 void UCreateSessionWidget::OnLeaveSessionComplete(FName SessionName, bool bSucceeded)
 {
+	// Abort if not a game session.
+	if (!SessionName.IsEqual(SessionOnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession)))
+	{
+		return;
+	}
+
 	if (bSucceeded)
 	{
 		SwitchContent(EContentType::CREATE);

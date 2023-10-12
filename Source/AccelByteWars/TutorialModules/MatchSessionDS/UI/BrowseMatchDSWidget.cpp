@@ -94,6 +94,12 @@ void UBrowseMatchDSWidget::JoinSession(const FOnlineSessionSearchResult& Session
 
 void UBrowseMatchDSWidget::OnLeaveSessionComplete(FName SessionName, bool bSucceeded) const
 {
+	// Abort if not a game session.
+	if (!SessionName.IsEqual(OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession)))
+	{
+		return;
+	}
+
 	if (bSucceeded)
 	{
 		W_Parent->SwitchContent(UBrowseMatchWidget::EContentType::BROWSE_NOT_EMPTY);
@@ -142,6 +148,12 @@ void UBrowseMatchDSWidget::OnJoinSessionComplete(
 	FName SessionName,
 	EOnJoinSessionCompleteResult::Type CompletionType) const
 {
+	// Abort if not a game session.
+	if (!SessionName.IsEqual(OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession)))
+	{
+		return;
+	}
+
 	bool bSucceeded;
 	FText ErrorMessage;
 
@@ -188,6 +200,12 @@ void UBrowseMatchDSWidget::OnSessionServerUpdateReceived(
 	const FOnlineError& Error,
 	const bool bHasClientTravelTriggered) const
 {
+	// Abort if not a game session.
+	if (!SessionName.IsEqual(OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession)))
+	{
+		return;
+	}
+
 	if (Error.bSucceeded && !bHasClientTravelTriggered)
 	{
 		// waiting for further update
