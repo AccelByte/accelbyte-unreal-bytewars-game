@@ -114,7 +114,7 @@ void UAccelByteWarsOnlineSession::ClearOnlineDelegates()
 	GetABSessionInt()->OnSessionParticipantsChangeDelegates.RemoveAll(this);
 	GetABSessionInt()->OnSessionUpdateReceivedDelegates.RemoveAll(this);
     GetABIdentityInt()->OnConnectLobbyCompleteDelegates->RemoveAll(this);
-	DeinitializePartyGeneratedWidgets();
+    DeinitializePartyGeneratedWidgets();
 }
 
 #pragma region "Session Essentials"
@@ -1181,7 +1181,7 @@ void UAccelByteWarsOnlineSession::OnLeavePartyToTriggerEvent(FName SessionName, 
 void UAccelByteWarsOnlineSession::InitializePartyGeneratedWidgets()
 {
     // Assign action button to invite player to the party.
-    InviteToPartyButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_invite_to_party"));
+    InviteToPartyButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_invite_to_party"), AssociateTutorialModule->GeneratedWidgets);
     if (ensure(InviteToPartyButtonMetadata))
     {
         InviteToPartyButtonMetadata->ButtonAction.AddWeakLambda(this, [this]()
@@ -1202,7 +1202,7 @@ void UAccelByteWarsOnlineSession::InitializePartyGeneratedWidgets()
     }
 
     // Assign action button to kick player from the party.
-    KickPlayerFromPartyButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_kick_from_party"));
+    KickPlayerFromPartyButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_kick_from_party"), AssociateTutorialModule->GeneratedWidgets);
     if (ensure(KickPlayerFromPartyButtonMetadata))
     {
         KickPlayerFromPartyButtonMetadata->ButtonAction.AddWeakLambda(this, [this]()
@@ -1223,7 +1223,7 @@ void UAccelByteWarsOnlineSession::InitializePartyGeneratedWidgets()
     }
 
     // Assign action button to promote party leader.
-    PromotePartyLeaderButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_promote_party_leader"));
+    PromotePartyLeaderButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_promote_party_leader"), AssociateTutorialModule->GeneratedWidgets);
     if (ensure(PromotePartyLeaderButtonMetadata))
     {
         PromotePartyLeaderButtonMetadata->ButtonAction.AddWeakLambda(this, [this]()

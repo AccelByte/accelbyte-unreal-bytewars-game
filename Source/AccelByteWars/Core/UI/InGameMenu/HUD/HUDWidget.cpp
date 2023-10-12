@@ -67,7 +67,7 @@ void UHUDWidget::NativeConstruct()
 
 	// Only show dedicated server FTUE on online session.
 	if (FFTUEDialogueModel* FTUEDedicatedServer =
-		FFTUEDialogueModel::GetMetadataById("ftue_ds_details"))
+		FFTUEDialogueModel::GetMetadataById("ftue_ds_details", FTUEDialogues))
 	{
 		EGameModeNetworkType NetMode = ByteWarsGameState->GameSetup.NetworkType;
 		FTUEDedicatedServer->OnValidateDelegate.Unbind();
