@@ -126,69 +126,66 @@ void UPartyOnlineSession_Starter::InitializePartyGeneratedWidgets()
 {
     // Assign action button to invite player to the party.
     InviteToPartyButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_invite_to_party"));
-    if (!ensure(InviteToPartyButtonMetadata))
+    if (ensure(InviteToPartyButtonMetadata))
     {
-        return;
-    }
-    InviteToPartyButtonMetadata->ButtonAction.AddWeakLambda(this, [this]()
-    {
-        const UCommonActivatableWidget* ParentWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
-        if (!ParentWidget)
+        InviteToPartyButtonMetadata->ButtonAction.AddWeakLambda(this, [this]()
         {
-            return;
-        }
+            const UCommonActivatableWidget* ParentWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
+            if (!ParentWidget)
+            {
+                return;
+            }
 
-        const FUniqueNetIdPtr FriendUserId = GetCurrentDisplayedFriendId();
-        if (FriendUserId)
-        {
-            OnInviteToPartyButtonClicked(GetLocalUserNumFromPlayerController(ParentWidget->GetOwningPlayer()), FriendUserId);
-        }
-    });
-    InviteToPartyButtonMetadata->OnWidgetGenerated.AddUObject(this, &ThisClass::UpdatePartyGeneratedWidgets);
+            const FUniqueNetIdPtr FriendUserId = GetCurrentDisplayedFriendId();
+            if (FriendUserId)
+            {
+                OnInviteToPartyButtonClicked(GetLocalUserNumFromPlayerController(ParentWidget->GetOwningPlayer()), FriendUserId);
+            }
+        });
+        InviteToPartyButtonMetadata->OnWidgetGenerated.AddUObject(this, &ThisClass::UpdatePartyGeneratedWidgets);
+    }
 
     // Assign action button to kick player from the party.
     KickPlayerFromPartyButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_kick_from_party"));
-    if (!ensure(KickPlayerFromPartyButtonMetadata))
+    if (ensure(KickPlayerFromPartyButtonMetadata))
     {
-        return;
-    }
-    KickPlayerFromPartyButtonMetadata->ButtonAction.AddWeakLambda(this, [this]()
-    {
-        const UCommonActivatableWidget* ParentWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
-        if (!ParentWidget)
+        KickPlayerFromPartyButtonMetadata->ButtonAction.AddWeakLambda(this, [this]()
         {
-            return;
-        }
+            const UCommonActivatableWidget* ParentWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
+            if (!ParentWidget)
+            {
+                return;
+            }
 
-        const FUniqueNetIdPtr FriendUserId = GetCurrentDisplayedFriendId();
-        if (FriendUserId)
-        {
-            OnKickPlayerFromPartyButtonClicked(GetLocalUserNumFromPlayerController(ParentWidget->GetOwningPlayer()), FriendUserId);
-        }
-    });
-    KickPlayerFromPartyButtonMetadata->OnWidgetGenerated.AddUObject(this, &ThisClass::UpdatePartyGeneratedWidgets);
+            const FUniqueNetIdPtr FriendUserId = GetCurrentDisplayedFriendId();
+            if (FriendUserId)
+            {
+                OnKickPlayerFromPartyButtonClicked(GetLocalUserNumFromPlayerController(ParentWidget->GetOwningPlayer()), FriendUserId);
+            }
+        });
+        KickPlayerFromPartyButtonMetadata->OnWidgetGenerated.AddUObject(this, &ThisClass::UpdatePartyGeneratedWidgets);
+    }
 
     // Assign action button to promote party leader.
     PromotePartyLeaderButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_promote_party_leader"));
-    if (!ensure(PromotePartyLeaderButtonMetadata))
+    if (ensure(PromotePartyLeaderButtonMetadata))
     {
-        return;
-    }
-    PromotePartyLeaderButtonMetadata->ButtonAction.AddWeakLambda(this, [this]()
-    {
-        const UCommonActivatableWidget* ParentWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
-        if (!ParentWidget)
+        PromotePartyLeaderButtonMetadata->ButtonAction.AddWeakLambda(this, [this]()
         {
-            return;
-        }
+            const UCommonActivatableWidget* ParentWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
+            if (!ParentWidget)
+            {
+                return;
+            }
 
-        const FUniqueNetIdPtr FriendUserId = GetCurrentDisplayedFriendId();
-        if (FriendUserId)
-        {
-            OnPromotePartyLeaderButtonClicked(GetLocalUserNumFromPlayerController(ParentWidget->GetOwningPlayer()), FriendUserId);
-        }
-    });
-    PromotePartyLeaderButtonMetadata->OnWidgetGenerated.AddUObject(this, &ThisClass::UpdatePartyGeneratedWidgets);
+            const FUniqueNetIdPtr FriendUserId = GetCurrentDisplayedFriendId();
+            if (FriendUserId)
+            {
+                OnPromotePartyLeaderButtonClicked(GetLocalUserNumFromPlayerController(ParentWidget->GetOwningPlayer()), FriendUserId);
+            }
+        });
+        PromotePartyLeaderButtonMetadata->OnWidgetGenerated.AddUObject(this, &ThisClass::UpdatePartyGeneratedWidgets);
+    }
 
     // On party member update events, update the generated widget.
     if (GetOnPartyMembersChangeDelegates())
