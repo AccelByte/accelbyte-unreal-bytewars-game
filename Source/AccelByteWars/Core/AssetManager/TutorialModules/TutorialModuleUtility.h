@@ -83,7 +83,7 @@ struct FTutorialModuleGeneratedWidget
 	{
 		const auto Result = GeneratedWidgets.FindByPredicate([WidgetId](const FTutorialModuleGeneratedWidget* Temp)
 		{
-			return Temp->WidgetId == WidgetId;
+			return Temp && Temp->WidgetId == WidgetId;
 		});
 
 		return Result ? *Result : nullptr;

@@ -369,7 +369,7 @@ struct FFTUEDialogueModel
     {
         const auto Result = FTUEDialogues.FindByPredicate([FTUEId](const FFTUEDialogueModel* Temp)
         {
-            return Temp->FTUEId == FTUEId;
+            return Temp && Temp->FTUEId == FTUEId;
         });
 
         return Result ? *Result : nullptr;

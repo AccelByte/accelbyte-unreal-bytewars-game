@@ -7,12 +7,12 @@
 
 FFTUEDialogueModel* FFTUEDialogueModel::GetMetadataById(const FString& FTUEId)
 {
-    return *UTutorialModuleDataAsset::GetCachedFTUEDialogues().
+    const auto Result = UTutorialModuleDataAsset::GetCachedFTUEDialogues().
         FindByPredicate([FTUEId](const FFTUEDialogueModel* Temp)
         {
-            return Temp->FTUEId == FTUEId;
+            return Temp && Temp->FTUEId == FTUEId;
         }
     );
 
-    return nullptr;
+    return Result ? *Result : nullptr;
 }
