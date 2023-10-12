@@ -6,6 +6,7 @@
 
 #include "CoreMinimal.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
+#include "Interfaces/OnlineSessionInterface.h"
 #include "CreateSessionWidget_Starter.generated.h"
 
 class UAccelByteWarsOnlineSessionBase;

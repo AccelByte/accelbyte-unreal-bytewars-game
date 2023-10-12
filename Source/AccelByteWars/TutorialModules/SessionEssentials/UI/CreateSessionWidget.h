@@ -6,6 +6,7 @@
 
 #include "CoreMinimal.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
+#include "Interfaces/OnlineSessionInterface.h"
 #include "CreateSessionWidget.generated.h"
 
 class UAccelByteWarsOnlineSessionBase;
@@ -30,6 +31,8 @@ protected:
 
 	UFUNCTION()
 	void OnCreateSessionComplete(FName SessionName, bool bSucceeded);
+
+	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
 
 	UFUNCTION()
 	void LeaveSession();
