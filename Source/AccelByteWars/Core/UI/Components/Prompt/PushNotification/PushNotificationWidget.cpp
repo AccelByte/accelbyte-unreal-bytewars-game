@@ -75,13 +75,19 @@ void UPushNotificationWidget::RemoveNotification(UPushNotification* Notification
 		NotificationTimers.Remove(Notification);
 	}
 
-	if (IsActivated() && !IsUnreachable())
+	
+	if (IsActivated() && !IsUnreachable()) 
 	{
 		// Delete from notification list.
-		Lv_PushNotification->RemoveItem(Notification);
+		if (!Lv_PushNotification->IsUnreachable() &&
+			Lv_PushNotification->GetIndexForItem(Notification) != INDEX_NONE)
+		{
+			Lv_PushNotification->RemoveItem(Notification);
+		}
 
 		// Dismiss the notification if empty.
-		if (PendingNotifications.IsEmpty() && Lv_PushNotification->GetNumItems() <= 0)
+		if (PendingNotifications.IsEmpty() &&
+			Lv_PushNotification->GetNumItems() <= 0)
 		{
 			DeactivateWidget();
 		}
