@@ -390,85 +390,97 @@ void UPlayWithPartySubsystem::UpdatePartyMemberGameSession(const FUniqueNetIdPtr
         return;
     }
 
-    FString GameSessionId;
-    FNamedOnlineSession* GameSession = GetSessionInterface()->GetNamedSession(
-        GetOnlineSession()->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession));
-    if (GameSession)
-    {
-        GameSessionId = GameSession->GetSessionIdStr();
-    }
-
-    FNamedOnlineSession* PartySession = GetSessionInterface()->GetPartySession();
-    if (!PartySession)
-    {
-        UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot update party member game session. Party session is not valid."));
-        return;
-    }
-
-    // Construct party game session data.
-    const FUniqueNetIdAccelByteUserRef MemberUserABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(MemberUserId.ToSharedRef());
-    TSharedPtr<FJsonObject> MembersGameSessionId = MakeShareable(new FJsonObject);
-    FOnlineSessionSetting PartyGameSessionSetting;
-    if (PartySession->SessionSettings.Settings.Contains(PARTY_MEMBERS_GAME_SESSION_ID))
-    {
-        PartyGameSessionSetting = PartySession->SessionSettings.Settings[PARTY_MEMBERS_GAME_SESSION_ID];
-        TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(PartyGameSessionSetting.Data.ToString());
-        if (!FJsonSerializer::Deserialize(JsonReader, MembersGameSessionId))
+    GetSessionInterface()->RefreshSession(
+        GetOnlineSession()->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession), 
+        FOnRefreshSessionComplete::CreateWeakLambda(this, [this, MemberUserId](bool bWasSuccessful)
         {
-            UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot update party member game session. Failed to parse party members game session."));
-            return;
-        }
-    }
-
-    // Update party member game session id.
-    if (!MembersGameSessionId)
-    {
-        UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot update party member game session. Failed to parse party members game session."));
-        return;
-    }
-    MembersGameSessionId->RemoveField(MemberUserABId->GetAccelByteId());
-    if (!GameSessionId.IsEmpty())
-    {
-        MembersGameSessionId->SetStringField(MemberUserABId->GetAccelByteId(), GameSessionId);
-    }
-
-    // Remove invalid party member data.
-    for (auto Pair : MembersGameSessionId->Values)
-    {
-        bool bIsValidMember = false;
-
-        for (auto& ValidMember : PartySession->RegisteredPlayers)
-        {
-            const FUniqueNetIdAccelByteUserRef ValidMemberUserABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(ValidMember);
-            if (Pair.Key.Equals(ValidMemberUserABId->GetAccelByteId()))
+            if (!bWasSuccessful) 
             {
-                bIsValidMember = true;
-                break;
+                UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot update party member game session. Failed to refresh party session."));
+                return;
             }
+
+            FString GameSessionId;
+            FNamedOnlineSession* GameSession = GetSessionInterface()->GetNamedSession(
+                GetOnlineSession()->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession));
+            if (GameSession)
+            {
+                GameSessionId = GameSession->GetSessionIdStr();
+            }
+
+            FNamedOnlineSession* PartySession = GetSessionInterface()->GetPartySession();
+            if (!PartySession)
+            {
+                UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot update party member game session. Party session is not valid."));
+                return;
+            }
+
+            // Construct party game session data.
+            const FUniqueNetIdAccelByteUserRef MemberUserABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(MemberUserId.ToSharedRef());
+            TSharedPtr<FJsonObject> MembersGameSessionId = MakeShareable(new FJsonObject);
+            FOnlineSessionSetting PartyGameSessionSetting;
+            if (PartySession->SessionSettings.Settings.Contains(PARTY_MEMBERS_GAME_SESSION_ID))
+            {
+                PartyGameSessionSetting = PartySession->SessionSettings.Settings[PARTY_MEMBERS_GAME_SESSION_ID];
+                TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(PartyGameSessionSetting.Data.ToString());
+                if (!FJsonSerializer::Deserialize(JsonReader, MembersGameSessionId))
+                {
+                    UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot update party member game session. Failed to parse party members game session."));
+                    return;
+                }
+            }
+
+            // Update party member game session id.
+            if (!MembersGameSessionId)
+            {
+                UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot update party member game session. Failed to parse party members game session."));
+                return;
+            }
+            MembersGameSessionId->RemoveField(MemberUserABId->GetAccelByteId());
+            if (!GameSessionId.IsEmpty())
+            {
+                MembersGameSessionId->SetStringField(MemberUserABId->GetAccelByteId(), GameSessionId);
+            }
+
+            // Remove invalid party member data.
+            for (auto Pair : MembersGameSessionId->Values)
+            {
+                bool bIsValidMember = false;
+
+                for (auto& ValidMember : PartySession->RegisteredPlayers)
+                {
+                    const FUniqueNetIdAccelByteUserRef ValidMemberUserABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(ValidMember);
+                    if (Pair.Key.Equals(ValidMemberUserABId->GetAccelByteId()))
+                    {
+                        bIsValidMember = true;
+                        break;
+                    }
+                }
+
+                if (!bIsValidMember)
+                {
+                    MembersGameSessionId->RemoveField(Pair.Key);
+                }
+            }
+
+            // Update party game session data to the party session settings.
+            FString MembersGameSessionIdStr;
+            TSharedRef<TJsonWriter<TCHAR>> JsonWriter = TJsonWriterFactory<TCHAR>::Create(&MembersGameSessionIdStr);
+            if (!FJsonSerializer::Serialize(MembersGameSessionId.ToSharedRef(), JsonWriter))
+            {
+                UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot update party member game session. Failed to parse party members game session."));
+                return;
+            }
+            PartyGameSessionSetting.Data = MembersGameSessionIdStr;
+
+            // Update party game session to store party game session data.
+            PartySession->SessionSettings.Settings.Remove(PARTY_MEMBERS_GAME_SESSION_ID);
+            PartySession->SessionSettings.Settings.Add(PARTY_MEMBERS_GAME_SESSION_ID, PartyGameSessionSetting);
+            GetSessionInterface()->UpdateSession(
+                GetOnlineSession()->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession),
+                PartySession->SessionSettings);
         }
-
-        if (!bIsValidMember)
-        {
-            MembersGameSessionId->RemoveField(Pair.Key);
-        }
-    }
-
-    // Update party game session data to the party session settings.
-    FString MembersGameSessionIdStr;
-    TSharedRef<TJsonWriter<TCHAR>> JsonWriter = TJsonWriterFactory<TCHAR>::Create(&MembersGameSessionIdStr);
-    if (!FJsonSerializer::Serialize(MembersGameSessionId.ToSharedRef(), JsonWriter))
-    {
-        UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot update party member game session. Failed to parse party members game session."));
-        return;
-    }
-    PartyGameSessionSetting.Data = MembersGameSessionIdStr;
-
-    // Update party game session to store party game session data.
-    PartySession->SessionSettings.Settings.Remove(PARTY_MEMBERS_GAME_SESSION_ID);
-    PartySession->SessionSettings.Settings.Add(PARTY_MEMBERS_GAME_SESSION_ID, PartyGameSessionSetting);
-    GetSessionInterface()->UpdateSession(
-        GetOnlineSession()->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession),
-        PartySession->SessionSettings);
+    ));
 }
 
 bool UPlayWithPartySubsystem::IsGameSessionDifferFromParty(const FUniqueNetIdPtr MemberUserId)
@@ -697,10 +709,18 @@ void UPlayWithPartySubsystem::OnLeavePartyGameSessionComplete(FName SessionName,
 
 bool UPlayWithPartySubsystem::ValidateToStartPartyGameSession()
 {
+    // Safety.
     if (!GetSessionInterface() || !GetOnlineSession())
     {
         UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot validate to start party game session. Interfaces or online session are not valid."));
         return false;
+    }
+
+    // If not in party session, no need to validate.
+    if (!GetSessionInterface()->IsInPartySession())
+    {
+        UE_LOG_PLAYINGWITHPARTY(Log, TEXT("No need to validate to start party game session. Player is not in a party."));
+        return true;
     }
 
     // Get current player.
@@ -711,7 +731,7 @@ bool UPlayWithPartySubsystem::ValidateToStartPartyGameSession()
     }
 
     // Only party leader is able to start party game session.
-    if (GetOnlineSession() && !GetOnlineSession()->IsPartyLeader(UserId))
+    if (!GetOnlineSession()->IsPartyLeader(UserId))
     {
         if (GetPromptSubystem())
         {
@@ -740,10 +760,18 @@ bool UPlayWithPartySubsystem::ValidateToJoinPartyGameSession(const FOnlineSessio
         return false;
     }
 
+    // Safety.
     if (!GetSessionInterface() || !GetOnlineSession())
     {
         UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot validate to join session. Interfaces or online session are not valid."));
         return false;
+    }
+
+    // If not in party session, no need to validate.
+    if (!GetSessionInterface()->IsInPartySession())
+    {
+        UE_LOG_PLAYINGWITHPARTY(Log, TEXT("No need to validate to join party game session. Player is not in a party."));
+        return true;
     }
 
     TSharedPtr<FOnlineSessionInfoAccelByteV2> SessionInfo = StaticCastSharedPtr<FOnlineSessionInfoAccelByteV2>(SessionSearchResult.Session.SessionInfo);
@@ -786,12 +814,27 @@ bool UPlayWithPartySubsystem::ValidateToStartPartyMatchmaking(const EGameModeTyp
         return false;
     }
 
+    // Safety.
+    if (!GetSessionInterface() || !GetOnlineSession())
+    {
+        UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot validate to start party matchmaking. Interfaces or online session are not valid."));
+        return false;
+    }
+
+    // If not in party session, no need to validate.
+    if (!GetSessionInterface()->IsInPartySession())
+    {
+        UE_LOG_PLAYINGWITHPARTY(Log, TEXT("No need to validate to start matchmaking with party. Player is not in a party."));
+        return true;
+    }
+
     // Check whether matchmaking with party is supported using the specified game mode.
     if (GetOnlineSession()->GetPartyMembers().Num() <= 1)
     {
         return true;
     }
     bool bResult = (GameModeType != EGameModeType::FFA);
+    UE_LOG_PLAYINGWITHPARTY(Log, TEXT("Validating to start matchmaking with party in %s game mode."), GameModeType == EGameModeType::FFA ? TEXT("Elimination") : TEXT("Team Deathmatch"));
 
     // Notify cannot matchmaking using the specified game mode.
     if (!bResult && GetPromptSubystem())
