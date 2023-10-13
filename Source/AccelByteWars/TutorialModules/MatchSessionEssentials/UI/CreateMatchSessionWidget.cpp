@@ -41,6 +41,8 @@ void UCreateMatchSessionWidget::NativeOnDeactivated()
 	Btn_Error_BackToCreateSession->OnClicked().RemoveAll(this);
 	Btn_Elimination->OnClicked().RemoveAll(this);
 	Btn_TeamDeathMatch->OnClicked().RemoveAll(this);
+
+	SwitchContent(EContentType::SELECT_GAMEMODE);
 }
 
 UWidget* UCreateMatchSessionWidget::NativeGetDesiredFocusTarget() const

@@ -101,6 +101,8 @@ void UQuickPlayWidget::NativeOnActivated()
 	Btn_SelectGameMode_Back->OnClicked().AddUObject(this, &ThisClass::DeactivateWidget);
 	Btn_SelectServerType_Back->OnClicked().AddUObject(this, &ThisClass::SwitchContent, EContentType::SELECTGAMEMODE);
 	Btn_Processing_Back->OnClicked().AddUObject(this, &ThisClass::SwitchContent, EContentType::SELECTGAMEMODE);
+
+	SwitchContent(EContentType::SELECTGAMEMODE);
 }
 
 void UQuickPlayWidget::NativeOnDeactivated()
@@ -113,6 +115,8 @@ void UQuickPlayWidget::NativeOnDeactivated()
 	Btn_SelectGameMode_Back->OnClicked().RemoveAll(this);
 	Btn_SelectServerType_Back->OnClicked().RemoveAll(this);
 	Btn_Processing_Back->OnClicked().RemoveAll(this);
+
+	SwitchContent(EContentType::SELECTGAMEMODE);
 }
 
 void UQuickPlayWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
