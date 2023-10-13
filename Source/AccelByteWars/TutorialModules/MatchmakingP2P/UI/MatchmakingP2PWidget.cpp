@@ -14,16 +14,18 @@
 #include "TutorialModules/MatchmakingEssentials/UI/QuickPlayWidget.h"
 #include "TutorialModules/OnlineSessionUtils/AccelByteWarsOnlineSessionBase.h"
 
-void UMatchmakingP2PWidget::NativeConstruct()
+void UMatchmakingP2PWidget::NativeOnActivated()
 {
-	Super::NativeConstruct();
+	Super::NativeOnActivated();
 
 	UOnlineSession* BaseOnlineSession = GetWorld()->GetGameInstance()->GetOnlineSession();
 	if (!ensure(BaseOnlineSession))
 	{
 		return;
 	}
+
 	OnlineSession = Cast<UAccelByteWarsOnlineSessionBase>(BaseOnlineSession);
+	ensure(OnlineSession);
 
 	OnlineSession->GetOnStartMatchmakingCompleteDelegates()->AddUObject(this, &ThisClass::OnStartMatchmakingComplete);
 	OnlineSession->GetOnCancelMatchmakingCompleteDelegates()->AddUObject(this, &ThisClass::OnCancelMatchmakingComplete);
@@ -41,15 +43,16 @@ void UMatchmakingP2PWidget::NativeConstruct()
 	W_Parent->GetProcessingWidget()->OnRetryClicked.AddUObject(this, &ThisClass::StartMatchmaking);
 }
 
-void UMatchmakingP2PWidget::NativeDestruct()
+void UMatchmakingP2PWidget::NativeOnDeactivated()
 {
-	Super::NativeDestruct();
+	Super::NativeOnDeactivated();
 
 	OnlineSession->GetOnStartMatchmakingCompleteDelegates()->RemoveAll(this);
 	OnlineSession->GetOnCancelMatchmakingCompleteDelegates()->RemoveAll(this);
 	OnlineSession->GetOnMatchmakingCompleteDelegates()->RemoveAll(this);
 
 	Btn_StartMatchmakingP2P->OnClicked().RemoveAll(this);
+
 	W_Parent->GetProcessingWidget()->OnCancelClicked.RemoveAll(this);
 	W_Parent->GetProcessingWidget()->OnRetryClicked.RemoveAll(this);
 }

@@ -19,10 +19,10 @@ class ACCELBYTEWARS_API UBrowseMatchP2PWidget : public UAccelByteWarsActivatable
 {
 	GENERATED_BODY()
 
-protected:
-	virtual void NativeConstruct() override;
-	virtual void NativeDestruct() override;
+	virtual void NativeOnActivated() override;
+	virtual void NativeOnDeactivated() override;
 
+protected:
 	void CancelJoining() const;
 	void FindSessions(const bool bForce) const;
 	void JoinSession(const FOnlineSessionSearchResult&SessionSearchResult) const;

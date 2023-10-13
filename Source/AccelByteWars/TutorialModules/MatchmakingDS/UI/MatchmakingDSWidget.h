@@ -17,10 +17,10 @@ class ACCELBYTEWARS_API UMatchmakingDSWidget : public UAccelByteWarsActivatableW
 {
 	GENERATED_BODY()
 
-protected:
-	virtual void NativeConstruct() override;
-	virtual void NativeDestruct() override;
+	virtual void NativeOnActivated() override;
+	virtual void NativeOnDeactivated() override;
 
+protected:
 	UFUNCTION()
 	void StartMatchmaking() const;
 
@@ -33,7 +33,7 @@ protected:
 
 private:
 	UPROPERTY()
-	UAccelByteWarsOnlineSessionBase* MatchmakingOnlineSession;
+	UAccelByteWarsOnlineSessionBase* OnlineSession;
 
 #pragma region "UI related"
 protected:

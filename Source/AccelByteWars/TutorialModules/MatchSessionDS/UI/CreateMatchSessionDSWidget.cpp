@@ -11,20 +11,9 @@
 #include "TutorialModules/MatchSessionEssentials/UI/CreateMatchSessionWidget.h"
 #include "TutorialModules/OnlineSessionUtils/AccelByteWarsOnlineSessionBase.h"
 
-void UCreateMatchSessionDSWidget::NativeConstruct()
+void UCreateMatchSessionDSWidget::NativeOnActivated()
 {
-	Super::NativeConstruct();
-
-	Btn_StartMatchSessionDS->OnClicked().AddUObject(this, &ThisClass::CreateSession);
-
-	W_Parent = GetFirstOccurenceOuter<UCreateMatchSessionWidget>();
-	if (!ensure(W_Parent))
-	{
-		return;
-	}
-
-	W_Parent->GetProcessingWidgetComponent()->OnCancelClicked.AddUObject(this, &ThisClass::CancelJoiningSession);
-	W_Parent->GetProcessingWidgetComponent()->OnRetryClicked.AddUObject(this, &ThisClass::CreateSession);
+	Super::NativeOnActivated();
 
 	UOnlineSession* BaseOnlineSession = GetWorld()->GetGameInstance()->GetOnlineSession();
 	if (!ensure(BaseOnlineSession))
@@ -37,20 +26,31 @@ void UCreateMatchSessionDSWidget::NativeConstruct()
 	OnlineSession->GetOnLeaveSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnCancelJoiningSessionComplete);
 	OnlineSession->GetOnSessionServerUpdateReceivedDelegates()->AddUObject(
 		this, &ThisClass::OnSessionServerUpdateReceived);
+
+	Btn_StartMatchSessionDS->OnClicked().AddUObject(this, &ThisClass::CreateSession);
+
+	W_Parent = GetFirstOccurenceOuter<UCreateMatchSessionWidget>();
+	if (!ensure(W_Parent))
+	{
+		return;
+	}
+
+	W_Parent->GetProcessingWidgetComponent()->OnCancelClicked.AddUObject(this, &ThisClass::CancelJoiningSession);
+	W_Parent->GetProcessingWidgetComponent()->OnRetryClicked.AddUObject(this, &ThisClass::CreateSession);
 }
 
-void UCreateMatchSessionDSWidget::NativeDestruct()
+void UCreateMatchSessionDSWidget::NativeOnDeactivated()
 {
-	Super::NativeDestruct();
+	Super::NativeOnDeactivated();
+
+	OnlineSession->GetOnCreateSessionCompleteDelegates()->RemoveAll(this);
+	OnlineSession->GetOnLeaveSessionCompleteDelegates()->RemoveAll(this);
+	OnlineSession->GetOnSessionServerUpdateReceivedDelegates()->RemoveAll(this);
 
 	Btn_StartMatchSessionDS->OnClicked().RemoveAll(this);
 
 	W_Parent->GetProcessingWidgetComponent()->OnRetryClicked.RemoveAll(this);
 	W_Parent->GetProcessingWidgetComponent()->OnCancelClicked.RemoveAll(this);
-
-	OnlineSession->GetOnCreateSessionCompleteDelegates()->RemoveAll(this);
-	OnlineSession->GetOnLeaveSessionCompleteDelegates()->RemoveAll(this);
-	OnlineSession->GetOnSessionServerUpdateReceivedDelegates()->RemoveAll(this);
 }
 
 void UCreateMatchSessionDSWidget::CreateSession() const

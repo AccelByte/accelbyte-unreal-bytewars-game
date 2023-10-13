@@ -18,10 +18,10 @@ class ACCELBYTEWARS_API UCreateMatchSessionDSWidget : public UAccelByteWarsActiv
 {
 	GENERATED_BODY()
 
-protected:
-	virtual void NativeConstruct() override;
-	virtual void NativeDestruct() override;
+	virtual void NativeOnActivated() override;
+	virtual void NativeOnDeactivated() override;
 
+protected:
 	UFUNCTION()
 	void CreateSession() const;
 

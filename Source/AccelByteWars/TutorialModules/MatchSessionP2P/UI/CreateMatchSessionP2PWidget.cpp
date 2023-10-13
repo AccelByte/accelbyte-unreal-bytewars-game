@@ -11,9 +11,22 @@
 #include "TutorialModules/MatchSessionEssentials/UI/CreateMatchSessionWidget.h"
 #include "TutorialModules/OnlineSessionUtils/AccelByteWarsOnlineSessionBase.h"
 
-void UCreateMatchSessionP2PWidget::NativeConstruct()
+void UCreateMatchSessionP2PWidget::NativeOnActivated()
 {
-	Super::NativeConstruct();
+	Super::NativeOnActivated();
+
+	UOnlineSession* BaseOnlineSession = GetWorld()->GetGameInstance()->GetOnlineSession();
+	if (!ensure(BaseOnlineSession))
+	{
+		return;
+	}
+
+	OnlineSession = Cast<UAccelByteWarsOnlineSessionBase>(BaseOnlineSession);
+	ensure(OnlineSession);
+
+	OnlineSession->GetOnCreateSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnCreateSessionComplete);
+	OnlineSession->GetOnLeaveSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnCancelJoiningSessionComplete);
+	OnlineSession->GetOnSessionServerUpdateReceivedDelegates()->AddUObject(this, &ThisClass::OnSessionServerUpdateReceived);
 
 	Btn_StartMatchSessionP2P->OnClicked().AddUObject(this, &ThisClass::CreateSession);
 
@@ -25,31 +38,20 @@ void UCreateMatchSessionP2PWidget::NativeConstruct()
 
 	W_Parent->GetProcessingWidgetComponent()->OnCancelClicked.AddUObject(this, &ThisClass::CancelJoiningSession);
 	W_Parent->GetProcessingWidgetComponent()->OnRetryClicked.AddUObject(this, &ThisClass::CreateSession);
-
-	UOnlineSession* BaseOnlineSession = GetWorld()->GetGameInstance()->GetOnlineSession();
-	if (!ensure(BaseOnlineSession))
-	{
-		return;
-	}
-	OnlineSession = Cast<UAccelByteWarsOnlineSessionBase>(BaseOnlineSession);
-
-	OnlineSession->GetOnCreateSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnCreateSessionComplete);
-	OnlineSession->GetOnLeaveSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnCancelJoiningSessionComplete);
-	OnlineSession->GetOnSessionServerUpdateReceivedDelegates()->AddUObject(this, &ThisClass::OnSessionServerUpdateReceived);
 }
 
-void UCreateMatchSessionP2PWidget::NativeDestruct()
+void UCreateMatchSessionP2PWidget::NativeOnDeactivated()
 {
-	Super::NativeDestruct();
+	Super::NativeOnDeactivated();
+
+	OnlineSession->GetOnCreateSessionCompleteDelegates()->RemoveAll(this);
+	OnlineSession->GetOnLeaveSessionCompleteDelegates()->RemoveAll(this);
+	OnlineSession->GetOnSessionServerUpdateReceivedDelegates()->RemoveAll(this);
 
 	Btn_StartMatchSessionP2P->OnClicked().RemoveAll(this);
 
 	W_Parent->GetProcessingWidgetComponent()->OnRetryClicked.RemoveAll(this);
 	W_Parent->GetProcessingWidgetComponent()->OnCancelClicked.RemoveAll(this);
-
-	OnlineSession->GetOnCreateSessionCompleteDelegates()->RemoveAll(this);
-	OnlineSession->GetOnLeaveSessionCompleteDelegates()->RemoveAll(this);
-	OnlineSession->GetOnSessionServerUpdateReceivedDelegates()->RemoveAll(this);
 }
 
 void UCreateMatchSessionP2PWidget::CreateSession() const

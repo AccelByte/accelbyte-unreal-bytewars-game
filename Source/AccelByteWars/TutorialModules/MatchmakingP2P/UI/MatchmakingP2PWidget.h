@@ -17,10 +17,10 @@ class ACCELBYTEWARS_API UMatchmakingP2PWidget : public UAccelByteWarsActivatable
 {
 	GENERATED_BODY()
 
-protected:
-	virtual void NativeConstruct() override;
-	virtual void NativeDestruct() override;
+	virtual void NativeOnActivated() override;
+	virtual void NativeOnDeactivated() override;
 
+protected:
 	UFUNCTION()
 	void StartMatchmaking() const;
 

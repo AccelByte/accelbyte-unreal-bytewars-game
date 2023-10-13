@@ -14,20 +14,22 @@
 #include "TutorialModules/MatchmakingEssentials/MatchmakingEssentialsModels.h"
 #include "TutorialModules/OnlineSessionUtils/AccelByteWarsOnlineSessionBase.h"
 
-void UMatchmakingDSWidget::NativeConstruct()
+void UMatchmakingDSWidget::NativeOnActivated()
 {
-	Super::NativeConstruct();
+	Super::NativeOnActivated();
 
 	UOnlineSession* BaseOnlineSession = GetWorld()->GetGameInstance()->GetOnlineSession();
 	if (!ensure(BaseOnlineSession))
 	{
 		return;
 	}
-	MatchmakingOnlineSession = Cast<UAccelByteWarsOnlineSessionBase>(BaseOnlineSession);
 
-	MatchmakingOnlineSession->GetOnStartMatchmakingCompleteDelegates()->AddUObject(this, &ThisClass::OnStartMatchmakingComplete);
-	MatchmakingOnlineSession->GetOnCancelMatchmakingCompleteDelegates()->AddUObject(this, &ThisClass::OnCancelMatchmakingComplete);
-	MatchmakingOnlineSession->GetOnMatchmakingCompleteDelegates()->AddUObject(this, &ThisClass::OnMatchmakingComplete);
+	OnlineSession = Cast<UAccelByteWarsOnlineSessionBase>(BaseOnlineSession);
+	ensure(OnlineSession);
+
+	OnlineSession->GetOnStartMatchmakingCompleteDelegates()->AddUObject(this, &ThisClass::OnStartMatchmakingComplete);
+	OnlineSession->GetOnCancelMatchmakingCompleteDelegates()->AddUObject(this, &ThisClass::OnCancelMatchmakingComplete);
+	OnlineSession->GetOnMatchmakingCompleteDelegates()->AddUObject(this, &ThisClass::OnMatchmakingComplete);
 
 	Btn_StartMatchmakingDS->OnClicked().AddUObject(this, &ThisClass::StartMatchmaking);
 
@@ -41,23 +43,24 @@ void UMatchmakingDSWidget::NativeConstruct()
 	W_Parent->GetProcessingWidget()->OnRetryClicked.AddUObject(this, &ThisClass::StartMatchmaking);
 }
 
-void UMatchmakingDSWidget::NativeDestruct()
+void UMatchmakingDSWidget::NativeOnDeactivated()
 {
-	Super::NativeDestruct();
+	Super::NativeOnDeactivated();
 
-	MatchmakingOnlineSession->GetOnStartMatchmakingCompleteDelegates()->RemoveAll(this);
-	MatchmakingOnlineSession->GetOnCancelMatchmakingCompleteDelegates()->RemoveAll(this);
-	MatchmakingOnlineSession->GetOnMatchmakingCompleteDelegates()->RemoveAll(this);
+	OnlineSession->GetOnStartMatchmakingCompleteDelegates()->RemoveAll(this);
+	OnlineSession->GetOnCancelMatchmakingCompleteDelegates()->RemoveAll(this);
+	OnlineSession->GetOnMatchmakingCompleteDelegates()->RemoveAll(this);
 
 	Btn_StartMatchmakingDS->OnClicked().RemoveAll(this);
+
 	W_Parent->GetProcessingWidget()->OnCancelClicked.RemoveAll(this);
 	W_Parent->GetProcessingWidget()->OnRetryClicked.RemoveAll(this);
 }
 
 void UMatchmakingDSWidget::StartMatchmaking() const
 {
-	if (MatchmakingOnlineSession->ValidateToStartMatchmaking.IsBound() && 
-		!MatchmakingOnlineSession->ValidateToStartMatchmaking.Execute(W_Parent->GetSelectedGameModeType()))
+	if (OnlineSession->ValidateToStartMatchmaking.IsBound() && 
+		!OnlineSession->ValidateToStartMatchmaking.Execute(W_Parent->GetSelectedGameModeType()))
 	{
 		return;
 	}
@@ -66,9 +69,9 @@ void UMatchmakingDSWidget::StartMatchmaking() const
 	W_Parent->SetLoadingMessage(TEXT_FINDING_MATCH, false);
 	W_Parent->SwitchContent(UQuickPlayWidget::EContentType::LOADING);
 
-	MatchmakingOnlineSession->StartMatchmaking(
+	OnlineSession->StartMatchmaking(
 		GetOwningPlayer(),
-		MatchmakingOnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession),
+		OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession),
 		EGameModeNetworkType::DS,
 		W_Parent->GetSelectedGameModeType());
 }
@@ -78,9 +81,9 @@ void UMatchmakingDSWidget::CancelMatchmaking() const
 	W_Parent->SetLoadingMessage(TEXT_CANCEL_MATCHMAKING, false);
 	W_Parent->SwitchContent(UQuickPlayWidget::EContentType::LOADING);
 
-	MatchmakingOnlineSession->CancelMatchmaking(
+	OnlineSession->CancelMatchmaking(
 		GetOwningPlayer(),
-		MatchmakingOnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession));
+		OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession));
 }
 
 void UMatchmakingDSWidget::OnStartMatchmakingComplete(FName SessionName, bool bSucceeded) const

@@ -11,9 +11,22 @@
 #include "TutorialModules/MatchSessionEssentials/MatchSessionEssentialsModels.h"
 #include "TutorialModules/OnlineSessionUtils/AccelByteWarsOnlineSessionBase.h"
 
-void UBrowseMatchP2PWidget::NativeConstruct()
+void UBrowseMatchP2PWidget::NativeOnActivated()
 {
-	Super::NativeConstruct();
+	Super::NativeOnActivated();
+
+	UOnlineSession* BaseOnlineSession = GetWorld()->GetGameInstance()->GetOnlineSession();
+	if (!ensure(BaseOnlineSession))
+	{
+		return;
+	}
+	OnlineSession = Cast<UAccelByteWarsOnlineSessionBase>(BaseOnlineSession);
+	ensure(OnlineSession);
+
+	OnlineSession->GetOnLeaveSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnLeaveSessionComplete);
+	OnlineSession->GetOnFindSessionsCompleteDelegates()->AddUObject(this, &ThisClass::OnFindSessionComplete);
+	OnlineSession->GetOnJoinSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnJoinSessionComplete);
+	OnlineSession->GetOnSessionServerUpdateReceivedDelegates()->AddUObject(this, &ThisClass::OnSessionServerUpdateReceived);
 
 	Btn_Refresh->OnClicked().AddUObject(this, &ThisClass::FindSessions, true);
 
@@ -25,33 +38,21 @@ void UBrowseMatchP2PWidget::NativeConstruct()
 
 	W_Parent->GetJoiningWidgetComponent()->OnCancelClicked.AddUObject(this, &ThisClass::CancelJoining);
 
-	UOnlineSession* BaseOnlineSession = GetWorld()->GetGameInstance()->GetOnlineSession();
-	if (!ensure(BaseOnlineSession))
-	{
-		return;
-	}
-	OnlineSession = Cast<UAccelByteWarsOnlineSessionBase>(BaseOnlineSession);
-
-	OnlineSession->GetOnLeaveSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnLeaveSessionComplete);
-	OnlineSession->GetOnFindSessionsCompleteDelegates()->AddUObject(this, &ThisClass::OnFindSessionComplete);
-	OnlineSession->GetOnJoinSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnJoinSessionComplete);
-	OnlineSession->GetOnSessionServerUpdateReceivedDelegates()->AddUObject(this, &ThisClass::OnSessionServerUpdateReceived);
-
 	FindSessions(false);
 }
 
-void UBrowseMatchP2PWidget::NativeDestruct()
+void UBrowseMatchP2PWidget::NativeOnDeactivated()
 {
-	Super::NativeDestruct();
-
-	Btn_Refresh->OnClicked().RemoveAll(this);
-
-	W_Parent->GetJoiningWidgetComponent()->OnCancelClicked.RemoveAll(this);
+	Super::NativeOnDeactivated();
 
 	OnlineSession->GetOnLeaveSessionCompleteDelegates()->RemoveAll(this);
 	OnlineSession->GetOnFindSessionsCompleteDelegates()->RemoveAll(this);
 	OnlineSession->GetOnJoinSessionCompleteDelegates()->RemoveAll(this);
 	OnlineSession->GetOnSessionServerUpdateReceivedDelegates()->RemoveAll(this);
+
+	Btn_Refresh->OnClicked().RemoveAll(this);
+
+	W_Parent->GetJoiningWidgetComponent()->OnCancelClicked.RemoveAll(this);
 }
 
 void UBrowseMatchP2PWidget::CancelJoining() const
