@@ -18,6 +18,16 @@ void UAccelByteWarsGameInstance::Init()
 	Super::Init();
 
 	GEngine->NetworkFailureEvent.AddUObject(this, &ThisClass::OnNetworkFailure);
+
+	// Command to crash the game. Used to test ADT crash report
+	IConsoleManager::Get().RegisterConsoleCommand(TEXT("TriggerCrash"), TEXT("Crash current game client"), FConsoleCommandDelegate::CreateWeakLambda(this, [this]()
+	{
+		UE_LOG(LogAccelByteWarsGameInstance, Warning, TEXT("Intended crash"))
+
+		// Simulating crash by accessing a null pointer.
+		const APlayerController* CrashPC = nullptr;
+		CrashPC->GetLocalPlayer()->GetPreferredUniqueNetId();
+	}));
 }
 
 void UAccelByteWarsGameInstance::Shutdown()

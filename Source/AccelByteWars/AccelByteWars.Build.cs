@@ -29,8 +29,9 @@ public class AccelByteWars : ModuleRules
 			"OnlineSubsystem",
 			"OnlineSubsystemUtils",
 			"Json",
-			"HTTP"
-        });
+			"HTTP",
+			"BlackBoxSDK"
+		});
 
 
 	PrivateDependencyModuleNames.AddRange(new string[] 
