@@ -298,6 +298,7 @@ void AAccelByteWarsInGameGameMode::OnShipDestroyed(
 
 	// Reset Missile Fired Count
 	SourcePlayerState->MissilesFired = 0;
+	ShipPlayerState->MissilesFired = 0; /* also reset the ship's missiles fired as a safety net */
 
 	// FX logic
 	OnShipDestroyedFX(SourcePlayerController, ShipOwner->GetTransform(), ShipPlayerState);
