@@ -1458,6 +1458,12 @@ FUniqueNetIdPtr UAccelByteWarsOnlineSession::GetPartyLeader()
         const FNamedOnlineSession* PartySession = GetABSessionInt()->GetNamedSession(GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession));
         if (PartySession)
         {
+            const TSharedPtr<FOnlineSessionInfoAccelByteV2> SessionInfo = StaticCastSharedPtr<FOnlineSessionInfoAccelByteV2>(PartySession->SessionInfo);
+            if (!SessionInfo)
+            {
+                return nullptr;
+            }
+
             return GetABSessionInt()->GetSessionLeaderId(PartySession);
         }
     }
