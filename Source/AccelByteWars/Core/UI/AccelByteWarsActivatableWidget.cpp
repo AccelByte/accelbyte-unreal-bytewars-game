@@ -310,6 +310,31 @@ TWeakObjectPtr<UAccelByteWarsButtonBase> UAccelByteWarsActivatableWidget::Genera
 
 	// Spawn the entry button.
 	const TWeakObjectPtr<UAccelByteWarsButtonBase> Button = MakeWeakObjectPtr<UAccelByteWarsButtonBase>(CreateWidget<UAccelByteWarsButtonBase>(this, DefaultButtonClass.Get()));
+	if (!Button.Get())
+	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Failed to create an instance of widget entry button"));
+		return nullptr;
+	}
+
+	// Rename the button based on its id.
+	if (!Metadata.WidgetId.IsEmpty())
+	{
+		if (!Button->Rename(*Metadata.WidgetId))
+		{
+			UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Failed to rename widget entry button %s to %s"), *Button->GetName(), *Metadata.WidgetId);
+		}
+	}
+
+	// Spawn button.
+	UPanelSlot* ButtonSlot = WidgetContainer.AddChild(Button.Get());
+	if (!ButtonSlot)
+	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Failed to add widget entry button %s to the target container."), *Button->GetName());
+		Button->Destruct();
+		return nullptr;
+	}
+
+	// Assign action to open widget when entry button is clicked.
 	Button->SetButtonText(Metadata.ButtonText);
 	Button->OnClicked().AddWeakLambda(this, [Metadata, BaseUIWidget, EntryWidgetClass]()
 	{
@@ -324,14 +349,7 @@ TWeakObjectPtr<UAccelByteWarsButtonBase> UAccelByteWarsActivatableWidget::Genera
 	});
 	Metadata.GenerateWidgetRef = Button.Get();
 
-	// Rename the button based on its id.
-	if (!Metadata.WidgetId.IsEmpty())
-	{
-		Button->Rename(*Metadata.WidgetId);
-	}
-
 	// Refresh button alignment since the default alignment upon a widget is spawned is "Align_Fill".
-	UPanelSlot* ButtonSlot = WidgetContainer.AddChild(Button.Get());
 	if (UVerticalBoxSlot* VerticalSlot = StaticCast<UVerticalBoxSlot*>(ButtonSlot))
 	{
 		VerticalSlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Center);
@@ -355,8 +373,33 @@ TWeakObjectPtr<UAccelByteWarsButtonBase> UAccelByteWarsActivatableWidget::Genera
 	const TSubclassOf<UAccelByteWarsButtonBase> DefaultButtonClass = GameInstance->GetDefaultButtonClass();
 	ensure(DefaultButtonClass.Get());
 
-	// Spawn the action button.
+	// Create action button.
 	const TWeakObjectPtr<UAccelByteWarsButtonBase> Button = MakeWeakObjectPtr<UAccelByteWarsButtonBase>(CreateWidget<UAccelByteWarsButtonBase>(this, DefaultButtonClass.Get()));
+	if (!Button.Get())
+	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Failed to create an instance of action button"));
+		return nullptr;
+	}
+
+	// Rename the button based on its id.
+	if (!Metadata.WidgetId.IsEmpty())
+	{
+		if (!Button->Rename(*Metadata.WidgetId))
+		{
+			UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Failed to rename action button %s to %s"), *Button->GetName(), *Metadata.WidgetId);
+		}
+	}
+
+	// Spawn button.
+	UPanelSlot* ButtonSlot = WidgetContainer.AddChild(Button.Get());
+	if (!ButtonSlot)
+	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Failed to add action button %s to the target container."), *Button->GetName());
+		Button->Destruct();
+		return nullptr;
+	}
+
+	// Assign action.
 	Button->SetButtonText(Metadata.ButtonText);
 	Button->OnClicked().AddWeakLambda(this, [&Metadata]()
 	{
@@ -377,14 +420,7 @@ TWeakObjectPtr<UAccelByteWarsButtonBase> UAccelByteWarsActivatableWidget::Genera
 	});
 	Metadata.GenerateWidgetRef = Button.Get();
 
-	// Rename the button based on its id.
-	if (!Metadata.WidgetId.IsEmpty())
-	{
-		Button->Rename(*Metadata.WidgetId);
-	}
-
 	// Refresh button alignment since the default alignment upon a widget is spawned is "Align_Fill".
-	UPanelSlot* ButtonSlot = WidgetContainer.AddChild(Button.Get());
 	if (UVerticalBoxSlot* VerticalSlot = StaticCast<UVerticalBoxSlot*>(ButtonSlot))
 	{
 		VerticalSlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Center);
@@ -437,16 +473,34 @@ TWeakObjectPtr<UAccelByteWarsActivatableWidget> UAccelByteWarsActivatableWidget:
 		return nullptr;
 	}
 
-	// Spawn the widget.
+	// Create the widget.
 	const TWeakObjectPtr<UAccelByteWarsActivatableWidget> Widget = MakeWeakObjectPtr<UAccelByteWarsActivatableWidget>(CreateWidget<UAccelByteWarsActivatableWidget>(this, WidgetClass.Get()));
-	WidgetContainer.AddChild(Widget.Get());
-	Metadata.GenerateWidgetRef = Widget.Get();
+	if (!Widget.Get()) 
+	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Failed to create an instance of generated widget with type %s"), *WidgetClass->GetName());
+		return nullptr;
+	}
 
 	// Rename the widget based on its id.
 	if (!Metadata.WidgetId.IsEmpty())
 	{
-		Widget->Rename(*Metadata.WidgetId);
+		if (!Widget->Rename(*Metadata.WidgetId))
+		{
+			UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Failed to rename generated widget %s to %s"), *Widget->GetName(), *Metadata.WidgetId);
+		}
 	}
+
+	// Spawn widget.
+	if (!WidgetContainer.AddChild(Widget.Get()))
+	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Failed to add generated widget %s to the target container."), *Widget->GetName());
+		Widget->Destruct();
+		return nullptr;
+	}
+
+	// Activate widget.
+	Widget->ActivateWidget();
+	Metadata.GenerateWidgetRef = Widget.Get();
 
 	GeneratedWidgetPool.Add(Widget.Get());
 
