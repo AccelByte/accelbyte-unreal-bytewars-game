@@ -16,8 +16,8 @@ class ACCELBYTEWARS_API UInviteToGameSessionWidget : public UAccelByteWarsActiva
 {
 	GENERATED_BODY()
 
-	virtual void NativeConstruct() override;
-	virtual void NativeDestruct() override;
+	virtual void NativeOnActivated() override;
+	virtual void NativeOnDeactivated() override;
 
 private:
 	void InviteToSession();

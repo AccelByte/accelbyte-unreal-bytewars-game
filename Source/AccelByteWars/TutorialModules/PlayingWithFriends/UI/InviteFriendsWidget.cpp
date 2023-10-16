@@ -10,9 +10,9 @@
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "TutorialModules/PlayingWithFriends/PlayingWithFriendsSubsystem.h"
 
-void UInviteFriendsWidget::NativeConstruct()
+void UInviteFriendsWidget::NativeOnActivated()
 {
-	Super::NativeConstruct();
+	Super::NativeOnActivated();
 
 	bool bShowButton = false;
 
@@ -28,11 +28,11 @@ void UInviteFriendsWidget::NativeConstruct()
 	Btn_Friends->OnClicked().AddUObject(this, &ThisClass::OpenFriendsMenu);
 }
 
-void UInviteFriendsWidget::NativeDestruct()
+void UInviteFriendsWidget::NativeOnDeactivated()
 {
-	Super::NativeDestruct();
-
 	Btn_Friends->OnClicked().RemoveAll(this);
+
+	Super::NativeOnDeactivated();
 }
 
 void UInviteFriendsWidget::OpenFriendsMenu() const

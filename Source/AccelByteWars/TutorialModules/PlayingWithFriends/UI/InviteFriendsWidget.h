@@ -15,8 +15,8 @@ class ACCELBYTEWARS_API UInviteFriendsWidget : public UAccelByteWarsActivatableW
 {
 	GENERATED_BODY()
 
-	virtual void NativeConstruct() override;
-	virtual void NativeDestruct() override;
+	virtual void NativeOnActivated() override;
+	virtual void NativeOnDeactivated() override;
 
 private:
 	void OpenFriendsMenu() const;

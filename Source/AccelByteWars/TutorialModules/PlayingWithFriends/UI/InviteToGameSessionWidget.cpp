@@ -9,9 +9,9 @@
 #include "TutorialModules/Module-8/UI/FriendDetailsWidget.h"
 #include "TutorialModules/PlayingWithFriends/PlayingWithFriendsSubsystem.h"
 
-void UInviteToGameSessionWidget::NativeConstruct()
+void UInviteToGameSessionWidget::NativeOnActivated()
 {
-	Super::NativeConstruct();
+	Super::NativeOnActivated();
 
 	Subsystem = GetGameInstance()->GetSubsystem<UPlayingWithFriendsSubsystem>();
 	check(Subsystem)
@@ -22,16 +22,16 @@ void UInviteToGameSessionWidget::NativeConstruct()
 	SetVisibility(Subsystem->IsInMatchSessionGameSession() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 }
 
-void UInviteToGameSessionWidget::NativeDestruct()
+void UInviteToGameSessionWidget::NativeOnDeactivated()
 {
-	Super::NativeDestruct();
-
 	Btn_Invite->OnClicked().RemoveAll(this);
 
 	if (InviteDelayTimerHandle.IsValid())
 	{
 		GetGameInstance()->GetTimerManager().ClearTimer(InviteDelayTimerHandle);
 	}
+
+	Super::NativeOnDeactivated();
 }
 
 void UInviteToGameSessionWidget::InviteToSession()
