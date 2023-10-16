@@ -11,6 +11,7 @@
 #include "Core/Player/AccelByteWarsPlayerController.h"
 #include "Core/UI/InGameMenu/Pause/PauseWidget.h"
 #include "Core/UI/MainMenu/MatchLobby/MatchLobbyWidget.h"
+#include "Core/UI/InGameMenu/GameOver/GameOverWidget.h"
 
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
@@ -51,6 +52,7 @@ void UAccelByteWarsOnlineSession::RegisterOnlineDelegates()
 		});
 	UPauseWidget::OnQuitGameDelegate.Add(LeaveSessionDelegate);
 	UMatchLobbyWidget::OnQuitLobbyDelegate.Add(LeaveSessionDelegate);
+    UGameOverWidget::OnQuitGameDelegate.Add(LeaveSessionDelegate);
 
 	// Matchmaking Essentials
 	GetSessionInt()->OnMatchmakingCompleteDelegates.AddUObject(this, &ThisClass::OnMatchmakingComplete);
