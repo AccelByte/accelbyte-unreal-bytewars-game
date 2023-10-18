@@ -115,10 +115,17 @@ void USessionEssentialsOnlineSession::CreateSession(
 		SessionSettings.Set(SETTING_SESSION_TYPE, GetPredefinedSessionNameFromType(SessionType).ToString());
 	}
 
-	// Set local server name for matchmaking request if any.
-	// This is useful if you want to try matchmaking using local dedicated server.
 	if (SessionType == EAccelByteV2SessionType::GameSession)
 	{
+		// Check for DS version override.
+		const FString OverriddenDSVersion = UTutorialModuleOnlineUtility::GetDedicatedServerVersionOverride();
+		if (!OverriddenDSVersion.IsEmpty())
+		{
+			SessionSettings.Set(SETTING_GAMESESSION_CLIENTVERSION, OverriddenDSVersion);
+		}
+
+		// Set local server name for matchmaking request if any.
+		// This is useful if you want to try matchmaking using local dedicated server.
 		FString ServerName;
 		FParse::Value(FCommandLine::Get(), TEXT("-ServerName="), ServerName);
 		if (!ServerName.IsEmpty())

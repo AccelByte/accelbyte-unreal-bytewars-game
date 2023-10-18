@@ -11,7 +11,6 @@
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "Core/UI/Components/AccelByteWarsButtonBase.h"
 
-#include "TutorialModules/Module-1/TutorialModuleOnlineUtility.h"
 #include "TutorialModules/Module-8/UI/FriendDetailsWidget.h"
 #include "TutorialModules/Module-8/UI/FriendDetailsWidget_Starter.h"
 

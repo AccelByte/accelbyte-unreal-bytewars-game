@@ -55,6 +55,9 @@ public:
 		return FText::Format(DEFAULT_USER_DISPLAYNAME, FText::FromString(UserId.Left(5))).ToString();
 	}
 
+	/* @brief Get dedicated server version override. Return empty if not overridden. */
+	static FString GetDedicatedServerVersionOverride();
+
 private:
 	static void CheckForSDKConfigOverride();
 	static bool OverrideSDKConfigFromLaunchParam(const bool bIsServer = false);

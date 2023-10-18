@@ -46,6 +46,7 @@ void UMatchmakingDSOnlineSession::ClearOnlineDelegates()
 
 	UPauseWidget::OnQuitGameDelegate.RemoveAll(this);
 	UMatchLobbyWidget::OnQuitLobbyDelegate.RemoveAll(this);
+	UGameOverWidget::OnQuitGameDelegate.RemoveAll(this);
 
 	GetSessionInt()->OnMatchmakingCompleteDelegates.RemoveAll(this);
 	GetSessionInt()->OnCancelMatchmakingCompleteDelegates.RemoveAll(this);
@@ -391,6 +392,13 @@ void UMatchmakingDSOnlineSession::StartMatchmaking(
 	MatchmakingSearchHandle->QuerySettings.Set(
 		SETTING_SESSION_MATCHPOOL, MatchPoolId, EOnlineComparisonOp::Equals);
 
+	// Check for DS version override.
+	const FString OverriddenDSVersion = UTutorialModuleOnlineUtility::GetDedicatedServerVersionOverride();
+	if (!OverriddenDSVersion.IsEmpty())
+	{
+		MatchmakingSearchHandle->QuerySettings.Set(SETTING_GAMESESSION_CLIENTVERSION, OverriddenDSVersion, EOnlineComparisonOp::Equals);
+	}
+
 	// Set local server name for matchmaking request if any.
 	// This is useful if you want to try matchmaking using local dedicated server.
 	FString ServerName;
@@ -519,7 +527,7 @@ void UMatchmakingDSOnlineSession::OnBackfillProposalReceived(
 
 	// Accept backfill proposal.
 	GetABSessionInt()->AcceptBackfillProposal(
-		NAME_GameSession,
+		GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession),
 		Proposal,
 		false,
 		FOnAcceptBackfillProposalComplete::CreateWeakLambda(this, [this](bool bSucceeded)

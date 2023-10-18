@@ -46,6 +46,7 @@ void UMatchSessionDSOnlineSession::ClearOnlineDelegates()
 
 	UPauseWidget::OnQuitGameDelegate.RemoveAll(this);
 	UMatchLobbyWidget::OnQuitLobbyDelegate.RemoveAll(this);
+	UGameOverWidget::OnQuitGameDelegate.RemoveAll(this);
 
 	GetSessionInt()->OnFindSessionsCompleteDelegates.RemoveAll(this);
 }

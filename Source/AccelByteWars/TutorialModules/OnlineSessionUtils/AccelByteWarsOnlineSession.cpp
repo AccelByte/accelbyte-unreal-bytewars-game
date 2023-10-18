@@ -18,7 +18,6 @@
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "Core/UI/Components/AccelByteWarsButtonBase.h"
 
-#include "TutorialModules/Module-1/TutorialModuleOnlineUtility.h"
 #include "TutorialModules/Module-8/UI/FriendDetailsWidget.h"
 #include "TutorialModules/Module-8/UI/FriendDetailsWidget_Starter.h"
 
@@ -96,6 +95,7 @@ void UAccelByteWarsOnlineSession::ClearOnlineDelegates()
 
 	UPauseWidget::OnQuitGameDelegate.RemoveAll(this);
 	UMatchLobbyWidget::OnQuitLobbyDelegate.RemoveAll(this);
+    UGameOverWidget::OnQuitGameDelegate.RemoveAll(this);
 
 	// Matchmaking Essentials
 	GetSessionInt()->OnMatchmakingCompleteDelegates.RemoveAll(this);
@@ -195,10 +195,17 @@ void UAccelByteWarsOnlineSession::CreateSession(
 		SessionSettings.Set(SETTING_SESSION_TYPE, GetPredefinedSessionNameFromType(SessionType).ToString());
 	}
 
-	// Set local server name for matchmaking request if any.
-	// This is useful if you want to try matchmaking using local dedicated server.
 	if (SessionType == EAccelByteV2SessionType::GameSession)
 	{
+        // Check for DS version override.
+        const FString OverriddenDSVersion = UTutorialModuleOnlineUtility::GetDedicatedServerVersionOverride();
+        if (!OverriddenDSVersion.IsEmpty()) 
+        {
+            SessionSettings.Set(SETTING_GAMESESSION_CLIENTVERSION, OverriddenDSVersion);
+        }
+
+        // Set local server name for matchmaking request if any.
+        // This is useful if you want to try matchmaking using local dedicated server.
 		FString ServerName;
 		FParse::Value(FCommandLine::Get(), TEXT("-ServerName="), ServerName);
 		if (!ServerName.IsEmpty())
@@ -859,6 +866,13 @@ void UAccelByteWarsOnlineSession::StartMatchmaking(
 	TSharedRef<FOnlineSessionSearch> MatchmakingSearchHandle = MakeShared<FOnlineSessionSearch>();
 	MatchmakingSearchHandle->QuerySettings.Set(
 		SETTING_SESSION_MATCHPOOL, MatchPoolId, EOnlineComparisonOp::Equals);
+
+    // Check for DS version override.
+    const FString OverriddenDSVersion = UTutorialModuleOnlineUtility::GetDedicatedServerVersionOverride();
+    if (!OverriddenDSVersion.IsEmpty())
+    {
+        MatchmakingSearchHandle->QuerySettings.Set(SETTING_GAMESESSION_CLIENTVERSION, OverriddenDSVersion, EOnlineComparisonOp::Equals);
+    }
 
 	// Set local server name for matchmaking request if any.
 	// This is useful if you want to try matchmaking using local dedicated server.

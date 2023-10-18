@@ -46,6 +46,7 @@ void UMatchmakingP2POnlineSession::ClearOnlineDelegates()
 
 	UPauseWidget::OnQuitGameDelegate.RemoveAll(this);
 	UMatchLobbyWidget::OnQuitLobbyDelegate.RemoveAll(this);
+	UGameOverWidget::OnQuitGameDelegate.RemoveAll(this);
 
 	GetSessionInt()->OnMatchmakingCompleteDelegates.RemoveAll(this);
 	GetSessionInt()->OnCancelMatchmakingCompleteDelegates.RemoveAll(this);
@@ -454,7 +455,7 @@ void UMatchmakingP2POnlineSession::OnBackfillProposalReceived(
 
 	// Accept backfill proposal.
 	GetABSessionInt()->AcceptBackfillProposal(
-		NAME_GameSession,
+		GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession),
 		Proposal,
 		false,
 		FOnAcceptBackfillProposalComplete::CreateWeakLambda(this, [this](bool bSucceeded)

@@ -11,6 +11,7 @@
 #include "Core/AssetManager/TutorialModules/TutorialModuleOnlineSession.h"
 #include "Core/Settings/GameModeDataAssets.h"
 #include "Models/AccelByteSessionModels.h"
+#include "TutorialModules/Module-1/TutorialModuleOnlineUtility.h"
 #include "AccelByteWarsOnlineSessionBase.generated.h"
 
 UCLASS(Abstract)

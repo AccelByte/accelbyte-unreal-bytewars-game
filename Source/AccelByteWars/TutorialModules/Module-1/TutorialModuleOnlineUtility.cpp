@@ -109,6 +109,74 @@ bool UTutorialModuleOnlineUtility::IsAccelByteSDKInitialized(const UObject* Targ
     return IsOSSEnabled && !IsSDKCredsEmpty;
 }
 
+FString UTutorialModuleOnlineUtility::GetDedicatedServerVersionOverride()
+{
+    bool bIsOverridden = false;
+
+    // Check dedicated server (DS) version override from launch parameter.
+    const FString CmdArgs = FCommandLine::Get();
+    const FString CmdStr = FString("-OverrideDSVersion=");
+    bool bValidCmdValue = false;
+    if (CmdArgs.Contains(CmdStr, ESearchCase::IgnoreCase))
+    {
+        FString CmdValue;
+        FParse::Value(*CmdArgs, *CmdStr, CmdValue);
+
+        if (!CmdValue.IsEmpty()) 
+        {
+            if (CmdValue.Equals(TEXT("TRUE"), ESearchCase::IgnoreCase))
+            {
+                bValidCmdValue = true;
+                bIsOverridden = true;
+            }
+            else if (CmdValue.Equals(TEXT("FALSE"), ESearchCase::IgnoreCase))
+            {
+                bValidCmdValue = true;
+                bIsOverridden = false;
+            }
+        }
+
+        if (bValidCmdValue) 
+        {
+            UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Log,
+                TEXT("Launch param set the override DS version config to %s."),
+                bIsOverridden ? TEXT("TRUE") : TEXT("FALSE"));
+        }
+        else 
+        {
+            UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Failed to set enable/disable the override DS version config using launch param. Empty or invalid value."));
+        }
+    }
+
+    // Check dedicated server (DS) version override from DefaultEngine.ini
+    const FString IniSectionPath = FString("/ByteWars/TutorialModule.DSEssentials");
+    const FString IniConfig = FString("bOverrideDSVersion");
+    if (!bValidCmdValue)
+    {
+        GConfig->GetBool(*IniSectionPath, *IniConfig, bIsOverridden, GEngineIni);
+
+        UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Log,
+            TEXT("DefaultEngine.ini set the override DS version config to %s."),
+            bIsOverridden ? TEXT("TRUE") : TEXT("FALSE"));
+    }
+
+    // If not overridden, return empty.
+    if (!bIsOverridden) 
+    {
+        return FString();
+    }
+
+    // Return project version (could be empty if not yet set in DefaultGame.ini).
+    FString ProjectVersionStr;
+    const FString ProjectVerSectionPath = FString("/Script/EngineSettings.GeneralProjectSettings");
+    const FString ProjectVerConfig = FString("ProjectVersion");
+    GConfig->GetString(*ProjectVerSectionPath, *ProjectVerConfig, ProjectVersionStr, GGameIni);
+
+    UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Log, TEXT("DS version is overridden to: %s"), *ProjectVersionStr);
+
+    return ProjectVersionStr;
+}
+
 void UTutorialModuleOnlineUtility::CheckForSDKConfigOverride()
 {
     bool bIsOverridden = false;
