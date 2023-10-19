@@ -84,7 +84,7 @@ void UAccelByteWarsGameInstance::OnNetworkFailure(
 	const FString& Message)
 {
 	// Only change the FailureType if the Message is different
-	if (!LastFailureMessage.Compare(Message))
+	if (!LastFailureMessage.Equals(Message))
 	{
 		LastFailureMessage = Message;
 		bPendingFailureNotification = true;
