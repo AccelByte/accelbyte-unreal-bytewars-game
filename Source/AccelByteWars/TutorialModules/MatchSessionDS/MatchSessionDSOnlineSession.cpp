@@ -347,7 +347,7 @@ void UMatchSessionDSOnlineSession::CreateMatchSession(
 		GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession),
 		SessionSettings,
 		EAccelByteV2SessionType::GameSession,
-		MatchSessionTemplateNameMap[{EGameModeNetworkType::P2P, GameModeType}]);
+		MatchSessionTemplateNameMap[{EGameModeNetworkType::DS, GameModeType}]);
 }
 
 void UMatchSessionDSOnlineSession::FindSessions(
