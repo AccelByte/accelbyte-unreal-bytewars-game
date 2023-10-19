@@ -35,9 +35,26 @@ public:
 	{
 		return &OnJoinSessionCompleteDelegates;
 	}
+	virtual FOnSendSessionInviteComplete* GetOnSendSessionInviteCompleteDelegates() override
+	{
+		return &OnSendSessionInviteCompleteDelegates;
+	}
+	virtual FOnRejectSessionInviteCompleteMulticast* GetOnRejectSessionInviteCompleteDelegate() override
+	{
+		return &OnRejectSessionInviteCompleteDelegates;
+	}
 	virtual FOnDestroySessionComplete* GetOnLeaveSessionCompleteDelegates() override
 	{
 		return &OnLeaveSessionCompleteDelegates;
+	}
+
+	virtual FOnV2SessionInviteReceived* GetOnSessionInviteReceivedDelegates() override
+	{
+		return &OnSessionInviteReceivedDelegates;
+	}
+	virtual FOnSessionParticipantsChange* GetOnSessionParticipantsChange() override
+	{
+		return &OnSessionParticipantsChangeDelegates;
 	}
 
 protected:
@@ -53,7 +70,12 @@ private:
 
 	FOnCreateSessionComplete OnCreateSessionCompleteDelegates;
 	FOnJoinSessionComplete OnJoinSessionCompleteDelegates;
+	FOnSendSessionInviteComplete OnSendSessionInviteCompleteDelegates;
+	FOnRejectSessionInviteCompleteMulticast OnRejectSessionInviteCompleteDelegates;
 	FOnDestroySessionComplete OnLeaveSessionCompleteDelegates;
+
+	FOnV2SessionInviteReceived OnSessionInviteReceivedDelegates;
+	FOnSessionParticipantsChange OnSessionParticipantsChangeDelegates;
 
 #pragma region "Funtions Declarations"
 	// TODO: declare your private functions here
