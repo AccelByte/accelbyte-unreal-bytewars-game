@@ -21,6 +21,27 @@ public:
 protected:
 	virtual void NativeConstruct() override;
 
+	/** Get the first outer with the specified class. Nullptr if not found. */
+	template<class WidgetClass>
+	WidgetClass* GetFirstOccurenceOuter()
+	{
+		UObject* CurrentIterationOuter = GetOuter();
+		WidgetClass* TargetOuter = nullptr;
+
+		while (!TargetOuter)
+		{
+			if (!CurrentIterationOuter)
+			{
+				break;
+			}
+
+			TargetOuter = Cast<WidgetClass>(CurrentIterationOuter);
+			CurrentIterationOuter = CurrentIterationOuter->GetOuter();
+		}
+
+		return TargetOuter;
+	}
+
 private:
 	bool GetUserInfo(FString& OutUserNickname, FString& OutUserId) const;
 
