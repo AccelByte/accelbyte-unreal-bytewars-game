@@ -297,8 +297,7 @@ void AAccelByteWarsInGameGameMode::OnShipDestroyed(
 	const_cast<AAccelByteWarsPlayerPawn*>(ABPawn)->Client_OnDestroyed();
 
 	// Reset Missile Fired Count
-	SourcePlayerState->MissilesFired = 0;
-	ShipPlayerState->MissilesFired = 0; /* also reset the ship's missiles fired as a safety net */
+	ShipPlayerState->MissilesFired = 0;
 
 	// FX logic
 	OnShipDestroyedFX(SourcePlayerController, ShipOwner->GetTransform(), ShipPlayerState);
