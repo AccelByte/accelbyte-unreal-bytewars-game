@@ -100,8 +100,8 @@ struct FTutorialModuleGeneratedWidget
 	template<typename T>
 	static T* GetGeneratedWidgetById(const FString& WidgetId, TArray<FTutorialModuleGeneratedWidget*>& GeneratedWidgets)
 	{
-		UUserWidget* Temp = GetMetadataById(WidgetId, GeneratedWidgets)->GenerateWidgetRef;
-		return Temp ? Cast<T>(Temp) : nullptr;
+		FTutorialModuleGeneratedWidget* Temp = GetMetadataById(WidgetId, GeneratedWidgets);
+		return Temp ? Cast<T>(Temp->GenerateWidgetRef) : nullptr;
 	}
 
 	template<typename T>
