@@ -75,6 +75,34 @@ void UHUDWidget::NativeConstruct()
 		{
 			return NetMode == EGameModeNetworkType::DS;
 		});
+		
+		// Check launch param
+		bool bUseAMS = FParse::Param(FCommandLine::Get(), TEXT("-ServerUseAMS"));
+	
+		// check DefaultEngine.ini next
+		if (!bUseAMS)
+		{
+			FString Config;
+			GConfig->GetBool(TEXT("/ByteWars/TutorialModule.DSEssentials"), TEXT("bServerUseAMS"), bUseAMS, GEngineIni);
+		}
+
+		// If using AMS then override the target URL 
+		if(bUseAMS)
+		{
+			FString DefaultAMSFleetId = TEXT("flt_018b4825-eede-7098-9e7d-21348380394c");
+			FString AMSFleetId;
+			FParse::Value(FCommandLine::Get(), TEXT("-amsfleetid="), AMSFleetId);
+
+			if(AMSFleetId.IsEmpty())
+			{
+				AMSFleetId = DefaultAMSFleetId;
+			}
+			
+			FString FleetUrl = "https://demo.accelbyte.io/admin/namespaces/bytewars/ams/fleets-manager/";
+			FleetUrl.Append(AMSFleetId);
+			FString TargetUrl = FleetUrl.Append("/server/{0}");
+			FTUEDedicatedServer->Button1.TargetURL = TargetUrl;
+		}
 	}
 }
 
