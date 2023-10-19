@@ -58,6 +58,9 @@ public:
 	/* @brief Get dedicated server version override. Return empty if not overridden. */
 	static FString GetDedicatedServerVersionOverride();
 
+	/* @brief Get if the server use AccelByte Multiplayer Server. */
+	static bool GetIsServerUseAMS();
+
 private:
 	static void CheckForSDKConfigOverride();
 	static bool OverrideSDKConfigFromLaunchParam(const bool bIsServer = false);

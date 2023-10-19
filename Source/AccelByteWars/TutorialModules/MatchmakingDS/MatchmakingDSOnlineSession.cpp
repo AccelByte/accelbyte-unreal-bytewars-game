@@ -383,9 +383,16 @@ void UMatchmakingDSOnlineSession::StartMatchmaking(
 		}));
 		return;
 	}
-
+	
+	// Check is using AMS
+	const bool bUseAMS = UTutorialModuleOnlineUtility::GetIsServerUseAMS();
+	
 	// Get match pool id based on game mode type
-	const FString MatchPoolId = MatchPoolIds[GameModeType];
+	FString MatchPoolId = MatchPoolIds[GameModeType];
+	if(bUseAMS)
+	{
+		MatchPoolId.Append("-ams");
+	}
 	
 	// Setup matchmaking search handle, it will be used to store session search results.
 	TSharedRef<FOnlineSessionSearch> MatchmakingSearchHandle = MakeShared<FOnlineSessionSearch>();

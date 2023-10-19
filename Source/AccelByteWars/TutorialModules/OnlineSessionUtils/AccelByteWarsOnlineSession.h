@@ -171,7 +171,9 @@ private:
 public:
 	TMap<FString, FString> MatchmakingTargetGameModeMap = {
 		{"unreal-elimination-ds", "ELIMINATION-DS"},
+		{"unreal-elimination-ds-ams", "ELIMINATION-DS"},
 		{"unreal-teamdeathmatch-ds", "TEAMDEATHMATCH-DS"},
+		{"unreal-teamdeathmatch-ds-ams", "TEAMDEATHMATCH-DS"},
 		{"unreal-elimination-p2p", "ELIMINATION-P2P"},
 		{"unreal-teamdeathmatch-p2p", "TEAMDEATHMATCH-P2P"}
 	};

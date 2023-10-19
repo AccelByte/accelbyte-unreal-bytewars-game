@@ -859,8 +859,16 @@ void UAccelByteWarsOnlineSession::StartMatchmaking(
 		return;
 	}
 
+	// Check is using AMS
+	const bool bUseAMS = UTutorialModuleOnlineUtility::GetIsServerUseAMS();
+	
 	// Get match pool id based on game mode type
-	const FString MatchPoolId = MatchmakingPoolIdMap[{NetworkType, GameModeType}];
+	FString MatchPoolId = MatchmakingPoolIdMap[{NetworkType, GameModeType}];
+
+	if(NetworkType == EGameModeNetworkType::DS && bUseAMS)
+	{
+		MatchPoolId.Append("-ams");
+	}
 	
 	// Setup matchmaking search handle, it will be used to store session search results.
 	TSharedRef<FOnlineSessionSearch> MatchmakingSearchHandle = MakeShared<FOnlineSessionSearch>();
@@ -1059,12 +1067,22 @@ void UAccelByteWarsOnlineSession::CreateMatchSession(
 		GAMESETUP_GameModeCode,
 		MatchSessionTargetGameModeMap[{NetworkType, GameModeType}]);
 
+	// Check is using AMS
+	const bool bUseAMS = UTutorialModuleOnlineUtility::GetIsServerUseAMS();
+	
+	// Get match pool id based on game mode type
+	FString MatchTemplateName = MatchSessionTemplateNameMap[{EGameModeNetworkType::DS, GameModeType}];
+	if(bUseAMS)
+	{
+		MatchTemplateName.Append("-ams");
+	}
+	
 	CreateSession(
 		LocalUserNum,
 		GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession),
 		SessionSettings,
 		EAccelByteV2SessionType::GameSession,
-		MatchSessionTemplateNameMap[{NetworkType, GameModeType}]);
+		MatchTemplateName);
 }
 
 void UAccelByteWarsOnlineSession::FindSessions(

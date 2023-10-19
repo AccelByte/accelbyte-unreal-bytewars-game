@@ -177,6 +177,21 @@ FString UTutorialModuleOnlineUtility::GetDedicatedServerVersionOverride()
     return ProjectVersionStr;
 }
 
+bool UTutorialModuleOnlineUtility::GetIsServerUseAMS()
+{
+    // Check launch param
+    bool bUseAMS = FParse::Param(FCommandLine::Get(), TEXT("-ServerUseAMS"));
+	
+    // check DefaultEngine.ini next
+    if (!bUseAMS)
+    {
+        FString Config;
+        GConfig->GetBool(TEXT("/ByteWars/TutorialModule.DSEssentials"), TEXT("bServerUseAMS"), bUseAMS, GEngineIni);
+    }
+
+    return bUseAMS;
+}
+
 void UTutorialModuleOnlineUtility::CheckForSDKConfigOverride()
 {
     bool bIsOverridden = false;
