@@ -1071,8 +1071,9 @@ void UAccelByteWarsOnlineSession::CreateMatchSession(
 	const bool bUseAMS = UTutorialModuleOnlineUtility::GetIsServerUseAMS();
 	
 	// Get match pool id based on game mode type
-	FString MatchTemplateName = MatchSessionTemplateNameMap[{EGameModeNetworkType::DS, GameModeType}];
-	if(bUseAMS)
+	FString MatchTemplateName = MatchSessionTemplateNameMap[{NetworkType, GameModeType}];
+	
+	if(NetworkType == EGameModeNetworkType::DS && bUseAMS)
 	{
 		MatchTemplateName.Append("-ams");
 	}
