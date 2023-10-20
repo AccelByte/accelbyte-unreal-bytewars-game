@@ -175,12 +175,20 @@ TSubclassOf<UOnlineSession> UAccelByteWarsGameInstance::GetOnlineSessionClass()
 			{
 				if (TutorialModule.OnlineSessionClass)
 				{
+					GAMEINSTANCE_LOG("Starter online session module detected: %s", *TutorialModule.OnlineSessionClass->GetPathName())
+
 					OnlineSessionClass = TutorialModule.OnlineSessionClass;
+					bUseCompletedOnlineSession = false;
 					break;
 				}
 			}
 			else
 			{
+				if (bUseCompletedOnlineSession)
+				{
+					continue;
+				}
+
 				if (TutorialModule.OnlineSessionClass)
 				{
 					if (OnlineSessionClass == nullptr)
@@ -191,10 +199,9 @@ TSubclassOf<UOnlineSession> UAccelByteWarsGameInstance::GetOnlineSessionClass()
 					{
 						bUseCompletedOnlineSession = true;
 						GAMEINSTANCE_LOG(
-							"Detected multiple Online Session module: %s and %s",
+							"Detected multiple Online Session module: %s and %s | Continuing search in case there's starter module activated",
 							*OnlineSessionClass->GetPathName(),
 							*TutorialModule.OnlineSessionClass->GetPathName())
-						break;
 					}
 				}
 			}

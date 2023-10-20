@@ -22,6 +22,8 @@ UTutorialModuleOnlineUtility::UTutorialModuleOnlineUtility()
 
     CheckForSDKConfigOverride();
 
+    CheckForDedicatedServerVersionOverride();
+
     // Trigger to get general predefined argument.
     FTUEArgumentModel::OnGetPredefinedArgument.BindUObject(this, &ThisClass::GetFTUEPredefinedArgument);
 
@@ -109,8 +111,25 @@ bool UTutorialModuleOnlineUtility::IsAccelByteSDKInitialized(const UObject* Targ
     return IsOSSEnabled && !IsSDKCredsEmpty;
 }
 
-FString UTutorialModuleOnlineUtility::GetDedicatedServerVersionOverride()
+bool UTutorialModuleOnlineUtility::GetIsServerUseAMS()
 {
+    // Check launch param
+    bool bUseAMS = FParse::Param(FCommandLine::Get(), TEXT("-ServerUseAMS"));
+	
+    // check DefaultEngine.ini next
+    if (!bUseAMS)
+    {
+        FString Config;
+        GConfig->GetBool(TEXT("/ByteWars/TutorialModule.DSEssentials"), TEXT("bServerUseAMS"), bUseAMS, GEngineIni);
+    }
+
+    return bUseAMS;
+}
+
+void UTutorialModuleOnlineUtility::CheckForDedicatedServerVersionOverride()
+{
+    DedicatedServerVersionOverride = FString("");
+
     bool bIsOverridden = false;
 
     // Check dedicated server (DS) version override from launch parameter.
@@ -122,7 +141,7 @@ FString UTutorialModuleOnlineUtility::GetDedicatedServerVersionOverride()
         FString CmdValue;
         FParse::Value(*CmdArgs, *CmdStr, CmdValue);
 
-        if (!CmdValue.IsEmpty()) 
+        if (!CmdValue.IsEmpty())
         {
             if (CmdValue.Equals(TEXT("TRUE"), ESearchCase::IgnoreCase))
             {
@@ -136,13 +155,13 @@ FString UTutorialModuleOnlineUtility::GetDedicatedServerVersionOverride()
             }
         }
 
-        if (bValidCmdValue) 
+        if (bValidCmdValue)
         {
             UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Log,
                 TEXT("Launch param set the override DS version config to %s."),
                 bIsOverridden ? TEXT("TRUE") : TEXT("FALSE"));
         }
-        else 
+        else
         {
             UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Failed to set enable/disable the override DS version config using launch param. Empty or invalid value."));
         }
@@ -160,13 +179,13 @@ FString UTutorialModuleOnlineUtility::GetDedicatedServerVersionOverride()
             bIsOverridden ? TEXT("TRUE") : TEXT("FALSE"));
     }
 
-    // If not overridden, return empty.
-    if (!bIsOverridden) 
+    // Abort if not overridden.
+    if (!bIsOverridden)
     {
-        return FString();
+        return;
     }
 
-    // Return project version (could be empty if not yet set in DefaultGame.ini).
+    // Set dedicated server version based on project version (could be empty if not yet set in DefaultGame.ini).
     FString ProjectVersionStr;
     const FString ProjectVerSectionPath = FString("/Script/EngineSettings.GeneralProjectSettings");
     const FString ProjectVerConfig = FString("ProjectVersion");
@@ -174,22 +193,12 @@ FString UTutorialModuleOnlineUtility::GetDedicatedServerVersionOverride()
 
     UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Log, TEXT("DS version is overridden to: %s"), *ProjectVersionStr);
 
-    return ProjectVersionStr;
+    DedicatedServerVersionOverride = ProjectVersionStr;
 }
 
-bool UTutorialModuleOnlineUtility::GetIsServerUseAMS()
+FString UTutorialModuleOnlineUtility::GetDedicatedServerVersionOverride()
 {
-    // Check launch param
-    bool bUseAMS = FParse::Param(FCommandLine::Get(), TEXT("-ServerUseAMS"));
-	
-    // check DefaultEngine.ini next
-    if (!bUseAMS)
-    {
-        FString Config;
-        GConfig->GetBool(TEXT("/ByteWars/TutorialModule.DSEssentials"), TEXT("bServerUseAMS"), bUseAMS, GEngineIni);
-    }
-
-    return bUseAMS;
+    return DedicatedServerVersionOverride;
 }
 
 void UTutorialModuleOnlineUtility::CheckForSDKConfigOverride()

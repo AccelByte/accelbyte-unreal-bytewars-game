@@ -62,6 +62,8 @@ public:
 	static bool GetIsServerUseAMS();
 
 private:
+	static void CheckForDedicatedServerVersionOverride();
+
 	static void CheckForSDKConfigOverride();
 	static bool OverrideSDKConfigFromLaunchParam(const bool bIsServer = false);
 
@@ -77,4 +79,5 @@ private:
 
 	inline static FString CurrentPlayerUserIdStr = FString("");
 	inline static FString CurrentPlayerDisplayName = FString("");
+	inline static FString DedicatedServerVersionOverride = FString("");
 };
