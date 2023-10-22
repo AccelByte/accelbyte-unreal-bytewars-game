@@ -8,6 +8,21 @@
 #include "Core/GameStates/AccelByteWarsMainMenuGameState.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
+#include "Core/Utilities/AccelByteWarsUtilityLog.h"
+
+void AAccelByteWarsPlayerController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+	
+	ABPlayerHUD = Cast<AHUDPlayer>(GetHUD());
+}
+
+void AAccelByteWarsPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AAccelByteWarsPlayerController, eShipDesign);
+}
 
 void AAccelByteWarsPlayerController::TriggerLobbyStart_Implementation()
 {
@@ -32,6 +47,17 @@ void AAccelByteWarsPlayerController::LoadingPlayerAssignment() const
 			PromptSubsystem->HideLoading();
 		}
 	}
+}
+
+void AAccelByteWarsPlayerController::Server_SelectPlayerShipDesign_Implementation(ShipDesign SelectedShipDesign)
+{
+	eShipDesign = SelectedShipDesign;
+	OnRepNotify_ShipDesign();
+}
+
+void AAccelByteWarsPlayerController::OnRepNotify_ShipDesign()
+{
+	// Nothing needed
 }
 
 void AAccelByteWarsPlayerController::DelayedClientTravel(TSoftObjectPtr<UWorld> Level)

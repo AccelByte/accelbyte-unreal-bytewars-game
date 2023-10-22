@@ -4,11 +4,14 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
 #include "TutorialModules/Module-5/CloudSaveLog.h"
 #include "TutorialModules/Module-5/CloudSaveModels.h"
 #include "OnlineCloudSaveInterfaceAccelByte.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
+#include "Core/Player/AccelByteWarsPlayerState.h"
+#include "Core/Player/AccelByteWarsPlayerPawn.h"
+
+#include "CoreMinimal.h"
 #include "CloudSaveSubsystem.generated.h"
 
 class UAccelByteWarsGameInstance;
@@ -25,9 +28,9 @@ public:
 
 #pragma region Module.5 Function Declarations
 public:
-	void SetPlayerRecord(const APlayerController* PC, const FString& RecordKey, const FJsonObject& RecordData, const FOnSetCloudSaveRecordComplete& OnSetRecordComplete);
-	void GetPlayerRecord(const APlayerController* PC, const FString& RecordKey, const FOnGetCloudSaveRecordComplete& OnGetRecordComplete);
-	void DeletePlayerRecord(const APlayerController* PC, const FString& RecordKey, const FOnDeleteCloudSaveRecordComplete& OnDeleteRecordComplete);
+	void SetPlayerRecord(const APlayerController* PlayerController, const FString& RecordKey, const FJsonObject& RecordData, const FOnSetCloudSaveRecordComplete& OnSetRecordComplete);
+	void GetPlayerRecord(const APlayerController* PlayerController, const FString& RecordKey, const FOnGetCloudSaveRecordComplete& OnGetRecordComplete);
+	void DeletePlayerRecord(const APlayerController* PlayerController, const FString& RecordKey, const FOnDeleteCloudSaveRecordComplete& OnDeleteRecordComplete);
 
 private:
 	void OnSetPlayerRecordComplete(int32 LocalUserNum, const FOnlineError& Result, const FString& Key, const FOnSetCloudSaveRecordComplete OnSetRecordComplete);
@@ -39,8 +42,11 @@ private:
 	void BindDelegates();
 	void UnbindDelegates();
 
-	void OnLoadGameSoundOptions(const APlayerController* PC, TDelegate<void()> OnComplete);
-	void OnSaveGameSoundOptions(const APlayerController* PC, TDelegate<void()> OnComplete);
+	void OnLoadGameSoundOptions(const APlayerController* PlayerController, TDelegate<void()> OnComplete);
+	void OnSaveGameSoundOptions(const APlayerController* PlayerController, TDelegate<void()> OnComplete);
+
+	void OnLoadPlayerShipEquipment(const AAccelByteWarsPlayerPawn* PlayerPawn, const APlayerController* PlayerController, const AAccelByteWarsPlayerState* ABPlayerState, FLinearColor InColor);
+	void OnSavePlayerShipEquipment(const APlayerController* PlayerController);
 
 	FDelegateHandle OnSetPlayerRecordCompletedDelegateHandle;
 	FDelegateHandle OnGetPlayerRecordCompletedDelegateHandle;

@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "Core/System/AccelByteWarsGameInstance.h"
+
 #include "CoreMinimal.h"
 #include "OnlineError.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
@@ -17,10 +19,15 @@ class UTileView;
 class UEntitlementsEssentialsSubsystem;
 class UAccelByteWarsWidgetSwitcher;
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnInventoryMenuDeactivated, const APlayerController* /*PlayerController*/);
+
 UCLASS(Abstract)
 class ACCELBYTEWARS_API UInventoryWidget : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
+
+public:
+	inline static FOnInventoryMenuDeactivated OnInventorysMenuDeactivated;
 
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;

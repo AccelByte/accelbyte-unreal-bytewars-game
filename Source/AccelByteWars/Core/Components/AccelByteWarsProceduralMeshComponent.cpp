@@ -82,6 +82,6 @@ void UAccelByteWarsProceduralMeshComponent::UpdateColor(const FLinearColor InCol
 {
 	Color = InColor;
 
-	if (Material->IsValidLowLevel())
+	if (Material != nullptr)
 		Material->SetVectorParameterValue(FName("EmissiveColour"), Color);
 }

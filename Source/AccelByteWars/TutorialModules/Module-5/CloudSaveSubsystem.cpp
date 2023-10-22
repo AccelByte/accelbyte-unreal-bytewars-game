@@ -9,6 +9,8 @@
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "Core/UI/MainMenu/HelpOptions/Options/OptionsWidget.h"
+#include "TutorialModules/EntitlementsEssentials/UI/InventoryWidget.h"
+#include "Core/Player/AccelByteWarsPlayerController.h"
 
 #define LOCTEXT_NAMESPACE "AccelByteWars"
 
@@ -49,6 +51,8 @@ void UCloudSaveSubsystem::BindDelegates()
     UAuthEssentialsModels::OnLoginSuccessDelegate.AddUObject(this, &ThisClass::OnLoadGameSoundOptions, TDelegate<void()>());
     UOptionsWidget::OnOptionsWidgetActivated.AddUObject(this, &ThisClass::OnLoadGameSoundOptions);
     UOptionsWidget::OnOptionsWidgetDeactivated.AddUObject(this, &ThisClass::OnSaveGameSoundOptions);
+    UInventoryWidget::OnInventorysMenuDeactivated.AddUObject(this, &ThisClass::OnSavePlayerShipEquipment);
+    AAccelByteWarsPlayerPawn::OnMatchStarted.AddUObject(this, &ThisClass::OnLoadPlayerShipEquipment);
 }
 
 void UCloudSaveSubsystem::UnbindDelegates()
@@ -56,11 +60,13 @@ void UCloudSaveSubsystem::UnbindDelegates()
     UAuthEssentialsModels::OnLoginSuccessDelegate.RemoveAll(this);
     UOptionsWidget::OnOptionsWidgetActivated.RemoveAll(this);
     UOptionsWidget::OnOptionsWidgetDeactivated.RemoveAll(this);
+    UInventoryWidget::OnInventorysMenuDeactivated.RemoveAll(this);
+    AAccelByteWarsPlayerPawn::OnMatchStarted.RemoveAll(this);
 }
 
-void UCloudSaveSubsystem::OnLoadGameSoundOptions(const APlayerController* PC, TDelegate<void()> OnComplete)
+void UCloudSaveSubsystem::OnLoadGameSoundOptions(const APlayerController* PlayerController, TDelegate<void()> OnComplete)
 {
-    if (!PC)
+    if (!PlayerController)
     {
         UE_LOG_CLOUDSAVE_ESSENTIALS(Warning, TEXT("Cannot get game options from Cloud Save. Player Controller is null."));
         return;
@@ -76,7 +82,7 @@ void UCloudSaveSubsystem::OnLoadGameSoundOptions(const APlayerController* PC, TD
 
     // Get game options from Cloud Save.
     GetPlayerRecord(
-        PC,
+        PlayerController,
         FString::Printf(TEXT("%s-%s"), *GAME_OPTIONS_KEY, *SOUND_OPTIONS_KEY),
         FOnGetCloudSaveRecordComplete::CreateWeakLambda(this, [this, GameInstance, PromptSubsystem, OnComplete](bool bWasSuccessful, FJsonObject& Result)
         {
@@ -96,9 +102,62 @@ void UCloudSaveSubsystem::OnLoadGameSoundOptions(const APlayerController* PC, TD
     );
 }
 
-void UCloudSaveSubsystem::OnSaveGameSoundOptions(const APlayerController* PC, TDelegate<void()> OnComplete)
+void UCloudSaveSubsystem::OnLoadPlayerShipEquipment(const AAccelByteWarsPlayerPawn* PlayerPawn, const APlayerController* PlayerController, const AAccelByteWarsPlayerState* ABPlayerState, FLinearColor InColor)
 {
-    if (!PC)
+    if (!PlayerController)
+    {
+        UE_LOG_CLOUDSAVE_ESSENTIALS(Warning, TEXT("Cannot get game options from Cloud Save. PlayerController is null."));
+        return;
+    }
+
+    if (!ABPlayerState)
+    {
+        UE_LOG_CLOUDSAVE_ESSENTIALS(Warning, TEXT("Cannot get game options from Cloud Save. PlayerState is null."));
+        return;
+    }
+
+    if (!PlayerPawn)
+    {
+        UE_LOG_CLOUDSAVE_ESSENTIALS(Warning, TEXT("Cannot get game options from Cloud Save. PlayerPawn is null."));
+        return;
+    }
+
+    UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+    ensure(GameInstance);
+
+    // Get game options from Cloud Save.
+    GetPlayerRecord(
+        PlayerController,
+        FString::Printf(TEXT("%s-%s"), *GAME_EQUIPMENT_KEY, *EQUIPMENT_OPTIONS_KEY),
+        FOnGetCloudSaveRecordComplete::CreateWeakLambda(this, [this, PlayerPawn, PlayerController, ABPlayerState, InColor, GameInstance](bool bWasSuccessful, FJsonObject& Result)
+        {
+            if (PlayerPawn->IsValidLowLevel() == false)
+                return;
+
+            UE_LOG_CLOUDSAVE_ESSENTIALS(Warning, TEXT("Get game options from Cloud Save was successful: %s"), bWasSuccessful ? TEXT("True") : TEXT("False"));
+
+            int32 SelectedPlayerShip = 0;
+            int32 SelectedPlayerPowerUp = 0;
+
+            // Update the local game options based on the Cloud Save record.
+            if (bWasSuccessful)
+            {
+                SelectedPlayerShip = Result.GetNumberField(PLAYER_EQUIPMENT_OPTIONS_SHIP_KEY);
+                SelectedPlayerPowerUp = Result.GetNumberField(PLAYER_EQUIPMENT_OPTIONS_POWERUP_KEY);
+            }
+
+            GameInstance->SetShipSelection(SelectedPlayerShip);
+            GameInstance->SetShipPowerUp(SelectedPlayerPowerUp);
+
+            const_cast<AAccelByteWarsPlayerPawn*>(PlayerPawn)->Server_SpawnPlayerShip((ShipDesign)SelectedPlayerShip);
+            const_cast<AAccelByteWarsPlayerPawn*>(PlayerPawn)->Server_SetColor(InColor);
+        })
+    );
+}
+
+void UCloudSaveSubsystem::OnSaveGameSoundOptions(const APlayerController* PlayerController, TDelegate<void()> OnComplete)
+{
+    if (!PlayerController)
     {
         UE_LOG_CLOUDSAVE_ESSENTIALS(Warning, TEXT("Cannot set game options from Cloud Save. Player Controller is null."));
         return;
@@ -119,7 +178,7 @@ void UCloudSaveSubsystem::OnSaveGameSoundOptions(const APlayerController* PC, TD
 
     // Save the game options to Cloud Save.
     SetPlayerRecord(
-        PC,
+        PlayerController,
         FString::Printf(TEXT("%s-%s"), *GAME_OPTIONS_KEY, *SOUND_OPTIONS_KEY),
         GameOptionsData,
         FOnSetCloudSaveRecordComplete::CreateWeakLambda(this, [this, PromptSubsystem, OnComplete](bool bWasSuccessful)
@@ -131,11 +190,46 @@ void UCloudSaveSubsystem::OnSaveGameSoundOptions(const APlayerController* PC, TD
         }
     ));
 }
+
+void UCloudSaveSubsystem::OnSavePlayerShipEquipment(const APlayerController* PlayerController)
+{
+    if (!PlayerController)
+    {
+        UE_LOG_CLOUDSAVE_ESSENTIALS(Warning, TEXT("Cannot set game options from Cloud Save. Player Controller is null."));
+        return;
+    }
+
+    UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+    ensure(GameInstance);
+
+    UPromptSubsystem* PromptSubsystem = GameInstance->GetSubsystem<UPromptSubsystem>();
+    ensure(PromptSubsystem);
+
+    PromptSubsystem->ShowLoading(LOCTEXT("Saving", "Saving"));
+
+    // Construct game options to save.
+    FJsonObject GameOptionsData;
+    GameOptionsData.SetNumberField(PLAYER_EQUIPMENT_OPTIONS_SHIP_KEY, GameInstance->GetShipSelection());
+    GameOptionsData.SetNumberField(PLAYER_EQUIPMENT_OPTIONS_POWERUP_KEY, GameInstance->GetShipPowerUp());
+
+    // Save the game options to Cloud Save.
+    SetPlayerRecord(
+        PlayerController,
+        FString::Printf(TEXT("%s-%s"), *GAME_EQUIPMENT_KEY, *EQUIPMENT_OPTIONS_KEY),
+        GameOptionsData,
+        FOnSetCloudSaveRecordComplete::CreateWeakLambda(this, [this, PromptSubsystem](bool bWasSuccessful)
+        {
+            UE_LOG_CLOUDSAVE_ESSENTIALS(Warning, TEXT("Set game options from Cloud Save was successful: %s"), bWasSuccessful ? TEXT("True") : TEXT("False"));
+
+            PromptSubsystem->HideLoading();
+        }
+    ));
+}
 #pragma endregion
 
 
 #pragma region Module.5 Function Definitions
-void UCloudSaveSubsystem::SetPlayerRecord(const APlayerController* PC, const FString& RecordKey, const FJsonObject& RecordData, const FOnSetCloudSaveRecordComplete& OnSetRecordComplete)
+void UCloudSaveSubsystem::SetPlayerRecord(const APlayerController* PlayerController, const FString& RecordKey, const FJsonObject& RecordData, const FOnSetCloudSaveRecordComplete& OnSetRecordComplete)
 {
     if (!ensure(CloudSaveInterface.IsValid()))
     {
@@ -143,7 +237,7 @@ void UCloudSaveSubsystem::SetPlayerRecord(const APlayerController* PC, const FSt
         return;
     }
 
-    const ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
+    const ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer();
     ensure(LocalPlayer != nullptr);
     int32 LocalUserNum = LocalPlayer->GetControllerId();
 
@@ -166,7 +260,7 @@ void UCloudSaveSubsystem::OnSetPlayerRecordComplete(int32 LocalUserNum, const FO
     OnSetRecordComplete.ExecuteIfBound(Result.bSucceeded);
 }
 
-void UCloudSaveSubsystem::GetPlayerRecord(const APlayerController* PC, const FString& RecordKey, const FOnGetCloudSaveRecordComplete& OnGetRecordComplete)
+void UCloudSaveSubsystem::GetPlayerRecord(const APlayerController* PlayerController, const FString& RecordKey, const FOnGetCloudSaveRecordComplete& OnGetRecordComplete)
 {
     if (!ensure(CloudSaveInterface.IsValid()))
     {
@@ -174,7 +268,7 @@ void UCloudSaveSubsystem::GetPlayerRecord(const APlayerController* PC, const FSt
         return;
     }
 
-    const ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
+    const ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer();
     ensure(LocalPlayer != nullptr);
     int32 LocalUserNum = LocalPlayer->GetControllerId();
 
@@ -200,7 +294,7 @@ void UCloudSaveSubsystem::OnGetPlayerRecordComplete(int32 LocalUserNum, const FO
     OnGetRecordComplete.ExecuteIfBound(Result.bSucceeded, RecordResult);
 }
 
-void UCloudSaveSubsystem::DeletePlayerRecord(const APlayerController* PC, const FString& RecordKey, const FOnDeleteCloudSaveRecordComplete& OnDeleteRecordComplete)
+void UCloudSaveSubsystem::DeletePlayerRecord(const APlayerController* PlayerController, const FString& RecordKey, const FOnDeleteCloudSaveRecordComplete& OnDeleteRecordComplete)
 {
     if (!ensure(CloudSaveInterface.IsValid()))
     {
@@ -208,7 +302,7 @@ void UCloudSaveSubsystem::DeletePlayerRecord(const APlayerController* PC, const 
         return;
     }
 
-    const ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
+    const ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer();
     ensure(LocalPlayer != nullptr);
     int32 LocalUserNum = LocalPlayer->GetControllerId();
 

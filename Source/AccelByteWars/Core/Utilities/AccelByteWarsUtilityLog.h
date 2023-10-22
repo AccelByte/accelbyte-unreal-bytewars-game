@@ -73,6 +73,6 @@ namespace
 		if (world->IsNetMode(NM_DedicatedServer))
 			is_dedicated_server = true;
 
-		LogToConsole("IsDedicatedServer: " + BoolToFString(is_dedicated_server) + " Local: " + local_role + " Remote: " + remote_role + " Net: " + net_role);
+		LogToScreenAndConsole("IsDedicatedServer: " + BoolToFString(is_dedicated_server) + " Local: " + local_role + " Remote: " + remote_role + " Net: " + net_role);
 	}
 }

@@ -5,6 +5,7 @@
 
 #include "InventoryWidget.h"
 
+#include "Core/Player/AccelByteWarsPlayerController.h"
 #include "Components/TileView.h"
 #include "CommonButtonBase.h"
 #include "Components/TextBlock.h"
@@ -50,6 +51,11 @@ void UInventoryWidget::NativeOnDeactivated()
 	Btn_Back->OnClicked().RemoveAll(this);
 	Btn_Equip->OnClicked().RemoveAll(this);
 	Ws_Root->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Loading);
+
+	if (OnInventorysMenuDeactivated.IsBound())
+	{
+		OnInventorysMenuDeactivated.Broadcast(GetOwningPlayer());
+	}
 }
 
 void UInventoryWidget::ShowEntitlements(const FOnlineError& Error, const TArray<UItemDataObject*> Entitlements) const
@@ -111,4 +117,32 @@ void UInventoryWidget::OnClickListItem(UObject* Object)
 
 void UInventoryWidget::OnClickEquip()
 {
+	if (SelectedItem == nullptr)
+		return;
+
+	UAccelByteWarsGameInstance* ABGameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+	if (ABGameInstance == nullptr)
+		return;
+
+	// Store -> Ship Item Lookup
+	if (SelectedItem->Id == "4f6a077395214cabade85e53f47b7a7c") // Default Triangle Ship
+	{
+		ABGameInstance->SetShipSelection((int32)ShipDesign::TRIANGLE);
+	}
+	else if (SelectedItem->Id == "49bb99d9b20e48759bf6784bc640a936") // D Ship
+	{
+		ABGameInstance->SetShipSelection((int32)ShipDesign::D);
+	}
+	else if (SelectedItem->Id == "112c59e29b1f4d34b782142b4e53a540") // Double Triangle
+	{
+		ABGameInstance->SetShipSelection((int32)ShipDesign::DOUBLE_TRIANGLE);
+	}
+	else if (SelectedItem->Id == "ad8bd8a02a604796b3c9c5665e36bc1b") // Glow Xtra
+	{
+		ABGameInstance->SetShipSelection((int32)ShipDesign::GLOW_XTRA);
+	}
+	else if (SelectedItem->Id == "a758d7fb7147465cbd4fb83b2b53d29d") // White Star
+	{
+		ABGameInstance->SetShipSelection((int32)ShipDesign::WHITE_STAR);;
+	}
 }

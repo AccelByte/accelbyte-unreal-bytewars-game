@@ -37,7 +37,17 @@ static FString FNameToFString(FName input)
 	return input.ToString();
 }
 
-static FString FVectorToString(FVector input)
+static FString FTextToFString(FText input)
+{
+	return input.ToString();
+}
+
+static FString FVector2DToFString(FVector2D input)
+{
+	return input.ToString();
+}
+
+static FString FVectorToFString(FVector input)
 {
 	return input.ToString();
 }

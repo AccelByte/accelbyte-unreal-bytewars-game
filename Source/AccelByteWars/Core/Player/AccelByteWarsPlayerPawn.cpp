@@ -7,11 +7,14 @@
 // Sets default values
 AAccelByteWarsPlayerPawn::AAccelByteWarsPlayerPawn()
 {
-	// Setup procedural mesh component
-	AccelByteWarsProceduralMesh = CreateDefaultSubobject<UAccelByteWarsProceduralMeshComponent>(TEXT("AccelByteWarsProceduralMesh"));
-	RootComponent = AccelByteWarsProceduralMesh;
+	// Setup a do nothing root component
+	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComponent"));
+	SphereComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	SphereComponent->SetGenerateOverlapEvents(false);
+	SphereComponent->SetVisibility(false);
+	RootComponent = SphereComponent;
 
-	// Setup ship gameplay object
+	// Setup ship game play object
 	GameplayObject = CreateDefaultSubobject<UAccelByteWarsGameplayObjectComponent>(TEXT("GameplayObject"));
 	GameplayObject->Mass = 1.0f;
 	GameplayObject->Radius = 0.5f;
@@ -27,7 +30,7 @@ AAccelByteWarsPlayerPawn::AAccelByteWarsPlayerPawn()
 void AAccelByteWarsPlayerPawn::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 	CurrentYaw = GetActorRotation().Yaw;
 }
 
@@ -101,7 +104,6 @@ AAccelByteWarsMissile* AAccelByteWarsPlayerPawn::SpawnMissileInWorld(AActor* Act
 		return nullptr;
 
 	new_actor->Server_SetColor(Color);
-
 	new_actor->InitialSpeed = InitialSpeed;
 	new_actor->SetVelocity();
 	new_actor->SetInstigator(this);
@@ -110,34 +112,99 @@ AAccelByteWarsMissile* AAccelByteWarsPlayerPawn::SpawnMissileInWorld(AActor* Act
 	return new_actor;
 }
 
-AAccelByteWarsMissileTrail* AAccelByteWarsPlayerPawn::SpawnMissileTrailInWorld(AActor* ActorOwner, FTransform InTransform, FString BlueprintPath, bool ShouldReplicate)
+template<class T>
+T* AAccelByteWarsPlayerPawn::SpawnBPActorInWorld(APawn* OwningPawn, const FVector Location, const FRotator Rotation, FString BlueprintPath, bool ShouldReplicate)
 {
-	if (ActorOwner == nullptr)
+	if (OwningPawn == nullptr)
 		return nullptr;
 
 	FActorSpawnParameters spawn_parameters;
-	spawn_parameters.Owner = ActorOwner;
+	spawn_parameters.Owner = OwningPawn;
 	spawn_parameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	UClass* generic_class = StaticLoadClass(AActor::StaticClass(), ActorOwner, *BlueprintPath);
-
-	AAccelByteWarsMissileTrail* new_actor = ActorOwner->GetWorld()->SpawnActor<AAccelByteWarsMissileTrail>(generic_class, InTransform, spawn_parameters);
-	if (new_actor == nullptr)
+	UClass* generic_class = StaticLoadClass(AActor::StaticClass(), OwningPawn, *BlueprintPath);
+	if (generic_class == nullptr)
+	{
+		LOG_TO_CONSOLE("Failed to generate generic class for: " + BlueprintPath);
 		return nullptr;
+	}
 
-	new_actor->Server_SetColor(Color);
-	new_actor->SetInstigator(this);
+	T* new_actor = OwningPawn->GetWorld()->SpawnActor<T>(generic_class, FTransform(Rotation, Location), spawn_parameters);
+	if (new_actor == nullptr)
+	{
+		LOG_TO_CONSOLE("Failed to generate actor class for: " + BlueprintPath);
+		return nullptr;
+	}
+
+	new_actor->SetInstigator(OwningPawn);
 	new_actor->SetReplicates(ShouldReplicate);
 
 	return new_actor;
 }
 
+void AAccelByteWarsPlayerPawn::Server_GetPlayerSelectedShip_Implementation(APlayerController* PlayerController, AAccelByteWarsPlayerState* ABPlayerState, FLinearColor InColor)
+{
+	Client_GetPlayerSelectedShip(PlayerController, ABPlayerState, InColor);
+}
+
+void AAccelByteWarsPlayerPawn::Client_GetPlayerSelectedShip_Implementation(APlayerController* PlayerController, AAccelByteWarsPlayerState* ABPlayerState, FLinearColor InColor)
+{
+	if (PlayerController == nullptr)
+		return;
+
+	if (ABPlayerState == nullptr)
+		return;
+
+	ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer();
+	if (LocalPlayer == nullptr)
+		return;
+
+	int32 LocalPlayerNum = LocalPlayer->GetControllerId();
+
+	if (OnMatchStarted.IsBound())
+	{
+		OnMatchStarted.Broadcast(this, PlayerController, ABPlayerState, InColor);
+	}
+}
+
+void AAccelByteWarsPlayerPawn::Server_SpawnPlayerShip_Implementation(ShipDesign SelectedShipDesign)
+{
+	switch (SelectedShipDesign)
+	{
+		case ShipDesign::TRIANGLE:
+		{
+			PlayerShip = SpawnBPActorInWorld<APlayerShipTriangle>(this, GetActorLocation(), GetActorRotation(), PlayerShipBlueprintPaths[(int8)SelectedShipDesign], true);
+		}
+		break;
+		case ShipDesign::D:
+		{
+			PlayerShip = SpawnBPActorInWorld<APlayerShipD>(this, GetActorLocation(), GetActorRotation(), PlayerShipBlueprintPaths[(int8)SelectedShipDesign], true);
+		}
+		break;
+		case ShipDesign::DOUBLE_TRIANGLE:
+		{
+			PlayerShip = SpawnBPActorInWorld<APlayerShipDoubleTriangle>(this, GetActorLocation(), GetActorRotation(), PlayerShipBlueprintPaths[(int8)SelectedShipDesign], true);
+		}
+		break;
+		case ShipDesign::GLOW_XTRA:
+		{
+			PlayerShip = SpawnBPActorInWorld<APlayerShipGlowXtra>(this, GetActorLocation(), GetActorRotation(), PlayerShipBlueprintPaths[(int8)SelectedShipDesign], true);
+		}
+		break;
+		case ShipDesign::WHITE_STAR:
+		{
+			PlayerShip = SpawnBPActorInWorld<APlayerShipWhiteStar>(this, GetActorLocation(), GetActorRotation(), PlayerShipBlueprintPaths[(int8)SelectedShipDesign], true);
+		}
+		break;
+	}
+
+	if (PlayerShip != nullptr)
+		PlayerShip->AttachToActor(this, FAttachmentTransformRules::SnapToTargetIncludingScale);
+}
+
 void AAccelByteWarsPlayerPawn::Server_FireMissile_Implementation()
 {
 	if (ShouldFire() == false)
-		return;
-
-	if (AccelByteWarsProceduralMesh == nullptr)
 		return;
 
 	// Calculate missile spawn location
@@ -147,9 +214,13 @@ void AAccelByteWarsPlayerPawn::Server_FireMissile_Implementation()
 	float clamped_initial_speed = UKismetMathLibrary::MapRangeClamped(FirePowerLevel, 0.0f, 1.0f, MinMissileSpeed, MaxMissileSpeed);
 
 	// Spawn missile actor
-	FiredMissile = SpawnMissileInWorld(this, SpawnTransform, clamped_initial_speed, FiredMissileBlueprintPath, true);
+	FiredMissile = SpawnBPActorInWorld<AAccelByteWarsMissile>(this, SpawnTransform.GetLocation(), SpawnTransform.Rotator(), FiredMissileBlueprintPath, true);
 	if (FiredMissile == nullptr)
 		return;
+
+	FiredMissile->Server_SetColor(Color);
+	FiredMissile->InitialSpeed = clamped_initial_speed;
+	FiredMissile->SetVelocity();
 
 	ShowPowerLevelUITimer = 0.0f;
 
@@ -170,9 +241,11 @@ void AAccelByteWarsPlayerPawn::Server_FireMissile_Implementation()
 	}
 
 	// Spawn missile trail
-	MissileTrail = SpawnMissileTrailInWorld(this, SpawnTransform, FiredMissileTrailBlueprintPath, true);
+	MissileTrail = SpawnBPActorInWorld<AAccelByteWarsMissileTrail>(this, SpawnTransform.GetLocation(), SpawnTransform.Rotator(), FiredMissileTrailBlueprintPath, true);
 	if (MissileTrail == nullptr)
 		return;
+
+	MissileTrail->Server_SetColor(Color);
 
 	// Attach new trail to missile actor
 	FAttachmentTransformRules attachment_rules(EAttachmentRule::SnapToTarget, EAttachmentRule::SnapToTarget, EAttachmentRule::KeepRelative, true);
@@ -215,7 +288,7 @@ void AAccelByteWarsPlayerPawn::AdjustFirePower(int Rate)
 	if (HasAuthority() == false)
 		return;
 
-	FirePowerLevel += FMath::Clamp(Rate, -1, 1);;
+	FirePowerLevel += FMath::Clamp(Rate, -1, 1);
 }
 
 void AAccelByteWarsPlayerPawn::OnPlayerInputThisFrame()
@@ -229,6 +302,17 @@ void AAccelByteWarsPlayerPawn::Server_RotatePawn_Implementation(int Rate)
 	Client_RotatePawn_Implementation(Rate);
 }
 
+UAccelByteWarsProceduralMeshComponent* AAccelByteWarsPlayerPawn::GetPlayerShipMesh()
+{
+	if (PlayerShip == nullptr)
+		return nullptr;
+
+	if (PlayerShip->AccelByteWarsProceduralMesh == nullptr)
+		return nullptr;
+
+	return PlayerShip->AccelByteWarsProceduralMesh;
+}
+
 void AAccelByteWarsPlayerPawn::Client_RotatePawn_Implementation(int Rate)
 {
 	if (HasAuthority())
@@ -240,7 +324,7 @@ void AAccelByteWarsPlayerPawn::Client_RotatePawn_Implementation(int Rate)
 	}
 }
 
-void AAccelByteWarsPlayerPawn::Server_AdjustFirePower_Implementation(int Rate)
+void AAccelByteWarsPlayerPawn::Server_AdjustFirePower_Implementation(FVector PlayerPosition, int Rate)
 {
 	if (HasAuthority())
 	{
@@ -258,12 +342,37 @@ void AAccelByteWarsPlayerPawn::Server_AdjustFirePower_Implementation(int Rate)
 		{
 			FirePowerAdjustRate = -1.0f;
 		}
+
+		Client_AdjustFirePower(PlayerPosition, Color);
 	}
+}
+
+void AAccelByteWarsPlayerPawn::Client_AdjustFirePower_Implementation(FVector PlayerPosition, FLinearColor InColor)
+{
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	if (PlayerController == nullptr)
+		return;
+
+	AAccelByteWarsPlayerController* ABPlayerController = Cast<AAccelByteWarsPlayerController>(PlayerController);
+	if (PlayerController == nullptr)
+		return;
+
+	if (ABPlayerController->ABPlayerHUD == nullptr)
+		return;
+
+	FVector2D ScreenLocation = FVector2D::ZeroVector;
+	PlayerController->ProjectWorldLocationToScreen(PlayerPosition, ScreenLocation, false);
+
+	ABPlayerController->ABPlayerHUD->UpdatePowerBarUI(ScreenLocation, InColor);
 }
 
 void AAccelByteWarsPlayerPawn::Server_SetColor_Implementation(FLinearColor InColor)
 {
 	Color = InColor;
+
+	if (PlayerShip != nullptr)
+		PlayerShip->SetShipColor(Color);
+
 	OnRepNotify_Color();
 }
 
@@ -277,10 +386,8 @@ void AAccelByteWarsPlayerPawn::Client_OnDestroyed_Implementation()
 
 void AAccelByteWarsPlayerPawn::OnRepNotify_Color()
 {
-	if (AccelByteWarsProceduralMesh == nullptr)
-		return;
-
-	AccelByteWarsProceduralMesh->UpdateColor(Color);
+	if (PlayerShip != nullptr)
+		PlayerShip->SetShipColor(Color);
 }
 
 void AAccelByteWarsPlayerPawn::OnRepNotify_FirePowerLevel()

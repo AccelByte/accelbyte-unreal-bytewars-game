@@ -175,6 +175,18 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = Sounds)
 	void SetSFXVolume(float InVolume);
 
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = Sounds)
+	int32 GetShipSelection();
+
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = Sounds)
+	void SetShipSelection(int32 InShipSeleciton);
+
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = Sounds)
+	int32 GetShipPowerUp();
+
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = Sounds)
+	void SetShipPowerUp(int32 InShipPowerUp);
+
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = GameSettings)
 	bool GetFTUEAlwaysOnSetting();
 

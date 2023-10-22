@@ -460,31 +460,29 @@ int32 AAccelByteWarsInGameGameMode::GetLivingTeamCount() const
 
 void AAccelByteWarsInGameGameMode::SpawnAndPossesPawn(APlayerState* PlayerState)
 {
-	if (const AAccelByteWarsPlayerState* PS = Cast<AAccelByteWarsPlayerState>(PlayerState))
-	{
-		// Only spawn if player have lives
-		if (PS->NumLivesLeft <= 0)
-		{
-			return;
-		}
+	AAccelByteWarsPlayerState* ABPlayerState = Cast<AAccelByteWarsPlayerState>(PlayerState);
+	if (ABPlayerState == nullptr)
+		return;
 
-		// if team is not assigned, aka INDEX_NONE, do not spawn
-		if (PS->TeamId <= INDEX_NONE)
-		{
-			return;
-		}
+	APlayerController* PlayerController = ABPlayerState->GetPlayerController();
+	if (PlayerController == nullptr)
+		return;
 
-		if (APlayerController* PC = PS->GetPlayerController())
-		{
-			// Pawn uses BP class pawn and "expose on spawn"ed parameters, use implementable event
-			APawn* Pawn = CreatePlayerPawn(FindGoodPlayerPosition(), PS->TeamColor, PC);
-			NULLPTR_CHECK(Pawn);
+	// Only spawn if player have lives
+	if (ABPlayerState->NumLivesLeft <= 0)
+		return;
 
-			// setup and posses
-			SetupGameplayObject(Pawn);
-			PC->Possess(Pawn);
-		}
-	}
+	// if team is not assigned, aka INDEX_NONE, do not spawn
+	if (ABPlayerState->TeamId <= INDEX_NONE)
+		return;
+
+	// Pawn uses BP class pawn and "expose on spawn"ed parameters, use implementable event
+	APawn* Pawn = CreatePlayerPawn(FindGoodPlayerPosition(), ABPlayerState->TeamColor, PlayerController);
+	NULLPTR_CHECK(Pawn);
+
+	// setup and posses
+	SetupGameplayObject(Pawn);
+	PlayerController->Possess(Pawn);
 }
 
 APawn* AAccelByteWarsInGameGameMode::CreatePlayerPawn(const FVector& Location, const FLinearColor& Color, APlayerController* PlayerController)
@@ -498,14 +496,30 @@ APawn* AAccelByteWarsInGameGameMode::CreatePlayerPawn(const FVector& Location, c
 
 	UClass* generic_class = StaticLoadClass(AActor::StaticClass(), this, *PawnBlueprintPath);
 
-	AAccelByteWarsPlayerPawn* new_player_pawn = PlayerController->GetWorld()->SpawnActor<AAccelByteWarsPlayerPawn>(generic_class, FTransform(FRotator::ZeroRotator, Location), spawn_parameters);
-	if (new_player_pawn == nullptr)
+	AAccelByteWarsPlayerPawn* NewPlayerPawn = PlayerController->GetWorld()->SpawnActor<AAccelByteWarsPlayerPawn>(generic_class, FTransform(FRotator::ZeroRotator, Location), spawn_parameters);
+	if (NewPlayerPawn == nullptr)
 		return nullptr;
 
-	new_player_pawn->SetReplicates(true);
-	new_player_pawn->Server_SetColor(Color);
+	UAccelByteWarsGameInstance* ABGameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+	if (ABGameInstance == nullptr)
+		return nullptr;
 
-	return new_player_pawn;
+	AAccelByteWarsPlayerController* ABPlayerController = Cast<AAccelByteWarsPlayerController>(PlayerController);
+	if (ABPlayerController == nullptr)
+		return nullptr;
+
+	APlayerState* PlayerState = ABPlayerController->PlayerState;
+	if (PlayerState == nullptr)
+		return nullptr;
+
+	AAccelByteWarsPlayerState* ABPlayerState = static_cast<AAccelByteWarsPlayerState*>(PlayerState);
+	if (ABPlayerState == nullptr)
+		return nullptr;
+
+	NewPlayerPawn->SetReplicates(true);
+	NewPlayerPawn->Server_GetPlayerSelectedShip(PlayerController, ABPlayerState, Color);
+
+	return NewPlayerPawn;
 }
 
 TArray<FVector> AAccelByteWarsInGameGameMode::GetActiveGameObjectsPosition(

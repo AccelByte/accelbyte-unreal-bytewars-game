@@ -4,20 +4,31 @@
 
 #pragma once
 
+// Player Ships
+#include "AccelByteWars/Core/Ships/PlayerShipBase.h"
+#include "AccelByteWars/Core/Ships/PlayerShipTriangle.h"
+#include "AccelByteWars/Core/Ships/PlayerShipD.h"
+#include "AccelByteWars/Core/Ships/PlayerShipDoubleTriangle.h"
+#include "AccelByteWars/Core/Ships/PlayerShipGlowXtra.h"
+#include "AccelByteWars/Core/Ships/PlayerShipWhiteStar.h"
+
 #include "AccelByteWars/Core/GameStates/AccelByteWarsInGameGameState.h"
 #include "AccelByteWars/Core/Actor/AccelByteWarsMissile.h"
 #include "AccelByteWars/Core/Actor/AccelByteWarsMissileTrail.h"
-#include "AccelByteWars/Core/Components/AccelByteWarsProceduralMeshComponent.h"
 #include "AccelByteWars/Core/Player/AccelByteWarsPlayerState.h"
 #include "AccelByteWars/Core/Player/AccelByteWarsPlayerController.h"
 #include "AccelByteWars/Core/Components/AccelByteWarsGameplayObjectComponent.h"
+#include "AccelByteWars/Core/UI/InGameMenu/HUD/HUDPlayer.h"
 
 #include "GameFramework/RotatingMovementComponent.h"
+#include "Components/SphereComponent.h"
 
 #include "Net/UnrealNetwork.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
 #include "AccelByteWarsPlayerPawn.generated.h"
+
+DECLARE_MULTICAST_DELEGATE_FourParams(FOnMatchStarted, const AAccelByteWarsPlayerPawn* /*PlayerPawn*/, const APlayerController* /*PlayerController*/, const AAccelByteWarsPlayerState* /*PlayerState*/, FLinearColor /*InColor*/);
 
 UCLASS()
 class ACCELBYTEWARS_API AAccelByteWarsPlayerPawn : public APawn
@@ -25,6 +36,8 @@ class ACCELBYTEWARS_API AAccelByteWarsPlayerPawn : public APawn
 	GENERATED_BODY()
 
 public:
+	static inline FOnMatchStarted OnMatchStarted;
+
 	// Sets default values for this pawn's properties
 	AAccelByteWarsPlayerPawn();
 
@@ -39,13 +52,19 @@ public:
 	//~End of UObject overridden functions
 
 	/**
-	 * @brief Visible mesh of player ship
+	 * @brief A do nothing root component of player ship
 	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AccelByteWars)
-		UAccelByteWarsProceduralMeshComponent* AccelByteWarsProceduralMesh = nullptr;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = AccelByteWars)
+		class USphereComponent* SphereComponent = nullptr;
 
 	/**
-	 * @brief Visible mesh of player ship
+	 * @brief Player ship look and feel class
+	 */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = AccelByteWars)
+		class APlayerShipBase* PlayerShip = nullptr;
+
+	/**
+	 * @brief For gravity calculations
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AccelByteWars)
 		UAccelByteWarsGameplayObjectComponent* GameplayObject = nullptr;
@@ -61,6 +80,19 @@ public:
 	 */
 	UPROPERTY(BlueprintReadOnly, Category = AccelByteWars)
 		AAccelByteWarsMissileTrail* MissileTrail = nullptr;
+
+	/**
+	 * @brief Direct path to generic ABPlayerShip to be spawned
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = AccelByteWars)
+		TArray<FString> PlayerShipBlueprintPaths = 
+		{
+			"Blueprint'/Game/ByteWars/Blueprints/Ships/ABPlayerShipTriangle.ABPlayerShipTriangle_C'",
+			"Blueprint'/Game/ByteWars/Blueprints/Ships/ABPlayerShipD.ABPlayerShipD_C'",
+			"Blueprint'/Game/ByteWars/Blueprints/Ships/ABPlayerShipDoubleTriangle.ABPlayerShipDoubleTriangle_C'",
+			"Blueprint'/Game/ByteWars/Blueprints/Ships/ABPlayerShipGlowXtra.ABPlayerShipGlowXtra_C'",
+			"Blueprint'/Game/ByteWars/Blueprints/Ships/ABPlayerShipWhiteStar.ABPlayerShipWhiteStar_C'"
+		};
 
 	/**
 	 * @brief Direct path to ABMissile to be spawned
@@ -135,12 +167,6 @@ public:
 		float CurrentYaw = 0.0f;
 
 	/**
-	 * @brief Shoots a missile
-	 */
-	UFUNCTION(BlueprintCallable, Server, Reliable, Category = AccelByteWars)
-		void Server_FireMissile();
-
-	/**
 	 * @brief Plays the sounds for shooting a missile
 	 */
 	UFUNCTION(BlueprintImplementableEvent, Category = AccelByteWars)
@@ -177,6 +203,40 @@ public:
 		void PauseCameraBackgroud();
 
 	/**
+	 * @brief Fires off the Game Camera Pulse Background Event
+	 */
+	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
+		UAccelByteWarsProceduralMeshComponent* GetPlayerShipMesh();
+
+	// ***************** //
+	// *** RPC Start *** //
+	// ***************** //
+
+	/**
+	 * @brief Gets players selected ship
+	 */
+	UFUNCTION(BlueprintCallable, Server, Reliable, Category = AccelByteWars)
+		void Server_GetPlayerSelectedShip(APlayerController* PlayerController, AAccelByteWarsPlayerState* ABPlayerState, FLinearColor InColor);
+
+	/**
+	 * @brief Gets players selected ship
+	 */
+	UFUNCTION(BlueprintCallable, Client, Reliable, Category = AccelByteWars)
+		void Client_GetPlayerSelectedShip(APlayerController* PlayerController, AAccelByteWarsPlayerState* ABPlayerState, FLinearColor InColor);
+
+	/**
+	 * @brief Visually creates player ship
+	 */
+	UFUNCTION(BlueprintCallable, Server, Reliable, Category = AccelByteWars)
+		void Server_SpawnPlayerShip(ShipDesign SelectedShipDesign);
+
+	/**
+	 * @brief Shoots a missile
+	 */
+	UFUNCTION(BlueprintCallable, Server, Reliable, Category = AccelByteWars)
+		void Server_FireMissile();
+
+	/**
 	 * @brief Lets other players know when a player ship is rotating
 	 */
 	UFUNCTION(BlueprintCallable, Server, Reliable, Category = AccelByteWars)
@@ -192,12 +252,18 @@ public:
 	 * @brief Lets other players know when a player ship is changing their attack power
 	 */
 	UFUNCTION(BlueprintCallable, Server, Reliable, Category = AccelByteWars)
-		void Server_AdjustFirePower(int Rate);
+		void Server_AdjustFirePower(FVector PlayerPosition, int Rate);
+
+	/**
+	 * @brief Client sends to update power bar on the UI
+	 */
+	UFUNCTION(BlueprintCallable, Client, Reliable, Category = AccelByteWars)
+		void Client_AdjustFirePower(FVector PlayerPosition, FLinearColor InColor);
 
 	/**
 	 * @brief Lets other players know when a player ship is changing their ship color on spawn
 	 */
-	UFUNCTION(BlueprintCallable, Server, Unreliable, Category = AccelByteWars)
+	UFUNCTION(BlueprintCallable, Server, Reliable, Category = AccelByteWars)
 		void Server_SetColor(FLinearColor InColor);
 
 	/**
@@ -205,6 +271,10 @@ public:
 	 */
 	UFUNCTION(Client, Reliable, Category = AccelByteWars)
 		void Client_OnDestroyed();
+
+	// ***************** //
+	// **** RPC End **** //
+	// ***************** //
 
 protected:
 
@@ -220,11 +290,9 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
 		AAccelByteWarsMissile* SpawnMissileInWorld(AActor* ActorOwner, FTransform InTransform, float InitialSpeed, FString BlueprintPath, bool ShouldReplicate);
 
-	/**
-	 * @brief Spawns a missile trail with provided data
-	 */
+	template<class T>
 	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
-		AAccelByteWarsMissileTrail* SpawnMissileTrailInWorld(AActor* ActorOwner, FTransform InTransform, FString BlueprintPath, bool ShouldReplicate);
+		T* SpawnBPActorInWorld(APawn* OwningPawn, const FVector Location, const FRotator Rotation, FString BlueprintPath, bool ShouldReplicate);
 
 	/**
 	 * @brief Determines if the player's ship is able to fire a missile
