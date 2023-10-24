@@ -22,6 +22,13 @@ TArray<FTutorialModuleGeneratedWidget*> UTutorialModuleDataAsset::CachedGenerate
 TSet<FString> UTutorialModuleDataAsset::FTUEDialogueUsedIds;
 TArray<FFTUEDialogueModel*> UTutorialModuleDataAsset::CachedFTUEDialogues;
 
+UTutorialModuleDataAsset::UTutorialModuleDataAsset() 
+{
+	AssetType = UTutorialModuleDataAsset::TutorialModuleAssetType;
+
+	ValidateDataAssetProperties();
+}
+
 FTutorialModuleData UTutorialModuleDataAsset::GetTutorialModuleDataByCodeName(const FString& InCodeName)
 {
 	FPrimaryAssetId TutorialModuleAssetId = GenerateAssetIdFromCodeName(InCodeName);

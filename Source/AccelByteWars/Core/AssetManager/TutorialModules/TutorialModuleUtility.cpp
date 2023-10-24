@@ -83,10 +83,21 @@ bool UTutorialModuleUtility::IsTutorialModuleActive(const FPrimaryAssetId Tutori
 
 FTutorialModuleGeneratedWidget* FTutorialModuleGeneratedWidget::GetMetadataById(const FString& WidgetId)
 {
-	return *UTutorialModuleDataAsset::GetCachedGeneratedWidgets().
-		FindByPredicate([WidgetId](const FTutorialModuleGeneratedWidget* Temp)
+	FTutorialModuleGeneratedWidget* Result = nullptr;
+
+	for (const auto Metadata : UTutorialModuleDataAsset::GetCachedGeneratedWidgets()) 
+	{
+		if (!Metadata) 
 		{
-			return Temp->WidgetId == WidgetId;
+			continue;
 		}
-	);
+
+		if (Metadata->WidgetId.Equals(WidgetId)) 
+		{
+			Result = Metadata;
+			break;
+		}
+	}
+		
+	return Result;
 }

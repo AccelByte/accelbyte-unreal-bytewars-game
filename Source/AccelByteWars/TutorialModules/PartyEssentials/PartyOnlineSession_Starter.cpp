@@ -124,7 +124,7 @@ void UPartyOnlineSession_Starter::OnLeavePartyToTriggerEvent(FName SessionName, 
 void UPartyOnlineSession_Starter::InitializePartyGeneratedWidgets()
 {
     // Assign action button to invite player to the party.
-    InviteToPartyButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_invite_to_party"), AssociateTutorialModule->GeneratedWidgets);
+    InviteToPartyButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_invite_to_party"));
     if (ensure(InviteToPartyButtonMetadata))
     {
         InviteToPartyButtonMetadata->ButtonAction.AddWeakLambda(this, [this]()
@@ -145,7 +145,7 @@ void UPartyOnlineSession_Starter::InitializePartyGeneratedWidgets()
     }
 
     // Assign action button to kick player from the party.
-    KickPlayerFromPartyButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_kick_from_party"), AssociateTutorialModule->GeneratedWidgets);
+    KickPlayerFromPartyButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_kick_from_party"));
     if (ensure(KickPlayerFromPartyButtonMetadata))
     {
         KickPlayerFromPartyButtonMetadata->ButtonAction.AddWeakLambda(this, [this]()
@@ -166,7 +166,7 @@ void UPartyOnlineSession_Starter::InitializePartyGeneratedWidgets()
     }
 
     // Assign action button to promote party leader.
-    PromotePartyLeaderButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_promote_party_leader"), AssociateTutorialModule->GeneratedWidgets);
+    PromotePartyLeaderButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_promote_party_leader"));
     if (ensure(PromotePartyLeaderButtonMetadata))
     {
         PromotePartyLeaderButtonMetadata->ButtonAction.AddWeakLambda(this, [this]()

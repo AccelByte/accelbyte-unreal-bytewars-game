@@ -30,10 +30,7 @@ class ACCELBYTEWARS_API UTutorialModuleDataAsset : public UAccelByteWarsDataAsse
 	GENERATED_BODY()
 
 public:
-	UTutorialModuleDataAsset()
-	{
-		AssetType = UTutorialModuleDataAsset::TutorialModuleAssetType;
-	}
+	UTutorialModuleDataAsset();
 
 	virtual FPrimaryAssetId GetPrimaryAssetId() const override
 	{
