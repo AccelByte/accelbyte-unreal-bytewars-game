@@ -58,7 +58,7 @@ public:
 	}
 
 protected:
-	bool bLeaveSessionRunning = false;
+	bool bLeavingSession = false;
 
 #pragma region "Funtions Declarations"
 	// TODO: declare your public functions here

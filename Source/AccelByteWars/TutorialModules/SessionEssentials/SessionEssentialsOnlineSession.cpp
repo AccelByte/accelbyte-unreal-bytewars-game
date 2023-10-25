@@ -270,7 +270,7 @@ void USessionEssentialsOnlineSession::LeaveSession(FName SessionName)
 		}
 		else
 		{
-			bLeaveSessionRunning = true;
+			bLeavingSession = true;
 		}
 	}
 	else
@@ -319,7 +319,7 @@ void USessionEssentialsOnlineSession::OnLeaveSessionComplete(FName SessionName, 
 {
 	UE_LOG_SESSIONESSENTIALS(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
 
-	bLeaveSessionRunning = false;
+	bLeavingSession = false;
 	OnLeaveSessionCompleteDelegates.Broadcast(SessionName, bSucceeded);
 }
 

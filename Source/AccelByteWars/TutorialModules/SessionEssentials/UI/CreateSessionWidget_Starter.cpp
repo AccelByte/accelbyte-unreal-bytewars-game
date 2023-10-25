@@ -17,6 +17,7 @@ void UCreateSessionWidget_Starter::NativeOnActivated()
 	Super::NativeOnActivated();
 
 	Btn_Back->OnClicked().AddUObject(this, &ThisClass::DeactivateWidget);
+	// TODO: Bind UI delegates
 
 	SessionOnlineSession = Cast<UAccelByteWarsOnlineSessionBase>(GetGameInstance()->GetOnlineSession());
 	if (!ensure(SessionOnlineSession))
@@ -42,10 +43,8 @@ void UCreateSessionWidget_Starter::NativeOnDeactivated()
 {
 	Super::NativeOnDeactivated();
 
-	Btn_CreateSession->OnClicked().RemoveAll(this);
 	Btn_Back->OnClicked().RemoveAll(this);
-	Btn_Leave->OnClicked().RemoveAll(this);
-	Ws_Processing->OnRetryClicked.RemoveAll(this);
+	// TODO: Unbind UI delegates
 
 	if (SessionOnlineSession)
 	{

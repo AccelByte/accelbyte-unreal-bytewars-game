@@ -30,7 +30,6 @@ void UCreateSessionWidget::NativeOnActivated()
 	}
 
 	SessionOnlineSession->GetOnCreateSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnCreateSessionComplete);
-	SessionOnlineSession->GetOnJoinSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnJoinSessionComplete);
 	SessionOnlineSession->GetOnLeaveSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnLeaveSessionComplete);
 
 	// Set initial UI state.
@@ -59,7 +58,6 @@ void UCreateSessionWidget::NativeOnDeactivated()
 	if (SessionOnlineSession)
 	{
 		SessionOnlineSession->GetOnCreateSessionCompleteDelegates()->RemoveAll(this);
-		SessionOnlineSession->GetOnJoinSessionCompleteDelegates()->RemoveAll(this);
 		SessionOnlineSession->GetOnLeaveSessionCompleteDelegates()->RemoveAll(this);
 	}
 }
@@ -109,24 +107,6 @@ void UCreateSessionWidget::OnCreateSessionComplete(FName SessionName, bool bSucc
 		Ws_Processing->ErrorMessage = TEXT_FAILED_TO_CREATE_SESSION;
 		Ws_Processing->bShowRetryButtonOnError = true;
 		SwitchContent(EContentType::ERROR);
-	}
-}
-
-void UCreateSessionWidget::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
-{
-	// Abort if not a game session.
-	if (!SessionName.IsEqual(SessionOnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession)))
-	{
-		return;
-	}
-
-	if (Result == EOnJoinSessionCompleteResult::Type::Success)
-	{
-		// Get session id
-		const FNamedOnlineSession* OnlineSession = SessionOnlineSession->GetSession(SessionName);
-		Tb_SessionId->SetText(FText::FromString(OnlineSession->GetSessionIdStr()));
-
-		SwitchContent(EContentType::SUCCESS);
 	}
 }
 

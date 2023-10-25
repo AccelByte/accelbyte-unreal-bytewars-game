@@ -68,7 +68,7 @@ public:
 	}
 
 protected:
-	bool bLeaveSessionRunning = false;
+	bool bLeavingSession = false;
 
 	virtual void OnCreateSessionComplete(FName SessionName, bool bSucceeded) override;
 	/*The parent's function with the same name will not be used. Ignore the "hides a non-virtual function" warning*/

@@ -32,8 +32,6 @@ protected:
 	UFUNCTION()
 	void OnCreateSessionComplete(FName SessionName, bool bSucceeded);
 
-	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
-
 	UFUNCTION()
 	void LeaveSession();
 

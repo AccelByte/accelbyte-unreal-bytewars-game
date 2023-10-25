@@ -292,7 +292,7 @@ void UMatchSessionDSOnlineSession::OnSessionServerUpdateReceived(FName SessionNa
 {
 	UE_LOG_MATCHSESSIONDS(Verbose, TEXT("called"))
 
-	if (bLeaveSessionRunning)
+	if (bLeavingSession)
 	{
 		UE_LOG_MATCHSESSIONDS(Warning, TEXT("called but leave session is currently running. Cancelling attempt to travel to server"))
 		OnSessionServerUpdateReceivedDelegates.Broadcast(SessionName, FOnlineError(true), false);
