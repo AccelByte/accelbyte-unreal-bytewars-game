@@ -165,6 +165,21 @@ void AAccelByteWarsPlayerPawn::Client_GetPlayerSelectedShip_Implementation(APlay
 	{
 		OnMatchStarted.Broadcast(this, PlayerController, ABPlayerState, InColor);
 	}
+	else
+	{
+		// Select ship based on local data.
+		if (UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance()))
+		{
+			Server_SpawnPlayerShip((ShipDesign)GameInstance->GetShipSelection());
+		}
+		// Fallback to default ship.
+		else
+		{
+			Server_SpawnPlayerShip((ShipDesign)0);
+		}
+
+		Server_SetColor(InColor);
+	}
 }
 
 void AAccelByteWarsPlayerPawn::Server_SpawnPlayerShip_Implementation(ShipDesign SelectedShipDesign)
