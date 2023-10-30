@@ -62,6 +62,10 @@ void UOptionsWidget::InitOptions()
 	// Init SFX volume setting.
 	W_OptionSFXVolumeScalar->InitOption(LOCTEXT("SFX Setting", "SFX"), GameInstance->GetSFXVolume());
 	W_OptionSFXVolumeScalar->OnScalarValueChangedDelegate.AddUObject(GameInstance, &UAccelByteWarsGameInstance::SetSFXVolume);
+
+	// Init FTUE setting.
+	W_OptionFTUEAlwaysOnToggler->InitOption(LOCTEXT("Show FTUE Setting", "Always Show FTUE"), GameInstance->GetFTUEAlwaysOnSetting());
+	W_OptionFTUEAlwaysOnToggler->OnToggleValueChangedDelegate.AddUObject(GameInstance, &UAccelByteWarsGameInstance::SetFTUEAlwaysOnSetting);
 }
 
 void UOptionsWidget::FinalizeOptions()
@@ -74,6 +78,7 @@ void UOptionsWidget::FinalizeOptions()
 
 	W_OptionMusicVolumeScalar->OnScalarValueChangedDelegate.RemoveAll(GameInstance);
 	W_OptionSFXVolumeScalar->OnScalarValueChangedDelegate.RemoveAll(GameInstance);
+	W_OptionFTUEAlwaysOnToggler->OnToggleValueChangedDelegate.RemoveAll(GameInstance);
 
 	GameInstance->SaveGameSettings();
 }

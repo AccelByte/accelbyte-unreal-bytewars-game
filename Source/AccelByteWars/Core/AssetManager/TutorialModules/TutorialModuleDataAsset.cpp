@@ -10,9 +10,24 @@
 #include "Blueprint/UserWidget.h"
 #include "Widgets/Notifications/SNotificationList.h"
 #include "Framework/Notifications/NotificationManager.h"
+#include "JsonObjectConverter.h"
+
+DEFINE_LOG_CATEGORY(LogTutorialModuleDataAsset);
 
 const FPrimaryAssetType	UTutorialModuleDataAsset::TutorialModuleAssetType = TEXT("TutorialModule");
+
 TSet<FString> UTutorialModuleDataAsset::GeneratedWidgetUsedIds;
+TArray<FTutorialModuleGeneratedWidget*> UTutorialModuleDataAsset::CachedGeneratedWidgets;
+
+TSet<FString> UTutorialModuleDataAsset::FTUEDialogueUsedIds;
+TArray<FFTUEDialogueModel*> UTutorialModuleDataAsset::CachedFTUEDialogues;
+
+UTutorialModuleDataAsset::UTutorialModuleDataAsset() 
+{
+	AssetType = UTutorialModuleDataAsset::TutorialModuleAssetType;
+
+	ValidateDataAssetProperties();
+}
 
 FTutorialModuleData UTutorialModuleDataAsset::GetTutorialModuleDataByCodeName(const FString& InCodeName)
 {
@@ -100,6 +115,87 @@ void UTutorialModuleDataAsset::ResetOverrides()
 	bOverriden = false;
 }
 
+FString UTutorialModuleDataAsset::GetAttributesLocalFilePath(const FString& TutorialModuleCodeName)
+{
+	return FPaths::Combine(FPaths::ProjectSavedDir(), FString::Printf(TEXT("TutorialModuleCache/%s.json"), *TutorialModuleCodeName));
+}
+
+bool UTutorialModuleDataAsset::SaveAttributesToLocal()
+{
+	// Delete last local file if the code name is changed.
+	if (!LastCodeName.IsEmpty() && LastCodeName != CodeName)
+	{
+		FPlatformFileManager::Get().GetPlatformFile().DeleteFile(*GetAttributesLocalFilePath(LastCodeName));
+	}
+
+	AttributesJsonObject = MakeShareable(new FJsonObject);
+
+#pragma region "First Time User Experience (FTUE)"
+	TArray<TSharedPtr<FJsonValue>> FTUEGroupStates;
+	for (auto& FTUEDialogueGroup : FTUEDialogueGroups)
+	{
+		TSharedPtr<FJsonValue> GroupState = MakeShareable(new FJsonValueBoolean(FTUEDialogueGroup.bIsAlreadyShown));
+		FTUEGroupStates.Add(GroupState);
+	}
+	AttributesJsonObject->SetArrayField(KEY_FTUEGROUPSTATE, FTUEGroupStates);
+#pragma endregion
+
+	// Write module local file.
+	FString JsonStr;
+	TSharedRef<TJsonWriter<TCHAR>> JsonWriter = TJsonWriterFactory<TCHAR>::Create(&JsonStr);
+	if (FJsonSerializer::Serialize(AttributesJsonObject.ToSharedRef(), JsonWriter))
+	{
+		if (FFileHelper::SaveStringToFile(JsonStr, *GetAttributesLocalFilePath(CodeName)))
+		{
+			UE_LOG_TUTORIALMODULEDATAASSET(Log, TEXT("Success to save Tutorial Module attributes to: %s"), *GetAttributesLocalFilePath(CodeName));
+			return true;
+		}
+		else
+		{
+			UE_LOG_TUTORIALMODULEDATAASSET(Warning, TEXT("Failed to save Tutorial Module attributes to: %s"), *GetAttributesLocalFilePath(CodeName));
+		}
+	}
+	else
+	{
+		UE_LOG_TUTORIALMODULEDATAASSET(Warning, TEXT("Failed to save Tutorial Module attributes to: %s"), *GetAttributesLocalFilePath(CodeName));
+	}
+
+	return false;
+}
+
+bool UTutorialModuleDataAsset::LoadAttributesFromLocal()
+{
+	// Delete last local file if the code name is changed.
+	if (!LastCodeName.IsEmpty() && LastCodeName != CodeName)
+	{
+		FPlatformFileManager::Get().GetPlatformFile().DeleteFile(*GetAttributesLocalFilePath(LastCodeName));
+	}
+
+	// Load from local file.
+	FString JsonStr;
+	if (FFileHelper::LoadFileToString(JsonStr, *GetAttributesLocalFilePath(CodeName)))
+	{
+		AttributesJsonObject = MakeShareable(new FJsonObject);
+
+		TSharedRef<TJsonReader<TCHAR>> JsonReader = TJsonReaderFactory<TCHAR>::Create(JsonStr);
+		if (FJsonSerializer::Deserialize(JsonReader, AttributesJsonObject))
+		{
+			UE_LOG_TUTORIALMODULEDATAASSET(Log, TEXT("Success to load Tutorial Module attributes from: %s"), *GetAttributesLocalFilePath(CodeName));
+			return true;
+		}
+		else
+		{
+			UE_LOG_TUTORIALMODULEDATAASSET(Warning, TEXT("Failed to load Tutorial Module attributes from: %s"), *GetAttributesLocalFilePath(CodeName));
+		}
+	}
+	else
+	{
+		UE_LOG_TUTORIALMODULEDATAASSET(Warning, TEXT("Failed to load Tutorial Module attributes from: %s"), *GetAttributesLocalFilePath(CodeName));
+	}
+
+	return false;
+}
+
 #pragma region "Online Session"
 TSubclassOf<UTutorialModuleOnlineSession> UTutorialModuleDataAsset::GetTutorialModuleOnlineSessionClass()
 {
@@ -109,12 +205,14 @@ TSubclassOf<UTutorialModuleOnlineSession> UTutorialModuleDataAsset::GetTutorialM
 
 void UTutorialModuleDataAsset::ValidateDataAssetProperties()
 {
+	LoadAttributesFromLocal();
+
 	// Validate Default's class properties.
 	ValidateClassProperty(DefaultUIClass, LastDefaultUIClass, false);
 	ValidateClassProperty(DefaultSubsystemClass, LastDefaultSubsystemClass, false);
 
 	LastAdditionalDefaultSubsystemClasses.Empty();
-	LastAdditionalDefaultSubsystemClasses.AddUninitialized(AdditionalDefaultSubsystemClasses.Num());
+	LastAdditionalDefaultSubsystemClasses.AddDefaulted(AdditionalDefaultSubsystemClasses.Num());
 	for (int i = 0; i < AdditionalDefaultSubsystemClasses.Num(); ++i)
 	{
 		ValidateClassProperty(
@@ -122,13 +220,13 @@ void UTutorialModuleDataAsset::ValidateDataAssetProperties()
 			LastAdditionalDefaultSubsystemClasses[i],
 			false);
 	}
-	
+
 	// Validate Starter's class properties.
 	ValidateClassProperty(StarterUIClass, LastStarterUIClass, true);
 	ValidateClassProperty(StarterSubsystemClass, LastStarterSubsystemClass, true);
 
 	LastAdditionalStarterSubsystemClasses.Empty();
-	LastAdditionalStarterSubsystemClasses.AddUninitialized(AdditionalStarterSubsystemClasses.Num());
+	LastAdditionalStarterSubsystemClasses.AddDefaulted(AdditionalStarterSubsystemClasses.Num());
 	for (int i = 0; i < AdditionalStarterSubsystemClasses.Num(); ++i)
 	{
 		ValidateClassProperty(
@@ -136,7 +234,7 @@ void UTutorialModuleDataAsset::ValidateDataAssetProperties()
 			LastAdditionalStarterSubsystemClasses[i],
 			true);
 	}
-	
+
 	// Validate Default's and Starter class properties for OnlineSession module
 	if (bOnlineSessionModule)
 	{
@@ -144,97 +242,10 @@ void UTutorialModuleDataAsset::ValidateDataAssetProperties()
 		ValidateClassProperty(StarterOnlineSessionClass, LastStarterOnlineSessionClass, true);
 	}
 
-	// Clean up last generated widgets metadata to avoid duplication.
-	for (FTutorialModuleGeneratedWidget& LastGeneratedWidget : LastGeneratedWidgets)
-	{
-		UTutorialModuleDataAsset::GeneratedWidgetUsedIds.Remove(LastGeneratedWidget.WidgetId);
+	ValidateGeneratedWidgets();
+	ValidateFTUEDialogues();
 
-		LastGeneratedWidget.DefaultTutorialModuleWidgetClass = nullptr;
-		LastGeneratedWidget.StarterTutorialModuleWidgetClass = nullptr;
-
-		LastGeneratedWidget.OtherTutorialModule = nullptr;
-
-		for (TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : LastGeneratedWidget.TargetWidgetClasses)
-		{
-			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
-			{
-				continue;
-			}
-
-			TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.RemoveAll([this](const FTutorialModuleGeneratedWidget* Temp)
-			{
-				return Temp->OwnerTutorialModule == this;
-			});
-		}
-	}
-	for (FTutorialModuleGeneratedWidget& GeneratedWidget : GeneratedWidgets)
-	{
-		for (TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : GeneratedWidget.TargetWidgetClasses)
-		{
-			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
-			{
-				continue;
-			}
-
-			TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.RemoveAll([this](const FTutorialModuleGeneratedWidget* Temp)
-			{
-				return Temp->OwnerTutorialModule == this;
-			});
-		}
-	}
-
-	// Assign fresh generated widget to the target widget class.
-	for (FTutorialModuleGeneratedWidget& GeneratedWidget : GeneratedWidgets)
-	{
-		// Clean up unnecessary references.
-		if (GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::GENERIC_WIDGET_ENTRY_BUTTON &&
-			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::GENERIC_WIDGET)
-		{
-			GeneratedWidget.GenericWidgetClass = nullptr;
-		}
-		if (GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_BUTTON &&
-			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_WIDGET)
-		{
-			GeneratedWidget.OtherTutorialModule = nullptr;
-		}
-		if ((GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_ENTRY_BUTTON &&
-			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_WIDGET &&
-			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_BUTTON &&
-			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_WIDGET) ||
-			GeneratedWidget.TutorialModuleWidgetClassType != ETutorialModuleWidgetClassType::ASSOCIATE_WIDGET_CLASS)
-		{
-			GeneratedWidget.DefaultTutorialModuleWidgetClass = nullptr;
-			GeneratedWidget.StarterTutorialModuleWidgetClass = nullptr;
-		}
-
-		// Assign the owner of the generated widget metadata to this Tutorial Module.
-		GeneratedWidget.OwnerTutorialModule = this;
-
-		// Check if the widget id is already used.
-		if (UTutorialModuleDataAsset::GeneratedWidgetUsedIds.Contains(GeneratedWidget.WidgetId))
-		{
-#if UE_EDITOR
-			ShowPopupMessage(FString::Printf(TEXT("%s widget id is already used. Widget id must be unique."), *GeneratedWidget.WidgetId));
-#endif
-			GeneratedWidget.WidgetId = TEXT("");
-		}
-		else if (!GeneratedWidget.WidgetId.IsEmpty())
-		{
-			UTutorialModuleDataAsset::GeneratedWidgetUsedIds.Add(GeneratedWidget.WidgetId);
-		}
-
-		// Assign the generated widget to the target widget class.
-		for (TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : GeneratedWidget.TargetWidgetClasses)
-		{
-			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
-			{
-				continue;
-			}
-			TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.Add(&GeneratedWidget);
-		}
-	}
-
-	LastGeneratedWidgets = GeneratedWidgets;
+	LastCodeName = CodeName;
 }
 
 bool UTutorialModuleDataAsset::ValidateClassProperty(TSubclassOf<UAccelByteWarsActivatableWidget>& UIClass, TSubclassOf<UAccelByteWarsActivatableWidget>& LastUIClass, const bool IsStarterClass)
@@ -393,6 +404,299 @@ void UTutorialModuleDataAsset::CleanUpDataAssetProperties()
 		Class.GetDefaultObject()->AssociateTutorialModule = nullptr;
 	}
 }
+
+#pragma region "Generated Widgets"
+void UTutorialModuleDataAsset::ValidateGeneratedWidgets()
+{
+	// Clean up last generated widgets metadata to avoid duplication.
+	for (FTutorialModuleGeneratedWidget& LastGeneratedWidget : LastGeneratedWidgets)
+	{
+		UTutorialModuleDataAsset::GeneratedWidgetUsedIds.Remove(LastGeneratedWidget.WidgetId);
+
+		LastGeneratedWidget.DefaultTutorialModuleWidgetClass = nullptr;
+		LastGeneratedWidget.StarterTutorialModuleWidgetClass = nullptr;
+
+		LastGeneratedWidget.OtherTutorialModule = nullptr;
+
+		for (TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : LastGeneratedWidget.TargetWidgetClasses)
+		{
+			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
+			{
+				continue;
+			}
+
+			TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.RemoveAll([this](const FTutorialModuleGeneratedWidget* Temp)
+			{
+				return !Temp || !Temp->OwnerTutorialModule || Temp->OwnerTutorialModule == this;
+			});
+		}
+	}
+	for (FTutorialModuleGeneratedWidget& GeneratedWidget : GeneratedWidgets)
+	{
+		for (TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : GeneratedWidget.TargetWidgetClasses)
+		{
+			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
+			{
+				continue;
+			}
+
+			TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.RemoveAll([this](const FTutorialModuleGeneratedWidget* Temp)
+			{
+				return !Temp || !Temp->OwnerTutorialModule || Temp->OwnerTutorialModule == this;
+			});
+		}
+	}
+
+	// Assign fresh generated widget to the target widget class.
+	CachedGeneratedWidgets.RemoveAll([](const FTutorialModuleGeneratedWidget* Temp)
+	{
+		return !Temp;
+	});
+	for (FTutorialModuleGeneratedWidget& GeneratedWidget : GeneratedWidgets)
+	{
+		// Clean up unnecessary references.
+		if (GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::GENERIC_WIDGET_ENTRY_BUTTON &&
+			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::GENERIC_WIDGET)
+		{
+			GeneratedWidget.GenericWidgetClass = nullptr;
+		}
+		if (GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_BUTTON &&
+			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_WIDGET)
+		{
+			GeneratedWidget.OtherTutorialModule = nullptr;
+		}
+		if ((GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_ENTRY_BUTTON &&
+			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_WIDGET &&
+			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_BUTTON &&
+			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_WIDGET) ||
+			GeneratedWidget.TutorialModuleWidgetClassType != ETutorialModuleWidgetClassType::ASSOCIATE_WIDGET_CLASS)
+		{
+			GeneratedWidget.DefaultTutorialModuleWidgetClass = nullptr;
+			GeneratedWidget.StarterTutorialModuleWidgetClass = nullptr;
+		}
+
+		// Assign the owner of the generated widget metadata to this Tutorial Module.
+		GeneratedWidget.OwnerTutorialModule = this;
+
+		// Check if the widget id is already used.
+		if (UTutorialModuleDataAsset::GeneratedWidgetUsedIds.Contains(GeneratedWidget.WidgetId))
+		{
+#if UE_EDITOR
+			ShowPopupMessage(FString::Printf(TEXT("%s widget id is already used. Widget id must be unique."), *GeneratedWidget.WidgetId));
+#endif
+			GeneratedWidget.WidgetId = TEXT("");
+		}
+		else if (!GeneratedWidget.WidgetId.IsEmpty())
+		{
+			UTutorialModuleDataAsset::GeneratedWidgetUsedIds.Add(GeneratedWidget.WidgetId);
+		}
+
+		// Assign the generated widget to the target widget class.
+		if (IsActiveAndDependenciesChecked())
+		{
+			for (TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : GeneratedWidget.TargetWidgetClasses)
+			{
+				if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
+				{
+					continue;
+				}
+				TargetWidgetClass.GetDefaultObject()->GeneratedWidgets.Add(&GeneratedWidget);
+				CachedGeneratedWidgets.Add(&GeneratedWidget);
+			}
+		}
+	}
+
+	LastGeneratedWidgets = GeneratedWidgets;
+}
+#pragma endregion
+
+#pragma region "First Time User Experience (FTUE)"
+bool UTutorialModuleDataAsset::HasFTUE()
+{
+	// Set the data asset value as the initial value.
+	bool bResult = bHasFTUE;
+
+	const FString OverrideKeyword = TEXT("ForceEnableFTUE");
+	const FString CmdKeyword = FString::Printf(TEXT("-%s="), *OverrideKeyword);
+
+	// Check for launch param override.
+	const FString CmdArgs = FCommandLine::Get();
+	if (CmdArgs.Contains(*CmdKeyword, ESearchCase::IgnoreCase))
+	{
+		FString CmdIsAlwaysShowStr;
+		FParse::Value(*CmdArgs, *CmdKeyword, CmdIsAlwaysShowStr);
+
+		const bool bTemp = bResult;
+		if (CmdIsAlwaysShowStr.Equals(TEXT("TRUE"), ESearchCase::IgnoreCase))
+		{
+			bResult = true;
+		}
+		else if (CmdIsAlwaysShowStr.Equals(TEXT("FALSE"), ESearchCase::IgnoreCase))
+		{
+			bResult = false;
+		}
+
+		// Show log only if the config is overridden.
+		if (bResult != bTemp)
+		{
+			UE_LOG_TUTORIALMODULEDATAASSET(Log,
+				TEXT("Launch param overrides Tutorial Module %s's enable FTUE config to %s."),
+				*CodeName, 
+				bResult ? TEXT("TRUE") : TEXT("FALSE"));
+		}
+	}
+	// Check for DefaultEngine.ini override.
+	else
+	{
+		const bool bTemp = bResult;
+		bResult = GConfig->GetBoolOrDefault(TEXT("AccelByteTutorialModules"), *OverrideKeyword, bResult, GEngineIni);
+
+		// Show log only if the config is overridden.
+		if (bResult != bTemp)
+		{
+			UE_LOG_TUTORIALMODULEDATAASSET(Log,
+				TEXT("DefaultEngine.ini overrides Tutorial Module %s's enable FTUE config to %s."),
+				*CodeName,
+				bResult ? TEXT("TRUE") : TEXT("FALSE"));
+		}
+	}
+
+	return bResult;
+}
+
+void UTutorialModuleDataAsset::ValidateFTUEDialogues()
+{
+	// Clean up last FTUE dialogues metadata to avoid duplication.
+	for (auto& LastFTUEDialogueGroup : LastFTUEDialogueGroups)
+	{
+		// Clean up each dialogues for each dialogue groups.
+		for (auto& LastFTUEDialogue : LastFTUEDialogueGroup.Dialogues) 
+		{
+			UTutorialModuleDataAsset::FTUEDialogueUsedIds.Remove(LastFTUEDialogue.FTUEId);
+
+			for (auto& TargetWidgetClass : LastFTUEDialogue.TargetWidgetClasses)
+			{
+				if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
+				{
+					continue;
+				}
+
+				TargetWidgetClass.GetDefaultObject()->FTUEDialogues.RemoveAll([this](const FFTUEDialogueModel* Temp)
+				{
+					return !Temp || !Temp->OwnerTutorialModule || Temp->OwnerTutorialModule == this;
+				});
+			}
+		}
+	}
+	for (auto& FTUEDialogueGroup : FTUEDialogueGroups)
+	{
+		// Clean up each dialogues for each dialogue groups.
+		for (auto& FTUEDialogue : FTUEDialogueGroup.Dialogues)
+		{
+			for (auto& TargetWidgetClass : FTUEDialogue.TargetWidgetClasses)
+			{
+				if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
+				{
+					continue;
+				}
+
+				TargetWidgetClass.GetDefaultObject()->FTUEDialogues.RemoveAll([this](const FFTUEDialogueModel* Temp)
+				{
+					return !Temp || !Temp->OwnerTutorialModule || Temp->OwnerTutorialModule == this;
+				});
+			}
+		}
+	}
+
+	// Get FTUE states from local file to set whether it is already shown before or not.
+	TArray<TSharedPtr<FJsonValue>> FTUEGroupStates;
+	if (GetLocalAttributes())
+	{
+		FTUEGroupStates = GetLocalAttributes()->GetArrayField(KEY_FTUEGROUPSTATE);
+	}
+
+	// Refresh FTUE dialogues metadata.
+	CachedFTUEDialogues.RemoveAll([](const FFTUEDialogueModel* Temp)
+	{
+		return !Temp;
+	});
+	int32 GroupIndex = INDEX_NONE;
+	for (auto& FTUEDialogueGroup : FTUEDialogueGroups)
+	{
+		GroupIndex++;
+		FTUEDialogueGroup.OwnerTutorialModule = this;
+
+		// Set up each dialogues for each dialogue groups.
+		int32 DialogueIndex = INDEX_NONE;
+		for (auto& FTUEDialogue : FTUEDialogueGroup.Dialogues)
+		{
+			DialogueIndex++;
+			FTUEDialogue.OwnerTutorialModule = this;
+
+			// Set dialogue order priority.
+			FTUEDialogue.Group = &FTUEDialogueGroup;
+			FTUEDialogue.GroupOrderPriority = FTUEDialogueGroup.OrderPriority;
+			FTUEDialogue.OrderPriority = DialogueIndex;
+
+			// Set dialogue statuses.
+			FTUEDialogue.bIsInstigator = (DialogueIndex == 0);
+			FTUEDialogue.bIsTerminator = (DialogueIndex >= FTUEDialogueGroup.Dialogues.Num() - 1);
+
+			// Reset button metadata if not used.
+			switch (FTUEDialogue.ButtonType)
+			{
+			case FFTUEDialogueButtonType::NO_BUTTON:
+				FTUEDialogue.Button1.Reset();
+			case FFTUEDialogueButtonType::ONE_BUTTON:
+				FTUEDialogue.Button2.Reset();
+				break;
+			}
+
+			// Reset highlighted widget metadata if not used.
+			if (!FTUEDialogue.bHighlightWidget)
+			{
+				FTUEDialogue.TargetWidgetClassToHighlight = nullptr;
+				FTUEDialogue.TargetWidgetNameToHighlight = FString("");
+			}
+
+			// Check if the FTUE id is already used.
+			if (UTutorialModuleDataAsset::FTUEDialogueUsedIds.Contains(FTUEDialogue.FTUEId))
+			{
+#if UE_EDITOR
+				ShowPopupMessage(FString::Printf(TEXT("%s FTUE id is already used. FTUE id must be unique."), *FTUEDialogue.FTUEId));
+#endif
+				FTUEDialogue.FTUEId = TEXT("");
+			}
+			else if (!FTUEDialogue.FTUEId.IsEmpty())
+			{
+				UTutorialModuleDataAsset::FTUEDialogueUsedIds.Add(FTUEDialogue.FTUEId);
+			}
+
+			// Assign FTUE dialogue metadata to the target widget class.
+			if (IsActiveAndDependenciesChecked() && HasFTUE())
+			{
+				for (auto& TargetWidgetClass : FTUEDialogue.TargetWidgetClasses)
+				{
+					if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
+					{
+						continue;
+					}
+					TargetWidgetClass.GetDefaultObject()->FTUEDialogues.Add(&FTUEDialogue);
+					CachedFTUEDialogues.Add(&FTUEDialogue);
+				}
+			}
+		}
+
+		// Set dialogue group state.
+		FTUEDialogueGroup.SetAlreadyShown(
+			FTUEGroupStates.IsValidIndex(GroupIndex) && FTUEGroupStates[GroupIndex] ? 
+			FTUEGroupStates[GroupIndex]->AsBool() : false);
+	}
+
+	// Save dialogues cache for clean-up later.
+	LastFTUEDialogueGroups = FTUEDialogueGroups;
+}
+#pragma endregion
 
 void UTutorialModuleDataAsset::PostLoad()
 {

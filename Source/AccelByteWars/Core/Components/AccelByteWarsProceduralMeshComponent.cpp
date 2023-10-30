@@ -1,4 +1,6 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
 
 
 #include "Core/Components/AccelByteWarsProceduralMeshComponent.h"
@@ -20,9 +22,16 @@ void UAccelByteWarsProceduralMeshComponent::MeshSetup()
 	{
 		TArray<FVector> MirroredOutlineVertices;
 
-		Material = CreateDynamicMaterialInstance(0, SourceMaterial);
-		Material->SetVectorParameterValue(FName("EmissiveColour"), Color);
-		Material->SetScalarParameterValue(FName("Glow"), Glow);
+		if (Material == nullptr)
+		{
+			Material = CreateDynamicMaterialInstance(0, SourceMaterial);
+		}
+
+		if (Material != nullptr && Material->IsValidLowLevel())
+		{
+			Material->SetVectorParameterValue(FName("EmissiveColour"), Color);
+			Material->SetScalarParameterValue(FName("Glow"), Glow);
+		}
 
 		ClearMeshSection(0);
 
@@ -73,5 +82,6 @@ void UAccelByteWarsProceduralMeshComponent::UpdateColor(const FLinearColor InCol
 {
 	Color = InColor;
 
-	Material->SetVectorParameterValue(FName("EmissiveColour"), InColor);
+	if (Material != nullptr)
+		Material->SetVectorParameterValue(FName("EmissiveColour"), Color);
 }

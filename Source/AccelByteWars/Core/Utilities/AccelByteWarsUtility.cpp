@@ -60,10 +60,14 @@ void AccelByteWarsUtility::GetImageFromURL(const FString& Url, const FString& Im
 
 FCacheBrush AccelByteWarsUtility::GetImageFromCache(const FString& ImageId)
 {
-	TArray<uint8> ImageData;
 	FCacheBrush ImageBrush;
-	const FString ResourceName = FPaths::ProjectSavedDir() / TEXT("Caches") / ImageId;
+	if (ImageId.IsEmpty()) 
+	{
+		return ImageBrush;
+	}
 
+	TArray<uint8> ImageData;
+	const FString ResourceName = FPaths::ProjectSavedDir() / TEXT("Caches") / ImageId;
 	if (FFileHelper::LoadFileToArray(ImageData, *ResourceName))
 	{
 		IImageWrapperModule& ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(FName("ImageWrapper"));

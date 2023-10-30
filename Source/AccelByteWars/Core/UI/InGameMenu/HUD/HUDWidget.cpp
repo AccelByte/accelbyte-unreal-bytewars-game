@@ -1,4 +1,6 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
 
 
 #include "Core/UI/InGameMenu/HUD/HUDWidget.h"
@@ -61,6 +63,46 @@ void UHUDWidget::NativeConstruct()
 	else
 	{
 		Widget_SimulateServerCrashCountdown->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	// Only show dedicated server FTUE on online session.
+	if (FFTUEDialogueModel* FTUEDedicatedServer =
+		FFTUEDialogueModel::GetMetadataById("ftue_ds_details", FTUEDialogues))
+	{
+		EGameModeNetworkType NetMode = ByteWarsGameState->GameSetup.NetworkType;
+		FTUEDedicatedServer->OnValidateDelegate.Unbind();
+		FTUEDedicatedServer->OnValidateDelegate.BindWeakLambda(this, [NetMode]()
+		{
+			return NetMode == EGameModeNetworkType::DS;
+		});
+		
+		// Check launch param
+		bool bUseAMS = FParse::Param(FCommandLine::Get(), TEXT("-ServerUseAMS"));
+	
+		// check DefaultEngine.ini next
+		if (!bUseAMS)
+		{
+			FString Config;
+			GConfig->GetBool(TEXT("/ByteWars/TutorialModule.DSEssentials"), TEXT("bServerUseAMS"), bUseAMS, GEngineIni);
+		}
+
+		// If using AMS then override the target URL 
+		if(bUseAMS)
+		{
+			FString DefaultAMSFleetId = TEXT("flt_018b4825-eede-7098-9e7d-21348380394c");
+			FString AMSFleetId;
+			FParse::Value(FCommandLine::Get(), TEXT("-amsfleetid="), AMSFleetId);
+
+			if(AMSFleetId.IsEmpty())
+			{
+				AMSFleetId = DefaultAMSFleetId;
+			}
+			
+			FString FleetUrl = "https://demo.accelbyte.io/admin/namespaces/bytewars/ams/fleets-manager/";
+			FleetUrl.Append(AMSFleetId);
+			FString TargetUrl = FleetUrl.Append("/server/{0}");
+			FTUEDedicatedServer->Button1.TargetURL = TargetUrl;
+		}
 	}
 }
 

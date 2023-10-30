@@ -10,6 +10,7 @@
 #include "CommonInputBaseTypes.h"
 #include "CommonInputSubsystem.h"
 #include "Components/Image.h"
+#include "Components/CheckBox.h"
 
 void UOptionListEntryBase::NativeOnEntryReleased()
 {
@@ -127,4 +128,42 @@ void UOptionListEntry_Discrete::HandleOptionIncrease()
 void UOptionListEntry_Discrete::HandleRotatorChangedValue(int32 Value, bool bUserInitiated)
 {
 
+}
+
+//////////////////////////////////////////////////////////////////////////
+// UOptionListEntry_Toggler
+//////////////////////////////////////////////////////////////////////////
+
+void UOptionListEntry_Toggler::NativeOnInitialized()
+{
+	Super::NativeOnInitialized();
+
+	Cb_OptionValue->OnCheckStateChanged.AddDynamic(this, &UOptionListEntry_Toggler::OnToggleValueChanged);
+}
+
+void UOptionListEntry_Toggler::InitOption(const FText& InName, const bool InValue)
+{
+	SetDisplayName(InName);
+	SetToggleValue(InValue);
+}
+
+void UOptionListEntry_Toggler::SetDisplayName(const FText& InName)
+{
+	Super::SetDisplayName(InName);
+	Txt_OptionName->SetText(InName);
+}
+
+void UOptionListEntry_Toggler::SetToggleValue(const bool InValue)
+{
+	Cb_OptionValue->SetCheckedState(InValue ? ECheckBoxState::Checked : ECheckBoxState::Unchecked);
+}
+
+bool UOptionListEntry_Toggler::GetToggleValue()
+{
+	return Cb_OptionValue->IsChecked();
+}
+
+void UOptionListEntry_Toggler::OnToggleValueChanged(bool Value)
+{
+	OnToggleValueChangedDelegate.Broadcast(Value);
 }

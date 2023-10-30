@@ -7,9 +7,6 @@
 #include "CoreMinimal.h"
 #include "TutorialModuleUtility.generated.h"
 
-DECLARE_MULTICAST_DELEGATE(FOnTutorialModuleActionButtonClicked);
-DECLARE_MULTICAST_DELEGATE(FOnTutorialModuleWidgetGenerated);
-
 class UUserWidget;
 class UTutorialModuleDataAsset;
 class UAccelByteWarsActivatableWidget;
@@ -65,8 +62,9 @@ struct FTutorialModuleGeneratedWidget
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (Tooltip = "The text that will be displayed on the entry button", EditCondition = "WidgetType==ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_ENTRY_BUTTON||WidgetType==ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_BUTTON||WidgetType==ETutorialModuleGeneratedWidgetType::GENERIC_WIDGET_ENTRY_BUTTON||WidgetType==ETutorialModuleGeneratedWidgetType::ACTION_BUTTON", EditConditionHides))
 	FText ButtonText;
 
-	FOnTutorialModuleActionButtonClicked ButtonAction;
-	FOnTutorialModuleWidgetGenerated OnWidgetGenerated;
+	FSimpleMulticastDelegate ButtonAction;
+	TDelegate<bool()> ValidateButtonAction;
+	FSimpleMulticastDelegate OnWidgetGenerated;
 
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (Tooltip = "The Target Widget where the generated widget will be spawned"))
 	TArray<TSubclassOf<UAccelByteWarsActivatableWidget>> TargetWidgetClasses;
@@ -79,12 +77,16 @@ struct FTutorialModuleGeneratedWidget
 
 	UUserWidget* GenerateWidgetRef = nullptr;
 
+	static FTutorialModuleGeneratedWidget* GetMetadataById(const FString& WidgetId);
+
 	static FTutorialModuleGeneratedWidget* GetMetadataById(const FString& WidgetId, TArray<FTutorialModuleGeneratedWidget*>& GeneratedWidgets)
 	{
-		return *GeneratedWidgets.FindByPredicate([WidgetId](const FTutorialModuleGeneratedWidget* Temp)
+		const auto Result = GeneratedWidgets.FindByPredicate([WidgetId](const FTutorialModuleGeneratedWidget* Temp)
 		{
-			return Temp->WidgetId == WidgetId;
+			return Temp && Temp->WidgetId == WidgetId;
 		});
+
+		return Result ? *Result : nullptr;
 	}
 
 	static FTutorialModuleGeneratedWidget* GetMetadataById(const FString& WidgetId, TArray<FTutorialModuleGeneratedWidget>& GeneratedWidgets)
@@ -98,8 +100,8 @@ struct FTutorialModuleGeneratedWidget
 	template<typename T>
 	static T* GetGeneratedWidgetById(const FString& WidgetId, TArray<FTutorialModuleGeneratedWidget*>& GeneratedWidgets)
 	{
-		UUserWidget* Temp = GetMetadataById(WidgetId, GeneratedWidgets)->GenerateWidgetRef;
-		return Temp ? Cast<T>(Temp) : nullptr;
+		FTutorialModuleGeneratedWidget* Temp = GetMetadataById(WidgetId, GeneratedWidgets);
+		return Temp ? Cast<T>(Temp->GenerateWidgetRef) : nullptr;
 	}
 
 	template<typename T>

@@ -1,9 +1,11 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
 
 
 #include "Core/GameModes/AccelByteWarsMainMenuGameMode.h"
 
-#include "Core/AssetManager/TutorialModules/TutorialModuleDataAsset.h"
+#include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "Core/UI/MainMenu/MatchLobby/MatchLobbyWidget.h"
 #include "GameFramework/PlayerState.h"
 #include "Kismet/GameplayStatics.h"
@@ -71,6 +73,48 @@ void AAccelByteWarsMainMenuGameMode::BeginPlay()
 			SetupSimulateServerCrashCountdownValue(FString("-SIM_SERVER_CRASH_MAINMENU"));
 		}
 	});
+
+	// check if last connection was failed
+	ENetworkFailure::Type FailureType;
+	if (GameInstance->GetIsPendingFailureNotification(FailureType))
+	{
+		if (UPromptSubsystem* PromptSubsystem = GetGameInstance()->GetSubsystem<UPromptSubsystem>())
+		{
+			FText FailureMessage;
+
+			switch (FailureType)
+			{
+			case ENetworkFailure::NetDriverAlreadyExists:
+				FailureMessage = TEXT_ERROR_NET_DRIVER_EXIST;
+				break;
+			case ENetworkFailure::NetDriverCreateFailure:
+				FailureMessage = TEXT_ERROR_NET_DRIVER_INIT;
+				break;
+			case ENetworkFailure::NetDriverListenFailure:
+				FailureMessage = TEXT_ERROR_NET_DRIVER_LISTEN;
+				break;
+			case ENetworkFailure::ConnectionLost:
+				FailureMessage = TEXT_CONNECTION_LOST;
+				break;
+			case ENetworkFailure::ConnectionTimeout:
+				FailureMessage = TEXT_CONNECTION_TIMEOUT;
+				break;
+			case ENetworkFailure::OutdatedClient:
+				FailureMessage = TEXT_CLIENT_OUTDATED;
+				break;
+			case ENetworkFailure::OutdatedServer:
+				FailureMessage = TEXT_SERVER_OUTDATED;
+				break;
+			case ENetworkFailure::PendingConnectionFailure:
+				FailureMessage = TEXT_PENDING_CONNECTION_FAILED;
+				break;
+			default:
+				FailureMessage = TEXT_CONNECTION_FAILED_GENERIC;
+			}
+
+			PromptSubsystem->ShowMessagePopUp(TEXT_CONNECTION_FAILED, FailureMessage);
+		}
+	}
 }
 
 APlayerController* AAccelByteWarsMainMenuGameMode::Login(

@@ -6,6 +6,12 @@
 #include "CommonActivatableWidget.h"
 #include "AccelByteWarsWidgetSwitcher.generated.h"
 
+ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogAccelByteWarsWidgetSwitcher, Log, All);
+#define UE_LOG_ACCELBYTEWARSWIDGETSWITCHER(Verbosity, Format, ...) \
+{ \
+	UE_LOG_FUNC(LogAccelByteWarsWidgetSwitcher, Verbosity, Format, ##__VA_ARGS__) \
+}
+
 class UNamedSlot;
 class UWidget;
 class UWidgetSwitcher;
@@ -71,6 +77,9 @@ public:
 	FButtonEvent OnRetryClicked;
 	FButtonEvent OnCancelClicked;
 
+	UPROPERTY(EditAnywhere, Category = FTUE, meta = (ToolTip = "Whether should initialize FTUE when the switcher is in loaded/not-empty state."))
+	bool bOnLoadedInitializeFTUE = false;
+
 protected:
 	virtual void NativePreConstruct() override;
 	virtual void NativeConstruct() override;
@@ -78,7 +87,9 @@ protected:
 
 	UFUNCTION(BlueprintCallable)
 	UWidget* GetFocusTargetBasedOnCurrentState() const;
-
+	
+	void HandleFTUE();
+	
 private:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UWidgetSwitcher* Ws_Root;

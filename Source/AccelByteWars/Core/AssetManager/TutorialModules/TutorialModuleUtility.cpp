@@ -3,12 +3,13 @@
 // and restrictions contact your company contract manager.
 
 #include "Core/AssetManager/TutorialModules/TutorialModuleUtility.h"
+
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/AssetManager/AssetManagementSubsystem.h"
 #include "Core/AssetManager/AccelByteWarsDataAsset.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleDataAsset.h"
+
 #include "Core/UI/AccelByteWarsBaseUI.h"
-#include "Blueprint/UserWidget.h"
 
 bool UTutorialModuleUtility::ActivateTutorialModuleWidget(UTutorialModuleDataAsset* TutorialModule, const UObject* Context)
 {
@@ -78,4 +79,25 @@ bool UTutorialModuleUtility::IsTutorialModuleActive(const FPrimaryAssetId Tutori
 
 	UTutorialModuleDataAsset* TutorialModule = GetTutorialModuleDataAsset(TutorialModuleCodeName, Context);
 	return (TutorialModule && TutorialModule->IsActiveAndDependenciesChecked());
+}
+
+FTutorialModuleGeneratedWidget* FTutorialModuleGeneratedWidget::GetMetadataById(const FString& WidgetId)
+{
+	FTutorialModuleGeneratedWidget* Result = nullptr;
+
+	for (const auto Metadata : UTutorialModuleDataAsset::GetCachedGeneratedWidgets()) 
+	{
+		if (!Metadata) 
+		{
+			continue;
+		}
+
+		if (Metadata->WidgetId.Equals(WidgetId)) 
+		{
+			Result = Metadata;
+			break;
+		}
+	}
+		
+	return Result;
 }

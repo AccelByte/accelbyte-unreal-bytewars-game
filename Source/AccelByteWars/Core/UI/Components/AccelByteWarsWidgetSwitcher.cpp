@@ -8,6 +8,12 @@
 #include "Components/TextBlock.h"
 #include "Components/WidgetSwitcher.h"
 
+#include "Core/System/AccelByteWarsGameInstance.h"
+#include "Core/UI/AccelByteWarsBaseUI.h"
+#include "Core/UI/Components/Prompt/FTUE/FTUEDialogueWidget.h"
+
+DEFINE_LOG_CATEGORY(LogAccelByteWarsWidgetSwitcher);
+
 void UAccelByteWarsWidgetSwitcher::SetWidgetState(const EAccelByteWarsWidgetSwitcherState State, const bool bForce)
 {
 	UWidget* TargetWidget = nullptr;
@@ -72,6 +78,9 @@ void UAccelByteWarsWidgetSwitcher::SetWidgetState(const EAccelByteWarsWidgetSwit
 	{
 		FocusTarget->SetUserFocus(GetOwningPlayer());
 	}
+
+	// Handle FTUE on switcher updated.
+	HandleFTUE();
 }
 
 void UAccelByteWarsWidgetSwitcher::NativePreConstruct()
@@ -152,4 +161,44 @@ UWidget* UAccelByteWarsWidgetSwitcher::GetFocusTargetBasedOnCurrentState() const
 	}
 
 	return FocusTarget;
+}
+
+void UAccelByteWarsWidgetSwitcher::HandleFTUE()
+{
+	if (!bOnLoadedInitializeFTUE) 
+	{
+		return;
+	}
+
+	UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetWorld()->GetGameInstance());
+	if (!GameInstance)
+	{
+		UE_LOG_ACCELBYTEWARSWIDGETSWITCHER(Warning, TEXT("Cannot handle FTUE dialogues. Game Instance is not valid."));
+		return;
+	}
+
+	UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget();
+	if (!BaseUIWidget)
+	{
+		UE_LOG_ACCELBYTEWARSWIDGETSWITCHER(Warning, TEXT("Cannot handle FTUE dialogues. Base UI widget is not valid."));
+		return;
+	}
+
+	UFTUEDialogueWidget* FTUEWidget = BaseUIWidget->GetFTUEDialogueWidget();
+	if (!FTUEWidget)
+	{
+		UE_LOG_ACCELBYTEWARSWIDGETSWITCHER(Warning, TEXT("Cannot handle FTUE dialogues. FTUE dialogue widget is not valid."));
+		return;
+	}
+
+	if (CurrentState == EAccelByteWarsWidgetSwitcherState::Not_Empty ||
+		CurrentState == EAccelByteWarsWidgetSwitcherState::Empty)
+	{
+		FTUEWidget->ShowDialogues(true);
+	}
+	else
+	{
+		FTUEWidget->CloseDialogues();
+		FTUEWidget->TryToggleHelpDev(false);
+	}
 }

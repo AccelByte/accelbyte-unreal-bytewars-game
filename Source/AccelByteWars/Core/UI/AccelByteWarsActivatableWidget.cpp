@@ -7,7 +7,7 @@
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "Core/UI/Components/AccelByteWarsButtonBase.h"
-
+ 
 #include "Editor/WidgetCompilerLog.h"
 #include "CommonInputModeTypes.h"
 #include "Input/UIActionBindingHandle.h"
@@ -16,6 +16,10 @@
 
 #include "Components/VerticalBoxSlot.h"
 #include "Components/HorizontalBoxSlot.h"
+
+#include "Core/UI/Components/Prompt/FTUE/FTUEDialogueWidget.h"
+
+DEFINE_LOG_CATEGORY(LogAccelByteWarsActivatableWidget);
 
 #define LOCTEXT_NAMESPACE "AccelByteWars"
 
@@ -28,11 +32,14 @@ void UAccelByteWarsActivatableWidget::NativePreConstruct()
 {
 	Super::NativePreConstruct();
 
+	// Refresh Tutorial Module metadatas based on the default object.
 	const UAccelByteWarsActivatableWidget* DefaultObj = Cast<UAccelByteWarsActivatableWidget>(GetClass()->GetDefaultObject());
 	if (DefaultObj)
 	{
 		AssociateTutorialModule = DefaultObj->AssociateTutorialModule;
+
 		GeneratedWidgets = DefaultObj->GeneratedWidgets;
+		FTUEDialogues = DefaultObj->FTUEDialogues;
 	}
 }
 
@@ -48,6 +55,14 @@ void UAccelByteWarsActivatableWidget::NativeOnActivated()
 	}
 
 	InitializeGeneratedWidgets();
+	InitializeFTEUDialogues(bOnActivatedInitializeFTUE);
+}
+
+void UAccelByteWarsActivatableWidget::NativeOnDeactivated()
+{
+	DeinitializeFTUEDialogues();
+
+	Super::NativeOnDeactivated();
 }
 
 TOptional<FUIInputConfig> UAccelByteWarsActivatableWidget::GetDesiredInputConfig() const
@@ -70,7 +85,9 @@ void UAccelByteWarsActivatableWidget::PostLoad()
 {
 	Super::PostLoad();
 
+	ValidateAssociateTutorialModule();
 	ValidateGeneratedWidgets();
+	ValidateFTUEDialogues();
 }
 
 #if WITH_EDITOR
@@ -78,14 +95,18 @@ void UAccelByteWarsActivatableWidget::PostEditChangeProperty(FPropertyChangedEve
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 
+	ValidateAssociateTutorialModule();
 	ValidateGeneratedWidgets();
+	ValidateFTUEDialogues();
 }
 
 void UAccelByteWarsActivatableWidget::PostDuplicate(bool bDuplicateForPIE)
 {
 	Super::PostDuplicate(bDuplicateForPIE);
 
+	ValidateAssociateTutorialModule();
 	ValidateGeneratedWidgets();
+	ValidateFTUEDialogues();
 }
 
 void UAccelByteWarsActivatableWidget::ValidateCompiledWidgetTree(const UWidgetTree& BlueprintWidgetTree, class IWidgetCompilerLog& CompileLog) const
@@ -113,7 +134,7 @@ void UAccelByteWarsActivatableWidget::MoveCameraToTargetLocation(const float Del
 	AActor* Camera = UGameplayStatics::GetActorOfClass(GetWorld(), ACameraActor::StaticClass());
 	if (Camera == nullptr) 
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Cannot move the camera to active menu. Camera is not found."));
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot move the camera to active menu. Camera is not found."));
 		return;
 	}
 
@@ -127,7 +148,7 @@ void UAccelByteWarsActivatableWidget::SetInputModeToUIOnly()
 	APlayerController* PC = GetOwningPlayer();
 	if (!PC)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Failed to change input mode. Player controller is not valid or already destroyed."));
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Failed to change input mode. Player controller is not valid or already destroyed."));
 		return;
 	}
 
@@ -148,7 +169,7 @@ void UAccelByteWarsActivatableWidget::SetInputModeToGameOnly()
 	APlayerController* PC = GetOwningPlayer();
 	if (!PC)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Failed to change input mode. Player controller is not valid or already destroyed."));
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Failed to change input mode. Player controller is not valid or already destroyed."));
 		return;
 	}
 
@@ -158,15 +179,22 @@ void UAccelByteWarsActivatableWidget::SetInputModeToGameOnly()
 	PC->bShowMouseCursor = false;
 }
 
-void UAccelByteWarsActivatableWidget::ValidateGeneratedWidgets()
+#pragma region "Tutorial Module"
+void UAccelByteWarsActivatableWidget::ValidateAssociateTutorialModule()
 {
 	if (AssociateTutorialModule && AssociateTutorialModule->GetTutorialModuleUIClass() != GetClass())
 	{
 		AssociateTutorialModule = nullptr;
 	}
+}
+#pragma endregion
+
+#pragma region "Generated Widgets"
+void UAccelByteWarsActivatableWidget::ValidateGeneratedWidgets()
+{
 	GeneratedWidgets.RemoveAll([](const FTutorialModuleGeneratedWidget* Temp)
 	{
-		return Temp->OwnerTutorialModule == nullptr;
+		return !Temp || !Temp->OwnerTutorialModule;
 	});
 }
 
@@ -181,6 +209,10 @@ void UAccelByteWarsActivatableWidget::InitializeGeneratedWidgets()
 	for (UUserWidget* OldGeneratedWidget : GeneratedWidgetPool)
 	{
 		OldGeneratedWidget->RemoveFromParent();
+		if (!OldGeneratedWidget->IsUnreachable()) 
+		{
+			OldGeneratedWidget->ConditionalBeginDestroy();
+		}
 	}
 	GeneratedWidgetPool.Empty();
 
@@ -197,20 +229,20 @@ void UAccelByteWarsActivatableWidget::InitializeGeneratedWidgets()
 		if ((!GeneratedWidget->OwnerTutorialModule || !GeneratedWidget->OwnerTutorialModule->IsActiveAndDependenciesChecked()) ||
 			(GeneratedWidget->OtherTutorialModule && !GeneratedWidget->OtherTutorialModule->IsActiveAndDependenciesChecked()))
 		{
-			UE_LOG(LogTemp, Log, TEXT("Tutorial Module Data Asset is not active. Cannot initialize the generated widget."));
+			UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Log, TEXT("Tutorial Module Data Asset is not active. Cannot initialize the generated widget."));
 			continue;
 		}
 
 		// Get valid widget container.
 		if (!ensure(GetGeneratedWidgetContainers().IsValidIndex(GeneratedWidget->TargetWidgetContainerIndex)))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Tutorial Module widget's Target Widget Container index is out of bound. Cannot initialize the widget."));
+			UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Tutorial Module widget's Target Widget Container index is out of bound. Cannot initialize the widget."));
 			continue;
 		}
 		UPanelWidget* WidgetContainer = GetGeneratedWidgetContainers()[GeneratedWidget->TargetWidgetContainerIndex];
 		if (!ensure(WidgetContainer))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Tutorial Module widget's Target Widget Container is null. Cannot initialize the widget."));
+			UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Tutorial Module widget's Target Widget Container is null. Cannot initialize the widget."));
 			continue;
 		}
 
@@ -272,22 +304,52 @@ TWeakObjectPtr<UAccelByteWarsButtonBase> UAccelByteWarsActivatableWidget::Genera
 
 	if (!EntryWidgetClass)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Entry widget class is null. Cannot initialize the generated entry button."));
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Entry widget class is null. Cannot initialize the generated entry button."));
 		return nullptr;
 	}
 
 	// Spawn the entry button.
 	const TWeakObjectPtr<UAccelByteWarsButtonBase> Button = MakeWeakObjectPtr<UAccelByteWarsButtonBase>(CreateWidget<UAccelByteWarsButtonBase>(this, DefaultButtonClass.Get()));
-	Button->SetButtonText(Metadata.ButtonText);
-	Button->OnClicked().AddWeakLambda(this, [BaseUIWidget, EntryWidgetClass]()
+	if (!Button.Get())
 	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Failed to create an instance of widget entry button"));
+		return nullptr;
+	}
+
+	// Rename the button based on its id.
+	if (!Metadata.WidgetId.IsEmpty())
+	{
+		if (!Button->Rename(*Metadata.WidgetId))
+		{
+			UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Failed to rename widget entry button %s to %s"), *Button->GetName(), *Metadata.WidgetId);
+		}
+	}
+
+	// Spawn button.
+	UPanelSlot* ButtonSlot = WidgetContainer.AddChild(Button.Get());
+	if (!ButtonSlot)
+	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Failed to add widget entry button %s to the target container."), *Button->GetName());
+		Button->Destruct();
+		return nullptr;
+	}
+
+	// Assign action to open widget when entry button is clicked.
+	Button->SetButtonText(Metadata.ButtonText);
+	Button->OnClicked().AddWeakLambda(this, [Metadata, BaseUIWidget, EntryWidgetClass]()
+	{
+		// Check if action is valid.
+		if (Metadata.ValidateButtonAction.IsBound() && !Metadata.ValidateButtonAction.Execute())
+		{
+			return;
+		}
+
+		// Execute action.
 		BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, EntryWidgetClass);
 	});
-	WidgetContainer.AddChild(Button.Get());
 	Metadata.GenerateWidgetRef = Button.Get();
 
 	// Refresh button alignment since the default alignment upon a widget is spawned is "Align_Fill".
-	UPanelSlot* ButtonSlot = WidgetContainer.AddChild(Button.Get());
 	if (UVerticalBoxSlot* VerticalSlot = StaticCast<UVerticalBoxSlot*>(ButtonSlot))
 	{
 		VerticalSlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Center);
@@ -311,24 +373,54 @@ TWeakObjectPtr<UAccelByteWarsButtonBase> UAccelByteWarsActivatableWidget::Genera
 	const TSubclassOf<UAccelByteWarsButtonBase> DefaultButtonClass = GameInstance->GetDefaultButtonClass();
 	ensure(DefaultButtonClass.Get());
 
-	// Spawn the action button.
+	// Create action button.
 	const TWeakObjectPtr<UAccelByteWarsButtonBase> Button = MakeWeakObjectPtr<UAccelByteWarsButtonBase>(CreateWidget<UAccelByteWarsButtonBase>(this, DefaultButtonClass.Get()));
+	if (!Button.Get())
+	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Failed to create an instance of action button"));
+		return nullptr;
+	}
+
+	// Rename the button based on its id.
+	if (!Metadata.WidgetId.IsEmpty())
+	{
+		if (!Button->Rename(*Metadata.WidgetId))
+		{
+			UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Failed to rename action button %s to %s"), *Button->GetName(), *Metadata.WidgetId);
+		}
+	}
+
+	// Spawn button.
+	UPanelSlot* ButtonSlot = WidgetContainer.AddChild(Button.Get());
+	if (!ButtonSlot)
+	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Failed to add action button %s to the target container."), *Button->GetName());
+		Button->Destruct();
+		return nullptr;
+	}
+
+	// Assign action.
 	Button->SetButtonText(Metadata.ButtonText);
 	Button->OnClicked().AddWeakLambda(this, [&Metadata]()
 	{
+		// Check if action is valid.
+		if (Metadata.ValidateButtonAction.IsBound() && !Metadata.ValidateButtonAction.Execute()) 
+		{
+			return;
+		}
+
+		// Execute action.
 		if (!Metadata.ButtonAction.IsBound())
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Tutorial Module's Button Action with id {%s} is clicked but doesn't have any action."), *Metadata.WidgetId);
+			UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Tutorial Module's Button Action with id {%s} is clicked but doesn't have any action."), *Metadata.WidgetId);
 			return;
 		}
 
 		Metadata.ButtonAction.Broadcast();
 	});
-	WidgetContainer.AddChild(Button.Get());
 	Metadata.GenerateWidgetRef = Button.Get();
 
 	// Refresh button alignment since the default alignment upon a widget is spawned is "Align_Fill".
-	UPanelSlot* ButtonSlot = WidgetContainer.AddChild(Button.Get());
 	if (UVerticalBoxSlot* VerticalSlot = StaticCast<UVerticalBoxSlot*>(ButtonSlot))
 	{
 		VerticalSlot->SetHorizontalAlignment(EHorizontalAlignment::HAlign_Center);
@@ -377,18 +469,187 @@ TWeakObjectPtr<UAccelByteWarsActivatableWidget> UAccelByteWarsActivatableWidget:
 
 	if (!WidgetClass)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Widget class is null. Cannot initialize the generated the Tutorial Module's widget."));
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Widget class is null. Cannot initialize the generated the Tutorial Module's widget."));
 		return nullptr;
 	}
 
-	// Spawn the widget.
+	// Create the widget.
 	const TWeakObjectPtr<UAccelByteWarsActivatableWidget> Widget = MakeWeakObjectPtr<UAccelByteWarsActivatableWidget>(CreateWidget<UAccelByteWarsActivatableWidget>(this, WidgetClass.Get()));
-	WidgetContainer.AddChild(Widget.Get());
+	if (!Widget.Get()) 
+	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Failed to create an instance of generated widget with type %s"), *WidgetClass->GetName());
+		return nullptr;
+	}
+
+	// Rename the widget based on its id.
+	if (!Metadata.WidgetId.IsEmpty())
+	{
+		if (!Widget->Rename(*Metadata.WidgetId))
+		{
+			UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Failed to rename generated widget %s to %s"), *Widget->GetName(), *Metadata.WidgetId);
+		}
+	}
+
+	// Spawn widget.
+	if (!WidgetContainer.AddChild(Widget.Get()))
+	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Failed to add generated widget %s to the target container."), *Widget->GetName());
+		Widget->Destruct();
+		return nullptr;
+	}
+
+	// Activate widget.
+	Widget->ActivateWidget();
 	Metadata.GenerateWidgetRef = Widget.Get();
 
 	GeneratedWidgetPool.Add(Widget.Get());
 
 	return Widget;
 }
+#pragma endregion
+
+#pragma region "First Time User Experience (FTUE)"
+
+void UAccelByteWarsActivatableWidget::ValidateFTUEDialogues()
+{
+	// Clear invalid FTUE dialogues.
+	FTUEDialogues.RemoveAll([](const FFTUEDialogueModel* Temp)
+	{
+		return !Temp || !Temp->OwnerTutorialModule;
+	});
+}
+
+void UAccelByteWarsActivatableWidget::InitializeFTEUDialogues(bool bShowOnInitialize)
+{
+	if (!IsActivated() || IsUnreachable())
+	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot initialize FTUE dialogues as the widget begin to tear down."));
+		return;
+	}
+
+	UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetWorld()->GetGameInstance());
+	if (!GameInstance)
+	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot initialize FTUE dialogues. Game Instance is not valid."));
+		return;
+	}
+
+	UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget();
+	if (!BaseUIWidget)
+	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot initialize FTUE dialogues. Base UI widget is not valid."));
+		return;
+	}
+
+	UFTUEDialogueWidget* FTUEWidget = BaseUIWidget->GetFTUEDialogueWidget();
+	if (!FTUEWidget) 
+	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot initialize FTUE dialogues. FTUE dialogue widget is not valid."));
+		return;
+	}
+
+	// Assign FTUE dialogues.
+	FTUEWidget->AddDialogues(FTUEDialogues);
+	if (!bShowOnInitialize) 
+	{
+		return;
+	}
+
+	// If prompt is active, pause the FTUE.
+	EBaseUIStackType TopMostActiveStack = BaseUIWidget->GetTopMostActiveStack();
+	if (TopMostActiveStack == EBaseUIStackType::Prompt) 
+	{
+		if (auto* PromptWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(TopMostActiveStack, this))
+		{
+			if (PromptWidget->IsActivated())
+			{
+				FTUEWidget->PauseDialogues();
+				return;
+			}
+		}
+	}
+	// Deinitialize FTUE for other widgets below the current active stack.
+	else 
+	{
+		for (auto& WidgetBelow : BaseUIWidget->GetAllWidgetsBelowStacks(TopMostActiveStack))
+		{
+			UAccelByteWarsActivatableWidget* OtherWidget = Cast<UAccelByteWarsActivatableWidget>(WidgetBelow);
+			if (!OtherWidget || OtherWidget == this)
+			{
+				continue;
+			}
+
+			OtherWidget->DeinitializeFTUEDialogues();
+		}
+	}
+
+	// Try to auto show the FTUE dialogues.
+	FTUEWidget->ShowDialogues(true);
+}
+
+void UAccelByteWarsActivatableWidget::DeinitializeFTUEDialogues()
+{
+	if (IsUnreachable())
+	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot deinitialize FTUE dialogues as the widget begin to tear down."));
+		return;
+	}
+
+	UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetWorld()->GetGameInstance());
+	if (!GameInstance)
+	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot deinitialize FTUE dialogues. Game Instance is not valid."));
+		return;
+	}
+
+	UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget(false);
+	if (!BaseUIWidget)
+	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot deinitialize FTUE dialogues. Base UI widget is not valid."));
+		return;
+	}
+
+	UFTUEDialogueWidget* FTUEWidget = BaseUIWidget->GetFTUEDialogueWidget();
+	if (!FTUEWidget)
+	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot deinitialize FTUE dialogues. FTUE dialogue widget is not valid."));
+		return;
+	}
+
+	// Only close the FTUE dialogue if this widget ever added dialogues to it.
+	if (FTUEWidget->RemoveAssociateDialogues(GetClass())) 
+	{
+		FTUEWidget->CloseDialogues();
+	}
+
+	// If prompt is deactivating, resume the dialogue.
+	EBaseUIStackType TopMostActiveStack = BaseUIWidget->GetTopMostActiveStack();
+	if (TopMostActiveStack == EBaseUIStackType::Prompt)
+	{
+		if (auto* PromptWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(TopMostActiveStack, this))
+		{
+			if (!PromptWidget->IsActivated())
+			{
+				FTUEWidget->ResumeDialogues();
+			}
+		}
+	}
+	// Initialize FTUE for other widgets below the current active stack.
+	else
+	{
+		for (auto& WidgetBelow : BaseUIWidget->GetAllWidgetsBelowStacks(TopMostActiveStack))
+		{
+			UAccelByteWarsActivatableWidget* OtherWidget = Cast<UAccelByteWarsActivatableWidget>(WidgetBelow);
+			if (!OtherWidget || OtherWidget == this)
+			{
+				continue;
+			}
+
+			OtherWidget->InitializeFTEUDialogues(true);
+		}
+	}
+}
+
+#pragma endregion
 
 #undef LOCTEXT_NAMESPACE

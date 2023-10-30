@@ -1,4 +1,6 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
 
 #pragma once
 
@@ -116,6 +118,7 @@ class ACCELBYTEWARS_API UAccelByteWarsGameInstance : public UGameInstance
 {
 	GENERATED_BODY()
 
+	virtual void Init() override;
 	virtual void Shutdown() override;
 	
 public:
@@ -135,10 +138,25 @@ public:
 	 * @brief Called on GameInstance::Shutdown | Just before the actual game exit. Will also be called on exit PIE.
 	 */
 	FOnGameInstanceShutdown OnGameInstanceShutdownDelegate;
-	
+
+	void OnDelayedClientTravelStarted();
+
+	/**
+	 * @brief Called on AAccelByteWarsPlayerController::DelayedClientTravel | Few seconds before the actual ClientTravel.
+	 */
+	FSimpleMulticastDelegate OnDelayedClientTravelStartedDelegates;
+
+	bool GetIsPendingFailureNotification(ENetworkFailure::Type& OutFailureType);
+
 private:
 	/** This is the primary player*/
 	TWeakObjectPtr<ULocalPlayer> PrimaryPlayer;
+
+	ENetworkFailure::Type LastFailureType;
+	FString LastFailureMessage;
+	bool bPendingFailureNotification = false;
+
+	void OnNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType, const FString& Message);
 
 public:
 	virtual int32 AddLocalPlayer(ULocalPlayer* NewLocalPlayer, FPlatformUserId UserId) override;
@@ -157,14 +175,32 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = Sounds)
 	void SetSFXVolume(float InVolume);
 
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = Sounds)
+	int32 GetShipSelection();
+
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = Sounds)
+	void SetShipSelection(int32 InShipSeleciton);
+
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = Sounds)
+	int32 GetShipPowerUp();
+
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = Sounds)
+	void SetShipPowerUp(int32 InShipPowerUp);
+
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = GameSettings)
+	bool GetFTUEAlwaysOnSetting();
+
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = GameSettings)
+	void SetFTUEAlwaysOnSetting(bool InValue);
+
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = GameSettings)
 	void LoadGameSettings();
 
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = GameSettings)
 	void SaveGameSettings();
 
-	UFUNCTION(BlueprintCallable, BlueprintCosmetic)
-	UAccelByteWarsBaseUI* GetBaseUIWidget();
+	UFUNCTION(BlueprintCallable, BlueprintPure)
+	UAccelByteWarsBaseUI* GetBaseUIWidget(bool bAutoActivate = true);
 
 	UFUNCTION(BlueprintPure)
 	TSubclassOf<UAccelByteWarsButtonBase> GetDefaultButtonClass() const { return DefaultButtonClass; }

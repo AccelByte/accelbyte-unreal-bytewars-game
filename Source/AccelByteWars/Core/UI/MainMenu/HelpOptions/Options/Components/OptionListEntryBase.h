@@ -16,6 +16,7 @@ class UImage;
 class UCommonTextBlock;
 class UCommonButtonBase;
 class UCommonRotator;
+class UCheckBox;
 
 UENUM(BlueprintType)
 enum class EOptionEntryType : uint8
@@ -149,4 +150,43 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonTextBlock* Txt_OptionName;
+};
+
+//////////////////////////////////////////////////////////////////////////
+// UOptionListEntry_Toggler
+//////////////////////////////////////////////////////////////////////////
+
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnToggleValueChangedDelegate, bool /*Value*/);
+
+UCLASS(Abstract, Blueprintable)
+class ACCELBYTEWARS_API UOptionListEntry_Toggler : public UOptionListEntryBase
+{
+	GENERATED_BODY()
+
+public:
+	UFUNCTION(BlueprintCallable)
+	void InitOption(const FText& InName, const bool InValue);
+
+	void SetDisplayName(const FText& InName) override;
+
+	UFUNCTION(BlueprintCallable)
+	void SetToggleValue(const bool InValue);
+
+	UFUNCTION(BlueprintPure)
+	bool GetToggleValue();
+
+	FOnToggleValueChangedDelegate OnToggleValueChangedDelegate;
+
+protected:
+	void NativeOnInitialized() override;
+
+	UFUNCTION()
+	void OnToggleValueChanged(bool Value);
+
+private:
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UCommonTextBlock* Txt_OptionName;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UCheckBox* Cb_OptionValue;
 };

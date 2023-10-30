@@ -27,6 +27,12 @@ public:
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 	//~End of AGameModeBase overridden functions
 
+	/**
+	 * @brief Direct path to ABPawn to be spawned
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = AccelByteWars)
+		FString PawnBlueprintPath = "Blueprint'/Game/ByteWars/Blueprints/Player/ABPawn.ABPawn_C'";
+
 	virtual void DelayedPlayerTeamSetupWithPredefinedData(APlayerController* PlayerController) override;
 
 	/**
@@ -57,6 +63,9 @@ public:
 		const float MissileScore,
 		APlayerController* SourcePlayerController);
 
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = AccelByteWars)
+		void OnMissileDestroyed(FVector Location, UAccelByteWarsGameplayObjectComponent* HitObject, FLinearColor MissileColour, AActor* MissileOwner);
+
 	/**
 	 * @brief Increase the number of attempt the player was almost got killed in a single-lifetime.
 	 * @param TargetPlayer The player that was almost got killed.
@@ -83,12 +92,8 @@ private:
 	void NotEnoughPlayerCountdownCounting(const float& DeltaSeconds) const;
 	void SetupShutdownCountdownsValue() const;
 
-	// Gameplay logic math helper
-	/**
-	 * @brief Calculate random location within game's bounding area outside all active game objects radius.
-	 * If bounding area < total game objects radius, then increase game's bounding area.
-	 */
-	FVector2D FindGoodSpawnLocation(const TArray<FVector>& ActiveGameObjectsCoords) const;
+	// Search playable game area for a random spot to spawn
+	FVector2D FindGoodSpawnLocation(const TArray<FVector>& ActiveGameObjectsCoords, bool ForStars = false) const;
 	bool IsInsideCircle(const FVector2D& Target, const FVector& Circle) const;
 	double CalculateCircleLengthAlongXonY(const FVector& Circle, const double Ycoord) const;
 	FVector2D CalculateActualCoord(const double RelativeLocation, const FVector2D& MinBound, const double RangeX) const;
@@ -104,11 +109,11 @@ private:
 	float GameEndsDelay = 1.0f;
 
 	UPROPERTY()
-	AAccelByteWarsInGameGameState* ABInGameGameState = nullptr;
+		AAccelByteWarsInGameGameState* ABInGameGameState = nullptr;
 	
 protected:
-	UFUNCTION(BlueprintImplementableEvent)
-	APawn* CreatePlayerPawn(const FVector& Location, const FLinearColor& Color, APlayerController* PlayerController);
+	UFUNCTION()
+		APawn* CreatePlayerPawn(const FVector& Location, const FLinearColor& Color, APlayerController* PlayerController);
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnShipDestroyedFX(
