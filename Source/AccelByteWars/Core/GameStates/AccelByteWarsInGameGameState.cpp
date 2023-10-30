@@ -1,4 +1,6 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
 
 
 #include "Core/GameStates/AccelByteWarsInGameGameState.h"
@@ -17,6 +19,8 @@ void AAccelByteWarsInGameGameState::GetLifetimeReplicatedProps(TArray<FLifetimeP
 	DOREPLIFETIME(ThisClass, GameStatus);
 	DOREPLIFETIME(ThisClass, MinGameBound);
 	DOREPLIFETIME(ThisClass, MaxGameBound);
+	DOREPLIFETIME(ThisClass, MinStarsGameBound);
+	DOREPLIFETIME(ThisClass, MaxStarsGameBound);
 }
 
 bool AAccelByteWarsInGameGameState::HasGameStarted() const

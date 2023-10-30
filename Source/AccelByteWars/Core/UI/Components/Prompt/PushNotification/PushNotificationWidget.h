@@ -41,6 +41,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	uint32 MaxNotificationStack = 5;
 
+	UPROPERTY()
 	TArray<UPushNotification*> PendingNotifications;
-	TMap<UPushNotification*, FTimerHandle*> NotificationTimers;
+
+	UPROPERTY()
+	TMap<UPushNotification*, FTimerHandle> NotificationTimers;
 };

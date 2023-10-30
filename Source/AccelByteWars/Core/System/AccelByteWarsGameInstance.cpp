@@ -1,4 +1,6 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
 
 
 #include "Core/System/AccelByteWarsGameInstance.h"
@@ -11,6 +13,23 @@
 
 #define GAMEINSTANCE_LOG(FormatString, ...) UE_LOG(LogAccelByteWarsGameInstance, Log, TEXT(FormatString), __VA_ARGS__);
 
+void UAccelByteWarsGameInstance::Init()
+{
+	Super::Init();
+
+	GEngine->NetworkFailureEvent.AddUObject(this, &ThisClass::OnNetworkFailure);
+
+	// Command to crash the game. Used to test ADT crash report
+	IConsoleManager::Get().RegisterConsoleCommand(TEXT("TriggerCrash"), TEXT("Crash current game client"), FConsoleCommandDelegate::CreateWeakLambda(this, [this]()
+	{
+		UE_LOG(LogAccelByteWarsGameInstance, Warning, TEXT("Intended crash"))
+
+		// Simulating crash by accessing a null pointer.
+		const APlayerController* CrashPC = nullptr;
+		CrashPC->GetLocalPlayer()->GetPreferredUniqueNetId();
+	}));
+}
+
 void UAccelByteWarsGameInstance::Shutdown()
 {
 	OnGameInstanceShutdownDelegate.Broadcast();
@@ -18,7 +37,7 @@ void UAccelByteWarsGameInstance::Shutdown()
 	Super::Shutdown();
 }
 
-UAccelByteWarsBaseUI* UAccelByteWarsGameInstance::GetBaseUIWidget()
+UAccelByteWarsBaseUI* UAccelByteWarsGameInstance::GetBaseUIWidget(bool bAutoActivate)
 {
 	if (IsRunningDedicatedServer())
 	{
@@ -30,29 +49,47 @@ UAccelByteWarsBaseUI* UAccelByteWarsGameInstance::GetBaseUIWidget()
 		BaseUIWidget = Cast<UAccelByteWarsBaseUI>(CreateWidget(this, BaseUIMenuWidgetClass));
 	}
 
-	if (!BaseUIWidget->IsActivated())
+	if (bAutoActivate && !BaseUIWidget->IsInViewport())
 	{
-		BaseUIWidget->ActivateWidget();
-	}
-
-	if (!BaseUIWidget->IsInViewport() && !bHasAddToViewportCalled)
-	{
-		/**
-		 * somwhow, when this is called multiple times before the BaseUIWidget finish constructing, 
-		 * IsInViewport will always return false, but the AddToViewport will be still be called that many times.
-		 * Resulting in the widget to be added multiple times to viewport despite using the IsInViewport flag.
-		 * Hence why there's this custom flag.
-		 */
-		bHasAddToViewportCalled = true;
-		BaseUIWidget->OnDeactivated().AddWeakLambda(this, [this]()
-		{
-			bHasAddToViewportCalled = false;
-		});
-
 		BaseUIWidget->AddToViewport(10);
+		BaseUIWidget->ResetWidget();
 	}
 
 	return BaseUIWidget;
+}
+
+void UAccelByteWarsGameInstance::OnDelayedClientTravelStarted()
+{
+	OnDelayedClientTravelStartedDelegates.Broadcast();
+
+	BaseUIWidget->ClearWidgets();
+}
+
+bool UAccelByteWarsGameInstance::GetIsPendingFailureNotification(ENetworkFailure::Type& OutFailureType)
+{
+	if (bPendingFailureNotification)
+	{
+		OutFailureType = LastFailureType;
+		bPendingFailureNotification = false;
+		return true;
+	}
+
+	return false;
+}
+
+void UAccelByteWarsGameInstance::OnNetworkFailure(
+	UWorld* World,
+	UNetDriver* NetDriver,
+	ENetworkFailure::Type FailureType,
+	const FString& Message)
+{
+	// Only change the FailureType if the Message is different
+	if (!LastFailureMessage.Equals(Message))
+	{
+		LastFailureMessage = Message;
+		bPendingFailureNotification = true;
+		LastFailureType = FailureType;
+	}
 }
 
 int32 UAccelByteWarsGameInstance::AddLocalPlayer(ULocalPlayer* NewLocalPlayer, FPlatformUserId UserId)
@@ -138,12 +175,20 @@ TSubclassOf<UOnlineSession> UAccelByteWarsGameInstance::GetOnlineSessionClass()
 			{
 				if (TutorialModule.OnlineSessionClass)
 				{
+					GAMEINSTANCE_LOG("Starter online session module detected: %s", *TutorialModule.OnlineSessionClass->GetPathName())
+
 					OnlineSessionClass = TutorialModule.OnlineSessionClass;
+					bUseCompletedOnlineSession = false;
 					break;
 				}
 			}
 			else
 			{
+				if (bUseCompletedOnlineSession)
+				{
+					continue;
+				}
+
 				if (TutorialModule.OnlineSessionClass)
 				{
 					if (OnlineSessionClass == nullptr)
@@ -154,10 +199,9 @@ TSubclassOf<UOnlineSession> UAccelByteWarsGameInstance::GetOnlineSessionClass()
 					{
 						bUseCompletedOnlineSession = true;
 						GAMEINSTANCE_LOG(
-							"Detected multiple Online Session module: %s and %s",
+							"Detected multiple Online Session module: %s and %s | Continuing search in case there's starter module activated",
 							*OnlineSessionClass->GetPathName(),
 							*TutorialModule.OnlineSessionClass->GetPathName())
-						break;
 					}
 				}
 			}

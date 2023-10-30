@@ -62,10 +62,16 @@ public:
 	float TimeLeft = INDEX_NONE;
 
 	UPROPERTY(BlueprintReadWrite, Replicated)
-	FVector2D MinGameBound = {-1500.0, -1300.0};
+	FVector2D MinGameBound = {-1000.0, -900.0};
 
 	UPROPERTY(BlueprintReadWrite, Replicated)
-	FVector2D MaxGameBound = {1500.0, 1300.0};
+	FVector2D MaxGameBound = { 1000.0, 900.0 };
+
+	UPROPERTY(BlueprintReadWrite, Replicated)
+	FVector2D MinStarsGameBound = {-1500.0, -1300.0};
+
+	UPROPERTY(BlueprintReadWrite, Replicated)
+	FVector2D MaxStarsGameBound = {1500.0, 1300.0};
 
 	UPROPERTY(Replicated, BlueprintReadWrite)
 	TArray<UAccelByteWarsGameplayObjectComponent*> ActiveGameObjects;

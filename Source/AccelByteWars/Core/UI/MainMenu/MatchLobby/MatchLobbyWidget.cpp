@@ -27,16 +27,33 @@ void UMatchLobbyWidget::NativeConstruct()
 
 	GameState = Cast<AAccelByteWarsMainMenuGameState>(GetWorld()->GetGameState());
 	ensure(GameState);
+}
+
+void UMatchLobbyWidget::NativeOnActivated()
+{
+	// Only show session FTUE on online session.
+	if (FFTUEDialogueModel* FTUESession =
+		FFTUEDialogueModel::GetMetadataById("ftue_session_details", FTUEDialogues))
+	{
+		EGameModeNetworkType NetMode = GameState->GameSetup.NetworkType;
+		FTUESession->OnValidateDelegate.Unbind();
+		FTUESession->OnValidateDelegate.BindWeakLambda(this, [NetMode]()
+		{
+			return NetMode != EGameModeNetworkType::LOCAL;
+		});
+	}
+
+	Super::NativeOnActivated();
 
 	// show loading screen on server start travel
-	GameState->OnIsServerTravellingChanged.AddDynamic(this, &ThisClass::ShowLoading);
+	GameState->OnIsServerTravellingChanged.AddUniqueDynamic(this, &ThisClass::ShowLoading);
 
 	if (GameState->GameSetup.StartGameCountdown != INDEX_NONE)
 	{
 		// Setup Countdown
 		CountdownWidget->SetupWidget(
-			FText::FromString("Starting Countdown"), 
-			FText::FromString("Starting Match"), 
+			FText::FromString("Starting Countdown"),
+			FText::FromString("Starting Match"),
 			FText::FromString("Match Starts In: "));
 		CountdownWidget->CheckCountdownStateDelegate.BindUObject(this, &UMatchLobbyWidget::SetCountdownState);
 		CountdownWidget->UpdateCountdownValueDelegate.BindUObject(this, &UMatchLobbyWidget::UpdateCountdownValue);
@@ -46,11 +63,6 @@ void UMatchLobbyWidget::NativeConstruct()
 	{
 		CountdownWidget->SetVisibility(ESlateVisibility::Collapsed);
 	}
-}
-
-void UMatchLobbyWidget::NativeOnActivated()
-{
-	Super::NativeOnActivated();
 
 	GenerateMultiplayerTeamEntries();
 
@@ -93,6 +105,7 @@ void UMatchLobbyWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTim
 
 void UMatchLobbyWidget::ShowLoading()
 {
+	DeinitializeFTUEDialogues();
 	SetMatchLobbyState(EMatchLobbyState::GameStarted);
 }
 

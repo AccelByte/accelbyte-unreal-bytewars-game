@@ -5,14 +5,16 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "CommonUserWidget.h"
 #include "Components/BackgroundBlur.h"
 #include "Components/Prompt/Loading/LoadingWidget.h"
 #include "Core/UI/Components/Prompt/PushNotification/PushNotificationWidget.h"
-#include "Core/UI/AccelByteWarsActivatableWidget.h"
 #include "Widgets/CommonActivatableWidgetContainer.h"
 #include "AccelByteWarsBaseUI.generated.h"
 
 class UPopUpWidget;
+class UFTUEDialogueWidget;
+class AccelByteWarsActivatableWidget;
 
 UENUM()
 enum EBaseUIStackType
@@ -24,17 +26,24 @@ enum EBaseUIStackType
 };
 
 UCLASS()
-class ACCELBYTEWARS_API UAccelByteWarsBaseUI : public UAccelByteWarsActivatableWidget
+class ACCELBYTEWARS_API UAccelByteWarsBaseUI : public UCommonUserWidget
 {
 	GENERATED_BODY()
 
 public:
 	void NativeOnInitialized() override;
 
+	void ClearWidgets();
+	void ResetWidget();
+
 	UFUNCTION(BlueprintCallable)
 	void ToggleBackgroundBlur(const bool bShow) const;
 
 	static UCommonActivatableWidget* GetActiveWidgetOfStack(const EBaseUIStackType TargetStack, const UObject* Context);
+
+	TArray<UCommonActivatableWidget*> GetAllWidgetsBelowStacks(const EBaseUIStackType CurrentStack);
+
+	EBaseUIStackType GetTopMostActiveStack();
 
 	/** Push widget to target stack. */
 	UFUNCTION(BlueprintCallable)
@@ -44,6 +53,8 @@ public:
 	UAccelByteWarsActivatableWidget* PushWidgetToStack(EBaseUIStackType TargetStack, TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass, TFunctionRef<void(UAccelByteWarsActivatableWidget&)> InitFunc);
 
 	UPushNotificationWidget* GetPushNotificationWidget();
+
+	UFTUEDialogueWidget* GetFTUEDialogueWidget();
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Base UI Settings")
 	TMap<TEnumAsByte<EBaseUIStackType>, UCommonActivatableWidgetStack*> Stacks;
@@ -58,6 +69,8 @@ public:
 	TSubclassOf<UPushNotificationWidget> DefaultPushNotificationWidgetClass;
 
 private:
+	bool bStacksCleared = false;
+
 	void OnWidgetTransitionChanged(UCommonActivatableWidgetContainerBase* Widget, bool bIsTransitioning);
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
@@ -77,4 +90,7 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonActivatableWidgetStack* PushNotificationStack;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UFTUEDialogueWidget* W_FTUEDialogue;
 };

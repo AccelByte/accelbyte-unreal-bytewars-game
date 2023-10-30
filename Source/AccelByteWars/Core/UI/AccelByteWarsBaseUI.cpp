@@ -28,6 +28,21 @@ void UAccelByteWarsBaseUI::NativeOnInitialized()
 	}
 }
 
+void UAccelByteWarsBaseUI::ClearWidgets()
+{
+	MenuStack->ClearWidgets();
+	InGameMenuStack->ClearWidgets();
+	InGameHUDStack->ClearWidgets();
+	PushNotificationStack->ClearWidgets();
+
+	bStacksCleared = true;
+}
+
+void UAccelByteWarsBaseUI::ResetWidget()
+{
+	bStacksCleared = false;
+}
+
 void UAccelByteWarsBaseUI::ToggleBackgroundBlur(const bool bShow) const
 {
 	BackgroundBlur->SetVisibility(bShow ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
@@ -46,13 +61,51 @@ UCommonActivatableWidget* UAccelByteWarsBaseUI::GetActiveWidgetOfStack(const EBa
 		return nullptr;
 	}
 
-	const UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget();
+	const UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget(false);
 	if (!BaseUIWidget) 
 	{
 		return nullptr;
 	}
 
-	return BaseUIWidget->Stacks[EBaseUIStackType::Menu]->GetActiveWidget();
+	return BaseUIWidget->Stacks[TargetStack]->GetActiveWidget();
+}
+
+TArray<UCommonActivatableWidget*> UAccelByteWarsBaseUI::GetAllWidgetsBelowStacks(const EBaseUIStackType CurrentStack)
+{
+	// Get all widgets below given stack.
+	TArray<UCommonActivatableWidget*> Result;
+	int32 StackInt = (int32)CurrentStack;
+	for (int32 i = StackInt; i <= EBaseUIStackType::InGameHUD; i++)
+	{
+		if (i == (int32)CurrentStack) 
+		{
+			continue;
+		}
+
+		UCommonActivatableWidget* ActiveStack = Stacks[static_cast<EBaseUIStackType>(i)]->GetActiveWidget();
+		if (ActiveStack) 
+		{
+			Result.Add(ActiveStack);
+		}
+	}
+
+	return Result;
+}
+
+EBaseUIStackType UAccelByteWarsBaseUI::GetTopMostActiveStack()
+{
+	EBaseUIStackType StackType = EBaseUIStackType::Prompt;
+	
+	for (int i = EBaseUIStackType::Prompt; i <= EBaseUIStackType::InGameHUD; i++)
+	{
+		StackType = static_cast<EBaseUIStackType>(i);
+		if (Stacks[StackType]->GetActiveWidget())
+		{
+			break;
+		}
+	}
+
+	return StackType;
 }
 
 UAccelByteWarsActivatableWidget* UAccelByteWarsBaseUI::PushWidgetToStack(EBaseUIStackType TargetStack, TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass)
@@ -70,6 +123,11 @@ UAccelByteWarsActivatableWidget* UAccelByteWarsBaseUI::PushWidgetToStack(EBaseUI
 
 UPushNotificationWidget* UAccelByteWarsBaseUI::GetPushNotificationWidget()
 {
+	if (bStacksCleared)
+	{
+		return nullptr;
+	}
+
 	UPushNotificationWidget* PushNotificationWidget = Cast<UPushNotificationWidget>(PushNotificationStack->GetActiveWidget());
 
 	if (!PushNotificationWidget)
@@ -78,6 +136,11 @@ UPushNotificationWidget* UAccelByteWarsBaseUI::GetPushNotificationWidget()
 	}
 
 	return PushNotificationWidget;
+}
+
+UFTUEDialogueWidget* UAccelByteWarsBaseUI::GetFTUEDialogueWidget()
+{
+	return W_FTUEDialogue;
 }
 
 void UAccelByteWarsBaseUI::OnWidgetTransitionChanged(UCommonActivatableWidgetContainerBase* Widget, bool bIsTransitioning)

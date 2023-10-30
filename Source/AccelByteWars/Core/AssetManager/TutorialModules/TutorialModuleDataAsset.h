@@ -8,7 +8,17 @@
 #include "Core/AssetManager/AccelByteWarsDataAsset.h"
 #include "Core/AssetManager/AccelByteWarsAssetModels.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleUtility.h"
+#include "Core/UI/Components/Prompt/FTUE/FTUEModels.h"
 #include "TutorialModuleDataAsset.generated.h"
+
+ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogTutorialModuleDataAsset, Log, All);
+#define UE_LOG_TUTORIALMODULEDATAASSET(Verbosity, Format, ...) \
+{ \
+	UE_LOG_FUNC(LogTutorialModuleDataAsset, Verbosity, Format, ##__VA_ARGS__) \
+}
+
+// Keys to access attributes saved in local file.
+#define KEY_FTUEGROUPSTATE "FTUEDialogueGroupStates"
 
 class UTutorialModuleOnlineSession;
 class UAccelByteWarsActivatableWidget;
@@ -20,10 +30,7 @@ class ACCELBYTEWARS_API UTutorialModuleDataAsset : public UAccelByteWarsDataAsse
 	GENERATED_BODY()
 
 public:
-	UTutorialModuleDataAsset()
-	{
-		AssetType = UTutorialModuleDataAsset::TutorialModuleAssetType;
-	}
+	UTutorialModuleDataAsset();
 
 	virtual FPrimaryAssetId GetPrimaryAssetId() const override
 	{
@@ -70,6 +77,18 @@ public:
 
 	static const FPrimaryAssetType TutorialModuleAssetType;
 
+	// Get the relative path where the attributes is saved in a local file.
+	FString GetAttributesLocalFilePath(const FString& TutorialModuleCodeName);
+
+	// Save attributes to local file as JSON literals.
+	bool SaveAttributesToLocal();
+
+	// Load attributes from local JSON file.
+	bool LoadAttributesFromLocal();
+
+	// Get attributes loaded from local file as JSON object.
+	TSharedPtr<FJsonObject> GetLocalAttributes() { return AttributesJsonObject; }
+
 #pragma region "Online Session"
 	UFUNCTION(BlueprintPure)
 	bool GetIsOnlineSessionActivatable() const { return bOnlineSessionModule; }
@@ -106,6 +125,12 @@ private:
 	UPROPERTY(EditAnywhere, AssetRegistrySearchable, Category = "Tutorial Module Starter", meta = (EditCondition = "bIsActive"))
 	bool bIsStarterModeActive = false;
 
+	// Helper to track whether the Tutorial Module code name is changed.
+	FString LastCodeName;
+
+	// Helper to store attributes loaded from local file.
+	TSharedPtr<FJsonObject> AttributesJsonObject;
+
 #pragma region "Online Session"
 	UPROPERTY(EditAnywhere, AssetRegistrySearchable, Category = "Online Session Module")
 	bool bOnlineSessionModule = false;
@@ -118,6 +143,12 @@ private:
 #pragma endregion
 
 public:
+#pragma region "Generated Widgets"
+	static TArray<FTutorialModuleGeneratedWidget*> GetCachedGeneratedWidgets()
+	{
+		return CachedGeneratedWidgets;
+	}
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tutorial Module Dependencies", meta = (Tooltip = "Other Tutorial Modules that is required by this Tutorial Module", DisplayThumbnail = false, ShowOnlyInnerProperties))
 	TArray<UTutorialModuleDataAsset*> TutorialModuleDependencies;
 
@@ -126,9 +157,36 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tutorial Module Widgets", meta = (Tooltip = "Widgets that will be generated if this Tutorial Module active", ShowOnlyInnerProperties))
 	TArray<FTutorialModuleGeneratedWidget> GeneratedWidgets;
+#pragma endregion
+
+#pragma region "First Time User Experience (FTUE)"
+private:
+	UPROPERTY(EditAnywhere,
+		Category = "First Time User Experience (FTUE)", 
+		meta = (Tooltip = "Whether this Tutorial Module has FTUE or not."))
+	bool bHasFTUE = false;
+
+public:
+	bool HasFTUE();
+
+	static TArray<FFTUEDialogueModel*> GetCachedFTUEDialogues()
+	{
+		return CachedFTUEDialogues;
+	}
+
+	UPROPERTY(EditAnywhere,
+		Category = "First Time User Experience (FTUE)",
+		meta = (
+			Tooltip = "FTUE dialogue group to be displayed when this Tutorial Module is active.",
+			ShowOnlyInnerProperties,
+			EditCondition = "bHasFTUE",
+			EditConditionHides))
+	TArray<FTUEDialogueGroup> FTUEDialogueGroups;
+#pragma endregion
 
 private:
 	void ValidateDataAssetProperties();
+
 	bool ValidateClassProperty(TSubclassOf<UAccelByteWarsActivatableWidget>& UIClass, TSubclassOf<UAccelByteWarsActivatableWidget>& LastUIClass, const bool IsStarterClass);
 	bool ValidateClassProperty(TSubclassOf<UTutorialModuleSubsystem>& SubsystemClass, TSubclassOf<UTutorialModuleSubsystem>& LastSubsystemClass, const bool IsStarterClass);
 #pragma region "Online Session"
@@ -136,6 +194,14 @@ private:
 #pragma endregion 
 
 	void CleanUpDataAssetProperties();
+
+#pragma region "Generated Widgets"
+	void ValidateGeneratedWidgets();
+#pragma endregion
+
+#pragma region "First Time User Experience (FTUE)"
+	void ValidateFTUEDialogues();
+#pragma endregion
 
 #if WITH_EDITOR
 	void ShowPopupMessage(const FString& Message) const;
@@ -154,7 +220,15 @@ private:
 	TSubclassOf<UTutorialModuleOnlineSession> LastStarterOnlineSessionClass;
 #pragma endregion 
 
+#pragma region "Generated Widgets"
 	TArray<FTutorialModuleGeneratedWidget> LastGeneratedWidgets;
-
 	static TSet<FString> GeneratedWidgetUsedIds;
+	static TArray<FTutorialModuleGeneratedWidget*> CachedGeneratedWidgets;
+#pragma endregion
+
+#pragma region "First Time User Experience (FTUE)"
+	TArray<FTUEDialogueGroup> LastFTUEDialogueGroups;
+	static TSet<FString> FTUEDialogueUsedIds;
+	static TArray<FFTUEDialogueModel*> CachedFTUEDialogues;
+#pragma endregion
 };

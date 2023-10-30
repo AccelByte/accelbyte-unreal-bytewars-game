@@ -1,4 +1,6 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
 
 #pragma once
 
@@ -24,44 +26,44 @@ public:
 	 * @brief Call in ConstructionScript to apply the procedural mesh
 	 */
 	UFUNCTION(BlueprintCallable)
-	void MeshSetup();
+		void MeshSetup();
 
 	/**
 	 * @brief Update Color variable and material parameter
 	 * @param InColor
 	 */
 	UFUNCTION(BlueprintCallable)
-	void UpdateColor(const FLinearColor InColor);
+		void UpdateColor(const FLinearColor InColor);
+
+	UPROPERTY(EditAnywhere)
+		TArray<FVector> OutlineVertices = {
+			{0.0f, 50.0f, 0.0f},
+			{35.0f, -35.0f, 0.0f},
+			{20.0f, -45.0f, 0.0f},
+			{0.0f, -35.0f, 0.0f}
+		};
+
+	UPROPERTY()
+		UMaterialInstanceDynamic* Material;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AccelByteWars)
+		UMaterialInterface* SourceMaterial;
+
+	UPROPERTY(EditAnywhere)
+		uint8 OutlineStrokes = 7;
+
+	UPROPERTY(EditAnywhere)
+		float Glow = 50.0f;
 
 protected:
 	TArray<int32> Triangles;
 	TArray<FVector> Vertices;
 
-	UPROPERTY()
-	UMaterialInstanceDynamic* Material;
-
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (ExposeOnSpawn), Replicated)
-	FLinearColor Color = {1.0f, 1.0f, 1.0f, 0.0f};
+		FLinearColor Color = {1.0f, 1.0f, 1.0f, 0.0f};
 
 	UPROPERTY(EditAnywhere)
-	TArray<uint8> TriStripPattern = {
-		0, 2, 1, 1, 2, 3
-	};
-
-	UPROPERTY(EditAnywhere)
-	TArray<FVector> OutlineVertices = {
-		{0.0f, 50.0f, 0.0f},
-		{35.0f, -35.0f, 0.0f},
-		{20.0f, -45.0f, 0.0f},
-		{0.0f, -35.0f, 0.0f}
-	};
-
-	UPROPERTY(EditAnywhere)
-	UMaterialInterface* SourceMaterial;
-
-	UPROPERTY(EditAnywhere)
-	uint8 OutlineStrokes = 7;
-
-	UPROPERTY(EditAnywhere)
-	float Glow = 50.0f;
+		TArray<uint8> TriStripPattern = {
+			0, 2, 1, 1, 2, 3
+		};
 };

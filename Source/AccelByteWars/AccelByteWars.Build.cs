@@ -11,8 +11,9 @@ public class AccelByteWars : ModuleRules
 
 		PublicIncludePaths.AddRange(new string[] 
 		{
-			"AccelByteWars"
-		});
+			"AccelByteWars",
+            "AccelByteWars/TutorialModules"
+        });
 
 
 		PublicDependencyModuleNames.AddRange(new string[] 

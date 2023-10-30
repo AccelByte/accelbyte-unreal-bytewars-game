@@ -5,6 +5,7 @@
 #include "Core/UI/Components/Prompt/PushNotification/PushNotificationWidget.h"
 #include "Components/ListView.h"
 #include "CommonButtonBase.h"
+#include "Core/UI/AccelByteWarsBaseUI.h"
 
 void UPushNotificationWidget::NativeOnActivated()
 {
@@ -47,7 +48,7 @@ void UPushNotificationWidget::PushNotification(UPushNotification* Notification)
 
 	// Start notification lifetime.
 	FTimerHandle TimerHandle;
-	NotificationTimers.Add(Notification, &TimerHandle);
+	NotificationTimers.Add(Notification, TimerHandle);
 
 	// Start notification lifetime.
 	GetWorld()->GetTimerManager().SetTimer(TimerHandle, FTimerDelegate::CreateUObject(this, &ThisClass::OnNotificationLifeTimeEnds, Notification), NotificationLifeTime, false);
@@ -55,6 +56,11 @@ void UPushNotificationWidget::PushNotification(UPushNotification* Notification)
 
 void UPushNotificationWidget::RemoveNotification(UPushNotification* Notification)
 {
+	if (!Notification)
+	{
+		return;
+	}
+
 	// Delete from pending notifications.
 	if (PendingNotifications.Contains(Notification)) 
 	{
@@ -64,26 +70,40 @@ void UPushNotificationWidget::RemoveNotification(UPushNotification* Notification
 	// Delete notification timer.
 	if (NotificationTimers.Contains(Notification)) 
 	{
-		FTimerHandle* NotificationTimer = NotificationTimers[Notification];
+		FTimerHandle* NotificationTimer = &NotificationTimers[Notification];
 		GetWorld()->GetTimerManager().ClearTimer(*NotificationTimer);
 		NotificationTimers.Remove(Notification);
 	}
 
-	// Delete from notification list.
-	Lv_PushNotification->RemoveItem(Notification);
-	Lv_PushNotification->RequestRefresh();
-
-	// Dismiss the notification if empty.
-	if (PendingNotifications.IsEmpty() && Lv_PushNotification->GetNumItems() <= 0)
+	
+	if (IsActivated() && !IsUnreachable()) 
 	{
-		DeactivateWidget();
+		// Delete from notification list.
+		if (!Lv_PushNotification->IsUnreachable() &&
+			Lv_PushNotification->GetIndexForItem(Notification) != INDEX_NONE)
+		{
+			Lv_PushNotification->RemoveItem(Notification);
+		}
+
+		// Dismiss the notification if empty.
+		if (PendingNotifications.IsEmpty() &&
+			Lv_PushNotification->GetNumItems() <= 0)
+		{
+			DeactivateWidget();
+		}
 	}
 }
 
 void UPushNotificationWidget::TryPushPendingNotifications()
 {
+	if (!IsActivated() || IsUnreachable())
+	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot access the push notification UI as the widget begin to tear down."));
+		return;
+	}
+
 	// Push pending notifications.
-	int32 MaxToPush = MaxNotificationStack - Lv_PushNotification->GetNumItems();
+	const int32 MaxToPush = MaxNotificationStack - Lv_PushNotification->GetNumItems();
 	for (int32 i = 0; i < MaxToPush; i++)
 	{
 		if (PendingNotifications.IsEmpty())
@@ -108,11 +128,11 @@ void UPushNotificationWidget::DismissAllNotifications()
 	PendingNotifications.Empty();
 
 	// Clear dangling notification timers.
-	for (const auto& NotificationTimer : NotificationTimers)
+	for (TTuple<UPushNotification*, FTimerHandle>& NotificationTimer : NotificationTimers)
 	{
-		if (NotificationTimer.Value)
+		if (NotificationTimer.Value.IsValid())
 		{
-			GetWorld()->GetTimerManager().ClearTimer(*NotificationTimer.Value);
+			GetWorld()->GetTimerManager().ClearTimer(NotificationTimer.Value);
 		}
 	}
 

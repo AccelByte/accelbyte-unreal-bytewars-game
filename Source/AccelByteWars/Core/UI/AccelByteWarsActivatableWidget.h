@@ -6,10 +6,18 @@
 
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
+#include "Core/Utilities/AccelByteWarsUtilityLog.h"
+#include "Core/UI/AccelByteWarsWidgetInterface.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleUtility.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleDataAsset.h"
+#include "Core/UI/Components/Prompt/FTUE/FTUEModels.h"
 #include "AccelByteWarsActivatableWidget.generated.h"
 
+ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogAccelByteWarsActivatableWidget, Log, All);
+#define UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Verbosity, Format, ...) \
+{ \
+	UE_LOG_FUNC(LogAccelByteWarsActivatableWidget, Verbosity, Format, ##__VA_ARGS__) \
+}
 
 UENUM(BlueprintType)
 enum class EAccelByteWarsWidgetInputMode : uint8
@@ -25,7 +33,7 @@ class UAccelByteWarsButtonBase;
 class UPanelWidget;
 
 UCLASS(Abstract, Blueprintable)
-class ACCELBYTEWARS_API UAccelByteWarsActivatableWidget : public UCommonActivatableWidget
+class ACCELBYTEWARS_API UAccelByteWarsActivatableWidget : public UCommonActivatableWidget, public IAccelByteWarsWidgetInterface
 {
 	GENERATED_BODY()
 
@@ -33,6 +41,7 @@ public:
 	UAccelByteWarsActivatableWidget(const FObjectInitializer& ObjectInitializer);
 	virtual void NativePreConstruct() override;
 	virtual void NativeOnActivated() override;
+	virtual void NativeOnDeactivated() override;
 
 	virtual void PostLoad() override;
 #if WITH_EDITOR
@@ -45,6 +54,7 @@ public:
 	virtual TOptional<FUIInputConfig> GetDesiredInputConfig() const override;
 	//~End of UCommonActivatableWidget interface
 
+#pragma region "Tutorial Module"
 	UFUNCTION(BlueprintImplementableEvent, Category = "Tutorial Module Metadata")
 	TArray<UPanelWidget*> GetGeneratedWidgetContainers();
 
@@ -54,6 +64,10 @@ public:
 
 	// The generated widget metadatas injected by one or more Tutorial Modules.
 	TArray<FTutorialModuleGeneratedWidget*> GeneratedWidgets;
+
+	// The FTUE dialogues to be shown when this widget is active.
+	TArray<FFTUEDialogueModel*> FTUEDialogues;
+#pragma endregion
 
 protected:
 	/** Change the owning player controller input mode to game only and also hide the mouse cursor */
@@ -97,7 +111,15 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = Input)
 	EMouseCaptureMode GameMouseCaptureMode = EMouseCaptureMode::CapturePermanently;
 
+	UPROPERTY(EditAnywhere, Category = FTUE, meta = (ToolTip = "Whether this widget should initialize FTUE on activated."))
+	bool bOnActivatedInitializeFTUE = true;
+
 private:
+#pragma region "Tutorial Module"
+	void ValidateAssociateTutorialModule();
+#pragma endregion
+
+#pragma region "Generated Widgets"
 	void ValidateGeneratedWidgets();
 	void InitializeGeneratedWidgets();
 	TWeakObjectPtr<UAccelByteWarsButtonBase> GenerateEntryButton(FTutorialModuleGeneratedWidget& Metadata, UPanelWidget& WidgetContainer);
@@ -106,4 +128,14 @@ private:
 
 	UPROPERTY()
 	TArray<UUserWidget*> GeneratedWidgetPool;
+#pragma endregion
+
+#pragma region "First Time User Experience (FTUE)"
+protected:
+	void InitializeFTEUDialogues(bool bShowOnInitialize);
+	void DeinitializeFTUEDialogues();
+
+private:
+	void ValidateFTUEDialogues();
+#pragma endregion
 };

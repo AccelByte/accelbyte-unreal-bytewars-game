@@ -1,16 +1,16 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "CommonButtonBase.h"
+#include "Core/UI/AccelByteWarsWidgetInterface.h"
 #include "AccelByteWarsButtonBase.generated.h"
 
-/**
- * 
- */
 UCLASS(Abstract, BlueprintType, Blueprintable)
-class ACCELBYTEWARS_API UAccelByteWarsButtonBase : public UCommonButtonBase
+class ACCELBYTEWARS_API UAccelByteWarsButtonBase : public UCommonButtonBase, public IAccelByteWarsWidgetInterface
 {
 	GENERATED_BODY()
 public:
