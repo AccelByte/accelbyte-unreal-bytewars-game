@@ -82,7 +82,7 @@ void UItemPurchaseWidget::FTUESetup() const
 	{
 		if (FFTUEDialogueModel* FTUE = FFTUEDialogueModel::GetMetadataById("ftue_purchase_itemid", W_Parent->FTUEDialogues))
 		{
-			FTUE->Button1.URLArguments[0].Argument = StoreItemDataObject->ItemData->Id;
+			FTUE->Button1.URLArguments[1].Argument = StoreItemDataObject->ItemData->Id;
 		}
 	}
 }

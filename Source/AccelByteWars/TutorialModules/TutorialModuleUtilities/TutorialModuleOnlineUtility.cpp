@@ -389,6 +389,29 @@ FString UTutorialModuleOnlineUtility::GetFTUEPredefinedArgument(const FTUEPredif
     {
         Result = GetDedicatedServer(this).Server.Pod_name;
     }
+    else if (Keyword == FTUEPredifinedArgument::ENV_BASE_URL) 
+    {
+        const FString ClientBaseURL = AccelByte::FRegistry::Settings.BaseUrl;
+        const FString ServerBaseURL = AccelByte::FRegistry::ServerSettings.BaseUrl;
+
+        /* Since the environment URL config should be the same between client and server, try to get it from client first. 
+         * If it is empty, then get it from server config. */
+        Result = !ClientBaseURL.IsEmpty() ? ClientBaseURL : ServerBaseURL;
+    }
+    else if (Keyword == FTUEPredifinedArgument::GAME_NAMESPACE)
+    {
+        const FString ClientGameNamespace = AccelByte::FRegistry::Settings.Namespace;
+        const FString ServerGameNamespace = AccelByte::FRegistry::ServerSettings.Namespace;
+
+        /* Since the game namespace config should be the same between client and server, try to get it from client first.
+         * If it is empty, then get it from server config. */
+        Result = !ClientGameNamespace.IsEmpty() ? ClientGameNamespace : ServerGameNamespace;
+    }
+    else if (Keyword == FTUEPredifinedArgument::ADMIN_PORTAL_URL)
+    {
+        // Construct Admin Portal URL.
+        Result = FString::Printf(TEXT("%s/admin/namespaces/%s"), *GetFTUEPredefinedArgument(FTUEPredifinedArgument::ENV_BASE_URL), *GetFTUEPredefinedArgument(FTUEPredifinedArgument::GAME_NAMESPACE));
+    }
 
     return Result;
 }

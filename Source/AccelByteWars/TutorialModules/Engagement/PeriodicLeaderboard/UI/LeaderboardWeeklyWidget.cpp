@@ -30,8 +30,8 @@ void ULeaderboardWeeklyWidget::NativeOnActivated()
 
 	if (FFTUEDialogueModel* FTUELeaderboard = FFTUEDialogueModel::GetMetadataById("ftue_weekly_leaderboard", FTUEDialogues))
 	{
-		FTUELeaderboard->Button1.URLArguments[0].Argument = LeaderboardCode;
-		FTUELeaderboard->Button1.URLArguments[1].Argument = CycleId;
+		FTUELeaderboard->Button1.URLArguments[1].Argument = LeaderboardCode;
+		FTUELeaderboard->Button1.URLArguments[2].Argument = CycleId;
 	}
 
 	Super::NativeOnActivated();

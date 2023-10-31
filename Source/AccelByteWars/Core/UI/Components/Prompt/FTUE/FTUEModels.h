@@ -50,7 +50,10 @@ enum class FTUEPredifinedArgument : uint8
     PLAYER_DISPLAY_NAME UMETA(DisplayName = "Player Display Name"),
     GAME_SESSION_ID UMETA(DisplayName = "Game Session Id"),
     PARTY_SESSION_ID UMETA(DisplayName = "Party Session Id"),
-    DEDICATED_SERVER_ID UMETA(DisplayName = "Dedicated Server Id")
+    DEDICATED_SERVER_ID UMETA(DisplayName = "Dedicated Server Id"),
+    ENV_BASE_URL UMETA(DisplayName = "Environment Base URL"),
+    GAME_NAMESPACE UMETA(DisplayName = "Game Namespace"),
+    ADMIN_PORTAL_URL UMETA(DisplayName = "Admin Portal URL")
 };
 
 USTRUCT(BlueprintType)
