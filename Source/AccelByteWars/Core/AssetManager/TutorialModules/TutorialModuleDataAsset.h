@@ -49,7 +49,7 @@ public:
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 	virtual void PostDuplicate(EDuplicateMode::Type DuplicateMode) override;
-	virtual void FinishDestroy();
+	virtual void FinishDestroy() override;
 #endif
 
 	static FTutorialModuleData GetTutorialModuleDataByCodeName(const FString& InCodeName);
@@ -95,6 +95,8 @@ public:
 
 	UFUNCTION(BlueprintPure)
 	TSubclassOf<UTutorialModuleOnlineSession> GetTutorialModuleOnlineSessionClass();
+
+	void RevalidateGeneratedWidgets();
 #pragma endregion 
 
 private:
@@ -151,9 +153,6 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tutorial Module Dependencies", meta = (Tooltip = "Other Tutorial Modules that is required by this Tutorial Module", DisplayThumbnail = false, ShowOnlyInnerProperties))
 	TArray<UTutorialModuleDataAsset*> TutorialModuleDependencies;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tutorial Module Dependencies", meta = (Tooltip = "If set, this module will only be activated if one or more modules in this list is also active. Main purpose is to hide UIs.", DisplayThumbnail = false, ShowOnlyInnerProperties))
-	TArray<UTutorialModuleDataAsset*> TutorialModuleDependents;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Tutorial Module Widgets", meta = (Tooltip = "Widgets that will be generated if this Tutorial Module active", ShowOnlyInnerProperties))
 	TArray<FTutorialModuleGeneratedWidget> GeneratedWidgets;

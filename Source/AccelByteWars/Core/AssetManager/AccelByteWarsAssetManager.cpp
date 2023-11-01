@@ -4,7 +4,9 @@
 
 #include "Core/AssetManager/AccelByteWarsAssetManager.h"
 
+#include "AssetViewUtils.h"
 #include "Framework/Notifications/NotificationManager.h"
+#include "GameFramework/OnlineSession.h"
 #include "GameModes/GameModeDataAsset.h"
 #include "GameModes/GameModeTypeDataAsset.h"
 #include "TutorialModules/TutorialModuleDataAsset.h"
@@ -55,20 +57,27 @@ void UAccelByteWarsAssetManager::PreBeginPIE(bool bStartSimulate)
 	Super::PreBeginPIE(bStartSimulate);
 	{
 		// Do preloading here
-		
+
+#pragma region "Online Session"
+		// Reset Online Session
+		PreferredOnlineSessionClass = nullptr;
+
+		// Re run generated widget validation so that Online Session related modules will generate its widget properly
+		TArray<UAccelByteWarsDataAsset*> Assets = GetAllAssetsForTypeFromCache(UTutorialModuleDataAsset::TutorialModuleAssetType);
+		for (UAccelByteWarsDataAsset* Asset : Assets)
+		{
+			if (UTutorialModuleDataAsset* TutorialModule = Cast<UTutorialModuleDataAsset>(Asset))
+			{
+				TutorialModule->RevalidateGeneratedWidgets();
+			}
+		}
+#pragma endregion
+
 		// Populate Asset Cache before playing in editor
 		PopulateAssetCache();
 
 		StarterOnlineSessionModulesChecker();
-		DependentModuleOverride();
 	}
-}
-
-void UAccelByteWarsAssetManager::EndPIE(bool bStartSimulate)
-{
-	Super::EndPIE(bStartSimulate);
-
-	ResetDependentModuleOverride();
 }
 #endif
 
@@ -164,6 +173,104 @@ UAccelByteWarsDataAsset* UAccelByteWarsAssetManager::GetAssetFromCache(FPrimaryA
 	return nullptr;
 }
 
+#pragma region "Online Session"
+TSubclassOf<UOnlineSession> UAccelByteWarsAssetManager::GetCompleteOnlineSessionClassFromDataAsset()
+{
+	if (!CompleteOnlineSessionClass)
+	{
+		TArray<FTutorialModuleData> TutorialModules = UAccelByteWarsAssetManager::GetAllTutorialModules();
+		for (const FTutorialModuleData& TutorialModule : TutorialModules)
+		{
+			if (TutorialModule.CodeName.Equals(OnlineSessionCompleteTutorialModuleCodeName))
+			{
+				CompleteOnlineSessionClass = TutorialModule.OnlineSessionClass;
+			}
+		}
+	}
+
+	return CompleteOnlineSessionClass;
+}
+
+TSubclassOf<UOnlineSession> UAccelByteWarsAssetManager::GetPreferredOnlineSessionClassFromDataAsset()
+{
+	if (!PreferredOnlineSessionClass)
+	{
+		bool bUseCompletedOnlineSession = false;
+		TArray<FTutorialModuleData> TutorialModules = GetAllTutorialModules();
+
+		for (const FTutorialModuleData& TutorialModule : TutorialModules)
+		{
+			if (TutorialModule.CodeName.Equals(OnlineSessionCompleteTutorialModuleCodeName))
+			{
+				continue;
+			}
+
+			if (TutorialModule.bIsActive && TutorialModule.bOnlineSessionModule)
+			{
+				/**
+				 * Online Session module behaviour:
+				 *
+				 * if one or more of the Online Session module has starter module activated:
+				 * Use the Online Session from the first module found.
+				 * If more than one, show notification that the game will only use the first one.
+				 * 
+				 * else if none of the Online Session module has starter mode activated:
+				 * if 1 Online Session module found, use its Online Session.
+				 * If more than one Online Session module active, use the complete OnlineSession.
+				 */
+				if (TutorialModule.bIsStarterModeActive)
+				{
+					if (TutorialModule.OnlineSessionClass)
+					{
+						UE_LOG_ASSET_MANAGER(
+							Log,
+							TEXT("Starter online session module detected: %s"),
+							*TutorialModule.OnlineSessionClass->GetPathName())
+
+						PreferredOnlineSessionClass = TutorialModule.OnlineSessionClass;
+						bUseCompletedOnlineSession = false;
+						break;
+					}
+				}
+				else
+				{
+					if (bUseCompletedOnlineSession)
+					{
+						continue;
+					}
+
+					if (TutorialModule.OnlineSessionClass)
+					{
+						if (!PreferredOnlineSessionClass)
+						{
+							PreferredOnlineSessionClass = TutorialModule.OnlineSessionClass;
+						}
+						else
+						{
+							bUseCompletedOnlineSession = true;
+							UE_LOG_ASSET_MANAGER(
+								Log,
+								TEXT("Detected multiple Online Session module: %s and %s | Continuing search in case there's starter module activated"),
+								*PreferredOnlineSessionClass->GetPathName(),
+								*TutorialModule.OnlineSessionClass->GetPathName())
+						}
+					}
+				}
+			}
+		}
+
+		if (bUseCompletedOnlineSession)
+		{
+			PreferredOnlineSessionClass = GetCompleteOnlineSessionClassFromDataAsset();
+		}
+
+		UE_LOG_ASSET_MANAGER(Log, TEXT("OnlineSession used: %s"), *PreferredOnlineSessionClass->GetPathName());
+	}
+
+	return PreferredOnlineSessionClass;
+}
+#pragma endregion 
+
 void UAccelByteWarsAssetManager::LoadAssetsOfType(const TArray<FPrimaryAssetType>& AssetTypes)
 {
 	for (const FPrimaryAssetType& AssetType : AssetTypes)
@@ -185,10 +292,6 @@ void UAccelByteWarsAssetManager::LoadAssetsOfType(const TArray<FPrimaryAssetType
 
 			TutorialModuleOverride();
 			StarterOnlineSessionModulesChecker();
-			if (IsRunningGame() || IsRunningDedicatedServer())
-			{
-				DependentModuleOverride();
-			}
 		}
 	}
 }
@@ -488,60 +591,6 @@ void UAccelByteWarsAssetManager::StarterOnlineSessionModulesChecker()
 		OnlineSessionActiveNotificationItem = FSlateNotificationManager::Get().AddNotification(Info);
 	}
 #endif
-}
-
-void UAccelByteWarsAssetManager::DependentModuleOverride() const
-{
-	TArray<UAccelByteWarsDataAsset*> Assets = GetAllAssetsForTypeFromCache(
-		UTutorialModuleDataAsset::TutorialModuleAssetType);
-	for (UAccelByteWarsDataAsset* Asset : Assets)
-	{
-		if (UTutorialModuleDataAsset* TutorialModule = Cast<UTutorialModuleDataAsset>(Asset))
-		{
-			if (!TutorialModule->IsActiveAndDependenciesChecked() || TutorialModule->TutorialModuleDependents.IsEmpty())
-			{
-				continue;
-			}
-
-			// disable module if ALL the dependants is not active
-			bool bDisableModule = true;
-			for (const UTutorialModuleDataAsset* Dependant : TutorialModule->TutorialModuleDependents)
-			{
-				if (Dependant->IsActiveAndDependenciesChecked())
-				{
-					bDisableModule = false;
-					break;
-				}
-			}
-
-			if (bDisableModule)
-			{
-				// no need to show notification, just disable it right away.
-				TutorialModule->OverridesIsActive(false);
-				TutorialModule->bIsOverridenByDependents = true;
-			}
-		}
-	}
-}
-
-void UAccelByteWarsAssetManager::ResetDependentModuleOverride() const
-{
-	TArray<UAccelByteWarsDataAsset*> Assets = GetAllAssetsForTypeFromCache(
-		UTutorialModuleDataAsset::TutorialModuleAssetType);
-	for (UAccelByteWarsDataAsset* Asset : Assets)
-	{
-		if (UTutorialModuleDataAsset* TutorialModule = Cast<UTutorialModuleDataAsset>(Asset))
-		{
-			if (TutorialModule->TutorialModuleDependents.IsEmpty() || !TutorialModule->bIsOverridenByDependents)
-			{
-				continue;
-			}
-
-			TutorialModule->OverridesIsActive(true);
-			TutorialModule->ResetOverrides();
-			TutorialModule->bIsOverridenByDependents = false;
-		}
-	}
 }
 
 #if UE_EDITOR

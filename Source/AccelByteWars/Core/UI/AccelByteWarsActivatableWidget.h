@@ -67,6 +67,8 @@ public:
 
 	// The FTUE dialogues to be shown when this widget is active.
 	TArray<FFTUEDialogueModel*> FTUEDialogues;
+
+	bool GetIsAllGeneratedWidgetsShouldNotDisplay() const;
 #pragma endregion
 
 protected:
@@ -114,6 +116,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category = FTUE, meta = (ToolTip = "Whether this widget should initialize FTUE on activated."))
 	bool bOnActivatedInitializeFTUE = true;
 
+	// If set to true, hide this UI if the generated widgets is empty
+	UPROPERTY(EditDefaultsOnly, Category = "Tutorial Module Metadata")
+	bool bHideIfGeneratedWidgetEmpty = false;
+
 private:
 #pragma region "Tutorial Module"
 	void ValidateAssociateTutorialModule();
@@ -125,6 +131,8 @@ private:
 	TWeakObjectPtr<UAccelByteWarsButtonBase> GenerateEntryButton(FTutorialModuleGeneratedWidget& Metadata, UPanelWidget& WidgetContainer);
 	TWeakObjectPtr<UAccelByteWarsButtonBase> GenerateActionButton(FTutorialModuleGeneratedWidget& Metadata, UPanelWidget& WidgetContainer);
 	TWeakObjectPtr<UAccelByteWarsActivatableWidget> GenerateWidget(FTutorialModuleGeneratedWidget& Metadata, UPanelWidget& WidgetContainer);
+
+	TSubclassOf<UAccelByteWarsActivatableWidget> GetValidEntryWidgetClass(const FTutorialModuleGeneratedWidget& Metadata) const;
 
 	UPROPERTY()
 	TArray<UUserWidget*> GeneratedWidgetPool;

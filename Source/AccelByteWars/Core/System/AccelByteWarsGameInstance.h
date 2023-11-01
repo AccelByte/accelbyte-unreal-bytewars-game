@@ -146,6 +146,10 @@ public:
 	 */
 	FSimpleMulticastDelegate OnDelayedClientTravelStartedDelegates;
 
+	/**
+	 * @brief Return true if there's a pending connection attempt failed. Reset the pending flag when this called.
+	 * @param OutFailureType Connection failure type
+	 */
 	bool GetIsPendingFailureNotification(ENetworkFailure::Type& OutFailureType);
 
 private:

@@ -21,10 +21,6 @@ class ACCELBYTEWARS_API UAccelbyteWarsServerSubsystem final : public UAccelByteW
 public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
-	virtual TSubclassOf<UTutorialModuleOnlineSession> GetOnlineSessionClass() const override
-	{
-		return UAccelByteWarsOnlineSession::StaticClass();
-	}
 
 protected:
 	virtual void OnServerSessionReceived(FName SessionName) override;

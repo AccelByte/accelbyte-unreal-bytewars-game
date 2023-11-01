@@ -201,6 +201,11 @@ TSubclassOf<UTutorialModuleOnlineSession> UTutorialModuleDataAsset::GetTutorialM
 {
 	return IsStarterModeActive() ? StarterOnlineSessionClass : DefaultOnlineSessionClass;
 }
+
+void UTutorialModuleDataAsset::RevalidateGeneratedWidgets()
+{
+	ValidateGeneratedWidgets();
+}
 #pragma endregion
 
 void UTutorialModuleDataAsset::ValidateDataAssetProperties()
@@ -355,7 +360,6 @@ bool UTutorialModuleDataAsset::ValidateClassProperty(TSubclassOf<UTutorialModule
 void UTutorialModuleDataAsset::CleanUpDataAssetProperties()
 {
 	TutorialModuleDependencies.Empty();
-	TutorialModuleDependents.Empty();
 
 	for (FTutorialModuleGeneratedWidget& GeneratedWidget : GeneratedWidgets)
 	{
@@ -491,8 +495,22 @@ void UTutorialModuleDataAsset::ValidateGeneratedWidgets()
 			UTutorialModuleDataAsset::GeneratedWidgetUsedIds.Add(GeneratedWidget.WidgetId);
 		}
 
+		/**
+		 * flag to disable widget if the current OnlineSession is not the complete OnlineSession nor is it its own OnlineSession
+		 * True if not an Online Session Tutorial Module
+		 */
+		bool bShouldGenerateBasedOnUsedOnlineSession = true;
+		if (GetIsOnlineSessionActivatable())
+		{
+			UAccelByteWarsAssetManager& AssetManager = UAccelByteWarsAssetManager::Get();
+			TSubclassOf<UOnlineSession> PreferredOnlineSessionClass = AssetManager.GetPreferredOnlineSessionClassFromDataAsset();
+			bShouldGenerateBasedOnUsedOnlineSession =
+				PreferredOnlineSessionClass == AssetManager.GetCompleteOnlineSessionClassFromDataAsset() ||
+				PreferredOnlineSessionClass == GetTutorialModuleOnlineSessionClass();
+		}
+
 		// Assign the generated widget to the target widget class.
-		if (IsActiveAndDependenciesChecked())
+		if (IsActiveAndDependenciesChecked() && bShouldGenerateBasedOnUsedOnlineSession)
 		{
 			for (TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : GeneratedWidget.TargetWidgetClasses)
 			{

@@ -17,10 +17,6 @@ class ACCELBYTEWARS_API UMatchmakingDSServerSubsystem_Starter : public UAccelByt
 public:
 	virtual void Deinitialize() override;
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
-	virtual TSubclassOf<UTutorialModuleOnlineSession> GetOnlineSessionClass() const override
-	{
-		return UMatchmakingDSOnlineSession_Starter::StaticClass();
-	}
 
 #pragma region "Matchmaking with DS Function Declarations"
 protected:

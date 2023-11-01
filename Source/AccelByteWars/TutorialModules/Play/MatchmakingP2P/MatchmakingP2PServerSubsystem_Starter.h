@@ -17,10 +17,6 @@ class ACCELBYTEWARS_API UMatchmakingP2PServerSubsystem_Starter : public UAccelBy
 public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
-	virtual TSubclassOf<UTutorialModuleOnlineSession> GetOnlineSessionClass() const override
-	{
-		return UMatchmakingP2POnlineSession_Starter::StaticClass();
-	}
 
 #pragma region "Matchmaking with P2P Function Declarations"
 protected:

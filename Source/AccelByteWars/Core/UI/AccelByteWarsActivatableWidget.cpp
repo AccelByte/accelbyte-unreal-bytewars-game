@@ -56,6 +56,8 @@ void UAccelByteWarsActivatableWidget::NativeOnActivated()
 
 	InitializeGeneratedWidgets();
 	InitializeFTEUDialogues(bOnActivatedInitializeFTUE);
+
+	SetVisibility(GetIsAllGeneratedWidgetsShouldNotDisplay() ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
 }
 
 void UAccelByteWarsActivatableWidget::NativeOnDeactivated()
@@ -128,6 +130,30 @@ void UAccelByteWarsActivatableWidget::ValidateCompiledWidgetTree(const UWidgetTr
 }
 
 #endif
+
+bool UAccelByteWarsActivatableWidget::GetIsAllGeneratedWidgetsShouldNotDisplay() const
+{
+	bool bAllShouldNotDisplay = false;
+	if (bHideIfGeneratedWidgetEmpty)
+	{
+		bAllShouldNotDisplay = true;
+		for (const FTutorialModuleGeneratedWidget* GeneratedWidget : GeneratedWidgets)
+		{
+			if (!GeneratedWidget)
+			{
+				continue;
+			}
+
+			if (GetValidEntryWidgetClass(*GeneratedWidget))
+			{
+				bAllShouldNotDisplay = false;
+				break;
+			}
+		}
+	}
+	
+	return bAllShouldNotDisplay;
+}
 
 void UAccelByteWarsActivatableWidget::MoveCameraToTargetLocation(const float DeltaTime, const FVector TargetLocation, const float InterpSpeed)
 {
@@ -263,8 +289,11 @@ void UAccelByteWarsActivatableWidget::InitializeGeneratedWidgets()
 		{
 			GenerateActionButton(*GeneratedWidget, *WidgetContainer);
 		}
-	
-		GeneratedWidget->OnWidgetGenerated.Broadcast();
+
+		if (GeneratedWidget)
+		{
+			GeneratedWidget->OnWidgetGenerated.Broadcast();
+		}
 	}
 }
 
@@ -277,31 +306,7 @@ TWeakObjectPtr<UAccelByteWarsButtonBase> UAccelByteWarsActivatableWidget::Genera
 	const TSubclassOf<UAccelByteWarsButtonBase> DefaultButtonClass = GameInstance->GetDefaultButtonClass();
 	ensure(DefaultButtonClass.Get());
 
-	// Set valid entry widget class.
-	UTutorialModuleDataAsset* SourceTutorialModule = nullptr;
-	TSubclassOf<UAccelByteWarsActivatableWidget> EntryWidgetClass = nullptr;
-	switch (Metadata.WidgetType)
-	{
-	case ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_ENTRY_BUTTON:
-		SourceTutorialModule = Metadata.OwnerTutorialModule;
-		break;
-	case ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_BUTTON:
-		SourceTutorialModule = Metadata.OtherTutorialModule;
-		break;
-	default:
-		EntryWidgetClass = Metadata.GenericWidgetClass;
-		break;
-	}
-	
-	if (SourceTutorialModule) 
-	{
-		EntryWidgetClass = SourceTutorialModule->GetTutorialModuleUIClass();
-		if (Metadata.TutorialModuleWidgetClassType == ETutorialModuleWidgetClassType::ASSOCIATE_WIDGET_CLASS)
-		{
-			EntryWidgetClass = (!SourceTutorialModule->IsStarterModeActive()) ? Metadata.DefaultTutorialModuleWidgetClass : Metadata.StarterTutorialModuleWidgetClass;
-		}
-	}
-
+	TSubclassOf<UAccelByteWarsActivatableWidget> EntryWidgetClass = GetValidEntryWidgetClass(Metadata);
 	if (!EntryWidgetClass)
 	{
 		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Entry widget class is null. Cannot initialize the generated entry button."));
@@ -439,37 +444,13 @@ TWeakObjectPtr<UAccelByteWarsActivatableWidget> UAccelByteWarsActivatableWidget:
 {
 	UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetWorld()->GetGameInstance());
 	ensure(GameInstance);
-	UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget();
+	const UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget();
 	ensure(BaseUIWidget);
 
-	// Set valid entry widget class.
-	UTutorialModuleDataAsset* SourceTutorialModule = nullptr;
-	TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass = nullptr;
-	switch (Metadata.WidgetType)
-	{
-	case ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_WIDGET:
-		SourceTutorialModule = Metadata.OwnerTutorialModule;
-		break;
-	case ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_WIDGET:
-		SourceTutorialModule = Metadata.OtherTutorialModule;
-		break;
-	default:
-		WidgetClass = Metadata.GenericWidgetClass;
-		break;
-	}
-
-	if (SourceTutorialModule)
-	{
-		WidgetClass = SourceTutorialModule->GetTutorialModuleUIClass();
-		if (Metadata.TutorialModuleWidgetClassType == ETutorialModuleWidgetClassType::ASSOCIATE_WIDGET_CLASS)
-		{
-			WidgetClass = (!SourceTutorialModule->IsStarterModeActive()) ? Metadata.DefaultTutorialModuleWidgetClass : Metadata.StarterTutorialModuleWidgetClass;
-		}
-	}
-
+	const TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass = GetValidEntryWidgetClass(Metadata);
 	if (!WidgetClass)
 	{
-		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Widget class is null. Cannot initialize the generated the Tutorial Module's widget."));
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Widget class is null. Cannot initialize the generated Tutorial Module's widget."));
 		return nullptr;
 	}
 
@@ -505,6 +486,53 @@ TWeakObjectPtr<UAccelByteWarsActivatableWidget> UAccelByteWarsActivatableWidget:
 	GeneratedWidgetPool.Add(Widget.Get());
 
 	return Widget;
+}
+
+TSubclassOf<UAccelByteWarsActivatableWidget> UAccelByteWarsActivatableWidget::GetValidEntryWidgetClass(
+	const FTutorialModuleGeneratedWidget& Metadata) const
+{
+	UTutorialModuleDataAsset* SourceTutorialModule = nullptr;
+	TSubclassOf<UAccelByteWarsActivatableWidget> EntryWidgetClass = nullptr;
+	switch (Metadata.WidgetType)
+	{
+	case ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_ENTRY_BUTTON:
+	case ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_WIDGET:
+		SourceTutorialModule = Metadata.OwnerTutorialModule;
+		break;
+	case ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_BUTTON:
+	case ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_WIDGET:
+		SourceTutorialModule = Metadata.OtherTutorialModule;
+		break;
+	default:
+		EntryWidgetClass = Metadata.GenericWidgetClass;
+		break;
+	}
+
+	if (SourceTutorialModule)
+	{
+		EntryWidgetClass = SourceTutorialModule->GetTutorialModuleUIClass();
+		if (Metadata.TutorialModuleWidgetClassType == ETutorialModuleWidgetClassType::ASSOCIATE_WIDGET_CLASS)
+		{
+			EntryWidgetClass = (!SourceTutorialModule->IsStarterModeActive()) ? Metadata.DefaultTutorialModuleWidgetClass : Metadata.StarterTutorialModuleWidgetClass;
+		}
+	}
+
+	if (!EntryWidgetClass)
+	{
+		return nullptr;
+	}
+
+	// If the target widget have bHideIfGeneratedWidgetEmpty true and its generated widget is empty
+	if (const UAccelByteWarsActivatableWidget* DefaultObject = Cast<UAccelByteWarsActivatableWidget>(EntryWidgetClass->GetDefaultObject()))
+	{
+		if (DefaultObject->GetIsAllGeneratedWidgetsShouldNotDisplay())
+		{
+			UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Log, TEXT("Widget class (%s) have its bHideIfGeneratedWidgetEmpty set to true and all of its GeneratedWidgets is empty / not visible. Skipping generation"), *DefaultObject->GetName())
+			return nullptr;
+		}
+	}
+
+	return EntryWidgetClass;
 }
 #pragma endregion
 

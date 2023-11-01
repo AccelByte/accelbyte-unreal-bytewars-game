@@ -145,85 +145,10 @@ FLinearColor UAccelByteWarsGameInstance::GetTeamColor(uint8 TeamId) const
 
 TSubclassOf<UOnlineSession> UAccelByteWarsGameInstance::GetOnlineSessionClass()
 {
-	TSubclassOf<UOnlineSession> OnlineSessionClass = nullptr;
+	const TSubclassOf<UOnlineSession> OnlineSessionClass =
+		UAccelByteWarsAssetManager::Get().GetPreferredOnlineSessionClassFromDataAsset();
 
-	bool bUseCompletedOnlineSession = false;
-	const FString OnlineSessionCompleteCodeName = "ONLINESESSIONCOMPLETE";
-	TArray<FTutorialModuleData> TutorialModules = UAccelByteWarsAssetManager::GetAllTutorialModules();
-
-	for (const FTutorialModuleData& TutorialModule : TutorialModules)
-	{
-		if (TutorialModule.CodeName.Equals(OnlineSessionCompleteCodeName))
-		{
-			continue;
-		}
-
-		if (TutorialModule.bIsActive && TutorialModule.bOnlineSessionModule)
-		{
-			/**
-			 * Online Session module behaviour:
-			 *
-			 * if one or more of the Online Session module has starter module activated:
-			 * Use the Online Session from the first module found.
-			 * If more than one, show notification that the game will only use the first one.
-			 * 
-			 * else if none of the Online Session module has starter mode activated:
-			 * if 1 Online Session module found, use its Online Session.
-			 * If more than one Online Session module active, use the complete OnlineSession.
-			 */
-			if (TutorialModule.bIsStarterModeActive)
-			{
-				if (TutorialModule.OnlineSessionClass)
-				{
-					GAMEINSTANCE_LOG("Starter online session module detected: %s", *TutorialModule.OnlineSessionClass->GetPathName())
-
-					OnlineSessionClass = TutorialModule.OnlineSessionClass;
-					bUseCompletedOnlineSession = false;
-					break;
-				}
-			}
-			else
-			{
-				if (bUseCompletedOnlineSession)
-				{
-					continue;
-				}
-
-				if (TutorialModule.OnlineSessionClass)
-				{
-					if (OnlineSessionClass == nullptr)
-					{
-						OnlineSessionClass = TutorialModule.OnlineSessionClass;
-					}
-					else
-					{
-						bUseCompletedOnlineSession = true;
-						GAMEINSTANCE_LOG(
-							"Detected multiple Online Session module: %s and %s | Continuing search in case there's starter module activated",
-							*OnlineSessionClass->GetPathName(),
-							*TutorialModule.OnlineSessionClass->GetPathName())
-					}
-				}
-			}
-		}
-	}
-
-	if (bUseCompletedOnlineSession)
-	{
-		// re iterate in case the completed module is at the earlier index
-		for (const FTutorialModuleData& TutorialModule : TutorialModules)
-		{
-			if (TutorialModule.CodeName.Equals(OnlineSessionCompleteCodeName))
-			{
-				OnlineSessionClass = TutorialModule.OnlineSessionClass;
-			}
-		}
-	}
-
-	OnlineSessionClass = OnlineSessionClass == nullptr ? Super::GetOnlineSessionClass() : OnlineSessionClass;
-
-	GAMEINSTANCE_LOG("OnlineSession used: %s", *OnlineSessionClass->GetPathName());
-	return OnlineSessionClass;
+	return OnlineSessionClass ? OnlineSessionClass : Super::GetOnlineSessionClass();
 }
 
 FGameModeData UAccelByteWarsGameInstance::GetGameModeDataByCodeName(const FString CodeName) const
