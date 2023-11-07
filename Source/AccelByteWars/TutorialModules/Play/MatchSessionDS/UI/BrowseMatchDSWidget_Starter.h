@@ -5,41 +5,34 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "OnlineError.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
-#include "CreateMatchSessionDSWidget.generated.h"
+#include "Interfaces/OnlineSessionInterface.h"
+#include "Play/MatchSessionEssentials/UI/BrowseMatchWidget.h"
+#include "Play/OnlineSessionUtils/AccelByteWarsOnlineSessionModels.h"
+#include "BrowseMatchDSWidget_Starter.generated.h"
 
-class UCommonButtonBase;
 class UAccelByteWarsOnlineSessionBase;
-class UCreateMatchSessionWidget;
+class UCommonButtonBase;
 
 UCLASS(Abstract)
-class ACCELBYTEWARS_API UCreateMatchSessionDSWidget : public UAccelByteWarsActivatableWidget
+class ACCELBYTEWARS_API UBrowseMatchDSWidget_Starter : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
 
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
 
+#pragma region "Match Session with DS function declarations"
 protected:
-	UFUNCTION()
-	void CreateSession() const;
+	// TODO: Add your function declarations here
 
-	void OnCreateSessionComplete(FName SessionName, bool bSucceeded) const;
+#pragma endregion
 
-	UFUNCTION()
-	void CancelJoiningSession() const;
-
-	void OnCancelJoiningSessionComplete(FName SessionName, bool bSucceeded) const;
-
-	void OnSessionServerUpdateReceived(
-		const FName SessionName,
-		const FOnlineError& Error,
-		const bool bHasClientTravelTriggered) const;
-
-protected:
+private:
 	UPROPERTY()
 	UAccelByteWarsOnlineSessionBase* OnlineSession;
+
+	const int32 SessionsNumToQuery = 20;
 
 #pragma region "UI related"
 protected:
@@ -47,9 +40,9 @@ protected:
 
 private:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UCommonButtonBase* Btn_StartMatchSessionDS;
+	UCommonButtonBase* Btn_Refresh;
 
 	UPROPERTY()
-	UCreateMatchSessionWidget* W_Parent;
-#pragma endregion
+	UBrowseMatchWidget* W_Parent;
+#pragma endregion 
 };

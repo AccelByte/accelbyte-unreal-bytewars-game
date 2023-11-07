@@ -302,7 +302,7 @@ void UMatchSessionP2POnlineSession::CreateMatchSession(
 	// flag to signify the server which game mode to use
 	SessionSettings.Set(
 		GAMESETUP_GameModeCode,
-		FString(GameModeType == EGameModeType::FFA ? "ELIMINATION-P2P" : "TEAMDEATHMATCH-P2P"));
+		FString(GameModeType == EGameModeType::FFA ? "ELIMINATION-P2P-USERCREATED" : "TEAMDEATHMATCH-P2P-USERCREATED"));
 
 	CreateSession(
 		LocalUserNum,

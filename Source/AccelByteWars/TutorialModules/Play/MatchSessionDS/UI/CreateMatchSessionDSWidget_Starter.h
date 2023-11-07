@@ -7,35 +7,25 @@
 #include "CoreMinimal.h"
 #include "OnlineError.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
-#include "CreateMatchSessionDSWidget.generated.h"
+#include "CreateMatchSessionDSWidget_Starter.generated.h"
 
 class UCommonButtonBase;
 class UAccelByteWarsOnlineSessionBase;
 class UCreateMatchSessionWidget;
 
 UCLASS(Abstract)
-class ACCELBYTEWARS_API UCreateMatchSessionDSWidget : public UAccelByteWarsActivatableWidget
+class ACCELBYTEWARS_API UCreateMatchSessionDSWidget_Starter : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
 
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
 
+#pragma region "Match Session with DS function declarations"
 protected:
-	UFUNCTION()
-	void CreateSession() const;
+	// TODO: Add your function declarations here
 
-	void OnCreateSessionComplete(FName SessionName, bool bSucceeded) const;
-
-	UFUNCTION()
-	void CancelJoiningSession() const;
-
-	void OnCancelJoiningSessionComplete(FName SessionName, bool bSucceeded) const;
-
-	void OnSessionServerUpdateReceived(
-		const FName SessionName,
-		const FOnlineError& Error,
-		const bool bHasClientTravelTriggered) const;
+#pragma endregion
 
 protected:
 	UPROPERTY()

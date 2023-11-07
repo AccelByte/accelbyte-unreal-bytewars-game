@@ -340,7 +340,7 @@ void UMatchSessionDSOnlineSession::CreateMatchSession(
 	// flag to signify the server which game mode to use
 	SessionSettings.Set(
 		GAMESETUP_GameModeCode,
-		FString(GameModeType == EGameModeType::FFA ? "ELIMINATION-DS" : "TEAMDEATHMATCH-DS"));
+		FString(GameModeType == EGameModeType::FFA ? "ELIMINATION-DS-USERCREATED" : "TEAMDEATHMATCH-DS-USERCREATED"));
 
 	// Check is using AMS
 	const bool bUseAMS = UTutorialModuleOnlineUtility::GetIsServerUseAMS();

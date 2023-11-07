@@ -43,7 +43,6 @@ void UBrowseMatchWidget::SetLoadingMessage(const FText& Text, const bool bBrowse
 	if (bBrowse)
 	{
 		Ws_Browse_Content->LoadingMessage = Text;
-		Ws_Browse_Content->bEnableCancelButton = bEnableCancelButton;
 	}
 	else
 	{

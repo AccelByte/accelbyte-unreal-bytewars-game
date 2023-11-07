@@ -22,19 +22,18 @@ void UCreateMatchSessionDSWidget::NativeOnActivated()
 	}
 	OnlineSession = Cast<UAccelByteWarsOnlineSessionBase>(BaseOnlineSession);
 
-	OnlineSession->GetOnCreateSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnCreateSessionComplete);
-	OnlineSession->GetOnLeaveSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnCancelJoiningSessionComplete);
-	OnlineSession->GetOnSessionServerUpdateReceivedDelegates()->AddUObject(
-		this, &ThisClass::OnSessionServerUpdateReceived);
-
-	Btn_StartMatchSessionDS->OnClicked().AddUObject(this, &ThisClass::CreateSession);
-
 	W_Parent = GetFirstOccurenceOuter<UCreateMatchSessionWidget>();
 	if (!ensure(W_Parent))
 	{
 		return;
 	}
 
+	OnlineSession->GetOnCreateSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnCreateSessionComplete);
+	OnlineSession->GetOnLeaveSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnCancelJoiningSessionComplete);
+	OnlineSession->GetOnSessionServerUpdateReceivedDelegates()->AddUObject(
+		this, &ThisClass::OnSessionServerUpdateReceived);
+
+	Btn_StartMatchSessionDS->OnClicked().AddUObject(this, &ThisClass::CreateSession);
 	W_Parent->GetProcessingWidgetComponent()->OnCancelClicked.AddUObject(this, &ThisClass::CancelJoiningSession);
 	W_Parent->GetProcessingWidgetComponent()->OnRetryClicked.AddUObject(this, &ThisClass::CreateSession);
 }
@@ -48,7 +47,6 @@ void UCreateMatchSessionDSWidget::NativeOnDeactivated()
 	OnlineSession->GetOnSessionServerUpdateReceivedDelegates()->RemoveAll(this);
 
 	Btn_StartMatchSessionDS->OnClicked().RemoveAll(this);
-
 	W_Parent->GetProcessingWidgetComponent()->OnRetryClicked.RemoveAll(this);
 	W_Parent->GetProcessingWidgetComponent()->OnCancelClicked.RemoveAll(this);
 }
@@ -70,15 +68,6 @@ void UCreateMatchSessionDSWidget::CreateSession() const
 		W_Parent->GetSelectedGameModeType());
 }
 
-void UCreateMatchSessionDSWidget::CancelJoiningSession() const
-{
-	W_Parent->SetLoadingMessage(TEXT_LEAVING_SESSION, false);
-	W_Parent->SwitchContent(UCreateMatchSessionWidget::EContentType::LOADING);
-
-	OnlineSession->LeaveSession(
-		OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession));
-}
-
 void UCreateMatchSessionDSWidget::OnCreateSessionComplete(FName SessionName, bool bSucceeded) const
 {
 	// Abort if not a game session.
@@ -97,6 +86,15 @@ void UCreateMatchSessionDSWidget::OnCreateSessionComplete(FName SessionName, boo
 		W_Parent->SetErrorMessage(TEXT_FAILED_TO_CREATE_SESSION, true);
 		W_Parent->SwitchContent(UCreateMatchSessionWidget::EContentType::ERROR);
 	}
+}
+
+void UCreateMatchSessionDSWidget::CancelJoiningSession() const
+{
+	W_Parent->SetLoadingMessage(TEXT_LEAVING_SESSION, false);
+	W_Parent->SwitchContent(UCreateMatchSessionWidget::EContentType::LOADING);
+
+	OnlineSession->LeaveSession(
+		OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession));
 }
 
 void UCreateMatchSessionDSWidget::OnCancelJoiningSessionComplete(FName SessionName, bool bSucceeded) const
