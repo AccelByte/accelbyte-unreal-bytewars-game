@@ -3,8 +3,12 @@
 // and restrictions contact your company contract manager.
 
 #include "ChatWidget.h"
+
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
+
+#include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
+
 #include "Components/VerticalBox.h"
 #include "Components/WidgetSwitcher.h"
 #include "Components/ListView.h"
@@ -300,5 +304,19 @@ void UChatWidget::OnChatRoomMessageReceived(const FUniqueNetId& Sender, const FC
 		return;
 	}
 
-	AppendChatMessage(Message.Get(), ChatEssentialsSubsystem->GetChatRoomType(RoomId));
+	// Replace sender name with default player name if it is empty.
+	if (Message.Get().GetNickname().IsEmpty()) 
+	{
+		UChatData* ChatData = NewObject<UChatData>();
+		ChatData->Sender = UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(Sender);
+		ChatData->Message = Message.Get().GetBody();
+		ChatData->bIsSenderLocal = ChatEssentialsSubsystem->IsMessageFromLocalUser(Sender.AsShared(), Message.Get());;
+
+		AppendChatMessage(ChatData, ChatEssentialsSubsystem->GetChatRoomType(RoomId));
+	}
+	// If not, show the chat as is.
+	else 
+	{
+		AppendChatMessage(Message.Get(), ChatEssentialsSubsystem->GetChatRoomType(RoomId));
+	}
 }
