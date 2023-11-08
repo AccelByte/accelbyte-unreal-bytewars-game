@@ -4,7 +4,6 @@
 
 #include "Core/AssetManager/AccelByteWarsAssetManager.h"
 
-#include "AssetViewUtils.h"
 #include "Framework/Notifications/NotificationManager.h"
 #include "GameFramework/OnlineSession.h"
 #include "GameModes/GameModeDataAsset.h"

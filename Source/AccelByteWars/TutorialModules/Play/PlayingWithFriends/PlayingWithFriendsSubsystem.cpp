@@ -392,19 +392,19 @@ void UPlayingWithFriendsSubsystem::OnJoinSessionComplete(
 		ErrorMessage = FText();
 		break;
 	case EOnJoinSessionCompleteResult::SessionIsFull:
-		ErrorMessage = TEXT_FAILED_SESSION_FULL;
+		ErrorMessage = TEXT_FAILED_SESSION_FULL_PLAYING_WITH_FRIENDS;
 		break;
 	case EOnJoinSessionCompleteResult::SessionDoesNotExist:
-		ErrorMessage = TEXT_FAILED_SESSION_NULL;
+		ErrorMessage = TEXT_FAILED_SESSION_NULL_PLAYING_WITH_FRIENDS;
 		break;
 	case EOnJoinSessionCompleteResult::CouldNotRetrieveAddress:
-		ErrorMessage = TEXT_FAILED_TO_JOIN_SESSION;
+		ErrorMessage = TEXT_FAILED_TO_JOIN_SESSION_PLAYING_WITH_FRIENDS;
 		break;
 	case EOnJoinSessionCompleteResult::AlreadyInSession:
-		ErrorMessage = TEXT_FAILED_ALREADY_IN_SESSION;
+		ErrorMessage = TEXT_FAILED_ALREADY_IN_SESSION_PLAYING_WITH_FRIENDS;
 		break;
 	case EOnJoinSessionCompleteResult::UnknownError:
-		ErrorMessage = TEXT_FAILED_TO_JOIN_SESSION;
+		ErrorMessage = TEXT_FAILED_TO_JOIN_SESSION_PLAYING_WITH_FRIENDS;
 		break;
 	default:
 		ErrorMessage = FText();
