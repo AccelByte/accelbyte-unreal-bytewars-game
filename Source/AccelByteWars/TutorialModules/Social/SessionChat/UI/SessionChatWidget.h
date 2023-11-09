@@ -23,6 +23,9 @@ class ACCELBYTEWARS_API USessionChatWidget : public UAccelByteWarsActivatableWid
 {
 	GENERATED_BODY()
 
+public:
+	void SetDefaultChatType(const EAccelByteChatRoomType ChatRoomType);
+
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeOnActivated() override;
@@ -49,7 +52,7 @@ protected:
 	USessionChatSubsystem* SessionChatSubsystem;
 	UPromptSubsystem* PromptSubsystem;
 
-	EAccelByteChatRoomType CurrentChatRoomType = EAccelByteChatRoomType::NORMAL;
+	EAccelByteChatRoomType CurrentChatRoomType = EAccelByteChatRoomType::SESSION_V2;
 
 	UListView* Lv_ChatMessage = nullptr;
 	UAccelByteWarsWidgetSwitcher* Ws_ChatMessage = nullptr;

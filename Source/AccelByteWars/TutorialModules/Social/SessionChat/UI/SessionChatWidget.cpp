@@ -35,7 +35,6 @@ void USessionChatWidget::NativeOnActivated()
 	Super::NativeOnActivated();
 
 	// Reset cache.
-	CurrentChatRoomType = EAccelByteChatRoomType::NORMAL;
 	Lv_ChatMessage = nullptr;
 	Ws_ChatMessage = nullptr;
 
@@ -62,12 +61,13 @@ void USessionChatWidget::NativeOnActivated()
 		SessionChatSubsystem->GetOnChatRoomMessageReceivedDelegates()->AddUObject(this, &ThisClass::OnChatRoomMessageReceived);
 	}
 
-	// Display default state.
-	SwitchChatMessageType(EAccelByteChatRoomType::SESSION_V2);
+	SwitchChatMessageType(CurrentChatRoomType);
 }
 
 void USessionChatWidget::NativeOnDeactivated()
 {
+	CurrentChatRoomType = EAccelByteChatRoomType::SESSION_V2;
+
 	Edt_ChatMessage->OnTextCommitted.Clear();
 	Edt_ChatMessage->OnTextChanged.Clear();
 	Btn_Send->OnClicked().Clear();
@@ -83,6 +83,11 @@ void USessionChatWidget::NativeOnDeactivated()
 	}
 
 	Super::NativeOnDeactivated();
+}
+
+void USessionChatWidget::SetDefaultChatType(const EAccelByteChatRoomType ChatRoomType)
+{
+	CurrentChatRoomType = ChatRoomType;
 }
 
 void USessionChatWidget::SwitchChatMessageType(const EAccelByteChatRoomType ChatRoomType)

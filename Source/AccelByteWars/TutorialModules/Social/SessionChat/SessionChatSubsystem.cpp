@@ -16,6 +16,44 @@ void USessionChatSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
 
+    // Assign action button to open party chat.
+    FTutorialModuleGeneratedWidget* PartyChatButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_partychat"));
+    if (PartyChatButtonMetadata)
+    {
+        if (!PartyChatButtonMetadata->OwnerTutorialModule)
+        {
+            return;
+        }
+
+        auto WidgetClass = PartyChatButtonMetadata->OwnerTutorialModule->GetTutorialModuleUIClass();
+        if (!WidgetClass)
+        {
+            return;
+        }
+
+        PartyChatButtonMetadata->ButtonAction.Clear();
+        PartyChatButtonMetadata->ButtonAction.AddWeakLambda(this, [this, WidgetClass]()
+        {
+            UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetGameInstance());
+            if (!GameInstance)
+            {
+                return;
+            }
+
+            UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget();
+            if (!BaseUIWidget)
+            {
+                return;
+            }
+
+            if (USessionChatWidget* SessionChatWidget = Cast<USessionChatWidget>(BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, WidgetClass.Get())))
+            {
+                SessionChatWidget->SetDefaultChatType(EAccelByteChatRoomType::PARTY_V2);
+            }
+            // TODO: Add check for starter widget too here.
+        });
+    }
+
     if (GetChatInterface()) 
     {
         GetChatInterface()->OnTopicAddedDelegates.AddUObject(this, &ThisClass::OnTopicAdded);
