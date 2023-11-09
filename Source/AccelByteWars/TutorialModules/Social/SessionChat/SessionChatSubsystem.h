@@ -8,12 +8,12 @@
 #include "OnlineSubsystemAccelByte.h"
 #include "OnlineChatInterfaceAccelByte.h"
 #include "OnlineSessionInterfaceV2AccelByte.h"
-#include "ChatEssentialsLog.h"
+#include "SessionChatLog.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
-#include "ChatEssentialsSubsystem.generated.h"
+#include "SessionChatSubsystem.generated.h"
 
 UCLASS()
-class ACCELBYTEWARS_API UChatEssentialsSubsystem : public UTutorialModuleSubsystem
+class ACCELBYTEWARS_API USessionChatSubsystem : public UTutorialModuleSubsystem
 {
 	GENERATED_BODY()
 	

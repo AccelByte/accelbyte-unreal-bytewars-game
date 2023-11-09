@@ -2,10 +2,10 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-#include "ChatEssentialsSubsystem.h"
+#include "SessionChatSubsystem.h"
 #include "OnlineSubsystemUtils.h"
 
-void UChatEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+void USessionChatSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
 
@@ -19,7 +19,7 @@ void UChatEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
     }
 }
 
-void UChatEssentialsSubsystem::Deinitialize()
+void USessionChatSubsystem::Deinitialize()
 {
     Super::Deinitialize();
 
@@ -33,7 +33,7 @@ void UChatEssentialsSubsystem::Deinitialize()
     }
 }
 
-FString UChatEssentialsSubsystem::GetChatRoomIdBasedOnType(const EAccelByteChatRoomType ChatRoomType)
+FString USessionChatSubsystem::GetChatRoomIdBasedOnType(const EAccelByteChatRoomType ChatRoomType)
 {
     FString ChatRoomId;
 
@@ -50,7 +50,7 @@ FString UChatEssentialsSubsystem::GetChatRoomIdBasedOnType(const EAccelByteChatR
     return ChatRoomId;
 }
 
-FString UChatEssentialsSubsystem::GetGameSessionChatRoomId()
+FString USessionChatSubsystem::GetGameSessionChatRoomId()
 {
     if (!GetChatInterface())
     {
@@ -71,7 +71,7 @@ FString UChatEssentialsSubsystem::GetGameSessionChatRoomId()
     return GetChatInterface()->SessionV2IdToChatTopicId(GameSession->GetSessionIdStr());
 }
 
-FString UChatEssentialsSubsystem::GetPartyChatRoomId()
+FString USessionChatSubsystem::GetPartyChatRoomId()
 {
     if (!GetChatInterface())
     {
@@ -92,25 +92,25 @@ FString UChatEssentialsSubsystem::GetPartyChatRoomId()
     return GetChatInterface()->PartyV2IdToChatTopicId(PartySession->GetSessionIdStr());
 }
 
-void UChatEssentialsSubsystem::SendChatMessage(const FUniqueNetIdPtr UserId, const FChatRoomId& RoomId, const FString& Message)
+void USessionChatSubsystem::SendChatMessage(const FUniqueNetIdPtr UserId, const FChatRoomId& RoomId, const FString& Message)
 {
     if (!GetChatInterface()) 
     {
-        UE_LOG_CHATESSENTIALS(Warning, TEXT("Cannot send chat message. Chat Interface is not valid."));
+        UE_LOG_SESSIONCHAT(Warning, TEXT("Cannot send chat message. Chat Interface is not valid."));
         OnSendChatComplete(FString(), Message, RoomId, false);
         return;
     }
 
     if (!UserId) 
     {
-        UE_LOG_CHATESSENTIALS(Warning, TEXT("Cannot send chat message. User NetId is not valid."));
+        UE_LOG_SESSIONCHAT(Warning, TEXT("Cannot send chat message. User NetId is not valid."));
         OnSendChatComplete(FString(), Message, RoomId, false);
         return;
     }
 
     if (RoomId.IsEmpty()) 
     {
-        UE_LOG_CHATESSENTIALS(Warning, TEXT("Cannot send chat message. Room Id is empty."));
+        UE_LOG_SESSIONCHAT(Warning, TEXT("Cannot send chat message. Room Id is empty."));
         OnSendChatComplete(FString(), Message, RoomId, false);
         return;
     }
@@ -118,54 +118,54 @@ void UChatEssentialsSubsystem::SendChatMessage(const FUniqueNetIdPtr UserId, con
     GetChatInterface()->SendRoomChat(UserId.ToSharedRef().Get(), RoomId, Message);
 }
 
-bool UChatEssentialsSubsystem::GetLastChatMessages(const FUniqueNetIdPtr UserId, const FChatRoomId& RoomId, const int32 NumMessages, TArray<TSharedRef<FChatMessage>>& OutMessages)
+bool USessionChatSubsystem::GetLastChatMessages(const FUniqueNetIdPtr UserId, const FChatRoomId& RoomId, const int32 NumMessages, TArray<TSharedRef<FChatMessage>>& OutMessages)
 {
     if (!GetChatInterface())
     {
-        UE_LOG_CHATESSENTIALS(Warning, TEXT("Cannot get last chat messages. Chat Interface is not valid."));
+        UE_LOG_SESSIONCHAT(Warning, TEXT("Cannot get last chat messages. Chat Interface is not valid."));
         return false;
     }
 
     if (!UserId)
     {
-        UE_LOG_CHATESSENTIALS(Warning, TEXT("Cannot get last chat messages. User NetId is not valid."));
+        UE_LOG_SESSIONCHAT(Warning, TEXT("Cannot get last chat messages. User NetId is not valid."));
         return false;
     }
 
     if (RoomId.IsEmpty())
     {
-        UE_LOG_CHATESSENTIALS(Warning, TEXT("Cannot get last chat messages. Room Id is empty."));
+        UE_LOG_SESSIONCHAT(Warning, TEXT("Cannot get last chat messages. Room Id is empty."));
         return false;
     }
 
     GetChatInterface()->GetLastMessages(UserId.ToSharedRef().Get(), RoomId, NumMessages, OutMessages);
-    UE_LOG_CHATESSENTIALS(Log, TEXT("Success to get last chat messages. Returned messages: %d"), OutMessages.Num());
+    UE_LOG_SESSIONCHAT(Log, TEXT("Success to get last chat messages. Returned messages: %d"), OutMessages.Num());
 
     return true;
 }
 
-bool UChatEssentialsSubsystem::IsMessageFromLocalUser(const FUniqueNetIdPtr UserId, const FChatMessage& Message)
+bool USessionChatSubsystem::IsMessageFromLocalUser(const FUniqueNetIdPtr UserId, const FChatMessage& Message)
 {
     if (!GetChatInterface())
     {
-        UE_LOG_CHATESSENTIALS(Warning, TEXT("Cannot check whether chat message is from local user or not. Chat Interface is not valid."));
+        UE_LOG_SESSIONCHAT(Warning, TEXT("Cannot check whether chat message is from local user or not. Chat Interface is not valid."));
         return false;
     }
 
     if (!UserId)
     {
-        UE_LOG_CHATESSENTIALS(Warning, TEXT("Cannot check whether chat message is from local user or not. User NetId is not valid."));
+        UE_LOG_SESSIONCHAT(Warning, TEXT("Cannot check whether chat message is from local user or not. User NetId is not valid."));
         return false;
     }
 
     return GetChatInterface()->IsMessageFromLocalUser(UserId.ToSharedRef().Get(), Message, true);
 }
 
-EAccelByteChatRoomType UChatEssentialsSubsystem::GetChatRoomType(const FString& RoomId)
+EAccelByteChatRoomType USessionChatSubsystem::GetChatRoomType(const FString& RoomId)
 {
     if (!GetChatInterface())
     {
-        UE_LOG_CHATESSENTIALS(Warning, TEXT("Cannot get chat room type for Room Id: %s"), *RoomId);
+        UE_LOG_SESSIONCHAT(Warning, TEXT("Cannot get chat room type for Room Id: %s"), *RoomId);
 
         return EAccelByteChatRoomType::NORMAL;
     }
@@ -173,37 +173,37 @@ EAccelByteChatRoomType UChatEssentialsSubsystem::GetChatRoomType(const FString& 
     return GetChatInterface()->GetChatRoomType(RoomId);
 }
 
-void UChatEssentialsSubsystem::OnTopicAdded(FString ChatTopicName, FString TopicId, FString UserId)
+void USessionChatSubsystem::OnTopicAdded(FString ChatTopicName, FString TopicId, FString UserId)
 {
-    UE_LOG_CHATESSENTIALS(Log, TEXT("New chat topic is added: %s"), *TopicId);
+    UE_LOG_SESSIONCHAT(Log, TEXT("New chat topic is added: %s"), *TopicId);
 
     OnTopicAddedDelegates.Broadcast(ChatTopicName, TopicId, UserId);
 }
 
-void UChatEssentialsSubsystem::OnTopicRemoved(FString ChatTopicName, FString TopicId, FString SenderId)
+void USessionChatSubsystem::OnTopicRemoved(FString ChatTopicName, FString TopicId, FString SenderId)
 {
-    UE_LOG_CHATESSENTIALS(Log, TEXT("Chat topic is removed: %s"), *TopicId);
+    UE_LOG_SESSIONCHAT(Log, TEXT("Chat topic is removed: %s"), *TopicId);
 
     OnTopicRemovedDelegates.Broadcast(ChatTopicName, TopicId, SenderId);
 }
 
-void UChatEssentialsSubsystem::OnSendChatComplete(FString UserId, FString MsgBody, FString RoomId, bool bWasSuccessful)
+void USessionChatSubsystem::OnSendChatComplete(FString UserId, FString MsgBody, FString RoomId, bool bWasSuccessful)
 {
     if (bWasSuccessful) 
     {
-        UE_LOG_CHATESSENTIALS(Log, TEXT("Success to send chat message on Room %s"), *RoomId);
+        UE_LOG_SESSIONCHAT(Log, TEXT("Success to send chat message on Room %s"), *RoomId);
     }
     else 
     {
-        UE_LOG_CHATESSENTIALS(Warning, TEXT("Failed to send chat message on Room %s"), *RoomId);
+        UE_LOG_SESSIONCHAT(Warning, TEXT("Failed to send chat message on Room %s"), *RoomId);
     }
 
     OnSendChatCompleteDelegates.Broadcast(UserId, MsgBody, RoomId, bWasSuccessful);
 }
 
-void UChatEssentialsSubsystem::OnChatRoomMessageReceived(const FUniqueNetId& Sender, const FChatRoomId& RoomId, const TSharedRef<FChatMessage>& Message)
+void USessionChatSubsystem::OnChatRoomMessageReceived(const FUniqueNetId& Sender, const FChatRoomId& RoomId, const TSharedRef<FChatMessage>& Message)
 {
-    UE_LOG_CHATESSENTIALS(Log, 
+    UE_LOG_SESSIONCHAT(Log, 
         TEXT("Received chat message from %s on Room %s: %s"),
         !Message.Get().GetNickname().IsEmpty() ? *Message.Get().GetNickname() : TEXT("Unknown"),
         *RoomId,
@@ -212,24 +212,24 @@ void UChatEssentialsSubsystem::OnChatRoomMessageReceived(const FUniqueNetId& Sen
     OnChatRoomMessageReceivedDelegates.Broadcast(Sender, RoomId, Message);
 }
 
-FOnlineChatAccelBytePtr UChatEssentialsSubsystem::GetChatInterface()
+FOnlineChatAccelBytePtr USessionChatSubsystem::GetChatInterface()
 {
     const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
     if (!ensure(Subsystem))
     {
-        UE_LOG_CHATESSENTIALS(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and DefaultPlatformService under [OnlineSubsystem] in the Engine.ini set to AccelByte."));
+        UE_LOG_SESSIONCHAT(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and DefaultPlatformService under [OnlineSubsystem] in the Engine.ini set to AccelByte."));
         return nullptr;
     }
 
     return StaticCastSharedPtr<FOnlineChatAccelByte>(Subsystem->GetChatInterface());
 }
 
-FOnlineSessionV2AccelBytePtr UChatEssentialsSubsystem::GetSessionInterface()
+FOnlineSessionV2AccelBytePtr USessionChatSubsystem::GetSessionInterface()
 {
     const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
     if (!ensure(Subsystem))
     {
-        UE_LOG_CHATESSENTIALS(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and DefaultPlatformService under [OnlineSubsystem] in the Engine.ini set to AccelByte."));
+        UE_LOG_SESSIONCHAT(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and DefaultPlatformService under [OnlineSubsystem] in the Engine.ini set to AccelByte."));
         return nullptr;
     }
 

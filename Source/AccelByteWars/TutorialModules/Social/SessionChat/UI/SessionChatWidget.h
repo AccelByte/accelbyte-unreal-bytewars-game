@@ -5,21 +5,21 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Social/ChatEssentials/ChatEssentialsSubsystem.h"
+#include "Social/SessionChat/SessionChatSubsystem.h"
 #include "Social/ChatEssentials/ChatEssentialsModels.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
-#include "ChatWidget.generated.h"
+#include "SessionChatWidget.generated.h"
 
+class UAccelByteWarsWidgetSwitcher;
 class UWidgetSwitcher;
 class UListView;
 class UEditableText;
-class UTextBlock;
 class UCommonButtonBase;
 class UVerticalBox;
 class UPromptSubsystem;
 
 UCLASS(Abstract)
-class ACCELBYTEWARS_API UChatWidget : public UAccelByteWarsActivatableWidget
+class ACCELBYTEWARS_API USessionChatWidget : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
 
@@ -29,7 +29,6 @@ protected:
 	virtual void NativeOnDeactivated() override;
 
 	void SwitchChatMessageType(const EAccelByteChatRoomType ChatRoomType);
-	UListView* GetChatMessageContainerBasedOnChatRoomType(const EAccelByteChatRoomType ChatRoomType);
 
 	void AppendChatMessage(UChatData* ChatData, const EAccelByteChatRoomType ChatRoomType);
 	void AppendChatMessage(const FChatMessage& Message, const EAccelByteChatRoomType ChatRoomType);
@@ -39,40 +38,70 @@ protected:
 	UFUNCTION()
 	void OnSendChatMessageCommited(const FText& Text, ETextCommit::Type CommitMethod);
 
+	UFUNCTION()
+	void OnChatMessageChanged(const FText& Text);
+
 	void GetLastChatMessages(const EAccelByteChatRoomType ChatRoomType);
 	
 	void OnSendChatComplete(FString UserId, FString MsgBody, FString RoomId, bool bWasSuccessful);
 	void OnChatRoomMessageReceived(const FUniqueNetId& Sender, const FChatRoomId& RoomId, const TSharedRef<FChatMessage>& Message);
 
-	UChatEssentialsSubsystem* ChatEssentialsSubsystem;
+	USessionChatSubsystem* SessionChatSubsystem;
 	UPromptSubsystem* PromptSubsystem;
 
 	EAccelByteChatRoomType CurrentChatRoomType = EAccelByteChatRoomType::NORMAL;
+
+	UListView* Lv_ChatMessage = nullptr;
+	UAccelByteWarsWidgetSwitcher* Ws_ChatMessage = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	float SendChatCooldown = 1.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	int32 MaxMessageLength = 80;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	int32 MaxChatHistory = 10000;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UWidgetSwitcher* Ws_ChatMessageType;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
-	UVerticalBox* Vb_SessionChat;
+	UWidgetSwitcher* Ws_ChatMessageTypeButton;
+
+#pragma region Game Session Chat
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
+	UVerticalBox* Vb_GameSessionChat;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
-	UListView* Lv_SessionChatMessage;
+	UAccelByteWarsWidgetSwitcher* Ws_GameSessionChatMessage;
 
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
+	UListView* Lv_GameSessionChatMessage;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
+	UCommonButtonBase* Btn_SessionChat;
+#pragma endregion
+
+#pragma region Party Chat
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UVerticalBox* Vb_PartyChat;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
+	UAccelByteWarsWidgetSwitcher* Ws_PartyChatMessage;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UListView* Lv_PartyChatMessage;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
+	UCommonButtonBase* Btn_PartyChat;
+#pragma endregion
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UEditableText* Edt_ChatMessage;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
-	UCommonButtonBase* Btn_SessionChat;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
-	UCommonButtonBase* Btn_PartyChat;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_Send;
+
+	FTimerHandle SendChatDelayTimerHandle;
 };

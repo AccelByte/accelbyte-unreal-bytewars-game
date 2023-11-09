@@ -7,12 +7,12 @@
 #include "CoreMinimal.h"
 #include "OnlineSubsystemAccelByte.h"
 #include "OnlineChatInterfaceAccelByte.h"
-#include "PrivateChatEssentialsLog.h"
+#include "PrivateChatLog.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
-#include "PrivateChatEssentialsSubsystem.generated.h"
+#include "PrivateChatSubsystem.generated.h"
 
 UCLASS()
-class ACCELBYTEWARS_API UPrivateChatEssentialsSubsystem : public UTutorialModuleSubsystem
+class ACCELBYTEWARS_API UPrivateChatSubsystem : public UTutorialModuleSubsystem
 {
 	GENERATED_BODY()
 	

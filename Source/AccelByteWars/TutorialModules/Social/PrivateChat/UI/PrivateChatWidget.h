@@ -5,17 +5,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Social/PrivateChatEssentials/PrivateChatEssentialsSubsystem.h"
+#include "Social/PrivateChat/PrivateChatSubsystem.h"
 #include "Social/ChatEssentials/ChatEssentialsModels.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
 #include "PrivateChatWidget.generated.h"
 
-class UWidgetSwitcher;
+class UAccelByteWarsWidgetSwitcher;
 class UListView;
 class UEditableText;
-class UTextBlock;
 class UCommonButtonBase;
-class UVerticalBox;
 class UPromptSubsystem;
 
 UCLASS(Abstract)
@@ -39,28 +37,39 @@ protected:
 	UFUNCTION()
 	void OnSendPrivateChatMessageCommited(const FText& Text, ETextCommit::Type CommitMethod);
 
+	UFUNCTION()
+	void OnChatMessageChanged(const FText& Text);
+
 	void GetLastPrivateChatMessages();
 
 	void OnSendPrivateChatComplete(FString UserId, FString MsgBody, FString RoomId, bool bWasSuccessful);
 	void OnPrivateChatMessageReceived(const FUniqueNetId& Sender, const TSharedRef<FChatMessage>& Message);
 
-	UPrivateChatEssentialsSubsystem* PrivateChatEssentialsSubsystem;
+	UPrivateChatSubsystem* PrivateChatSubsystem;
 	UPromptSubsystem* PromptSubsystem;
 
 	FUniqueNetIdPtr PrivateChatRecipientUserId = nullptr;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	float SendChatCooldown = 1.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	int32 MaxMessageLength = 80;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	int32 MaxChatHistory = 10000;
+
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
-	UWidgetSwitcher* Ws_ChatMessageType;
+	UAccelByteWarsWidgetSwitcher* Ws_ChatMessage;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UEditableText* Edt_ChatMessage;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
-	UVerticalBox* Vb_PrivateChat;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
-	UListView* Lv_PrivateChatMessage;
+	UListView* Lv_ChatMessage;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_Send;
+
+	FTimerHandle SendChatDelayTimerHandle;
 };

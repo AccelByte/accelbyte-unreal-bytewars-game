@@ -2,16 +2,16 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-#include "PrivateChatEssentialsSubsystem.h"
+#include "PrivateChatSubsystem.h"
 #include "OnlineSubsystemUtils.h"
 
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "Social/FriendsEssentials/UI/FriendDetailsWidget.h"
 #include "Social/FriendsEssentials/UI/FriendDetailsWidget_Starter.h"
-#include "Social/PrivateChatEssentials/UI/PrivateChatWidget.h"
+#include "Social/PrivateChat/UI/PrivateChatWidget.h"
 
-void UPrivateChatEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+void UPrivateChatSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
 
@@ -95,7 +95,7 @@ void UPrivateChatEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Colle
     }
 }
 
-void UPrivateChatEssentialsSubsystem::Deinitialize()
+void UPrivateChatSubsystem::Deinitialize()
 {
     Super::Deinitialize();
 
@@ -109,7 +109,7 @@ void UPrivateChatEssentialsSubsystem::Deinitialize()
     }
 }
 
-FString UPrivateChatEssentialsSubsystem::GetPrivateChatRoomId(const FUniqueNetIdPtr SenderUserId, const FUniqueNetIdPtr RecipientUserId)
+FString UPrivateChatSubsystem::GetPrivateChatRoomId(const FUniqueNetIdPtr SenderUserId, const FUniqueNetIdPtr RecipientUserId)
 {
     if (!GetChatInterface())
     {
@@ -131,25 +131,25 @@ FString UPrivateChatEssentialsSubsystem::GetPrivateChatRoomId(const FUniqueNetId
     return GetChatInterface()->PersonalChatTopicId(SenderABId->GetAccelByteId(), RecipientABId->GetAccelByteId());
 }
 
-void UPrivateChatEssentialsSubsystem::SendPrivateChatMessage(const FUniqueNetIdPtr UserId, const FUniqueNetIdPtr RecipientUserId, const FString& Message)
+void UPrivateChatSubsystem::SendPrivateChatMessage(const FUniqueNetIdPtr UserId, const FUniqueNetIdPtr RecipientUserId, const FString& Message)
 {
     if (!GetChatInterface())
     {
-        UE_LOG_PRIVATECHATESSENTIALS(Warning, TEXT("Cannot send private chat message. Chat Interface is not valid."));
+        UE_LOG_PRIVATECHAT(Warning, TEXT("Cannot send private chat message. Chat Interface is not valid."));
         OnSendPrivateChatComplete(FString(), Message, FString(), false);
         return;
     }
 
     if (!UserId)
     {
-        UE_LOG_PRIVATECHATESSENTIALS(Warning, TEXT("Cannot send private chat message. User NetId is not valid."));
+        UE_LOG_PRIVATECHAT(Warning, TEXT("Cannot send private chat message. User NetId is not valid."));
         OnSendPrivateChatComplete(FString(), Message, FString(), false);
         return;
     }
 
     if (!RecipientUserId)
     {
-        UE_LOG_PRIVATECHATESSENTIALS(Warning, TEXT("Cannot send private chat message. Recipient NetId is not valid."));
+        UE_LOG_PRIVATECHAT(Warning, TEXT("Cannot send private chat message. Recipient NetId is not valid."));
         OnSendPrivateChatComplete(FString(), Message, FString(), false);
         return;
     }
@@ -157,65 +157,65 @@ void UPrivateChatEssentialsSubsystem::SendPrivateChatMessage(const FUniqueNetIdP
     GetChatInterface()->SendPrivateChat(UserId.ToSharedRef().Get(), RecipientUserId.ToSharedRef().Get(), Message);
 }
 
-bool UPrivateChatEssentialsSubsystem::GetLastPrivateChatMessages(const FUniqueNetIdPtr UserId, const FChatRoomId& RoomId, const int32 NumMessages, TArray<TSharedRef<FChatMessage>>& OutMessages)
+bool UPrivateChatSubsystem::GetLastPrivateChatMessages(const FUniqueNetIdPtr UserId, const FChatRoomId& RoomId, const int32 NumMessages, TArray<TSharedRef<FChatMessage>>& OutMessages)
 {
     if (!GetChatInterface())
     {
-        UE_LOG_PRIVATECHATESSENTIALS(Warning, TEXT("Cannot get last chat messages. Chat Interface is not valid."));
+        UE_LOG_PRIVATECHAT(Warning, TEXT("Cannot get last chat messages. Chat Interface is not valid."));
         return false;
     }
 
     if (!UserId)
     {
-        UE_LOG_PRIVATECHATESSENTIALS(Warning, TEXT("Cannot get last chat messages. User NetId is not valid."));
+        UE_LOG_PRIVATECHAT(Warning, TEXT("Cannot get last chat messages. User NetId is not valid."));
         return false;
     }
 
     // Abort if not a private chat room.
     if (RoomId.IsEmpty() || GetChatInterface()->GetChatRoomType(RoomId) != EAccelByteChatRoomType::PERSONAL)
     {
-        UE_LOG_PRIVATECHATESSENTIALS(Warning, TEXT("Cannot get last chat messages. Room Id is empty or not a private chat room."));
+        UE_LOG_PRIVATECHAT(Warning, TEXT("Cannot get last chat messages. Room Id is empty or not a private chat room."));
         return false;
     }
 
     GetChatInterface()->GetLastMessages(UserId.ToSharedRef().Get(), RoomId, NumMessages, OutMessages);
-    UE_LOG_PRIVATECHATESSENTIALS(Log, TEXT("Success to get last chat messages. Returned messages: %d"), OutMessages.Num());
+    UE_LOG_PRIVATECHAT(Log, TEXT("Success to get last chat messages. Returned messages: %d"), OutMessages.Num());
 
     return true;
 }
 
-bool UPrivateChatEssentialsSubsystem::IsMessageFromLocalUser(const FUniqueNetIdPtr UserId, const FChatMessage& Message)
+bool UPrivateChatSubsystem::IsMessageFromLocalUser(const FUniqueNetIdPtr UserId, const FChatMessage& Message)
 {
     if (!GetChatInterface())
     {
-        UE_LOG_PRIVATECHATESSENTIALS(Warning, TEXT("Cannot check whether chat message is from local user or not. Chat Interface is not valid."));
+        UE_LOG_PRIVATECHAT(Warning, TEXT("Cannot check whether chat message is from local user or not. Chat Interface is not valid."));
         return false;
     }
 
     if (!UserId)
     {
-        UE_LOG_PRIVATECHATESSENTIALS(Warning, TEXT("Cannot check whether chat message is from local user or not. User NetId is not valid."));
+        UE_LOG_PRIVATECHAT(Warning, TEXT("Cannot check whether chat message is from local user or not. User NetId is not valid."));
         return false;
     }
 
     return GetChatInterface()->IsMessageFromLocalUser(UserId.ToSharedRef().Get(), Message, true);
 }
 
-void UPrivateChatEssentialsSubsystem::OnTopicAdded(FString ChatTopicName, FString TopicId, FString UserId)
+void UPrivateChatSubsystem::OnTopicAdded(FString ChatTopicName, FString TopicId, FString UserId)
 {
-    UE_LOG_PRIVATECHATESSENTIALS(Log, TEXT("New chat topic is added: %s"), *TopicId);
+    UE_LOG_PRIVATECHAT(Log, TEXT("New chat topic is added: %s"), *TopicId);
 
     OnTopicAddedDelegates.Broadcast(ChatTopicName, TopicId, UserId);
 }
 
-void UPrivateChatEssentialsSubsystem::OnTopicRemoved(FString ChatTopicName, FString TopicId, FString SenderId)
+void UPrivateChatSubsystem::OnTopicRemoved(FString ChatTopicName, FString TopicId, FString SenderId)
 {
-    UE_LOG_PRIVATECHATESSENTIALS(Log, TEXT("Chat topic is removed: %s"), *TopicId);
+    UE_LOG_PRIVATECHAT(Log, TEXT("Chat topic is removed: %s"), *TopicId);
 
     OnTopicRemovedDelegates.Broadcast(ChatTopicName, TopicId, SenderId);
 }
 
-void UPrivateChatEssentialsSubsystem::OnSendPrivateChatComplete(FString UserId, FString MsgBody, FString RoomId, bool bWasSuccessful)
+void UPrivateChatSubsystem::OnSendPrivateChatComplete(FString UserId, FString MsgBody, FString RoomId, bool bWasSuccessful)
 {
     // Abort if the room id is not a private chat room.
     if (!GetChatInterface() || GetChatInterface()->GetChatRoomType(RoomId) != EAccelByteChatRoomType::PERSONAL)
@@ -225,19 +225,19 @@ void UPrivateChatEssentialsSubsystem::OnSendPrivateChatComplete(FString UserId, 
 
     if (bWasSuccessful)
     {
-        UE_LOG_PRIVATECHATESSENTIALS(Log, TEXT("Success to send chat message on Room %s"), *RoomId);
+        UE_LOG_PRIVATECHAT(Log, TEXT("Success to send chat message on Room %s"), *RoomId);
     }
     else
     {
-        UE_LOG_PRIVATECHATESSENTIALS(Warning, TEXT("Failed to send chat message on Room %s"), *RoomId);
+        UE_LOG_PRIVATECHAT(Warning, TEXT("Failed to send chat message on Room %s"), *RoomId);
     }
 
     OnSendPrivateChatCompleteDelegates.Broadcast(UserId, MsgBody, RoomId, bWasSuccessful);
 }
 
-void UPrivateChatEssentialsSubsystem::OnPrivateChatMessageReceived(const FUniqueNetId& Sender, const TSharedRef<FChatMessage>& Message)
+void UPrivateChatSubsystem::OnPrivateChatMessageReceived(const FUniqueNetId& Sender, const TSharedRef<FChatMessage>& Message)
 {
-    UE_LOG_PRIVATECHATESSENTIALS(Log,
+    UE_LOG_PRIVATECHAT(Log,
         TEXT("Received private chat message from %s: %s"),
         !Message.Get().GetNickname().IsEmpty() ? *Message.Get().GetNickname() : TEXT("Unknown"),
         *Message.Get().GetBody());
@@ -245,12 +245,12 @@ void UPrivateChatEssentialsSubsystem::OnPrivateChatMessageReceived(const FUnique
     OnPrivateChatMessageReceivedDelegates.Broadcast(Sender, Message);
 }
 
-FOnlineChatAccelBytePtr UPrivateChatEssentialsSubsystem::GetChatInterface()
+FOnlineChatAccelBytePtr UPrivateChatSubsystem::GetChatInterface()
 {
     const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
     if (!ensure(Subsystem))
     {
-        UE_LOG_PRIVATECHATESSENTIALS(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and DefaultPlatformService under [OnlineSubsystem] in the Engine.ini set to AccelByte."));
+        UE_LOG_PRIVATECHAT(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and DefaultPlatformService under [OnlineSubsystem] in the Engine.ini set to AccelByte."));
         return nullptr;
     }
 

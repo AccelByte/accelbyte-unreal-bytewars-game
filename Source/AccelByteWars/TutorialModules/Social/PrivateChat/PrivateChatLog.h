@@ -7,9 +7,9 @@
 #include "CoreMinimal.h"
 #include "Core/Utilities/AccelByteWarsUtilityLog.h"
 
-ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogPrivateChatEssentials, Log, All);
+ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogPrivateChat, Log, All);
 
-#define UE_LOG_PRIVATECHATESSENTIALS(Verbosity, Format, ...) \
+#define UE_LOG_PRIVATECHAT(Verbosity, Format, ...) \
 { \
-	UE_LOG_FUNC(LogPrivateChatEssentials, Verbosity, Format, ##__VA_ARGS__) \
+	UE_LOG_FUNC(LogPrivateChat, Verbosity, Format, ##__VA_ARGS__) \
 }

@@ -2,6 +2,6 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-#include "PrivateChatEssentialsLog.h"
+#include "PrivateChatLog.h"
 
-DEFINE_LOG_CATEGORY(LogPrivateChatEssentials);
+DEFINE_LOG_CATEGORY(LogPrivateChat);
