@@ -111,11 +111,11 @@ void USessionChatWidget::SwitchChatMessageType(const EAccelByteChatRoomType Chat
 	// Try to display last chat messages if the current one is empty.
 	if (Lv_ChatMessage && Lv_ChatMessage->GetListItems().IsEmpty())
 	{
-		GetLastChatMessages(ChatRoomType);
+		GetLastChatMessages();
 	}
 }
 
-void USessionChatWidget::AppendChatMessage(UChatData* ChatData, const EAccelByteChatRoomType ChatRoomType)
+void USessionChatWidget::AppendChatMessage(UChatData* ChatData)
 {
 	// Display chat message.
 	if (Lv_ChatMessage && ChatData)
@@ -127,11 +127,11 @@ void USessionChatWidget::AppendChatMessage(UChatData* ChatData, const EAccelByte
 	}
 }
 
-void USessionChatWidget::AppendChatMessage(const FChatMessage& Message, const EAccelByteChatRoomType ChatRoomType)
+void USessionChatWidget::AppendChatMessage(const FChatMessage& Message)
 {
 	if (!SessionChatSubsystem)
 	{
-		UE_LOG_SESSIONCHAT(Warning, TEXT("Cannot append a chat message to display. Chat Essentials subsystem is not valid."));
+		UE_LOG_SESSIONCHAT(Warning, TEXT("Cannot append a chat message to display. Session Chat subsystem is not valid."));
 		return;
 	}
 
@@ -154,7 +154,7 @@ void USessionChatWidget::AppendChatMessage(const FChatMessage& Message, const EA
 	ChatData->Message = Message.GetBody();
 	ChatData->bIsSenderLocal = SessionChatSubsystem->IsMessageFromLocalUser(LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId(), Message);
 
-	AppendChatMessage(ChatData, ChatRoomType);
+	AppendChatMessage(ChatData);
 }
 
 void USessionChatWidget::SendChatMessage()
@@ -170,7 +170,7 @@ void USessionChatWidget::SendChatMessage()
 
 	if (!SessionChatSubsystem)
 	{
-		UE_LOG_SESSIONCHAT(Warning, TEXT("Cannot send chat message. Chat Essentials subsystem is not valid."));
+		UE_LOG_SESSIONCHAT(Warning, TEXT("Cannot send chat message. Session Chat subsystem is not valid."));
 		return;
 	}
 
@@ -230,11 +230,11 @@ void USessionChatWidget::OnChatMessageChanged(const FText& Text)
 	Edt_ChatMessage->SetText(FText::FromString(Edt_ChatMessage->GetText().ToString().Left(MaxMessageLength)));
 }
 
-void USessionChatWidget::GetLastChatMessages(const EAccelByteChatRoomType ChatRoomType)
+void USessionChatWidget::GetLastChatMessages()
 {
 	if (!SessionChatSubsystem) 
 	{
-		UE_LOG_SESSIONCHAT(Warning, TEXT("Cannot get last chat messages. Chat Essentials subsystem is not valid."));
+		UE_LOG_SESSIONCHAT(Warning, TEXT("Cannot get last chat messages. Session Chat subsystem is not valid."));
 		return;
 	}
 
@@ -260,7 +260,7 @@ void USessionChatWidget::GetLastChatMessages(const EAccelByteChatRoomType ChatRo
 	Ws_ChatMessage->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Loading);
 
 	// Get chat room id.
-	FString ChatRoomId = SessionChatSubsystem->GetChatRoomIdBasedOnType(ChatRoomType);
+	FString ChatRoomId = SessionChatSubsystem->GetChatRoomIdBasedOnType(CurrentChatRoomType);
 
 	// Abort if room id was not found.
 	if (ChatRoomId.IsEmpty())
@@ -288,7 +288,7 @@ void USessionChatWidget::GetLastChatMessages(const EAccelByteChatRoomType ChatRo
 		Algo::Reverse(OutMessages);
 		for (const TSharedRef<FChatMessage>& Message : OutMessages)
 		{
-			AppendChatMessage(Message.Get(), ChatRoomType);
+			AppendChatMessage(Message.Get());
 		}
 	}
 	// Show error message if failed.
@@ -300,6 +300,18 @@ void USessionChatWidget::GetLastChatMessages(const EAccelByteChatRoomType ChatRo
 
 void USessionChatWidget::OnSendChatComplete(FString UserId, FString MsgBody, FString RoomId, bool bWasSuccessful)
 {
+	if (!SessionChatSubsystem)
+	{
+		UE_LOG_SESSIONCHAT(Warning, TEXT("Cannot display a sent chat message. Session Chat subsystem is not valid."));
+		return;
+	}
+
+	// Only show the chat if the type is valid.
+	if (SessionChatSubsystem->GetChatRoomType(RoomId) != CurrentChatRoomType)
+	{
+		return;
+	}
+
 	// Display the chat if success.
 	if (bWasSuccessful && SessionChatSubsystem)
 	{
@@ -307,7 +319,7 @@ void USessionChatWidget::OnSendChatComplete(FString UserId, FString MsgBody, FSt
 		ChatData->Message = MsgBody;
 		ChatData->bIsSenderLocal = true;
 
-		AppendChatMessage(ChatData, SessionChatSubsystem->GetChatRoomType(RoomId));
+		AppendChatMessage(ChatData);
 	}
 	// Push a notification if failed.
 	else
@@ -323,7 +335,13 @@ void USessionChatWidget::OnChatRoomMessageReceived(const FUniqueNetId& Sender, c
 {
 	if (!SessionChatSubsystem)
 	{
-		UE_LOG_SESSIONCHAT(Warning, TEXT("Cannot display received chat message. Chat Essentials subsystem is not valid."));
+		UE_LOG_SESSIONCHAT(Warning, TEXT("Cannot display a received chat message. Session Chat subsystem is not valid."));
+		return;
+	}
+
+	// Only show the chat if the type is valid.
+	if (SessionChatSubsystem->GetChatRoomType(RoomId) != CurrentChatRoomType) 
+	{
 		return;
 	}
 
@@ -335,11 +353,11 @@ void USessionChatWidget::OnChatRoomMessageReceived(const FUniqueNetId& Sender, c
 		ChatData->Message = Message.Get().GetBody();
 		ChatData->bIsSenderLocal = SessionChatSubsystem->IsMessageFromLocalUser(Sender.AsShared(), Message.Get());;
 
-		AppendChatMessage(ChatData, SessionChatSubsystem->GetChatRoomType(RoomId));
+		AppendChatMessage(ChatData);
 	}
 	// If not, show the chat as is.
 	else 
 	{
-		AppendChatMessage(Message.Get(), SessionChatSubsystem->GetChatRoomType(RoomId));
+		AppendChatMessage(Message.Get());
 	}
 }

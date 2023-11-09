@@ -5,6 +5,13 @@
 #include "SessionChatSubsystem.h"
 #include "OnlineSubsystemUtils.h"
 
+#include "Core/System/AccelByteWarsGameInstance.h"
+#include "Core/UI/AccelByteWarsBaseUI.h"
+#include "Core/UI/Components/Prompt/PromptSubsystem.h"
+#include "Social/SessionChat/UI/SessionChatWidget.h"
+
+#include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
+
 void USessionChatSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
@@ -16,6 +23,8 @@ void USessionChatSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
         GetChatInterface()->OnSendChatCompleteDelegates.AddUObject(this, &ThisClass::OnSendChatComplete);
         GetChatInterface()->OnChatRoomMessageReceivedDelegates.AddUObject(this, &ThisClass::OnChatRoomMessageReceived);
+
+        GetChatInterface()->OnChatRoomMessageReceivedDelegates.AddUObject(this, &ThisClass::PushChatRoomMessageReceivedNotification);
     }
 }
 
@@ -212,6 +221,38 @@ void USessionChatSubsystem::OnChatRoomMessageReceived(const FUniqueNetId& Sender
     OnChatRoomMessageReceivedDelegates.Broadcast(Sender, RoomId, Message);
 }
 
+void USessionChatSubsystem::PushChatRoomMessageReceivedNotification(const FUniqueNetId& Sender, const FChatRoomId& RoomId, const TSharedRef<FChatMessage>& Message)
+{
+    if (!GetPromptSubystem())
+    {
+        return;
+    }
+
+    // Only push a notification only if the player is not in the chat menu.
+    const UCommonActivatableWidget* ActiveWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
+    if (const USessionChatWidget* SessionChatWidget = Cast<USessionChatWidget>(ActiveWidget))
+    {
+        return;
+    }
+    // TODO: Add check for starter widget too here.
+
+    FString SenderStr = Message.Get().GetNickname();
+    if (SenderStr.IsEmpty())
+    {
+        SenderStr = UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(Sender);
+    }
+
+    switch (GetChatRoomType(RoomId))
+    {
+    case EAccelByteChatRoomType::SESSION_V2:
+        GetPromptSubystem()->PushNotification(FText::Format(GAMESESSION_CHAT_RECEIVED_MESSAGE, FText::FromString(SenderStr)));
+        break;
+    case EAccelByteChatRoomType::PARTY_V2:
+        GetPromptSubystem()->PushNotification(FText::Format(PARTY_CHAT_RECEIVED_MESSAGE, FText::FromString(SenderStr)));
+        break;
+    }
+}
+
 FOnlineChatAccelBytePtr USessionChatSubsystem::GetChatInterface()
 {
     const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
@@ -234,4 +275,15 @@ FOnlineSessionV2AccelBytePtr USessionChatSubsystem::GetSessionInterface()
     }
 
     return StaticCastSharedPtr<FOnlineSessionV2AccelByte>(Subsystem->GetSessionInterface());
+}
+
+UPromptSubsystem* USessionChatSubsystem::GetPromptSubystem()
+{
+    UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+    if (!GameInstance)
+    {
+        return nullptr;
+    }
+
+    return GameInstance->GetSubsystem<UPromptSubsystem>();
 }

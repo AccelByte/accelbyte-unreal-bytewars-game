@@ -30,8 +30,8 @@ protected:
 
 	void SwitchChatMessageType(const EAccelByteChatRoomType ChatRoomType);
 
-	void AppendChatMessage(UChatData* ChatData, const EAccelByteChatRoomType ChatRoomType);
-	void AppendChatMessage(const FChatMessage& Message, const EAccelByteChatRoomType ChatRoomType);
+	void AppendChatMessage(UChatData* ChatData);
+	void AppendChatMessage(const FChatMessage& Message);
 
 	void SendChatMessage();
 	
@@ -41,7 +41,7 @@ protected:
 	UFUNCTION()
 	void OnChatMessageChanged(const FText& Text);
 
-	void GetLastChatMessages(const EAccelByteChatRoomType ChatRoomType);
+	void GetLastChatMessages();
 	
 	void OnSendChatComplete(FString UserId, FString MsgBody, FString RoomId, bool bWasSuccessful);
 	void OnChatRoomMessageReceived(const FUniqueNetId& Sender, const FChatRoomId& RoomId, const TSharedRef<FChatMessage>& Message);

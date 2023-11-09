@@ -12,6 +12,8 @@
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "SessionChatSubsystem.generated.h"
 
+class UPromptSubsystem;
+
 UCLASS()
 class ACCELBYTEWARS_API USessionChatSubsystem : public UTutorialModuleSubsystem
 {
@@ -59,8 +61,12 @@ protected:
 	void OnSendChatComplete(FString UserId, FString MsgBody, FString RoomId, bool bWasSuccessful);
 	void OnChatRoomMessageReceived(const FUniqueNetId& Sender, const FChatRoomId& RoomId, const TSharedRef<FChatMessage>& Message);
 
+	void PushChatRoomMessageReceivedNotification(const FUniqueNetId& Sender, const FChatRoomId& RoomId, const TSharedRef<FChatMessage>& Message);
+
 	FOnlineChatAccelBytePtr GetChatInterface();
 	FOnlineSessionV2AccelBytePtr GetSessionInterface();
+
+	UPromptSubsystem* GetPromptSubystem();
 
 private:
 	FOnTopicAdded OnTopicAddedDelegates;

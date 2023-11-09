@@ -89,7 +89,7 @@ void UPrivateChatWidget::AppendChatMessage(const FChatMessage& Message)
 {
 	if (!PrivateChatSubsystem)
 	{
-		UE_LOG_PRIVATECHAT(Warning, TEXT("Cannot append a private chat message to display. Chat Essentials subsystem is not valid."));
+		UE_LOG_PRIVATECHAT(Warning, TEXT("Cannot append a private chat message to display. Private Chat subsystem is not valid."));
 		return;
 	}
 
@@ -133,7 +133,7 @@ void UPrivateChatWidget::SendPrivateChatMessage()
 
 	if (!PrivateChatSubsystem)
 	{
-		UE_LOG_PRIVATECHAT(Warning, TEXT("Cannot send private chat message. Chat Essentials subsystem is not valid."));
+		UE_LOG_PRIVATECHAT(Warning, TEXT("Cannot send private chat message. Private Chat subsystem is not valid."));
 		return;
 	}
 
@@ -197,7 +197,7 @@ void UPrivateChatWidget::GetLastPrivateChatMessages()
 {
 	if (!PrivateChatSubsystem)
 	{
-		UE_LOG_PRIVATECHAT(Warning, TEXT("Cannot get last private chat messages. Chat Essentials subsystem is not valid."));
+		UE_LOG_PRIVATECHAT(Warning, TEXT("Cannot get last private chat messages. Private Chat subsystem is not valid."));
 		return;
 	}
 
