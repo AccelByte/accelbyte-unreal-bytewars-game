@@ -17,11 +17,6 @@ public:
 	virtual void RegisterOnlineDelegates() override;
 	virtual void ClearOnlineDelegates() override;
 
-protected:
-	virtual void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result) override;
-	virtual void OnLeaveSessionComplete(FName SessionName, bool bSucceeded) override;
-	virtual void OnCreateSessionComplete(FName SessionName, bool bSucceeded) override;
-
 #pragma region "Game Session Essentials"
 public:
 	virtual void QueryUserInfo(
@@ -46,6 +41,10 @@ protected:
 
 	virtual void OnSessionServerUpdateReceived(FName SessionName) override;
 	virtual void OnSessionServerErrorReceived(FName SessionName, const FString& Message) override;
+
+	virtual void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result) override;
+	virtual void OnLeaveSessionComplete(FName SessionName, bool bSucceeded) override;
+	virtual void OnCreateSessionComplete(FName SessionName, bool bSucceeded) override;
 
 	virtual bool HandleDisconnectInternal(UWorld* World, UNetDriver* NetDriver) override;
 

@@ -16,10 +16,7 @@
 void UMatchSessionP2POnlineSession::RegisterOnlineDelegates()
 {
 	Super::RegisterOnlineDelegates();
-
-	// Game Session delegates
-	GetABSessionInt()->OnSessionServerUpdateDelegates.AddUObject(this, &ThisClass::OnSessionServerUpdateReceived);
-	GetABSessionInt()->OnSessionServerErrorDelegates.AddUObject(this, &ThisClass::OnSessionServerErrorReceived);
+	UE_LOG_MATCHSESSIONP2P(Verbose, TEXT("called"))
 
 	const TDelegate<void(APlayerController*)> LeaveSessionDelegate = TDelegate<void(APlayerController*)>::CreateWeakLambda(
 		this, [this](APlayerController*)
@@ -29,6 +26,10 @@ void UMatchSessionP2POnlineSession::RegisterOnlineDelegates()
 	UPauseWidget::OnQuitGameDelegate.Add(LeaveSessionDelegate);
 	UMatchLobbyWidget::OnQuitLobbyDelegate.Add(LeaveSessionDelegate);
 	UGameOverWidget::OnQuitGameDelegate.Add(LeaveSessionDelegate);
+
+	// Game Session delegates
+	GetABSessionInt()->OnSessionServerUpdateDelegates.AddUObject(this, &ThisClass::OnSessionServerUpdateReceived);
+	GetABSessionInt()->OnSessionServerErrorDelegates.AddUObject(this, &ThisClass::OnSessionServerErrorReceived);
 
 	// Match Session delegates
 	GetSessionInt()->OnFindSessionsCompleteDelegates.AddUObject(this, &ThisClass::OnFindSessionsComplete);
@@ -40,44 +41,14 @@ void UMatchSessionP2POnlineSession::ClearOnlineDelegates()
 {
 	Super::ClearOnlineDelegates();
 
-	GetABSessionInt()->OnSessionServerUpdateDelegates.RemoveAll(this);
-	GetABSessionInt()->OnSessionServerErrorDelegates.RemoveAll(this);
-
 	UPauseWidget::OnQuitGameDelegate.RemoveAll(this);
 	UMatchLobbyWidget::OnQuitLobbyDelegate.RemoveAll(this);
 	UGameOverWidget::OnQuitGameDelegate.RemoveAll(this);
 
+	GetABSessionInt()->OnSessionServerUpdateDelegates.RemoveAll(this);
+	GetABSessionInt()->OnSessionServerErrorDelegates.RemoveAll(this);
+
 	GetSessionInt()->OnFindSessionsCompleteDelegates.RemoveAll(this);
-}
-
-void UMatchSessionP2POnlineSession::OnJoinSessionComplete(
-	FName SessionName,
-	EOnJoinSessionCompleteResult::Type Result)
-{
-	Super::OnJoinSessionComplete(SessionName, Result);
-
-	TravelToSession(SessionName);
-}
-
-void UMatchSessionP2POnlineSession::OnLeaveSessionComplete(FName SessionName, bool bSucceeded)
-{
-	Super::OnLeaveSessionComplete(SessionName, bSucceeded);
-
-	if (bSucceeded)
-	{
-		bIsInSessionServer = false;
-	}
-}
-
-void UMatchSessionP2POnlineSession::OnCreateSessionComplete(FName SessionName, bool bSucceeded)
-{
-	Super::OnCreateSessionComplete(SessionName, bSucceeded);
-
-	if (bSucceeded)
-	{
-		// attempt to travel -> P2P host will need to travel as listen server right now
-		TravelToSession(SessionName);
-	}
 }
 
 #pragma region "Game Session Essentials"
@@ -274,6 +245,36 @@ void UMatchSessionP2POnlineSession::OnSessionServerErrorReceived(FName SessionNa
 	Error.ErrorMessage = FText::FromString(Message);
 
 	OnSessionServerUpdateReceivedDelegates.Broadcast(SessionName, Error, false);
+}
+
+void UMatchSessionP2POnlineSession::OnJoinSessionComplete(
+	FName SessionName,
+	EOnJoinSessionCompleteResult::Type Result)
+{
+	Super::OnJoinSessionComplete(SessionName, Result);
+
+	TravelToSession(SessionName);
+}
+
+void UMatchSessionP2POnlineSession::OnLeaveSessionComplete(FName SessionName, bool bSucceeded)
+{
+	Super::OnLeaveSessionComplete(SessionName, bSucceeded);
+
+	if (bSucceeded)
+	{
+		bIsInSessionServer = false;
+	}
+}
+
+void UMatchSessionP2POnlineSession::OnCreateSessionComplete(FName SessionName, bool bSucceeded)
+{
+	Super::OnCreateSessionComplete(SessionName, bSucceeded);
+
+	if (bSucceeded)
+	{
+		// attempt to travel -> P2P host will need to travel as listen server right now
+		TravelToSession(SessionName);
+	}
 }
 
 bool UMatchSessionP2POnlineSession::HandleDisconnectInternal(UWorld* World, UNetDriver* NetDriver)

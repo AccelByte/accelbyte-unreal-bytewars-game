@@ -15,6 +15,7 @@ void UBrowseMatchP2PWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
+	// Get Online Session
 	UOnlineSession* BaseOnlineSession = GetWorld()->GetGameInstance()->GetOnlineSession();
 	if (!ensure(BaseOnlineSession))
 	{
@@ -23,19 +24,19 @@ void UBrowseMatchP2PWidget::NativeOnActivated()
 	OnlineSession = Cast<UAccelByteWarsOnlineSessionBase>(BaseOnlineSession);
 	ensure(OnlineSession);
 
-	OnlineSession->GetOnLeaveSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnLeaveSessionComplete);
-	OnlineSession->GetOnFindSessionsCompleteDelegates()->AddUObject(this, &ThisClass::OnFindSessionComplete);
-	OnlineSession->GetOnJoinSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnJoinSessionComplete);
-	OnlineSession->GetOnSessionServerUpdateReceivedDelegates()->AddUObject(this, &ThisClass::OnSessionServerUpdateReceived);
-
-	Btn_Refresh->OnClicked().AddUObject(this, &ThisClass::FindSessions, true);
-
+	// Get parent menu widget
 	W_Parent = GetFirstOccurenceOuter<UBrowseMatchWidget>();
 	if (!ensure(W_Parent))
 	{
 		return;
 	}
 
+	OnlineSession->GetOnLeaveSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnLeaveSessionComplete);
+	OnlineSession->GetOnFindSessionsCompleteDelegates()->AddUObject(this, &ThisClass::OnFindSessionComplete);
+	OnlineSession->GetOnJoinSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnJoinSessionComplete);
+	OnlineSession->GetOnSessionServerUpdateReceivedDelegates()->AddUObject(this, &ThisClass::OnSessionServerUpdateReceived);
+
+	Btn_Refresh->OnClicked().AddUObject(this, &ThisClass::FindSessions, true);
 	W_Parent->GetJoiningWidgetComponent()->OnCancelClicked.AddUObject(this, &ThisClass::CancelJoining);
 
 	FindSessions(false);
@@ -51,17 +52,7 @@ void UBrowseMatchP2PWidget::NativeOnDeactivated()
 	OnlineSession->GetOnSessionServerUpdateReceivedDelegates()->RemoveAll(this);
 
 	Btn_Refresh->OnClicked().RemoveAll(this);
-
 	W_Parent->GetJoiningWidgetComponent()->OnCancelClicked.RemoveAll(this);
-}
-
-void UBrowseMatchP2PWidget::CancelJoining() const
-{
-	W_Parent->SetLoadingMessage(TEXT_LEAVING_SESSION, false, false);
-	W_Parent->SwitchContent(UBrowseMatchWidget::EContentType::JOIN_LOADING);
-
-	OnlineSession->LeaveSession(
-		OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession));
 }
 
 void UBrowseMatchP2PWidget::FindSessions(const bool bForce) const
@@ -74,42 +65,6 @@ void UBrowseMatchP2PWidget::FindSessions(const bool bForce) const
 		OnlineSession->GetLocalUserNumFromPlayerController(GetOwningPlayer()),
 		SessionsNumToQuery,
 		bForce);
-}
-
-void UBrowseMatchP2PWidget::JoinSession(const FOnlineSessionSearchResult& SessionSearchResult) const
-{
-	if (OnlineSession->ValidateToJoinSession.IsBound() &&
-		!OnlineSession->ValidateToJoinSession.Execute(SessionSearchResult))
-	{
-		return;
-	}
-
-	W_Parent->SetLoadingMessage(TEXT_JOINING_SESSION, false, false);
-	W_Parent->SwitchContent(UBrowseMatchWidget::EContentType::JOIN_LOADING);
-
-	OnlineSession->JoinSession(
-		OnlineSession->GetLocalUserNumFromPlayerController(GetOwningPlayer()),
-		OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession),
-		SessionSearchResult);
-}
-
-void UBrowseMatchP2PWidget::OnLeaveSessionComplete(FName SessionName, bool bSucceeded) const
-{
-	// Abort if not a game session.
-	if (!SessionName.IsEqual(OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession)))
-	{
-		return;
-	}
-
-	if (bSucceeded)
-	{
-		W_Parent->SwitchContent(UBrowseMatchWidget::EContentType::BROWSE_NOT_EMPTY);
-	}
-	else
-	{
-		W_Parent->SetErrorMessage(TEXT_FAILED_TO_LEAVE_SESSION, false);
-		W_Parent->SwitchContent(UBrowseMatchWidget::EContentType::JOIN_ERROR);
-	}
 }
 
 void UBrowseMatchP2PWidget::OnFindSessionComplete(
@@ -145,6 +100,51 @@ void UBrowseMatchP2PWidget::OnFindSessionComplete(
 		W_Parent->SetErrorMessage(TEXT_FAILED_TO_RETRIEVE_DATA, true);
 		W_Parent->SwitchContent(UBrowseMatchWidget::EContentType::BROWSE_ERROR);
 	}
+}
+
+void UBrowseMatchP2PWidget::CancelJoining() const
+{
+	W_Parent->SetLoadingMessage(TEXT_LEAVING_SESSION, false, false);
+	W_Parent->SwitchContent(UBrowseMatchWidget::EContentType::JOIN_LOADING);
+
+	OnlineSession->LeaveSession(
+		OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession));
+}
+
+void UBrowseMatchP2PWidget::OnLeaveSessionComplete(FName SessionName, bool bSucceeded) const
+{
+	// Abort if not a game session.
+	if (!SessionName.IsEqual(OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession)))
+	{
+		return;
+	}
+
+	if (bSucceeded)
+	{
+		W_Parent->SwitchContent(UBrowseMatchWidget::EContentType::BROWSE_NOT_EMPTY);
+	}
+	else
+	{
+		W_Parent->SetErrorMessage(TEXT_FAILED_TO_LEAVE_SESSION, false);
+		W_Parent->SwitchContent(UBrowseMatchWidget::EContentType::JOIN_ERROR);
+	}
+}
+
+void UBrowseMatchP2PWidget::JoinSession(const FOnlineSessionSearchResult& SessionSearchResult) const
+{
+	if (OnlineSession->ValidateToJoinSession.IsBound() &&
+		!OnlineSession->ValidateToJoinSession.Execute(SessionSearchResult))
+	{
+		return;
+	}
+
+	W_Parent->SetLoadingMessage(TEXT_JOINING_SESSION, false, false);
+	W_Parent->SwitchContent(UBrowseMatchWidget::EContentType::JOIN_LOADING);
+
+	OnlineSession->JoinSession(
+		OnlineSession->GetLocalUserNumFromPlayerController(GetOwningPlayer()),
+		OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession),
+		SessionSearchResult);
 }
 
 void UBrowseMatchP2PWidget::OnJoinSessionComplete(

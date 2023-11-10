@@ -9,35 +9,25 @@
 #include "Interfaces/OnlineSessionInterface.h"
 #include "Play/MatchSessionEssentials/UI/BrowseMatchWidget.h"
 #include "Play/OnlineSessionUtils/AccelByteWarsOnlineSessionModels.h"
-#include "BrowseMatchP2PWidget.generated.h"
+#include "BrowseMatchP2PWidget_Starter.generated.h"
 
 class UAccelByteWarsOnlineSessionBase;
 class UCommonButtonBase;
 
 UCLASS(Abstract)
-class ACCELBYTEWARS_API UBrowseMatchP2PWidget : public UAccelByteWarsActivatableWidget
+class ACCELBYTEWARS_API UBrowseMatchP2PWidget_Starter : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
-
+	
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
 
+#pragma region "Match Session with P2P function declarations"
 protected:
-	void FindSessions(const bool bForce) const;
-	void OnFindSessionComplete(const TArray<FMatchSessionEssentialInfo> SessionEssentialsInfo, bool bSucceeded);
+	// TODO: Add your function declarations here
+#pragma endregion
 
-	void CancelJoining() const;
-	void OnLeaveSessionComplete(FName SessionName, bool bSucceeded) const;
-
-	void JoinSession(const FOnlineSessionSearchResult&SessionSearchResult) const;
-	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type CompletionType) const;
-
-	void OnSessionServerUpdateReceived(
-		const FName SessionName,
-		const FOnlineError& Error,
-		const bool bHasClientTravelTriggered) const;
-
-protected:
+private:
 	UPROPERTY()
 	UAccelByteWarsOnlineSessionBase* OnlineSession;
 

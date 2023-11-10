@@ -7,37 +7,26 @@
 #include "CoreMinimal.h"
 #include "OnlineError.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
-#include "CreateMatchSessionP2PWidget.generated.h"
+#include "CreateMatchSessionP2PWidget_Starter.generated.h"
 
 class UCreateMatchSessionWidget;
 class UCommonButtonBase;
 class UAccelByteWarsOnlineSessionBase;
 
 UCLASS(Abstract)
-class ACCELBYTEWARS_API UCreateMatchSessionP2PWidget : public UAccelByteWarsActivatableWidget
+class ACCELBYTEWARS_API UCreateMatchSessionP2PWidget_Starter : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
 
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
 
+#pragma region "Match Session with P2P function declarations"
 protected:
-	UFUNCTION()
-	void CreateSession() const;
+	// TODO: Add your function declarations here
+#pragma endregion
 
-	void OnCreateSessionComplete(FName SessionName, bool bSucceeded) const;
-
-	UFUNCTION()
-	void CancelJoiningSession() const;
-
-	void OnCancelJoiningSessionComplete(FName SessionName, bool bSucceeded) const;
-
-	void OnSessionServerUpdateReceived(
-		const FName SessionName,
-		const FOnlineError& Error,
-		const bool bHasClientTravelTriggered) const;
-
-protected:
+private:
 	UPROPERTY()
 	UAccelByteWarsOnlineSessionBase* OnlineSession;
 

@@ -3,28 +3,27 @@
 // and restrictions contact your company contract manager.
 
 
-#include "CreateMatchSessionDSWidget_Starter.h"
+#include "BrowseMatchP2PWidget_Starter.h"
 
 #include "CommonButtonBase.h"
+#include "Components/ListView.h"
 #include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
 #include "Play/MatchSessionEssentials/MatchSessionEssentialsModels.h"
-#include "Play/MatchSessionEssentials/UI/CreateMatchSessionWidget.h"
 #include "Play/OnlineSessionUtils/AccelByteWarsOnlineSessionBase.h"
 
-void UCreateMatchSessionDSWidget_Starter::NativeOnActivated()
+void UBrowseMatchP2PWidget_Starter::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
-	// Get Online Session
 	UOnlineSession* BaseOnlineSession = GetWorld()->GetGameInstance()->GetOnlineSession();
 	if (!ensure(BaseOnlineSession))
 	{
 		return;
 	}
 	OnlineSession = Cast<UAccelByteWarsOnlineSessionBase>(BaseOnlineSession);
+	ensure(OnlineSession);
 
-	// Get parent menu widget
-	W_Parent = GetFirstOccurenceOuter<UCreateMatchSessionWidget>();
+	W_Parent = GetFirstOccurenceOuter<UBrowseMatchWidget>();
 	if (!ensure(W_Parent))
 	{
 		return;
@@ -35,7 +34,7 @@ void UCreateMatchSessionDSWidget_Starter::NativeOnActivated()
 	// TODO: Add your UI delegates setup here
 }
 
-void UCreateMatchSessionDSWidget_Starter::NativeOnDeactivated()
+void UBrowseMatchP2PWidget_Starter::NativeOnDeactivated()
 {
 	Super::NativeOnDeactivated();
 
@@ -44,13 +43,13 @@ void UCreateMatchSessionDSWidget_Starter::NativeOnDeactivated()
 	// TODO: Add your UI delegates cleanup here
 }
 
-#pragma region "Match Session with DS function implementations"
+#pragma region "Match Session with P2P function implementations"
 // TODO: Add your function implementations here
 #pragma endregion 
 
 #pragma region "UI related"
-UWidget* UCreateMatchSessionDSWidget_Starter::NativeGetDesiredFocusTarget() const
+UWidget* UBrowseMatchP2PWidget_Starter::NativeGetDesiredFocusTarget() const
 {
-	return Btn_StartMatchSessionDS;
+	return Btn_Refresh;
 }
 #pragma endregion 

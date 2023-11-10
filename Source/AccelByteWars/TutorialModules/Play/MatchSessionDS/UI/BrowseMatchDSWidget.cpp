@@ -15,6 +15,7 @@ void UBrowseMatchDSWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
+	// Get Online Session
 	UOnlineSession* BaseOnlineSession = GetWorld()->GetGameInstance()->GetOnlineSession();
 	if (!ensure(BaseOnlineSession))
 	{
@@ -23,6 +24,7 @@ void UBrowseMatchDSWidget::NativeOnActivated()
 	OnlineSession = Cast<UAccelByteWarsOnlineSessionBase>(BaseOnlineSession);
 	ensure(OnlineSession);
 
+	// Get parent menu widget
 	W_Parent = GetFirstOccurenceOuter<UBrowseMatchWidget>();
 	if (!ensure(W_Parent))
 	{

@@ -24,7 +24,6 @@ class ACCELBYTEWARS_API UCreateMatchSessionDSWidget_Starter : public UAccelByteW
 #pragma region "Match Session with DS function declarations"
 protected:
 	// TODO: Add your function declarations here
-
 #pragma endregion
 
 protected:

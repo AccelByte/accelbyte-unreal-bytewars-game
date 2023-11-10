@@ -25,7 +25,6 @@ class ACCELBYTEWARS_API UBrowseMatchDSWidget_Starter : public UAccelByteWarsActi
 #pragma region "Match Session with DS function declarations"
 protected:
 	// TODO: Add your function declarations here
-
 #pragma endregion
 
 private:

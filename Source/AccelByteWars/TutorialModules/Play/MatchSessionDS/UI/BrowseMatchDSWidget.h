@@ -37,7 +37,7 @@ protected:
 		const FOnlineError& Error,
 		const bool bHasClientTravelTriggered) const;
 
-private:
+protected:
 	UPROPERTY()
 	UAccelByteWarsOnlineSessionBase* OnlineSession;
 
