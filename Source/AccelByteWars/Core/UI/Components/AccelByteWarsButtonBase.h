@@ -9,13 +9,26 @@
 #include "Core/UI/AccelByteWarsWidgetInterface.h"
 #include "AccelByteWarsButtonBase.generated.h"
 
+UENUM(BlueprintType)
+enum class EAccelByteWarsButtonBaseType : uint8
+{
+	TEXT_BUTTON UMETA(DisplayName = "Text Button"),
+	IMAGE_BUTTON UMETA(DisplayName = "Image Button")
+};
+
 UCLASS(Abstract, BlueprintType, Blueprintable)
 class ACCELBYTEWARS_API UAccelByteWarsButtonBase : public UCommonButtonBase, public IAccelByteWarsWidgetInterface
 {
 	GENERATED_BODY()
 public:
 	UFUNCTION(BlueprintCallable)
-		void SetButtonText(const FText& InText);
+	void SetButtonText(const FText& InText);
+
+	UFUNCTION(BlueprintCallable)
+	void SetButtonImage(const FSlateBrush& InBrush);
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void SetButtonType(const EAccelByteWarsButtonBaseType& InType);
 
 protected:
 	// UUserWidget interface
@@ -34,11 +47,23 @@ protected:
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void UpdateButtonStyle();
+
+	void RefreshButtonImage();
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void UpdateButtonImage(const FSlateBrush& InBrush);
 	
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Button")
+	EAccelByteWarsButtonBaseType ButtonType = EAccelByteWarsButtonBaseType::TEXT_BUTTON;
+
 private:
-	UPROPERTY(EditAnywhere, Category = "Button", meta = (InlineEditConditionToggle))
+	UPROPERTY(EditAnywhere, Category = "Button", meta = (InlineEditConditionToggle, EditCondition = "ButtonType==EAccelByteWarsButtonBaseType::TEXT_BUTTON", EditConditionHides))
 	uint8 bOverride_ButtonText : 1;
 
-	UPROPERTY(EditAnywhere, Category = "Button", meta = (editcondition = "bOverride_ButtonText"))
+	UPROPERTY(EditAnywhere, Category = "Button", meta = (EditCondition = "bOverride_ButtonText&&ButtonType==EAccelByteWarsButtonBaseType::TEXT_BUTTON", EditConditionHides))
 	FText ButtonText;
+
+	UPROPERTY(EditAnywhere, Category = "Button", meta = (EditCondition = "ButtonType==EAccelByteWarsButtonBaseType::IMAGE_BUTTON", EditConditionHides))
+	FSlateBrush ButtonBrush;
 };

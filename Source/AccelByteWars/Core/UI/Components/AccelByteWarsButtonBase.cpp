@@ -11,6 +11,9 @@ void UAccelByteWarsButtonBase::NativePreConstruct()
 
 	UpdateButtonStyle();
 	RefreshButtonText();
+	RefreshButtonImage();
+
+	SetButtonType(ButtonType);
 }
 
 void UAccelByteWarsButtonBase::UpdateInputActionWidget()
@@ -19,6 +22,7 @@ void UAccelByteWarsButtonBase::UpdateInputActionWidget()
 
 	UpdateButtonStyle();
 	RefreshButtonText();
+	RefreshButtonImage();
 }
 
 void UAccelByteWarsButtonBase::SetButtonText(const FText& InText)
@@ -26,6 +30,12 @@ void UAccelByteWarsButtonBase::SetButtonText(const FText& InText)
 	bOverride_ButtonText = InText.IsEmpty();
 	ButtonText = InText;
 	RefreshButtonText();
+}
+
+void UAccelByteWarsButtonBase::SetButtonImage(const FSlateBrush& InBrush)
+{
+	ButtonBrush = InBrush;
+	RefreshButtonImage();
 }
 
 void UAccelByteWarsButtonBase::RefreshButtonText()
@@ -44,6 +54,11 @@ void UAccelByteWarsButtonBase::RefreshButtonText()
 	}
 
 	UpdateButtonText(ButtonText);
+}
+
+void UAccelByteWarsButtonBase::RefreshButtonImage()
+{
+	UpdateButtonImage(ButtonBrush);
 }
 
 void UAccelByteWarsButtonBase::OnInputMethodChanged(ECommonInputType CurrentInputType)

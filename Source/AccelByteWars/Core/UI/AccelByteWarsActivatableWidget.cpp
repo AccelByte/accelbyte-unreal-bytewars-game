@@ -340,7 +340,16 @@ TWeakObjectPtr<UAccelByteWarsButtonBase> UAccelByteWarsActivatableWidget::Genera
 	}
 
 	// Assign action to open widget when entry button is clicked.
-	Button->SetButtonText(Metadata.ButtonText);
+	if (Metadata.ButtonType == ETutorialModuleButtonType::TEXT_BUTTON) 
+	{
+		Button->SetButtonType(EAccelByteWarsButtonBaseType::TEXT_BUTTON);
+		Button->SetButtonText(Metadata.ButtonText);
+	}
+	else 
+	{
+		Button->SetButtonType(EAccelByteWarsButtonBaseType::IMAGE_BUTTON);
+		Button->SetButtonImage(Metadata.ButtonImage);
+	}
 	Button->OnClicked().AddWeakLambda(this, [Metadata, BaseUIWidget, EntryWidgetClass]()
 	{
 		// Check if action is valid.
@@ -405,7 +414,16 @@ TWeakObjectPtr<UAccelByteWarsButtonBase> UAccelByteWarsActivatableWidget::Genera
 	}
 
 	// Assign action.
-	Button->SetButtonText(Metadata.ButtonText);
+	if (Metadata.ButtonType == ETutorialModuleButtonType::TEXT_BUTTON)
+	{
+		Button->SetButtonType(EAccelByteWarsButtonBaseType::TEXT_BUTTON);
+		Button->SetButtonText(Metadata.ButtonText);
+	}
+	else
+	{
+		Button->SetButtonType(EAccelByteWarsButtonBaseType::IMAGE_BUTTON);
+		Button->SetButtonImage(Metadata.ButtonImage);
+	}
 	Button->OnClicked().AddWeakLambda(this, [&Metadata]()
 	{
 		// Check if action is valid.

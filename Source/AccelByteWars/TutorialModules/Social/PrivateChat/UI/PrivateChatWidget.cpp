@@ -260,23 +260,22 @@ void UPrivateChatWidget::GetLastPrivateChatMessages()
 
 void UPrivateChatWidget::OnSendPrivateChatComplete(FString UserId, FString MsgBody, FString RoomId, bool bWasSuccessful)
 {
-	// Display the chat if success.
-	if (bWasSuccessful && PrivateChatSubsystem)
-	{
-		UChatData* ChatData = NewObject<UChatData>();
-		ChatData->Message = MsgBody;
-		ChatData->bIsSenderLocal = true;
-
-		AppendChatMessage(ChatData);
-	}
-	// Push a notification if failed.
-	else
+	// Abort and push a notification if failed.
+	if (!bWasSuccessful)
 	{
 		if (PromptSubsystem)
 		{
 			PromptSubsystem->PushNotification(SEND_CHAT_FAILED_MESSAGE);
 		}
+
+		return;
 	}
+
+	// Display the chat if success.
+	UChatData* ChatData = NewObject<UChatData>();
+	ChatData->Message = MsgBody;
+	ChatData->bIsSenderLocal = true;
+	AppendChatMessage(ChatData);
 }
 
 void UPrivateChatWidget::OnPrivateChatMessageReceived(const FUniqueNetId& Sender, const TSharedRef<FChatMessage>& Message)

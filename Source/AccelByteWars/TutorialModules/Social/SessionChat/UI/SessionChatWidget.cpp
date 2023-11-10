@@ -305,6 +305,17 @@ void USessionChatWidget::GetLastChatMessages()
 
 void USessionChatWidget::OnSendChatComplete(FString UserId, FString MsgBody, FString RoomId, bool bWasSuccessful)
 {
+	// Abort and push a notification if failed.
+	if (!bWasSuccessful) 
+	{
+		if (PromptSubsystem)
+		{
+			PromptSubsystem->PushNotification(SEND_CHAT_FAILED_MESSAGE);
+		}
+
+		return;
+	}
+
 	if (!SessionChatSubsystem)
 	{
 		UE_LOG_SESSIONCHAT(Warning, TEXT("Cannot display a sent chat message. Session Chat subsystem is not valid."));
@@ -318,22 +329,10 @@ void USessionChatWidget::OnSendChatComplete(FString UserId, FString MsgBody, FSt
 	}
 
 	// Display the chat if success.
-	if (bWasSuccessful && SessionChatSubsystem)
-	{
-		UChatData* ChatData = NewObject<UChatData>();
-		ChatData->Message = MsgBody;
-		ChatData->bIsSenderLocal = true;
-
-		AppendChatMessage(ChatData);
-	}
-	// Push a notification if failed.
-	else
-	{
-		if (PromptSubsystem) 
-		{
-			PromptSubsystem->PushNotification(SEND_CHAT_FAILED_MESSAGE);
-		}
-	}
+	UChatData* ChatData = NewObject<UChatData>();
+	ChatData->Message = MsgBody;
+	ChatData->bIsSenderLocal = true;
+	AppendChatMessage(ChatData);
 }
 
 void USessionChatWidget::OnChatRoomMessageReceived(const FUniqueNetId& Sender, const FChatRoomId& RoomId, const TSharedRef<FChatMessage>& Message)
