@@ -6,14 +6,14 @@
 
 #include "CoreMinimal.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
-#include "InviteToGameSessionWidget.generated.h"
+#include "InviteToGameSessionWidget_Starter.generated.h"
 
 class UCommonButtonBase;
-class UPlayingWithFriendsSubsystem;
+class UPlayingWithFriendsSubsystem_Starter;
 class UFriendData;
 
 UCLASS(Abstract)
-class ACCELBYTEWARS_API UInviteToGameSessionWidget : public UAccelByteWarsActivatableWidget
+class ACCELBYTEWARS_API UInviteToGameSessionWidget_Starter : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
 
@@ -23,14 +23,16 @@ class ACCELBYTEWARS_API UInviteToGameSessionWidget : public UAccelByteWarsActiva
 #pragma region "Helper"
 private:
 	UFriendData* GetFriendDataFromParentWidget();
+#pragma endregion
+
+#pragma region "Playing with Friends function declaration"
+private:
+	// TODO: Add your private function declaration here
 #pragma endregion 
 
 private:
-	void InviteToSession();
-
-private:
 	UPROPERTY()
-	UPlayingWithFriendsSubsystem* Subsystem;
+	UPlayingWithFriendsSubsystem_Starter* Subsystem;
 
 #pragma region "UI Related"
 private:

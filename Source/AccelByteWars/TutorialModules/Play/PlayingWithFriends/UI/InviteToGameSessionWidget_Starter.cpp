@@ -3,29 +3,29 @@
 // and restrictions contact your company contract manager.
 
 
-#include "InviteToGameSessionWidget.h"
+#include "InviteToGameSessionWidget_Starter.h"
 
 #include "CommonButtonBase.h"
 #include "Social/FriendsEssentials/UI/FriendDetailsWidget.h"
-#include "Play/PlayingWithFriends/PlayingWithFriendsSubsystem.h"
+#include "Play/PlayingWithFriends/PlayingWithFriendsSubsystem_Starter.h"
 #include "Social/FriendsEssentials/UI/FriendDetailsWidget_Starter.h"
 
-void UInviteToGameSessionWidget::NativeOnActivated()
+void UInviteToGameSessionWidget_Starter::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
-	Subsystem = GetGameInstance()->GetSubsystem<UPlayingWithFriendsSubsystem>();
+	Subsystem = GetGameInstance()->GetSubsystem<UPlayingWithFriendsSubsystem_Starter>();
 	check(Subsystem)
 
 	SetVisibility(Subsystem->IsInMatchSessionGameSession() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 
 	Btn_Invite->SetIsEnabled(true);
-	Btn_Invite->OnClicked().AddUObject(this, &ThisClass::InviteToSession);
+	// TODO: Add your UI delegate setup here
 }
 
-void UInviteToGameSessionWidget::NativeOnDeactivated()
+void UInviteToGameSessionWidget_Starter::NativeOnDeactivated()
 {
-	Btn_Invite->OnClicked().RemoveAll(this);
+	// TODO: Add your UI delegate cleanup here
 
 	if (InviteDelayTimerHandle.IsValid())
 	{
@@ -36,7 +36,7 @@ void UInviteToGameSessionWidget::NativeOnDeactivated()
 }
 
 #pragma region "Helper"
-UFriendData* UInviteToGameSessionWidget::GetFriendDataFromParentWidget()
+UFriendData* UInviteToGameSessionWidget_Starter::GetFriendDataFromParentWidget()
 {
 	if (const UFriendDetailsWidget* Parent = GetFirstOccurenceOuter<UFriendDetailsWidget>())
 	{
@@ -50,27 +50,8 @@ UFriendData* UInviteToGameSessionWidget::GetFriendDataFromParentWidget()
 
 	return nullptr;
 }
+#pragma endregion
+
+#pragma region "Playing with Friends implementation"
+// TODO: Add your module implementations here.
 #pragma endregion 
-
-void UInviteToGameSessionWidget::InviteToSession()
-{
-	const UFriendData* FriendData = GetFriendDataFromParentWidget();
-	if (!FriendData)
-	{
-		return;
-	}
-
-	Subsystem->SendGameSessionInvite(GetOwningPlayer(), FriendData->UserId);
-
-	// disable button for 5 seconds to avoid spamming
-	Btn_Invite->SetIsEnabled(false);
-	GetGameInstance()->GetTimerManager().SetTimer(
-		InviteDelayTimerHandle,
-		FTimerDelegate::CreateWeakLambda(this, [this]()
-		{
-			Btn_Invite->SetIsEnabled(true);
-		}),
-		5.0f,
-		false,
-		5.0f);
-}

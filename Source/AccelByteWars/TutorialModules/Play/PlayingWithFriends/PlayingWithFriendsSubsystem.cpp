@@ -16,16 +16,17 @@ void UPlayingWithFriendsSubsystem::Initialize(FSubsystemCollectionBase& Collecti
 {
 	Super::Initialize(Collection);
 
+	// Get Online Session
 	OnlineSession = Cast<UAccelByteWarsOnlineSessionBase>(GetGameInstance()->GetOnlineSession());
 	if (!ensure(OnlineSession))
 	{
 		return;
 	}
 
-	OnlineSession->GetOnJoinSessionCompleteDelegates()->AddUObject(
-		this, &ThisClass::OnJoinSessionComplete);
 	OnlineSession->GetOnSendSessionInviteCompleteDelegates()->AddUObject(
 		this, &ThisClass::OnSendGameSessionInviteComplete);
+	OnlineSession->GetOnJoinSessionCompleteDelegates()->AddUObject(
+		this, &ThisClass::OnJoinSessionComplete);
 	OnlineSession->GetOnRejectSessionInviteCompleteDelegate()->AddUObject(
 		this, &ThisClass::OnRejectGameSessionInviteComplete);
 	OnlineSession->GetOnSessionInviteReceivedDelegates()->AddUObject(
@@ -38,13 +39,14 @@ void UPlayingWithFriendsSubsystem::Deinitialize()
 {
 	Super::Deinitialize();
 
-	OnlineSession->GetOnJoinSessionCompleteDelegates()->RemoveAll(this);
 	OnlineSession->GetOnSendSessionInviteCompleteDelegates()->RemoveAll(this);
+	OnlineSession->GetOnJoinSessionCompleteDelegates()->RemoveAll(this);
 	OnlineSession->GetOnRejectSessionInviteCompleteDelegate()->RemoveAll(this);
 	OnlineSession->GetOnSessionInviteReceivedDelegates()->RemoveAll(this);
 	OnlineSession->GetOnSessionParticipantsChange()->RemoveAll(this);
 }
 
+#pragma region "Helper"
 bool UPlayingWithFriendsSubsystem::IsInMatchSessionGameSession() const
 {
 	FString RequestedSessionType;
@@ -63,6 +65,130 @@ bool UPlayingWithFriendsSubsystem::IsInMatchSessionGameSession() const
 
 	return false;
 }
+
+FUniqueNetIdRef UPlayingWithFriendsSubsystem::GetSessionOwnerUniqueNetId(const FName SessionName) const
+{
+	const FNamedOnlineSession* Session = OnlineSession->GetSession(SessionName);
+	return Session->LocalOwnerId.Get()->AsShared();
+}
+
+UPromptSubsystem* UPlayingWithFriendsSubsystem::GetPromptSubsystem() const
+{
+	const UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+	if (!GameInstance)
+	{
+		return nullptr;
+	}
+
+	return GameInstance->GetSubsystem<UPromptSubsystem>();
+}
+
+void UPlayingWithFriendsSubsystem::JoinGameSessionConfirmation(
+	const int32 LocalUserNum,
+	const FOnlineSessionInviteAccelByte& Invite)
+{
+	if (OnlineSession->GetSession(OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession)))
+	{
+		UPromptSubsystem* PromptSubsystem = GetPromptSubsystem();
+		if (!PromptSubsystem)
+		{
+			return;
+		}
+
+		PromptSubsystem->ShowDialoguePopUp(
+			TEXT_LEAVING_SESSION,
+			TEXT_JOIN_NEW_SESSION_CONFIRMATION,
+			EPopUpType::ConfirmationConfirmCancel,
+			FPopUpResultDelegate::CreateWeakLambda(this, [this, LocalUserNum, Invite](EPopUpResult Result)
+			{
+				switch (Result)
+				{
+				case Confirmed:
+					JoinGameSession(LocalUserNum, Invite.Session);
+					break;
+				case Declined:
+					OnlineSession->RejectSessionInvite(LocalUserNum, Invite);
+					break;
+				}
+			}));
+	}
+	else
+	{
+		UPromptSubsystem* PromptSubsystem = GetPromptSubsystem();
+		if (!PromptSubsystem)
+		{
+			return;
+		}
+
+		PromptSubsystem->ShowLoading(TEXT_JOINING_SESSION);
+		JoinGameSession(LocalUserNum, Invite.Session);
+	}
+}
+
+void UPlayingWithFriendsSubsystem::OnQueryUserInfoOnGameSessionParticipantChange(
+	const bool bSucceeded,
+	const TArray<FUserOnlineAccountAccelByte*>& UsersInfo,
+	FName SessionName,
+	const bool bJoined)
+{
+	UE_LOG_PLAYINGWITHFRIENDS(Verbose, TEXT("Called"));
+
+	UPromptSubsystem* PromptSubsystem = GetPromptSubsystem();
+	if (!bSucceeded || UsersInfo.IsEmpty() || !PromptSubsystem)
+	{
+		return;
+	}
+
+	for (const FUserOnlineAccountAccelByte* User : UsersInfo)
+	{
+		const bool bIsLeaderInfo = OnlineSession->CompareAccelByteUniqueId(
+			FUniqueNetIdRepl(User->GetUserId()),
+			FUniqueNetIdRepl(LeaderId));
+		// Joined / left member
+		if (!bIsLeaderInfo)
+		{
+			UE_LOG_PLAYINGWITHFRIENDS(VeryVerbose, TEXT("Member %s"), *FString(bJoined ? "JOINED" : "LEFT"));
+
+			const FText Message = FText::Format(
+				bJoined ? TEXT_FORMAT_JOINED : TEXT_FORMAT_LEFT,
+				FText::FromString(User->GetDisplayName().IsEmpty()
+					? UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(User->GetUserId().Get())
+					: User->GetDisplayName()));
+
+			FString AvatarURL;
+			User->GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
+
+			PromptSubsystem->PushNotification(Message, AvatarURL);
+		}
+
+		// Session's leader change
+		else if (bIsLeaderInfo && bLeaderChanged)
+		{
+			bLeaderChanged = false;
+
+			const FNamedOnlineSession* Session = OnlineSession->GetSession(SessionName);
+			if (!Session)
+			{
+				break;
+			}
+
+			const bool bIsLocalUserLeader = OnlineSession->CompareAccelByteUniqueId(
+				FUniqueNetIdRepl(Session->LocalOwnerId),
+				FUniqueNetIdRepl(LeaderId));
+			const FText Message = FText::Format(
+				TEXT_FORMAT_LEADER_CHANGED,
+				bIsLocalUserLeader ? TEXT_YOU_ARE : FText::FromString(User->GetDisplayName().IsEmpty() ?
+					UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(User->GetUserId().Get())
+					: User->GetDisplayName()));
+
+			FString AvatarURL;
+			User->GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
+
+			PromptSubsystem->PushNotification(Message, AvatarURL);
+		}
+	}
+}
+#pragma endregion 
 
 void UPlayingWithFriendsSubsystem::SendGameSessionInvite(const APlayerController* Owner, const FUniqueNetIdPtr Invitee) const
 {
@@ -98,7 +224,7 @@ void UPlayingWithFriendsSubsystem::OnSendGameSessionInviteComplete(
 		return;
 	}
 
-	// show sent notification
+	// show sent push notification
 	if (UPromptSubsystem* PromptSubsystem = GetPromptSubsystem())
 	{
 		PromptSubsystem->PushNotification(TEXT_INVITE_SENT);
@@ -112,6 +238,55 @@ void UPlayingWithFriendsSubsystem::OnRejectGameSessionInviteComplete(bool bSucce
 	UE_LOG_PLAYINGWITHFRIENDS(Verbose, TEXT("Succeedded: %s"), *FString(bSucceeded ? "TRUE" : "FALSE"));
 
 	OnRejectGameSessionInviteCompleteDelegates.Broadcast(bSucceeded);
+}
+
+void UPlayingWithFriendsSubsystem::JoinGameSession(const int32 LocalUserNum, const FOnlineSessionSearchResult& Session) const
+{
+	UE_LOG_PLAYINGWITHFRIENDS(Verbose, TEXT("Called"));
+
+	OnlineSession->JoinSession(
+		LocalUserNum,
+		OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession),
+		Session);
+}
+
+void UPlayingWithFriendsSubsystem::OnJoinSessionComplete(
+	FName SessionName,
+	EOnJoinSessionCompleteResult::Type CompletionType) const
+{
+	const bool bSucceeded = CompletionType == EOnJoinSessionCompleteResult::Success;
+	FText ErrorMessage;
+
+	UE_LOG_PLAYINGWITHFRIENDS(Verbose, TEXT("Succeedded: %s"), *FString(bSucceeded ? "TRUE" : "FALSE"));
+
+	switch (CompletionType)
+	{
+	case EOnJoinSessionCompleteResult::Success:
+		ErrorMessage = FText();
+		break;
+	case EOnJoinSessionCompleteResult::SessionIsFull:
+		ErrorMessage = TEXT_FAILED_SESSION_FULL_PLAYING_WITH_FRIENDS;
+		break;
+	case EOnJoinSessionCompleteResult::SessionDoesNotExist:
+		ErrorMessage = TEXT_FAILED_SESSION_NULL_PLAYING_WITH_FRIENDS;
+		break;
+	case EOnJoinSessionCompleteResult::CouldNotRetrieveAddress:
+		ErrorMessage = TEXT_FAILED_TO_JOIN_SESSION_PLAYING_WITH_FRIENDS;
+		break;
+	case EOnJoinSessionCompleteResult::AlreadyInSession:
+		ErrorMessage = TEXT_FAILED_ALREADY_IN_SESSION_PLAYING_WITH_FRIENDS;
+		break;
+	case EOnJoinSessionCompleteResult::UnknownError:
+		ErrorMessage = TEXT_FAILED_TO_JOIN_SESSION_PLAYING_WITH_FRIENDS;
+		break;
+	default:
+		ErrorMessage = FText();
+	}
+
+	if (UPromptSubsystem* PromptSubsystem = GetPromptSubsystem(); !bSucceeded && PromptSubsystem)
+	{
+		PromptSubsystem->PushNotification(ErrorMessage);
+	}
 }
 
 void UPlayingWithFriendsSubsystem::OnGameSessionInviteReceived(
@@ -207,58 +382,6 @@ void UPlayingWithFriendsSubsystem::ShowInviteReceivedPopup(
 			}));
 }
 
-void UPlayingWithFriendsSubsystem::JoinGameSessionConfirmation(
-	const int32 LocalUserNum,
-	const FOnlineSessionInviteAccelByte& Invite)
-{
-	if (OnlineSession->GetSession(OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession)))
-	{
-		UPromptSubsystem* PromptSubsystem = GetPromptSubsystem();
-		if (!PromptSubsystem)
-		{
-			return;
-		}
-
-		PromptSubsystem->ShowDialoguePopUp(
-			TEXT_LEAVING_SESSION,
-			TEXT_JOIN_NEW_SESSION_CONFIRMATION,
-			EPopUpType::ConfirmationConfirmCancel,
-			FPopUpResultDelegate::CreateWeakLambda(this, [this, LocalUserNum, Invite](EPopUpResult Result)
-			{
-				switch (Result)
-				{
-				case Confirmed:
-					JoinGameSession(LocalUserNum, Invite.Session);
-					break;
-				case Declined:
-					OnlineSession->RejectSessionInvite(LocalUserNum, Invite);
-					break;
-				}
-			}));
-	}
-	else
-	{
-		UPromptSubsystem* PromptSubsystem = GetPromptSubsystem();
-		if (!PromptSubsystem)
-		{
-			return;
-		}
-
-		PromptSubsystem->ShowLoading(TEXT_JOINING_SESSION);
-		JoinGameSession(LocalUserNum, Invite.Session);
-	}
-}
-
-void UPlayingWithFriendsSubsystem::JoinGameSession(const int32 LocalUserNum, const FOnlineSessionSearchResult& Session) const
-{
-	UE_LOG_PLAYINGWITHFRIENDS(Verbose, TEXT("Called"));
-
-	OnlineSession->JoinSession(
-		LocalUserNum,
-		OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession),
-		Session);
-}
-
 void UPlayingWithFriendsSubsystem::OnGameSessionParticipantsChange(
 	FName SessionName,
 	const FUniqueNetId& Member,
@@ -311,124 +434,4 @@ void UPlayingWithFriendsSubsystem::OnGameSessionParticipantsChange(
 			&ThisClass::OnQueryUserInfoOnGameSessionParticipantChange,
 			SessionName,
 			bJoined));
-}
-
-void UPlayingWithFriendsSubsystem::OnQueryUserInfoOnGameSessionParticipantChange(
-	const bool bSucceeded,
-	const TArray<FUserOnlineAccountAccelByte*>& UsersInfo,
-	FName SessionName,
-	const bool bJoined)
-{
-	UE_LOG_PLAYINGWITHFRIENDS(Verbose, TEXT("Called"));
-
-	UPromptSubsystem* PromptSubsystem = GetPromptSubsystem();
-	if (!bSucceeded || UsersInfo.IsEmpty() || !PromptSubsystem)
-	{
-		return;
-	}
-
-	for (const FUserOnlineAccountAccelByte* User : UsersInfo)
-	{
-		const bool bIsLeaderInfo = OnlineSession->CompareAccelByteUniqueId(
-			FUniqueNetIdRepl(User->GetUserId()),
-			FUniqueNetIdRepl(LeaderId));
-		// Joined / left member
-		if (!bIsLeaderInfo)
-		{
-			UE_LOG_PLAYINGWITHFRIENDS(VeryVerbose, TEXT("Member %s"), *FString(bJoined ? "JOINED" : "LEFT"));
-
-			const FText Message = FText::Format(
-				bJoined ? TEXT_FORMAT_JOINED : TEXT_FORMAT_LEFT,
-				FText::FromString(User->GetDisplayName().IsEmpty()
-					? UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(User->GetUserId().Get())
-					: User->GetDisplayName()));
-
-			FString AvatarURL;
-			User->GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
-
-			PromptSubsystem->PushNotification(Message, AvatarURL);
-		}
-
-		// Session's leader change
-		else if (bIsLeaderInfo && bLeaderChanged)
-		{
-			bLeaderChanged = false;
-
-			const FNamedOnlineSession* Session = OnlineSession->GetSession(SessionName);
-			if (!Session)
-			{
-				break;
-			}
-
-			const bool bIsLocalUserLeader = OnlineSession->CompareAccelByteUniqueId(
-				FUniqueNetIdRepl(Session->LocalOwnerId),
-				FUniqueNetIdRepl(LeaderId));
-			const FText Message = FText::Format(
-				TEXT_FORMAT_LEADER_CHANGED,
-				bIsLocalUserLeader ? TEXT_YOU_ARE : FText::FromString(User->GetDisplayName().IsEmpty() ?
-					UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(User->GetUserId().Get())
-					: User->GetDisplayName()));
-
-			FString AvatarURL;
-			User->GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
-
-			PromptSubsystem->PushNotification(Message, AvatarURL);
-		}
-	}
-}
-
-void UPlayingWithFriendsSubsystem::OnJoinSessionComplete(
-	FName SessionName,
-	EOnJoinSessionCompleteResult::Type CompletionType) const
-{
-	const bool bSucceeded = CompletionType == EOnJoinSessionCompleteResult::Success;
-	FText ErrorMessage;
-
-	UE_LOG_PLAYINGWITHFRIENDS(Verbose, TEXT("Succeedded: %s"), *FString(bSucceeded ? "TRUE" : "FALSE"));
-
-	switch (CompletionType)
-	{
-	case EOnJoinSessionCompleteResult::Success:
-		ErrorMessage = FText();
-		break;
-	case EOnJoinSessionCompleteResult::SessionIsFull:
-		ErrorMessage = TEXT_FAILED_SESSION_FULL_PLAYING_WITH_FRIENDS;
-		break;
-	case EOnJoinSessionCompleteResult::SessionDoesNotExist:
-		ErrorMessage = TEXT_FAILED_SESSION_NULL_PLAYING_WITH_FRIENDS;
-		break;
-	case EOnJoinSessionCompleteResult::CouldNotRetrieveAddress:
-		ErrorMessage = TEXT_FAILED_TO_JOIN_SESSION_PLAYING_WITH_FRIENDS;
-		break;
-	case EOnJoinSessionCompleteResult::AlreadyInSession:
-		ErrorMessage = TEXT_FAILED_ALREADY_IN_SESSION_PLAYING_WITH_FRIENDS;
-		break;
-	case EOnJoinSessionCompleteResult::UnknownError:
-		ErrorMessage = TEXT_FAILED_TO_JOIN_SESSION_PLAYING_WITH_FRIENDS;
-		break;
-	default:
-		ErrorMessage = FText();
-	}
-
-	if (UPromptSubsystem* PromptSubsystem = GetPromptSubsystem(); !bSucceeded && PromptSubsystem)
-	{
-		PromptSubsystem->PushNotification(ErrorMessage);
-	}
-}
-
-FUniqueNetIdRef UPlayingWithFriendsSubsystem::GetSessionOwnerUniqueNetId(const FName SessionName) const
-{
-	const FNamedOnlineSession* Session = OnlineSession->GetSession(SessionName);
-	return Session->LocalOwnerId.Get()->AsShared();
-}
-
-UPromptSubsystem* UPlayingWithFriendsSubsystem::GetPromptSubsystem() const
-{
-	const UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
-	if (!GameInstance)
-	{
-		return nullptr;
-	}
-
-	return GameInstance->GetSubsystem<UPromptSubsystem>();
 }
