@@ -172,3 +172,18 @@ FGameModeData UAccelByteWarsGameInstance::GetGameModeDataByCodeName(const FStrin
 	}
 	return Data;
 }
+
+void UAccelByteWarsGameInstance::OpenSDKConfigMenu()
+{
+	// Abort if the SDK config menu is already opened.
+	if (SDKConfigWidgetInstance && SDKConfigWidgetInstance->IsActivated()) 
+	{
+		return;
+	}
+
+	// Open the SDK config menu.
+	if (SDKConfigWidgetClass && SDKConfigWidgetClass.Get())
+	{
+		SDKConfigWidgetInstance = GetBaseUIWidget()->PushWidgetToStack(EBaseUIStackType::Prompt, SDKConfigWidgetClass.Get());
+	}
+}

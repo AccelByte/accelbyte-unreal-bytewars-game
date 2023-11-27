@@ -61,11 +61,12 @@ public:
 	/* @brief Get if the server use AccelByte Multiplayer Server. */
 	static bool GetIsServerUseAMS();
 
+	static void OverrideSDKConfig(const bool bIsServer, const TMap<FString, FString>& SDKConfigs);
+
 private:
 	static void CheckForDedicatedServerVersionOverride();
 
-	static void CheckForSDKConfigOverride();
-	static bool OverrideSDKConfigFromLaunchParam(const bool bIsServer = false);
+	static void CheckForSDKConfigOverride(const bool bIsServer);
 
 	static void CheckForEnvironmentConfigOverride();
 	static ESettingsEnvironment ConvertStringEnvToAccelByteEnv(const FString& EnvironmentStr);

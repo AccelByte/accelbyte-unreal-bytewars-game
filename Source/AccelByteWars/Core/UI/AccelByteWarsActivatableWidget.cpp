@@ -10,6 +10,7 @@
  
 #include "Editor/WidgetCompilerLog.h"
 #include "CommonInputModeTypes.h"
+#include "Input/CommonUIInputTypes.h"
 #include "Input/UIActionBindingHandle.h"
 #include "Kismet/GameplayStatics.h"
 #include "Camera/CameraActor.h"
@@ -31,6 +32,16 @@ UAccelByteWarsActivatableWidget::UAccelByteWarsActivatableWidget(const FObjectIn
 void UAccelByteWarsActivatableWidget::NativePreConstruct()
 {
 	Super::NativePreConstruct();
+
+	// Assign triggerer to open AccelByte SDK config menu.
+	if (UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetWorld()->GetGameInstance()))
+	{
+		OpenSdkConfigHandle.Unregister();
+		OpenSdkConfigHandle = RegisterUIActionBinding(FBindUIActionArgs(
+			GameInstance->GetOpenSDKConfigMenuInputAction(),
+			false,
+			FSimpleDelegate::CreateUObject(GameInstance, &UAccelByteWarsGameInstance::OpenSDKConfigMenu)));
+	}
 
 	// Refresh Tutorial Module metadatas based on the default object.
 	const UAccelByteWarsActivatableWidget* DefaultObj = Cast<UAccelByteWarsActivatableWidget>(GetClass()->GetDefaultObject());

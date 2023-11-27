@@ -120,6 +120,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Tutorial Module Metadata")
 	bool bHideIfGeneratedWidgetEmpty = false;
 
+#pragma region "AccelByte SDK Config Menu"
+	// Handle to store action binding to open AccelByte SDK reconfiguration menu.
+	FUIActionBindingHandle OpenSdkConfigHandle;
+#pragma endregion
+
 private:
 #pragma region "Tutorial Module"
 	void ValidateAssociateTutorialModule();
