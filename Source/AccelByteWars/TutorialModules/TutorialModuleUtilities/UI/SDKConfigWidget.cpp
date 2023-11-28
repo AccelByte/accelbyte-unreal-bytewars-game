@@ -128,7 +128,6 @@ void USDKConfigWidget::SaveSdkConfig()
 	ClientSDKConfigs.Add(FString("PublisherNamespace"), Edt_GameClientPublisher->GetText().ToString());
 	ClientSDKConfigs.Add(FString("BaseUrl"), Edt_GameClientBaseUrl->GetText().ToString());
 	ClientSDKConfigs.Add(FString("RedirectURI"), Edt_GameClientRedirectUri->GetText().ToString());
-	UTutorialModuleOnlineUtility::OverrideSDKConfig(false, ClientSDKConfigs);
 
 	// Save game server sdk configs.
 	TMap<FString, FString> ServerSDKConfigs;
@@ -138,7 +137,9 @@ void USDKConfigWidget::SaveSdkConfig()
 	ServerSDKConfigs.Add(FString("PublisherNamespace"), Edt_ServerPublisher->GetText().ToString());
 	ServerSDKConfigs.Add(FString("BaseUrl"), Edt_ServerBaseUrl->GetText().ToString());
 	ServerSDKConfigs.Add(FString("RedirectURI"), Edt_ServerRedirectUri->GetText().ToString());
-	UTutorialModuleOnlineUtility::OverrideSDKConfig(true, ServerSDKConfigs);
+
+	// Override sdk configs.
+	UTutorialModuleOnlineUtility::OverrideSDKConfig(ClientSDKConfigs, ServerSDKConfigs);
 
 	// Reload the game.
 	UGameplayStatics::OpenLevel(GetWorld(), TEXT("MainMenu"));
