@@ -14,6 +14,7 @@ void UMultiplayerDSEssentialsSubsystemAMS::Initialize(FSubsystemCollectionBase& 
 	Super::Initialize(Collection);
 
 	AAccelByteWarsGameSession::OnRegisterServerDelegates.AddUObject(this, &ThisClass::RegisterServer);
+	AAccelByteWarsGameSession::OnRegisterServerDelegates.AddUObject(this, &ThisClass::SendServerReady);
 	AAccelByteWarsGameSession::OnUnregisterServerDelegates.AddUObject(this, &ThisClass::UnregisterServer);
 
 	ABSessionInt = StaticCastSharedPtr<FOnlineSessionV2AccelByte>(Online::GetSessionInterface());
@@ -68,9 +69,6 @@ void UMultiplayerDSEssentialsSubsystemAMS::OnRegisterServerComplete(const bool b
 	if (bSucceeded)
 	{
 		bServerAlreadyRegister = true;
-
-		// Set server as ready.
-		SendServerReady();
 	}
 }
 
@@ -106,7 +104,7 @@ void UMultiplayerDSEssentialsSubsystemAMS::OnUnregisterServerComplete(const bool
 	FPlatformMisc::RequestExit(false);
 }
 
-void UMultiplayerDSEssentialsSubsystemAMS::SendServerReady() 
+void UMultiplayerDSEssentialsSubsystemAMS::SendServerReady(const FName SessionName)
 {
 	if (!ABSessionInt)
 	{
@@ -122,18 +120,24 @@ void UMultiplayerDSEssentialsSubsystemAMS::SendServerReady()
 		return;
 	}
 
-	ABSessionInt->SendServerReady(TEXT(""), FOnRegisterServerComplete::CreateUObject(this, &ThisClass::OnSendServerReadyComplete));
+	if (bServerAlreadyRegister)
+	{
+		UE_LOG_MultiplayerDSEssentials(Warning, TEXT("Already registered and ready"));
+		OnSendServerReadyComplete(false);
+		return;
+	}
+
+	// Registering the server manually by setting it as ready.
+	ABSessionInt->SendServerReady(SessionName, FOnRegisterServerComplete::CreateUObject(this, &ThisClass::OnSendServerReadyComplete));
 }
 
 void UMultiplayerDSEssentialsSubsystemAMS::OnSendServerReadyComplete(const bool bSucceeded)
 {
+	UE_LOG_MultiplayerDSEssentials(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE" : "FALSE"))
+
 	if (bSucceeded) 
 	{
-		UE_LOG_MultiplayerDSEssentials(Log, TEXT("Success to set AMS server ready state."));
-	}
-	else 
-	{
-		UE_LOG_MultiplayerDSEssentials(Warning, TEXT("Failed to set AMS server ready state"));
+		bServerAlreadyRegister = true;
 	}
 }
 
