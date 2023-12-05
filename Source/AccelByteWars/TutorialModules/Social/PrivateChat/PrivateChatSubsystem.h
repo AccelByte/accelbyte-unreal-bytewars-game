@@ -29,16 +29,6 @@ public:
 	bool GetLastPrivateChatMessages(const FUniqueNetIdPtr UserId, const FChatRoomId& RoomId, const int32 NumMessages, TArray<TSharedRef<FChatMessage>>& OutMessages);
 	bool IsMessageFromLocalUser(const FUniqueNetIdPtr UserId, const FChatMessage& Message);
 
-	FOnTopicAdded* GetOnTopicAddedDelegates()
-	{
-		return &OnTopicAddedDelegates;
-	}
-
-	FOnTopicRemoved* GetOnTopicRemovedDelegates()
-	{
-		return &OnTopicRemovedDelegates;
-	}
-
 	FOnSendChatComplete* GetOnSendPrivateChatCompleteDelegates()
 	{
 		return &OnSendPrivateChatCompleteDelegates;
@@ -50,9 +40,6 @@ public:
 	}
 
 protected:
-	void OnTopicAdded(FString ChatTopicName, FString TopicId, FString UserId);
-	void OnTopicRemoved(FString ChatTopicName, FString TopicId, FString SenderId);
-
 	void OnSendPrivateChatComplete(FString UserId, FString MsgBody, FString RoomId, bool bWasSuccessful);
 	void OnPrivateChatMessageReceived(const FUniqueNetId& Sender, const TSharedRef<FChatMessage>& Message);
 
@@ -63,9 +50,6 @@ protected:
 	UPromptSubsystem* GetPromptSubystem();
 
 private:
-	FOnTopicAdded OnTopicAddedDelegates;
-	FOnTopicRemoved OnTopicRemovedDelegates;
-
 	FOnSendChatComplete OnSendPrivateChatCompleteDelegates;
 	FOnChatPrivateMessageReceived OnPrivateChatMessageReceivedDelegates;
 };

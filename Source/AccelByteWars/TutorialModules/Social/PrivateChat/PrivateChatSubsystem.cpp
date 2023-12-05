@@ -90,9 +90,6 @@ void UPrivateChatSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
     if (GetChatInterface())
     {
-        GetChatInterface()->OnTopicAddedDelegates.AddUObject(this, &ThisClass::OnTopicAdded);
-        GetChatInterface()->OnTopicRemovedDelegates.AddUObject(this, &ThisClass::OnTopicRemoved);
-
         GetChatInterface()->OnSendChatCompleteDelegates.AddUObject(this, &ThisClass::OnSendPrivateChatComplete);
         GetChatInterface()->OnChatPrivateMessageReceivedDelegates.AddUObject(this, &ThisClass::OnPrivateChatMessageReceived);
 
@@ -107,9 +104,6 @@ void UPrivateChatSubsystem::Deinitialize()
 
     if (GetChatInterface())
     {
-        GetChatInterface()->OnTopicAddedDelegates.RemoveAll(this);
-        GetChatInterface()->OnTopicRemovedDelegates.RemoveAll(this);
-        
         GetChatInterface()->OnSendChatCompleteDelegates.RemoveAll(this);
         GetChatInterface()->OnChatPrivateMessageReceivedDelegates.RemoveAll(this);
     }
@@ -185,7 +179,7 @@ bool UPrivateChatSubsystem::GetLastPrivateChatMessages(const FUniqueNetIdPtr Use
     }
 
     GetChatInterface()->GetLastMessages(UserId.ToSharedRef().Get(), RoomId, NumMessages, OutMessages);
-    UE_LOG_PRIVATECHAT(Log, TEXT("Success to get last chat messages. Returned messages: %d"), OutMessages.Num());
+    UE_LOG_PRIVATECHAT(Log, TEXT("Success to get last chat messages. Number of returned messages: %d"), OutMessages.Num());
 
     return true;
 }
@@ -205,20 +199,6 @@ bool UPrivateChatSubsystem::IsMessageFromLocalUser(const FUniqueNetIdPtr UserId,
     }
 
     return GetChatInterface()->IsMessageFromLocalUser(UserId.ToSharedRef().Get(), Message, true);
-}
-
-void UPrivateChatSubsystem::OnTopicAdded(FString ChatTopicName, FString TopicId, FString UserId)
-{
-    UE_LOG_PRIVATECHAT(Log, TEXT("New chat topic is added: %s"), *TopicId);
-
-    OnTopicAddedDelegates.Broadcast(ChatTopicName, TopicId, UserId);
-}
-
-void UPrivateChatSubsystem::OnTopicRemoved(FString ChatTopicName, FString TopicId, FString SenderId)
-{
-    UE_LOG_PRIVATECHAT(Log, TEXT("Chat topic is removed: %s"), *TopicId);
-
-    OnTopicRemovedDelegates.Broadcast(ChatTopicName, TopicId, SenderId);
 }
 
 void UPrivateChatSubsystem::OnSendPrivateChatComplete(FString UserId, FString MsgBody, FString RoomId, bool bWasSuccessful)
@@ -260,11 +240,10 @@ void UPrivateChatSubsystem::PushPrivateChatMessageReceivedNotification(const FUn
 
     // Only push a notification only if the player is not in the chat menu.
     const UCommonActivatableWidget* ActiveWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
-    if (const UPrivateChatWidget* PrivateChatWidget = Cast<UPrivateChatWidget>(ActiveWidget))
+    if (Cast<UPrivateChatWidget>(ActiveWidget))
     {
         return;
     }
-    // TODO: Add check for starter widget too here.
 
     FString SenderStr = Message.Get().GetNickname();
     if (SenderStr.IsEmpty()) 
