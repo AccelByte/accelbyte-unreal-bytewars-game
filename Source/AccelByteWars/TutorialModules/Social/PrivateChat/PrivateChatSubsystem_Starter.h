@@ -25,9 +25,9 @@ public:
 protected:
 	void PushPrivateChatMessageReceivedNotification(const FUniqueNetId& Sender, const TSharedRef<FChatMessage>& Message);
 
-	FOnlineChatAccelBytePtr GetChatInterface();
+	FOnlineChatAccelBytePtr GetChatInterface() const;
 
-	UPromptSubsystem* GetPromptSubystem();
+	UPromptSubsystem* GetPromptSubsystem() const;
 
 #pragma region Module Private Chat Function Declarations
 public:

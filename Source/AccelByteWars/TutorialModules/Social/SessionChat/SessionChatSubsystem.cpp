@@ -17,8 +17,7 @@ void USessionChatSubsystem::Initialize(FSubsystemCollectionBase& Collection)
     Super::Initialize(Collection);
 
     // Assign action button to open party chat.
-    FTutorialModuleGeneratedWidget* PartyChatButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_partychat"));
-    if (PartyChatButtonMetadata)
+    if (FTutorialModuleGeneratedWidget* PartyChatButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_partychat")))
     {
         if (!PartyChatButtonMetadata->OwnerTutorialModule)
         {
@@ -50,18 +49,15 @@ void USessionChatSubsystem::Initialize(FSubsystemCollectionBase& Collection)
             {
                 SessionChatWidget->SetDefaultChatType(EAccelByteChatRoomType::PARTY_V2);
             }
-            // TODO: Add check for starter widget too here.
         });
     }
 
     if (GetChatInterface()) 
     {
-        GetChatInterface()->OnTopicAddedDelegates.AddUObject(this, &ThisClass::OnTopicAdded);
-        GetChatInterface()->OnTopicRemovedDelegates.AddUObject(this, &ThisClass::OnTopicRemoved);
-
         GetChatInterface()->OnSendChatCompleteDelegates.AddUObject(this, &ThisClass::OnSendChatComplete);
         GetChatInterface()->OnChatRoomMessageReceivedDelegates.AddUObject(this, &ThisClass::OnChatRoomMessageReceived);
 
+        // Push a notification when received chat messages.
         GetChatInterface()->OnChatRoomMessageReceivedDelegates.AddUObject(this, &ThisClass::PushChatRoomMessageReceivedNotification);
     }
 }
@@ -72,9 +68,6 @@ void USessionChatSubsystem::Deinitialize()
 
     if (GetChatInterface())
     {
-        GetChatInterface()->OnTopicAddedDelegates.RemoveAll(this);
-        GetChatInterface()->OnTopicRemovedDelegates.RemoveAll(this);
-
         GetChatInterface()->OnSendChatCompleteDelegates.RemoveAll(this);
         GetChatInterface()->OnChatRoomMessageReceivedDelegates.RemoveAll(this);
     }
@@ -220,20 +213,6 @@ EAccelByteChatRoomType USessionChatSubsystem::GetChatRoomType(const FString& Roo
     return GetChatInterface()->GetChatRoomType(RoomId);
 }
 
-void USessionChatSubsystem::OnTopicAdded(FString ChatTopicName, FString TopicId, FString UserId)
-{
-    UE_LOG_SESSIONCHAT(Log, TEXT("New chat topic is added: %s"), *TopicId);
-
-    OnTopicAddedDelegates.Broadcast(ChatTopicName, TopicId, UserId);
-}
-
-void USessionChatSubsystem::OnTopicRemoved(FString ChatTopicName, FString TopicId, FString SenderId)
-{
-    UE_LOG_SESSIONCHAT(Log, TEXT("Chat topic is removed: %s"), *TopicId);
-
-    OnTopicRemovedDelegates.Broadcast(ChatTopicName, TopicId, SenderId);
-}
-
 void USessionChatSubsystem::OnSendChatComplete(FString UserId, FString MsgBody, FString RoomId, bool bWasSuccessful)
 {
     if (bWasSuccessful) 
@@ -261,18 +240,17 @@ void USessionChatSubsystem::OnChatRoomMessageReceived(const FUniqueNetId& Sender
 
 void USessionChatSubsystem::PushChatRoomMessageReceivedNotification(const FUniqueNetId& Sender, const FChatRoomId& RoomId, const TSharedRef<FChatMessage>& Message)
 {
-    if (!GetPromptSubystem())
+    if (!GetChatInterface() || !GetPromptSubsystem())
     {
         return;
     }
 
     // Only push a notification only if the player is not in the chat menu.
     const UCommonActivatableWidget* ActiveWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
-    if (const USessionChatWidget* SessionChatWidget = Cast<USessionChatWidget>(ActiveWidget))
+    if (Cast<USessionChatWidget>(ActiveWidget))
     {
         return;
     }
-    // TODO: Add check for starter widget too here.
 
     FString SenderStr = Message.Get().GetNickname();
     if (SenderStr.IsEmpty())
@@ -280,18 +258,20 @@ void USessionChatSubsystem::PushChatRoomMessageReceivedNotification(const FUniqu
         SenderStr = UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(Sender);
     }
 
-    switch (GetChatRoomType(RoomId))
+    switch (GetChatInterface()->GetChatRoomType(RoomId))
     {
     case EAccelByteChatRoomType::SESSION_V2:
-        GetPromptSubystem()->PushNotification(FText::Format(GAMESESSION_CHAT_RECEIVED_MESSAGE, FText::FromString(SenderStr)));
+        GetPromptSubsystem()->PushNotification(FText::Format(GAMESESSION_CHAT_RECEIVED_MESSAGE, FText::FromString(SenderStr)));
         break;
     case EAccelByteChatRoomType::PARTY_V2:
-        GetPromptSubystem()->PushNotification(FText::Format(PARTY_CHAT_RECEIVED_MESSAGE, FText::FromString(SenderStr)));
+        GetPromptSubsystem()->PushNotification(FText::Format(PARTY_CHAT_RECEIVED_MESSAGE, FText::FromString(SenderStr)));
+        break;
+    default:
         break;
     }
 }
 
-FOnlineChatAccelBytePtr USessionChatSubsystem::GetChatInterface()
+FOnlineChatAccelBytePtr USessionChatSubsystem::GetChatInterface() const
 {
     const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
     if (!ensure(Subsystem))
@@ -303,7 +283,7 @@ FOnlineChatAccelBytePtr USessionChatSubsystem::GetChatInterface()
     return StaticCastSharedPtr<FOnlineChatAccelByte>(Subsystem->GetChatInterface());
 }
 
-FOnlineSessionV2AccelBytePtr USessionChatSubsystem::GetSessionInterface()
+FOnlineSessionV2AccelBytePtr USessionChatSubsystem::GetSessionInterface() const
 {
     const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
     if (!ensure(Subsystem))
@@ -315,9 +295,9 @@ FOnlineSessionV2AccelBytePtr USessionChatSubsystem::GetSessionInterface()
     return StaticCastSharedPtr<FOnlineSessionV2AccelByte>(Subsystem->GetSessionInterface());
 }
 
-UPromptSubsystem* USessionChatSubsystem::GetPromptSubystem()
+UPromptSubsystem* USessionChatSubsystem::GetPromptSubsystem() const
 {
-    UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+    const UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
     if (!GameInstance)
     {
         return nullptr;

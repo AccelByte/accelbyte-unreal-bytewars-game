@@ -100,7 +100,7 @@ void UPrivateChatSubsystem_Starter::Deinitialize()
 
 void UPrivateChatSubsystem_Starter::PushPrivateChatMessageReceivedNotification(const FUniqueNetId& Sender, const TSharedRef<FChatMessage>& Message)
 {
-    if (!GetPromptSubystem())
+    if (!GetPromptSubsystem())
     {
         return;
     }
@@ -117,10 +117,10 @@ void UPrivateChatSubsystem_Starter::PushPrivateChatMessageReceivedNotification(c
     {
         SenderStr = UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(Sender);
     }
-    GetPromptSubystem()->PushNotification(FText::Format(PRIVATE_CHAT_RECEIVED_MESSAGE, FText::FromString(SenderStr)));
+    GetPromptSubsystem()->PushNotification(FText::Format(PRIVATE_CHAT_RECEIVED_MESSAGE, FText::FromString(SenderStr)));
 }
 
-FOnlineChatAccelBytePtr UPrivateChatSubsystem_Starter::GetChatInterface()
+FOnlineChatAccelBytePtr UPrivateChatSubsystem_Starter::GetChatInterface() const
 {
     const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
     if (!ensure(Subsystem))
@@ -132,9 +132,9 @@ FOnlineChatAccelBytePtr UPrivateChatSubsystem_Starter::GetChatInterface()
     return StaticCastSharedPtr<FOnlineChatAccelByte>(Subsystem->GetChatInterface());
 }
 
-UPromptSubsystem* UPrivateChatSubsystem_Starter::GetPromptSubystem()
+UPromptSubsystem* UPrivateChatSubsystem_Starter::GetPromptSubsystem() const
 {
-    UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+    const UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
     if (!GameInstance)
     {
         return nullptr;

@@ -34,16 +34,6 @@ public:
 
 	EAccelByteChatRoomType GetChatRoomType(const FString& RoomId);
 
-	FOnTopicAdded* GetOnTopicAddedDelegates()
-	{
-		return &OnTopicAddedDelegates;
-	}
-
-	FOnTopicRemoved* GetOnTopicRemovedDelegates()
-	{
-		return &OnTopicRemovedDelegates;
-	}
-
 	FOnSendChatComplete* GetOnSendChatCompleteDelegates()
 	{
 		return &OnSendChatCompleteDelegates;
@@ -55,23 +45,17 @@ public:
 	}
 
 protected:
-	void OnTopicAdded(FString ChatTopicName, FString TopicId, FString UserId);
-	void OnTopicRemoved(FString ChatTopicName, FString TopicId, FString SenderId);
-
 	void OnSendChatComplete(FString UserId, FString MsgBody, FString RoomId, bool bWasSuccessful);
 	void OnChatRoomMessageReceived(const FUniqueNetId& Sender, const FChatRoomId& RoomId, const TSharedRef<FChatMessage>& Message);
 
 	void PushChatRoomMessageReceivedNotification(const FUniqueNetId& Sender, const FChatRoomId& RoomId, const TSharedRef<FChatMessage>& Message);
 
-	FOnlineChatAccelBytePtr GetChatInterface();
-	FOnlineSessionV2AccelBytePtr GetSessionInterface();
+	FOnlineChatAccelBytePtr GetChatInterface() const;
+	FOnlineSessionV2AccelBytePtr GetSessionInterface() const;
 
-	UPromptSubsystem* GetPromptSubystem();
+	UPromptSubsystem* GetPromptSubsystem() const;
 
 private:
-	FOnTopicAdded OnTopicAddedDelegates;
-	FOnTopicRemoved OnTopicRemovedDelegates;
-
 	FOnSendChatComplete OnSendChatCompleteDelegates;
 	FOnChatRoomMessageReceived OnChatRoomMessageReceivedDelegates;
 };
