@@ -27,12 +27,16 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetButtonImage(const FSlateBrush& InBrush);
 
-	UFUNCTION(BlueprintImplementableEvent)
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
 	void SetButtonType(const EAccelByteWarsButtonBaseType& InType);
 
+	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+	void ToggleExclamationMark (const bool bShowMark);
+	
 protected:
 	// UUserWidget interface
 	virtual void NativePreConstruct() override;
+	virtual void NativeConstruct() override;
 	// End of UUserWidget interface
 
 	// UCommonButtonBase interface
@@ -57,6 +61,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Button")
 	EAccelByteWarsButtonBaseType ButtonType = EAccelByteWarsButtonBaseType::TEXT_BUTTON;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Button")
+	bool bShowExclamationMark = false;
+	
 private:
 	UPROPERTY(EditAnywhere, Category = "Button", meta = (InlineEditConditionToggle, EditCondition = "ButtonType==EAccelByteWarsButtonBaseType::TEXT_BUTTON", EditConditionHides))
 	uint8 bOverride_ButtonText : 1;

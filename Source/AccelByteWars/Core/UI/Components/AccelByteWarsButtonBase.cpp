@@ -14,6 +14,18 @@ void UAccelByteWarsButtonBase::NativePreConstruct()
 	RefreshButtonImage();
 
 	SetButtonType(ButtonType);
+	ToggleExclamationMark(bShowExclamationMark);
+}
+
+void UAccelByteWarsButtonBase::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	SetButtonType(ButtonType);
+	ToggleExclamationMark(bShowExclamationMark);
+
+	OnClicked().RemoveAll(this);
+	OnClicked().AddUObject(this, &ThisClass::ToggleExclamationMark, false);
 }
 
 void UAccelByteWarsButtonBase::UpdateInputActionWidget()
