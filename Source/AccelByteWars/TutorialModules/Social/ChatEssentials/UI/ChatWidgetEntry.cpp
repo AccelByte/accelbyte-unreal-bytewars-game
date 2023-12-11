@@ -20,6 +20,8 @@ void UChatWidgetEntry::NativeOnListItemObjectSet(UObject* ListItemObject)
 		return;
 	}
 
+	SetChatSenderType(ChatData->bIsSenderLocal);
+
 	const FText Sender = FText::FromString(FString::Printf(TEXT("[%s]"), 
 		ChatData->bIsSenderLocal ? 
 		*CHAT_LOCAL_SENDER_DEFAULT_USERNAME.ToString() :
@@ -27,6 +29,4 @@ void UChatWidgetEntry::NativeOnListItemObjectSet(UObject* ListItemObject)
 	Tb_Sender->SetText(Sender);
 
 	Tb_Message->SetText(FText::FromString(ChatData->Message));
-
-	SetChatSenderType(ChatData->bIsSenderLocal);
 }
