@@ -109,6 +109,10 @@ void UPrivateChatWidget::AppendChatMessage(const FChatMessage& Message)
 	// Display chat message.
 	UChatData* ChatData = NewObject<UChatData>();
 	ChatData->Sender = Message.GetNickname();
+	if (ChatData->Sender.IsEmpty())
+	{
+		ChatData->Sender = UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(Message.GetUserId().Get());	
+	}
 	ChatData->Message = Message.GetBody();
 	ChatData->bIsSenderLocal = PrivateChatSubsystem->IsMessageFromLocalUser(LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId(), Message);
 
@@ -280,19 +284,6 @@ void UPrivateChatWidget::OnSendPrivateChatComplete(FString UserId, FString MsgBo
 
 void UPrivateChatWidget::OnPrivateChatMessageReceived(const FUniqueNetId& Sender, const TSharedRef<FChatMessage>& Message)
 {
-	// Replace sender name with default player name if it is empty.
-	if (Message.Get().GetNickname().IsEmpty())
-	{
-		UChatData* ChatData = NewObject<UChatData>();
-		ChatData->Sender = UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(Sender);
-		ChatData->Message = Message.Get().GetBody();
-		ChatData->bIsSenderLocal = PrivateChatSubsystem->IsMessageFromLocalUser(Sender.AsShared(), Message.Get());
-
-		AppendChatMessage(ChatData);
-	}
-	// If not, show the chat as is.
-	else
-	{
-		AppendChatMessage(Message.Get());
-	}
+	// Show the received chat message.
+	AppendChatMessage(Message.Get());
 }

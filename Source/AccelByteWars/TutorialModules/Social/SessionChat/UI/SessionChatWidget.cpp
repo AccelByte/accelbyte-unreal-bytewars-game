@@ -156,6 +156,10 @@ void USessionChatWidget::AppendChatMessage(const FChatMessage& Message)
 	// Display chat message.
 	UChatData* ChatData = NewObject<UChatData>();
 	ChatData->Sender = Message.GetNickname();
+	if (ChatData->Sender.IsEmpty())
+	{
+		ChatData->Sender = UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(Message.GetUserId().Get());	
+	}
 	ChatData->Message = Message.GetBody();
 	ChatData->bIsSenderLocal = SessionChatSubsystem->IsMessageFromLocalUser(LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId(), Message);
 
@@ -349,19 +353,6 @@ void USessionChatWidget::OnChatRoomMessageReceived(const FUniqueNetId& Sender, c
 		return;
 	}
 
-	// Replace sender name with default player name if it is empty.
-	if (Message.Get().GetNickname().IsEmpty()) 
-	{
-		UChatData* ChatData = NewObject<UChatData>();
-		ChatData->Sender = UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(Sender);
-		ChatData->Message = Message.Get().GetBody();
-		ChatData->bIsSenderLocal = SessionChatSubsystem->IsMessageFromLocalUser(Sender.AsShared(), Message.Get());;
-
-		AppendChatMessage(ChatData);
-	}
-	// If not, show the chat as is.
-	else 
-	{
-		AppendChatMessage(Message.Get());
-	}
+	// Show the received chat message.
+	AppendChatMessage(Message.Get());
 }

@@ -7,6 +7,7 @@
 
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
+#include "Core/UI/Components/AccelByteWarsButtonBase.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "Social/SessionChat/UI/SessionChatWidget.h"
 
@@ -51,7 +52,7 @@ void USessionChatSubsystem::Initialize(FSubsystemCollectionBase& Collection)
             }
         });
     }
-
+    
     if (GetChatInterface()) 
     {
         GetChatInterface()->OnSendChatCompleteDelegates.AddUObject(this, &ThisClass::OnSendChatComplete);
@@ -268,6 +269,15 @@ void USessionChatSubsystem::PushChatRoomMessageReceivedNotification(const FUniqu
         break;
     default:
         break;
+    }
+
+    // The push notification is not shown to the gameplay level. Instead, the game will show exclamation mark on the chat button.
+    if (const FTutorialModuleGeneratedWidget* SessionChatGameplayButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_session_chat_gameplay")))
+    {
+        if (UAccelByteWarsButtonBase* Button = Cast<UAccelByteWarsButtonBase>(SessionChatGameplayButtonMetadata->GenerateWidgetRef))
+        {
+            Button->ToggleExclamationMark(true);
+        }
     }
 }
 

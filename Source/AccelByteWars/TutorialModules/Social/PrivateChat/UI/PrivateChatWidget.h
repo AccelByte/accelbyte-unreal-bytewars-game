@@ -54,7 +54,7 @@ protected:
 	float SendChatCooldown = 1.0f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	int32 MaxMessageLength = 80;
+	int32 MaxMessageLength = 100;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	int32 MaxChatHistory = 10000;
