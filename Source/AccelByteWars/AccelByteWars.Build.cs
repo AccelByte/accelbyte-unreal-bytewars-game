@@ -23,7 +23,8 @@ public class AccelByteWars : ModuleRules
 			"InputCore", 
 			"CommonUI", 
 			"CommonInput",
-			"OnlineSubsystem",
+            "GameplayTags",
+            "OnlineSubsystem",
 			"OnlineSubsystemUtils",
 			"Json",
 			"HTTP"

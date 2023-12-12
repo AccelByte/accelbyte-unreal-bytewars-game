@@ -15,11 +15,4 @@ class ACCELBYTEWARS_API UTutorialModuleOnlineSessionSubsystem : public UTutorial
 
 public:
 	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
-
-protected:
-	/**
-	 * Use this instead of getting the class from AssociateTutorialModule since AssociateTutorialModule set on
-	 * Initialize and this function will be called before that. 
-	 */
-	virtual TSubclassOf<UTutorialModuleOnlineSession> GetOnlineSessionClass() const { return nullptr; }
 };

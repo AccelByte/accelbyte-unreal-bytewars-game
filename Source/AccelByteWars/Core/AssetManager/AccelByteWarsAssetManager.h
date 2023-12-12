@@ -56,13 +56,33 @@ public:
 	UFUNCTION(BlueprintPure, meta = (DisplayName = "Get Assets From Cache"))
 	UAccelByteWarsDataAsset* GetAssetFromCache(FPrimaryAssetId AssetId) const;
 
+#pragma region "Online Session"
+public:
+	/**
+	 * @brief Get the complete Online Session class from Tutorial Modules
+	 *
+	 * This function will store the CompleteOnlineSession class and will return that stored value if possible.
+	 * Minimizing the number of iteration needed if this function needs to be called multiple times.
+	 */
+	TSubclassOf<UOnlineSession> GetCompleteOnlineSessionClassFromDataAsset();
+
+	/**
+	 * @brief Get the supposed current online session class
+	 */
+	TSubclassOf<UOnlineSession> GetPreferredOnlineSessionClassFromDataAsset();
+
+private:
+	const FString OnlineSessionCompleteTutorialModuleCodeName = "ONLINESESSIONCOMPLETE";
+	TSubclassOf<UOnlineSession> CompleteOnlineSessionClass;
+	TSubclassOf<UOnlineSession> PreferredOnlineSessionClass;
+#pragma endregion 
+
 protected:
 	//~UAssetManager interface
 	virtual void StartInitialLoading() override;
 	//~End of UAssetManager interface
 #if WITH_EDITOR
 	virtual void PreBeginPIE(bool bStartSimulate) override;
-	virtual void EndPIE(bool bStartSimulate) override;
 #endif
 
 	void PopulateAssetCache();
@@ -75,8 +95,6 @@ protected:
 
 	void TutorialModuleOverride();
 	void StarterOnlineSessionModulesChecker();
-	void DependentModuleOverride() const;
-	void ResetDependentModuleOverride() const;
 
 #if UE_EDITOR
 	virtual void PostInitialAssetScan() override;

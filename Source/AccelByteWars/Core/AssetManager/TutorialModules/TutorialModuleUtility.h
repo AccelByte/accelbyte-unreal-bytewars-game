@@ -30,6 +30,13 @@ enum class ETutorialModuleWidgetClassType : uint8
 	ASSOCIATE_WIDGET_CLASS UMETA(DisplayName = "Associate Widget Class")
 };
 
+UENUM(BlueprintType)
+enum class ETutorialModuleButtonType : uint8
+{
+	TEXT_BUTTON UMETA(DisplayName = "Text Button"),
+	IMAGE_BUTTON UMETA(DisplayName = "Image Button")
+};
+
 USTRUCT(BlueprintType)
 struct FTutorialModuleGeneratedWidget
 {
@@ -60,7 +67,13 @@ struct FTutorialModuleGeneratedWidget
 	TSubclassOf<UAccelByteWarsActivatableWidget> GenericWidgetClass;
 
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (Tooltip = "The text that will be displayed on the entry button", EditCondition = "WidgetType==ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_ENTRY_BUTTON||WidgetType==ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_BUTTON||WidgetType==ETutorialModuleGeneratedWidgetType::GENERIC_WIDGET_ENTRY_BUTTON||WidgetType==ETutorialModuleGeneratedWidgetType::ACTION_BUTTON", EditConditionHides))
+	ETutorialModuleButtonType ButtonType = ETutorialModuleButtonType::TEXT_BUTTON;
+
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (Tooltip = "The text that will be displayed on the entry button", EditCondition = "ButtonType==ETutorialModuleButtonType::TEXT_BUTTON&&(WidgetType==ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_ENTRY_BUTTON||WidgetType==ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_BUTTON||WidgetType==ETutorialModuleGeneratedWidgetType::GENERIC_WIDGET_ENTRY_BUTTON||WidgetType==ETutorialModuleGeneratedWidgetType::ACTION_BUTTON)", EditConditionHides))
 	FText ButtonText;
+
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (Tooltip = "The image that will be displayed on the entry button", EditCondition = "ButtonType==ETutorialModuleButtonType::IMAGE_BUTTON&&(WidgetType==ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_ENTRY_BUTTON||WidgetType==ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_BUTTON||WidgetType==ETutorialModuleGeneratedWidgetType::GENERIC_WIDGET_ENTRY_BUTTON||WidgetType==ETutorialModuleGeneratedWidgetType::ACTION_BUTTON)", EditConditionHides))
+	FSlateBrush ButtonImage;
 
 	FSimpleMulticastDelegate ButtonAction;
 	TDelegate<bool()> ValidateButtonAction;
