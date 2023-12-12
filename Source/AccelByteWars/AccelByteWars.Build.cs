@@ -31,8 +31,7 @@ public class AccelByteWars : ModuleRules
 			"OnlineSubsystem",
 			"OnlineSubsystemUtils",
 			"Json",
-			"HTTP",
-			"BlackBoxSDK"
+			"HTTP"
 		});
 
 
