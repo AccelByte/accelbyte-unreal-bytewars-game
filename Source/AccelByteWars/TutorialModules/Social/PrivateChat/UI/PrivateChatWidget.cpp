@@ -282,7 +282,7 @@ void UPrivateChatWidget::OnSendPrivateChatComplete(FString UserId, FString MsgBo
 	AppendChatMessage(ChatData);
 }
 
-void UPrivateChatWidget::OnPrivateChatMessageReceived(const FUniqueNetId& Sender, const TSharedRef<FChatMessage>& Message)
+void UPrivateChatWidget::OnPrivateChatMessageReceived(const FUniqueNetId& UserId, const TSharedRef<FChatMessage>& Message)
 {
 	// Show the received chat message.
 	AppendChatMessage(Message.Get());

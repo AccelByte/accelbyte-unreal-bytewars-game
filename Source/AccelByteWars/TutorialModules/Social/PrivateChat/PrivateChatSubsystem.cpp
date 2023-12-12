@@ -221,34 +221,45 @@ void UPrivateChatSubsystem::OnSendPrivateChatComplete(FString UserId, FString Ms
     OnSendPrivateChatCompleteDelegates.Broadcast(UserId, MsgBody, RoomId, bWasSuccessful);
 }
 
-void UPrivateChatSubsystem::OnPrivateChatMessageReceived(const FUniqueNetId& Sender, const TSharedRef<FChatMessage>& Message)
+void UPrivateChatSubsystem::OnPrivateChatMessageReceived(const FUniqueNetId& UserId, const TSharedRef<FChatMessage>& Message)
 {
     UE_LOG_PRIVATECHAT(Log,
         TEXT("Received private chat message from %s: %s"),
-        !Message.Get().GetNickname().IsEmpty() ? *Message.Get().GetNickname() : TEXT("Unknown"),
+        !Message.Get().GetNickname().IsEmpty() ? *Message.Get().GetNickname() : *UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(Message->GetUserId().Get()),
         *Message.Get().GetBody());
 
-    OnPrivateChatMessageReceivedDelegates.Broadcast(Sender, Message);
+    OnPrivateChatMessageReceivedDelegates.Broadcast(UserId, Message);
 }
 
-void UPrivateChatSubsystem::PushPrivateChatMessageReceivedNotification(const FUniqueNetId& Sender, const TSharedRef<FChatMessage>& Message)
+void UPrivateChatSubsystem::PushPrivateChatMessageReceivedNotification(const FUniqueNetId& UserId, const TSharedRef<FChatMessage>& Message)
 {
     if (!GetPromptSubsystem())
     {
         return;
     }
 
-    // Only push a notification only if the player is not in the chat menu.
+    // Only push a notification only if the player is not in the chat menu of the same recipient.
     const UCommonActivatableWidget* ActiveWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
-    if (Cast<UPrivateChatWidget>(ActiveWidget))
+    if (const UPrivateChatWidget* PrivateChatWidget = Cast<UPrivateChatWidget>(ActiveWidget))
     {
-        return;
+        const FUniqueNetIdAccelByteUserPtr CurrentRecipientABId = StaticCastSharedPtr<const FUniqueNetIdAccelByteUser>(PrivateChatWidget->GetPrivateChatRecipient());
+        const FUniqueNetIdAccelByteUserRef SenderABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(Message->GetUserId());
+
+        if (!CurrentRecipientABId || !SenderABId.Get().IsValid())
+        {
+            return;
+        }
+        
+        if (CurrentRecipientABId->GetAccelByteId().Equals(SenderABId->GetAccelByteId()))
+        {
+            return;   
+        }
     }
 
     FString SenderStr = Message.Get().GetNickname();
     if (SenderStr.IsEmpty()) 
     {
-        SenderStr = UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(Sender);
+        SenderStr = UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(Message->GetUserId().Get());
     }
     GetPromptSubsystem()->PushNotification(FText::Format(PRIVATE_CHAT_RECEIVED_MESSAGE, FText::FromString(SenderStr)));
 }

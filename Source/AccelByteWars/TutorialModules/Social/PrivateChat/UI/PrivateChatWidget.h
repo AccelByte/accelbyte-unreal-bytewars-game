@@ -23,6 +23,7 @@ class ACCELBYTEWARS_API UPrivateChatWidget : public UAccelByteWarsActivatableWid
 	
 public:
 	void SetPrivateChatRecipient(FUniqueNetIdPtr RecipientUserId);
+	FUniqueNetIdPtr GetPrivateChatRecipient() const { return PrivateChatRecipientUserId; }
 
 protected:
 	virtual void NativeConstruct() override;
@@ -43,7 +44,7 @@ protected:
 	void GetLastPrivateChatMessages();
 
 	void OnSendPrivateChatComplete(FString UserId, FString MsgBody, FString RoomId, bool bWasSuccessful);
-	void OnPrivateChatMessageReceived(const FUniqueNetId& Sender, const TSharedRef<FChatMessage>& Message);
+	void OnPrivateChatMessageReceived(const FUniqueNetId& UserId, const TSharedRef<FChatMessage>& Message);
 
 	UPrivateChatSubsystem* PrivateChatSubsystem;
 	UPromptSubsystem* PromptSubsystem;

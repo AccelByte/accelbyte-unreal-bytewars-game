@@ -228,15 +228,15 @@ void USessionChatSubsystem::OnSendChatComplete(FString UserId, FString MsgBody, 
     OnSendChatCompleteDelegates.Broadcast(UserId, MsgBody, RoomId, bWasSuccessful);
 }
 
-void USessionChatSubsystem::OnChatRoomMessageReceived(const FUniqueNetId& Sender, const FChatRoomId& RoomId, const TSharedRef<FChatMessage>& Message)
+void USessionChatSubsystem::OnChatRoomMessageReceived(const FUniqueNetId& UserId, const FChatRoomId& RoomId, const TSharedRef<FChatMessage>& Message)
 {
     UE_LOG_SESSIONCHAT(Log, 
         TEXT("Received chat message from %s on Room %s: %s"),
-        !Message.Get().GetNickname().IsEmpty() ? *Message.Get().GetNickname() : TEXT("Unknown"),
+        !Message.Get().GetNickname().IsEmpty() ? *Message.Get().GetNickname() : *UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(Message->GetUserId().Get()),
         *RoomId,
         *Message.Get().GetBody());
 
-    OnChatRoomMessageReceivedDelegates.Broadcast(Sender, RoomId, Message);
+    OnChatRoomMessageReceivedDelegates.Broadcast(UserId, RoomId, Message);
 }
 
 void USessionChatSubsystem::PushChatRoomMessageReceivedNotification(const FUniqueNetId& Sender, const FChatRoomId& RoomId, const TSharedRef<FChatMessage>& Message)
@@ -246,11 +246,15 @@ void USessionChatSubsystem::PushChatRoomMessageReceivedNotification(const FUniqu
         return;
     }
 
-    // Only push a notification only if the player is not in the chat menu.
+    // Only push a notification only if the player is not in the chat menu of the same type.
+    const EAccelByteChatRoomType ChatRoomType = GetChatInterface()->GetChatRoomType(RoomId);
     const UCommonActivatableWidget* ActiveWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
-    if (Cast<USessionChatWidget>(ActiveWidget))
+    if (const USessionChatWidget* SessionWidget = Cast<USessionChatWidget>(ActiveWidget))
     {
-        return;
+        if (SessionWidget->GetCurrentChatType() == ChatRoomType)
+        {
+            return;
+        }
     }
 
     FString SenderStr = Message.Get().GetNickname();
@@ -259,7 +263,7 @@ void USessionChatSubsystem::PushChatRoomMessageReceivedNotification(const FUniqu
         SenderStr = UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(Sender);
     }
 
-    switch (GetChatInterface()->GetChatRoomType(RoomId))
+    switch (ChatRoomType)
     {
     case EAccelByteChatRoomType::SESSION_V2:
         GetPromptSubsystem()->PushNotification(FText::Format(GAMESESSION_CHAT_RECEIVED_MESSAGE, FText::FromString(SenderStr)));

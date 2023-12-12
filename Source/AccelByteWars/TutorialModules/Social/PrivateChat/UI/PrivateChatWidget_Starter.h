@@ -23,6 +23,7 @@ class ACCELBYTEWARS_API UPrivateChatWidget_Starter : public UAccelByteWarsActiva
 	
 public:
 	void SetPrivateChatRecipient(FUniqueNetIdPtr RecipientUserId);
+	FUniqueNetIdPtr GetPrivateChatRecipient() const { return PrivateChatRecipientUserId; }
 
 protected:
 	virtual void NativeConstruct() override;

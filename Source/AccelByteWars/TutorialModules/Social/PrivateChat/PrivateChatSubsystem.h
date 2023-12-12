@@ -41,9 +41,9 @@ public:
 
 protected:
 	void OnSendPrivateChatComplete(FString UserId, FString MsgBody, FString RoomId, bool bWasSuccessful);
-	void OnPrivateChatMessageReceived(const FUniqueNetId& Sender, const TSharedRef<FChatMessage>& Message);
+	void OnPrivateChatMessageReceived(const FUniqueNetId& UserId, const TSharedRef<FChatMessage>& Message);
 
-	void PushPrivateChatMessageReceivedNotification(const FUniqueNetId& Sender, const TSharedRef<FChatMessage>& Message);
+	void PushPrivateChatMessageReceivedNotification(const FUniqueNetId& UserId, const TSharedRef<FChatMessage>& Message);
 
 	FOnlineChatAccelBytePtr GetChatInterface() const;
 

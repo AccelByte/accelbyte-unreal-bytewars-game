@@ -25,6 +25,7 @@ class ACCELBYTEWARS_API USessionChatWidget : public UAccelByteWarsActivatableWid
 
 public:
 	void SetDefaultChatType(const EAccelByteChatRoomType ChatRoomType);
+	EAccelByteChatRoomType GetCurrentChatType() const { return CurrentChatRoomType; }
 
 protected:
 	virtual void NativeConstruct() override;
@@ -47,7 +48,7 @@ protected:
 	void GetLastChatMessages();
 	
 	void OnSendChatComplete(FString UserId, FString MsgBody, FString RoomId, bool bWasSuccessful);
-	void OnChatRoomMessageReceived(const FUniqueNetId& Sender, const FChatRoomId& RoomId, const TSharedRef<FChatMessage>& Message);
+	void OnChatRoomMessageReceived(const FUniqueNetId& UserId, const FChatRoomId& RoomId, const TSharedRef<FChatMessage>& Message);
 
 	USessionChatSubsystem* SessionChatSubsystem;
 	UPromptSubsystem* PromptSubsystem;

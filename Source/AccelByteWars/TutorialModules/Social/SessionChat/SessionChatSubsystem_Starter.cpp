@@ -70,11 +70,15 @@ void USessionChatSubsystem_Starter::PushChatRoomMessageReceivedNotification(cons
         return;
     }
 
-    // Only push a notification only if the player is not in the chat menu.
+    // Only push a notification only if the player is not in the chat menu of the same type.
+    const EAccelByteChatRoomType ChatRoomType = GetChatInterface()->GetChatRoomType(RoomId);
     const UCommonActivatableWidget* ActiveWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
-    if (Cast<USessionChatWidget_Starter>(ActiveWidget))
+    if (const USessionChatWidget_Starter* SessionWidget = Cast<USessionChatWidget_Starter>(ActiveWidget))
     {
-        return;
+        if (SessionWidget->GetCurrentChatType() == ChatRoomType)
+        {
+            return;
+        }
     }
 
     FString SenderStr = Message.Get().GetNickname();
@@ -83,7 +87,7 @@ void USessionChatSubsystem_Starter::PushChatRoomMessageReceivedNotification(cons
         SenderStr = UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(Sender);
     }
 
-    switch (GetChatInterface()->GetChatRoomType(RoomId))
+    switch (ChatRoomType)
     {
     case EAccelByteChatRoomType::SESSION_V2:
         GetPromptSubsystem()->PushNotification(FText::Format(GAMESESSION_CHAT_RECEIVED_MESSAGE, FText::FromString(SenderStr)));

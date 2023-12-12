@@ -23,7 +23,7 @@ public:
 	void Deinitialize();
 	
 protected:
-	void PushPrivateChatMessageReceivedNotification(const FUniqueNetId& Sender, const TSharedRef<FChatMessage>& Message);
+	void PushPrivateChatMessageReceivedNotification(const FUniqueNetId& UserId, const TSharedRef<FChatMessage>& Message);
 
 	FOnlineChatAccelBytePtr GetChatInterface() const;
 

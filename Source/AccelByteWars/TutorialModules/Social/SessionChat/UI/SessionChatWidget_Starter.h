@@ -25,6 +25,7 @@ class ACCELBYTEWARS_API USessionChatWidget_Starter : public UAccelByteWarsActiva
 
 public:
 	void SetDefaultChatType(const EAccelByteChatRoomType ChatRoomType);
+	EAccelByteChatRoomType GetCurrentChatType() const { return CurrentChatRoomType; }
 
 protected:
 	virtual void NativeConstruct() override;

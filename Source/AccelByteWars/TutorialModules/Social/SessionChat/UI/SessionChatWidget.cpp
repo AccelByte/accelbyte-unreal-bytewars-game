@@ -339,7 +339,7 @@ void USessionChatWidget::OnSendChatComplete(FString UserId, FString MsgBody, FSt
 	AppendChatMessage(ChatData);
 }
 
-void USessionChatWidget::OnChatRoomMessageReceived(const FUniqueNetId& Sender, const FChatRoomId& RoomId, const TSharedRef<FChatMessage>& Message)
+void USessionChatWidget::OnChatRoomMessageReceived(const FUniqueNetId& UserId, const FChatRoomId& RoomId, const TSharedRef<FChatMessage>& Message)
 {
 	if (!SessionChatSubsystem)
 	{
