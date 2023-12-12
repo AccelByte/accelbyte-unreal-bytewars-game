@@ -98,10 +98,8 @@ void UHUDWidget::NativeConstruct()
 				AMSFleetId = DefaultAMSFleetId;
 			}
 			
-			FString FleetUrl = "https://demo.accelbyte.io/admin/namespaces/bytewars/ams/fleets-manager/";
-			FleetUrl.Append(AMSFleetId);
-			FString TargetUrl = FleetUrl.Append("/server/{0}");
-			FTUEDedicatedServer->Button1.TargetURL = TargetUrl;
+			FString FleetUrl = FString::Printf(TEXT("{0}/ams/fleets-manager/%s/server/{1}"), *AMSFleetId);
+			FTUEDedicatedServer->Button1.TargetURL = FleetUrl;
 		}
 	}
 }

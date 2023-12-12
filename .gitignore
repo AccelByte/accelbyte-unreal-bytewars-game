@@ -72,3 +72,14 @@ Plugins/*/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+
+# Ignore IDE files
+.idea/*
+.vsconfig
+
+# Whitelist ADT pulgin flies
+!Plugins/BlackBoxSDK/
+!Plugins/BlackBoxSDK/**/*.lib
+!Plugins/BlackBoxSDK/**/*.so
+!Plugins/BlackBoxSDK/**/*.dll
+!Plugins/BlackBoxSDK/**/*.exe

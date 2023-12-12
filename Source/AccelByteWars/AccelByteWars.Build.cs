@@ -23,15 +23,17 @@ public class AccelByteWars : ModuleRules
 			"Engine", 
 			"InputCore", 
 			"CommonUI", 
-			"CommonInput", 
-			"AccelByteUe4Sdk", 
+			"CommonInput",
+            "GameplayTags",
+            "AccelByteUe4Sdk", 
 			"AccelByteNetworkUtilities", 
 			"OnlineSubsystemAccelByte",
 			"OnlineSubsystem",
 			"OnlineSubsystemUtils",
 			"Json",
-			"HTTP"
-        });
+			"HTTP",
+			"BlackBoxSDK"
+		});
 
 
 	PrivateDependencyModuleNames.AddRange(new string[] 

@@ -10,6 +10,7 @@
 #include "PlayingWithFriendsSubsystem.generated.h"
 
 class UPromptSubsystem;
+
 UCLASS()
 class ACCELBYTEWARS_API UPlayingWithFriendsSubsystem : public UTutorialModuleSubsystem
 {
@@ -17,33 +18,46 @@ class ACCELBYTEWARS_API UPlayingWithFriendsSubsystem : public UTutorialModuleSub
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
+
+	// Don't run on DS
 	virtual bool ShouldCreateSubsystem(UObject* Outer) const override
 	{
 		return IsRunningDedicatedServer() ? false : Super::ShouldCreateSubsystem(Outer);
 	}
 
+#pragma region "Helper"
 public:
 	bool IsInMatchSessionGameSession() const;
 
-	void SendGameSessionInvite(const APlayerController* Owner, const FUniqueNetIdPtr Invitee) const;
-	void RejectGameSessionInvite(const APlayerController* Owner, const FOnlineSessionInviteAccelByte& Invite) const;
+private:
+	FUniqueNetIdRef GetSessionOwnerUniqueNetId(const FName SessionName) const;
+	UPromptSubsystem* GetPromptSubsystem() const;
 
+	void JoinGameSessionConfirmation(const int32 LocalUserNum, const FOnlineSessionInviteAccelByte& Invite);
+	void OnQueryUserInfoOnGameSessionParticipantChange(
+		const bool bSucceeded,
+		const TArray<FUserOnlineAccountAccelByte*>& UsersInfo,
+		FName SessionName,
+		const bool bJoined);
+#pragma endregion 
+
+public:
+	void SendGameSessionInvite(const APlayerController* Owner, const FUniqueNetIdPtr Invitee) const;
 	FOnSendSessionInviteComplete OnSendGameSessionInviteCompleteDelegates;
+
+	void RejectGameSessionInvite(const APlayerController* Owner, const FOnlineSessionInviteAccelByte& Invite) const;
 	FOnRejectSessionInviteCompleteMulticast OnRejectGameSessionInviteCompleteDelegates;
 
 private:
-	UPROPERTY()
-	UAccelByteWarsOnlineSessionBase* OnlineSession;
-
-	FUniqueNetIdPtr LeaderId;
-	bool bLeaderChanged = false;
-
 	void OnSendGameSessionInviteComplete(
 		const FUniqueNetId& LocalSenderId,
 		FName SessionName,
 		bool bSucceeded,
 		const FUniqueNetId& InviteeId) const;
 	void OnRejectGameSessionInviteComplete(bool bSucceeded) const;
+
+	void JoinGameSession(const int32 LocalUserNum, const FOnlineSessionSearchResult& Session) const;
+	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type CompletionType) const;
 
 	void OnGameSessionInviteReceived(
 		const FUniqueNetId& UserId,
@@ -53,18 +67,12 @@ private:
 		const TArray<FUserOnlineAccountAccelByte*>& UsersInfo,
 		const int32 LocalUserNum, const FOnlineSessionInviteAccelByte Invite);
 
-	void JoinGameSessionConfirmation(const int32 LocalUserNum, const FOnlineSessionInviteAccelByte& Invite);
-	void JoinGameSession(const int32 LocalUserNum, const FOnlineSessionSearchResult& Session) const;
-
 	void OnGameSessionParticipantsChange(FName SessionName, const FUniqueNetId& Member, bool bJoined);
-	void OnQueryUserInfoOnGameSessionParticipantChange(
-		const bool bSucceeded,
-		const TArray<FUserOnlineAccountAccelByte*>& UsersInfo,
-		FName SessionName,
-		const bool bJoined);
 
-	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type CompletionType) const;
+private:
+	UPROPERTY()
+	UAccelByteWarsOnlineSessionBase* OnlineSession;
 
-	FUniqueNetIdRef GetSessionOwnerUniqueNetId(const FName SessionName) const;
-	UPromptSubsystem* GetPromptSubsystem() const;
+	FUniqueNetIdPtr LeaderId;
+	bool bLeaderChanged = false;
 };

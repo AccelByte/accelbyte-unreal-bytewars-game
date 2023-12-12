@@ -25,17 +25,19 @@ protected:
 	UFUNCTION()
 	void CreateSession() const;
 
+	void OnCreateSessionComplete(FName SessionName, bool bSucceeded) const;
+
 	UFUNCTION()
 	void CancelJoiningSession() const;
 
-private:
-	void OnCreateSessionComplete(FName SessionName, bool bSucceeded) const;
 	void OnCancelJoiningSessionComplete(FName SessionName, bool bSucceeded) const;
+
 	void OnSessionServerUpdateReceived(
 		const FName SessionName,
 		const FOnlineError& Error,
 		const bool bHasClientTravelTriggered) const;
 
+protected:
 	UPROPERTY()
 	UAccelByteWarsOnlineSessionBase* OnlineSession;
 

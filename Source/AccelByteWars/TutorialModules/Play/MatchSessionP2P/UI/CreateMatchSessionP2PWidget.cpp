@@ -15,27 +15,27 @@ void UCreateMatchSessionP2PWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
+	// Get Online Session
 	UOnlineSession* BaseOnlineSession = GetWorld()->GetGameInstance()->GetOnlineSession();
 	if (!ensure(BaseOnlineSession))
 	{
 		return;
 	}
-
 	OnlineSession = Cast<UAccelByteWarsOnlineSessionBase>(BaseOnlineSession);
 	ensure(OnlineSession);
 
-	OnlineSession->GetOnCreateSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnCreateSessionComplete);
-	OnlineSession->GetOnLeaveSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnCancelJoiningSessionComplete);
-	OnlineSession->GetOnSessionServerUpdateReceivedDelegates()->AddUObject(this, &ThisClass::OnSessionServerUpdateReceived);
-
-	Btn_StartMatchSessionP2P->OnClicked().AddUObject(this, &ThisClass::CreateSession);
-
+	// Get parent menu widget
 	W_Parent = GetFirstOccurenceOuter<UCreateMatchSessionWidget>();
 	if (!ensure(W_Parent))
 	{
 		return;
 	}
 
+	OnlineSession->GetOnCreateSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnCreateSessionComplete);
+	OnlineSession->GetOnLeaveSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnCancelJoiningSessionComplete);
+	OnlineSession->GetOnSessionServerUpdateReceivedDelegates()->AddUObject(this, &ThisClass::OnSessionServerUpdateReceived);
+
+	Btn_StartMatchSessionP2P->OnClicked().AddUObject(this, &ThisClass::CreateSession);
 	W_Parent->GetProcessingWidgetComponent()->OnCancelClicked.AddUObject(this, &ThisClass::CancelJoiningSession);
 	W_Parent->GetProcessingWidgetComponent()->OnRetryClicked.AddUObject(this, &ThisClass::CreateSession);
 }
@@ -49,7 +49,6 @@ void UCreateMatchSessionP2PWidget::NativeOnDeactivated()
 	OnlineSession->GetOnSessionServerUpdateReceivedDelegates()->RemoveAll(this);
 
 	Btn_StartMatchSessionP2P->OnClicked().RemoveAll(this);
-
 	W_Parent->GetProcessingWidgetComponent()->OnRetryClicked.RemoveAll(this);
 	W_Parent->GetProcessingWidgetComponent()->OnCancelClicked.RemoveAll(this);
 }
@@ -71,15 +70,6 @@ void UCreateMatchSessionP2PWidget::CreateSession() const
 		W_Parent->GetSelectedGameModeType());
 }
 
-void UCreateMatchSessionP2PWidget::CancelJoiningSession() const
-{
-	W_Parent->SetLoadingMessage(TEXT_LEAVING_SESSION, false);
-	W_Parent->SwitchContent(UCreateMatchSessionWidget::EContentType::LOADING);
-
-	OnlineSession->LeaveSession(
-		OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession));
-}
-
 void UCreateMatchSessionP2PWidget::OnCreateSessionComplete(FName SessionName, bool bSucceeded) const
 {
 	// Abort if not a game session.
@@ -98,6 +88,15 @@ void UCreateMatchSessionP2PWidget::OnCreateSessionComplete(FName SessionName, bo
 		W_Parent->SetErrorMessage(TEXT_FAILED_TO_CREATE_SESSION, true);
 		W_Parent->SwitchContent(UCreateMatchSessionWidget::EContentType::ERROR);
 	}
+}
+
+void UCreateMatchSessionP2PWidget::CancelJoiningSession() const
+{
+	W_Parent->SetLoadingMessage(TEXT_LEAVING_SESSION, false);
+	W_Parent->SwitchContent(UCreateMatchSessionWidget::EContentType::LOADING);
+
+	OnlineSession->LeaveSession(
+		OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession));
 }
 
 void UCreateMatchSessionP2PWidget::OnCancelJoiningSessionComplete(FName SessionName, bool bSucceeded) const

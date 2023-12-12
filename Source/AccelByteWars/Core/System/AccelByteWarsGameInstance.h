@@ -146,6 +146,10 @@ public:
 	 */
 	FSimpleMulticastDelegate OnDelayedClientTravelStartedDelegates;
 
+	/**
+	 * @brief Return true if there's a pending connection attempt failed. Reset the pending flag when this called.
+	 * @param OutFailureType Connection failure type
+	 */
 	bool GetIsPendingFailureNotification(ENetworkFailure::Type& OutFailureType);
 
 private:
@@ -236,4 +240,28 @@ protected:
 
 	UPROPERTY(EditAnywhere)
 	UDataTable* GameModeDataTable;
+
+#pragma region "AccelByte SDK Config Menu"
+public:
+	// Open AccelByte SDK config menu to reconfigure the config on the fly.
+	UFUNCTION(Exec, BlueprintCallable)
+	void OpenSDKConfigMenu();
+
+	// Get input action data to open AccelByte SDK config menu.
+	UFUNCTION(BlueprintPure)
+	FDataTableRowHandle GetOpenSDKConfigMenuInputAction() { return OpenSDKConfigInputActionData; }
+
+protected:
+	// Widget class that represent AccelByte SDK config menu.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TSubclassOf<UAccelByteWarsActivatableWidget> SDKConfigWidgetClass;
+
+	// Input action to open widget to open AccelByte SDK config menu.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	FDataTableRowHandle OpenSDKConfigInputActionData;
+
+private:
+	// Helper variable to reference the initiated AccelByte SDK config menu.
+	UAccelByteWarsActivatableWidget* SDKConfigWidgetInstance;
+#pragma endregion
 };

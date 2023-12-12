@@ -9,17 +9,24 @@
 
 bool UTutorialModuleOnlineSessionSubsystem::ShouldCreateSubsystem(UObject* Outer) const
 {
-	const TSubclassOf<UTutorialModuleOnlineSession> ModuleOnlineSession = GetOnlineSessionClass();
-	const TSubclassOf<UOnlineSession> CurrentOnlineSession =
-		GEngine->GetWorldFromContextObject(Outer, EGetWorldErrorMode::Assert)->GetGameInstance()->GetOnlineSession()->GetClass();
-
-	// safety. turn off subsystem if one of the online session is nullptr
-	if (ModuleOnlineSession == nullptr || CurrentOnlineSession == nullptr)
+	if (AssociateTutorialModule)
 	{
-		return false;
+		const TSubclassOf<UTutorialModuleOnlineSession> ModuleOnlineSession =
+			AssociateTutorialModule->GetTutorialModuleOnlineSessionClass();
+		const TSubclassOf<UOnlineSession> CurrentOnlineSession =
+			GEngine->GetWorldFromContextObject(Outer, EGetWorldErrorMode::Assert)->GetGameInstance()->GetOnlineSession()->GetClass();
+
+		// safety. turn off subsystem if one of the online session is nullptr
+		if (ModuleOnlineSession == nullptr || CurrentOnlineSession == nullptr)
+		{
+			return false;
+		}
+
+		// if current online session class is not the exact same as module's online session class, disable subsystem
+		const bool bIsTheSameClass = CurrentOnlineSession == ModuleOnlineSession;
+
+		return bIsTheSameClass ? Super::ShouldCreateSubsystem(Outer) : false;
 	}
 
-	// if current online session class is not the exact same as module's online session class, disable subsystem
-	const bool bIsTheSameClass = CurrentOnlineSession == ModuleOnlineSession;
-	return bIsTheSameClass ? Super::ShouldCreateSubsystem(Outer) : false;
+	return Super::ShouldCreateSubsystem(Outer);
 }

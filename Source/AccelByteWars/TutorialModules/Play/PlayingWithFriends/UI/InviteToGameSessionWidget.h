@@ -10,6 +10,7 @@
 
 class UCommonButtonBase;
 class UPlayingWithFriendsSubsystem;
+class UFriendData;
 
 UCLASS(Abstract)
 class ACCELBYTEWARS_API UInviteToGameSessionWidget : public UAccelByteWarsActivatableWidget
@@ -19,17 +20,23 @@ class ACCELBYTEWARS_API UInviteToGameSessionWidget : public UAccelByteWarsActiva
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
 
+#pragma region "Helper"
+private:
+	UFriendData* GetFriendDataFromParentWidget();
+#pragma endregion 
+
 private:
 	void InviteToSession();
 
+private:
 	UPROPERTY()
 	UPlayingWithFriendsSubsystem* Subsystem;
-
-	FTimerHandle InviteDelayTimerHandle;
 
 #pragma region "UI Related"
 private:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_Invite;
+
+	FTimerHandle InviteDelayTimerHandle;
 #pragma endregion 
 };

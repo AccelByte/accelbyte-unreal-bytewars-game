@@ -8,6 +8,7 @@
 #include "CommonButtonBase.h"
 #include "Social/FriendsEssentials/UI/FriendDetailsWidget.h"
 #include "Play/PlayingWithFriends/PlayingWithFriendsSubsystem.h"
+#include "Social/FriendsEssentials/UI/FriendDetailsWidget_Starter.h"
 
 void UInviteToGameSessionWidget::NativeOnActivated()
 {
@@ -16,10 +17,10 @@ void UInviteToGameSessionWidget::NativeOnActivated()
 	Subsystem = GetGameInstance()->GetSubsystem<UPlayingWithFriendsSubsystem>();
 	check(Subsystem)
 
-	Btn_Invite->OnClicked().AddUObject(this, &ThisClass::InviteToSession);
-	Btn_Invite->SetIsEnabled(true);
-
 	SetVisibility(Subsystem->IsInMatchSessionGameSession() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+
+	Btn_Invite->SetIsEnabled(true);
+	Btn_Invite->OnClicked().AddUObject(this, &ThisClass::InviteToSession);
 }
 
 void UInviteToGameSessionWidget::NativeOnDeactivated()
@@ -34,15 +35,26 @@ void UInviteToGameSessionWidget::NativeOnDeactivated()
 	Super::NativeOnDeactivated();
 }
 
-void UInviteToGameSessionWidget::InviteToSession()
+#pragma region "Helper"
+UFriendData* UInviteToGameSessionWidget::GetFriendDataFromParentWidget()
 {
-	const UFriendDetailsWidget* Parent = GetFirstOccurenceOuter<UFriendDetailsWidget>();
-	if (!Parent)
+	if (const UFriendDetailsWidget* Parent = GetFirstOccurenceOuter<UFriendDetailsWidget>())
 	{
-		return;
+		return Parent->GetCachedFriendData();
 	}
 
-	const UFriendData* FriendData = Parent->GetCachedFriendData();
+	if (const UFriendDetailsWidget_Starter* Parent = GetFirstOccurenceOuter<UFriendDetailsWidget_Starter>())
+	{
+		return Parent->GetCachedFriendData();
+	}
+
+	return nullptr;
+}
+#pragma endregion 
+
+void UInviteToGameSessionWidget::InviteToSession()
+{
+	const UFriendData* FriendData = GetFriendDataFromParentWidget();
 	if (!FriendData)
 	{
 		return;

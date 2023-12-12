@@ -28,6 +28,11 @@ private:
 	void UnregisterServer(const FName SessionName);
 	void OnUnregisterServerComplete(const bool bSucceeded);
 
+	void SendServerReady(const FName SessionName);
+	void OnSendServerReadyComplete(const bool bSucceeded);
+
+	void OnAMSDrainReceived();
+
 	bool bServerAlreadyRegister;
 	bool bUnregisterServerRunning;
 	FOnlineSessionV2AccelBytePtr ABSessionInt;

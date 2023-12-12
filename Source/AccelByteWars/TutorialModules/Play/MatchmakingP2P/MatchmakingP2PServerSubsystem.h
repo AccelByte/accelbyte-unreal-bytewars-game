@@ -17,10 +17,6 @@ class ACCELBYTEWARS_API UMatchmakingP2PServerSubsystem : public UAccelByteWarsSe
 public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
-	virtual TSubclassOf<UTutorialModuleOnlineSession> GetOnlineSessionClass() const override
-	{
-		return UMatchmakingP2POnlineSession::StaticClass();
-	}
 
 protected:
 	virtual void OnServerSessionReceived(FName SessionName) override;

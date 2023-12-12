@@ -13,7 +13,6 @@ class ACCELBYTEWARS_API UMatchSessionDSOnlineSession : public USessionEssentials
 {
 	GENERATED_BODY()
 
-public:
 	virtual void RegisterOnlineDelegates() override;
 	virtual void ClearOnlineDelegates() override;
 

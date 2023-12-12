@@ -18,10 +18,13 @@ DEFINE_LOG_CATEGORY(LogAccelByteWarsTutorialModuleOnlineUtility);
 
 UTutorialModuleOnlineUtility::UTutorialModuleOnlineUtility()
 {
+    // Try to override environment config.
     CheckForEnvironmentConfigOverride();
 
-    CheckForSDKConfigOverride();
+    // Try to override SDK config.
+    OverrideSDKConfig(CheckForSDKConfigOverride(false), CheckForSDKConfigOverride(true));
 
+    // Try to override server version.
     CheckForDedicatedServerVersionOverride();
 
     // Trigger to get general predefined argument.
@@ -126,6 +129,97 @@ bool UTutorialModuleOnlineUtility::GetIsServerUseAMS()
     return bUseAMS;
 }
 
+void UTutorialModuleOnlineUtility::OverrideSDKConfig(const TMap<FString, FString>& ClientConfigs, const TMap<FString, FString>& ServerConfigs)
+{
+    // Abort if no configs to be overridden.
+    if (ClientConfigs.IsEmpty() && ServerConfigs.IsEmpty()) 
+    {
+        return;
+    }
+
+    TMap<FString, FString> OriginalClientConfigs, OriginalServerConfigs;
+
+    const FString ClientSectionPath = FString("/Script/AccelByteUe4Sdk.AccelByteSettings");
+    const FString ServerSectionPath = FString("/Script/AccelByteUe4Sdk.AccelByteServerSettings");
+
+    // Try to override sdk config (client).
+    for (auto& ConfigPair : ClientConfigs)
+    {
+        // Skip if the current value is the same.
+        FString LastValue;
+        GConfig->GetString(*ClientSectionPath, *ConfigPair.Key, LastValue, GEngineIni);
+        if (LastValue.Equals(ConfigPair.Value)) 
+        {
+            continue;
+        }
+
+        // Save last config.
+        OriginalClientConfigs.Add(ConfigPair.Key, LastValue);
+
+        // Override the value.
+        GConfig->SetString(*ClientSectionPath, *ConfigPair.Key, *ConfigPair.Value, GEngineIni);
+
+        // Log the new value.
+        FString ChangedValue;
+        GConfig->GetString(*ClientSectionPath, *ConfigPair.Key, ChangedValue, GEngineIni);
+        UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(
+            Log,
+            TEXT("Client SDK config %s is overridden from %s to %s"),
+            *ConfigPair.Key,
+            *LastValue,
+            *ChangedValue);
+    }
+
+    // Try to override sdk config (server).
+    for (auto& ConfigPair : ServerConfigs)
+    {
+        // Skip if the current value is the same.
+        FString LastValue;
+        GConfig->GetString(*ServerSectionPath, *ConfigPair.Key, LastValue, GEngineIni);
+        if (LastValue.Equals(ConfigPair.Value))
+        {
+            continue;
+        }
+
+        // Save last config.
+        OriginalServerConfigs.Add(ConfigPair.Key, LastValue);
+
+        // Override the value.
+        GConfig->SetString(*ServerSectionPath, *ConfigPair.Key, *ConfigPair.Value, GEngineIni);
+
+        // Log the new value.
+        FString ChangedValue;
+        GConfig->GetString(*ServerSectionPath, *ConfigPair.Key, ChangedValue, GEngineIni);
+        UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(
+            Log,
+            TEXT("Server SDK config %s is overridden from %s to %s"),
+            *ConfigPair.Key,
+            *LastValue,
+            *ChangedValue);
+    }
+
+    // Abort if no configs to be overridden.
+    if (OriginalClientConfigs.IsEmpty() && OriginalServerConfigs.IsEmpty()) 
+    {
+        return;
+    }
+
+    /* Overridden SDK config is placed at the default environment.
+     * Thus, update the environment to use the default environment.*/
+    IAccelByteUe4SdkModuleInterface::Get().SetEnvironment(ESettingsEnvironment::Default);
+
+    /* Reset the original config values.
+     * This way, the config file still remain original. */
+    for (auto& OriginalConfigPair : OriginalClientConfigs)
+    {
+        GConfig->SetString(*ClientSectionPath, *OriginalConfigPair.Key, *OriginalConfigPair.Value, GEngineIni);
+    }
+    for (auto& OriginalConfigPair : OriginalServerConfigs)
+    {
+        GConfig->SetString(*ServerSectionPath, *OriginalConfigPair.Key, *OriginalConfigPair.Value, GEngineIni);
+    }
+}
+
 void UTutorialModuleOnlineUtility::CheckForDedicatedServerVersionOverride()
 {
     DedicatedServerVersionOverride = FString("");
@@ -201,29 +295,8 @@ FString UTutorialModuleOnlineUtility::GetDedicatedServerVersionOverride()
     return DedicatedServerVersionOverride;
 }
 
-void UTutorialModuleOnlineUtility::CheckForSDKConfigOverride()
+TMap<FString, FString> UTutorialModuleOnlineUtility::CheckForSDKConfigOverride(const bool bIsServer)
 {
-    bool bIsOverridden = false;
-
-    // Try to override client SDK config from launch param.
-    bIsOverridden = OverrideSDKConfigFromLaunchParam() || bIsOverridden;
-    
-    // Try to override server SDK config from launch param.
-    bIsOverridden = OverrideSDKConfigFromLaunchParam(true) || bIsOverridden;
-
-    /* Overridden SDK config is placed at the default environment.
-     * Thus, update the environment to use the default environment.*/
-    if (bIsOverridden) 
-    {
-        IAccelByteUe4SdkModuleInterface::Get().SetEnvironment(ESettingsEnvironment::Default);
-    }
-}
-
-bool UTutorialModuleOnlineUtility::OverrideSDKConfigFromLaunchParam(const bool bIsServer)
-{
-    const FString ClientSectionPath = FString("/Script/AccelByteUe4Sdk.AccelByteSettings");
-    const FString ServerSectionPath = FString("/Script/AccelByteUe4Sdk.AccelByteServerSettings");
-
     const FString ClientPrefix = FString("-Client_");
     const FString ServerPrefix = FString("-Server_");
 
@@ -237,11 +310,11 @@ bool UTutorialModuleOnlineUtility::OverrideSDKConfigFromLaunchParam(const bool b
         FString("RedirectURI")
     };
 
-    // Check launch param and override the SDK config.
-    bool bIsOverridden = false;
+    TMap<FString, FString> SDKConfigs;
+
+    // Check launch param for the SDK config.
     const FString CmdArgs = FCommandLine::Get();
     const FString ConfigPrefix = bIsServer ? ServerPrefix : ClientPrefix;
-    const FString SectionPath = bIsServer ? ServerSectionPath : ClientSectionPath;
     for (const FString& Config : ConfigKeys)
     {
         const FString CmdStr = FString::Printf(TEXT("%s%s="), *ConfigPrefix, *Config, false);
@@ -252,30 +325,34 @@ bool UTutorialModuleOnlineUtility::OverrideSDKConfigFromLaunchParam(const bool b
             if (CmdValue.IsEmpty())
             {
                 UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(
-                    Warning, 
-                    TEXT("Unable to override %s SDK config %s using launch param. Empty or invalid value."), 
+                    Warning,
+                    TEXT("Unable to override %s SDK config %s using launch param. Empty or invalid value."),
                     bIsServer ? TEXT("Server") : TEXT("Client"),
                     *Config);
                 continue;
             }
 
-            GConfig->SetString(*SectionPath, *Config, *CmdValue, GEngineIni);
-            UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(
-                Log, 
-                TEXT("%s SDK config %s is overridden by launch param to %s"), 
-                bIsServer ? TEXT("Server") : TEXT("Client"), 
-                *Config, 
-                *CmdValue);
+            SDKConfigs.Add(Config, CmdValue);
 
-            bIsOverridden = true;
+            UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(
+                Log,
+                TEXT("%s SDK config %s is overridden by launch param to %s"),
+                bIsServer ? TEXT("Server") : TEXT("Client"),
+                *Config,
+                *CmdValue);
         }
     }
-    
-    return bIsOverridden;
+
+    // Return SDK config to override.
+    return SDKConfigs;
 }
 
 void UTutorialModuleOnlineUtility::CheckForEnvironmentConfigOverride()
 {
+    // Reset to default environment first.
+    IAccelByteUe4SdkModuleInterface::Get().SetEnvironment(ESettingsEnvironment::Default);
+
+    // Check for environment override.
     FString CmdArgs = FCommandLine::Get();
     if (!CmdArgs.Contains(TEXT("-TARGET_ENV="), ESearchCase::IgnoreCase))
     {
@@ -388,6 +465,29 @@ FString UTutorialModuleOnlineUtility::GetFTUEPredefinedArgument(const FTUEPredif
     else if (Keyword == FTUEPredifinedArgument::DEDICATED_SERVER_ID) 
     {
         Result = GetDedicatedServer(this).Server.Pod_name;
+    }
+    else if (Keyword == FTUEPredifinedArgument::ENV_BASE_URL) 
+    {
+        const FString ClientBaseURL = AccelByte::FRegistry::Settings.BaseUrl;
+        const FString ServerBaseURL = AccelByte::FRegistry::ServerSettings.BaseUrl;
+
+        /* Since the environment URL config should be the same between client and server, try to get it from client first. 
+         * If it is empty, then get it from server config. */
+        Result = !ClientBaseURL.IsEmpty() ? ClientBaseURL : ServerBaseURL;
+    }
+    else if (Keyword == FTUEPredifinedArgument::GAME_NAMESPACE)
+    {
+        const FString ClientGameNamespace = AccelByte::FRegistry::Settings.Namespace;
+        const FString ServerGameNamespace = AccelByte::FRegistry::ServerSettings.Namespace;
+
+        /* Since the game namespace config should be the same between client and server, try to get it from client first.
+         * If it is empty, then get it from server config. */
+        Result = !ClientGameNamespace.IsEmpty() ? ClientGameNamespace : ServerGameNamespace;
+    }
+    else if (Keyword == FTUEPredifinedArgument::ADMIN_PORTAL_URL)
+    {
+        // Construct Admin Portal URL.
+        Result = FString::Printf(TEXT("%s/admin/namespaces/%s"), *GetFTUEPredefinedArgument(FTUEPredifinedArgument::ENV_BASE_URL), *GetFTUEPredefinedArgument(FTUEPredifinedArgument::GAME_NAMESPACE));
     }
 
     return Result;

@@ -18,10 +18,6 @@ void UMatchSessionDSOnlineSession::RegisterOnlineDelegates()
 	Super::RegisterOnlineDelegates();
 	UE_LOG_MATCHSESSIONDS(Verbose, TEXT("called"))
 
-	// Game Session delegates
-	GetABSessionInt()->OnSessionServerUpdateDelegates.AddUObject(this, &ThisClass::OnSessionServerUpdateReceived);
-	GetABSessionInt()->OnSessionServerErrorDelegates.AddUObject(this, &ThisClass::OnSessionServerErrorReceived);
-
 	const TDelegate<void(APlayerController*)> LeaveSessionDelegate = TDelegate<void(APlayerController*)>::CreateWeakLambda(
 		this, [this](APlayerController*)
 		{
@@ -30,6 +26,10 @@ void UMatchSessionDSOnlineSession::RegisterOnlineDelegates()
 	UPauseWidget::OnQuitGameDelegate.Add(LeaveSessionDelegate);
 	UMatchLobbyWidget::OnQuitLobbyDelegate.Add(LeaveSessionDelegate);
 	UGameOverWidget::OnQuitGameDelegate.Add(LeaveSessionDelegate);
+
+	// Game Session delegates
+	GetABSessionInt()->OnSessionServerUpdateDelegates.AddUObject(this, &ThisClass::OnSessionServerUpdateReceived);
+	GetABSessionInt()->OnSessionServerErrorDelegates.AddUObject(this, &ThisClass::OnSessionServerErrorReceived);
 
 	// Match Session delegates
 	GetSessionInt()->OnFindSessionsCompleteDelegates.AddUObject(this, &ThisClass::OnFindSessionsComplete);
@@ -41,12 +41,12 @@ void UMatchSessionDSOnlineSession::ClearOnlineDelegates()
 {
 	Super::ClearOnlineDelegates();
 
-	GetABSessionInt()->OnSessionServerUpdateDelegates.RemoveAll(this);
-	GetABSessionInt()->OnSessionServerErrorDelegates.RemoveAll(this);
-
 	UPauseWidget::OnQuitGameDelegate.RemoveAll(this);
 	UMatchLobbyWidget::OnQuitLobbyDelegate.RemoveAll(this);
 	UGameOverWidget::OnQuitGameDelegate.RemoveAll(this);
+
+	GetABSessionInt()->OnSessionServerUpdateDelegates.RemoveAll(this);
+	GetABSessionInt()->OnSessionServerErrorDelegates.RemoveAll(this);
 
 	GetSessionInt()->OnFindSessionsCompleteDelegates.RemoveAll(this);
 }
@@ -340,7 +340,7 @@ void UMatchSessionDSOnlineSession::CreateMatchSession(
 	// flag to signify the server which game mode to use
 	SessionSettings.Set(
 		GAMESETUP_GameModeCode,
-		FString(GameModeType == EGameModeType::FFA ? "ELIMINATION-DS" : "TEAMDEATHMATCH-DS"));
+		FString(GameModeType == EGameModeType::FFA ? "ELIMINATION-DS-USERCREATED" : "TEAMDEATHMATCH-DS-USERCREATED"));
 
 	// Check is using AMS
 	const bool bUseAMS = UTutorialModuleOnlineUtility::GetIsServerUseAMS();
