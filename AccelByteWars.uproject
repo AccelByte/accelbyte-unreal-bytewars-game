@@ -49,10 +49,6 @@
 		{
 			"Name": "OnlineSubsystemSteam",
 			"Enabled": true
-		},
-		{
-			"Name": "BlackBoxSDK",
-			"Enabled": true
 		}
 	]
 }

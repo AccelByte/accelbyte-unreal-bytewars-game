@@ -79,7 +79,7 @@ void UHUDWidget::NativeConstruct()
 		// Check launch param
 		bool bUseAMS = FParse::Param(FCommandLine::Get(), TEXT("-ServerUseAMS"));
 	
-		// check DefaultEngine.ini next
+		// Check DefaultEngine.ini next
 		if (!bUseAMS)
 		{
 			FString Config;
@@ -87,19 +87,9 @@ void UHUDWidget::NativeConstruct()
 		}
 
 		// If using AMS then override the target URL 
-		if(bUseAMS)
+		if (bUseAMS)
 		{
-			FString DefaultAMSFleetId = TEXT("flt_018b4825-eede-7098-9e7d-21348380394c");
-			FString AMSFleetId;
-			FParse::Value(FCommandLine::Get(), TEXT("-amsfleetid="), AMSFleetId);
-
-			if(AMSFleetId.IsEmpty())
-			{
-				AMSFleetId = DefaultAMSFleetId;
-			}
-			
-			FString FleetUrl = FString::Printf(TEXT("{0}/ams/fleets-manager/%s/server/{1}"), *AMSFleetId);
-			FTUEDedicatedServer->Button1.TargetURL = FleetUrl;
+			FTUEDedicatedServer->Button1.TargetURL = FString("{0}/ams/fleets-manager/any/server/{1}");
 		}
 	}
 }
