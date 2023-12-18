@@ -117,7 +117,7 @@ void UCreateSessionWidget_Starter::SwitchContent(const EContentType Type)
 	// Set FTUEs
 	if (Type == EContentType::SUCCESS)
 	{
-		InitializeFTEUDialogues(true);
+		InitializeFTUEDialogues(true);
 	}
 	else
 	{

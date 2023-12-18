@@ -145,7 +145,7 @@ private:
 
 #pragma region "First Time User Experience (FTUE)"
 protected:
-	void InitializeFTEUDialogues(bool bShowOnInitialize);
+	void InitializeFTUEDialogues(bool bShowOnInitialize);
 	void DeinitializeFTUEDialogues();
 
 private:

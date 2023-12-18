@@ -46,7 +46,7 @@ void UQuickPlayWidget::SwitchContent(const EContentType State)
 		WidgetTarget = W_SelectGameMode;
 		BackButtonTarget = Btn_SelectGameMode_Back;
 		CameraTargetY = 600.0f;
-		InitializeFTEUDialogues(true);
+		InitializeFTUEDialogues(true);
 		break;
 	case EContentType::SELECTSERVERTYPE:
 		bShowBackButton = true;

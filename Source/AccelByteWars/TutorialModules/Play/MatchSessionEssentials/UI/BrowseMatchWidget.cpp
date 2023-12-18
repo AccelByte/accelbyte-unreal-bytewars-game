@@ -129,7 +129,7 @@ void UBrowseMatchWidget::SwitchContent(const EContentType Type)
 	// Set FTUE
 	if (Type == EContentType::BROWSE_EMPTY || Type == EContentType::BROWSE_NOT_EMPTY) 
 	{
-		InitializeFTEUDialogues(true);
+		InitializeFTUEDialogues(true);
 	}
 	else 
 	{

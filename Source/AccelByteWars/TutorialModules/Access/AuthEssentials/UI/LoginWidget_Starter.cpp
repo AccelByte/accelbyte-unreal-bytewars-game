@@ -61,7 +61,7 @@ void ULoginWidget_Starter::SetLoginState(const ELoginState NewState)
 	{
 	case ELoginState::Default:
 		Btn_LoginWithDeviceId->SetUserFocus(GetOwningPlayer());
-		InitializeFTEUDialogues(true);
+		InitializeFTUEDialogues(true);
 		break;
 	case ELoginState::LoggingIn:
 		DeinitializeFTUEDialogues();
@@ -72,7 +72,7 @@ void ULoginWidget_Starter::SetLoginState(const ELoginState NewState)
 		break;
 	default:
 		Btn_LoginWithDeviceId->SetUserFocus(GetOwningPlayer());
-		InitializeFTEUDialogues(true);
+		InitializeFTUEDialogues(true);
 		break;
 	}
 }
