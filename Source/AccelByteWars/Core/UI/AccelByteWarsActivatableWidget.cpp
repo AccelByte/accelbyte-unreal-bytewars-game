@@ -66,7 +66,7 @@ void UAccelByteWarsActivatableWidget::NativeOnActivated()
 	}
 
 	InitializeGeneratedWidgets();
-	InitializeFTEUDialogues(bOnActivatedInitializeFTUE);
+	InitializeFTUEDialogues(bOnActivatedInitializeFTUE);
 
 	SetVisibility(GetIsAllGeneratedWidgetsShouldNotDisplay() ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
 }
@@ -576,7 +576,7 @@ void UAccelByteWarsActivatableWidget::ValidateFTUEDialogues()
 	});
 }
 
-void UAccelByteWarsActivatableWidget::InitializeFTEUDialogues(bool bShowOnInitialize)
+void UAccelByteWarsActivatableWidget::InitializeFTUEDialogues(bool bShowOnInitialize)
 {
 	if (!IsActivated() || IsUnreachable())
 	{
@@ -702,7 +702,7 @@ void UAccelByteWarsActivatableWidget::DeinitializeFTUEDialogues()
 				continue;
 			}
 
-			OtherWidget->InitializeFTEUDialogues(true);
+			OtherWidget->InitializeFTUEDialogues(true);
 		}
 	}
 }
