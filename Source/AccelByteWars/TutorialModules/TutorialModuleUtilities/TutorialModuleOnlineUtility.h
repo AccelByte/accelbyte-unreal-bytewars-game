@@ -63,6 +63,8 @@ public:
 
 	static void OverrideSDKConfig(const TMap<FString, FString>& ClientConfigs, const TMap<FString, FString>& ServerConfigs);
 
+	static bool IsUseAGSStarter();
+
 private:
 	static void CheckForDedicatedServerVersionOverride();
 
@@ -78,7 +80,11 @@ private:
 	static FNamedOnlineSession* GetOnlineSession(const FName SessionName, const UObject* Context);
 	static FAccelByteModelsV2GameSessionDSInformation GetDedicatedServer(const UObject* Context);
 
+	static void CheckUseAGSStarter();
+	
 	inline static FString CurrentPlayerUserIdStr = FString("");
 	inline static FString CurrentPlayerDisplayName = FString("");
 	inline static FString DedicatedServerVersionOverride = FString("");
+
+	inline static bool bUseAGSStarter = false;
 };

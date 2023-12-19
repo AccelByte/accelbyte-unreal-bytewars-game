@@ -18,6 +18,9 @@ DEFINE_LOG_CATEGORY(LogAccelByteWarsTutorialModuleOnlineUtility);
 
 UTutorialModuleOnlineUtility::UTutorialModuleOnlineUtility()
 {
+    // Try to check for AGS Starter mode.
+    CheckUseAGSStarter();
+
     // Try to override environment config.
     CheckForEnvironmentConfigOverride();
 
@@ -474,6 +477,22 @@ FString UTutorialModuleOnlineUtility::GetFTUEPredefinedArgument(const FTUEPredif
         /* Since the environment URL config should be the same between client and server, try to get it from client first. 
          * If it is empty, then get it from server config. */
         Result = !ClientBaseURL.IsEmpty() ? ClientBaseURL : ServerBaseURL;
+
+        // If using AGS Starter, format the environment URL by omitting the first sub-domain.
+        if (IsUseAGSStarter()) 
+        {
+            int32 ProtocolIndex = Result.Find(TEXT("://"));
+            if (ProtocolIndex != INDEX_NONE)
+            {
+                int32 FirstDomainIndex = Result.Find(TEXT("."), ESearchCase::CaseSensitive, ESearchDir::FromStart, ProtocolIndex);
+                if (FirstDomainIndex != INDEX_NONE)
+                {
+                    // Construct the AGS Starter environment URL.
+                    const FString Protocol = Result.Left(ProtocolIndex) + FString("://");
+                    Result = Protocol + Result.RightChop(FirstDomainIndex + 1);
+                }
+            }
+        }
     }
     else if (Keyword == FTUEPredifinedArgument::GAME_NAMESPACE)
     {
@@ -557,4 +576,41 @@ FAccelByteModelsV2GameSessionDSInformation UTutorialModuleOnlineUtility::GetDedi
     DSInformation = SessionData->DSInformation;
 
     return DSInformation;
+}
+
+bool UTutorialModuleOnlineUtility::IsUseAGSStarter()
+{
+    return bUseAGSStarter;
+}
+
+void UTutorialModuleOnlineUtility::CheckUseAGSStarter()
+{
+    // Check for launch parameter first.
+    const FString CmdArgs = FCommandLine::Get();
+    const FString CmdStr = FString("-UseAGSStarter=");
+    bool bValidCmdValue = false;
+    if (CmdArgs.Contains(CmdStr, ESearchCase::IgnoreCase))
+    {
+        FString CmdValue;
+        FParse::Value(*CmdArgs, *CmdStr, CmdValue);
+        if (!CmdValue.IsEmpty())
+        {
+            bUseAGSStarter = CmdValue.Equals(TEXT("TRUE"), ESearchCase::IgnoreCase);
+            bValidCmdValue = true;
+
+            UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Log,
+                TEXT("Launch param sets the AGS Starter mode to %s."),
+                bUseAGSStarter ? TEXT("TRUE") : TEXT("FALSE"));
+        }
+    }
+
+    // Check for DefaultEngine.ini
+    if (!bValidCmdValue)
+    {
+        GConfig->GetBool(TEXT("AccelByteTutorialModules"), TEXT("bUseAGSStarter"), bUseAGSStarter, GEngineIni);
+
+        UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Log,
+            TEXT("DefaultEngine.ini sets the AGS Starter mode to %s."),
+            bUseAGSStarter ? TEXT("TRUE") : TEXT("FALSE"));
+    }
 }
