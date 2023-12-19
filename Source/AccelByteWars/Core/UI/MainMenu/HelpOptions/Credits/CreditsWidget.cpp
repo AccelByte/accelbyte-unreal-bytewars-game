@@ -3,12 +3,16 @@
 // and restrictions contact your company contract manager.
 
 #include "Core/UI/MainMenu/HelpOptions/Credits/CreditsWidget.h"
+
+#include "Camera/CameraActor.h"
 #include "Core/UI/MainMenu/HelpOptions/Credits/Components/CreditsRoleGroupWidget.h"
 #include "Core/UI/MainMenu/HelpOptions/Credits/Components/CreditsEntry.h"
 #include "Components/ScrollBox.h"
+#include "Kismet/GameplayStatics.h"
 
 void UCreditsWidget::InitCredits()
 {
+	bShouldTick = true;
 	TMap<ECreditsRoleType, TWeakObjectPtr<UCreditsRoleGroupWidget>> RoleGroupMap;
 
 	for (FCreditsData Credit : CreditsData)
@@ -30,20 +34,37 @@ void UCreditsWidget::InitCredits()
 		RoleGroupMap[Credit.RoleType]->AddChild(NewCredit.Get());
 	}
 
-	GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this]() { bIsCreditsListInitialized = true; }, AutoScrollDelay, false);
+	BeginCreditsAutoScroll();
 }
 
-void UCreditsWidget::ScrollCreditsToEnd(const float DeltaTime, const float ScrollSpeed)
+void UCreditsWidget::BeginCreditsAutoScroll()
 {
-	if (!bIsCreditsListInitialized)
+	// Perform delay in Task Graph.
+	Async(EAsyncExecution::TaskGraph, [this]
 	{
-		return;
-	}
+		FPlatformProcess::Sleep(AutoScrollDelay);
 
+		if (bIsCreditsWidgetActive)
+		{
+			// Run timer on game thread to ensure thread safety.
+			AsyncTask(ENamedThreads::GameThread, [this]
+			{
+				GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &UCreditsWidget::ScrollCreditsToEnd, 0.05f, true);
+			});
+		}
+	});
+}
+
+void UCreditsWidget::ScrollCreditsToEnd() const
+{
 	const float CurrentOffset = Scb_CreditsList->GetScrollOffset();
 	const float TargetOffset = Scb_CreditsList->GetScrollOffsetOfEnd();
-	const float DesiredOffset = FMath::FInterpTo(CurrentOffset, TargetOffset, DeltaTime, ScrollSpeed);
-	Scb_CreditsList->SetScrollOffset(DesiredOffset);
+
+	if (CurrentOffset < TargetOffset)
+	{
+		const float IncrementedOffset = CurrentOffset + AutoScrollOffset;
+		Scb_CreditsList->SetScrollOffset(IncrementedOffset);
+	}
 }
 
 void UCreditsWidget::ResetCreditsList()
@@ -51,7 +72,6 @@ void UCreditsWidget::ResetCreditsList()
 	Scb_CreditsList->ClearChildren();
 	Scb_CreditsList->SetScrollOffset(0.0f);
 	GetWorld()->GetTimerManager().ClearTimer(TimerHandle);
-	bIsCreditsListInitialized = false;
 }
 
 void UCreditsWidget::NativeOnActivated()
@@ -59,6 +79,7 @@ void UCreditsWidget::NativeOnActivated()
 	Super::NativeOnActivated();
 
 	InitCredits();
+	bIsCreditsWidgetActive = true;
 }
 
 void UCreditsWidget::NativeOnDeactivated()
@@ -66,12 +87,27 @@ void UCreditsWidget::NativeOnDeactivated()
 	Super::NativeOnDeactivated();
 
 	ResetCreditsList();
+	bIsCreditsWidgetActive = false;
 }
 
-void UCreditsWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+void UCreditsWidget::NativeTick(const FGeometry& MyGeometry, const float InDeltaTime)
 {
+	if (!bShouldTick)
+	{
+		return;
+	}
+
 	Super::NativeTick(MyGeometry, InDeltaTime);
 
-	MoveCameraToTargetLocation(InDeltaTime, FVector(60.0f, 600.0f, 160.0f));
-	ScrollCreditsToEnd(InDeltaTime, AutoScrollSpeed);
+	const AActor* Camera = UGameplayStatics::GetActorOfClass(GetWorld(), ACameraActor::StaticClass());
+	const FVector TargetLocation = FVector(60.0f, 600.0f, 160.0f);
+
+	if (Camera->GetActorLocation() != TargetLocation)
+	{
+		MoveCameraToTargetLocation(InDeltaTime, TargetLocation);
+	}
+	else
+	{
+		bShouldTick = false;
+	}
 }
