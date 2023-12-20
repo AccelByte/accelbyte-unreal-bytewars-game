@@ -20,23 +20,25 @@ class ACCELBYTEWARS_API UCreditsWidget : public UAccelByteWarsActivatableWidget
 
 public:
 	void InitCredits();
-	void ScrollCreditsToEnd(const float DeltaTime, const float ScrollSpeed = 0.05f);
+	void BeginCreditsAutoScroll();
+	void ScrollCreditsToEnd() const;
 	void ResetCreditsList();
 
 protected:
-	void NativeOnActivated() override;
-	void NativeOnDeactivated() override;
-	void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
+	virtual void NativeOnActivated() override;
+	virtual void NativeOnDeactivated() override;
+	virtual void NativeTick(const FGeometry& MyGeometry, const float InDeltaTime) override;
 
 private:
-	bool bIsCreditsListInitialized = false;
+	bool bIsCreditsWidgetActive;
+	bool bShouldTick;
 	FTimerHandle TimerHandle;
 
 	UPROPERTY(EditAnywhere, Category = Credits)
 	float AutoScrollDelay = 2.0f;
 
 	UPROPERTY(EditAnywhere, Category = Credits)
-	float AutoScrollSpeed = 0.1f;
+	float AutoScrollOffset = 1.5f;
 
 	UPROPERTY(EditDefaultsOnly, Category = Credits)
 	TArray<FCreditsData> CreditsData;
