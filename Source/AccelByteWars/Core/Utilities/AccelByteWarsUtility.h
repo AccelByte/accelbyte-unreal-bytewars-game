@@ -16,6 +16,9 @@ public:
 	static void GetImageFromURL(const FString& Url, const FString& ImageId, const FOnImageReceived& OnReceived);
 	static FCacheBrush GetImageFromCache(const FString& ImageId);
 
+	/** @brief Always return positive value for Dividend % Modulus. If Modulus is zero, returns -1 as to prevent divide by zero exception. */
+	static int32 PositiveModulo(const int32 Dividend, const int32 Modulus);
+
 private:
 	static const TMap<FString, EImageFormat> ImageFormatMap;
 };

@@ -92,3 +92,8 @@ FCacheBrush AccelByteWarsUtility::GetImageFromCache(const FString& ImageId)
 
 	return ImageBrush;
 }
+
+int32 AccelByteWarsUtility::PositiveModulo(const int32 Dividend, const int32 Modulus)
+{
+	return Modulus == 0 ? INDEX_NONE : (Modulus + (Dividend % Modulus)) % Modulus;
+}
