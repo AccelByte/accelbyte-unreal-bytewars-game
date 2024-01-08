@@ -43,4 +43,15 @@ public:
 	UFUNCTION(Category = AccelByteWars)
 		virtual void DestroyPowerUp() override;
 	
+	/**
+	* @brief A do-nothing sphere component used for positioning
+	*/
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = AccelByteWars)
+	class USphereComponent* SphereComponent = nullptr;
+
+	/**
+	* @brief Sound FX for bomb
+	*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AccelByteWars)
+	UAudioComponent* BombAudioComponent = nullptr;
 };

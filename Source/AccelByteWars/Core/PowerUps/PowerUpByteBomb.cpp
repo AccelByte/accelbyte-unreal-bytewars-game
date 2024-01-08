@@ -9,6 +9,16 @@
 
 APowerUpByteBomb::APowerUpByteBomb()
 {
+	// Setup a do nothing root component
+	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("BombSphereComponent"));
+	SphereComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	RootComponent = SphereComponent;
+
+	// Setup audio component
+	BombAudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("BombAudioComponent"));
+	BombAudioComponent->SetupAttachment(RootComponent);
+	BombAudioComponent->OnAudioFinished.AddUniqueDynamic(this, &ThisClass::DestroyPowerUp);
+
 	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 	SetReplicateMovement(false);
@@ -69,11 +79,14 @@ void APowerUpByteBomb::Server_DestroyAllEnemyMissiles_Implementation(APawn* Byte
 			Missile->DestroyByPowerUp();
 		}
 	}
-
-	DestroyPowerUp();
 }
 
 void APowerUpByteBomb::DestroyPowerUp()
 {
+	if (BombAudioComponent) 
+	{
+		BombAudioComponent->Stop();
+	}
+
 	Destroy();
 }
