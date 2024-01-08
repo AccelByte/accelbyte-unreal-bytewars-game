@@ -6,40 +6,94 @@
 #include "EntitlementsEssentialsSubsystem.h"
 
 #include "OnlineSubsystemUtils.h"
-#include "Monetization/InGameStoreEssentials/UI/ShopWidget.h"
-#include "Monetization/StoreItemPurchase/UI/ItemPurchaseWidget.h"
+#include "OnlineIdentityInterfaceAccelByte.h"
+#include "Api/AccelByteEntitlementApi.h"
+
+#include "TutorialModules/Monetization/InGameStoreEssentials/UI/ShopWidget.h"
+#include "TutorialModules/Monetization/StoreItemPurchase/UI/ItemPurchaseWidget.h"
+#include "Core/Player/AccelByteWarsPlayerPawn.h"
 
 void UEntitlementsEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
-	EntitlementsInterface = Online::GetSubsystem(GetWorld())->GetEntitlementsInterface();
-	ensure(EntitlementsInterface);
+	const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+	if (!ensure(Subsystem))
+	{
+		return;
+	}
 
-	EntitlementsInterface->OnQueryEntitlementsCompleteDelegates.AddUObject(this, &ThisClass::OnQueryEntitlementComplete);
+	EntitlementsInterface = StaticCastSharedPtr<FOnlineEntitlementsAccelByte>(Subsystem->GetEntitlementsInterface());
+	if (!ensure(EntitlementsInterface)) 
+	{
+		return;
+	}
 
-	UShopWidget::OnActivatedMulticastDelegate.AddUObject(this, &ThisClass::QueryUserEntitlement);
-	UItemPurchaseWidget::OnPurchaseCompleteMulticastDelegate.AddUObject(this, &ThisClass::QueryUserEntitlement);
+	if (EntitlementsInterface) 
+	{
+		EntitlementsInterface->OnQueryEntitlementsCompleteDelegates.AddUObject(this, &ThisClass::OnQueryEntitlementComplete);
+	}
+
+	UShopWidget::OnActivatedMulticastDelegate.AddWeakLambda(this, [this](const APlayerController* PC)
+	{
+		const FUniqueNetIdPtr UserId = GetLocalPlayerUniqueNetId(PC);
+		QueryUserEntitlement(UserId);
+	});
+
+	UItemPurchaseWidget::OnPurchaseCompleteMulticastDelegate.AddWeakLambda(this, [this](const APlayerController* PC)
+	{
+		const FUniqueNetIdPtr UserId = GetLocalPlayerUniqueNetId(PC);
+		QueryUserEntitlement(UserId);
+	});
+
+	// Consume power up entitlement when it is activated.
+	AAccelByteWarsPlayerPawn::OnValidateActivatePowerUp.BindWeakLambda(this, [this](AAccelByteWarsPlayerPawn* PlayerPawn, const PowerUpSelection SelectedPowerUp)
+	{
+		const FUniqueNetIdPtr UserId = GetLocalPlayerUniqueNetId(Cast<APlayerController>(PlayerPawn->GetController()));
+		const FString PowerUpId = ConvertPowerUpToItemId(SelectedPowerUp);
+
+		ConsumeItemEntitlement(UserId, PowerUpId, 1, 
+			FOnConsumeUserEntitlementComplete::CreateWeakLambda(this, [PlayerPawn, SelectedPowerUp](const bool bSucceded, const UItemDataObject* Entitlement)
+			{
+				if (bSucceded && PlayerPawn)
+				{
+					PlayerPawn->Server_ActivatePowerUp(SelectedPowerUp);
+					return;
+				}
+			}
+		));
+	});
 }
 
 void UEntitlementsEssentialsSubsystem::Deinitialize()
 {
 	Super::Deinitialize();
 
-	EntitlementsInterface->OnQueryEntitlementsCompleteDelegates.RemoveAll(this);
+	if (EntitlementsInterface) 
+	{
+		EntitlementsInterface->OnQueryEntitlementsCompleteDelegates.RemoveAll(this);
+	}
+
 	UShopWidget::OnActivatedMulticastDelegate.RemoveAll(this);
 	UItemPurchaseWidget::OnPurchaseCompleteMulticastDelegate.RemoveAll(this);
+
+	AAccelByteWarsPlayerPawn::OnValidateActivatePowerUp.Unbind();
 }
 
 UItemDataObject* UEntitlementsEssentialsSubsystem::GetItemEntitlement(
-	const APlayerController* OwningPlayer,
+	const FUniqueNetIdPtr UserId,
 	const FUniqueOfferId ItemId) const
 {
+	if (!UserId) 
+	{
+		return nullptr;
+	}
+
 	UItemDataObject* Item = nullptr;
 
-	if (const TSharedPtr<FOnlineEntitlement> Entitlement = EntitlementsInterface->GetItemEntitlement(
-		*GetLocalPlayerUniqueNetId(OwningPlayer).Get(),
-		ItemId); Entitlement.IsValid())
+	if (const TSharedPtr<FOnlineEntitlement> Entitlement = 
+		EntitlementsInterface->GetItemEntitlement(UserId.ToSharedRef().Get(), ItemId); 
+		Entitlement.IsValid())
 	{
 		Item = NewObject<UItemDataObject>();
 		Item->Id = Entitlement->ItemId;
@@ -51,17 +105,51 @@ UItemDataObject* UEntitlementsEssentialsSubsystem::GetItemEntitlement(
 	return Item;
 }
 
-void UEntitlementsEssentialsSubsystem::QueryUserEntitlement(const APlayerController* OwningPlayer)
+void UEntitlementsEssentialsSubsystem::QueryUserEntitlement(const FUniqueNetIdPtr UserId)
 {
+	if (!UserId)
+	{
+		return;
+	}
+
 	if (bIsQueryRunning)
 	{
 		return;
 	}
 
 	bIsQueryRunning = true;
-	EntitlementsInterface->QueryEntitlements(
-		*GetLocalPlayerUniqueNetId(OwningPlayer).Get(),
-		"");
+
+	EntitlementsInterface->QueryEntitlements(UserId.ToSharedRef().Get(), FString(), FPagedQuery());
+}
+
+void UEntitlementsEssentialsSubsystem::ConsumeItemEntitlement(
+	const FUniqueNetIdPtr UserId, 
+	const FString& ItemId, 
+	const int32 UseCount, 
+	const FOnConsumeUserEntitlementComplete& OnComplete)
+{
+	if (!UserId) 
+	{
+		return;
+	}
+
+	// Get entitlement item from cache.
+	TSharedPtr<FOnlineEntitlement> Entitlement = EntitlementsInterface->GetItemEntitlement(UserId.ToSharedRef().Get(), ItemId);
+	if (!Entitlement) 
+	{
+		// If the entitlement is not available on cache, query and then consume it.
+		QueryToConsumeEntitlementDelegateHandle.Reset();
+		QueryToConsumeEntitlementDelegateHandle = 
+			EntitlementsInterface->AddOnQueryEntitlementsCompleteDelegate_Handle(
+				FOnQueryEntitlementsCompleteDelegate::CreateUObject(this, &ThisClass::OnQueryToConsumeEntitlementComplete, ItemId, UseCount, OnComplete));
+
+		QueryUserEntitlement(UserId);
+		return;
+	}
+
+	// Consume entitlement.
+	ConsumeEntitlementDelegateHandle = EntitlementsInterface->AddOnConsumeEntitlementCompleteDelegate_Handle(FOnConsumeEntitlementCompleteDelegate::CreateUObject(this, &ThisClass::OnConsumeEntitlementComplete, OnComplete));
+	EntitlementsInterface->ConsumeEntitlement(UserId.ToSharedRef().Get(), Entitlement->Id, UseCount);
 }
 
 void UEntitlementsEssentialsSubsystem::OnQueryEntitlementComplete(
@@ -80,11 +168,8 @@ void UEntitlementsEssentialsSubsystem::OnQueryEntitlementComplete(
 	if (bWasSuccessful)
 	{
 		TArray<TSharedRef<FOnlineEntitlement>> Entitlements;
-		EntitlementsInterface->GetAllEntitlements(
-			*GetLocalPlayerUniqueNetId(GetWorld()->GetFirstPlayerController()).Get(),
-			"",
-			Entitlements);
-
+		EntitlementsInterface->GetAllEntitlements(UserId, FString(), Entitlements);
+		
 		for (const TSharedRef<FOnlineEntitlement>& Entitlement : Entitlements)
 		{
 			UItemDataObject* Item = NewObject<UItemDataObject>();
@@ -97,6 +182,57 @@ void UEntitlementsEssentialsSubsystem::OnQueryEntitlementComplete(
 	}
 	
 	OnQueryUserEntitlementsCompleteDelegates.Broadcast(OnlineError, Items);
+}
+
+void UEntitlementsEssentialsSubsystem::OnConsumeEntitlementComplete(
+	bool bWasSuccessful, 
+	const FUniqueNetId& UserId, 
+	const TSharedPtr<FOnlineEntitlement>& Entitlement, 
+	const FOnlineError& Error, 
+	const FOnConsumeUserEntitlementComplete OnComplete)
+{
+	if (EntitlementsInterface)
+	{
+		EntitlementsInterface->ClearOnConsumeEntitlementCompleteDelegate_Handle(ConsumeEntitlementDelegateHandle);
+	}
+
+	if (!bWasSuccessful)
+	{
+		OnComplete.ExecuteIfBound(false, nullptr);
+		return;
+	}
+
+	UItemDataObject* Item = NewObject<UItemDataObject>();
+	Item->Id = Entitlement->ItemId;
+	Item->Title = FText::FromString(Entitlement->Name);
+	Item->bConsumable = Entitlement->bIsConsumable;
+	Item->Count = Entitlement->RemainingCount;
+
+	OnComplete.ExecuteIfBound(true, Item);
+}
+
+void UEntitlementsEssentialsSubsystem::OnQueryToConsumeEntitlementComplete(
+	bool bWasSuccessful, 
+	const FUniqueNetId& UserId, 
+	const FString& Namespace, 
+	const FString& Error, 
+	const FString ItemId, 
+	const int32 UseCount, 
+	const FOnConsumeUserEntitlementComplete OnComplete)
+{
+	if (EntitlementsInterface) 
+	{
+		EntitlementsInterface->ClearOnQueryEntitlementsCompleteDelegate_Handle(QueryToConsumeEntitlementDelegateHandle);
+	}
+
+	if (bWasSuccessful)
+	{
+		ConsumeItemEntitlement(UserId.AsShared(), ItemId, UseCount, OnComplete);
+	}
+	else 
+	{
+		OnComplete.ExecuteIfBound(false, nullptr);
+	}
 }
 
 FUniqueNetIdPtr UEntitlementsEssentialsSubsystem::GetLocalPlayerUniqueNetId(

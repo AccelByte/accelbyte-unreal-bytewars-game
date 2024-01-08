@@ -7,7 +7,7 @@
 #include "CoreMinimal.h"
 #include "EntitlementsEssentialsModel.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
-#include "Interfaces/OnlineEntitlementsInterface.h"
+#include "OnlineEntitlementsInterfaceAccelByte.h"
 #include "Interfaces/OnlineExternalUIInterface.h"
 #include "EntitlementsEssentialsSubsystem.generated.h"
 
@@ -21,22 +21,48 @@ class ACCELBYTEWARS_API UEntitlementsEssentialsSubsystem : public UTutorialModul
 	virtual bool ShouldCreateSubsystem(UObject* Outer) const override {return true;}
 
 public:
-	UItemDataObject* GetItemEntitlement(const APlayerController* OwningPlayer, const FUniqueOfferId ItemId) const;
+	UItemDataObject* GetItemEntitlement(const FUniqueNetIdPtr UserId, const FUniqueOfferId ItemId) const;
 
-	void QueryUserEntitlement(const APlayerController* OwningPlayer);
+	void QueryUserEntitlement(const FUniqueNetIdPtr UserId);
 	FOnQueryUserEntitlementsComplete OnQueryUserEntitlementsCompleteDelegates;
 
 	bool GetIsQueryRunning() const { return bIsQueryRunning; }
 
-private:
-	bool bIsQueryRunning = false;
-	IOnlineEntitlementsPtr EntitlementsInterface;
+	void ConsumeItemEntitlement(
+		const FUniqueNetIdPtr UserId,
+		const FString& ItemId,
+		const int32 UseCount, 
+		const FOnConsumeUserEntitlementComplete& OnComplete = FOnConsumeUserEntitlementComplete());
 
+private:
 	void OnQueryEntitlementComplete(
 		bool bWasSuccessful,
 		const FUniqueNetId& UserId,
 		const FString& Namespace,
 		const FString& Error);
-	
+
+	void OnConsumeEntitlementComplete(
+		bool bWasSuccessful, 
+		const FUniqueNetId& UserId, 
+		const TSharedPtr<FOnlineEntitlement>& Entitlement, 
+		const FOnlineError& Error,
+		const FOnConsumeUserEntitlementComplete OnComplete);
+
+	void OnQueryToConsumeEntitlementComplete(
+		bool bWasSuccessful, 
+		const FUniqueNetId& UserId, 
+		const FString& Namespace, 
+		const FString& Error,
+		const FString ItemId, 
+		const int32 UseCount, 
+		const FOnConsumeUserEntitlementComplete OnComplete);
+
 	FUniqueNetIdPtr GetLocalPlayerUniqueNetId(const APlayerController* PlayerController) const;
+
+	FOnlineEntitlementsAccelBytePtr EntitlementsInterface;
+
+	bool bIsQueryRunning = false;
+
+	FDelegateHandle ConsumeEntitlementDelegateHandle;
+	FDelegateHandle QueryToConsumeEntitlementDelegateHandle;
 };

@@ -28,7 +28,7 @@ protected:
 	void OnStartPartyMatchmakingComplete();
 	void OnPartyMatchmakingComplete(FName SessionName, bool bSucceeded);
 	void OnPartyMatchmakingCanceled();
-	void OnPartyMatchmakingExpired();
+	void OnPartyMatchmakingExpired(TSharedPtr<FOnlineSessionSearchAccelByte> SearchHandler);
 
 	void InvitePartyMembersToJoinPartyGameSession(const FUniqueNetIdPtr LeaderUserId);
 	void OnPartyGameSessionInviteReceived(const FUniqueNetId& UserId, const FUniqueNetId& FromId, const FOnlineSessionInviteAccelByte& Invite);

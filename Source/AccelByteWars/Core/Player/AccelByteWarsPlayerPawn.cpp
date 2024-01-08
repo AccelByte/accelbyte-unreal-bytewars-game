@@ -23,7 +23,7 @@ AAccelByteWarsPlayerPawn::AAccelByteWarsPlayerPawn()
  	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	SetReplicateMovement(true);
-	SetReplicates(true);
+	bReplicates = true;
 }
 
 // Called when the game starts or when spawned
@@ -85,7 +85,7 @@ void AAccelByteWarsPlayerPawn::GetLifetimeReplicatedProps(TArray<FLifetimeProper
 	DOREPLIFETIME(AAccelByteWarsPlayerPawn, RotationDirection);
 	DOREPLIFETIME(AAccelByteWarsPlayerPawn, CurrentYaw);
 	DOREPLIFETIME(AAccelByteWarsPlayerPawn, FirePowerLevel);
-	DOREPLIFETIME(AAccelByteWarsPlayerPawn, Color);
+	DOREPLIFETIME(AAccelByteWarsPlayerPawn, PawnColor);
 }
 
 AAccelByteWarsMissile* AAccelByteWarsPlayerPawn::SpawnMissileInWorld(AActor* ActorOwner, FTransform InTransform, float InitialSpeed, FString BlueprintPath, bool ShouldReplicate)
@@ -103,7 +103,7 @@ AAccelByteWarsMissile* AAccelByteWarsPlayerPawn::SpawnMissileInWorld(AActor* Act
 	if (new_actor == nullptr)
 		return nullptr;
 
-	new_actor->Server_SetColor(Color);
+	new_actor->Server_SetColor(PawnColor);
 	new_actor->InitialSpeed = InitialSpeed;
 	new_actor->SetVelocity();
 	new_actor->SetInstigator(this);
@@ -215,6 +215,107 @@ void AAccelByteWarsPlayerPawn::Server_SpawnPlayerShip_Implementation(ShipDesign 
 
 	if (PlayerShip != nullptr)
 		PlayerShip->AttachToActor(this, FAttachmentTransformRules::SnapToTargetIncludingScale);
+
+	if (PlayerShip->AccelByteWarsProceduralMesh)
+		PlayerShip->AccelByteWarsProceduralMesh->SetupAttachment(SphereComponent);
+}
+
+void AAccelByteWarsPlayerPawn::ValidateActivatePowerUp(PowerUpSelection SelectedPowerUp)
+{
+	// If no power up selected, abort.
+	if (SelectedPowerUp == PowerUpSelection::NONE) 
+	{
+		return;
+	}
+
+	// If online, power up can only be activated if the player is entitled to activate the power up.
+	if (OnValidateActivatePowerUp.IsBound())
+	{
+		OnValidateActivatePowerUp.Execute(this, SelectedPowerUp);
+		return;
+	}
+
+	// If offline, power up can be activated without validation.
+	Server_ActivatePowerUp(SelectedPowerUp);
+}
+
+void AAccelByteWarsPlayerPawn::Server_ActivatePowerUp_Implementation(PowerUpSelection SelectedPowerUp)
+{
+	// In case multiple power ups are used at once (this shouldn't happen, but if allowed in the future, this will deal with it)
+	if (PowerUp != nullptr) 
+	{
+		// Do not create a new shield if already exist.
+		const APowerUpByteShield* LastShield = Cast<APowerUpByteShield>(PowerUp);
+		if (LastShield && LastShield->IsShieldActive)
+		{
+			return;
+		}
+
+		PowerUp->DestroyPowerUp();
+	}
+
+	switch (SelectedPowerUp)
+	{
+		case PowerUpSelection::NONE:
+		{
+			// No power up equipped, do nothing and return;
+			return;
+		}
+		break;
+		case PowerUpSelection::BYTE_BOMB:
+		{
+			PowerUp = SpawnBPActorInWorld<APowerUpByteBomb>(this, GetActorLocation(), GetActorRotation(), PlayerPowerUpBlueprintPaths[(int8)SelectedPowerUp], true);
+
+			APowerUpByteBomb* ByteBomb = Cast<APowerUpByteBomb>(PowerUp);
+			if (ByteBomb == nullptr)
+				return;
+
+			ByteBomb->InitiateExplosion();
+			PowerUp = nullptr;
+		}
+		break;
+		case PowerUpSelection::BYTE_SHIELD:
+		{
+			PowerUp = SpawnBPActorInWorld<APowerUpByteShield>(this, GetActorLocation(), GetActorRotation(), PlayerPowerUpBlueprintPaths[(int8)SelectedPowerUp], true);
+
+			APowerUpByteShield* ByteShield = Cast<APowerUpByteShield>(PowerUp);
+			if (ByteShield == nullptr)
+				return;
+
+			PowerUp->AttachToActor(this, FAttachmentTransformRules::SnapToTargetIncludingScale);
+			ByteShield->SetShieldColor(PawnColor);
+		}
+		break;
+		case PowerUpSelection::WORM_HOLE:
+		{
+			PowerUp = SpawnBPActorInWorld<APowerUpWormHole>(this, GetActorLocation(), GetActorRotation(), PlayerPowerUpBlueprintPaths[(int8)SelectedPowerUp], true);
+
+			APowerUpWormHole* WormHole = Cast<APowerUpWormHole>(PowerUp);
+			if (WormHole == nullptr)
+				return;
+
+			PowerUp->AttachToActor(this, FAttachmentTransformRules::SnapToTargetIncludingScale);
+			WormHole->SetWormHoleColor(PawnColor);
+			WormHole->Server_InitiateWormHoleGenerator();
+		}
+		break;
+		case PowerUpSelection::SPLIT_MISSILE:
+		{
+			// Do not use PowerUp if a missile is not in use
+			if (FiredMissile == nullptr)
+				return;
+
+			PowerUp = SpawnBPActorInWorld<APowerUpSplitMissile>(this, GetActorLocation(), GetActorRotation(), PlayerPowerUpBlueprintPaths[(int8)SelectedPowerUp], true);
+
+			APowerUpSplitMissile* SplitMissiles = Cast<APowerUpSplitMissile>(PowerUp);
+			if (SplitMissiles == nullptr)
+				return;
+
+			SplitMissiles->Server_FireMissiles(this, FiredMissile->GetActorTransform(), FirePowerLevel, MinMissileSpeed, MaxMissileSpeed, PawnColor, FiredMissileBlueprintPath, FiredMissileTrailBlueprintPath);
+			FireMissileFx(SplitMissiles->ParentMissileTransform);
+		}
+		break;
+	}	
 }
 
 void AAccelByteWarsPlayerPawn::Server_FireMissile_Implementation()
@@ -233,7 +334,7 @@ void AAccelByteWarsPlayerPawn::Server_FireMissile_Implementation()
 	if (FiredMissile == nullptr)
 		return;
 
-	FiredMissile->Server_SetColor(Color);
+	FiredMissile->Server_SetColor(PawnColor);
 	FiredMissile->InitialSpeed = clamped_initial_speed;
 	FiredMissile->SetVelocity();
 
@@ -260,7 +361,7 @@ void AAccelByteWarsPlayerPawn::Server_FireMissile_Implementation()
 	if (MissileTrail == nullptr)
 		return;
 
-	MissileTrail->Server_SetColor(Color);
+	MissileTrail->Server_SetColor(PawnColor);
 
 	// Attach new trail to missile actor
 	FAttachmentTransformRules attachment_rules(EAttachmentRule::SnapToTarget, EAttachmentRule::SnapToTarget, EAttachmentRule::KeepRelative, true);
@@ -271,7 +372,7 @@ FTransform AAccelByteWarsPlayerPawn::CalculateWhereToSpawnMissile()
 {
 	FTransform actor_transform = GetActorTransform();
 	FVector right_vector = actor_transform.GetRotation().GetRightVector();
-	FVector a = (right_vector * 90.0f);
+	FVector a = (right_vector * 100.0f);
 	FVector b = a + actor_transform.GetLocation();
 
 	FTransform out_transform;
@@ -358,7 +459,7 @@ void AAccelByteWarsPlayerPawn::Server_AdjustFirePower_Implementation(FVector Pla
 			FirePowerAdjustRate = -1.0f;
 		}
 
-		Client_AdjustFirePower(PlayerPosition, Color);
+		Client_AdjustFirePower(PlayerPosition, PawnColor);
 	}
 }
 
@@ -383,10 +484,10 @@ void AAccelByteWarsPlayerPawn::Client_AdjustFirePower_Implementation(FVector Pla
 
 void AAccelByteWarsPlayerPawn::Server_SetColor_Implementation(FLinearColor InColor)
 {
-	Color = InColor;
+	PawnColor = InColor;
 
 	if (PlayerShip != nullptr)
-		PlayerShip->SetShipColor(Color);
+		PlayerShip->SetShipColor(PawnColor);
 
 	OnRepNotify_Color();
 }
@@ -402,7 +503,7 @@ void AAccelByteWarsPlayerPawn::Client_OnDestroyed_Implementation()
 void AAccelByteWarsPlayerPawn::OnRepNotify_Color()
 {
 	if (PlayerShip != nullptr)
-		PlayerShip->SetShipColor(Color);
+		PlayerShip->SetShipColor(PawnColor);
 }
 
 void AAccelByteWarsPlayerPawn::OnRepNotify_FirePowerLevel()

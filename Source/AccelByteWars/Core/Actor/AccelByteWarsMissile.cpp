@@ -4,6 +4,8 @@
 
 #include "Core/Actor/AccelByteWarsMissile.h"
 
+#include "AccelByteWars/Core/Player/AccelByteWarsPlayerPawn.h"
+
 // Sets default values
 AAccelByteWarsMissile::AAccelByteWarsMissile()
 {
@@ -309,6 +311,14 @@ void AAccelByteWarsMissile::DestroyOnTimeout()
 	}
 }
 
+void AAccelByteWarsMissile::DestroyByPowerUp()
+{
+	if (HasAuthority() == false)
+		return;
+
+	KillActorThisFrame = true;
+}
+
 void AAccelByteWarsMissile::SkimmingAndScoreUpdate(float DeltaTime)
 {
 	if (GetGameTimeSinceCreation() <= 1.0f)
@@ -418,6 +428,13 @@ void AAccelByteWarsMissile::DecrementPlayerMissileCount()
 	if (HasAuthority() == false)
 		return;
 
+	if (GetOwner() == nullptr)
+		return;
+
+	AAccelByteWarsPlayerPawn* ABPawn = Cast<AAccelByteWarsPlayerPawn>(GetOwner());
+	if (ABPawn == nullptr)
+		return;
+
 	AAccelByteWarsPlayerController* ABPlayerController = Cast<AAccelByteWarsPlayerController>(GetOwner()->GetInstigatorController());
 	if (ABPlayerController == nullptr)
 		return;
@@ -430,4 +447,6 @@ void AAccelByteWarsMissile::DecrementPlayerMissileCount()
 		return;
 
 	ABPlayerState->MissilesFired--;
+	ABPawn->FiredMissile = nullptr;
+	ABPawn->MissileTrail = nullptr;
 }

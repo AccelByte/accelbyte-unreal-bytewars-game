@@ -257,7 +257,7 @@ void UPlayWithPartySubsystem::OnPartyMatchmakingCanceled()
     }
 }
 
-void UPlayWithPartySubsystem::OnPartyMatchmakingExpired()
+void UPlayWithPartySubsystem::OnPartyMatchmakingExpired(TSharedPtr<FOnlineSessionSearchAccelByte> SearchHandler)
 {
     if (!GetSessionInterface() || !GetOnlineSession())
     {

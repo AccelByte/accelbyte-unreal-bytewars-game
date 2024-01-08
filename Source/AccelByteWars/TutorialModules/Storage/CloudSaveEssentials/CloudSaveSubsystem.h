@@ -45,7 +45,9 @@ private:
 	void OnLoadGameSoundOptions(const APlayerController* PlayerController, TDelegate<void()> OnComplete);
 	void OnSaveGameSoundOptions(const APlayerController* PlayerController, TDelegate<void()> OnComplete);
 
+	void OnLoadPlayerShipEquipment(const APlayerController* PlayerController);
 	void OnLoadPlayerShipEquipment(const AAccelByteWarsPlayerPawn* PlayerPawn, const APlayerController* PlayerController, const AAccelByteWarsPlayerState* ABPlayerState, FLinearColor InColor);
+	
 	void OnSavePlayerShipEquipment(const APlayerController* PlayerController);
 
 	FDelegateHandle OnSetPlayerRecordCompletedDelegateHandle;
