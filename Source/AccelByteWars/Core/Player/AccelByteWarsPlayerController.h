@@ -22,6 +22,16 @@ enum ShipDesign
     WHITE_STAR = 4			UMETA(DisplayName = "WHITE_STAR")
 };
 
+UENUM(BlueprintType)
+enum PowerUpSelection
+{
+    NONE = 0				UMETA(DisplayName = "NONE"),
+    BYTE_BOMB = 1			UMETA(DisplayName = "BYTE_BOMB"),
+    BYTE_SHIELD = 2			UMETA(DisplayName = "BYTE_SHIELD"),
+    WORM_HOLE = 3			UMETA(DisplayName = "WORM_HOLE"),
+    SPLIT_MISSILE = 4		UMETA(DisplayName = "SPLIT_MISSILE")
+};
+
 UCLASS()
 class ACCELBYTEWARS_API AAccelByteWarsPlayerController : public APlayerController
 {

@@ -9,7 +9,7 @@
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "Core/UI/MainMenu/HelpOptions/Options/OptionsWidget.h"
-#include "Monetization/EntitlementsEssentials/UI/InventoryWidget.h"
+#include "TutorialModules/Monetization/EntitlementsEssentials/UI/InventoryWidget.h"
 #include "Core/Player/AccelByteWarsPlayerController.h"
 
 #define LOCTEXT_NAMESPACE "AccelByteWars"
@@ -51,15 +51,19 @@ void UCloudSaveSubsystem::BindDelegates()
     UAuthEssentialsModels::OnLoginSuccessDelegate.AddUObject(this, &ThisClass::OnLoadGameSoundOptions, TDelegate<void()>());
     UOptionsWidget::OnOptionsWidgetActivated.AddUObject(this, &ThisClass::OnLoadGameSoundOptions);
     UOptionsWidget::OnOptionsWidgetDeactivated.AddUObject(this, &ThisClass::OnSaveGameSoundOptions);
-    UInventoryWidget::OnInventorysMenuDeactivated.AddUObject(this, &ThisClass::OnSavePlayerShipEquipment);
+
+    UAuthEssentialsModels::OnLoginSuccessDelegate.AddUObject(this, &ThisClass::OnLoadPlayerShipEquipment);
     AAccelByteWarsPlayerPawn::OnMatchStarted.AddUObject(this, &ThisClass::OnLoadPlayerShipEquipment);
+    UInventoryWidget::OnInventorysMenuDeactivated.AddUObject(this, &ThisClass::OnSavePlayerShipEquipment);
 }
 
 void UCloudSaveSubsystem::UnbindDelegates()
 {
     UAuthEssentialsModels::OnLoginSuccessDelegate.RemoveAll(this);
+
     UOptionsWidget::OnOptionsWidgetActivated.RemoveAll(this);
     UOptionsWidget::OnOptionsWidgetDeactivated.RemoveAll(this);
+
     UInventoryWidget::OnInventorysMenuDeactivated.RemoveAll(this);
     AAccelByteWarsPlayerPawn::OnMatchStarted.RemoveAll(this);
 }
@@ -91,13 +95,54 @@ void UCloudSaveSubsystem::OnLoadGameSoundOptions(const APlayerController* Player
             PromptSubsystem->HideLoading();
 
             // Update the local game options based on the Cloud Save record.
-            if (bWasSuccessful)
+            double MusicVolume = 0.0f, SFXVolume = 0.0f;
+            if (Result.TryGetNumberField(SOUND_OPTIONS_MUSIC_KEY, MusicVolume))
             {
-                GameInstance->SetMusicVolume(Result.GetNumberField(SOUND_OPTIONS_MUSIC_KEY));
-                GameInstance->SetSFXVolume(Result.GetNumberField(SOUND_OPTIONS_SFX_KEY));
+                GameInstance->SetMusicVolume(MusicVolume);
             }
+            if (Result.TryGetNumberField(SOUND_OPTIONS_SFX_KEY, SFXVolume))
+            {
+                GameInstance->SetSFXVolume(SFXVolume);
+            }
+            
+            GameInstance->SaveGameSettings();
 
             OnComplete.ExecuteIfBound();
+        })
+    );
+}
+
+void UCloudSaveSubsystem::OnLoadPlayerShipEquipment(const APlayerController* PlayerController)
+{
+    if (!PlayerController)
+    {
+        UE_LOG_CLOUDSAVE_ESSENTIALS(Warning, TEXT("Cannot get game options from Cloud Save. PlayerController is null."));
+        return;
+    }
+
+    UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+    ensure(GameInstance);
+
+    // Get game options from Cloud Save.
+    GetPlayerRecord(
+        PlayerController,
+        FString::Printf(TEXT("%s-%s"), *GAME_EQUIPMENT_KEY, *EQUIPMENT_OPTIONS_KEY),
+        FOnGetCloudSaveRecordComplete::CreateWeakLambda(this, [this, GameInstance](bool bWasSuccessful, FJsonObject& Result)
+        {
+            UE_LOG_CLOUDSAVE_ESSENTIALS(Warning, TEXT("Get ship and power-up options from Cloud Save was successful: %s"), bWasSuccessful ? TEXT("True") : TEXT("False"));
+
+            // Update the local game options based on the Cloud Save record.
+            int32 SelectedPlayerShip = 0, SelectedPlayerPowerUp = 0;
+            if (Result.TryGetNumberField(PLAYER_EQUIPMENT_OPTIONS_SHIP_KEY, SelectedPlayerShip)) 
+            {
+                GameInstance->SetShipSelection(SelectedPlayerShip);
+            }
+            if (Result.TryGetNumberField(PLAYER_EQUIPMENT_OPTIONS_POWERUP_KEY, SelectedPlayerPowerUp))
+            {
+                GameInstance->SetShipPowerUp(SelectedPlayerPowerUp);
+            }
+
+            GameInstance->SaveGameSettings();
         })
     );
 }
@@ -129,28 +174,32 @@ void UCloudSaveSubsystem::OnLoadPlayerShipEquipment(const AAccelByteWarsPlayerPa
     GetPlayerRecord(
         PlayerController,
         FString::Printf(TEXT("%s-%s"), *GAME_EQUIPMENT_KEY, *EQUIPMENT_OPTIONS_KEY),
-        FOnGetCloudSaveRecordComplete::CreateWeakLambda(this, [this, PlayerPawn, PlayerController, ABPlayerState, InColor, GameInstance](bool bWasSuccessful, FJsonObject& Result)
+        FOnGetCloudSaveRecordComplete::CreateWeakLambda(this, [this, PlayerPawn, InColor, GameInstance](bool bWasSuccessful, FJsonObject& Result)
         {
-            if (PlayerPawn->IsValidLowLevel() == false)
-                return;
-
-            UE_LOG_CLOUDSAVE_ESSENTIALS(Warning, TEXT("Get game options from Cloud Save was successful: %s"), bWasSuccessful ? TEXT("True") : TEXT("False"));
-
-            int32 SelectedPlayerShip = 0;
-            int32 SelectedPlayerPowerUp = 0;
-
-            // Update the local game options based on the Cloud Save record.
-            if (bWasSuccessful)
+            if (!PlayerPawn->IsValidLowLevel()) 
             {
-                SelectedPlayerShip = Result.GetNumberField(PLAYER_EQUIPMENT_OPTIONS_SHIP_KEY);
-                SelectedPlayerPowerUp = Result.GetNumberField(PLAYER_EQUIPMENT_OPTIONS_POWERUP_KEY);
+                return;
             }
 
-            GameInstance->SetShipSelection(SelectedPlayerShip);
-            GameInstance->SetShipPowerUp(SelectedPlayerPowerUp);
+            UE_LOG_CLOUDSAVE_ESSENTIALS(Warning, TEXT("Get ship and power-up options from Cloud Save was successful: %s"), bWasSuccessful ? TEXT("True") : TEXT("False"));
 
-            const_cast<AAccelByteWarsPlayerPawn*>(PlayerPawn)->Server_SpawnPlayerShip((ShipDesign)SelectedPlayerShip);
-            const_cast<AAccelByteWarsPlayerPawn*>(PlayerPawn)->Server_SetColor(InColor);
+            // Update the local game options based on the Cloud Save record.
+            int32 SelectedPlayerShip = 0, SelectedPlayerPowerUp = 0;
+            if (Result.TryGetNumberField(PLAYER_EQUIPMENT_OPTIONS_SHIP_KEY, SelectedPlayerShip))
+            {
+                GameInstance->SetShipSelection(SelectedPlayerShip);
+            }
+            if (Result.TryGetNumberField(PLAYER_EQUIPMENT_OPTIONS_POWERUP_KEY, SelectedPlayerPowerUp))
+            {
+                GameInstance->SetShipPowerUp(SelectedPlayerPowerUp);
+            }
+            GameInstance->SaveGameSettings();
+
+            if (PlayerPawn->GameplayObject != nullptr)
+            {
+                const_cast<AAccelByteWarsPlayerPawn*>(PlayerPawn)->Server_SpawnPlayerShip((ShipDesign)SelectedPlayerShip);
+                const_cast<AAccelByteWarsPlayerPawn*>(PlayerPawn)->Server_SetColor(InColor);
+            }
         })
     );
 }
