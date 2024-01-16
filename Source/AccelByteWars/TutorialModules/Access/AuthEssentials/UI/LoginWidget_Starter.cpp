@@ -39,9 +39,6 @@ void ULoginWidget_Starter::NativeOnActivated()
 	Btn_LoginWithDeviceId->OnClicked().AddUObject(this, &ThisClass::OnLoginWithDeviceIdButtonClicked);
 	Btn_RetryLogin->OnClicked().AddUObject(this, &ThisClass::OnRetryLoginButtonClicked);
 	Btn_QuitGame->OnClicked().AddUObject(this, &ThisClass::OnQuitGameButtonClicked);
-
-	SetLoginState(ELoginState::Default);
-	OnRetryLoginDelegate.Clear();
 }
 
 void ULoginWidget_Starter::NativeOnDeactivated()

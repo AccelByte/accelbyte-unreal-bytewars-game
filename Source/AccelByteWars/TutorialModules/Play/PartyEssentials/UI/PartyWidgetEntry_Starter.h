@@ -66,11 +66,5 @@ protected:
 	TSubclassOf<UAccelByteWarsActivatableWidget> FriendsWidgetClass;
 
 	UPROPERTY(EditDefaultsOnly, meta = (EditCondition = "FriendsEssentialsModule!=nullptr", EditConditionHides))
-	TSubclassOf<UAccelByteWarsActivatableWidget> FriendsWidgetStarterClass;
-
-	UPROPERTY(EditDefaultsOnly, meta = (EditCondition = "FriendsEssentialsModule!=nullptr", EditConditionHides))
 	TSubclassOf<UAccelByteWarsActivatableWidget> FriendDetailsWidgetClass;
-
-	UPROPERTY(EditDefaultsOnly, meta = (EditCondition = "FriendsEssentialsModule!=nullptr", EditConditionHides))
-	TSubclassOf<UAccelByteWarsActivatableWidget> FriendDetailsWidgetStarterClass;
 };

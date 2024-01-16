@@ -13,7 +13,6 @@
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "Core/UI/Components/AccelByteWarsButtonBase.h"
 #include "Social/FriendsEssentials/UI/FriendDetailsWidget.h"
-#include "Social/FriendsEssentials/UI/FriendDetailsWidget_Starter.h"
 
 void UManagingChatSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -204,15 +203,6 @@ FUniqueNetIdPtr UManagingChatSubsystem::GetCurrentDisplayedFriendId()
             FriendDetailsWidget->GetCachedFriendData()->UserId.IsValid())
         {
             FriendUserId = FriendDetailsWidget->GetCachedFriendData()->UserId;
-        }
-    }
-    else if (const UFriendDetailsWidget_Starter* FriendDetailsWidget_Starter = Cast<UFriendDetailsWidget_Starter>(ParentWidget))
-    {
-        if (FriendDetailsWidget_Starter->GetCachedFriendData() &&
-            FriendDetailsWidget_Starter->GetCachedFriendData()->UserId &&
-            FriendDetailsWidget_Starter->GetCachedFriendData()->UserId.IsValid())
-        {
-            FriendUserId = FriendDetailsWidget_Starter->GetCachedFriendData()->UserId;
         }
     }
 
