@@ -9,7 +9,6 @@
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "Social/FriendsEssentials/UI/FriendDetailsWidget.h"
-#include "Social/FriendsEssentials/UI/FriendDetailsWidget_Starter.h"
 #include "Social/PrivateChat/UI/PrivateChatWidget_Starter.h"
 
 #include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
@@ -64,15 +63,6 @@ void UPrivateChatSubsystem_Starter::Initialize(FSubsystemCollectionBase& Collect
                     FriendDetailsWidget->GetCachedFriendData()->UserId.IsValid())
                 {
                     FriendUserId = FriendDetailsWidget->GetCachedFriendData()->UserId;
-                }
-            }
-            else if (const UFriendDetailsWidget_Starter* FriendDetailsWidget_Starter = Cast<UFriendDetailsWidget_Starter>(ParentWidget))
-            {
-                if (FriendDetailsWidget_Starter->GetCachedFriendData() &&
-                    FriendDetailsWidget_Starter->GetCachedFriendData()->UserId &&
-                    FriendDetailsWidget_Starter->GetCachedFriendData()->UserId.IsValid())
-                {
-                    FriendUserId = FriendDetailsWidget_Starter->GetCachedFriendData()->UserId;
                 }
             }
 

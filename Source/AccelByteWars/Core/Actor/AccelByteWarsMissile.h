@@ -271,6 +271,12 @@ public:
 		void DestroyOnTimeout();
 
 	/**
+	 * @brief Initiates end of life sequence for missile when a Byte Bomb is used
+	 */
+	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
+		void DestroyByPowerUp();
+
+	/**
 	 * @brief Updates score depending on time and skimming
 	 */
 	UFUNCTION(BlueprintCallable, Category = AccelByteWars)

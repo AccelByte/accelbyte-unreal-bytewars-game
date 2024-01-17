@@ -574,6 +574,13 @@ void UAccelByteWarsAssetManager::StarterOnlineSessionModulesChecker()
 
 		Info.SubText = FText::FromString(SubText);
 
+		// safeguard to expire the previous one before adding a new notification
+		if (OnlineSessionActiveNotificationItem.IsValid())
+		{
+			OnlineSessionActiveNotificationItem->SetFadeOutDuration(0.0f);
+			OnlineSessionActiveNotificationItem->ExpireAndFadeout();
+		}
+
 		Info.FadeInDuration = 0.25f;
 		Info.FadeOutDuration = 0.5f;
 		Info.bFireAndForget = false;

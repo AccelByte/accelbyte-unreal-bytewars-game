@@ -7,7 +7,6 @@
 #include "OnlineSubsystemUtils.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "Social/FriendsEssentials/UI/FriendDetailsWidget.h"
-#include "Social/FriendsEssentials/UI/FriendDetailsWidget_Starter.h"
 
 void UManagingFriendsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -58,11 +57,6 @@ void UManagingFriendsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
             ensure(FriendDetailsWidget->GetCachedFriendData());
             FriendUserId = FriendDetailsWidget->GetCachedFriendData()->UserId;
         }
-        else if (const UFriendDetailsWidget_Starter* FriendDetailsWidget_Starter = Cast<UFriendDetailsWidget_Starter>(ParentWidget))
-        {
-            ensure(FriendDetailsWidget_Starter->GetCachedFriendData());
-            FriendUserId = FriendDetailsWidget_Starter->GetCachedFriendData()->UserId;
-        }
 
         ensure(FriendUserId.IsValid());
 
@@ -96,11 +90,6 @@ void UManagingFriendsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
         {
             ensure(FriendDetailsWidget->GetCachedFriendData());
             BlockedPlayerUserId = FriendDetailsWidget->GetCachedFriendData()->UserId;
-        }
-        else if (const UFriendDetailsWidget_Starter* FriendDetailsWidget_Starter = Cast<UFriendDetailsWidget_Starter>(ParentWidget))
-        {
-            ensure(FriendDetailsWidget_Starter->GetCachedFriendData());
-            BlockedPlayerUserId = FriendDetailsWidget_Starter->GetCachedFriendData()->UserId;
         }
 
         ensure(BlockedPlayerUserId.IsValid());

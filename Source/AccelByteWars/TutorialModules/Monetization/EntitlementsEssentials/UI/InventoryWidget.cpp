@@ -31,7 +31,11 @@ void UInventoryWidget::NativeOnActivated()
 	Ws_Root->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Loading);
 	if (!EntitlementsSubsystem->GetIsQueryRunning())
 	{
-		EntitlementsSubsystem->QueryUserEntitlement(GetOwningPlayer());
+		if (const APlayerController* PC = GetOwningPlayer();
+			const ULocalPlayer* LocalPlayer = PC->GetLocalPlayer()) 
+		{
+			EntitlementsSubsystem->QueryUserEntitlement(LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId());
+		}
 	}
 
 	UItemDataObject* EmptyData = NewObject<UItemDataObject>();
@@ -66,7 +70,7 @@ void UInventoryWidget::ShowEntitlements(const FOnlineError& Error, const TArray<
 		TArray<UItemDataObject*> FilteredEntitlements = Entitlements;
 		FilteredEntitlements.RemoveAll([this](const UItemDataObject* Item)
 		{
-			return bIsConsumable != Item->bConsumable;
+			return bIsConsumable != Item->bConsumable || (Item->bConsumable && Item->Count <= 0);
 		});
 
 		Tv_Content->ClearListItems();
@@ -117,32 +121,29 @@ void UInventoryWidget::OnClickListItem(UObject* Object)
 
 void UInventoryWidget::OnClickEquip()
 {
-	if (SelectedItem == nullptr)
+	if (SelectedItem == nullptr) 
+	{
 		return;
+	}
 
-	UAccelByteWarsGameInstance* ABGameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
-	if (ABGameInstance == nullptr)
+	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+	if (GameInstance == nullptr)
+	{
 		return;
+	}
 
-	// Store -> Ship Item Lookup
-	if (SelectedItem->Id == "4f6a077395214cabade85e53f47b7a7c") // Default Triangle Ship
+	// Power Ups Selection
+	const PowerUpSelection PowerUp = ConvertItemIdToPowerUp(SelectedItem->Id);
+	if (PowerUp != PowerUpSelection::NONE)
 	{
-		ABGameInstance->SetShipSelection((int32)ShipDesign::TRIANGLE);
+		GameInstance->SetShipPowerUp((int32)PowerUp);
+		GameInstance->SaveGameSettings();
+		Tv_Content->RegenerateAllEntries();
+		return;
 	}
-	else if (SelectedItem->Id == "49bb99d9b20e48759bf6784bc640a936") // D Ship
-	{
-		ABGameInstance->SetShipSelection((int32)ShipDesign::D);
-	}
-	else if (SelectedItem->Id == "112c59e29b1f4d34b782142b4e53a540") // Double Triangle
-	{
-		ABGameInstance->SetShipSelection((int32)ShipDesign::DOUBLE_TRIANGLE);
-	}
-	else if (SelectedItem->Id == "ad8bd8a02a604796b3c9c5665e36bc1b") // Glow Xtra
-	{
-		ABGameInstance->SetShipSelection((int32)ShipDesign::GLOW_XTRA);
-	}
-	else if (SelectedItem->Id == "a758d7fb7147465cbd4fb83b2b53d29d") // White Star
-	{
-		ABGameInstance->SetShipSelection((int32)ShipDesign::WHITE_STAR);;
-	}
+
+	// Ship Selection
+	GameInstance->SetShipSelection((int32)ConvertItemIdToShipDesign(SelectedItem->Id));
+	GameInstance->SaveGameSettings();
+	Tv_Content->RegenerateAllEntries();
 }

@@ -8,7 +8,6 @@
 #include "CommonButtonBase.h"
 #include "Social/FriendsEssentials/UI/FriendDetailsWidget.h"
 #include "Play/PlayingWithFriends/PlayingWithFriendsSubsystem_Starter.h"
-#include "Social/FriendsEssentials/UI/FriendDetailsWidget_Starter.h"
 
 void UInviteToGameSessionWidget_Starter::NativeOnActivated()
 {
@@ -39,11 +38,6 @@ void UInviteToGameSessionWidget_Starter::NativeOnDeactivated()
 UFriendData* UInviteToGameSessionWidget_Starter::GetFriendDataFromParentWidget()
 {
 	if (const UFriendDetailsWidget* Parent = GetFirstOccurenceOuter<UFriendDetailsWidget>())
-	{
-		return Parent->GetCachedFriendData();
-	}
-
-	if (const UFriendDetailsWidget_Starter* Parent = GetFirstOccurenceOuter<UFriendDetailsWidget_Starter>())
 	{
 		return Parent->GetCachedFriendData();
 	}

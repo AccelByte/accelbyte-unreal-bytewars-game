@@ -60,6 +60,11 @@ void UStoreItemListEntry::Setup(UItemDataObject* Object)
 	{
 		if (UCommonActivatableWidget* Widget = Cast<UCommonActivatableWidget>(W_EntitlementOuter->GetChildAt(0)))
 		{
+			// Activate or reactivate widget.
+			if (Widget->IsActivated()) 
+			{
+				Widget->DeactivateWidget();
+			}
 			Widget->ActivateWidget();
 		}
 	}

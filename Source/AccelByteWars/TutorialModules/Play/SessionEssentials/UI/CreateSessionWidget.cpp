@@ -69,6 +69,7 @@ void UCreateSessionWidget::CreateSession()
 		return;
 	}
 
+	// An event to validate to start the session, will be used on playing with party module
 	if (SessionOnlineSession->ValidateToStartSession.IsBound() &&
 		!SessionOnlineSession->ValidateToStartSession.Execute())
 	{

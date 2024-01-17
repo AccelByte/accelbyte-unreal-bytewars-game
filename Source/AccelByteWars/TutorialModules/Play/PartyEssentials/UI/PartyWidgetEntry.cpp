@@ -15,7 +15,6 @@
 #include "Play/OnlineSessionUtils/AccelByteWarsOnlineSessionBase.h"
 #include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
 #include "Social/FriendsEssentials/UI/FriendDetailsWidget.h"
-#include "Social/FriendsEssentials/UI/FriendDetailsWidget_Starter.h"
 
 void UPartyWidgetEntry::NativeConstruct()
 {
@@ -98,14 +97,7 @@ void UPartyWidgetEntry::AddPartyMember()
 	}
 
 	// Display friends widget.
-	if (!FriendsEssentialsModule->IsStarterModeActive())
-	{
-		BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, FriendsWidgetClass);
-	}
-	else 
-	{
-		BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, FriendsWidgetStarterClass);
-	}
+	BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, FriendsWidgetClass);
 }
 
 void UPartyWidgetEntry::OpenPlayerActionMenu()
@@ -161,16 +153,7 @@ void UPartyWidgetEntry::OpenPlayerActionMenu()
 	}
 
 	// Display player action menu widget.
-	if (!FriendsEssentialsModule->IsStarterModeActive())
-	{
-		UFriendDetailsWidget* DetailsWidget = 
-			Cast<UFriendDetailsWidget>(BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, FriendDetailsWidgetClass));
-		DetailsWidget->InitData(CachedFriendData);
-	}
-	else
-	{
-		UFriendDetailsWidget_Starter* DetailsWidget =
-			Cast<UFriendDetailsWidget_Starter>(BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, FriendDetailsWidgetStarterClass));
-		DetailsWidget->InitData(CachedFriendData);
-	}
+	UFriendDetailsWidget* DetailsWidget = 
+		Cast<UFriendDetailsWidget>(BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, FriendDetailsWidgetClass));
+	DetailsWidget->InitData(CachedFriendData);
 }

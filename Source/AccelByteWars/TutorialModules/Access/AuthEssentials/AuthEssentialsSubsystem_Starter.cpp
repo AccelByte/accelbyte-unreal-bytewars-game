@@ -4,6 +4,7 @@
 
 #include "AuthEssentialsSubsystem_Starter.h"
 #include "OnlineSubsystemUtils.h"
+#include "Core/System/AccelByteWarsGameInstance.h"
 
 void UAuthEssentialsSubsystem_Starter::Initialize(FSubsystemCollectionBase& Collection)
 {

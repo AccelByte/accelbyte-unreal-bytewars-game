@@ -3,7 +3,7 @@
 // and restrictions contact your company contract manager.
 
 #include "FriendsWidget_Starter.h"
-#include "FriendDetailsWidget_Starter.h"
+#include "FriendDetailsWidget.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
 #include "Components/TileView.h"
@@ -58,7 +58,7 @@ void UFriendsWidget_Starter::OnFriendEntryClicked(UObject* Item)
 	UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->GetBaseUIWidget());
 	ensure(BaseUIWidget);
 
-	UFriendDetailsWidget_Starter* DetailsWidget = Cast<UFriendDetailsWidget_Starter>(BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, FriendDetailsWidgetClass));
+	UFriendDetailsWidget* DetailsWidget = Cast<UFriendDetailsWidget>(BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, FriendDetailsWidgetClass));
 	ensure(DetailsWidget);
 
 	DetailsWidget->InitData(FriendData);

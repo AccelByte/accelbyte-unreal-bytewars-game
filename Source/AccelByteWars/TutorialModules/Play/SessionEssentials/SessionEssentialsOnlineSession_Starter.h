@@ -61,7 +61,7 @@ protected:
 	bool bLeavingSession = false;
 
 #pragma region "Funtions Declarations"
-	// TODO: declare your public functions here
+	// TODO: declare your protected functions here
 #pragma endregion 
 
 private:

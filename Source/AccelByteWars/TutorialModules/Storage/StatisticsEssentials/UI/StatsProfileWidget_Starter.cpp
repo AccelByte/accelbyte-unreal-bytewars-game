@@ -41,3 +41,7 @@ void UStatsProfileWidget_Starter::NativeTick(const FGeometry& MyGeometry, float 
 
 	MoveCameraToTargetLocation(InDeltaTime, FVector(60.0f, 600.0f, 160.0f));
 }
+
+#pragma region Module Function Definitions
+// TODO: Add your function definitions here
+#pragma endregion
