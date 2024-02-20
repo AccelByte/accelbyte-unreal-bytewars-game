@@ -79,3 +79,8 @@ void UAccelByteWarsButtonBase::OnInputMethodChanged(ECommonInputType CurrentInpu
 
 	UpdateButtonStyle();
 }
+
+void UAccelByteWarsButtonBase::ClearButtonBindings()
+{
+	OnClicked().Clear();
+}

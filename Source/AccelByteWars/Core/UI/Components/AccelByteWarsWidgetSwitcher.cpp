@@ -79,7 +79,10 @@ void UAccelByteWarsWidgetSwitcher::SetWidgetState(const EAccelByteWarsWidgetSwit
 		FocusTarget->SetUserFocus(GetOwningPlayer());
 	}
 
-	// Handle FTUE on switcher updated.
+	// Handle widget validators on switcher state is updated.
+	HandleWidgetValidators();
+
+	// Handle FTUE on switcher state is updated.
 	HandleFTUE();
 }
 
@@ -102,6 +105,8 @@ void UAccelByteWarsWidgetSwitcher::NativeConstruct()
 	{
 		OnRetryClicked.Broadcast();
 	});
+
+	SetWidgetState(DefaultState, true);
 }
 
 void UAccelByteWarsWidgetSwitcher::NativeDestruct()
@@ -161,6 +166,17 @@ UWidget* UAccelByteWarsWidgetSwitcher::GetFocusTargetBasedOnCurrentState() const
 	}
 
 	return FocusTarget;
+}
+
+void UAccelByteWarsWidgetSwitcher::HandleWidgetValidators()
+{
+	UAccelByteWarsActivatableWidget* ActiveWidget = Cast<UAccelByteWarsActivatableWidget>(UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this));
+	if (!ActiveWidget) 
+	{
+		return;
+	}
+
+	ActiveWidget->ExecuteWidgetValidators();
 }
 
 void UAccelByteWarsWidgetSwitcher::HandleFTUE()

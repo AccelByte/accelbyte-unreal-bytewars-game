@@ -26,6 +26,10 @@ void UAccelByteWarsWidgetEntry::NativeConstruct()
 {
 	Super::NativeConstruct();
 
+	bAutoActivate = false;
+	bOnActivatedInitializeFTUE = false;
+	InitializeGeneratedWidgets();
+
 	if (const ULocalPlayer* LocalPlayer = GetOwningPlayer()->GetLocalPlayer())
 	{
 		InputSubsystem = UCommonInputSubsystem::Get(LocalPlayer);

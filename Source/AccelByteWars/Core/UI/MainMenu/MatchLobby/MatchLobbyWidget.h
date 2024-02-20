@@ -24,6 +24,7 @@ enum class EMatchLobbyState
 	GameStarted
 };
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnEnterLobby, APlayerController* /*PlayerController*/);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnQuitLobby, APlayerController* /*PlayerController*/);
 
 UCLASS()
@@ -41,6 +42,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void LeaveMatch();
 
+	inline static FOnEnterLobby OnEnterLobbyDelegate;
 	inline static FOnQuitLobby OnQuitLobbyDelegate;
 
 protected:

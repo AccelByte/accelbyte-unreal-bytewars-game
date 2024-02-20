@@ -6,16 +6,21 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/IUserObjectListEntry.h"
-#include "CommonUserWidget.h"
-
+#include "Core/UI/AccelByteWarsActivatableWidget.h"
 #include "AccelByteWarsWidgetEntry.generated.h"
 
 class UCommonButtonBase;
 
 UCLASS(Abstract)
-class ACCELBYTEWARS_API UAccelByteWarsWidgetEntry : public UCommonUserWidget, public IUserObjectListEntry
+class ACCELBYTEWARS_API UAccelByteWarsWidgetEntry : public UAccelByteWarsActivatableWidget, public IUserObjectListEntry
 {
 	GENERATED_BODY()
+
+public:
+	FSimpleMulticastDelegate* GetOnListItemObjectSet()
+	{
+		return &OnListItemObjectSet;
+	}
 
 protected:
 	virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;
@@ -26,6 +31,8 @@ protected:
 
 	UFUNCTION(BlueprintImplementableEvent)
 	TArray<UCommonButtonBase*> InputMethodDependantWidgets();
+
+	FSimpleMulticastDelegate OnListItemObjectSet;
 
 private:
 	UFUNCTION()

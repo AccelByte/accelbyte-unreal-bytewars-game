@@ -9,6 +9,7 @@
 #include "Core/AssetManager/AccelByteWarsAssetModels.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleUtility.h"
 #include "Core/UI/Components/Prompt/FTUE/FTUEModels.h"
+#include "Core/UI/Components/WidgetValidator/WidgetValidatorModels.h"
 #include "TutorialModuleDataAsset.generated.h"
 
 ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogTutorialModuleDataAsset, Log, All);
@@ -180,7 +181,37 @@ public:
 			ShowOnlyInnerProperties,
 			EditCondition = "bHasFTUE",
 			EditConditionHides))
-	TArray<FTUEDialogueGroup> FTUEDialogueGroups;
+	TArray<FFTUEDialogueGroup> FTUEDialogueGroups;
+#pragma endregion
+
+#pragma region "Widget Validators"
+private:
+	void ValidateWidgetValidators();
+
+	UPROPERTY(EditAnywhere,
+		Category = "Widget Validator",
+		meta = (Tooltip = "Whether this Tutorial Module enable widget validator feature or not."))
+	bool bEnableWidgetValidator = false;
+
+	TArray<FWidgetValidator> LastWidgetValidators;
+	static TSet<FString> WidgetValidatorUsedIds;
+	static TArray<FWidgetValidator*> CachedWidgetValidators;
+
+public:
+	UPROPERTY(EditAnywhere,
+		Category = "Widget Validator",
+		meta = (
+			Tooltip = "Widget validator to be executed when this Tutorial Module is active",
+			ShowOnlyInnerProperties,
+			EditConditionHides))
+	TArray<FWidgetValidator> WidgetValidators;
+
+	bool IsWidgetValidatorEnabled();
+
+	static TArray<FWidgetValidator*> GetCachedWidgetValidators()
+	{
+		return CachedWidgetValidators;
+	}
 #pragma endregion
 
 private:
@@ -226,7 +257,7 @@ private:
 #pragma endregion
 
 #pragma region "First Time User Experience (FTUE)"
-	TArray<FTUEDialogueGroup> LastFTUEDialogueGroups;
+	TArray<FFTUEDialogueGroup> LastFTUEDialogueGroups;
 	static TSet<FString> FTUEDialogueUsedIds;
 	static TArray<FFTUEDialogueModel*> CachedFTUEDialogues;
 #pragma endregion

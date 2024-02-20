@@ -21,6 +21,8 @@ void AAccelByteWarsPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimePrope
 	DOREPLIFETIME(AAccelByteWarsPlayerState, NumLivesLeft);
 	DOREPLIFETIME(AAccelByteWarsPlayerState, bPendingTeamAssignment);
 	DOREPLIFETIME(AAccelByteWarsPlayerState, NumKilledAttemptInSingleLifetime);
+	DOREPLIFETIME(AAccelByteWarsPlayerState, SelectedPowerUp);
+	DOREPLIFETIME(AAccelByteWarsPlayerState, PowerUpCount);
 }
 
 void AAccelByteWarsPlayerState::ClientInitialize(AController* C)

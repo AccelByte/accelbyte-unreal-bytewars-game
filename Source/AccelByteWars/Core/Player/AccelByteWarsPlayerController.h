@@ -5,22 +5,13 @@
 #pragma once
 
 #include "AccelByteWars/Core/UI/InGameMenu/HUD/HUDPlayer.h"
-
+#include "Core/PowerUps/PowerUpModels.h"
+#include "Core/Ships/PlayerShipModels.h"
 #include "Net/UnrealNetwork.h"
 #include "CoreMinimal.h"
 #include "OnlineSessionSettings.h"
 #include "GameFramework/PlayerController.h"
 #include "AccelByteWarsPlayerController.generated.h"
-
-UENUM(BlueprintType)
-enum ShipDesign
-{
-    TRIANGLE = 0			UMETA(DisplayName = "TRIANGLE"),
-    D = 1					UMETA(DisplayName = "D"),
-    DOUBLE_TRIANGLE = 2		UMETA(DisplayName = "DOUBLE_TRIANGLE"),
-    GLOW_XTRA = 3			UMETA(DisplayName = "GLOW_XTRA"),
-    WHITE_STAR = 4			UMETA(DisplayName = "WHITE_STAR")
-};
 
 UCLASS()
 class ACCELBYTEWARS_API AAccelByteWarsPlayerController : public APlayerController
@@ -48,25 +39,25 @@ public:
 	 * @brief Sets the currently selected ship design
 	 */
 	UFUNCTION(BlueprintCallable, Server, Reliable, Category = AccelByteWars)
-		void Server_SelectPlayerShipDesign(ShipDesign SelectedShipDesign);
+	void Server_SelectPlayerShipDesign(const EShipDesign SelectedShipDesign);
 
 	/**
 	* @brief Enum that indicates the ship design the player selected in the main menu
 	*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = AccelByteWars, ReplicatedUsing = OnRepNotify_ShipDesign)
-		TEnumAsByte<ShipDesign> eShipDesign = ShipDesign::TRIANGLE;
+	TEnumAsByte<EShipDesign> ShipDesign = EShipDesign::TRIANGLE;
 
 	/**
 	* @brief Pointer to custom HUD
 	*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = AccelByteWars)
-		AHUDPlayer* ABPlayerHUD = nullptr;
+	AHUDPlayer* ABPlayerHUD = nullptr;
 
 	/**
 	 * @brief Generic OnRep notify for player ship design
 	 */
 	UFUNCTION()
-		void OnRepNotify_ShipDesign();
+	void OnRepNotify_ShipDesign();
 
 private:
 	bool bDelayedClientTravelStarted = false;

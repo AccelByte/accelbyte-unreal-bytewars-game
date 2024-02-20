@@ -21,7 +21,7 @@ void AAccelByteWarsPlayerController::GetLifetimeReplicatedProps(TArray<FLifetime
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(AAccelByteWarsPlayerController, eShipDesign);
+	DOREPLIFETIME(AAccelByteWarsPlayerController, ShipDesign);
 }
 
 void AAccelByteWarsPlayerController::TriggerLobbyStart_Implementation()
@@ -49,9 +49,9 @@ void AAccelByteWarsPlayerController::LoadingPlayerAssignment() const
 	}
 }
 
-void AAccelByteWarsPlayerController::Server_SelectPlayerShipDesign_Implementation(ShipDesign SelectedShipDesign)
+void AAccelByteWarsPlayerController::Server_SelectPlayerShipDesign_Implementation(const EShipDesign SelectedShipDesign)
 {
-	eShipDesign = SelectedShipDesign;
+	ShipDesign = SelectedShipDesign;
 	OnRepNotify_ShipDesign();
 }
 

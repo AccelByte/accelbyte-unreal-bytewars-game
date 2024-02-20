@@ -7,6 +7,7 @@
 #include "CoreMinimal.h"
 #include "Core/Settings/GameModeDataAssets.h"
 #include "Core/Settings/GlobalSettingsDataAsset.h"
+#include "Core/PowerUps/PowerUpModels.h"
 #include "Engine/GameInstance.h"
 #include "AccelByteWarsGameInstance.generated.h"
 
@@ -48,6 +49,12 @@ public:
 
 	UPROPERTY(BlueprintReadWrite)
 	int32 NumLivesLeft = 1;
+
+	UPROPERTY(BlueprintReadWrite)
+	TEnumAsByte<EPowerUpSelection> SelectedPowerUp = EPowerUpSelection::NONE;
+
+	UPROPERTY(BlueprintReadWrite)
+	int32 PowerUpCount = 0;
 
 	// Number of attempt the player was almost got killed in a single-lifetime
 	UPROPERTY(BlueprintReadWrite)

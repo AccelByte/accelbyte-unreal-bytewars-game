@@ -99,6 +99,8 @@ void UGameOverWidget::SetupLeaderboard()
 	FString WinnerPlayerName = TEXT("");
 
 	// Generate leaderboard entries.
+	const ENetMode NetMode = GetOwningPlayer()->GetNetMode();
+	const FUniqueNetIdRepl LocalPlayerNetId = GetGameInstance()->GetPrimaryPlayerUniqueIdRepl();
 	int32 PlayerIndex = 0;
 	for (const FGameplayTeamData& Team : GameState->Teams) 
 	{
@@ -123,7 +125,18 @@ void UGameOverWidget::SetupLeaderboard()
 		for (const FGameplayPlayerData& Member : Team.TeamMembers) 
 		{
 			PlayerIndex++;
-			const FString PlayerName = Member.PlayerName.IsEmpty() ? FString::Printf(TEXT("Player %d"), PlayerIndex) : Member.PlayerName;
+
+			FString PlayerName = FString::Printf(TEXT("Player %d"), PlayerIndex);
+			const bool bIsLocalPlayer = LocalPlayerNetId.IsValid() && LocalPlayerNetId == Member.UniqueNetId && NetMode != ENetMode::NM_Standalone;
+			if (bIsLocalPlayer)
+			{
+				PlayerName = NSLOCTEXT("AccelByteWars", "Game Over Widget Local Player Identifier", "You").ToString();
+			}
+			else if (!Member.PlayerName.IsEmpty())
+			{
+				PlayerName = Member.PlayerName;
+			}
+
 			if (Team.TeamId == WinnerTeamId) 
 			{
 				WinnerPlayerName = PlayerName;

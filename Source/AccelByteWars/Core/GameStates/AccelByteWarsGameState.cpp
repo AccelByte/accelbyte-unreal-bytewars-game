@@ -54,6 +54,11 @@ void AAccelByteWarsGameState::PostInitializeComponents()
 			OnNotify_Teams();
 		}
 	}
+
+	if (OnInitialized.IsBound())
+	{
+		OnInitialized.Broadcast();
+	}
 }
 
 void AAccelByteWarsGameState::OnNotify_IsServerTravelling() const

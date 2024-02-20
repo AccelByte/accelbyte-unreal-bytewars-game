@@ -5,19 +5,31 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Core/AssetManager/TutorialModules/TutorialModuleUtility.h"
 #include "AccelByteWarsWidgetInterface.generated.h"
+
+UENUM(BlueprintType)
+enum class EWidgetValidationState : uint8
+{
+    VALID UMETA(DisplayName = "Valid"),
+    INVALID UMETA(DisplayName = "Invalid"),
+    VALIDATING UMETA(DisplayName = "Validating")
+};
 
 UINTERFACE(BlueprintType)
 class ACCELBYTEWARS_API UAccelByteWarsWidgetInterface : public UInterface
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 };
 
-class ACCELBYTEWARS_API IAccelByteWarsWidgetInterface 
+class ACCELBYTEWARS_API IAccelByteWarsWidgetInterface
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
-	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "AccelByteWars Widget Interface")
-	void ToggleHighlight(const bool bToHighlight);
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "AccelByteWars Widget Interface")
+    void ToggleHighlight(const bool bToHighlight);
+
+    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "AccelByteWars Widget Interface")
+    void SetWidgetValidationState(const EWidgetValidationState State, const FString& StateMessage, const FString& FallbackURL);
 };
