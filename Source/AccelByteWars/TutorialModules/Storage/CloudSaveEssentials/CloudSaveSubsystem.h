@@ -8,13 +8,12 @@
 #include "CloudSaveModels.h"
 #include "OnlineCloudSaveInterfaceAccelByte.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
-#include "Core/Player/AccelByteWarsPlayerState.h"
-#include "Core/Player/AccelByteWarsPlayerPawn.h"
-
 #include "CoreMinimal.h"
 #include "CloudSaveSubsystem.generated.h"
 
 class UAccelByteWarsGameInstance;
+class AAccelByteWarsPlayerPawn;
+class AAccelByteWarsPlayerState;
 class UPromptSubsystem;
 
 UCLASS()
@@ -45,10 +44,11 @@ private:
 	void OnLoadGameSoundOptions(const APlayerController* PlayerController, TDelegate<void()> OnComplete);
 	void OnSaveGameSoundOptions(const APlayerController* PlayerController, TDelegate<void()> OnComplete);
 
-	void OnLoadPlayerShipEquipment(const APlayerController* PlayerController);
-	void OnLoadPlayerShipEquipment(const AAccelByteWarsPlayerPawn* PlayerPawn, const APlayerController* PlayerController, const AAccelByteWarsPlayerState* ABPlayerState, FLinearColor InColor);
-	
-	void OnSavePlayerShipEquipment(const APlayerController* PlayerController);
+	void OnLoadPlayerShipEquipment(const APlayerController* PlayerController, TDelegate<void()> OnComplete);
+	void OnLoadPlayerShipEquipment(AAccelByteWarsPlayerPawn* PlayerPawn, const APlayerController* PlayerController, const AAccelByteWarsPlayerState* ABPlayerState, const FLinearColor InColor);
+	void OnSavePlayerShipEquipment(const APlayerController* PlayerController, TDelegate<void()> OnComplete);
+
+	void OnLoadPlayerEquipmentToSpawnComplete(bool bWasSuccessful, FJsonObject& Result, const FUniqueNetIdPtr UserId, const FLinearColor InColor);
 
 	FDelegateHandle OnSetPlayerRecordCompletedDelegateHandle;
 	FDelegateHandle OnGetPlayerRecordCompletedDelegateHandle;

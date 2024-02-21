@@ -5,6 +5,8 @@
 #include "Engagement/PeriodicLeaderboard/PeriodicBoardSubsystem.h"
 #include "OnlineSubsystemUtils.h"
 
+#include "Core/AccelByteRegistry.h"
+
 void UPeriodicBoardSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
@@ -122,6 +124,41 @@ void UPeriodicBoardSubsystem::GetPlayerPeriodicRanking(const APlayerController* 
     // Get the player's periodic leaderboard ranking.
     OnLeaderboardReadCompleteDelegateHandle = LeaderboardInterface->AddOnLeaderboardReadCompleteDelegate_Handle(FOnLeaderboardReadCompleteDelegate::CreateUObject(this, &ThisClass::OnGetPeriodicRankingsComplete, LocalUserNum, LeaderboardObj, OnComplete));
     LeaderboardInterface->ReadLeaderboardsCycle(TPartyMemberArray{ PlayerNetId->AsShared() }, LeaderboardObj, CycleId);
+}
+
+void UPeriodicBoardSubsystem::GetLeaderboardCycleIdByName(const FString& InCycleName, const EAccelByteCycle& InCycleType, const FOnGetLeaderboardsCycleIdComplete& OnComplete)
+{
+    AccelByte::FRegistry::Statistic.GetListStatCycleConfigs(
+        InCycleType,
+        THandler<FAccelByteModelsStatCycleConfigPagingResult>::CreateWeakLambda(this, [InCycleName, OnComplete](const FAccelByteModelsStatCycleConfigPagingResult& Result)
+            {
+                FString FoundCycleId;
+                for (auto& Cycle : Result.Data)
+                {
+                    if (Cycle.Name.Equals(InCycleName))
+                    {
+                        FoundCycleId = Cycle.Id;
+                        break;
+                    }
+                }
+
+                if (!FoundCycleId.IsEmpty())
+                {
+                    UE_LOG_PERIODIC_LEADERBOARD(Log, TEXT("Cycle Id of cycle with name %s is %s."), *InCycleName, *FoundCycleId);
+                    OnComplete.ExecuteIfBound(true, FoundCycleId);
+                }
+                else
+                {
+                    UE_LOG_PERIODIC_LEADERBOARD(Warning, TEXT("Cycle Id of cycle with name %s is not found."), *InCycleName);
+                    OnComplete.ExecuteIfBound(false, FoundCycleId);
+                }
+            }),
+        FErrorHandler::CreateWeakLambda(this, [InCycleName, OnComplete](int32 ErrorCode, const FString& ErrorMessage)
+            {
+                UE_LOG_PERIODIC_LEADERBOARD(Warning, TEXT("Failed to get Cycle Id of cycle with name %s. Error %d: %s"), *InCycleName, ErrorCode, *ErrorMessage);
+                OnComplete.ExecuteIfBound(false, FString());
+            })
+        );
 }
 
 void UPeriodicBoardSubsystem::OnGetPeriodicRankingsComplete(bool bWasSuccessful, const int32 LocalUserNum, const FOnlineLeaderboardReadRef LeaderboardObj, const FOnGetLeaderboardRankingComplete OnComplete)

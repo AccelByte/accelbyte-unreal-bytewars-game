@@ -46,9 +46,6 @@ void UFriendWidgetEntry::NativeOnListItemObjectSet(UObject* ListItemObject)
 		Tb_DisplayName->SetText(FText::FromString(
 			UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(CachedFriendData->UserId.ToSharedRef().Get())));
 	}
-	
-	// Display presence.
-	Tb_Presence->SetText(FText::FromString(CachedFriendData->GetPresence()));
 
 	// Store default brush to be used to reset the avatar brush if needed.
 	if (!DefaultAvatarBrush.GetResourceObject())
@@ -91,6 +88,8 @@ void UFriendWidgetEntry::NativeOnListItemObjectSet(UObject* ListItemObject)
 	Btn_Invite->SetVisibility(!CachedFriendData->bCannotBeInvited ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	Tb_CannotInviteMessage->SetVisibility(CachedFriendData->bCannotBeInvited ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	Tb_CannotInviteMessage->SetText(FText::FromString(CachedFriendData->ReasonCannotBeInvited));
+
+	OnListItemObjectSet.Broadcast();
 }
 
 void UFriendWidgetEntry::OnInviteButtonClicked()

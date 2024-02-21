@@ -12,6 +12,58 @@ class UTutorialModuleDataAsset;
 class UAccelByteWarsActivatableWidget;
 
 UENUM(BlueprintType)
+enum class EServicePredefinedValidator : uint8
+{
+	CUSTOM_VALIDATOR = 0 UMETA(DisplayName = "Custom Validation"),
+	AMS_ACCOUNT_SETUP UMETA(DisplayName = "AMS Account Setup")
+};
+
+UENUM(BlueprintType)
+enum class EServicePredifinedArgument : uint8
+{
+	PLAYER_ID = 0 UMETA(DisplayName = "Player Id"),
+	PLAYER_DISPLAY_NAME UMETA(DisplayName = "Player Display Name"),
+	GAME_SESSION_ID UMETA(DisplayName = "Game Session Id"),
+	PARTY_SESSION_ID UMETA(DisplayName = "Party Session Id"),
+	DEDICATED_SERVER_ID UMETA(DisplayName = "Dedicated Server Id"),
+	ENV_BASE_URL UMETA(DisplayName = "Environment Base URL"),
+	GAME_NAMESPACE UMETA(DisplayName = "Game Namespace"),
+	ADMIN_PORTAL_URL UMETA(DisplayName = "Admin Portal URL")
+};
+
+USTRUCT(BlueprintType)
+struct FServiceArgumentModel
+{
+	GENERATED_BODY()
+
+	UPROPERTY(
+		BlueprintReadOnly,
+		EditAnywhere,
+		meta = (Tooltip = "Whether to use predefined argument or not."))
+	bool bUsePredefinedArgument = false;
+
+	UPROPERTY(
+		BlueprintReadOnly, 
+		EditAnywhere, 
+		meta = (
+			Tooltip = "User defined string argument.",
+			EditCondition = "!bUsePredefinedArgument",
+			EditConditionHides))
+	FString Argument;
+
+	UPROPERTY(
+		BlueprintReadOnly, 
+		EditAnywhere, meta = (
+			Tooltip = "Predefined argument.",
+			EditCondition = "bUsePredefinedArgument",
+			EditConditionHides))
+	EServicePredifinedArgument PredefinedArgument = EServicePredifinedArgument::PLAYER_ID;
+
+	// Event to get predefined argument from online tutorial modules branch.
+	inline static TDelegate<FString(const EServicePredifinedArgument /*Keyword*/)> OnGetPredefinedArgument;
+};
+
+UENUM(BlueprintType)
 enum class ETutorialModuleGeneratedWidgetType : uint8
 {
 	TUTORIAL_MODULE_ENTRY_BUTTON UMETA(DisplayName = "Tutorial Module Entry Button"),

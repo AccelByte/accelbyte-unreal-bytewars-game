@@ -17,7 +17,7 @@ UCLASS(Abstract)
 class ACCELBYTEWARS_API UBlockedPlayerWidgetEntry : public UAccelByteWarsWidgetEntry
 {
 	GENERATED_BODY()
-	
+
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;

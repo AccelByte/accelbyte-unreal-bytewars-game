@@ -6,12 +6,13 @@
 
 #include "CoreMinimal.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
-#include "Components/TextBlock.h"
+#include "Core/PowerUps/PowerUpModels.h"
 #include "HUDWidgetEntry.generated.h"
 
-/**
- * 
- */
+class UTextBlock;
+class UPowerUpWidgetEntry;
+class UHorizontalBox;
+
 UCLASS()
 class ACCELBYTEWARS_API UHUDWidgetEntry : public UAccelByteWarsActivatableWidget
 {
@@ -20,6 +21,9 @@ class ACCELBYTEWARS_API UHUDWidgetEntry : public UAccelByteWarsActivatableWidget
 	virtual void NativePreConstruct() override;
 
 public:
+	UFUNCTION(BlueprintCallable)
+	void SetPowerUpValues(const TArray<TEnumAsByte<EPowerUpSelection>>& SelectedPowerUps, const TArray<int32>& PowerUpCounts);
+
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Text_Value_Left;
 
@@ -44,6 +48,9 @@ public:
 	UPROPERTY(meta = (ExposeOnSpawn = true), EditAnywhere, BlueprintReadWrite)
 	bool bHideLeftRight = false;
 
+	UPROPERTY(meta = (ExposeOnSpawn = true), EditAnywhere, BlueprintReadWrite)
+	bool bHidePowerUpWidgets = false;
+
 private:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Text_Label_Left;
@@ -53,4 +60,21 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Text_Label_Right;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UHorizontalBox* Hb_PowerUps;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UPowerUpWidgetEntry* Widget_PowerUpP1;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UPowerUpWidgetEntry* Widget_PowerUpP2;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UPowerUpWidgetEntry* Widget_PowerUpP3;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UPowerUpWidgetEntry* Widget_PowerUpP4;
+
+	TArray<UPowerUpWidgetEntry*> PowerUpWidgets;
 };

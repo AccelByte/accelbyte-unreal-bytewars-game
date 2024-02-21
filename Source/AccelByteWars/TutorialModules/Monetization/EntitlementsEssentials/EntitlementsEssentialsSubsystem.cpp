@@ -46,23 +46,8 @@ void UEntitlementsEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Coll
 		QueryUserEntitlement(UserId);
 	});
 
-	// Consume power up entitlement when it is activated.
-	AAccelByteWarsPlayerPawn::OnValidateActivatePowerUp.BindWeakLambda(this, [this](AAccelByteWarsPlayerPawn* PlayerPawn, const PowerUpSelection SelectedPowerUp)
-	{
-		const FUniqueNetIdPtr UserId = GetLocalPlayerUniqueNetId(Cast<APlayerController>(PlayerPawn->GetController()));
-		const FString PowerUpId = ConvertPowerUpToItemId(SelectedPowerUp);
-
-		ConsumeItemEntitlement(UserId, PowerUpId, 1, 
-			FOnConsumeUserEntitlementComplete::CreateWeakLambda(this, [PlayerPawn, SelectedPowerUp](const bool bSucceded, const UItemDataObject* Entitlement)
-			{
-				if (bSucceded && PlayerPawn)
-				{
-					PlayerPawn->Server_ActivatePowerUp(SelectedPowerUp);
-					return;
-				}
-			}
-		));
-	});
+	AAccelByteWarsPlayerPawn::OnValidateActivatePowerUp.AddUObject(this, &ThisClass::OnValidateActivatePowerUp);
+	AAccelByteWarsPlayerPawn::OnPlayerEquipmentLoaded.AddUObject(this, &ThisClass::OnPlayerEquipmentLoaded);
 }
 
 void UEntitlementsEssentialsSubsystem::Deinitialize()
@@ -77,7 +62,109 @@ void UEntitlementsEssentialsSubsystem::Deinitialize()
 	UShopWidget::OnActivatedMulticastDelegate.RemoveAll(this);
 	UItemPurchaseWidget::OnPurchaseCompleteMulticastDelegate.RemoveAll(this);
 
-	AAccelByteWarsPlayerPawn::OnValidateActivatePowerUp.Unbind();
+	AAccelByteWarsPlayerPawn::OnValidateActivatePowerUp.RemoveAll(this);
+	AAccelByteWarsPlayerPawn::OnPlayerEquipmentLoaded.RemoveAll(this);
+}
+
+void UEntitlementsEssentialsSubsystem::OnValidateActivatePowerUp(AAccelByteWarsPlayerPawn* PlayerPawn, const EPowerUpSelection SelectedPowerUp)
+{
+	if (!PlayerPawn || PlayerPawn->IsActorBeingDestroyed() || !PlayerPawn->IsValidLowLevel() || !PlayerPawn->GameplayObject)
+	{
+		return;
+	}
+
+	// Consume power up entitlement when it is activated.
+	const FUniqueNetIdPtr UserId = GetLocalPlayerUniqueNetId(Cast<APlayerController>(PlayerPawn->GetController()));
+	const FString PowerUpId = ConvertPowerUpToItemId(SelectedPowerUp);
+	ConsumeItemEntitlement(
+		UserId, 
+		PowerUpId, 
+		1, 
+		FOnConsumeUserEntitlementComplete::CreateUObject(this, &ThisClass::OnConsumePowerUpComplete, UserId, SelectedPowerUp));
+}
+
+void UEntitlementsEssentialsSubsystem::OnConsumePowerUpComplete(const bool bSucceded, const UItemDataObject* Entitlement, const FUniqueNetIdPtr UserId, const EPowerUpSelection SelectedPowerUp)
+{
+	if (!GetGameInstance() || !UserId)
+	{
+		return;
+	}
+
+	const ULocalPlayer* LocalPlayer = GetGameInstance()->FindLocalPlayerFromUniqueNetId(UserId);
+	if (!LocalPlayer)
+	{
+		return;
+	}
+
+	const APlayerController* PC = LocalPlayer->GetPlayerController(GetWorld());
+	if (!PC)
+	{
+		return;
+	}
+
+	AAccelByteWarsPlayerPawn* PlayerPawn = Cast<AAccelByteWarsPlayerPawn>(PC->GetPawn());
+	if (!bSucceded || !Entitlement || !PlayerPawn || PlayerPawn->IsActorBeingDestroyed() || !PlayerPawn->IsValidLowLevel() || !PlayerPawn->GameplayObject)
+	{
+		return;
+	}
+
+	PlayerPawn->Server_ActivatePowerUp(SelectedPowerUp);
+	PlayerPawn->Server_RefreshSelectedPowerUp(SelectedPowerUp, Entitlement->Count);
+}
+
+void UEntitlementsEssentialsSubsystem::OnPlayerEquipmentLoaded(AAccelByteWarsPlayerPawn* PlayerPawn, const EShipDesign SelectedShipDesign, const EPowerUpSelection SelectedPowerUp)
+{
+	if (!PlayerPawn || PlayerPawn->IsActorBeingDestroyed() || !PlayerPawn->IsValidLowLevel() || !PlayerPawn->GameplayObject)
+	{
+		return;
+	}
+
+	// Query power up entitlement info, which will be used by the gameplay to display player's power up info.
+	const FUniqueNetIdPtr UserId = GetLocalPlayerUniqueNetId(Cast<APlayerController>(PlayerPawn->GetController()));
+	QueryToSetupPowerUpInfoDelegateHandle = EntitlementsInterface->AddOnQueryEntitlementsCompleteDelegate_Handle(
+		FOnQueryEntitlementsCompleteDelegate::CreateUObject(this, &ThisClass::OnQueryToSetupPowerUpInfoComplete, SelectedPowerUp));
+	QueryUserEntitlement(UserId);
+}
+
+void UEntitlementsEssentialsSubsystem::OnQueryToSetupPowerUpInfoComplete(bool bWasSuccessful, const FUniqueNetId& UserId, const FString& Namespace, const FString& Error, const EPowerUpSelection SelectedPowerUp)
+{
+	EntitlementsInterface->ClearOnQueryEntitlementsCompleteDelegate_Handle(QueryToSetupPowerUpInfoDelegateHandle);
+
+	if (!GetGameInstance())
+	{
+		return;
+	}
+
+	const ULocalPlayer* LocalPlayer = GetGameInstance()->FindLocalPlayerFromUniqueNetId(UserId);
+	if (!LocalPlayer)
+	{
+		return;
+	}
+
+	const APlayerController* PC = LocalPlayer->GetPlayerController(GetWorld());
+	if (!PC)
+	{
+		return;
+	}
+
+	AAccelByteWarsPlayerPawn* PlayerPawn = Cast<AAccelByteWarsPlayerPawn>(PC->GetPawn());
+	if (!PlayerPawn || PlayerPawn->IsActorBeingDestroyed() || !PlayerPawn->IsValidLowLevel() || !PlayerPawn->GameplayObject)
+	{
+		return;
+	}
+
+	if (!bWasSuccessful)
+	{
+		PlayerPawn->Server_RefreshSelectedPowerUp(EPowerUpSelection::NONE, 0);
+		return;
+	}
+
+	const FString PowerUpId = ConvertPowerUpToItemId(SelectedPowerUp);
+	if (const UItemDataObject* PowerUpEntitlement = GetItemEntitlement(UserId.AsShared(), PowerUpId))
+	{
+		PlayerPawn->Server_RefreshSelectedPowerUp(PowerUpEntitlement->Count > 0 ? SelectedPowerUp : EPowerUpSelection::NONE, PowerUpEntitlement->Count);
+		return;
+	}
 }
 
 UItemDataObject* UEntitlementsEssentialsSubsystem::GetItemEntitlement(
@@ -238,13 +325,13 @@ void UEntitlementsEssentialsSubsystem::OnQueryToConsumeEntitlementComplete(
 FUniqueNetIdPtr UEntitlementsEssentialsSubsystem::GetLocalPlayerUniqueNetId(
 	const APlayerController* PlayerController) const
 {
-	if (!ensure(PlayerController)) 
+	if (!PlayerController) 
 	{
 		return nullptr;
 	}
 
 	const ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer();
-	if (!ensure(LocalPlayer))
+	if (!LocalPlayer)
 	{
 		return nullptr;
 	}

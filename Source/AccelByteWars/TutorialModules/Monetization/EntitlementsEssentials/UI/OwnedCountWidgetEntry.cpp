@@ -105,8 +105,8 @@ void UOwnedCountWidgetEntry::ShowOwnedCount()
 		// Highlight the entitlement item if it is equipped.
 		if (bIsInInventory) 
 		{
-			const FString EquippedShip = ConvertShipDesignToItemId((ShipDesign)GameInstance->GetShipSelection());
-			const FString EquippedPowerUp = ConvertPowerUpToItemId((PowerUpSelection)GameInstance->GetShipPowerUp());
+			const FString EquippedShip = ConvertShipDesignToItemId((EShipDesign)GameInstance->GetShipSelection());
+			const FString EquippedPowerUp = ConvertPowerUpToItemId((EPowerUpSelection)GameInstance->GetShipPowerUp());
 			const bool bIsEquipped = (ItemData->Id.Equals(EquippedShip) || ItemData->Id.Equals(EquippedPowerUp));
 
 			W_Parent->Execute_ToggleHighlight(W_Parent, bIsEquipped);

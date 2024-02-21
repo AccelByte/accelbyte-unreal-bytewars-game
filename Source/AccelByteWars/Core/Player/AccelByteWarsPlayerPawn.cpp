@@ -42,6 +42,7 @@ void AAccelByteWarsPlayerPawn::Tick(float DeltaTime)
 	if (GetWorld()->IsNetMode(NM_DedicatedServer) == false)
 	{
 		UpdatePowerBarUI(DeltaTime);
+		UpdateShipLabelUI(DeltaTime);
 	}
 
 	if (HasAuthority())
@@ -93,23 +94,23 @@ AAccelByteWarsMissile* AAccelByteWarsPlayerPawn::SpawnMissileInWorld(AActor* Act
 	if (ActorOwner == nullptr)
 		return nullptr;
 
-	FActorSpawnParameters spawn_parameters;
-	spawn_parameters.Owner = ActorOwner;
-	spawn_parameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	FActorSpawnParameters SpawnParameters;
+	SpawnParameters.Owner = ActorOwner;
+	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	UClass* generic_class = StaticLoadClass(AActor::StaticClass(), ActorOwner, *BlueprintPath);
+	UClass* GenericClass = StaticLoadClass(AActor::StaticClass(), ActorOwner, *BlueprintPath);
 
-	AAccelByteWarsMissile* new_actor = ActorOwner->GetWorld()->SpawnActor<AAccelByteWarsMissile>(generic_class, InTransform, spawn_parameters);
-	if (new_actor == nullptr)
+	AAccelByteWarsMissile* NewActor = ActorOwner->GetWorld()->SpawnActor<AAccelByteWarsMissile>(GenericClass, InTransform, SpawnParameters);
+	if (NewActor == nullptr)
 		return nullptr;
 
-	new_actor->Server_SetColor(PawnColor);
-	new_actor->InitialSpeed = InitialSpeed;
-	new_actor->SetVelocity();
-	new_actor->SetInstigator(this);
-	new_actor->SetReplicates(ShouldReplicate);
+	NewActor->Server_SetColor(PawnColor);
+	NewActor->InitialSpeed = InitialSpeed;
+	NewActor->SetVelocity();
+	NewActor->SetInstigator(this);
+	NewActor->SetReplicates(ShouldReplicate);
 
-	return new_actor;
+	return NewActor;
 }
 
 template<class T>
@@ -118,32 +119,37 @@ T* AAccelByteWarsPlayerPawn::SpawnBPActorInWorld(APawn* OwningPawn, const FVecto
 	if (OwningPawn == nullptr)
 		return nullptr;
 
-	FActorSpawnParameters spawn_parameters;
-	spawn_parameters.Owner = OwningPawn;
-	spawn_parameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	FActorSpawnParameters SpawnParameters;
+	SpawnParameters.Owner = OwningPawn;
+	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	UClass* generic_class = StaticLoadClass(AActor::StaticClass(), OwningPawn, *BlueprintPath);
-	if (generic_class == nullptr)
+	UClass* GenericClass = StaticLoadClass(AActor::StaticClass(), OwningPawn, *BlueprintPath);
+	if (GenericClass == nullptr)
 	{
 		LOG_TO_CONSOLE("Failed to generate generic class for: " + BlueprintPath);
 		return nullptr;
 	}
 
-	T* new_actor = OwningPawn->GetWorld()->SpawnActor<T>(generic_class, FTransform(Rotation, Location), spawn_parameters);
-	if (new_actor == nullptr)
+	T* NewActor = OwningPawn->GetWorld()->SpawnActor<T>(GenericClass, FTransform(Rotation, Location), SpawnParameters);
+	if (NewActor == nullptr)
 	{
 		LOG_TO_CONSOLE("Failed to generate actor class for: " + BlueprintPath);
 		return nullptr;
 	}
 
-	new_actor->SetInstigator(OwningPawn);
-	new_actor->SetReplicates(ShouldReplicate);
+	NewActor->SetInstigator(OwningPawn);
+	NewActor->SetReplicates(ShouldReplicate);
 
-	return new_actor;
+	return NewActor;
 }
 
 void AAccelByteWarsPlayerPawn::Server_GetPlayerSelectedShip_Implementation(APlayerController* PlayerController, AAccelByteWarsPlayerState* ABPlayerState, FLinearColor InColor)
 {
+	if (!HasAuthority())
+	{
+		return;
+	}
+
 	Client_GetPlayerSelectedShip(PlayerController, ABPlayerState, InColor);
 }
 
@@ -161,52 +167,63 @@ void AAccelByteWarsPlayerPawn::Client_GetPlayerSelectedShip_Implementation(APlay
 
 	int32 LocalPlayerNum = LocalPlayer->GetControllerId();
 
-	if (OnMatchStarted.IsBound())
+	// If online and primary player, broadcast event to configure player equipment based on online data.
+	if (PlayerController->IsPrimaryPlayer() && OnMatchStarted.IsBound())
 	{
 		OnMatchStarted.Broadcast(this, PlayerController, ABPlayerState, InColor);
+		return;
 	}
-	else
+
+	// If offline or not a primary player, configure the default player equipment.
+	Server_SpawnPlayerShip((EShipDesign)EShipDesign::TRIANGLE);
+	Server_RefreshSelectedPowerUp(EPowerUpSelection::NONE, 0);
+	Server_SetColor(InColor);
+
+	// Reset local equipment if a primary player.
+	if (PlayerController->IsPrimaryPlayer()) 
 	{
-		// Select ship based on local data.
 		if (UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance()))
 		{
-			Server_SpawnPlayerShip((ShipDesign)GameInstance->GetShipSelection());
+			GameInstance->SetShipSelection((int32)EShipDesign::TRIANGLE);
+			GameInstance->SetShipPowerUp((int32)EPowerUpSelection::NONE);
 		}
-		// Fallback to default ship.
-		else
+		if (OnPlayerEquipmentLoaded.IsBound())
 		{
-			Server_SpawnPlayerShip((ShipDesign)0);
+			OnPlayerEquipmentLoaded.Broadcast(this, EShipDesign::TRIANGLE, EPowerUpSelection::NONE);
 		}
-
-		Server_SetColor(InColor);
 	}
 }
 
-void AAccelByteWarsPlayerPawn::Server_SpawnPlayerShip_Implementation(ShipDesign SelectedShipDesign)
+void AAccelByteWarsPlayerPawn::Server_SpawnPlayerShip_Implementation(const EShipDesign SelectedShipDesign)
 {
+	if (!HasAuthority()) 
+	{
+		return;
+	}
+
 	switch (SelectedShipDesign)
 	{
-		case ShipDesign::TRIANGLE:
+		case EShipDesign::TRIANGLE:
 		{
 			PlayerShip = SpawnBPActorInWorld<APlayerShipTriangle>(this, GetActorLocation(), GetActorRotation(), PlayerShipBlueprintPaths[(int8)SelectedShipDesign], true);
 		}
 		break;
-		case ShipDesign::D:
+		case EShipDesign::D:
 		{
 			PlayerShip = SpawnBPActorInWorld<APlayerShipD>(this, GetActorLocation(), GetActorRotation(), PlayerShipBlueprintPaths[(int8)SelectedShipDesign], true);
 		}
 		break;
-		case ShipDesign::DOUBLE_TRIANGLE:
+		case EShipDesign::DOUBLE_TRIANGLE:
 		{
 			PlayerShip = SpawnBPActorInWorld<APlayerShipDoubleTriangle>(this, GetActorLocation(), GetActorRotation(), PlayerShipBlueprintPaths[(int8)SelectedShipDesign], true);
 		}
 		break;
-		case ShipDesign::GLOW_XTRA:
+		case EShipDesign::GLOW_XTRA:
 		{
 			PlayerShip = SpawnBPActorInWorld<APlayerShipGlowXtra>(this, GetActorLocation(), GetActorRotation(), PlayerShipBlueprintPaths[(int8)SelectedShipDesign], true);
 		}
 		break;
-		case ShipDesign::WHITE_STAR:
+		case EShipDesign::WHITE_STAR:
 		{
 			PlayerShip = SpawnBPActorInWorld<APlayerShipWhiteStar>(this, GetActorLocation(), GetActorRotation(), PlayerShipBlueprintPaths[(int8)SelectedShipDesign], true);
 		}
@@ -220,10 +237,10 @@ void AAccelByteWarsPlayerPawn::Server_SpawnPlayerShip_Implementation(ShipDesign 
 		PlayerShip->AccelByteWarsProceduralMesh->SetupAttachment(SphereComponent);
 }
 
-void AAccelByteWarsPlayerPawn::ValidateActivatePowerUp(PowerUpSelection SelectedPowerUp)
+void AAccelByteWarsPlayerPawn::ValidateActivatePowerUp(const EPowerUpSelection SelectedPowerUp)
 {
 	// If no power up selected, abort.
-	if (SelectedPowerUp == PowerUpSelection::NONE) 
+	if (SelectedPowerUp == EPowerUpSelection::NONE) 
 	{
 		return;
 	}
@@ -231,7 +248,7 @@ void AAccelByteWarsPlayerPawn::ValidateActivatePowerUp(PowerUpSelection Selected
 	// If online, power up can only be activated if the player is entitled to activate the power up.
 	if (OnValidateActivatePowerUp.IsBound())
 	{
-		OnValidateActivatePowerUp.Execute(this, SelectedPowerUp);
+		OnValidateActivatePowerUp.Broadcast(this, SelectedPowerUp);
 		return;
 	}
 
@@ -239,8 +256,32 @@ void AAccelByteWarsPlayerPawn::ValidateActivatePowerUp(PowerUpSelection Selected
 	Server_ActivatePowerUp(SelectedPowerUp);
 }
 
-void AAccelByteWarsPlayerPawn::Server_ActivatePowerUp_Implementation(PowerUpSelection SelectedPowerUp)
+void AAccelByteWarsPlayerPawn::Server_RefreshSelectedPowerUp_Implementation(const EPowerUpSelection SelectedPowerUp, const int32 PowerUpCount)
 {
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	AAccelByteWarsInGameGameMode* ABInGameMode = Cast<AAccelByteWarsInGameGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
+	if (!ABInGameMode) 
+	{
+		return;
+	}
+
+	if (APlayerController* PC = Cast<APlayerController>(GetController())) 
+	{
+		ABInGameMode->OnRefreshPlayerSelectedPowerUp(PC, SelectedPowerUp, PowerUpCount);
+	}
+}
+
+void AAccelByteWarsPlayerPawn::Server_ActivatePowerUp_Implementation(const EPowerUpSelection SelectedPowerUp)
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
 	// In case multiple power ups are used at once (this shouldn't happen, but if allowed in the future, this will deal with it)
 	if (PowerUp != nullptr) 
 	{
@@ -256,13 +297,13 @@ void AAccelByteWarsPlayerPawn::Server_ActivatePowerUp_Implementation(PowerUpSele
 
 	switch (SelectedPowerUp)
 	{
-		case PowerUpSelection::NONE:
+		case EPowerUpSelection::NONE:
 		{
 			// No power up equipped, do nothing and return;
 			return;
 		}
 		break;
-		case PowerUpSelection::BYTE_BOMB:
+		case EPowerUpSelection::BYTE_BOMB:
 		{
 			PowerUp = SpawnBPActorInWorld<APowerUpByteBomb>(this, GetActorLocation(), GetActorRotation(), PlayerPowerUpBlueprintPaths[(int8)SelectedPowerUp], true);
 
@@ -274,7 +315,7 @@ void AAccelByteWarsPlayerPawn::Server_ActivatePowerUp_Implementation(PowerUpSele
 			PowerUp = nullptr;
 		}
 		break;
-		case PowerUpSelection::BYTE_SHIELD:
+		case EPowerUpSelection::BYTE_SHIELD:
 		{
 			PowerUp = SpawnBPActorInWorld<APowerUpByteShield>(this, GetActorLocation(), GetActorRotation(), PlayerPowerUpBlueprintPaths[(int8)SelectedPowerUp], true);
 
@@ -286,7 +327,7 @@ void AAccelByteWarsPlayerPawn::Server_ActivatePowerUp_Implementation(PowerUpSele
 			ByteShield->SetShieldColor(PawnColor);
 		}
 		break;
-		case PowerUpSelection::WORM_HOLE:
+		case EPowerUpSelection::WORM_HOLE:
 		{
 			PowerUp = SpawnBPActorInWorld<APowerUpWormHole>(this, GetActorLocation(), GetActorRotation(), PlayerPowerUpBlueprintPaths[(int8)SelectedPowerUp], true);
 
@@ -299,7 +340,7 @@ void AAccelByteWarsPlayerPawn::Server_ActivatePowerUp_Implementation(PowerUpSele
 			WormHole->Server_InitiateWormHoleGenerator();
 		}
 		break;
-		case PowerUpSelection::SPLIT_MISSILE:
+		case EPowerUpSelection::SPLIT_MISSILE:
 		{
 			// Do not use PowerUp if a missile is not in use
 			if (FiredMissile == nullptr)
@@ -320,14 +361,16 @@ void AAccelByteWarsPlayerPawn::Server_ActivatePowerUp_Implementation(PowerUpSele
 
 void AAccelByteWarsPlayerPawn::Server_FireMissile_Implementation()
 {
-	if (ShouldFire() == false)
+	if (!HasAuthority() || !ShouldFire())
+	{
 		return;
+	}
 
 	// Calculate missile spawn location
 	FTransform SpawnTransform = CalculateWhereToSpawnMissile();
 
 	// Clamp initial missile speed
-	float clamped_initial_speed = UKismetMathLibrary::MapRangeClamped(FirePowerLevel, 0.0f, 1.0f, MinMissileSpeed, MaxMissileSpeed);
+	float ClampedInitialSpeed = UKismetMathLibrary::MapRangeClamped(FirePowerLevel, 0.0f, 1.0f, MinMissileSpeed, MaxMissileSpeed);
 
 	// Spawn missile actor
 	FiredMissile = SpawnBPActorInWorld<AAccelByteWarsMissile>(this, SpawnTransform.GetLocation(), SpawnTransform.Rotator(), FiredMissileBlueprintPath, true);
@@ -335,7 +378,7 @@ void AAccelByteWarsPlayerPawn::Server_FireMissile_Implementation()
 		return;
 
 	FiredMissile->Server_SetColor(PawnColor);
-	FiredMissile->InitialSpeed = clamped_initial_speed;
+	FiredMissile->InitialSpeed = ClampedInitialSpeed;
 	FiredMissile->SetVelocity();
 
 	ShowPowerLevelUITimer = 0.0f;
@@ -364,23 +407,22 @@ void AAccelByteWarsPlayerPawn::Server_FireMissile_Implementation()
 	MissileTrail->Server_SetColor(PawnColor);
 
 	// Attach new trail to missile actor
-	FAttachmentTransformRules attachment_rules(EAttachmentRule::SnapToTarget, EAttachmentRule::SnapToTarget, EAttachmentRule::KeepRelative, true);
-	MissileTrail->AttachToActor(FiredMissile, attachment_rules);
+	FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, EAttachmentRule::SnapToTarget, EAttachmentRule::KeepRelative, true);
+	MissileTrail->AttachToActor(FiredMissile, AttachmentRules);
 }
 
 FTransform AAccelByteWarsPlayerPawn::CalculateWhereToSpawnMissile()
 {
-	FTransform actor_transform = GetActorTransform();
-	FVector right_vector = actor_transform.GetRotation().GetRightVector();
-	FVector a = (right_vector * 100.0f);
-	FVector b = a + actor_transform.GetLocation();
+	FTransform ActorTransform = GetActorTransform();
+	FVector RightVector = ActorTransform.GetRotation().GetRightVector();
+	FVector DesiredLocation = (RightVector * 100.0f) + ActorTransform.GetLocation();
 
-	FTransform out_transform;
-	out_transform.SetLocation(b);
-	out_transform.SetRotation(actor_transform.GetRotation());
-	out_transform.SetScale3D(FVector(1.0f, 1.0f, 1.0f));
+	FTransform OutTransform;
+	OutTransform.SetLocation(DesiredLocation);
+	OutTransform.SetRotation(ActorTransform.GetRotation());
+	OutTransform.SetScale3D(FVector(1.0f, 1.0f, 1.0f));
 
-	return out_transform;
+	return OutTransform;
 }
 
 bool AAccelByteWarsPlayerPawn::ShouldFire()
@@ -415,6 +457,11 @@ void AAccelByteWarsPlayerPawn::OnPlayerInputThisFrame()
 
 void AAccelByteWarsPlayerPawn::Server_RotatePawn_Implementation(int Rate)
 {
+	if (!HasAuthority()) 
+	{
+		return;
+	}
+
 	Client_RotatePawn_Implementation(Rate);
 }
 
@@ -433,34 +480,36 @@ void AAccelByteWarsPlayerPawn::Client_RotatePawn_Implementation(int Rate)
 {
 	if (HasAuthority())
 	{
-		int in_rate = FMath::Clamp(Rate, 0, 2);
+		int InRate = FMath::Clamp(Rate, 0, 2);
 
-		RotationDirection = in_rate;
+		RotationDirection = InRate;
 		OnRepNotify_RotationDirection();
 	}
 }
 
 void AAccelByteWarsPlayerPawn::Server_AdjustFirePower_Implementation(FVector PlayerPosition, int Rate)
 {
-	if (HasAuthority())
+	if (!HasAuthority())
 	{
-		int in_rate = FMath::Clamp(Rate, 0, 2);
-
-		if (in_rate == 0)
-		{
-			FirePowerAdjustRate = 0.0f;
-		}
-		else if (in_rate == 1)
-		{
-			FirePowerAdjustRate = 1.0f;
-		}
-		else if (in_rate == 2)
-		{
-			FirePowerAdjustRate = -1.0f;
-		}
-
-		Client_AdjustFirePower(PlayerPosition, PawnColor);
+		return;
 	}
+
+	int InRate = FMath::Clamp(Rate, 0, 2);
+
+	if (InRate == 0)
+	{
+		FirePowerAdjustRate = 0.0f;
+	}
+	else if (InRate == 1)
+	{
+		FirePowerAdjustRate = 1.0f;
+	}
+	else if (InRate == 2)
+	{
+		FirePowerAdjustRate = -1.0f;
+	}
+
+	Client_AdjustFirePower(PlayerPosition, PawnColor);
 }
 
 void AAccelByteWarsPlayerPawn::Client_AdjustFirePower_Implementation(FVector PlayerPosition, FLinearColor InColor)
@@ -484,6 +533,11 @@ void AAccelByteWarsPlayerPawn::Client_AdjustFirePower_Implementation(FVector Pla
 
 void AAccelByteWarsPlayerPawn::Server_SetColor_Implementation(FLinearColor InColor)
 {
+	if (!HasAuthority())
+	{
+		return;
+	}
+
 	PawnColor = InColor;
 
 	if (PlayerShip != nullptr)
@@ -497,7 +551,10 @@ void AAccelByteWarsPlayerPawn::Client_OnDestroyed_Implementation()
 	IsDestroyed = true;
 
 	ShowPowerLevelUITimer = 0.0f;
+	ShowShipLabelUITimer = 0.0f;
+
 	UpdatePowerBarUI(0.01f);
+	UpdateShipLabelUI(0.01f);
 }
 
 void AAccelByteWarsPlayerPawn::OnRepNotify_Color()
@@ -518,10 +575,10 @@ void AAccelByteWarsPlayerPawn::OnRepNotify_RotationDirection()
 
 void AAccelByteWarsPlayerPawn::OnRepNotify_CurrentYaw()
 {
-	FRotator rot;
-	rot.Roll = 0.0f;
-	rot.Pitch = 0.0f;
-	rot.Yaw = CurrentYaw;
+	FRotator Rotation;
+	Rotation.Roll = 0.0f;
+	Rotation.Pitch = 0.0f;
+	Rotation.Yaw = CurrentYaw;
 
-	SetActorRotation(rot, ETeleportType::None);
+	SetActorRotation(Rotation, ETeleportType::None);
 }

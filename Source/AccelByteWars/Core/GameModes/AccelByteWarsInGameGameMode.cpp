@@ -9,12 +9,21 @@
 #include "Core/Player/AccelByteWarsPlayerState.h"
 #include "Core/System/AccelByteWarsGameSession.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
+#include "Core/Utilities/AccelByteWarsUtility.h"
 #include "GameFramework/PlayerStart.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
 
 #define NULLPTR_CHECK(Object) if (!Object) return;
+
+AAccelByteWarsInGameGameMode::AAccelByteWarsInGameGameMode()
+{
+	PrimaryActorTick.bStartWithTickEnabled = true;
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.TickInterval = 0.05f;
+	bAllowTickBeforeBeginPlay = false;
+}
 
 void AAccelByteWarsInGameGameMode::InitGameState()
 {
@@ -47,7 +56,7 @@ void AAccelByteWarsInGameGameMode::BeginPlay()
 	}
 #endif
 #pragma endregion
-
+	
 	Super::BeginPlay();
 }
 
@@ -363,6 +372,23 @@ void AAccelByteWarsInGameGameMode::IncreasePlayerKilledAttempt(const APlayerCont
 	PlayerData->NumKilledAttemptInSingleLifetime = TargetPlayerState->NumKilledAttemptInSingleLifetime;
 }
 
+void AAccelByteWarsInGameGameMode::OnRefreshPlayerSelectedPowerUp(const APlayerController* TargetPlayer, const EPowerUpSelection SelectedPowerUp, const int32 PowerUpCount)
+{
+	NULLPTR_CHECK(TargetPlayer);
+
+	AAccelByteWarsPlayerState* TargetPlayerState = Cast<AAccelByteWarsPlayerState>(TargetPlayer->PlayerState);
+	NULLPTR_CHECK(TargetPlayerState);
+
+	FGameplayPlayerData* PlayerData = ABInGameGameState->GetPlayerDataById(TargetPlayerState->GetUniqueId(), GetControllerId(TargetPlayerState));
+	NULLPTR_CHECK(PlayerData);
+	
+	TargetPlayerState->SelectedPowerUp = SelectedPowerUp;
+	TargetPlayerState->PowerUpCount = PowerUpCount;
+
+	PlayerData->SelectedPowerUp = TargetPlayerState->SelectedPowerUp;
+	PlayerData->PowerUpCount = TargetPlayerState->PowerUpCount;
+}
+
 void AAccelByteWarsInGameGameMode::RemoveFromActiveGameObjects(AActor* DestroyedActor)
 {
 	if (UAccelByteWarsGameplayObjectComponent* Component =
@@ -393,32 +419,20 @@ void AAccelByteWarsInGameGameMode::CloseGame(const FString& Reason) const
 
 void AAccelByteWarsInGameGameMode::StartGame()
 {
-	const FRotator Rotator = FRotator::ZeroRotator;
-
 	// Spawn player start
 	for (const FVector& PlayerStart : PlayerStartPoints)
 	{
-		GetWorld()->SpawnActor<APlayerStart>(PlayerStart, Rotator);
+		GetWorld()->SpawnActor<APlayerStart>(PlayerStart, FRotator::ZeroRotator);
 	}
 
-	// Spawn objects
-	const int MaxObjectNum = UKismetMathLibrary::RandomIntegerInRange(2, 5);
-	for (int i = 0; i <= MaxObjectNum; ++i)
-	{
-		const TSubclassOf<AActor>& ObjectToSpawn =
-			ObjectsToSpawn[UKismetMathLibrary::RandomIntegerInRange(0, ObjectsToSpawn.Num() - 1)];
-
-		const FVector& Location = FindGoodPlanetPosition();
-		AActor* SpawnedObject = GetWorld()->SpawnActor(ObjectToSpawn, &Location, &Rotator);
-
-		SetupGameplayObject(SpawnedObject);
-	}
-
-	// Spawn and posses pawn for existing players
+	// Spawn and posses ships
 	for (APlayerState* PlayerState : ABInGameGameState->PlayerArray)
 	{
 		SpawnAndPossesPawn(PlayerState);
 	}
+
+	// Spawn planets
+	SpawnPlanets();
 }
 
 void AAccelByteWarsInGameGameMode::SetupGameplayObject(AActor* Object) const
@@ -461,12 +475,10 @@ int32 AAccelByteWarsInGameGameMode::GetLivingTeamCount() const
 void AAccelByteWarsInGameGameMode::SpawnAndPossesPawn(APlayerState* PlayerState)
 {
 	AAccelByteWarsPlayerState* ABPlayerState = Cast<AAccelByteWarsPlayerState>(PlayerState);
-	if (ABPlayerState == nullptr)
-		return;
+	NULLPTR_CHECK(ABPlayerState)
 
 	APlayerController* PlayerController = ABPlayerState->GetPlayerController();
-	if (PlayerController == nullptr)
-		return;
+	NULLPTR_CHECK(PlayerController)
 
 	// Only spawn if player have lives
 	if (ABPlayerState->NumLivesLeft <= 0)
@@ -477,7 +489,7 @@ void AAccelByteWarsInGameGameMode::SpawnAndPossesPawn(APlayerState* PlayerState)
 		return;
 
 	// Pawn uses BP class pawn and "expose on spawn"ed parameters, use implementable event
-	APawn* Pawn = CreatePlayerPawn(FindGoodPlayerPosition(), ABPlayerState->TeamColor, PlayerController);
+	APawn* Pawn = CreatePlayerPawn(FindGoodPlayerPosition(ABPlayerState), PlayerController);
 	NULLPTR_CHECK(Pawn);
 
 	// setup and posses
@@ -485,7 +497,7 @@ void AAccelByteWarsInGameGameMode::SpawnAndPossesPawn(APlayerState* PlayerState)
 	PlayerController->Possess(Pawn);
 }
 
-APawn* AAccelByteWarsInGameGameMode::CreatePlayerPawn(const FVector& Location, const FLinearColor& Color, APlayerController* PlayerController)
+APawn* AAccelByteWarsInGameGameMode::CreatePlayerPawn(const FVector& Location, APlayerController* PlayerController)
 {
 	if (PlayerController == nullptr)
 		return nullptr;
@@ -517,14 +529,12 @@ APawn* AAccelByteWarsInGameGameMode::CreatePlayerPawn(const FVector& Location, c
 		return nullptr;
 
 	NewPlayerPawn->SetReplicates(true);
-	NewPlayerPawn->Server_GetPlayerSelectedShip(PlayerController, ABPlayerState, Color);
+	NewPlayerPawn->Server_GetPlayerSelectedShip(PlayerController, ABPlayerState, ABPlayerState->TeamColor);
 
 	return NewPlayerPawn;
 }
 
-TArray<FVector> AAccelByteWarsInGameGameMode::GetActiveGameObjectsPosition(
-	const float SeparationFactor,
-	const float ShipSeparationFactor) const
+TArray<FVector> AAccelByteWarsInGameGameMode::GetActiveGameObjectsPosition() const
 {
 	TArray<FVector> Positions;
 
@@ -537,35 +547,168 @@ TArray<FVector> AAccelByteWarsInGameGameMode::GetActiveGameObjectsPosition(
 		}
 
 		const FVector& ActorLocation = ActiveGameObject->GetOwner()->GetActorLocation();
-		const float Z = ActiveGameObject->Radius * 100.0 *
-			(ActiveGameObject->ObjectType == EGameplayObjectType::SHIP ? ShipSeparationFactor : SeparationFactor);
+		const float Z = (ActiveGameObject->Radius * 100.0) + ObjectSafeDistance;
 		Positions.Add(FVector(ActorLocation.X, ActorLocation.Y, Z));
 	}
 
 	return Positions;
 }
 
-FVector AAccelByteWarsInGameGameMode::FindGoodPlanetPosition() const
+void AAccelByteWarsInGameGameMode::SpawnPlanets()
 {
-	FVector Position = FVector::ZeroVector;
+	for (int i = 0; i < MaxTargetPlanetCount; ++i)
+	{
+		// random which planet to spawn
+		const int32 RandomIndex = FMath::RandRange(0, PlanetMap.Num() - 1);
+		const FPlanetMetadata PlanetData = *PlanetMap.Find(RandomIndex);
 
-	const TArray<FVector> ActiveGameObjectLocations = GetActiveGameObjectsPosition(1.5f, 25.0f);
-	FVector2D Position2D = FindGoodSpawnLocation(ActiveGameObjectLocations, true);
-	Position.X = Position2D.X;
-	Position.Y = Position2D.Y;
+		// Calculate pseudorandom location
+		FVector Location;
+		if (!FindGoodPlanetPosition(Location))
+		{
+			continue;
+		}
 
-	return Position;
+		const TSubclassOf<AActor>& ObjectToSpawn = ObjectsToSpawn[PlanetData.PlanetID];
+		AActor* SpawnedObject = GetWorld()->SpawnActor(ObjectToSpawn, &Location, &FRotator::ZeroRotator);
+		SetupGameplayObject(SpawnedObject);
+	}
 }
 
-FVector AAccelByteWarsInGameGameMode::FindGoodPlayerPosition() const
+bool AAccelByteWarsInGameGameMode::FindGoodPlanetPosition(FVector& Position) const
 {
-	FVector Position = FVector::ZeroVector;
+	FVector2D MaxBound;
+	FVector2D MinBound;
 
-	const TArray<FVector> ActiveGameObjectLocations = GetActiveGameObjectsPosition(1.5f, 25.0f);
-	FVector2D Position2D = FindGoodSpawnLocation(ActiveGameObjectLocations, false);
+	// calculate allowable spawn area width and height
+	const float PlanetSpawnProhibitedAreaDecimal = 1 - (PlanetSpawnAreaPercentage / 100.0f);
+	const float ProhibitedWidth =
+		FMath::Abs(ABInGameGameState->MaxGameBound.X - ABInGameGameState->MinGameBound.X) * PlanetSpawnProhibitedAreaDecimal;
+	const float ProhibitedHeight =
+		FMath::Abs(ABInGameGameState->MaxGameBound.Y - ABInGameGameState->MinGameBound.Y) * PlanetSpawnProhibitedAreaDecimal;
+
+	// Set allowable planet spawn area
+	MaxBound.X = ABInGameGameState->MaxGameBound.X - (ProhibitedWidth / 2);
+	MaxBound.Y = ABInGameGameState->MaxGameBound.Y - (ProhibitedHeight / 2);
+	MinBound.X = ABInGameGameState->MinGameBound.X + (ProhibitedWidth / 2);
+	MinBound.Y = ABInGameGameState->MinGameBound.Y + (ProhibitedHeight / 2);
+
+	// draw planets' spawn area
+	if (bDrawBoundingBox)
+	{
+		const float BoundingBoxHalfWidth = FMath::Abs(MaxBound.X - MinBound.X) / 2;
+		const float BoundingBoxHalfHeight = FMath::Abs(MaxBound.Y - MinBound.Y) / 2;
+		const FVector BoxCenter =
+			FVector(MinBound.X + BoundingBoxHalfWidth, MinBound.Y + BoundingBoxHalfHeight, 0.0f);
+		const FVector BoxExtents =
+			FVector(BoundingBoxHalfWidth, BoundingBoxHalfHeight, 100.0f); // Z extent is arbitrary for visibility
+		DrawDebugBox(
+			GetWorld(),
+			BoxCenter,
+			BoxExtents,
+			FColor::Blue,
+			true,
+			-1.0f,
+			0,
+			10.0f);
+	}
+
+	const TArray<FVector> ActiveGameObjectsCoords = GetActiveGameObjectsPosition();
+	FVector2D Position2D;
+	if (!FindGoodSpawnLocation(
+		Position2D,
+		ActiveGameObjectsCoords,
+		MinBound,
+		MaxBound))
+	{
+		return false;
+	}
+
 	Position.X = Position2D.X;
 	Position.Y = Position2D.Y;
+	
+	return true;
+}
 
+FVector AAccelByteWarsInGameGameMode::FindGoodPlayerPosition(APlayerState* PlayerState) const
+{
+	FVector Position = FVector::ZeroVector;
+	FVector2D MaxBound;
+	FVector2D MinBound;
+
+	const AAccelByteWarsPlayerState* ABPlayerState = Cast<AAccelByteWarsPlayerState>(PlayerState);
+	if (ABPlayerState == nullptr)
+	{
+		GAMEMODE_LOG(Warning, TEXT("PlayerState is null, returning 0,0 as spawn location."));
+		return Position;
+	}
+
+	// Quadrant based spawning, play area divided into 4 quadrants, and quadrant can only occupied by one ship
+	const float HalfWidth = FMath::Abs(ABInGameGameState->MaxGameBound.X - ABInGameGameState->MinGameBound.X) / 2.0f;
+	const float HalfHeight = FMath::Abs(ABInGameGameState->MaxGameBound.Y - ABInGameGameState->MinGameBound.Y) / 2.0f;
+
+	// Quadrant balancing, make sure that the second player will be spawned diagonal to the first one
+	constexpr int QuadrantIndices[4] = {0, 3, 2, 1};
+
+	switch (QuadrantIndices[ABPlayerState->TeamId])
+	{
+	case 0: // Top-Left Quadrant
+		MinBound.X = ABInGameGameState->MinGameBound.X;
+		MinBound.Y = ABInGameGameState->MinGameBound.Y + HalfHeight + SafeZone;
+		MaxBound.X = ABInGameGameState->MaxGameBound.X - HalfWidth - SafeZone;
+		MaxBound.Y = ABInGameGameState->MaxGameBound.Y;
+		break;
+	case 1: // Top-Right Quadrant
+		MinBound.X = ABInGameGameState->MinGameBound.X + HalfWidth + SafeZone;
+		MinBound.Y = ABInGameGameState->MinGameBound.Y + HalfHeight + SafeZone;
+		MaxBound.X = ABInGameGameState->MaxGameBound.X;
+		MaxBound.Y = ABInGameGameState->MaxGameBound.Y;
+		break;
+	case 2: // Bottom-Left Quadrant
+		MinBound.X = ABInGameGameState->MinGameBound.X;
+		MinBound.Y = ABInGameGameState->MinGameBound.Y;
+		MaxBound.X = ABInGameGameState->MaxGameBound.X - HalfWidth - SafeZone;
+		MaxBound.Y = ABInGameGameState->MaxGameBound.Y - HalfHeight - SafeZone;
+		break;
+	case 3: // Bottom-Right Quadrant
+		MinBound.X = ABInGameGameState->MinGameBound.X + HalfWidth + SafeZone;
+		MinBound.Y = ABInGameGameState->MinGameBound.Y;
+		MaxBound.X = ABInGameGameState->MaxGameBound.X;
+		MaxBound.Y = ABInGameGameState->MaxGameBound.Y - HalfHeight - SafeZone;
+		break;
+	default: ;
+	}
+
+	// pseudo-randomizer
+	const TArray<FVector> ActiveGameObjectsCoords = GetActiveGameObjectsPosition();
+	FVector2D Position2;
+	if (!FindGoodSpawnLocation(Position2, ActiveGameObjectsCoords, MinBound, MaxBound))
+	{
+		GAMEMODE_LOG(Warning, TEXT("Can't find good spawn location for PLAYER. Please report"));
+	}
+	Position.X = Position2.X;
+	Position.Y = Position2.Y;
+
+	// Draw the spawn area box for debugging
+	if (bDrawBoundingBox)
+	{
+		const float BoundingBoxHalfWidth = FMath::Abs(MaxBound.X - MinBound.X) / 2;
+		const float BoundingBoxHalfHeight = FMath::Abs(MaxBound.Y - MinBound.Y) / 2;
+		const FVector BoxCenter =
+			FVector(MinBound.X + BoundingBoxHalfWidth, MinBound.Y + BoundingBoxHalfHeight, 0.0f);
+		const FVector BoxExtents =
+			FVector(BoundingBoxHalfWidth, BoundingBoxHalfHeight, 100.0f); // Z extent is arbitrary for visibility
+		DrawDebugBox(
+			GetWorld(),
+			BoxCenter,
+			BoxExtents,
+			FColor::Green,
+			true,
+			-1.0f,
+			0,
+			10.0f);
+	}
+	
 	return Position;
 }
 #pragma endregion 
@@ -601,66 +744,69 @@ void AAccelByteWarsInGameGameMode::SetupShutdownCountdownsValue() const
 #pragma endregion
 
 #pragma region "Gameplay logic math helper"
-FVector2D AAccelByteWarsInGameGameMode::FindGoodSpawnLocation(const TArray<FVector>& ActiveGameObjectsCoords, bool ForStars /* = false */) const
+bool AAccelByteWarsInGameGameMode::FindGoodSpawnLocation(
+	FVector2D& OutCoord,
+	const TArray<FVector>& ActiveGameObjectsCoords,
+	const FVector2D& MinBound,
+	const FVector2D& MaxBound) const
 {
-	FVector2D& MaxBound = ABInGameGameState->MaxGameBound;
-	FVector2D& MinBound = ABInGameGameState->MinGameBound;
-
-	if (ForStars)
-	{
-		MaxBound = ABInGameGameState->MaxStarsGameBound;
-		MinBound = ABInGameGameState->MinStarsGameBound;
-	}
-
 	// Calculate prohibited area size
 	double AreaProhibited = 0.0;
-	for (const FVector& Coord : ActiveGameObjectsCoords)
+	for (const FVector& CircleCoord : ActiveGameObjectsCoords)
 	{
 		// assuming all object takes the shape of a circle with Z as the radius
-		AreaProhibited += UKismetMathLibrary::Abs(UKismetMathLibrary::GetPI() * FMath::Pow(Coord.Z, 2.0));
+		// closest distance between circle's center to box's outer rim
+		float d = FMath::Sqrt(
+			FMath::Square(FMath::Min(FMath::Max(CircleCoord.X, MinBound.X), MaxBound.X) - CircleCoord.X) +
+			FMath::Square(FMath::Min(FMath::Max(CircleCoord.Y, MinBound.Y), MaxBound.Y) - CircleCoord.Y));
+		float OverlapArea =
+			FMath::Square(CircleCoord.Z) *
+			FMath::Acos(d / (2 * CircleCoord.Z)) -
+			((d / 2) - FMath::Sqrt(
+				FMath::Square(CircleCoord.Z) -
+				FMath::Square(d / 2)));
+
+		// if NaN, meaning the circle is entirely outside the bounding box
+		if (FMath::IsNaN(OverlapArea))
+		{
+			OverlapArea = 0;
+		}
+
+		AreaProhibited += OverlapArea;
 	}
 
 	// Calculate total play area size
-	double RangeX = (MaxBound.X - MinBound.X);
-	double RangeY = (MaxBound.Y - MinBound.Y);
-	double AreaTotal = UKismetMathLibrary::Abs(RangeX * RangeY);
+	const double Width = (MaxBound.X - MinBound.X);
+	const double Height = (MaxBound.Y - MinBound.Y);
+	const double AreaTotal = UKismetMathLibrary::Abs(Width * Height);
 
 	// Calculate allowable area size
-	double AreaAllowed = AreaTotal - AreaProhibited;
+	const double AreaAllowed = AreaTotal - AreaProhibited;
 
-	// Negative value means not enough room in the game play area -> increase play area while maintaining the original ratio
+	// Negative value means not enough room in the game play area -> skip spawn
 	if (AreaAllowed < 0)
 	{
-		const double n = FMath::Pow((AreaTotal + FMath::Abs(AreaAllowed)) / AreaTotal, 0.5);
-		RangeX *= n;
-		RangeY *= n;
-
-		MaxBound.X = (RangeX + MinBound.X);
-		MaxBound.Y = (RangeY + MinBound.Y);
-
-		AreaTotal += UKismetMathLibrary::Abs(RangeX * RangeY);
-		AreaAllowed = AreaTotal - AreaProhibited;
-
-		UE_LOG(LogTemp, Log, TEXT("Play area is smaller than the prohibited area. Increasing play area. New MaxBound: %s"), *MaxBound.ToString());
+		GAMEMODE_LOG(Warning, TEXT("Not enough room, skipping spawn."), *MaxBound.ToString());
+		return false;
 	}
 
 	// Random value within the allowable area
-	double RelativeLocation = UKismetMathLibrary::RandomFloatInRange(0.0f, AreaAllowed);
+	double RelativeLocation = static_cast<float>(UKismetMathLibrary::RandomIntegerInRange(0, AreaAllowed));
 
-	FVector2D OutLocation = CalculateActualCoord(RelativeLocation, MinBound, RangeX);
+	OutCoord = CalculateActualCoord(RelativeLocation, MinBound, Width);
 
 	// check if "overlapped" with existing objects
 	bool bUpdated = true;
 	while (bUpdated)
 	{
 		bUpdated = false;
-		for (const FVector& Coord : ActiveGameObjectsCoords)
+		for (const FVector& CircleCoord : ActiveGameObjectsCoords)
 		{
-			if (IsInsideCircle(OutLocation, Coord))
+			if (IsInsideCircle(OutCoord, CircleCoord))
 			{
 				// Add the X axis length inside the circle on the specified Y to the RelativeLocation
-				RelativeLocation += CalculateCircleLengthAlongXonY(Coord, OutLocation.Y);
-				OutLocation = CalculateActualCoord(RelativeLocation, MinBound, RangeX);
+				RelativeLocation += CalculateCircleLengthAlongXonY(CircleCoord, OutCoord.Y);
+				OutCoord = CalculateActualCoord(RelativeLocation, MinBound, Width);
 
 				bUpdated = true;
 				break;
@@ -668,7 +814,7 @@ FVector2D AAccelByteWarsInGameGameMode::FindGoodSpawnLocation(const TArray<FVect
 		}
 	}
 
-	return OutLocation;
+	return true;
 }
 
 bool AAccelByteWarsInGameGameMode::IsInsideCircle(const FVector2D& Target, const FVector& Circle) const
@@ -744,5 +890,69 @@ bool AAccelByteWarsInGameGameMode::LocationHasLineOfSightToOtherShip(const FVect
 	}
 
 	return false;
+}
+#pragma endregion
+
+#pragma region "Debugging"
+void AAccelByteWarsInGameGameMode::StartPlanetSpawningTimer(float InRate)
+{
+	GetWorldTimerManager().SetTimer(
+		PlanetSpawningTimerHandle,
+		this,
+		&AAccelByteWarsInGameGameMode::ResetPlanets,
+		InRate,
+		true);
+}
+
+void AAccelByteWarsInGameGameMode::StopPlanetSpawningTimer()
+{
+	if (PlanetSpawningTimerHandle.IsValid())
+	{
+		GetWorldTimerManager().ClearTimer(PlanetSpawningTimerHandle);
+	}
+}
+
+void AAccelByteWarsInGameGameMode::ResetPlanets()
+{
+	// remove planets
+	TArray<AActor*> Actors;
+	UGameplayStatics::GetAllActorsOfClass(this, AActor::StaticClass(), Actors);
+	for (AActor* Actor : Actors)
+	{
+		if (const UAccelByteWarsGameplayObjectComponent* Component =
+			Cast<UAccelByteWarsGameplayObjectComponent>(Actor->GetComponentByClass(UAccelByteWarsGameplayObjectComponent::StaticClass())))
+		{
+			if (Component->ObjectType != EGameplayObjectType::SHIP)
+			{
+				Actor->Destroy();
+			}
+		}
+	}
+
+	// remove planets from game state
+	for (UAccelByteWarsGameplayObjectComponent* Component : ABInGameGameState->ActiveGameObjects)
+	{
+		if (Component->ObjectType != EGameplayObjectType::SHIP)
+		{
+			ABInGameGameState->ActiveGameObjects.Remove(Component);
+		}
+	}
+
+	SpawnPlanets();
+}
+
+void AAccelByteWarsInGameGameMode::SetPlanetTargetNum(const int32 NewTarget)
+{
+	MaxTargetPlanetCount = NewTarget;
+}
+
+void AAccelByteWarsInGameGameMode::SetObjectSafeDistance(float NewDistance)
+{
+	ObjectSafeDistance = NewDistance;
+}
+
+void AAccelByteWarsInGameGameMode::DrawBoundingBoxOnNextSpawn(const bool bDraw)
+{
+	bDrawBoundingBox = bDraw;
 }
 #pragma endregion 

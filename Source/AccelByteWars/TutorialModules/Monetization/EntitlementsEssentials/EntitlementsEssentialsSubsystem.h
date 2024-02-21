@@ -7,9 +7,13 @@
 #include "CoreMinimal.h"
 #include "EntitlementsEssentialsModel.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
+#include "Core/Ships/PlayerShipModels.h"
+#include "Core/PowerUps/PowerUpModels.h"
 #include "OnlineEntitlementsInterfaceAccelByte.h"
 #include "Interfaces/OnlineExternalUIInterface.h"
 #include "EntitlementsEssentialsSubsystem.generated.h"
+
+class AAccelByteWarsPlayerPawn;
 
 UCLASS()
 class ACCELBYTEWARS_API UEntitlementsEssentialsSubsystem : public UTutorialModuleSubsystem
@@ -57,6 +61,12 @@ private:
 		const int32 UseCount, 
 		const FOnConsumeUserEntitlementComplete OnComplete);
 
+	void OnValidateActivatePowerUp(AAccelByteWarsPlayerPawn* PlayerPawn, const EPowerUpSelection SelectedPowerUp);
+	void OnConsumePowerUpComplete(const bool bSucceded, const UItemDataObject* Entitlement, const FUniqueNetIdPtr UserId, const EPowerUpSelection SelectedPowerUp);
+
+	void OnPlayerEquipmentLoaded(AAccelByteWarsPlayerPawn* PlayerPawn, const EShipDesign SelectedShipDesign, const EPowerUpSelection SelectedPowerUp);
+	void OnQueryToSetupPowerUpInfoComplete(bool bWasSuccessful, const FUniqueNetId& UserId, const FString& Namespace, const FString& Error, const EPowerUpSelection SelectedPowerUp);
+
 	FUniqueNetIdPtr GetLocalPlayerUniqueNetId(const APlayerController* PlayerController) const;
 
 	FOnlineEntitlementsAccelBytePtr EntitlementsInterface;
@@ -65,4 +75,5 @@ private:
 
 	FDelegateHandle ConsumeEntitlementDelegateHandle;
 	FDelegateHandle QueryToConsumeEntitlementDelegateHandle;
+	FDelegateHandle QueryToSetupPowerUpInfoDelegateHandle;
 };

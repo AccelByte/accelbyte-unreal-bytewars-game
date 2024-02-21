@@ -38,47 +38,6 @@ public:
 	bool bCannotBeInvited;
 	FString ReasonCannotBeInvited;
 
-    FString GetPresence() const
-    {
-        // If friend is online, simply return online.
-        if (bIsOnline) 
-        {
-            return NSLOCTEXT("AccelByteWars", "Online", "Online").ToString();
-        }
-
-        // Only check last online within a month.
-        const FDateTime CurrentTime = FDateTime::UtcNow();
-        if (CurrentTime.GetMonth() != LastOnline.GetMonth()) 
-        {
-            return NSLOCTEXT("AccelByteWars", "Last Online a Long Ago", "Last Online a Long Ago").ToString();
-        }
-
-        // Check last online in days.
-        if (CurrentTime.GetDay() > LastOnline.GetDay()) 
-        {
-            const int32 Days = CurrentTime.GetDay() - LastOnline.GetDay();
-            return FText::Format(NSLOCTEXT("AccelByteWars", "Last Online Day(s) Ago", "Last Online %d Day(s) Ago"), Days).ToString();
-        }
-
-        // Check last online in hours.
-        if (CurrentTime.GetHour() > LastOnline.GetHour())
-        {
-            const int32 Hours = CurrentTime.GetHour() - LastOnline.GetHour();
-            return FText::Format(NSLOCTEXT("AccelByteWars", "Last Online Hour(s) Ago", "Last Online %d Hour(s) Ago"), Hours).ToString();
-        }
-
-        // Check last online in minutes.
-        if (CurrentTime.GetMinute() > LastOnline.GetMinute()) 
-        {
-            const int32 Minutes = CurrentTime.GetMinute() - LastOnline.GetMinute();
-            return FText::Format(NSLOCTEXT("AccelByteWars", "Last Online Minute(s) Ago", "Last Online %d Minute(s) Ago"), Minutes).ToString();
-        }
-        else 
-        {
-            return NSLOCTEXT("AccelByteWars", "Last Online a While Ago", "Last Online a While Ago").ToString();
-        }
-    }
-
     static UFriendData* ConvertToFriendData(TSharedRef<FOnlineUser> OnlineUser)
     {
         UFriendData* FriendData = NewObject<UFriendData>();
@@ -95,9 +54,6 @@ public:
     static UFriendData* ConvertToFriendData(TSharedRef<FOnlineFriend> OnlineUser)
     {
         UFriendData* FriendData = ConvertToFriendData(StaticCast<TSharedRef<FOnlineUser>>(OnlineUser));
-
-        FriendData->bIsOnline = OnlineUser->GetPresence().bIsOnline;
-        FriendData->LastOnline = OnlineUser->GetPresence().LastOnline;
 
         switch (OnlineUser->GetInviteStatus())
         {
@@ -153,6 +109,7 @@ public:
 
 #define CANNOT_INVITE_FRIEND_SELF NSLOCTEXT("AccelByteWars", "Cannot friend with yourself", "Cannot friend with yourself")
 #define SUCCESS_SEND_FRIEND_REQUEST NSLOCTEXT("AccelByteWars", "Friend request is sent", "Friend request is sent")
+#define SUCCESS_SEND_FRIEND_REQUEST_BY_FRIEND_CODE NSLOCTEXT("AccelByteWars", "Friend request by friend code is sent", "Friend request by friend code is sent")
 #define SUCCESS_ACCEPT_FRIEND_REQUEST NSLOCTEXT("AccelByteWars", "Friend request is accepted", "Friend request is accepted")
 #define SUCCESS_REJECT_FRIEND_REQUEST NSLOCTEXT("AccelByteWars", "Friend request is rejected", "Friend request is rejected")
 #define SUCCESS_CANCEL_FRIEND_REQUEST NSLOCTEXT("AccelByteWars", "Friend request is canceled", "Friend request is canceled")
@@ -164,6 +121,7 @@ public:
 DECLARE_DELEGATE_ThreeParams(FOnGetCacheFriendListComplete, bool /*bWasSuccessful*/, TArray<TSharedRef<FOnlineFriend>>& /*CachedFriendList*/, const FString& /*ErrorMessage*/);
 DECLARE_DELEGATE(FOnCachedFriendsDataUpdated);
 
+DECLARE_DELEGATE_ThreeParams(FOnGetSelfFriendCodeComplete, bool /*bWasSuccessful*/, UFriendData* /*FriendData*/, const FString& /*FriendCode*/);
 DECLARE_DELEGATE_ThreeParams(FOnFindFriendComplete, bool /*bWasSuccessful*/, UFriendData* /*FriendData*/, const FString& /*ErrorMessage*/);
 DECLARE_DELEGATE_ThreeParams(FOnGetInboundFriendRequestListComplete, bool /*bWasSuccessful*/, TArray<UFriendData*> /*FriendRequests*/, const FString& /*ErrorMessage*/);
 DECLARE_DELEGATE_ThreeParams(FOnGetOutboundFriendRequestListComplete, bool /*bWasSuccessful*/, TArray<UFriendData*> /*FriendRequests*/, const FString& /*ErrorMessage*/);

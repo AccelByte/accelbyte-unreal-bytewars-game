@@ -61,8 +61,8 @@ private:
 #pragma region "Match Session Essentials"
 public:
 	const TMap<TPair<EGameModeNetworkType, EGameModeType>, FString> MatchSessionTemplateNameMap = {
-		{{EGameModeNetworkType::DS, EGameModeType::FFA}, "unreal-elimination-ds"},
-		{{EGameModeNetworkType::DS, EGameModeType::TDM}, "unreal-teamdeathmatch-ds"}
+		{{EGameModeNetworkType::DS, EGameModeType::FFA}, "unreal-elimination-ds-ams"},
+		{{EGameModeNetworkType::DS, EGameModeType::TDM}, "unreal-teamdeathmatch-ds-ams"}
 	};
 
 	virtual void CreateMatchSession(

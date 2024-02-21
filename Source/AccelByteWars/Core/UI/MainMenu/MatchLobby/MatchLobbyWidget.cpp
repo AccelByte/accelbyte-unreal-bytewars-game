@@ -78,6 +78,11 @@ void UMatchLobbyWidget::NativeOnActivated()
 	{
 		Btn_Start->SetVisibility(GetOwningPlayer()->HasAuthority() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	}
+
+	if (OnEnterLobbyDelegate.IsBound())
+	{
+		OnEnterLobbyDelegate.Broadcast(GetOwningPlayer());
+	}
 }
 
 void UMatchLobbyWidget::NativeOnDeactivated()
@@ -157,6 +162,7 @@ void UMatchLobbyWidget::GenerateMultiplayerTeamEntries()
 	ResetTeamEntries();
 
 	// Spawn team and player entry widgets.
+	const FUniqueNetIdRepl LocalPlayerNetId = GetGameInstance()->GetPrimaryPlayerUniqueIdRepl();
 	int32 PlayerIndex = 0;
 	for (const FGameplayTeamData& Team : GameState->Teams) 
 	{
@@ -172,7 +178,17 @@ void UMatchLobbyWidget::GenerateMultiplayerTeamEntries()
 		for (const FGameplayPlayerData& Member : Team.TeamMembers)
 		{
 			PlayerIndex++;
-			const FString PlayerName = Member.PlayerName.IsEmpty() ? FString::Printf(TEXT("Player %d"), PlayerIndex) : Member.PlayerName;
+			
+			FString PlayerName = FString::Printf(TEXT("Player %d"), PlayerIndex);
+			const bool bIsLocalPlayer = LocalPlayerNetId.IsValid() && LocalPlayerNetId == Member.UniqueNetId;
+			if (bIsLocalPlayer)
+			{
+				PlayerName = NSLOCTEXT("AccelByteWars", "Match Lobby Widget Local Player Identifier", "You").ToString();
+			}
+			else if (!Member.PlayerName.IsEmpty())
+			{
+				PlayerName = Member.PlayerName;
+			}
 
 			// Spawn player entry and set the default username.
 			const TWeakObjectPtr<UPlayerEntryWidget> PlayerEntry = MakeWeakObjectPtr<UPlayerEntryWidget>(CreateWidget<UPlayerEntryWidget>(this, PlayerEntryWidget.Get()));

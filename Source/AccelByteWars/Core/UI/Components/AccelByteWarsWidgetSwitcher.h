@@ -88,6 +88,7 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	UWidget* GetFocusTargetBasedOnCurrentState() const;
 	
+	void HandleWidgetValidators();
 	void HandleFTUE();
 	
 private:

@@ -341,15 +341,14 @@ void UMatchSessionDSOnlineSession::CreateMatchSession(
 	SessionSettings.Set(
 		GAMESETUP_GameModeCode,
 		FString(GameModeType == EGameModeType::FFA ? "ELIMINATION-DS-USERCREATED" : "TEAMDEATHMATCH-DS-USERCREATED"));
-
-	// Check is using AMS
-	const bool bUseAMS = UTutorialModuleOnlineUtility::GetIsServerUseAMS();
 	
 	// Get match pool id based on game mode type
 	FString MatchTemplateName = MatchSessionTemplateNameMap[{EGameModeNetworkType::DS, GameModeType}];
-	if(bUseAMS)
+
+	// if not using AMS, remove suffix -ams (internal purpose)
+	if(!UTutorialModuleOnlineUtility::GetIsServerUseAMS())
 	{
-		MatchTemplateName.Append("-ams");
+		MatchTemplateName = MatchTemplateName.Replace(TEXT("-ams"), TEXT(""));
 	}
 	
 	CreateSession(

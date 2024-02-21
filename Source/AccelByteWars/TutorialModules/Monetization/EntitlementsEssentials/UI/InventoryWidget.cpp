@@ -4,11 +4,11 @@
 
 
 #include "InventoryWidget.h"
-
-#include "Core/Player/AccelByteWarsPlayerController.h"
 #include "Components/TileView.h"
 #include "CommonButtonBase.h"
 #include "Components/TextBlock.h"
+#include "Core/PowerUps/PowerUpModels.h"
+#include "Core/Ships/PlayerShipModels.h"
 #include "Core/UI/Components/AccelByteWarsAsyncImageWidget.h"
 #include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
 #include "Core/UI/MainMenu/Store/Components/StoreItemListEntry.h"
@@ -26,6 +26,11 @@ void UInventoryWidget::NativeOnActivated()
 	Tv_Content->OnItemClicked().AddUObject(this, &UInventoryWidget::OnClickListItem);
 	Btn_Back->OnClicked().AddUObject(this, &ThisClass::DeactivateWidget);
 	Btn_Equip->OnClicked().AddUObject(this, &ThisClass::OnClickEquip);
+	Btn_Unequip->OnClicked().AddUObject(this, &ThisClass::OnClickUnequip);
+	if (UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance()))
+	{
+		Btn_Unequip->SetIsEnabled(GameInstance->GetShipPowerUp() != EPowerUpSelection::NONE);
+	}
 
 	// reset UI
 	Ws_Root->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Loading);
@@ -43,7 +48,15 @@ void UInventoryWidget::NativeOnActivated()
 	SelectedItem = EmptyData;
 	W_SelectedItem_Preview->LoadImage(SelectedItem->IconUrl);
 	Tb_SelectedItem_Title->SetText(SelectedItem->Title);
-	Btn_Equip->SetIsInteractionEnabled(false);
+	Btn_Equip->SetIsEnabled(false);
+
+	if (OnInventoryMenuActivated.IsBound())
+	{
+		OnInventoryMenuActivated.Broadcast(GetOwningPlayer(), TDelegate<void()>::CreateWeakLambda(this, [this]()
+		{
+			Tv_Content->RegenerateAllEntries();
+		}));
+	}
 }
 
 void UInventoryWidget::NativeOnDeactivated()
@@ -54,11 +67,12 @@ void UInventoryWidget::NativeOnDeactivated()
 	Tv_Content->OnItemClicked().RemoveAll(this);
 	Btn_Back->OnClicked().RemoveAll(this);
 	Btn_Equip->OnClicked().RemoveAll(this);
+	Btn_Unequip->OnClicked().RemoveAll(this);
 	Ws_Root->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Loading);
 
-	if (OnInventorysMenuDeactivated.IsBound())
+	if (OnInventoryMenuDeactivated.IsBound())
 	{
-		OnInventorysMenuDeactivated.Broadcast(GetOwningPlayer());
+		OnInventoryMenuDeactivated.Broadcast(GetOwningPlayer(), TDelegate<void()>());
 	}
 }
 
@@ -115,7 +129,7 @@ void UInventoryWidget::OnClickListItem(UObject* Object)
 		W_SelectedItem_Preview->LoadImage(SelectedItem->IconUrl);
 		Tb_SelectedItem_Title->SetText(SelectedItem->Title);
 
-		Btn_Equip->SetIsInteractionEnabled(true);
+		Btn_Equip->SetIsEnabled(true);
 	}
 }
 
@@ -132,9 +146,11 @@ void UInventoryWidget::OnClickEquip()
 		return;
 	}
 
+	Btn_Unequip->SetIsEnabled(true);
+
 	// Power Ups Selection
-	const PowerUpSelection PowerUp = ConvertItemIdToPowerUp(SelectedItem->Id);
-	if (PowerUp != PowerUpSelection::NONE)
+	const EPowerUpSelection PowerUp = ConvertItemIdToPowerUp(SelectedItem->Id);
+	if (PowerUp != EPowerUpSelection::NONE)
 	{
 		GameInstance->SetShipPowerUp((int32)PowerUp);
 		GameInstance->SaveGameSettings();
@@ -145,5 +161,21 @@ void UInventoryWidget::OnClickEquip()
 	// Ship Selection
 	GameInstance->SetShipSelection((int32)ConvertItemIdToShipDesign(SelectedItem->Id));
 	GameInstance->SaveGameSettings();
+	Tv_Content->RegenerateAllEntries();
+}
+
+void UInventoryWidget::OnClickUnequip()
+{
+	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+	if (!GameInstance)
+	{
+		return;
+	}
+
+	Btn_Unequip->SetIsEnabled(false);
+
+	GameInstance->SetShipPowerUp((int32)EPowerUpSelection::NONE);
+	GameInstance->SaveGameSettings();
+
 	Tv_Content->RegenerateAllEntries();
 }

@@ -54,23 +54,6 @@ public:
 	virtual TOptional<FUIInputConfig> GetDesiredInputConfig() const override;
 	//~End of UCommonActivatableWidget interface
 
-#pragma region "Tutorial Module"
-	UFUNCTION(BlueprintImplementableEvent, Category = "Tutorial Module Metadata")
-	TArray<UPanelWidget*> GetGeneratedWidgetContainers();
-
-	// The Tutorial Module Data Asset associated with this widget.
-	UPROPERTY()
-	UTutorialModuleDataAsset* AssociateTutorialModule;
-
-	// The generated widget metadatas injected by one or more Tutorial Modules.
-	TArray<FTutorialModuleGeneratedWidget*> GeneratedWidgets;
-
-	// The FTUE dialogues to be shown when this widget is active.
-	TArray<FFTUEDialogueModel*> FTUEDialogues;
-
-	bool GetIsAllGeneratedWidgetsShouldNotDisplay() const;
-#pragma endregion
-
 protected:
 	/** Change the owning player controller input mode to game only and also hide the mouse cursor */
 	UFUNCTION(BlueprintCallable)
@@ -113,26 +96,40 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = Input)
 	EMouseCaptureMode GameMouseCaptureMode = EMouseCaptureMode::CapturePermanently;
 
-	UPROPERTY(EditAnywhere, Category = FTUE, meta = (ToolTip = "Whether this widget should initialize FTUE on activated."))
-	bool bOnActivatedInitializeFTUE = true;
-
-	// If set to true, hide this UI if the generated widgets is empty
-	UPROPERTY(EditDefaultsOnly, Category = "Tutorial Module Metadata")
-	bool bHideIfGeneratedWidgetEmpty = false;
-
 #pragma region "AccelByte SDK Config Menu"
 	// Handle to store action binding to open AccelByte SDK reconfiguration menu.
 	FUIActionBindingHandle OpenSdkConfigHandle;
 #pragma endregion
 
-private:
 #pragma region "Tutorial Module"
+public:
+	// The Tutorial Module Data Asset associated with this widget.
+	UPROPERTY()
+	UTutorialModuleDataAsset* AssociateTutorialModule;
+
+private:
 	void ValidateAssociateTutorialModule();
 #pragma endregion
 
 #pragma region "Generated Widgets"
-	void ValidateGeneratedWidgets();
+public:
+	UFUNCTION(BlueprintImplementableEvent, Category = "Tutorial Module Metadata")
+	TArray<UPanelWidget*> GetGeneratedWidgetContainers();
+
+	bool GetIsAllGeneratedWidgetsShouldNotDisplay() const;
+
+	// The generated widget metadatas injected by one or more Tutorial Modules.
+	TArray<FTutorialModuleGeneratedWidget*> GeneratedWidgets;
+
+protected:
 	void InitializeGeneratedWidgets();
+
+	// If set to true, hide this UI if the generated widgets is empty
+	UPROPERTY(EditDefaultsOnly, Category = "Tutorial Module Metadata")
+	bool bHideIfGeneratedWidgetEmpty = false;
+
+private:
+	void ValidateGeneratedWidgets();
 	TWeakObjectPtr<UAccelByteWarsButtonBase> GenerateEntryButton(FTutorialModuleGeneratedWidget& Metadata, UPanelWidget& WidgetContainer);
 	TWeakObjectPtr<UAccelByteWarsButtonBase> GenerateActionButton(FTutorialModuleGeneratedWidget& Metadata, UPanelWidget& WidgetContainer);
 	TWeakObjectPtr<UAccelByteWarsActivatableWidget> GenerateWidget(FTutorialModuleGeneratedWidget& Metadata, UPanelWidget& WidgetContainer);
@@ -144,11 +141,29 @@ private:
 #pragma endregion
 
 #pragma region "First Time User Experience (FTUE)"
+public:
+	// The FTUE dialogues to be shown when this widget is active.
+	TArray<FFTUEDialogueModel*> FTUEDialogues;
+
 protected:
 	void InitializeFTUEDialogues(bool bShowOnInitialize);
 	void DeinitializeFTUEDialogues();
 
+	UPROPERTY(EditAnywhere, Category = "Tutorial Module Metadata", meta = (ToolTip = "Whether this widget should initialize FTUE on activated."))
+	bool bOnActivatedInitializeFTUE = true;
+
 private:
 	void ValidateFTUEDialogues();
+#pragma endregion
+
+#pragma region "Widget Validators"
+public:
+	void ExecuteWidgetValidators();
+
+	// The widget validators to be executed when this widget is active.
+	TArray<FWidgetValidator*> WidgetValidators;
+
+private:
+	void ValidateWidgetValidators();
 #pragma endregion
 };

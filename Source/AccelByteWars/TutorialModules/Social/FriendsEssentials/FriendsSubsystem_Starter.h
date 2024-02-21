@@ -49,6 +49,7 @@ public:
 	FUniqueNetIdPtr GetUniqueNetIdFromPlayerController(const APlayerController* PC) const;
 	int32 GetLocalUserNumFromPlayerController(const APlayerController* PC) const;
 
+	FDelegateHandle OnQueryUserToGetFriendCodeDelegateHandle;
 	FDelegateHandle OnQueryUserInfoCompleteDelegateHandle;
 	FDelegateHandle OnRejectFriendRequestCompleteDelegateHandle;
 	FDelegateHandle OnCancelFriendRequestCompleteDelegateHandle;

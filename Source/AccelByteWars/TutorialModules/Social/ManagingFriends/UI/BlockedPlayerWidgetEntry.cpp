@@ -72,6 +72,8 @@ void UBlockedPlayerWidgetEntry::NativeOnListItemObjectSet(UObject* ListItemObjec
 	{
 		Img_Avatar->SetBrush(DefaultAvatarBrush);
 	}
+
+	OnListItemObjectSet.Broadcast();
 }
 
 void UBlockedPlayerWidgetEntry::OnUnblockButtonClicked()

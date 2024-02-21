@@ -5,7 +5,7 @@
 #pragma once
 
 #include "AccelByteWars/Core/Components/AccelByteWarsProceduralMeshComponent.h"
-
+#include "PowerUpModels.h"
 #include "Net/UnrealNetwork.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"

@@ -858,15 +858,13 @@ void UAccelByteWarsOnlineSession::StartMatchmaking(
 		return;
 	}
 
-	// Check is using AMS
-	const bool bUseAMS = UTutorialModuleOnlineUtility::GetIsServerUseAMS();
-	
 	// Get match pool id based on game mode type
 	FString MatchPoolId = MatchmakingPoolIdMap[{NetworkType, GameModeType}];
 
-	if(NetworkType == EGameModeNetworkType::DS && bUseAMS)
+	// if not using AMS, remove suffix -ams (internal purpose)
+	if(!UTutorialModuleOnlineUtility::GetIsServerUseAMS())
 	{
-		MatchPoolId.Append("-ams");
+		MatchPoolId = MatchPoolId.Replace(TEXT("-ams"), TEXT(""));
 	}
 	
 	// Setup matchmaking search handle, it will be used to store session search results.
@@ -1065,16 +1063,14 @@ void UAccelByteWarsOnlineSession::CreateMatchSession(
 	SessionSettings.Set(
 		GAMESETUP_GameModeCode,
 		MatchSessionTargetGameModeMap[{NetworkType, GameModeType}]);
-
-	// Check is using AMS
-	const bool bUseAMS = UTutorialModuleOnlineUtility::GetIsServerUseAMS();
 	
 	// Get match pool id based on game mode type
 	FString MatchTemplateName = MatchSessionTemplateNameMap[{NetworkType, GameModeType}];
 	
-	if(NetworkType == EGameModeNetworkType::DS && bUseAMS)
+	// if not using AMS, remove suffix -ams (internal purpose)
+	if(NetworkType == EGameModeNetworkType::DS && !UTutorialModuleOnlineUtility::GetIsServerUseAMS())
 	{
-		MatchTemplateName.Append("-ams");
+		MatchTemplateName = MatchTemplateName.Replace(TEXT("-ams"), TEXT(""));
 	}
 	
 	CreateSession(

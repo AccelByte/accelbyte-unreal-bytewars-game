@@ -28,8 +28,8 @@ public:
 		const FOnDSQueryUsersInfoComplete& OnComplete) override;
 
 	const TMap<FString, FString> TargetGameModeMap = {
-		{"unreal-elimination-ds", "ELIMINATION-DS"},
-		{"unreal-teamdeathmatch-ds", "TEAMDEATHMATCH-DS"}
+		{"unreal-elimination-ds-ams", "ELIMINATION-DS"},
+		{"unreal-teamdeathmatch-ds-ams", "TEAMDEATHMATCH-DS"}
 	};
 
 protected:
@@ -44,8 +44,8 @@ protected:
 
 private:
 	const TMap<EGameModeType, FString> MatchPoolIds = {
-		{EGameModeType::FFA, "unreal-elimination-ds"},
-		{EGameModeType::TDM, "unreal-teamdeathmatch-ds"}
+		{EGameModeType::FFA, "unreal-elimination-ds-ams"},
+		{EGameModeType::TDM, "unreal-teamdeathmatch-ds-ams"}
 	};
 
 	bool bIsInSessionServer = false;

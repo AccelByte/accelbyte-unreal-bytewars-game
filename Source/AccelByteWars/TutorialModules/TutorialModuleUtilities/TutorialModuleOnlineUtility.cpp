@@ -31,7 +31,10 @@ UTutorialModuleOnlineUtility::UTutorialModuleOnlineUtility()
     CheckForDedicatedServerVersionOverride();
 
     // Trigger to get general predefined argument.
-    FTUEArgumentModel::OnGetPredefinedArgument.BindUObject(this, &ThisClass::GetFTUEPredefinedArgument);
+    FServiceArgumentModel::OnGetPredefinedArgument.BindUObject(this, &ThisClass::GetServicePredefinedArgument);
+
+    // Trigger to execute predefined service validator.
+    FWidgetValidator::OnPredefinedServiceValidatorExecutedDelegate.BindUObject(this, &ThisClass::ExecutePredefinedServiceValidator);
 
     // Save general logged-in player information.
     UAuthEssentialsModels::OnLoginSuccessDelegate.AddWeakLambda(this, [this](const APlayerController* PC)
@@ -119,13 +122,17 @@ bool UTutorialModuleOnlineUtility::IsAccelByteSDKInitialized(const UObject* Targ
 
 bool UTutorialModuleOnlineUtility::GetIsServerUseAMS()
 {
-    // Check launch param
-    bool bUseAMS = FParse::Param(FCommandLine::Get(), TEXT("-ServerUseAMS"));
-	
-    // check DefaultEngine.ini next
-    if (!bUseAMS)
+    bool bUseAMS = true; // default is true
+
+    // Check launch param. Prioritize launch param.
+    FString UseAMSString;
+    if (FParse::Value(FCommandLine::Get(), TEXT("-bServerUseAMS="), UseAMSString))
     {
-        FString Config;
+        bUseAMS = !UseAMSString.Equals("false", ESearchCase::Type::IgnoreCase);
+    }
+    // check DefaultEngine.ini next
+    else
+    {
         GConfig->GetBool(TEXT("/ByteWars/TutorialModule.DSEssentials"), TEXT("bServerUseAMS"), bUseAMS, GEngineIni);
     }
 
@@ -439,47 +446,89 @@ ESettingsEnvironment UTutorialModuleOnlineUtility::ConvertOSSEnvToAccelByteEnv(c
     }
 }
 
-FString UTutorialModuleOnlineUtility::GetFTUEPredefinedArgument(const FTUEPredifinedArgument Keyword)
+void UTutorialModuleOnlineUtility::ExecutePredefinedServiceValidator(FWidgetValidator* WidgetValidator)
 {
-    FString Result = FString("");
+    if (!WidgetValidator)
+    {
+        return;
+    }
 
-    if (Keyword == FTUEPredifinedArgument::PLAYER_ID) 
+    const EServicePredefinedValidator ValidatorType = WidgetValidator->ValidatorType;
+    WidgetValidator->OnValidatorExecutedDelegate.Unbind();
+
+    switch (ValidatorType)
+    {
+    case EServicePredefinedValidator::AMS_ACCOUNT_SETUP:
+        AccelByte::FRegistry::AMS.GetAccount(
+            AccelByte::THandler<FAccelByteModelsAMSGetAccountResponse>::CreateWeakLambda(this, [WidgetValidator](const FAccelByteModelsAMSGetAccountResponse& Result)
+            {
+                if (WidgetValidator)
+                {
+                    WidgetValidator->FinalizeValidator(!Result.Id.IsEmpty());
+                }
+            }),
+            FErrorHandler::CreateWeakLambda(this, [WidgetValidator](int32 ErrorCode, const FString& ErrorMessage)
+            {
+                if (WidgetValidator)
+                {
+                    WidgetValidator->FinalizeValidator(false);
+                }
+            }
+        ));
+        break;
+    default:
+        break;
+    }
+}
+
+FString UTutorialModuleOnlineUtility::GetServicePredefinedArgument(const EServicePredifinedArgument Keyword)
+{
+    FString Result;
+
+    switch(Keyword) 
+    {
+    case EServicePredifinedArgument::PLAYER_ID:
     {
         Result = CurrentPlayerUserIdStr;
+        break;
     }
-    else if (Keyword == FTUEPredifinedArgument::PLAYER_DISPLAY_NAME)
+    case EServicePredifinedArgument::PLAYER_DISPLAY_NAME:
     {
         Result = CurrentPlayerDisplayName;
+        break;
     }
-    else if (Keyword == FTUEPredifinedArgument::GAME_SESSION_ID) 
+    case EServicePredifinedArgument::GAME_SESSION_ID:
     {
         if (FNamedOnlineSession* Session = GetOnlineSession(NAME_GameSession, this))
         {
             Result = Session->GetSessionIdStr();
         }
+        break;
     }
-    else if (Keyword == FTUEPredifinedArgument::PARTY_SESSION_ID)
+    case EServicePredifinedArgument::PARTY_SESSION_ID:
     {
         if (FNamedOnlineSession* Session = GetOnlineSession(NAME_PartySession, this))
         {
             Result = Session->GetSessionIdStr();
         }
+        break;
     }
-    else if (Keyword == FTUEPredifinedArgument::DEDICATED_SERVER_ID) 
+    case EServicePredifinedArgument::DEDICATED_SERVER_ID:
     {
         Result = GetDedicatedServer(this).Server.Pod_name;
+        break;
     }
-    else if (Keyword == FTUEPredifinedArgument::ENV_BASE_URL) 
+    case EServicePredifinedArgument::ENV_BASE_URL:
     {
         const FString ClientBaseURL = AccelByte::FRegistry::Settings.BaseUrl;
         const FString ServerBaseURL = AccelByte::FRegistry::ServerSettings.BaseUrl;
 
-        /* Since the environment URL config should be the same between client and server, try to get it from client first. 
+        /* Since the environment URL config should be the same between client and server, try to get it from client first.
          * If it is empty, then get it from server config. */
         Result = !ClientBaseURL.IsEmpty() ? ClientBaseURL : ServerBaseURL;
 
         // If using AGS Starter, format the environment URL by omitting the first sub-domain.
-        if (IsUseAGSStarter()) 
+        if (IsUseAGSStarter())
         {
             int32 ProtocolIndex = Result.Find(TEXT("://"));
             if (ProtocolIndex != INDEX_NONE)
@@ -493,8 +542,9 @@ FString UTutorialModuleOnlineUtility::GetFTUEPredefinedArgument(const FTUEPredif
                 }
             }
         }
+        break;
     }
-    else if (Keyword == FTUEPredifinedArgument::GAME_NAMESPACE)
+    case EServicePredifinedArgument::GAME_NAMESPACE:
     {
         const FString ClientGameNamespace = AccelByte::FRegistry::Settings.Namespace;
         const FString ServerGameNamespace = AccelByte::FRegistry::ServerSettings.Namespace;
@@ -502,11 +552,21 @@ FString UTutorialModuleOnlineUtility::GetFTUEPredefinedArgument(const FTUEPredif
         /* Since the game namespace config should be the same between client and server, try to get it from client first.
          * If it is empty, then get it from server config. */
         Result = !ClientGameNamespace.IsEmpty() ? ClientGameNamespace : ServerGameNamespace;
+        break;
     }
-    else if (Keyword == FTUEPredifinedArgument::ADMIN_PORTAL_URL)
+    case EServicePredifinedArgument::ADMIN_PORTAL_URL:
     {
         // Construct Admin Portal URL.
-        Result = FString::Printf(TEXT("%s/admin/namespaces/%s"), *GetFTUEPredefinedArgument(FTUEPredifinedArgument::ENV_BASE_URL), *GetFTUEPredefinedArgument(FTUEPredifinedArgument::GAME_NAMESPACE));
+        Result = FString::Printf(
+            TEXT("%s/admin/namespaces/%s"),
+            *GetServicePredefinedArgument(EServicePredifinedArgument::ENV_BASE_URL),
+            *GetServicePredefinedArgument(EServicePredifinedArgument::GAME_NAMESPACE));
+        break;
+    }
+    default:
+    {
+        break;
+    }
     }
 
     return Result;

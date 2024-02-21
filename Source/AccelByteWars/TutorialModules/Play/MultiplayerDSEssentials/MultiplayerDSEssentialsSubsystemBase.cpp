@@ -7,15 +7,21 @@
 
 bool UMultiplayerDSEssentialsSubsystemBase::ShouldCreateSubsystem(UObject* Outer) const
 {
-	// check launch param
-	bool bUseAMS = FParse::Param(FCommandLine::Get(), TEXT("-ServerUseAMS"));
+#pragma region "Check if using AMS or not"
+	bool bUseAMS = true; // default is true
 
-	// check DefaultEngine.ini next
-	if (!bUseAMS)
+	// Check launch param. Prioritize launch param.
+	FString UseAMSString;
+	if (FParse::Value(FCommandLine::Get(), TEXT("-bServerUseAMS="), UseAMSString))
 	{
-		FString Config;
+		bUseAMS = !UseAMSString.Equals("false", ESearchCase::Type::IgnoreCase);
+	}
+	// check DefaultEngine.ini next
+	else
+	{
 		GConfig->GetBool(TEXT("/ByteWars/TutorialModule.DSEssentials"), TEXT("bServerUseAMS"), bUseAMS, GEngineIni);
 	}
+#pragma endregion
 
 	return Super::ShouldCreateSubsystem(Outer) ? IsAMSServer() == bUseAMS : false;
 }

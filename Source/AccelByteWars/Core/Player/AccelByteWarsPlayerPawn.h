@@ -35,9 +35,10 @@
 #include "GameFramework/Pawn.h"
 #include "AccelByteWarsPlayerPawn.generated.h"
 
-DECLARE_MULTICAST_DELEGATE_FourParams(FOnMatchStarted, const AAccelByteWarsPlayerPawn* /*PlayerPawn*/, const APlayerController* /*PlayerController*/, const AAccelByteWarsPlayerState* /*PlayerState*/, FLinearColor /*InColor*/);
-DECLARE_DELEGATE_TwoParams(FOnValidateActivatePowerUp, AAccelByteWarsPlayerPawn* /*PlayerPawn*/, const PowerUpSelection /*SelectedPowerUp*/);
-
+DECLARE_MULTICAST_DELEGATE_FourParams(FOnMatchStarted, AAccelByteWarsPlayerPawn* /*PlayerPawn*/, const APlayerController* /*PlayerController*/, const AAccelByteWarsPlayerState* /*PlayerState*/, const FLinearColor /*InColor*/);
+DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnPlayerEquipmentLoaded, AAccelByteWarsPlayerPawn* /*PlayerPawn*/, const EShipDesign /*SelectedShipDesign*/, const EPowerUpSelection /*SelectedPowerUp*/);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnValidateActivatePowerUp, AAccelByteWarsPlayerPawn* /*PlayerPawn*/, const EPowerUpSelection /*SelectedPowerUp*/);
+ 
 UCLASS()
 class ACCELBYTEWARS_API AAccelByteWarsPlayerPawn : public APawn
 {
@@ -45,6 +46,7 @@ class ACCELBYTEWARS_API AAccelByteWarsPlayerPawn : public APawn
 
 public:
 	static inline FOnMatchStarted OnMatchStarted;
+	static inline FOnPlayerEquipmentLoaded OnPlayerEquipmentLoaded;
 	static inline FOnValidateActivatePowerUp OnValidateActivatePowerUp;
 
 	// Sets default values for this pawn's properties
@@ -165,6 +167,12 @@ public:
 	float ShowPowerLevelUITimer = 0.0f;
 
 	/**
+	 * @brief How long the ship label indicator should be shown on screen
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AccelByteWars)
+	float ShowShipLabelUITimer = 5.0f;
+
+	/**
 	 * @brief Minimum allowed missile speed
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AccelByteWars)
@@ -213,6 +221,12 @@ public:
 	void UpdatePowerBarUI(float DeltaTime);
 
 	/**
+	 * @brief Visually updates the ship label UI
+	 */
+	UFUNCTION(BlueprintImplementableEvent, Category = AccelByteWars)
+	void UpdateShipLabelUI(float DeltaTime);
+
+	/**
 	 * @brief Updated when the player sends some input
 	 */
 	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
@@ -256,19 +270,25 @@ public:
 	 * @brief Visually creates player ship
 	 */
 	UFUNCTION(BlueprintCallable, Server, Reliable, Category = AccelByteWars)
-	void Server_SpawnPlayerShip(ShipDesign SelectedShipDesign);
+	void Server_SpawnPlayerShip(const EShipDesign SelectedShipDesign);
 
 	/**
 	 * @brief Validate and activate power up (client side).
 	 */
 	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
-	void ValidateActivatePowerUp(PowerUpSelection SelectedPowerUp);
+	void ValidateActivatePowerUp(const EPowerUpSelection SelectedPowerUp);
+
+	/**
+	 * @brief Refresh game client power up state (server side).
+	 */
+	UFUNCTION(BlueprintCallable, Server, Reliable, Category = AccelByteWars)
+	void Server_RefreshSelectedPowerUp(const EPowerUpSelection SelectedPowerUp, const int32 PowerUpCount);
 
 	/**
 	 * @brief Activate power up (server side).
 	 */
 	UFUNCTION(BlueprintCallable, Server, Reliable, Category = AccelByteWars)
-	void Server_ActivatePowerUp(PowerUpSelection SelectedPowerUp);
+	void Server_ActivatePowerUp(const EPowerUpSelection SelectedPowerUp);
 
 	/**
 	 * @brief Shoots a missile

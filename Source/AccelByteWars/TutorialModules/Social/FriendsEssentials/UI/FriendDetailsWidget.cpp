@@ -27,9 +27,6 @@ void UFriendDetailsWidget::InitData(UFriendData* FriendData)
 			UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(CachedFriendData->UserId.ToSharedRef().Get())));
 	}
 
-	// Display presence.
-	Tb_Presence->SetText(FText::FromString(CachedFriendData->GetPresence()));
-
 	// Store default brush to be used to reset the avatar brush if needed.
 	if (!DefaultAvatarBrush.GetResourceObject())
 	{

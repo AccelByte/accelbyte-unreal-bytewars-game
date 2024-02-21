@@ -8,6 +8,7 @@
 #include "Components/WidgetSwitcher.h"
 #include "Components/TextBlock.h"
 #include "Components/Image.h"
+#include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
 
 #define LOCTEXT_NAMESPACE "AccelByteWars"
 
@@ -42,11 +43,9 @@ void UFriendWidgetEntry_Starter::NativeOnListItemObjectSet(UObject* ListItemObje
 	}
 	else
 	{
-		Tb_DisplayName->SetText(LOCTEXT("Byte Wars Player", "Byte Wars Player"));
+		Tb_DisplayName->SetText(FText::FromString(
+		UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(CachedFriendData->UserId.ToSharedRef().Get())));
 	}
-
-	// Display presence.
-	Tb_Presence->SetText(FText::FromString(CachedFriendData->GetPresence()));
 
 	// Store default brush to be used to reset the avatar brush if needed.
 	if (!DefaultAvatarBrush.GetResourceObject())
@@ -89,6 +88,8 @@ void UFriendWidgetEntry_Starter::NativeOnListItemObjectSet(UObject* ListItemObje
 	Btn_Invite->SetVisibility(!CachedFriendData->bCannotBeInvited ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	Tb_CannotInviteMessage->SetVisibility(CachedFriendData->bCannotBeInvited ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	Tb_CannotInviteMessage->SetText(FText::FromString(CachedFriendData->ReasonCannotBeInvited));
+
+	OnListItemObjectSet.Broadcast();
 }
 
 void UFriendWidgetEntry_Starter::OnInviteButtonClicked()

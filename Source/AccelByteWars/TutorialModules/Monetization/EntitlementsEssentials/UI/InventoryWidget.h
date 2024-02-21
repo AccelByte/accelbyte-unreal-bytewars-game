@@ -19,7 +19,8 @@ class UTileView;
 class UEntitlementsEssentialsSubsystem;
 class UAccelByteWarsWidgetSwitcher;
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnInventoryMenuDeactivated, const APlayerController* /*PlayerController*/);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnInventoryMenuActivated, const APlayerController* /*PlayerController*/, const TDelegate<void()> /*Callback*/);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnInventoryMenuDeactivated, const APlayerController* /*PlayerController*/, const TDelegate<void()> /*Callback*/);
 
 UCLASS(Abstract)
 class ACCELBYTEWARS_API UInventoryWidget : public UAccelByteWarsActivatableWidget
@@ -27,7 +28,8 @@ class ACCELBYTEWARS_API UInventoryWidget : public UAccelByteWarsActivatableWidge
 	GENERATED_BODY()
 
 public:
-	inline static FOnInventoryMenuDeactivated OnInventorysMenuDeactivated;
+	inline static FOnInventoryMenuActivated OnInventoryMenuActivated;
+	inline static FOnInventoryMenuDeactivated OnInventoryMenuDeactivated;
 
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
@@ -49,6 +51,7 @@ protected:
 private:
 	void OnClickListItem(UObject* Object);
 	void OnClickEquip();
+	void OnClickUnequip();
 
 	UPROPERTY()
 	UItemDataObject* SelectedItem;
@@ -67,6 +70,9 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_Equip;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UCommonButtonBase* Btn_Unequip;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_Back;

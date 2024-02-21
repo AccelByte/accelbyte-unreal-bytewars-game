@@ -22,6 +22,7 @@ public class AccelByteWars : ModuleRules
 			"CoreUObject", 
 			"Engine", 
 			"InputCore", 
+			"ApplicationCore",
 			"CommonUI", 
 			"CommonInput",
             "GameplayTags",

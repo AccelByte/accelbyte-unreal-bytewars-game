@@ -5,6 +5,7 @@
 #pragma once
 
 #include "UObject/NoExportTypes.h"
+#include "Core/AssetManager/TutorialModules/TutorialModuleUtility.h"
 #include "CoreMinimal.h"
 #include "FTUEModels.generated.h"
 
@@ -43,44 +44,6 @@ enum class FFTUEDialogueButtonType : uint8
     TWO_BUTTONS UMETA(DisplayName = "Two Buttons")
 };
 
-UENUM(BlueprintType)
-enum class FTUEPredifinedArgument : uint8
-{
-    PLAYER_ID = 0 UMETA(DisplayName = "Player Id"),
-    PLAYER_DISPLAY_NAME UMETA(DisplayName = "Player Display Name"),
-    GAME_SESSION_ID UMETA(DisplayName = "Game Session Id"),
-    PARTY_SESSION_ID UMETA(DisplayName = "Party Session Id"),
-    DEDICATED_SERVER_ID UMETA(DisplayName = "Dedicated Server Id"),
-    ENV_BASE_URL UMETA(DisplayName = "Environment Base URL"),
-    GAME_NAMESPACE UMETA(DisplayName = "Game Namespace"),
-    ADMIN_PORTAL_URL UMETA(DisplayName = "Admin Portal URL")
-};
-
-USTRUCT(BlueprintType)
-struct FTUEArgumentModel 
-{
-    GENERATED_BODY()
-
-    UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (
-        Tooltip = "Whether to use predefined argument or not."))
-    bool bUsePredefinedArgument = false;
-
-    UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (
-        Tooltip = "User defined string argument.",
-        EditCondition = "!bUsePredefinedArgument",
-        EditConditionHides))
-    FString Argument;
-
-    UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (
-        Tooltip = "Predefined argument.",
-        EditCondition = "bUsePredefinedArgument",
-        EditConditionHides))
-    FTUEPredifinedArgument PredefinedArgument = FTUEPredifinedArgument::PLAYER_ID;
-
-    // Event to get predefined argument from online tutorial modules branch.
-    inline static TDelegate<FString(const FTUEPredifinedArgument /*Keyword*/)> OnGetPredefinedArgument;
-};
-
 USTRUCT(BlueprintType)
 struct FFTUEDialogueButtonModel
 {
@@ -103,7 +66,7 @@ struct FFTUEDialogueButtonModel
         Tooltip = "List of argument to be inserted on the formatted button text. The order and the size of the arguments must follow the formatted button text.",
         EditCondition = "bIsFormattedButtonText",
         EditConditionHides))
-    TArray<FTUEArgumentModel> ButtonTextArguments;
+    TArray<FServiceArgumentModel> ButtonTextArguments;
 
     UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (
         Tooltip = "URL to be opened when the button is clicked.",
@@ -121,7 +84,7 @@ struct FFTUEDialogueButtonModel
         Tooltip = "List of argument to be inserted on the formatted URL. The order and the size of the arguments must follow the formatted URL.",
         EditCondition = "bIsFormattedURL && ButtonActionType==EFTUEDialogueButtonActionType::HYPERLINK_BUTTON",
         EditConditionHides))
-    TArray<FTUEArgumentModel> URLArguments;
+    TArray<FServiceArgumentModel> URLArguments;
 
     // Action button to be executed if the button action type is a custom action button.
     TMulticastDelegate<void()> ButtonActionDelegate;
@@ -145,7 +108,7 @@ struct FFTUEDialogueButtonModel
 
         FFormatNamedArguments Args;
         int32 ArgIndex = 0;
-        for (auto& Arg : ButtonTextArguments)
+        for (const FServiceArgumentModel& Arg : ButtonTextArguments)
         {
             FString ArgStr = FString("");
             if (Arg.bUsePredefinedArgument && Arg.OnGetPredefinedArgument.IsBound())
@@ -172,9 +135,11 @@ struct FFTUEDialogueButtonModel
         }
 
         FFormatNamedArguments Args;
-        int32 ArgIndex = 0;
-        for (auto& Arg : URLArguments)
+        const int32 ArgsNum = URLArguments.Num();
+        for (int32 i = 0; i < ArgsNum; i++)
         {
+            const FServiceArgumentModel Arg = URLArguments[i];
+
             FString ArgStr = FString("");
             if (Arg.bUsePredefinedArgument && Arg.OnGetPredefinedArgument.IsBound())
             {
@@ -185,8 +150,7 @@ struct FFTUEDialogueButtonModel
                 ArgStr = Arg.Argument;
             }
 
-            Args.Add(FString::Printf(TEXT("%d"), ArgIndex), FText::FromString(ArgStr));
-            ArgIndex++;
+            Args.Add(FString::Printf(TEXT("%d"), i), FText::FromString(ArgStr));
         }
 
         return FText::Format(FText::FromString(TargetURL), Args).ToString();
@@ -220,7 +184,7 @@ struct FFTUEDialogueModel
         Tooltip = "List of argument to be inserted on the formatted message. The order and the size of the arguments must follow the formatted message.",
         EditCondition = "bIsFormattedMessage",
         EditConditionHides))
-    TArray<FTUEArgumentModel> MessageArguments;
+    TArray<FServiceArgumentModel> MessageArguments;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
         Tooltip = "The type of action buttons should be shown when the FTUE is shown."))
@@ -279,7 +243,7 @@ struct FFTUEDialogueModel
     bool bIsAlreadyShown = false;
 
     // Which group owns thi dialogue (if any).
-    FTUEDialogueGroup* Group = nullptr;
+    FFTUEDialogueGroup* Group = nullptr;
 
     // The order priority if this dialogue's group.
     int32 GroupOrderPriority = 0;
@@ -347,7 +311,7 @@ struct FFTUEDialogueModel
 
         FFormatNamedArguments Args;
         int32 ArgIndex = 0;
-        for (auto& Arg : MessageArguments)
+        for (const FServiceArgumentModel& Arg : MessageArguments)
         {
             FString ArgStr = FString("");
             if (Arg.bUsePredefinedArgument && Arg.OnGetPredefinedArgument.IsBound())
@@ -393,7 +357,7 @@ struct FFTUEDialogueModel
 };
 
 USTRUCT(BlueprintType)
-struct FTUEDialogueGroup
+struct FFTUEDialogueGroup
 {
     GENERATED_BODY()
     
@@ -416,7 +380,7 @@ struct FTUEDialogueGroup
 
     void SetAlreadyShown(bool bIsShown) 
     {
-        for(auto& Dialogue : Dialogues) 
+        for(FFTUEDialogueModel& Dialogue : Dialogues)
         {
             Dialogue.bIsAlreadyShown = bIsShown;
         }
@@ -424,11 +388,11 @@ struct FTUEDialogueGroup
         bIsAlreadyShown = bIsShown;
     }
 
-    static FFTUEDialogueModel* GetMetadataById(const FString& FTUEId, TArray<FTUEDialogueGroup>& FTUEDialogueGroups)
+    static FFTUEDialogueModel* GetMetadataById(const FString& FTUEId, TArray<FFTUEDialogueGroup>& FTUEDialogueGroups)
     {
         FFTUEDialogueModel* Result = nullptr;
 
-        for (auto& Group : FTUEDialogueGroups)
+        for (FFTUEDialogueGroup& Group : FTUEDialogueGroups)
         {
             Result = Group.Dialogues.FindByPredicate([FTUEId](const FFTUEDialogueModel& Temp)
             {
@@ -444,7 +408,7 @@ struct FTUEDialogueGroup
         return Result;
     }
 
-    bool operator<(const FTUEDialogueGroup& Other) const
+    bool operator<(const FFTUEDialogueGroup& Other) const
     {
         return OrderPriority < Other.OrderPriority;
     }

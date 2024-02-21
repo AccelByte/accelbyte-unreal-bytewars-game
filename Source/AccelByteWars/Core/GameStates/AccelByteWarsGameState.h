@@ -53,6 +53,9 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FGameStateVoidDelegate OnTeamsChanged;
 
+	// Static delegate to be called when the game state is initialized and replicated.
+	inline static FSimpleMulticastDelegate OnInitialized;
+
 	UFUNCTION()
 	void OnNotify_IsServerTravelling() const;
 

@@ -23,14 +23,20 @@ class ACCELBYTEWARS_API UFriendsSubsystem : public UTutorialModuleSubsystem
 
 #pragma region Module.8a Function Declarations
 public:
+	void GetSelfFriendCode(const APlayerController* PC, const FOnGetSelfFriendCodeComplete& OnComplete = FOnGetSelfFriendCodeComplete());
+
 	void FindFriend(const APlayerController* PC, const FString& InKeyword, const FOnFindFriendComplete& OnComplete = FOnFindFriendComplete());
+
 	void SendFriendRequest(const APlayerController* PC, const FUniqueNetIdRepl FriendUserId, const FOnSendFriendRequestComplete& OnComplete = FOnSendFriendRequestComplete());
+	void SendFriendRequest(const APlayerController* PC, const FString& FriendCode, const FOnSendFriendRequestComplete& OnComplete = FOnSendFriendRequestComplete());
 
 protected:
-	void GetCacheFriendList(const APlayerController* PC, const FOnGetCacheFriendListComplete& OnComplete = FOnGetCacheFriendListComplete());
+	void GetCacheFriendList(const int32 LocalUserNum, const FOnGetCacheFriendListComplete& OnComplete = FOnGetCacheFriendListComplete());
 
 	void OnFindFriendComplete(bool bWasSuccessful, const FUniqueNetId& UserId, const FString& DisplayName, const FUniqueNetId& FoundUserId, const FString& Error, int32 LocalUserNum, const FOnFindFriendComplete OnComplete);
+
 	void OnSendFriendRequestComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& FriendId, const FString& ListName, const FString& ErrorStr, const FOnSendFriendRequestComplete OnComplete);
+	void OnSendFriendRequestByFriendCodeComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& FriendId, const FString& ListName, const FString& ErrorStr, const FOnSendFriendRequestComplete OnComplete);
 #pragma endregion
 
 #pragma region Module.8b Function Declarations
@@ -63,6 +69,7 @@ public:
 	FUniqueNetIdPtr GetUniqueNetIdFromPlayerController(const APlayerController* PC) const;
 	int32 GetLocalUserNumFromPlayerController(const APlayerController* PC) const;
 
+	FDelegateHandle OnQueryUserToGetFriendCodeDelegateHandle;
 	FDelegateHandle OnQueryUserInfoCompleteDelegateHandle;
 	FDelegateHandle OnRejectFriendRequestCompleteDelegateHandle;
 	FDelegateHandle OnCancelFriendRequestCompleteDelegateHandle;

@@ -8,6 +8,7 @@
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "Core/UI/Components/AccelByteWarsButtonBase.h"
  
+#include "Blueprint/WidgetBlueprintLibrary.h"
 #include "Editor/WidgetCompilerLog.h"
 #include "CommonInputModeTypes.h"
 #include "Input/CommonUIInputTypes.h"
@@ -50,6 +51,7 @@ void UAccelByteWarsActivatableWidget::NativePreConstruct()
 		AssociateTutorialModule = DefaultObj->AssociateTutorialModule;
 
 		GeneratedWidgets = DefaultObj->GeneratedWidgets;
+		WidgetValidators = DefaultObj->WidgetValidators;
 		FTUEDialogues = DefaultObj->FTUEDialogues;
 	}
 }
@@ -66,6 +68,7 @@ void UAccelByteWarsActivatableWidget::NativeOnActivated()
 	}
 
 	InitializeGeneratedWidgets();
+	ExecuteWidgetValidators();
 	InitializeFTUEDialogues(bOnActivatedInitializeFTUE);
 
 	SetVisibility(GetIsAllGeneratedWidgetsShouldNotDisplay() ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
@@ -99,8 +102,6 @@ void UAccelByteWarsActivatableWidget::PostLoad()
 	Super::PostLoad();
 
 	ValidateAssociateTutorialModule();
-	ValidateGeneratedWidgets();
-	ValidateFTUEDialogues();
 }
 
 #if WITH_EDITOR
@@ -109,8 +110,6 @@ void UAccelByteWarsActivatableWidget::PostEditChangeProperty(FPropertyChangedEve
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 
 	ValidateAssociateTutorialModule();
-	ValidateGeneratedWidgets();
-	ValidateFTUEDialogues();
 }
 
 void UAccelByteWarsActivatableWidget::PostDuplicate(bool bDuplicateForPIE)
@@ -118,8 +117,6 @@ void UAccelByteWarsActivatableWidget::PostDuplicate(bool bDuplicateForPIE)
 	Super::PostDuplicate(bDuplicateForPIE);
 
 	ValidateAssociateTutorialModule();
-	ValidateGeneratedWidgets();
-	ValidateFTUEDialogues();
 }
 
 void UAccelByteWarsActivatableWidget::ValidateCompiledWidgetTree(const UWidgetTree& BlueprintWidgetTree, class IWidgetCompilerLog& CompileLog) const
@@ -223,6 +220,11 @@ void UAccelByteWarsActivatableWidget::ValidateAssociateTutorialModule()
 	{
 		AssociateTutorialModule = nullptr;
 	}
+
+	// Validate tutorial module metadatas
+	ValidateGeneratedWidgets();
+	ValidateWidgetValidators();
+	ValidateFTUEDialogues();
 }
 #pragma endregion
 
@@ -613,10 +615,10 @@ void UAccelByteWarsActivatableWidget::InitializeFTUEDialogues(bool bShowOnInitia
 	}
 
 	// If prompt is active, pause the FTUE.
-	EBaseUIStackType TopMostActiveStack = BaseUIWidget->GetTopMostActiveStack();
+	const EBaseUIStackType TopMostActiveStack = BaseUIWidget->GetTopMostActiveStack();
 	if (TopMostActiveStack == EBaseUIStackType::Prompt) 
 	{
-		if (auto* PromptWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(TopMostActiveStack, this))
+		if (const UCommonActivatableWidget* PromptWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(TopMostActiveStack, this))
 		{
 			if (PromptWidget->IsActivated())
 			{
@@ -628,7 +630,7 @@ void UAccelByteWarsActivatableWidget::InitializeFTUEDialogues(bool bShowOnInitia
 	// Deinitialize FTUE for other widgets below the current active stack.
 	else 
 	{
-		for (auto& WidgetBelow : BaseUIWidget->GetAllWidgetsBelowStacks(TopMostActiveStack))
+		for (UCommonActivatableWidget* WidgetBelow : BaseUIWidget->GetAllWidgetsBelowStacks(TopMostActiveStack))
 		{
 			UAccelByteWarsActivatableWidget* OtherWidget = Cast<UAccelByteWarsActivatableWidget>(WidgetBelow);
 			if (!OtherWidget || OtherWidget == this)
@@ -680,10 +682,10 @@ void UAccelByteWarsActivatableWidget::DeinitializeFTUEDialogues()
 	}
 
 	// If prompt is deactivating, resume the dialogue.
-	EBaseUIStackType TopMostActiveStack = BaseUIWidget->GetTopMostActiveStack();
+	const EBaseUIStackType TopMostActiveStack = BaseUIWidget->GetTopMostActiveStack();
 	if (TopMostActiveStack == EBaseUIStackType::Prompt)
 	{
-		if (auto* PromptWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(TopMostActiveStack, this))
+		if (const UCommonActivatableWidget* PromptWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(TopMostActiveStack, this))
 		{
 			if (!PromptWidget->IsActivated())
 			{
@@ -694,7 +696,7 @@ void UAccelByteWarsActivatableWidget::DeinitializeFTUEDialogues()
 	// Initialize FTUE for other widgets below the current active stack.
 	else
 	{
-		for (auto& WidgetBelow : BaseUIWidget->GetAllWidgetsBelowStacks(TopMostActiveStack))
+		for (UCommonActivatableWidget* WidgetBelow : BaseUIWidget->GetAllWidgetsBelowStacks(TopMostActiveStack))
 		{
 			UAccelByteWarsActivatableWidget* OtherWidget = Cast<UAccelByteWarsActivatableWidget>(WidgetBelow);
 			if (!OtherWidget || OtherWidget == this)
@@ -708,5 +710,66 @@ void UAccelByteWarsActivatableWidget::DeinitializeFTUEDialogues()
 }
 
 #pragma endregion
+
+void UAccelByteWarsActivatableWidget::ValidateWidgetValidators()
+{
+	// Clear invalid widget validators.
+	WidgetValidators.RemoveAll([](const FWidgetValidator* Temp)
+	{
+		return !Temp || !Temp->OwnerTutorialModule;
+	});
+}
+
+void UAccelByteWarsActivatableWidget::ExecuteWidgetValidators()
+{
+	for (FWidgetValidator* Validator : WidgetValidators) 
+	{
+		if (!Validator) 
+		{
+			continue;
+		}
+
+		// Look for widget to validate.
+		const FString WidgetToValidateStr = Validator->TargetWidgetNameToValidate;
+
+		TArray<UUserWidget*> FoundWidgets;
+		UWidgetBlueprintLibrary::GetAllWidgetsOfClass(this, FoundWidgets, Validator->TargetWidgetClassToValidate.Get(), false);
+
+		// Eliminate invalid found widgets.
+		FoundWidgets.RemoveAll([WidgetToValidateStr](const UUserWidget* Temp)
+		{
+			return !Temp || !Temp->GetName().Equals(WidgetToValidateStr) || !Temp->IsVisible();
+		});
+		if (FoundWidgets.IsEmpty()) 
+		{
+			continue;
+		}
+
+		for (UUserWidget* FoundWidget : FoundWidgets)
+		{
+			// Skip if invalid.
+			if (!FoundWidget || !FoundWidget->IsVisible())
+			{
+				continue;
+			}
+
+			// If widget found, execute widget validator.
+			if (FoundWidget->GetName().Equals(WidgetToValidateStr, ESearchCase::CaseSensitive))
+			{
+				if (IAccelByteWarsWidgetInterface* WidgetInterface = Cast<IAccelByteWarsWidgetInterface>(FoundWidget)) 
+				{
+					UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Log, TEXT("Validator executed for widget by name %s"), *WidgetToValidateStr);
+					Validator->ExecuteValidator(WidgetInterface);
+				}
+				else 
+				{
+					UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot execute widget validator. Widget by name %s does not implement valid widget interface."), *WidgetToValidateStr);
+				}
+				
+				break;
+			}
+		}
+	}
+}
 
 #undef LOCTEXT_NAMESPACE

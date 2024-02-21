@@ -11,7 +11,8 @@
 #include "OnlineSubsystemAccelByteTypes.h"
 #include "OnlineSubsystemAccelByteSessionSettings.h"
 #include "Core/AccelByteEnvironment.h"
-#include "Core/UI/Components/Prompt/FTUE/FTUEModels.h"
+#include "Core/UI/Components/WidgetValidator/WidgetValidatorModels.h"
+#include "Core/AssetManager/TutorialModules/TutorialModuleUtility.h"
 #include "TutorialModuleOnlineUtility.generated.h"
 
 ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogAccelByteWarsTutorialModuleOnlineUtility, Log, All);
@@ -19,7 +20,6 @@ ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogAccelByteWarsTutorialModuleOnli
 { \
 	UE_LOG(LogAccelByteWarsTutorialModuleOnlineUtility, Verbosity, TEXT("%s"), *FString::Printf(Format, ##__VA_ARGS__)); \
 }
-
 
 #define BYTEWARS_LOCTEXT_NAMESPACE "AccelByteWars"
 #define DEFAULT_USER_DISPLAYNAME NSLOCTEXT(BYTEWARS_LOCTEXT_NAMESPACE, "Player-{0}", "Player-{0}")
@@ -75,7 +75,9 @@ private:
 	static FString ConvertAccelByteEnvToStringEnv(const ESettingsEnvironment& Environment);
 	static ESettingsEnvironment ConvertOSSEnvToAccelByteEnv(const EOnlineEnvironment::Type& Environment);
 
-	FString GetFTUEPredefinedArgument(const FTUEPredifinedArgument Keyword);
+	void ExecutePredefinedServiceValidator(FWidgetValidator* WidgetValidator);
+
+	FString GetServicePredefinedArgument(const EServicePredifinedArgument Keyword);
 
 	static FNamedOnlineSession* GetOnlineSession(const FName SessionName, const UObject* Context);
 	static FAccelByteModelsV2GameSessionDSInformation GetDedicatedServer(const UObject* Context);

@@ -6,6 +6,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerState.h"
+#include "Core/PowerUps/PowerUpModels.h"
 #include "AccelByteWarsPlayerState.generated.h"
 
 UCLASS()
@@ -36,6 +37,12 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, Category = Attributes, Replicated)
 	int32 NumLivesLeft = INDEX_NONE;
+
+	UPROPERTY(BlueprintReadWrite, Category = Attributes, Replicated)
+	TEnumAsByte<EPowerUpSelection> SelectedPowerUp = EPowerUpSelection::NONE;
+
+	UPROPERTY(BlueprintReadWrite, Category = Attributes, Replicated)
+	int32 PowerUpCount = 0;
 
 	UFUNCTION()
 	void RepNotify_PendingTeamAssignment();

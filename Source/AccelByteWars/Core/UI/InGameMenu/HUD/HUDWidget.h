@@ -7,6 +7,7 @@
 #include "CoreMinimal.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
 #include "Core/UI/Components/Countdown/CountdownWidget.h"
+#include "Core/PowerUps/PowerUpModels.h"
 #include "HUDWidget.generated.h"
 
 class UHUDWidgetEntry;
@@ -28,7 +29,15 @@ public:
 	 * @param BoxIndex Box index. 0 = left; 1 = middle; 2 = right
 	 */
 	UFUNCTION(BlueprintCallable)
-	void SetValue(const FString Value, const int32 Index, const int32 BoxIndex);
+	bool SetValue(const FString Value, const int32 Index, const int32 BoxIndex);
+
+	/**
+	 * @brief Set HUD power up entries value
+	 * @param SelectedPowerUps All power-ups equipped by team members.
+	 * @param TeamIndex Team's index. Currently, this HUD only supports 4 team (0 - 3)
+	 */
+	UFUNCTION(BlueprintCallable)
+	bool SetPowerUps(const TArray<TEnumAsByte<EPowerUpSelection>>& SelectedPowerUps, const TArray<int32>& PowerUpCounts, const int32 TeamIndex);
 
 	/**
 	 * @brief Change the color of HUD entry. Will only be executed when Color is not the same with current HUD entry's color
@@ -36,7 +45,7 @@ public:
 	 * @param Color Team's color
 	 */
 	UFUNCTION(BlueprintCallable)
-	void SetColorChecked(const int32 Index, const FLinearColor Color);
+	bool SetColorChecked(const int32 Index, const FLinearColor Color);
 
 	/**
 	 * @brief Toggle activate or deactivate HUD entry.
@@ -44,7 +53,7 @@ public:
 	 * @param bActivate Set it to true will activate the widget and vice versa.
 	 */
 	UFUNCTION(BlueprintCallable)
-	void ToggleEntry(const int32 Index, const bool bActivate);
+	bool ToggleEntry(const int32 Index, const bool bActivate);
 
 	/**
 	 * @brief Set Time Left value
@@ -53,7 +62,19 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetTimerValue(const float TimeLeft);
 
+	/**
+	 * @brief Retrieve the start and end position, on screen, of the top bar on the HUD
+	 * @param OutMinPixelPosition Geometry start position
+	 * @param OutMaxPixelPosition Geometry end position
+	 */
+	UFUNCTION(BlueprintCallable)
+	void GetVisibleHUDPixelPosition(FVector2D& OutMinPixelPosition, FVector2D& OutMaxPixelPosition) const;
+
 private:
+	/* Used to tell the game what size the visible HUD is */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UWidget* Widget_VisibleBorder;
+
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UHUDWidgetEntry* Widget_HUDNameValueP1;
 

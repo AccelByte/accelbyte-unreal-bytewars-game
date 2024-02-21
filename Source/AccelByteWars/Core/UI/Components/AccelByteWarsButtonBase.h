@@ -20,6 +20,7 @@ UCLASS(Abstract, BlueprintType, Blueprintable)
 class ACCELBYTEWARS_API UAccelByteWarsButtonBase : public UCommonButtonBase, public IAccelByteWarsWidgetInterface
 {
 	GENERATED_BODY()
+
 public:
 	UFUNCTION(BlueprintCallable)
 	void SetButtonText(const FText& InText);
@@ -33,6 +34,9 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
 	void ToggleExclamationMark (const bool bShowMark);
 	
+	UFUNCTION(BlueprintCallable)
+	void ClearButtonBindings();
+
 protected:
 	// UUserWidget interface
 	virtual void NativePreConstruct() override;
@@ -65,10 +69,10 @@ protected:
 	bool bShowExclamationMark = false;
 	
 private:
-	UPROPERTY(EditAnywhere, Category = "Button", meta = (InlineEditConditionToggle, EditCondition = "ButtonType==EAccelByteWarsButtonBaseType::TEXT_BUTTON", EditConditionHides))
+	UPROPERTY(EditAnywhere, Category = "Button", meta = (EditCondition = "ButtonType==EAccelByteWarsButtonBaseType::TEXT_BUTTON", EditConditionHides))
 	uint8 bOverride_ButtonText : 1;
 
-	UPROPERTY(EditAnywhere, Category = "Button", meta = (EditCondition = "bOverride_ButtonText&&ButtonType==EAccelByteWarsButtonBaseType::TEXT_BUTTON", EditConditionHides))
+	UPROPERTY(EditAnywhere, Category = "Button", meta = (EditCondition = "ButtonType==EAccelByteWarsButtonBaseType::TEXT_BUTTON", EditConditionHides))
 	FText ButtonText;
 
 	UPROPERTY(EditAnywhere, Category = "Button", meta = (EditCondition = "ButtonType==EAccelByteWarsButtonBaseType::IMAGE_BUTTON", EditConditionHides))

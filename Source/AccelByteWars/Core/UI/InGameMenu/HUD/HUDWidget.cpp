@@ -6,6 +6,7 @@
 #include "Core/UI/InGameMenu/HUD/HUDWidget.h"
 
 #include "HUDWidgetEntry.h"
+#include "Blueprint/SlateBlueprintLibrary.h"
 #include "Components/TextBlock.h"
 #include "Core/GameStates/AccelByteWarsInGameGameState.h"
 #include "Core/GameStates/AccelByteWarsGameState.h"
@@ -75,16 +76,22 @@ void UHUDWidget::NativeConstruct()
 		{
 			return NetMode == EGameModeNetworkType::DS;
 		});
-		
-		// Check launch param
-		bool bUseAMS = FParse::Param(FCommandLine::Get(), TEXT("-ServerUseAMS"));
-	
-		// Check DefaultEngine.ini next
-		if (!bUseAMS)
+
+#pragma region "Check if using AMS or not"
+		bool bUseAMS = true; // default is true
+
+		// Check launch param. Prioritize launch param.
+		FString UseAMSString;
+		if (FParse::Value(FCommandLine::Get(), TEXT("-bServerUseAMS="), UseAMSString))
 		{
-			FString Config;
+			bUseAMS = !UseAMSString.Equals("false", ESearchCase::Type::IgnoreCase);
+		}
+		// check DefaultEngine.ini next
+		else
+		{
 			GConfig->GetBool(TEXT("/ByteWars/TutorialModule.DSEssentials"), TEXT("bServerUseAMS"), bUseAMS, GEngineIni);
 		}
+#pragma endregion
 
 		// If using AMS then override the target URL 
 		if (bUseAMS)
@@ -102,16 +109,16 @@ void UHUDWidget::NativeDestruct()
 	Widget_NotEnoughPlayerCountdown->OnCountdownFinishedDelegate.Remove(OnNotEnoughPlayerCountdownFinishedDelegateHandle);
 }
 
-void UHUDWidget::SetValue(const FString Value, const int32 Index, const int32 BoxIndex)
+bool UHUDWidget::SetValue(const FString Value, const int32 Index, const int32 BoxIndex)
 {
 	if (Index < 0 || Index > 3)
 	{
-		return;
+		return false;
 	}
 
 	if (BoxIndex < 0 || BoxIndex > 2)
 	{
-		return;
+		return false;
 	}
 
 	const UHUDWidgetEntry* TargetWidget;
@@ -130,7 +137,12 @@ void UHUDWidget::SetValue(const FString Value, const int32 Index, const int32 Bo
 		TargetWidget = Widget_HUDNameValueP4;
 		break;
 	default:
-		return;
+		return false;
+	}
+
+	if (!TargetWidget)
+	{
+		return false;
 	}
 
 	UTextBlock* TargetTextBlock;
@@ -146,17 +158,58 @@ void UHUDWidget::SetValue(const FString Value, const int32 Index, const int32 Bo
 		TargetTextBlock = TargetWidget->Text_Value_Right;
 		break;
 	default:
-		return;
+		return false;
+	}
+
+	if (!TargetTextBlock) 
+	{
+		return false;
 	}
 
 	TargetTextBlock->SetText(FText::FromString(Value));
+	return true;
 }
 
-void UHUDWidget::SetColorChecked(const int32 Index, const FLinearColor Color)
+bool UHUDWidget::SetPowerUps(const TArray<TEnumAsByte<EPowerUpSelection>>& SelectedPowerUps, const TArray<int32>& PowerUpCounts, const int32 TeamIndex)
+{
+	if (TeamIndex < 0 || TeamIndex > 3)
+	{
+		return false;
+	}
+
+	UHUDWidgetEntry* TargetWidget;
+	switch (TeamIndex)
+	{
+	case 0:
+		TargetWidget = Widget_HUDNameValueP1;
+		break;
+	case 1:
+		TargetWidget = Widget_HUDNameValueP2;
+		break;
+	case 2:
+		TargetWidget = Widget_HUDNameValueP3;
+		break;
+	case 3:
+		TargetWidget = Widget_HUDNameValueP4;
+		break;
+	default:
+		return false;
+	}
+	
+	if (!TargetWidget) 
+	{
+		return false;
+	}
+
+	TargetWidget->SetPowerUpValues(SelectedPowerUps, PowerUpCounts);
+	return true;
+}
+
+bool UHUDWidget::SetColorChecked(const int32 Index, const FLinearColor Color)
 {
 	if (Index < 0 || Index > 3)
 	{
-		return;
+		return false;
 	}
 
 	UHUDWidgetEntry* TargetWidget;
@@ -175,23 +228,28 @@ void UHUDWidget::SetColorChecked(const int32 Index, const FLinearColor Color)
 		TargetWidget = Widget_HUDNameValueP4;
 		break;
 	default:
-		return;
+		return false;
 	}
 
-	// if target color and current color is the same, skip
-	if (TargetWidget->ColorAndOpacity.Equals(Color))
+	if (!TargetWidget) 
 	{
-		return;
+		return false;
 	}
 
-	TargetWidget->SetColorAndOpacity(Color);
+	// Change the color if not the same.
+	if (!TargetWidget->ColorAndOpacity.Equals(Color))
+	{
+		TargetWidget->SetColorAndOpacity(Color);
+	}
+
+	return true;
 }
 
-void UHUDWidget::ToggleEntry(const int32 Index, const bool bActivate)
+bool UHUDWidget::ToggleEntry(const int32 Index, const bool bActivate)
 {
 	if (Index < 0 || Index > 3)
 	{
-		return;
+		return false;
 	}
 
 	UHUDWidgetEntry* TargetWidget;
@@ -210,16 +268,42 @@ void UHUDWidget::ToggleEntry(const int32 Index, const bool bActivate)
 		TargetWidget = Widget_HUDNameValueP4;
 		break;
 	default:
-		return;
+		return false;
+	}
+
+	if (!TargetWidget) 
+	{
+		return false;
 	}
 
 	TargetWidget->SetVisibility(bActivate ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	return true;
 }
 
 void UHUDWidget::SetTimerValue(const float TimeLeft)
 {
 	const FText Text = UKismetTextLibrary::Conv_IntToText(UKismetMathLibrary::FFloor(TimeLeft));
 	Widget_HUDNameValueTimer->Text_Value_Middle->SetText(Text);
+}
+
+void UHUDWidget::GetVisibleHUDPixelPosition(FVector2D& OutMinPixelPosition, FVector2D& OutMaxPixelPosition) const
+{
+	FVector2D ViewportPosition;
+
+	const FGeometry& CachedGeometry = Widget_VisibleBorder->GetCachedGeometry();
+	const FVector2D& CachedGeometrySize = CachedGeometry.GetLocalSize();
+
+	USlateBlueprintLibrary::LocalToViewport(
+		GetWorld(),
+		CachedGeometry,
+		FVector2D::Zero(),
+		OutMinPixelPosition,
+		ViewportPosition);
+
+	OutMaxPixelPosition.X = OutMinPixelPosition.X + CachedGeometrySize.X;
+	OutMaxPixelPosition.Y = OutMinPixelPosition.Y + CachedGeometrySize.Y;
+
+	return;
 }
 
 ECountdownState UHUDWidget::SetPreGameCountdownState() const

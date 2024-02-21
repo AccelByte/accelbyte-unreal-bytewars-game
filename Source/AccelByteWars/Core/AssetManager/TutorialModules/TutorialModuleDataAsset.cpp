@@ -19,6 +19,9 @@ const FPrimaryAssetType	UTutorialModuleDataAsset::TutorialModuleAssetType = TEXT
 TSet<FString> UTutorialModuleDataAsset::GeneratedWidgetUsedIds;
 TArray<FTutorialModuleGeneratedWidget*> UTutorialModuleDataAsset::CachedGeneratedWidgets;
 
+TSet<FString> UTutorialModuleDataAsset::WidgetValidatorUsedIds;
+TArray<FWidgetValidator*> UTutorialModuleDataAsset::CachedWidgetValidators;
+
 TSet<FString> UTutorialModuleDataAsset::FTUEDialogueUsedIds;
 TArray<FFTUEDialogueModel*> UTutorialModuleDataAsset::CachedFTUEDialogues;
 
@@ -132,7 +135,7 @@ bool UTutorialModuleDataAsset::SaveAttributesToLocal()
 
 #pragma region "First Time User Experience (FTUE)"
 	TArray<TSharedPtr<FJsonValue>> FTUEGroupStates;
-	for (auto& FTUEDialogueGroup : FTUEDialogueGroups)
+	for (const FFTUEDialogueGroup& FTUEDialogueGroup : FTUEDialogueGroups)
 	{
 		TSharedPtr<FJsonValue> GroupState = MakeShareable(new FJsonValueBoolean(FTUEDialogueGroup.bIsAlreadyShown));
 		FTUEGroupStates.Add(GroupState);
@@ -248,6 +251,7 @@ void UTutorialModuleDataAsset::ValidateDataAssetProperties()
 	}
 
 	ValidateGeneratedWidgets();
+	ValidateWidgetValidators();
 	ValidateFTUEDialogues();
 
 	LastCodeName = CodeName;
@@ -361,9 +365,12 @@ void UTutorialModuleDataAsset::CleanUpDataAssetProperties()
 {
 	TutorialModuleDependencies.Empty();
 
-	for (FTutorialModuleGeneratedWidget& GeneratedWidget : GeneratedWidgets)
+	// Clean up generated widgets.
+	for (const FTutorialModuleGeneratedWidget& GeneratedWidget : GeneratedWidgets)
 	{
-		for (TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : GeneratedWidget.TargetWidgetClasses)
+		UTutorialModuleDataAsset::GeneratedWidgetUsedIds.Remove(GeneratedWidget.WidgetId);
+
+		for (const TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : GeneratedWidget.TargetWidgetClasses)
 		{
 			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
 			{
@@ -377,6 +384,55 @@ void UTutorialModuleDataAsset::CleanUpDataAssetProperties()
 		}
 	}
 	GeneratedWidgets.Empty();
+
+	// Clean up FTUE dialogues.
+	int32 GroupIndex = INDEX_NONE;
+	for (const FFTUEDialogueGroup& FTUEDialogueGroup : FTUEDialogueGroups)
+	{
+		GroupIndex++;
+
+		int32 DialogueIndex = INDEX_NONE;
+		for (const FFTUEDialogueModel& FTUEDialogue : FTUEDialogueGroup.Dialogues)
+		{
+			DialogueIndex++;
+
+			UTutorialModuleDataAsset::FTUEDialogueUsedIds.Remove(FTUEDialogue.FTUEId);
+
+			for (const TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : FTUEDialogue.TargetWidgetClasses)
+			{
+				if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
+				{
+					continue;
+				}
+
+				TargetWidgetClass.GetDefaultObject()->FTUEDialogues.RemoveAll([this](const FFTUEDialogueModel* Temp)
+				{
+					return Temp->OwnerTutorialModule == this;
+				});
+			}
+		}
+	}
+	FTUEDialogueGroups.Empty();
+
+	// Clean up widget validators.
+	for (const FWidgetValidator& WidgetValidator : WidgetValidators)
+	{
+		UTutorialModuleDataAsset::WidgetValidatorUsedIds.Remove(WidgetValidator.WidgetValidatorId);
+
+		for (const TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetContainerClass : WidgetValidator.TargetWidgetContainerClasses)
+		{
+			if (!TargetWidgetContainerClass || !TargetWidgetContainerClass.GetDefaultObject())
+			{
+				continue;
+			}
+
+			TargetWidgetContainerClass.GetDefaultObject()->WidgetValidators.RemoveAll([this](const FWidgetValidator* Temp)
+			{
+				return Temp->OwnerTutorialModule == this;
+			});
+		}
+	}
+	WidgetValidators.Empty();
 
 	if (DefaultUIClass.Get())
 	{
@@ -422,7 +478,7 @@ void UTutorialModuleDataAsset::ValidateGeneratedWidgets()
 
 		LastGeneratedWidget.OtherTutorialModule = nullptr;
 
-		for (TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : LastGeneratedWidget.TargetWidgetClasses)
+		for (const TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : LastGeneratedWidget.TargetWidgetClasses)
 		{
 			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
 			{
@@ -435,9 +491,9 @@ void UTutorialModuleDataAsset::ValidateGeneratedWidgets()
 			});
 		}
 	}
-	for (FTutorialModuleGeneratedWidget& GeneratedWidget : GeneratedWidgets)
+	for (const FTutorialModuleGeneratedWidget& GeneratedWidget : GeneratedWidgets)
 	{
-		for (TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : GeneratedWidget.TargetWidgetClasses)
+		for (const TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : GeneratedWidget.TargetWidgetClasses)
 		{
 			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
 			{
@@ -512,7 +568,7 @@ void UTutorialModuleDataAsset::ValidateGeneratedWidgets()
 		// Assign the generated widget to the target widget class.
 		if (IsActiveAndDependenciesChecked() && bShouldGenerateBasedOnUsedOnlineSession)
 		{
-			for (TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : GeneratedWidget.TargetWidgetClasses)
+			for (const TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : GeneratedWidget.TargetWidgetClasses)
 			{
 				if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
 				{
@@ -585,14 +641,14 @@ bool UTutorialModuleDataAsset::HasFTUE()
 void UTutorialModuleDataAsset::ValidateFTUEDialogues()
 {
 	// Clean up last FTUE dialogues metadata to avoid duplication.
-	for (auto& LastFTUEDialogueGroup : LastFTUEDialogueGroups)
+	for (const FFTUEDialogueGroup& LastFTUEDialogueGroup : LastFTUEDialogueGroups)
 	{
 		// Clean up each dialogues for each dialogue groups.
-		for (auto& LastFTUEDialogue : LastFTUEDialogueGroup.Dialogues) 
+		for (const FFTUEDialogueModel& LastFTUEDialogue : LastFTUEDialogueGroup.Dialogues) 
 		{
 			UTutorialModuleDataAsset::FTUEDialogueUsedIds.Remove(LastFTUEDialogue.FTUEId);
 
-			for (auto& TargetWidgetClass : LastFTUEDialogue.TargetWidgetClasses)
+			for (const TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : LastFTUEDialogue.TargetWidgetClasses)
 			{
 				if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
 				{
@@ -606,12 +662,12 @@ void UTutorialModuleDataAsset::ValidateFTUEDialogues()
 			}
 		}
 	}
-	for (auto& FTUEDialogueGroup : FTUEDialogueGroups)
+	for (const FFTUEDialogueGroup& FTUEDialogueGroup : FTUEDialogueGroups)
 	{
 		// Clean up each dialogues for each dialogue groups.
-		for (auto& FTUEDialogue : FTUEDialogueGroup.Dialogues)
+		for (const FFTUEDialogueModel& FTUEDialogue : FTUEDialogueGroup.Dialogues)
 		{
-			for (auto& TargetWidgetClass : FTUEDialogue.TargetWidgetClasses)
+			for (const TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : FTUEDialogue.TargetWidgetClasses)
 			{
 				if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
 				{
@@ -639,14 +695,14 @@ void UTutorialModuleDataAsset::ValidateFTUEDialogues()
 		return !Temp;
 	});
 	int32 GroupIndex = INDEX_NONE;
-	for (auto& FTUEDialogueGroup : FTUEDialogueGroups)
+	for (FFTUEDialogueGroup& FTUEDialogueGroup : FTUEDialogueGroups)
 	{
 		GroupIndex++;
 		FTUEDialogueGroup.OwnerTutorialModule = this;
 
 		// Set up each dialogues for each dialogue groups.
 		int32 DialogueIndex = INDEX_NONE;
-		for (auto& FTUEDialogue : FTUEDialogueGroup.Dialogues)
+		for (FFTUEDialogueModel& FTUEDialogue : FTUEDialogueGroup.Dialogues)
 		{
 			DialogueIndex++;
 			FTUEDialogue.OwnerTutorialModule = this;
@@ -693,7 +749,7 @@ void UTutorialModuleDataAsset::ValidateFTUEDialogues()
 			// Assign FTUE dialogue metadata to the target widget class.
 			if (IsActiveAndDependenciesChecked() && HasFTUE())
 			{
-				for (auto& TargetWidgetClass : FTUEDialogue.TargetWidgetClasses)
+				for (const TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : FTUEDialogue.TargetWidgetClasses)
 				{
 					if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
 					{
@@ -713,6 +769,139 @@ void UTutorialModuleDataAsset::ValidateFTUEDialogues()
 
 	// Save dialogues cache for clean-up later.
 	LastFTUEDialogueGroups = FTUEDialogueGroups;
+}
+#pragma endregion
+
+#pragma region "Widget Validators"
+bool UTutorialModuleDataAsset::IsWidgetValidatorEnabled()
+{
+	// Set the data asset value as the initial value.
+	bool bResult = bEnableWidgetValidator;
+
+	const FString OverrideKeyword = TEXT("ForceEnableWidgetValidator");
+	const FString CmdKeyword = FString::Printf(TEXT("-%s="), *OverrideKeyword);
+
+	// Check for launch param override.
+	const FString CmdArgs = FCommandLine::Get();
+	if (CmdArgs.Contains(*CmdKeyword, ESearchCase::IgnoreCase))
+	{
+		FString CmdIsAlwaysShowStr;
+		FParse::Value(*CmdArgs, *CmdKeyword, CmdIsAlwaysShowStr);
+
+		const bool bTemp = bResult;
+		if (CmdIsAlwaysShowStr.Equals(TEXT("TRUE"), ESearchCase::IgnoreCase))
+		{
+			bResult = true;
+		}
+		else if (CmdIsAlwaysShowStr.Equals(TEXT("FALSE"), ESearchCase::IgnoreCase))
+		{
+			bResult = false;
+		}
+
+		// Show log only if the config is overridden.
+		if (bResult != bTemp)
+		{
+			UE_LOG_TUTORIALMODULEDATAASSET(Log,
+				TEXT("Launch param overrides Tutorial Module %s's enable Widget Validator config to %s."),
+				*CodeName,
+				bResult ? TEXT("TRUE") : TEXT("FALSE"));
+		}
+	}
+	// Check for DefaultEngine.ini override.
+	else
+	{
+		const bool bTemp = bResult;
+		bResult = GConfig->GetBoolOrDefault(TEXT("AccelByteTutorialModules"), *OverrideKeyword, bResult, GEngineIni);
+
+		// Show log only if the config is overridden.
+		if (bResult != bTemp)
+		{
+			UE_LOG_TUTORIALMODULEDATAASSET(Log,
+				TEXT("DefaultEngine.ini overrides Tutorial Module %s's enable Widget Validator config to %s."),
+				*CodeName,
+				bResult ? TEXT("TRUE") : TEXT("FALSE"));
+		}
+	}
+
+	return bResult;
+}
+
+void UTutorialModuleDataAsset::ValidateWidgetValidators()
+{
+	// Clean up last generated widgets metadata to avoid duplication.
+	for (const FWidgetValidator& LastWidgetValidator : LastWidgetValidators)
+	{
+		UTutorialModuleDataAsset::WidgetValidatorUsedIds.Remove(LastWidgetValidator.WidgetValidatorId);
+
+		for (const TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetContainerClass : LastWidgetValidator.TargetWidgetContainerClasses)
+		{
+			if (!TargetWidgetContainerClass || !TargetWidgetContainerClass.GetDefaultObject())
+			{
+				continue;
+			}
+
+			TargetWidgetContainerClass.GetDefaultObject()->WidgetValidators.RemoveAll([this](const FWidgetValidator* Temp)
+			{
+				return !Temp || !Temp->OwnerTutorialModule || Temp->OwnerTutorialModule == this;
+			});
+		}
+	}
+	for (const FWidgetValidator& WidgetValidator : WidgetValidators)
+	{
+		for (const TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetContainerClass : WidgetValidator.TargetWidgetContainerClasses)
+		{
+			if (!TargetWidgetContainerClass || !TargetWidgetContainerClass.GetDefaultObject())
+			{
+				continue;
+			}
+
+			TargetWidgetContainerClass.GetDefaultObject()->WidgetValidators.RemoveAll([this](const FWidgetValidator* Temp)
+			{
+				return !Temp || !Temp->OwnerTutorialModule || Temp->OwnerTutorialModule == this;
+			});
+		}
+	}
+
+	// Assign fresh widget validators to the target widget class.
+	CachedWidgetValidators.RemoveAll([](const FWidgetValidator* Temp)
+	{
+		return !Temp;
+	});
+	for (FWidgetValidator& WidgetValidator : WidgetValidators)
+	{
+		// Assign the owner of the widget validator metadata to this Tutorial Module.
+		WidgetValidator.OwnerTutorialModule = this;
+
+		// Check if the widget validator id is already used.
+		const FString WidgetValidatorId = WidgetValidator.WidgetValidatorId;
+		if (UTutorialModuleDataAsset::WidgetValidatorUsedIds.Contains(WidgetValidatorId))
+		{
+#if UE_EDITOR
+			ShowPopupMessage(FString::Printf(TEXT("%s widget validator id is already used. Widget validator id must be unique."), *WidgetValidatorId));
+#endif
+			WidgetValidator.WidgetValidatorId = FString();
+		}
+		else if (!WidgetValidatorId.IsEmpty())
+		{
+			UTutorialModuleDataAsset::WidgetValidatorUsedIds.Add(WidgetValidatorId);
+		}
+
+		// Assign the widget validator to the target widget class.
+		if (IsActiveAndDependenciesChecked() && IsWidgetValidatorEnabled())
+		{
+			for (const TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetContainerClass : WidgetValidator.TargetWidgetContainerClasses)
+			{
+				if (!TargetWidgetContainerClass || !TargetWidgetContainerClass.GetDefaultObject())
+				{
+					continue;
+				}
+				TargetWidgetContainerClass.GetDefaultObject()->WidgetValidators.Add(&WidgetValidator);
+				CachedWidgetValidators.Add(&WidgetValidator);
+			}
+		}
+	}
+
+	LastWidgetValidators = WidgetValidators;
 }
 #pragma endregion
 

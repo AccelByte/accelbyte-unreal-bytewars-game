@@ -37,6 +37,12 @@ public:
 	 */
 	void GetPlayerPeriodicRanking(const APlayerController* PC, const FString& LeaderboardCode, const FString& CycleId, const FOnGetLeaderboardRankingComplete& OnComplete = FOnGetLeaderboardRankingComplete());
 
+	/**
+	* @brief Get Leaderboards Cycle Id list
+	* @param CycleType Cycle type that will be retrieved, query list : empty, "INIT", "ACTIVE", "STOPPED"
+	*/
+	void GetLeaderboardCycleIdByName(const FString& InCycleName, const EAccelByteCycle& InCycleType, const FOnGetLeaderboardsCycleIdComplete& OnComplete = FOnGetLeaderboardsCycleIdComplete());
+
 protected:
 	/**
 	 * @brief Callback when get rankings of a periodic leaderboard is complete.
