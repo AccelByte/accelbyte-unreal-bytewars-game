@@ -554,6 +554,19 @@ TArray<FVector> AAccelByteWarsInGameGameMode::GetActiveGameObjectsPosition() con
 	return Positions;
 }
 
+bool AAccelByteWarsInGameGameMode::FindGoodSpawnLocation(FVector2D& OutCoord)
+{
+	if (!FindGoodSpawnLocation(
+		OutCoord,
+		GetActiveGameObjectsPosition(),
+		ABInGameGameState->MinGameBound,
+		ABInGameGameState->MaxGameBound))
+	{
+		return false;
+	}
+	return true;
+}
+
 void AAccelByteWarsInGameGameMode::SpawnPlanets()
 {
 	for (int i = 0; i < MaxTargetPlanetCount; ++i)
@@ -954,5 +967,17 @@ void AAccelByteWarsInGameGameMode::SetObjectSafeDistance(float NewDistance)
 void AAccelByteWarsInGameGameMode::DrawBoundingBoxOnNextSpawn(const bool bDraw)
 {
 	bDrawBoundingBox = bDraw;
+}
+
+void AAccelByteWarsInGameGameMode::ModifyGameBoundExtendModifier(const float NewModifier) const
+{
+	const float NewHalfWidth =
+		(FMath::Abs(ABInGameGameState->MaxGameBound.X - ABInGameGameState->MinGameBound.X) * (NewModifier - 1)) / 2;
+	const float NewHalfHeight =
+		(FMath::Abs(ABInGameGameState->MaxGameBound.Y - ABInGameGameState->MinGameBound.Y) * (NewModifier - 1)) / 2;
+	ABInGameGameState->MaxGameBoundExtend =
+		{ABInGameGameState->MaxGameBound.X + NewHalfWidth, ABInGameGameState->MaxGameBound.Y + NewHalfHeight};
+	ABInGameGameState->MinGameBoundExtend =
+		{ABInGameGameState->MinGameBound.X - NewHalfWidth, ABInGameGameState->MinGameBound.Y - NewHalfHeight};
 }
 #pragma endregion 

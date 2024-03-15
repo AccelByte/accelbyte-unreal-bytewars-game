@@ -8,7 +8,7 @@
 
 DEFINE_LOG_CATEGORY(LogWidgetValidator);
 
-void FWidgetValidator::ExecuteValidator(IAccelByteWarsWidgetInterface* Widget, const bool bForceValidate)
+void FWidgetValidator::ExecuteValidator(IAccelByteWarsWidgetInterface* Widget, const UObject* Context, const bool bForceValidate)
 {
     if (!Widget || !Widget->_getUObject())
     {
@@ -38,14 +38,20 @@ void FWidgetValidator::ExecuteValidator(IAccelByteWarsWidgetInterface* Widget, c
         EWidgetValidationState::VALIDATING,
         DEFAULT_WIDGET_VALIDATOR_VALIDATING_MESSAGE.ToString(),
         GetFormattedURL());
-
-    if (ValidatorType == EServicePredefinedValidator::CUSTOM_VALIDATOR)
+    
+    const EServicePredefinedValidator ValidatorType = Validator.ValidatorType;
+    if (ValidatorType == EServicePredefinedValidator::NONE) 
+    {
+        FinalizeValidator(true);
+        return;
+    }
+    else if (ValidatorType == EServicePredefinedValidator::IS_CUSTOM)
     {
         OnValidatorExecutedDelegate.ExecuteIfBound(this);
     }
     else
     {
-        OnPredefinedServiceValidatorExecutedDelegate.ExecuteIfBound(this);
+        OnPredefinedServiceValidatorExecutedDelegate.ExecuteIfBound(this, Context);
     }
 
     // Start widget validator time out.

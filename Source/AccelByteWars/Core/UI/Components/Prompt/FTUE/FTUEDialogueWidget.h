@@ -59,6 +59,11 @@ protected:
 	void InitializeActionButton(UAccelByteWarsButtonBase* Button, const FFTUEDialogueButtonModel& ButtonModel);
 
 	void ValidateDialogues();
+	void OnValidateDialoguesComplete();
+
+	void ValidateDialogue(const int32 DialogueToValidateIndex = INDEX_NONE);
+	void OnValidateDialogueComplete(FFTUEDialogueModel* Dialogue, const bool bIsValid, const int32 NextDialogueToValidateIndex = INDEX_NONE);
+
 	void DeinitializeLastDialogue();
 	void ClearHighlightedWidget();
 
@@ -108,4 +113,10 @@ private:
 
 	FFTUEDialogueModel* CachedLastDialogue;
 	UUserWidget* CachedHighlightedWidget;
+
+	// Helper to cache whether the dialogues run in first time mode.
+	bool bIsFirstTimeMode = false;
+
+	// Helper to cache whether the dialogues are already validated or not.
+	bool bIsAllDialogueValidated = false;
 };

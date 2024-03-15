@@ -66,7 +66,7 @@ public:
     TSubclassOf<UCommonUserWidget> TargetWidgetClassToValidate;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (Tooltip = "Validation to perform. If Custom Validation selected, you need to implement it on your own through code."))
-    EServicePredefinedValidator ValidatorType = EServicePredefinedValidator::CUSTOM_VALIDATOR;
+    FServicePredefinedValidator Validator;
 
     UPROPERTY(
         EditAnywhere,
@@ -102,10 +102,10 @@ public:
     TDelegate<void(FWidgetValidator* /*WidgetValidator*/, const bool /*bIsValidState*/, const FString& /*InvalidStateMessage*/)> OnValidatorFinalizedDelegate;
 
     // Event to invoke predefined service valdator.
-    inline static TDelegate<void(FWidgetValidator* /*WidgetValidator*/)> OnPredefinedServiceValidatorExecutedDelegate;
+    inline static TDelegate<void(FWidgetValidator* /*WidgetValidator*/, const UObject* Context)> OnPredefinedServiceValidatorExecutedDelegate;
 
     // Event to be called when the widget validation is started.
-    void ExecuteValidator(IAccelByteWarsWidgetInterface* Widget, const bool bForceValidate = false);
+    void ExecuteValidator(IAccelByteWarsWidgetInterface* Widget, const UObject* Context, const bool bForceValidate = false);
 
     // Event to be called when the widget validation is completed.
     void FinalizeValidator(const bool bIsValidState, const FString& InvalidStateMessage = FString(""), const bool bFallbackToDefaultInvalidMessage = true);

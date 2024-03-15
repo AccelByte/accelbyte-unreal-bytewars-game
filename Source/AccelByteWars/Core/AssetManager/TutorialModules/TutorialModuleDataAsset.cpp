@@ -700,6 +700,17 @@ void UTutorialModuleDataAsset::ValidateFTUEDialogues()
 		GroupIndex++;
 		FTUEDialogueGroup.OwnerTutorialModule = this;
 
+		// Set whether the dialogue group is forced to always be shown.
+		if (FTUEDialogueGroup.bIsForceAlwaysShow)
+		{
+			FTUEDialogueGroup.SetAlreadyShown(false);
+		}
+		// Set dialogue group state from cache.
+		else if (FTUEGroupStates.IsValidIndex(GroupIndex) && FTUEGroupStates[GroupIndex])
+		{
+			FTUEDialogueGroup.SetAlreadyShown(FTUEGroupStates[GroupIndex]->AsBool());
+		}
+
 		// Set up each dialogues for each dialogue groups.
 		int32 DialogueIndex = INDEX_NONE;
 		for (FFTUEDialogueModel& FTUEDialogue : FTUEDialogueGroup.Dialogues)
@@ -760,11 +771,6 @@ void UTutorialModuleDataAsset::ValidateFTUEDialogues()
 				}
 			}
 		}
-
-		// Set dialogue group state.
-		FTUEDialogueGroup.SetAlreadyShown(
-			FTUEGroupStates.IsValidIndex(GroupIndex) && FTUEGroupStates[GroupIndex] ? 
-			FTUEGroupStates[GroupIndex]->AsBool() : false);
 	}
 
 	// Save dialogues cache for clean-up later.

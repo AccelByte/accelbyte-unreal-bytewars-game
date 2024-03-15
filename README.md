@@ -78,4 +78,4 @@ To clone the repository and checkout the submodule at the same time, run the fol
 
 ## Run Byte Wars Online (Tutorial Modules Branch)
 
-Follow along Byte Wars [Tutorial Module 2: Getting Online](https://docs-preview.accelbyte.io/gaming-services/tutorials/unreal-engine/module-2/).
+Follow along Byte Wars [Learning Paths](https://docs.accelbyte.io/gaming-services/tutorials/byte-wars/unreal-engine/learning-paths/). We suggest you to start with the [Login with Device ID and Steam path](https://docs.accelbyte.io/gaming-services/tutorials/byte-wars/unreal-engine/learning-paths/authentication/unreal-path-login-device-id-and-steam/) if you're unsure where to start.

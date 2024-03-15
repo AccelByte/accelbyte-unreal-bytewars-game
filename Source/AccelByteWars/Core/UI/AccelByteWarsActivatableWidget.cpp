@@ -759,7 +759,7 @@ void UAccelByteWarsActivatableWidget::ExecuteWidgetValidators()
 				if (IAccelByteWarsWidgetInterface* WidgetInterface = Cast<IAccelByteWarsWidgetInterface>(FoundWidget)) 
 				{
 					UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Log, TEXT("Validator executed for widget by name %s"), *WidgetToValidateStr);
-					Validator->ExecuteValidator(WidgetInterface);
+					Validator->ExecuteValidator(WidgetInterface, this);
 				}
 				else 
 				{

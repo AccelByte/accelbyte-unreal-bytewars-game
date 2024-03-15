@@ -13,7 +13,7 @@ void UTutorialModuleOnlineSession::RegisterOnlineDelegates()
 
 void UTutorialModuleOnlineSession::ClearOnlineDelegates() {}
 
-void UTutorialModuleOnlineSession::ExecuteNextTick(const FSimpleDelegate& Delegate) const
+void UTutorialModuleOnlineSession::ExecuteNextTick(const FTimerDelegate & Delegate) const
 {
 	GetWorld()->GetTimerManager().SetTimerForNextTick(Delegate);
 }

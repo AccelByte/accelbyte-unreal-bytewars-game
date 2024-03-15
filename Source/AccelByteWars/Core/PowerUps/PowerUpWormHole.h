@@ -91,15 +91,4 @@ public:
 
 	UFUNCTION(Category = AccelByteWars)
 		virtual void DestroyPowerUp() override;
-
-private:
-
-	FVector FindGoodWormHoleExitLocation();
-
-	TArray<FVector> GetActiveGameObjectsPosition(const float SeparationFactor, const float ShipSeparationFactor) const;
-	FVector2D FindGoodSpawnLocation(const TArray<FVector>& ActiveGameObjectsCoords, bool ForStars /* = false */) const;
-	FVector2D CalculateActualCoord(const double RelativeLocation, const FVector2D& MinBound, const double RangeX) const;
-	bool IsInsideCircle(const FVector2D& Target, const FVector& Circle) const;
-	double CalculateCircleLengthAlongXonY(const FVector& Circle, const double Ycoord) const;
-	
 };

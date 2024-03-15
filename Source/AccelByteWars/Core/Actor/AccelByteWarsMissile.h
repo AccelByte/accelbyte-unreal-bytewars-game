@@ -288,6 +288,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
 		void OnDestroyObject();
 
+	/**
+	 * @brief Initiates end of life sequence for missile when it goes out of bounds
+	 */
+	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
+		void DestroyOnOutOfBounds();
+
+
 protected:
 
 	/**

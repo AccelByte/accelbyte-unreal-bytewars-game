@@ -24,10 +24,11 @@ void UAccelByteWarsWidgetEntry::NativeOnItemSelectionChanged(bool bIsSelected)
 
 void UAccelByteWarsWidgetEntry::NativeConstruct()
 {
-	Super::NativeConstruct();
-
 	bAutoActivate = false;
 	bOnActivatedInitializeFTUE = false;
+
+	Super::NativeConstruct();
+
 	InitializeGeneratedWidgets();
 
 	if (const ULocalPlayer* LocalPlayer = GetOwningPlayer()->GetLocalPlayer())

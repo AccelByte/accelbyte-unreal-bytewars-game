@@ -67,6 +67,7 @@ void AAccelByteWarsMissile::Tick(float DeltaTime)
 	ApplyOverallGravityForceToChangeTheVelocity(DeltaTime);
 	ExpiryWindowBeforeTimeoutDestruction();
 	DestroyOnTimeout();
+	DestroyOnOutOfBounds();
 	SkimmingAndScoreUpdate(DeltaTime);
 	OnDestroyObject();
 }
@@ -307,6 +308,28 @@ void AAccelByteWarsMissile::DestroyOnTimeout()
 
 	if (GetGameTimeSinceCreation() > MaxTimeAlive)
 	{
+		KillActorThisFrame = true;
+	}
+}
+
+void AAccelByteWarsMissile::DestroyOnOutOfBounds()
+{
+	if (HasAuthority() == false)
+		return;
+
+	// Destroy when missile reaches out of bounds logic here
+	const AAccelByteWarsInGameGameState* GameState = Cast<AAccelByteWarsInGameGameState>(GetWorld()->GetGameState());
+	if (this->GetActorLocation().X <= GameState->MinGameBoundExtend.X || this->GetActorLocation().X >= GameState->MaxGameBoundExtend.X || 
+		this->GetActorLocation().Y <= GameState->MinGameBoundExtend.Y || this->GetActorLocation().Y >= GameState->MaxGameBoundExtend.Y)
+	{
+		// should add activating state to prevent overlaps
+		if (ThrustSparks != nullptr)
+			ThrustSparks->Deactivate();
+
+		// should add activating state to prevent overlaps
+		if (ExpiringSparks != nullptr)
+			ExpiringSparks->Activate();
+
 		KillActorThisFrame = true;
 	}
 }

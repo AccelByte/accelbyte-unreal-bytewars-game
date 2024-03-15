@@ -43,7 +43,8 @@ void UFTUEDialogueWidget::AddDialogues(const TArray<FFTUEDialogueModel*>& Dialog
 		DialoguesOrigin.AddUnique(Dialogues[i]);
 	}
 
-	ValidateDialogues();
+	// When the dialogue list is changed, reset the validation.
+	bIsAllDialogueValidated = false;
 }
 
 bool UFTUEDialogueWidget::RemoveAssociateDialogues(const TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass)
@@ -53,7 +54,8 @@ bool UFTUEDialogueWidget::RemoveAssociateDialogues(const TSubclassOf<UAccelByteW
 		return !Temp || Temp->TargetWidgetClasses.Contains(WidgetClass);
 	});
 
-	ValidateDialogues();
+	// When the dialogue list is changed, reset the validation.
+	bIsAllDialogueValidated = false;
 
 	return Removed > 0;
 }
@@ -65,56 +67,16 @@ void UFTUEDialogueWidget::ShowDialogues(bool bFirstTime)
 		return;
 	}
 
-	ValidateDialogues();
-	
-	// Check whether should abort if all dialogues are already shown.
-	if (bFirstTime)
+	bIsFirstTimeMode = bFirstTime;
+
+	// Validate dialogues and show it after the validation complete.
+	if (!bIsAllDialogueValidated) 
 	{
-		// Reset is already shown dialogue statuses if always show FTUE.
-		if (GameInstance && GameInstance->GetFTUEAlwaysOnSetting())
-		{
-			TArray<FFTUEDialogueModel*> Instigators = DialoguesInternal.FilterByPredicate([](const FFTUEDialogueModel* Temp)
-			{
-				return Temp && Temp->bIsInstigator;
-			});
-			for (auto Instigator : Instigators)
-			{
-				if (Instigator->Group)
-				{
-					Instigator->Group->SetAlreadyShown(false);
-				}
-			}
-
-			DialoguesInternal.RemoveAll([](const FFTUEDialogueModel* Temp)
-			{
-				return !Temp || Temp->bIsAlreadyShown;
-			});
-		}
-
-		// Abort if all dialogues is already shown.
-		if (IsAllDialoguesAlreadyShown()) 
-		{
-			return;
-		}
+		ValidateDialogues();	
 	}
-
-	// Abort if after validation, the dialogues turns out to be empty.
-	if (DialoguesInternal.IsEmpty()) 
+	else 
 	{
-		return;
-	}
-
-	// Initialize FTUE.
-	ClearHighlightedWidget();
-	DialogueIndex = 0;
-	CachedLastDialogue = nullptr;
-	DialoguesInternal.Sort();
-
-	// Show FTUE.
-	if (InitializeDialogue(DialoguesInternal[DialogueIndex]))
-	{
-		W_FTUEDialogue->SetVisibility(ESlateVisibility::Visible);
-		TryToggleHelpDev(false);
+		OnValidateDialoguesComplete();
 	}
 }
 
@@ -128,7 +90,6 @@ void UFTUEDialogueWidget::CloseDialogues()
 	// Tear down FTUE.
 	ClearHighlightedWidget();
 	DeinitializeLastDialogue();
-	ValidateDialogues();
 	DialogueIndex = INDEX_NONE;
 	CachedLastDialogue = nullptr;
 
@@ -187,11 +148,11 @@ void UFTUEDialogueWidget::PrevDialogue()
 	// Try to init dialogue. If fails, fallback.
 	if (!InitializeDialogue(DialoguesInternal[--DialogueIndex]))
 	{
-		if (DialogueIndex <= 0) 
+		if (DialogueIndex <= 0)
 		{
 			CloseDialogues();
 		}
-		else 
+		else
 		{
 			PrevDialogue();
 		}
@@ -239,6 +200,12 @@ bool UFTUEDialogueWidget::InitializeDialogue(FFTUEDialogueModel* Dialogue)
 		return false;
 	}
 
+	// If first time mode, don't initialize if the dialogue if already shown.
+	if (Dialogue->bIsAlreadyShown && bIsFirstTimeMode)
+	{
+		return false;
+	}
+
 	// Check for highlighted widget.
 	ClearHighlightedWidget();
 	if (Dialogue->bHighlightWidget)
@@ -253,13 +220,13 @@ bool UFTUEDialogueWidget::InitializeDialogue(FFTUEDialogueModel* Dialogue)
 
 		// Eliminate invalid found widgets.
 		FoundWidgets.RemoveAll([WidgetToHighlightStr](const UUserWidget* Temp)
-		{
-			return !Temp || !Temp->GetName().Equals(WidgetToHighlightStr) || !Temp->IsVisible();
-		});
+			{
+				return !Temp || !Temp->GetName().Equals(WidgetToHighlightStr) || !Temp->IsVisible();
+			});
 		UE_LOG_FTUEDIALOGUEWIDGET(Log, TEXT("Potential widgets to highlight after validation: %d"), FoundWidgets.Num());
 
 		// Try to highlight widget.
-		for (auto& FoundWidget : FoundWidgets)
+		for (UUserWidget* FoundWidget : FoundWidgets)
 		{
 			// Skip if invalid.
 			if (!FoundWidget)
@@ -285,7 +252,7 @@ bool UFTUEDialogueWidget::InitializeDialogue(FFTUEDialogueModel* Dialogue)
 
 					UE_LOG_FTUEDIALOGUEWIDGET(Log, TEXT("Highlighted widget found."));
 				}
-				else 
+				else
 				{
 					UE_LOG_FTUEDIALOGUEWIDGET(Warning, TEXT("Highlighted widget is found but it is not implementing widget highlighting interface."));
 				}
@@ -332,19 +299,19 @@ bool UFTUEDialogueWidget::InitializeDialogue(FFTUEDialogueModel* Dialogue)
 	}
 
 	// Set dialogue position.
-	if (UCanvasPanelSlot* WidgetSlot = Cast<UCanvasPanelSlot>(W_FTUEDialogue->Slot)) 
+	if (UCanvasPanelSlot* WidgetSlot = Cast<UCanvasPanelSlot>(W_FTUEDialogue->Slot))
 	{
 		WidgetSlot->SetAutoSize(true);
 		WidgetSlot->SetAnchors(FAnchors(Dialogue->GetAnchor().X, Dialogue->GetAnchor().Y));
 		WidgetSlot->SetAlignment(Dialogue->GetAnchor());
 		WidgetSlot->SetPosition(Dialogue->Position);
 	}
-	
+
 	// Execute last dialogue's on-deactivate event.
 	DeinitializeLastDialogue();
 
 	// Execute current dialogue's on-activated event.
-	if (Dialogue->OnActivateDelegate.IsBound()) 
+	if (Dialogue->OnActivateDelegate.IsBound())
 	{
 		Dialogue->OnActivateDelegate.Broadcast();
 	}
@@ -399,17 +366,131 @@ void UFTUEDialogueWidget::InitializeActionButton(UAccelByteWarsButtonBase* Butto
 
 void UFTUEDialogueWidget::ValidateDialogues()
 {
-	// Remove invalid dialogues.
+	// Clear cached dialogues.
+	DialoguesInternal.Empty();
+
+	// Remove invalid dialogues from the original input.
 	DialoguesOrigin.RemoveAll([](const FFTUEDialogueModel* Temp)
 	{
-		return !Temp || 
-			!Temp->OwnerTutorialModule || 
-			!Temp->OwnerTutorialModule->IsActiveAndDependenciesChecked() ||
-			(Temp->OnValidateDelegate.IsBound() && !Temp->OnValidateDelegate.Execute());
+		return !Temp || !Temp->OwnerTutorialModule || !Temp->OwnerTutorialModule->IsActiveAndDependenciesChecked();
 	});
 
-	DialoguesInternal = DialoguesOrigin;
+	// Abort if no valid dialogues from the original input.
+	if (DialoguesOrigin.IsEmpty()) 
+	{
+		TryToggleHelpDev(false);
+		return;
+	}
+
+	// Execute validation for each dialogues recursively.
+	ValidateDialogue(0);
+}
+
+void UFTUEDialogueWidget::OnValidateDialoguesComplete()
+{
+	bIsAllDialogueValidated = true;
+
 	TryToggleHelpDev(!DialoguesInternal.IsEmpty());
+
+	// Check whether should abort if all dialogues are already shown.
+	if (bIsFirstTimeMode)
+	{
+		// Reset is already shown dialogue statuses if always show FTUE.
+		if (GameInstance && GameInstance->GetFTUEAlwaysOnSetting())
+		{
+			TArray<FFTUEDialogueModel*> Instigators = DialoguesInternal.FilterByPredicate([](const FFTUEDialogueModel* Temp)
+			{
+				return Temp && Temp->bIsInstigator;
+			});
+			for (FFTUEDialogueModel* Instigator : Instigators)
+			{
+				if (Instigator->Group)
+				{
+					Instigator->Group->SetAlreadyShown(false);
+				}
+			}
+
+			DialoguesInternal.RemoveAll([](const FFTUEDialogueModel* Temp)
+			{
+				return !Temp || Temp->bIsAlreadyShown;
+			});
+		}
+
+		// Abort if all dialogues is already shown.
+		if (IsAllDialoguesAlreadyShown())
+		{
+			return;
+		}
+	}
+
+	// Abort if after validation, the dialogues turns out to be empty.
+	if (DialoguesInternal.IsEmpty())
+	{
+		return;
+	}
+
+	// Reinitialize FTUE helpers.
+	ClearHighlightedWidget();
+	DialoguesInternal.Sort();
+	CachedLastDialogue = nullptr;
+	
+	/* If first time mode, get the first dialogue that has not yet shown.
+	 * If not, fallback to the first dialogue.*/
+	DialogueIndex = 0;
+	if (bIsFirstTimeMode) 
+	{
+		for (int32 i = 0; i < DialoguesInternal.Num(); i++)
+		{
+			if (!DialoguesInternal[i]->bIsAlreadyShown)
+			{
+				DialogueIndex = i;
+				break;
+			}
+		}
+	}
+
+	// Show FTUE.
+	if (InitializeDialogue(DialoguesInternal[DialogueIndex]))
+	{
+		W_FTUEDialogue->SetVisibility(ESlateVisibility::Visible);
+		TryToggleHelpDev(false);
+	}
+}
+
+void UFTUEDialogueWidget::ValidateDialogue(const int32 DialogueToValidateIndex)
+{
+	// Finalize validation if reached invalid index or the end of the dialogue array.
+	const bool bIsValidIndex = DialoguesOrigin.IsValidIndex(DialogueToValidateIndex);
+	if (!bIsValidIndex)
+	{
+		OnValidateDialoguesComplete();
+		return;
+	}
+
+	const int32 NextDialogueIndex = DialogueToValidateIndex + 1;
+
+	// Skip to next dialogue if the current one is invalid.
+	FFTUEDialogueModel* Dialogue = DialoguesOrigin[DialogueToValidateIndex];
+	if (!Dialogue) 
+	{
+		ValidateDialogue(NextDialogueIndex);
+		return;
+	}
+
+	// Execute dialogue validation.
+	Dialogue->ExecuteValidation(FOnFTUEDialogueValidationComplete::CreateUObject(this, &ThisClass::OnValidateDialogueComplete, NextDialogueIndex), this);
+}
+
+void UFTUEDialogueWidget::OnValidateDialogueComplete(FFTUEDialogueModel* Dialogue, const bool bIsValid, const int32 NextDialogueToValidateIndex)
+{
+	// Add dialogue to internal cache if valid.
+	if (bIsValid && Dialogue)
+	{
+		DialoguesInternal.Add(Dialogue);
+	}
+
+	// Execute validation for next dialogue.
+	ValidateDialogue(NextDialogueToValidateIndex);
 }
 
 void UFTUEDialogueWidget::DeinitializeLastDialogue()
