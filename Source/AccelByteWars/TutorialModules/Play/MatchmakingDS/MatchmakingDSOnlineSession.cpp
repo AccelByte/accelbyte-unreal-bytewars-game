@@ -65,7 +65,7 @@ void UMatchmakingDSOnlineSession::QueryUserInfo(
 	if (!GetUserInt())
 	{
 		UE_LOG_MATCHMAKINGDS(Warning, TEXT("User interface null"))
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, OnComplete]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, OnComplete]()
 		{
 			OnComplete.ExecuteIfBound(false, {});
 		}));
@@ -76,7 +76,7 @@ void UMatchmakingDSOnlineSession::QueryUserInfo(
 	if (RetrieveUserInfoCache(UserIds, UserInfo))
 	{
 		UE_LOG_MATCHMAKINGDS(Log, TEXT("Cache found"))
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, UserInfo, OnComplete]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, UserInfo, OnComplete]()
 		{
 			OnComplete.ExecuteIfBound(true, UserInfo);
 		}));
@@ -117,7 +117,7 @@ void UMatchmakingDSOnlineSession::DSQueryUserInfo(
 	if (DSRetrieveUserInfoCache(UserIds, UserInfo))
 	{
 		UE_LOG_MATCHMAKINGDS(Log, TEXT("Cache found"))
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, OnComplete, UserInfo]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, OnComplete, UserInfo]()
 		{
 			OnComplete.ExecuteIfBound(true, UserInfo);
 		}));
@@ -144,7 +144,7 @@ void UMatchmakingDSOnlineSession::DSQueryUserInfo(
 			}),
 			FErrorHandler::CreateWeakLambda(this, [this, OnComplete](int32, const FString&)
 			{
-				ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, OnComplete]()
+				ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, OnComplete]()
 				{
 					OnDSQueryUserInfoComplete(FListBulkUserInfo(), OnComplete);
 				}));
@@ -347,7 +347,7 @@ void UMatchmakingDSOnlineSession::StartMatchmaking(
 	if (!ensure(GetSessionInt()))
 	{
 		UE_LOG_MATCHMAKINGDS(Warning, TEXT("Session Interface is not valid."));
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnStartMatchmakingComplete(SessionName, FOnlineError(false), {});
 		}));
@@ -377,7 +377,7 @@ void UMatchmakingDSOnlineSession::StartMatchmaking(
 	if (!ensure(PlayerNetId.IsValid()))
 	{
 		UE_LOG_MATCHMAKINGDS(Warning, TEXT("Player UniqueNetId is not valid."));
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnStartMatchmakingComplete(SessionName, FOnlineError(false), {});
 		}));
@@ -424,7 +424,7 @@ void UMatchmakingDSOnlineSession::StartMatchmaking(
 	{
 		UE_LOG_MATCHMAKINGDS(Warning, TEXT("Failed executing"))
 		// Failed to start matchmaking.
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnStartMatchmakingComplete(SessionName, FOnlineError(false), {});
 		}));
@@ -439,7 +439,7 @@ void UMatchmakingDSOnlineSession::CancelMatchmaking(APlayerController* PC, const
 	if (!ensure(GetSessionInt()))
 	{
 		UE_LOG_MATCHMAKINGDS(Warning, TEXT("Session Interface is not valid."));
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnCancelMatchmakingComplete(SessionName, false);
 		}));
@@ -450,7 +450,7 @@ void UMatchmakingDSOnlineSession::CancelMatchmaking(APlayerController* PC, const
 		GetABSessionInt()->CurrentMatchmakingSearchHandle->SearchingPlayerId.IsValid()))
 	{
 		UE_LOG_MATCHMAKINGDS(Warning, TEXT("Searching player ID is not valid."));
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnCancelMatchmakingComplete(SessionName, false);
 		}));
@@ -463,7 +463,7 @@ void UMatchmakingDSOnlineSession::CancelMatchmaking(APlayerController* PC, const
 	{
 		UE_LOG_MATCHMAKINGDS(Warning, TEXT("Failed executing"))
 		// Failed to start matchmaking.
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnCancelMatchmakingComplete(SessionName, false);
 		}));

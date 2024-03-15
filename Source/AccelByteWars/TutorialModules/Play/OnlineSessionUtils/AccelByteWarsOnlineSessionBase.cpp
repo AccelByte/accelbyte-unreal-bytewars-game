@@ -335,7 +335,8 @@ TArray<FMatchSessionEssentialInfo> UAccelByteWarsOnlineSessionBase::SimplifySess
 		SessionSettings.Get(SETTING_SESSION_TEMPLATE_NAME, SessionTemplateName);
 		for (const TTuple<TPair<EGameModeNetworkType, EGameModeType>, FString>& TemplateName : PredefinedSessionTemplateNames)
 		{
-			if (TemplateName.Value.Equals(SessionTemplateName))
+			// Assuming the TemplateName.Value contains game mode of type "elimination" or "teamdeathmatch".
+			if (TemplateName.Value.Contains(SessionTemplateName))
 			{
 				SessionEssentialInfo.GameModeType = TemplateName.Key.Value;
 				break;

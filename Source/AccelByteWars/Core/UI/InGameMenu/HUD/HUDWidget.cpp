@@ -70,13 +70,6 @@ void UHUDWidget::NativeConstruct()
 	if (FFTUEDialogueModel* FTUEDedicatedServer =
 		FFTUEDialogueModel::GetMetadataById("ftue_ds_details", FTUEDialogues))
 	{
-		EGameModeNetworkType NetMode = ByteWarsGameState->GameSetup.NetworkType;
-		FTUEDedicatedServer->OnValidateDelegate.Unbind();
-		FTUEDedicatedServer->OnValidateDelegate.BindWeakLambda(this, [NetMode]()
-		{
-			return NetMode == EGameModeNetworkType::DS;
-		});
-
 #pragma region "Check if using AMS or not"
 		bool bUseAMS = true; // default is true
 

@@ -38,7 +38,7 @@ void UMatchmakingDSOnlineSession_Starter::QueryUserInfo(
 		if (!GetUserInt())
 		{
 			UE_LOG_MATCHMAKINGDS(Warning, TEXT("User interface null"))
-			ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, OnComplete]()
+			ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, OnComplete]()
 			{
 				OnComplete.ExecuteIfBound(false, {});
 			}));
@@ -49,7 +49,7 @@ void UMatchmakingDSOnlineSession_Starter::QueryUserInfo(
 	if (RetrieveUserInfoCache(UserIds, UserInfo))
 	{
 		UE_LOG_MATCHMAKINGDS(Log, TEXT("Cache found"))
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, UserInfo, OnComplete]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, UserInfo, OnComplete]()
 		{
 			OnComplete.ExecuteIfBound(true, UserInfo);
 		}));
@@ -90,7 +90,7 @@ void UMatchmakingDSOnlineSession_Starter::DSQueryUserInfo(
 	if (DSRetrieveUserInfoCache(UserIds, UserInfo))
 	{
 		UE_LOG_MATCHMAKINGDS(Log, TEXT("Cache found"))
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, OnComplete, UserInfo]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, OnComplete, UserInfo]()
 		{
 			OnComplete.ExecuteIfBound(true, UserInfo);
 		}));
@@ -117,7 +117,7 @@ void UMatchmakingDSOnlineSession_Starter::DSQueryUserInfo(
 			}),
 			FErrorHandler::CreateWeakLambda(this, [this, OnComplete](int32, const FString&)
 			{
-				ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, OnComplete]()
+				ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, OnComplete]()
 				{
 					OnDSQueryUserInfoComplete(FListBulkUserInfo(), OnComplete);
 				}));

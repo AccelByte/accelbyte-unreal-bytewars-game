@@ -89,7 +89,7 @@ void USessionEssentialsOnlineSession::CreateSession(
 	if (!GetSessionInt())
 	{
 		UE_LOG_SESSIONESSENTIALS(Warning, TEXT("Session interface is null"))
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnCreateSessionComplete(SessionName, false);
 		}));
@@ -98,7 +98,7 @@ void USessionEssentialsOnlineSession::CreateSession(
 	if (SessionTemplateName.IsEmpty())
 	{
 		UE_LOG_SESSIONESSENTIALS(Warning, TEXT("Session Template Name can't be empty"))
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnCreateSessionComplete(SessionName, false);
 		}));
@@ -156,7 +156,7 @@ void USessionEssentialsOnlineSession::CreateSession(
 		if (!GetSessionInt()->CreateSession(LocalUserNum, SessionName, SessionSettings))
 		{
 			UE_LOG_SESSIONESSENTIALS(Warning, TEXT("Failed to execute"))
-			ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+			ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 			{
 				OnCreateSessionComplete(SessionName, false);
 			}));
@@ -175,7 +175,7 @@ void USessionEssentialsOnlineSession::JoinSession(
 	if (!GetSessionInt())
 	{
 		UE_LOG_SESSIONESSENTIALS(Warning, TEXT("Session interface null"))
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnJoinSessionComplete(SessionName, EOnJoinSessionCompleteResult::UnknownError);
 		}));
@@ -200,7 +200,7 @@ void USessionEssentialsOnlineSession::JoinSession(
 		if (!GetSessionInt()->JoinSession(LocalUserNum, SessionName, SearchResult))
 		{
 			UE_LOG_SESSIONESSENTIALS(Warning, TEXT("Failed to execute"))
-			ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+			ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 			{
 				OnJoinSessionComplete(SessionName, EOnJoinSessionCompleteResult::UnknownError);
 			}));
@@ -251,7 +251,7 @@ void USessionEssentialsOnlineSession::LeaveSession(FName SessionName)
 	if (!GetSessionInt())
 	{
 		UE_LOG_SESSIONESSENTIALS(Warning, TEXT("Session interface null"))
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnLeaveSessionComplete(SessionName, false);
 		}));
@@ -263,7 +263,7 @@ void USessionEssentialsOnlineSession::LeaveSession(FName SessionName)
 		if (!GetABSessionInt()->DestroySession(SessionName))
 		{
 			UE_LOG_SESSIONESSENTIALS(Warning, TEXT("Failed to execute"))
-			ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+			ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 			{
 				OnLeaveSessionComplete(SessionName, false);
 			}));
@@ -276,7 +276,7 @@ void USessionEssentialsOnlineSession::LeaveSession(FName SessionName)
 	else
 	{
 		UE_LOG_SESSIONESSENTIALS(Log, TEXT("Not in session"))
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnLeaveSessionComplete(SessionName, true);
 		}));

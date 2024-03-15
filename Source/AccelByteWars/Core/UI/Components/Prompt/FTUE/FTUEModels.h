@@ -9,6 +9,8 @@
 #include "CoreMinimal.h"
 #include "FTUEModels.generated.h"
 
+DECLARE_DELEGATE_TwoParams(FOnFTUEDialogueValidationComplete, FFTUEDialogueModel* /*Dialogue*/, const bool /*bIsValid*/);
+
 class UAccelByteWarsActivatableWidget;
 class UCommonUserWidget;
 class UTutorialModuleDataAsset;
@@ -173,6 +175,10 @@ struct FFTUEDialogueModel
     FString FTUEId;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
+        Tooltip = "Validation to perform to determine whether the FTUE should be displayed or not. If Custom Validation selected, you need to implement it on your own through code."))
+    FServicePredefinedValidator Validator;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
         Tooltip = "The message to be shown on the FTUE."))
     FText Message;
 
@@ -255,13 +261,17 @@ struct FFTUEDialogueModel
     bool bIsTerminator = false;
 
     // Event to be executed when the FTUE is shown to the screen.
-    TDelegate<bool()> OnValidateDelegate;
-
-    // Event to be executed when the FTUE is shown to the screen.
     TMulticastDelegate<void()> OnActivateDelegate;
 
     // Event to be executed when the FTUE is dismissed from the screen.
     TMulticastDelegate<void()> OnDeactivateDelegate;
+
+    // Event to bind to perform custom validation.
+    TDelegate<void(const FOnFTUEDialogueValidationComplete& /*OnComplete*/)> OnCustomValidationDelegate;
+    
+    inline static TDelegate<void(FFTUEDialogueModel* /*Dialogue*/, const FOnFTUEDialogueValidationComplete& /*OnComplete*/, const UObject* /*Context*/)> OnPredefinedValidationDelegate;
+
+    void ExecuteValidation(const FOnFTUEDialogueValidationComplete& OnComplete, const UObject* Context);
 
     FVector2D GetAnchor() const
     {
@@ -370,6 +380,10 @@ struct FFTUEDialogueGroup
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
         Tooltip = "The order when the FTUE group should be shown."))
     int32 OrderPriority = 0;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
+        Tooltip = "Whether the FTUE dialogues in the group must be forced to be shown or not."))
+    bool bIsForceAlwaysShow = false;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
         Tooltip = "List of FTUE dialogues in the group."))

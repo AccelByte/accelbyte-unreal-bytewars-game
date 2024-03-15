@@ -83,7 +83,7 @@ void UMatchmakingP2POnlineSession::QueryUserInfo(
 	if (!GetUserInt())
 	{
 		UE_LOG_MATCHMAKINGP2P(Warning, TEXT("User interface null"))
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, OnComplete]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, OnComplete]()
 		{
 			OnComplete.ExecuteIfBound(false, {});
 		}));
@@ -94,7 +94,7 @@ void UMatchmakingP2POnlineSession::QueryUserInfo(
 	if (RetrieveUserInfoCache(UserIds, UserInfo))
 	{
 		UE_LOG_MATCHMAKINGP2P(Log, TEXT("Cache found"))
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, UserInfo, OnComplete]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, UserInfo, OnComplete]()
 		{
 			OnComplete.ExecuteIfBound(true, UserInfo);
 		}));
@@ -292,7 +292,7 @@ void UMatchmakingP2POnlineSession::StartMatchmaking(
 	if (!ensure(GetSessionInt()))
 	{
 		UE_LOG_MATCHMAKINGP2P(Warning, TEXT("Session Interface is not valid."));
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnStartMatchmakingComplete(SessionName, FOnlineError(false), {});
 		}));
@@ -322,7 +322,7 @@ void UMatchmakingP2POnlineSession::StartMatchmaking(
 	if (!ensure(PlayerNetId.IsValid()))
 	{
 		UE_LOG_MATCHMAKINGP2P(Warning, TEXT("Player UniqueNetId is not valid."));
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnStartMatchmakingComplete(SessionName, FOnlineError(false), {});
 		}));
@@ -346,7 +346,7 @@ void UMatchmakingP2POnlineSession::StartMatchmaking(
 	{
 		UE_LOG_MATCHMAKINGP2P(Warning, TEXT("Failed executing"))
 		// Failed to start matchmaking.
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnStartMatchmakingComplete(SessionName, FOnlineError(false), {});
 		}));
@@ -361,7 +361,7 @@ void UMatchmakingP2POnlineSession::CancelMatchmaking(APlayerController* PC, cons
 	if (!ensure(GetSessionInt()))
 	{
 		UE_LOG_MATCHMAKINGP2P(Warning, TEXT("Session Interface is not valid."));
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnCancelMatchmakingComplete(SessionName, false);
 		}));
@@ -372,7 +372,7 @@ void UMatchmakingP2POnlineSession::CancelMatchmaking(APlayerController* PC, cons
 		GetABSessionInt()->CurrentMatchmakingSearchHandle->SearchingPlayerId.IsValid()))
 	{
 		UE_LOG_MATCHMAKINGP2P(Warning, TEXT("Searching player ID is not valid."));
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnCancelMatchmakingComplete(SessionName, false);
 		}));
@@ -385,7 +385,7 @@ void UMatchmakingP2POnlineSession::CancelMatchmaking(APlayerController* PC, cons
 	{
 		UE_LOG_MATCHMAKINGP2P(Warning, TEXT("Failed executing"))
 		// Failed to start matchmaking.
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnCancelMatchmakingComplete(SessionName, false);
 		}));

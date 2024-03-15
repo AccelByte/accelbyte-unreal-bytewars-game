@@ -72,7 +72,7 @@ FOnlineSessionV2AccelBytePtr UAccelByteWarsServerSubsystemBase::GetABSessionInt(
 	return ABSessionInt;
 }
 
-void UAccelByteWarsServerSubsystemBase::ExecuteNextTick(const FSimpleDelegate& Delegate) const
+void UAccelByteWarsServerSubsystemBase::ExecuteNextTick(const FTimerDelegate & Delegate) const
 {
 	GetWorld()->GetTimerManager().SetTimerForNextTick(Delegate);
 }
@@ -100,7 +100,7 @@ void UAccelByteWarsServerSubsystemBase::AuthenticatePlayer(APlayerController* Pl
 	if (!PlayerState)
 	{
 		UE_LOG_GAMESESSION(Warning, TEXT("Player State is invalid"));
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, PlayerController]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, PlayerController]()
 		{
 			OnAuthenticatePlayerComplete(PlayerController, false);
 		}));
@@ -111,7 +111,7 @@ void UAccelByteWarsServerSubsystemBase::AuthenticatePlayer(APlayerController* Pl
 	if (!AbPlayerState)
 	{
 		UE_LOG_GAMESESSION(Warning, TEXT("Player State is not derived from AAccelByteWarsPlayerState"));
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, PlayerController]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, PlayerController]()
 		{
 			OnAuthenticatePlayerComplete(PlayerController, false);
 		}));
@@ -135,7 +135,7 @@ void UAccelByteWarsServerSubsystemBase::AuthenticatePlayer(APlayerController* Pl
 				AbPlayerState->TeamId = UserInfo.Value.Value;
 				AbPlayerState->AvatarURL = UserInfo.Value.Key.AvatarUrl;
 
-				ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, PlayerController]()
+				ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, PlayerController]()
 				{
 					OnAuthenticatePlayerComplete(PlayerController, true);
 				}));
@@ -157,7 +157,7 @@ void UAccelByteWarsServerSubsystemBase::AuthenticatePlayer(APlayerController* Pl
 				AbPlayerState->TeamId = UserInfo.Value.Value;
 				UserInfo.Value.Key.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AbPlayerState->AvatarURL);
 
-				ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, PlayerController]()
+				ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, PlayerController]()
 				{
 					OnAuthenticatePlayerComplete(PlayerController, true);
 				}));

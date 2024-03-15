@@ -3,6 +3,8 @@
 // and restrictions contact your company contract manager.
 
 #include "TutorialModuleOnlineUtility.h"
+#include "Core/GameStates/AccelByteWarsGameState.h"
+#include "Core/Utilities/AccelByteWarsUtility.h"
 #include "Core/Utilities/AccelByteWarsBlueprintFunctionLibrary.h"
 
 #include "OnlineSubsystemUtils.h"
@@ -33,52 +35,14 @@ UTutorialModuleOnlineUtility::UTutorialModuleOnlineUtility()
     // Trigger to get general predefined argument.
     FServiceArgumentModel::OnGetPredefinedArgument.BindUObject(this, &ThisClass::GetServicePredefinedArgument);
 
-    // Trigger to execute predefined service validator.
-    FWidgetValidator::OnPredefinedServiceValidatorExecutedDelegate.BindUObject(this, &ThisClass::ExecutePredefinedServiceValidator);
+    // Trigger to execute predefined service validator for FTUE dialogues.
+    FFTUEDialogueModel::OnPredefinedValidationDelegate.BindUObject(this, &ThisClass::ExecutePredefinedServiceForFTUE);
 
-    // Save general logged-in player information.
-    UAuthEssentialsModels::OnLoginSuccessDelegate.AddWeakLambda(this, [this](const APlayerController* PC)
-    {
-        const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
-        if (!Subsystem)
-        {
-            return;
-        }
+    // Trigger to execute predefined service validator for Widget Validators.
+    FWidgetValidator::OnPredefinedServiceValidatorExecutedDelegate.BindUObject(this, &ThisClass::ExecutePredefinedServiceForWidgetValidator);
 
-        const FOnlineIdentityAccelBytePtr IdentityInterface = 
-            StaticCastSharedPtr<FOnlineIdentityAccelByte>(Subsystem->GetIdentityInterface());
-        if (!IdentityInterface)
-        {
-            return;
-        }
-
-        const ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
-        if (!LocalPlayer)
-        {
-            return;
-        }
-
-        const FUniqueNetIdAccelByteUserPtr UserABId = 
-            StaticCastSharedPtr<const FUniqueNetIdAccelByteUser>(LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId());
-        if (!UserABId) 
-        {
-            return;
-        }
-
-        // Save player's AccelByte user id.
-        CurrentPlayerUserIdStr = UserABId->GetAccelByteId();
-
-        // Save player's display name.
-        TSharedPtr<FUserOnlineAccount> UserAccount = IdentityInterface->GetUserAccount(UserABId.ToSharedRef().Get());
-        if (UserAccount) 
-        {
-            CurrentPlayerDisplayName = UserAccount->GetDisplayName();
-        }
-        if (CurrentPlayerDisplayName.IsEmpty())
-        {
-            CurrentPlayerDisplayName = GetUserDefaultDisplayName(CurrentPlayerUserIdStr);
-        }
-    });
+    // Cache general information after login.
+    UAuthEssentialsModels::OnLoginSuccessDelegate.AddUObject(this, &ThisClass::CacheGeneralInformation);
 }
 
 bool UTutorialModuleOnlineUtility::IsAccelByteSDKInitialized(const UObject* Target)
@@ -290,14 +254,8 @@ void UTutorialModuleOnlineUtility::CheckForDedicatedServerVersionOverride()
     }
 
     // Set dedicated server version based on project version (could be empty if not yet set in DefaultGame.ini).
-    FString ProjectVersionStr;
-    const FString ProjectVerSectionPath = FString("/Script/EngineSettings.GeneralProjectSettings");
-    const FString ProjectVerConfig = FString("ProjectVersion");
-    GConfig->GetString(*ProjectVerSectionPath, *ProjectVerConfig, ProjectVersionStr, GGameIni);
-
-    UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Log, TEXT("DS version is overridden to: %s"), *ProjectVersionStr);
-
-    DedicatedServerVersionOverride = ProjectVersionStr;
+    DedicatedServerVersionOverride = AccelByteWarsUtility::GetGameVersion();
+    UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Log, TEXT("DS version is overridden to: %s"), *DedicatedServerVersionOverride);
 }
 
 FString UTutorialModuleOnlineUtility::GetDedicatedServerVersionOverride()
@@ -307,19 +265,36 @@ FString UTutorialModuleOnlineUtility::GetDedicatedServerVersionOverride()
 
 TMap<FString, FString> UTutorialModuleOnlineUtility::CheckForSDKConfigOverride(const bool bIsServer)
 {
-    const FString ClientPrefix = FString("-Client_");
-    const FString ServerPrefix = FString("-Server_");
+    const FString ClientPrefix = TEXT("Client_");
+    const FString ServerPrefix = TEXT("Server_");
 
-    TArray<FString> ConfigKeys =
+    const FString ClientIdConfigKey = TEXT("ClientId");
+    const FString ClientSecretConfigKey = TEXT("ClientSecret");
+    const FString NamespaceConfigKey = TEXT("Namespace");
+    const FString PublisherNamespaceConfigKey = TEXT("PublisherNamespace");
+    const FString BaseURLConfigKey = TEXT("BaseUrl");
+    const FString RedirectURIConfigKey = TEXT("RedirectURI");
+
+    // These are supported SDK config keys to be overridden.
+    const TArray<FString> ConfigKeys =
     {
-        FString("ClientId"),
-        FString("ClientSecret"),
-        FString("Namespace"),
-        FString("PublisherNamespace"),
-        FString("BaseUrl"),
-        FString("RedirectURI")
+        ClientIdConfigKey,
+        ClientSecretConfigKey,
+        NamespaceConfigKey,
+        PublisherNamespaceConfigKey,
+        BaseURLConfigKey,
+        RedirectURIConfigKey
     };
 
+    // These shared SDK config keys apply to both the game client and server.
+    const TArray<FString> SharedConfigKeys =
+    {
+        NamespaceConfigKey,
+        PublisherNamespaceConfigKey,
+        BaseURLConfigKey
+    };
+
+    // Helper to store what SDK configs should be overridden.
     TMap<FString, FString> SDKConfigs;
 
     // Check launch param for the SDK config.
@@ -327,30 +302,62 @@ TMap<FString, FString> UTutorialModuleOnlineUtility::CheckForSDKConfigOverride(c
     const FString ConfigPrefix = bIsServer ? ServerPrefix : ClientPrefix;
     for (const FString& Config : ConfigKeys)
     {
-        const FString CmdStr = FString::Printf(TEXT("%s%s="), *ConfigPrefix, *Config, false);
+        FString CmdValue = TEXT("");
+
+        // Construct launch param to check.
+        FString CmdStr = FString::Printf(TEXT("-%s%s="), *ConfigPrefix, *Config);
+        if (SharedConfigKeys.Contains(Config))
+        {
+            /* The shared SDK config supports using client/server prefixes or without any prefixes.
+             * The value changed by shared SDK config will affect both client and server SDK config value.
+             * Example: -BaseUrl=test -Client_BaseUrl=test -Server_BaseUrl=test,
+             * each of these commands will perform the same thing: to change the value of client and server Base Url to "test".*/
+
+            // Construct shared SDK config launch param without any prefix.
+            CmdStr = FString::Printf(TEXT("-%s="), *Config);
+
+            // If the shared SDK config launch param without prefix is not found, fallback to add client prefix.
+            if (!CmdArgs.Contains(CmdStr, ESearchCase::IgnoreCase)) 
+            {
+                CmdStr = FString::Printf(TEXT("-%s%s="), *ClientPrefix, *Config);
+            }
+            // If the shared SDK config launch param with client prefix is not found, fallback to add server prefix.
+            if (!CmdArgs.Contains(CmdStr, ESearchCase::IgnoreCase))
+            {
+                CmdStr = FString::Printf(TEXT("-%s%s="), *ServerPrefix, *Config);
+            }
+        }
+
+        // Check for launch param.
         if (CmdArgs.Contains(CmdStr, ESearchCase::IgnoreCase))
         {
-            FString CmdValue;
             FParse::Value(*CmdArgs, *CmdStr, CmdValue);
-            if (CmdValue.IsEmpty())
-            {
-                UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(
-                    Warning,
-                    TEXT("Unable to override %s SDK config %s using launch param. Empty or invalid value."),
-                    bIsServer ? TEXT("Server") : TEXT("Client"),
-                    *Config);
-                continue;
-            }
-
-            SDKConfigs.Add(Config, CmdValue);
-
-            UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(
-                Log,
-                TEXT("%s SDK config %s is overridden by launch param to %s"),
-                bIsServer ? TEXT("Server") : TEXT("Client"),
-                *Config,
-                *CmdValue);
         }
+        else
+        {
+            continue;
+        }
+
+        // Abort if the SDK config to override value is empty.
+        if (CmdValue.IsEmpty())
+        {
+            UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(
+                Warning,
+                TEXT("Unable to override %s SDK config %s using launch param. Empty or invalid value."),
+                bIsServer ? TEXT("Server") : TEXT("Client"),
+                *Config);
+            continue;
+        }
+
+        // Collect SDK config value to override.
+        SDKConfigs.Add(Config, CmdValue);
+
+        UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(
+            Log,
+            TEXT("%s SDK config %s is overridden by launch param to %s"),
+            bIsServer ? TEXT("Server") : TEXT("Client"),
+            *Config,
+            *CmdValue);
     }
 
     // Return SDK config to override.
@@ -446,39 +453,178 @@ ESettingsEnvironment UTutorialModuleOnlineUtility::ConvertOSSEnvToAccelByteEnv(c
     }
 }
 
-void UTutorialModuleOnlineUtility::ExecutePredefinedServiceValidator(FWidgetValidator* WidgetValidator)
+void UTutorialModuleOnlineUtility::ExecutePredefinedServiceValidator(const EServicePredefinedValidator ValidatorType, const TDelegate<void(const bool /*bIsValid*/)>& OnComplete, const UObject* Context)
+{
+    if (!Context) 
+    {
+        UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Failed to execute predefined service validator. Context object is null."));
+        OnComplete.ExecuteIfBound(false);
+        return;
+    }
+
+    switch (ValidatorType)
+    {
+    case EServicePredefinedValidator::IS_REQUIRED_AMS_ACCOUNT:
+    {
+        AccelByte::FRegistry::AMS.GetAccount(
+            AccelByte::THandler<FAccelByteModelsAMSGetAccountResponse>::CreateWeakLambda(this, [OnComplete](const FAccelByteModelsAMSGetAccountResponse& Result)
+            {
+                UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Log, TEXT("Success to get AMS account configuration. AMS account id: %s"), *(!Result.Id.IsEmpty() ? Result.Id : FString("empty")));
+                OnComplete.ExecuteIfBound(!Result.Id.IsEmpty());
+            }),
+            FErrorHandler::CreateWeakLambda(this, [OnComplete](int32 ErrorCode, const FString& ErrorMessage)
+            {
+                UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Failed to get AMS account configuration. Error: %s"), *ErrorMessage);
+                OnComplete.ExecuteIfBound(false);
+            }
+        ));
+        break;
+    }
+    case EServicePredefinedValidator::IS_VALID_CONFIG_VERSION:
+    {
+        const FString GameVersion = GetServicePredefinedArgument(EServicePredifinedArgument::GAME_VERSION);
+
+        AccelByte::FRegistry::Configurations.Get(
+            FString("bytewars_config_version"),
+            THandler<FAccelByteModelsConfiguration>::CreateWeakLambda(this, [GameVersion, OnComplete](const FAccelByteModelsConfiguration& Result)
+            {
+                if (Result.Value.IsEmpty()) 
+                {
+                    UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Log, TEXT("Failed to get config version from backend. Config version value is empty."));
+                    return;
+                }
+
+                UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Log, TEXT("Success to get config version from backend. Config version value: %s, Game client version: %s"), *Result.Value, *GameVersion);
+                OnComplete.ExecuteIfBound(Result.Value.Equals(GameVersion));
+            }),
+            FErrorHandler::CreateWeakLambda(this, [OnComplete](int32 ErrorCode, const FString& ErrorMessage)
+            {
+                UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Failed to get config version from backend. Error: %s"), *ErrorMessage);
+                OnComplete.ExecuteIfBound(false);
+            })
+        );
+        break;
+    }
+    case EServicePredefinedValidator::IS_ONLINE_SESSION:
+    {
+        const FString SessionId = GetServicePredefinedArgument(EServicePredifinedArgument::GAME_SESSION_ID);
+        OnComplete.ExecuteIfBound(!SessionId.IsEmpty());
+        break;
+    }
+    case EServicePredefinedValidator::IS_LOCAL_NETWORK:
+    {
+        const UWorld* World = Context->GetWorld();
+        if (!World)
+        {
+            UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Failed to check local network type. World is not valid"));
+            OnComplete.ExecuteIfBound(false);
+            return;
+        }
+
+        if (const AAccelByteWarsGameState* GameState = Cast<AAccelByteWarsGameState>(World->GetGameState()))
+        {
+            OnComplete.ExecuteIfBound(GameState->GameSetup.NetworkType == EGameModeNetworkType::LOCAL);
+        }
+        else
+        {
+            UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Failed to check local network type. Game State is not valid"));
+            OnComplete.ExecuteIfBound(false);
+        }
+        break;
+    }
+    case EServicePredefinedValidator::IS_P2P_NETWORK:
+    {
+        const UWorld* World = Context->GetWorld();
+        if (!World) 
+        {
+            UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Failed to check P2P network type. World is not valid"));
+            OnComplete.ExecuteIfBound(false);
+            return;
+        }
+
+        if (const AAccelByteWarsGameState* GameState = Cast<AAccelByteWarsGameState>(World->GetGameState())) 
+        {
+            OnComplete.ExecuteIfBound(GameState->GameSetup.NetworkType == EGameModeNetworkType::P2P);
+        }
+        else 
+        {
+            UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Failed to check P2P network type. Game State is not valid"));
+            OnComplete.ExecuteIfBound(false);
+        }
+        break;
+    }
+    case EServicePredefinedValidator::IS_DS_NETWORK:
+    {
+        const UWorld* World = Context->GetWorld();
+        if (!World)
+        {
+            UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Failed to check DS network type. World is not valid"));
+            OnComplete.ExecuteIfBound(false);
+            return;
+        }
+
+        if (const AAccelByteWarsGameState* GameState = Cast<AAccelByteWarsGameState>(World->GetGameState()))
+        {
+            OnComplete.ExecuteIfBound(GameState->GameSetup.NetworkType == EGameModeNetworkType::DS);
+        }
+        else
+        {
+            UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Failed to check DS network type. Game State is not valid"));
+            OnComplete.ExecuteIfBound(false);
+        }
+        break;
+    }
+    default:
+    {
+        break;
+    }
+    }
+}
+
+void UTutorialModuleOnlineUtility::ExecutePredefinedServiceForFTUE(FFTUEDialogueModel* Dialogue, const FOnFTUEDialogueValidationComplete& OnComplete, const UObject* Context)
+{
+    if (!Dialogue)
+    {
+        return;
+    }
+
+    const EServicePredefinedValidator ValidatorType = Dialogue->Validator.ValidatorType;
+    Dialogue->OnCustomValidationDelegate.Unbind();
+
+    ExecutePredefinedServiceValidator(
+        ValidatorType,
+        TDelegate<void(const bool)>::CreateWeakLambda(this, [Dialogue, OnComplete](const bool bIsValid)
+        {
+            if (Dialogue)
+            {
+                OnComplete.ExecuteIfBound(Dialogue, !Dialogue->Validator.bNegateValidator ? bIsValid : !bIsValid);
+            }
+        }),
+        Context
+    );
+}
+
+void UTutorialModuleOnlineUtility::ExecutePredefinedServiceForWidgetValidator(FWidgetValidator* WidgetValidator, const UObject* Context)
 {
     if (!WidgetValidator)
     {
         return;
     }
 
-    const EServicePredefinedValidator ValidatorType = WidgetValidator->ValidatorType;
+    const EServicePredefinedValidator ValidatorType = WidgetValidator->Validator.ValidatorType;
     WidgetValidator->OnValidatorExecutedDelegate.Unbind();
 
-    switch (ValidatorType)
-    {
-    case EServicePredefinedValidator::AMS_ACCOUNT_SETUP:
-        AccelByte::FRegistry::AMS.GetAccount(
-            AccelByte::THandler<FAccelByteModelsAMSGetAccountResponse>::CreateWeakLambda(this, [WidgetValidator](const FAccelByteModelsAMSGetAccountResponse& Result)
+    ExecutePredefinedServiceValidator(
+        ValidatorType,
+        TDelegate<void(const bool)>::CreateWeakLambda(this, [WidgetValidator](const bool bIsValid)
+        {
+            if (WidgetValidator)
             {
-                if (WidgetValidator)
-                {
-                    WidgetValidator->FinalizeValidator(!Result.Id.IsEmpty());
-                }
-            }),
-            FErrorHandler::CreateWeakLambda(this, [WidgetValidator](int32 ErrorCode, const FString& ErrorMessage)
-            {
-                if (WidgetValidator)
-                {
-                    WidgetValidator->FinalizeValidator(false);
-                }
+                WidgetValidator->FinalizeValidator(!WidgetValidator->Validator.bNegateValidator ? bIsValid : !bIsValid);
             }
-        ));
-        break;
-    default:
-        break;
-    }
+        }),
+        Context
+    );
 }
 
 FString UTutorialModuleOnlineUtility::GetServicePredefinedArgument(const EServicePredifinedArgument Keyword)
@@ -561,6 +707,16 @@ FString UTutorialModuleOnlineUtility::GetServicePredefinedArgument(const EServic
             TEXT("%s/admin/namespaces/%s"),
             *GetServicePredefinedArgument(EServicePredifinedArgument::ENV_BASE_URL),
             *GetServicePredefinedArgument(EServicePredifinedArgument::GAME_NAMESPACE));
+        break;
+    }
+    case EServicePredifinedArgument::GAME_VERSION:
+    {
+        Result = AccelByteWarsUtility::GetGameVersion();
+        break;
+    }
+    case EServicePredifinedArgument::PUBLISHED_STORE_ID:
+    {
+        Result = CurrentPublishedStoreId;
         break;
     }
     default:
@@ -673,4 +829,81 @@ void UTutorialModuleOnlineUtility::CheckUseAGSStarter()
             TEXT("DefaultEngine.ini sets the AGS Starter mode to %s."),
             bUseAGSStarter ? TEXT("TRUE") : TEXT("FALSE"));
     }
+}
+
+void UTutorialModuleOnlineUtility::CacheGeneralInformation(const APlayerController* PC)
+{
+    const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+    if (!Subsystem)
+    {
+        UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Cannot cache general information. Online Subsystem is not valid."));
+        return;
+    }
+
+    const FOnlineIdentityAccelBytePtr IdentityInterface =
+        StaticCastSharedPtr<FOnlineIdentityAccelByte>(Subsystem->GetIdentityInterface());
+    if (!IdentityInterface)
+    {
+        UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Cannot cache general information. Identity Interface is not valid."));
+        return;
+    }
+
+    const ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
+    if (!LocalPlayer)
+    {
+        UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Cannot cache general information. Current logged-in player's is not valid."));
+        return;
+    }
+
+    const FUniqueNetIdAccelByteUserPtr UserABId =
+        StaticCastSharedPtr<const FUniqueNetIdAccelByteUser>(LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId());
+    if (!UserABId)
+    {
+        UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Cannot cache general information. Current logged-in player's AccelByte user id is not valid."));
+        return;
+    }
+
+    // Cache current logged-in player's AccelByte user id.
+    CurrentPlayerUserIdStr = UserABId->GetAccelByteId();
+
+    // Cache current logged-in player's display name.
+    TSharedPtr<FUserOnlineAccount> UserAccount = IdentityInterface->GetUserAccount(UserABId.ToSharedRef().Get());
+    if (UserAccount)
+    {
+        CurrentPlayerDisplayName = UserAccount->GetDisplayName();
+    }
+    if (CurrentPlayerDisplayName.IsEmpty())
+    {
+        CurrentPlayerDisplayName = GetUserDefaultDisplayName(CurrentPlayerUserIdStr);
+    }
+
+    // Cache current published store id.
+    AccelByte::FRegistry::Item.GetListAllStores(
+        THandler<TArray<FAccelByteModelsPlatformStore>>::CreateWeakLambda(this, [this](const TArray<FAccelByteModelsPlatformStore>& Result)
+        {
+            bool bHasPublishedStore = false;
+            for (const FAccelByteModelsPlatformStore& Store : Result)
+            {
+                if (Store.Published)
+                {
+                    CurrentPublishedStoreId = Store.StoreId;
+                    bHasPublishedStore = true;
+                    break;
+                }
+            }
+
+            if (bHasPublishedStore) 
+            {
+                UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Log, TEXT("Success to cache published store id. Published store id: %s"), *CurrentPublishedStoreId);
+            }
+            else 
+            {
+                UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Failed to cache published store id. Error: no store is published."));
+            }
+        }),
+        FErrorHandler::CreateWeakLambda(this, [](int32 ErrorCode, const FString& ErrorMessage)
+        {
+            UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Failed to cache published store id. Error %d: %s"), ErrorCode, *ErrorMessage);
+        }
+    ));
 }

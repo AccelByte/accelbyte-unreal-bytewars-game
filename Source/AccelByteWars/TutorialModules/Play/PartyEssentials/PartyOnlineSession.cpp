@@ -74,7 +74,7 @@ void UPartyOnlineSession::QueryUserInfo(const int32 LocalUserNum, const TArray<F
     // Safety
     if (!GetUserInt())
     {
-        ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, OnComplete]()
+        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, OnComplete]()
         {
             OnComplete.ExecuteIfBound(false, {});
         }));
@@ -84,7 +84,7 @@ void UPartyOnlineSession::QueryUserInfo(const int32 LocalUserNum, const TArray<F
     TArray<FUserOnlineAccountAccelByte*> UserInfo;
     if (RetrieveUserInfoCache(UserIds, UserInfo))
     {
-        ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, UserInfo, OnComplete]()
+        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, UserInfo, OnComplete]()
         {
             OnComplete.ExecuteIfBound(true, UserInfo);
         }));
@@ -494,7 +494,7 @@ void UPartyOnlineSession::CreateParty(const int32 LocalUserNum)
     if (!GetABSessionInt())
     {
         UE_LOG_PARTYESSENTIALS(Warning, TEXT("Cannot create a party. Session Interface is not valid."));
-        ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
         {
             OnCreatePartyComplete(SessionName, false);
         }));
@@ -521,7 +521,7 @@ void UPartyOnlineSession::CreateParty(const int32 LocalUserNum)
                 }
                 else
                 {
-                    ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+                    ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
                     {
                         OnCreatePartyComplete(SessionName, false);
                     }));
@@ -549,7 +549,7 @@ void UPartyOnlineSession::LeaveParty(const int32 LocalUserNum)
     if (!GetABSessionInt() || !GetABSessionInt()->IsInPartySession())
     {
         UE_LOG_PARTYESSENTIALS(Warning, TEXT("Cannot leave a party. Session Interface is not valid."));
-        ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
         {
             OnLeavePartyComplete(SessionName, false);
         }));
@@ -573,7 +573,7 @@ void UPartyOnlineSession::LeaveParty(const int32 LocalUserNum)
             }
             else
             {
-                ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+                ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
                 {
                     OnLeavePartyComplete(SessionName, false);
                 }));
@@ -611,7 +611,7 @@ void UPartyOnlineSession::SendPartyInvite(const int32 LocalUserNum, const FUniqu
     if (!Invitee)
     {
         UE_LOG_PARTYESSENTIALS(Warning, TEXT("Cannot send a party invitation. Invitee's NetId is not valid."));
-        ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SenderId, SessionName, Invitee]()
+        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SenderId, SessionName, Invitee]()
         {
             OnSendPartyInviteComplete(SenderId.ToSharedRef().Get(), SessionName, false, Invitee.ToSharedRef().Get());
         }));
@@ -631,7 +631,7 @@ void UPartyOnlineSession::JoinParty(const int32 LocalUserNum, const FOnlineSessi
     if (!GetABSessionInt())
     {
         UE_LOG_PARTYESSENTIALS(Warning, TEXT("Cannot join a party. Session Interface is not valid."));
-        ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
         {
             OnJoinPartyComplete(SessionName, EOnJoinSessionCompleteResult::Type::UnknownError);
         }));
@@ -658,7 +658,7 @@ void UPartyOnlineSession::JoinParty(const int32 LocalUserNum, const FOnlineSessi
                 }
                 else
                 {
-                    ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+                    ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
                     {
                         OnJoinPartyComplete(SessionName, EOnJoinSessionCompleteResult::Type::UnknownError);
                     }));
@@ -679,7 +679,7 @@ void UPartyOnlineSession::RejectPartyInvite(const int32 LocalUserNum, const FOnl
     if (!GetABSessionInt())
     {
         UE_LOG_PARTYESSENTIALS(Warning, TEXT("Cannot reject a party invitation. Session Interface is not valid."));
-        ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this]()
+        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
         {
             OnRejectPartyInviteComplete(false);
         }));
@@ -690,7 +690,7 @@ void UPartyOnlineSession::RejectPartyInvite(const int32 LocalUserNum, const FOnl
     if (!RejecterPC)
     {
         UE_LOG_PARTYESSENTIALS(Warning, TEXT("Cannot reject a party invitation. Rejecter's PlayerController is not valid."));
-        ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this]()
+        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
         {
             OnRejectPartyInviteComplete(false);
         }));
@@ -701,7 +701,7 @@ void UPartyOnlineSession::RejectPartyInvite(const int32 LocalUserNum, const FOnl
     if (!RejecterId)
     {
         UE_LOG_PARTYESSENTIALS(Warning, TEXT("Cannot reject a party invitation. Rejecter's NetId is not valid."));
-        ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this]()
+        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
         {
             OnRejectPartyInviteComplete(false);
         }));
@@ -732,7 +732,7 @@ void UPartyOnlineSession::KickPlayerFromParty(const int32 LocalUserNum, const FU
     if (!PC)
     {
         UE_LOG_PARTYESSENTIALS(Warning, TEXT("Cannot kick a player from the party. Kicker's PlayerController is not valid."));
-        ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, KickedPlayer]()
+        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, KickedPlayer]()
         {
             OnKickPlayerFromPartyComplete(false, KickedPlayer.ToSharedRef().Get());
         }));
@@ -743,7 +743,7 @@ void UPartyOnlineSession::KickPlayerFromParty(const int32 LocalUserNum, const FU
     if (!PlayerNetId)
     {
         UE_LOG_PARTYESSENTIALS(Warning, TEXT("Cannot kick a player from the party. Kicker's NetId is not valid."));
-        ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, KickedPlayer]()
+        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, KickedPlayer]()
         {
             OnKickPlayerFromPartyComplete(false, KickedPlayer.ToSharedRef().Get());
         }));
@@ -775,7 +775,7 @@ void UPartyOnlineSession::PromotePartyLeader(const int32 LocalUserNum, const FUn
     if (!PC)
     {
         UE_LOG_PARTYESSENTIALS(Warning, TEXT("Cannot promote new party leader. Promoter's PlayerController is not valid."));
-        ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, NewLeader]()
+        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, NewLeader]()
         {
             OnPromotePartyLeaderComplete(NewLeader.ToSharedRef().Get(), FOnlineError(false));
         }));
@@ -786,7 +786,7 @@ void UPartyOnlineSession::PromotePartyLeader(const int32 LocalUserNum, const FUn
     if (!PlayerNetId)
     {
         UE_LOG_PARTYESSENTIALS(Warning, TEXT("Cannot promote new party leader. Promoter's NetId is not valid."));
-        ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, NewLeader]()
+        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, NewLeader]()
         {
             OnPromotePartyLeaderComplete(NewLeader.ToSharedRef().Get(), FOnlineError(false));
         }));

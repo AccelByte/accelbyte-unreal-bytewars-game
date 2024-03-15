@@ -97,3 +97,14 @@ int32 AccelByteWarsUtility::PositiveModulo(const int32 Dividend, const int32 Mod
 {
 	return Modulus == 0 ? INDEX_NONE : (Modulus + (Dividend % Modulus)) % Modulus;
 }
+
+FString AccelByteWarsUtility::GetGameVersion()
+{
+	const FString ProjectVerSectionPath = FString("/Script/EngineSettings.GeneralProjectSettings");
+	const FString ProjectVerConfig = FString("ProjectVersion");
+
+	FString ProjectVersionStr = FString();
+	GConfig->GetString(*ProjectVerSectionPath, *ProjectVerConfig, ProjectVersionStr, GGameIni);
+
+	return ProjectVersionStr;
+}

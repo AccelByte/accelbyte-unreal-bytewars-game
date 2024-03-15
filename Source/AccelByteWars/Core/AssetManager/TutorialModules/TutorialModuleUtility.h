@@ -14,8 +14,28 @@ class UAccelByteWarsActivatableWidget;
 UENUM(BlueprintType)
 enum class EServicePredefinedValidator : uint8
 {
-	CUSTOM_VALIDATOR = 0 UMETA(DisplayName = "Custom Validation"),
-	AMS_ACCOUNT_SETUP UMETA(DisplayName = "AMS Account Setup")
+	NONE = 0 UMETA(DisplayName = "None"),
+	IS_CUSTOM UMETA(DisplayName = "Is Custom"),
+	IS_REQUIRED_AMS_ACCOUNT UMETA(DisplayName = "Is Required AMS Account"),
+	IS_VALID_CONFIG_VERSION UMETA(DisplayName = "Is Valid Config Version"),
+	IS_ONLINE_SESSION UMETA(DisplayName = "In Online Session"),
+	IS_LOCAL_NETWORK UMETA(DisplayName = "Is Local Network"),
+	IS_P2P_NETWORK UMETA(DisplayName = "Is P2P Network"),
+	IS_DS_NETWORK UMETA(DisplayName = "Is DS Network")
+};
+
+USTRUCT(BlueprintType)
+struct FServicePredefinedValidator
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
+		Tooltip = "Validation to perform. If Custom Validation selected, you need to implement it on your own through code."))
+	EServicePredefinedValidator ValidatorType = EServicePredefinedValidator::NONE;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
+		Tooltip = "Whether result from the validation should be negated or not."))
+	bool bNegateValidator = false;
 };
 
 UENUM(BlueprintType)
@@ -28,7 +48,9 @@ enum class EServicePredifinedArgument : uint8
 	DEDICATED_SERVER_ID UMETA(DisplayName = "Dedicated Server Id"),
 	ENV_BASE_URL UMETA(DisplayName = "Environment Base URL"),
 	GAME_NAMESPACE UMETA(DisplayName = "Game Namespace"),
-	ADMIN_PORTAL_URL UMETA(DisplayName = "Admin Portal URL")
+	ADMIN_PORTAL_URL UMETA(DisplayName = "Admin Portal URL"),
+	GAME_VERSION UMETA(DisplayName = "Game Version"),
+	PUBLISHED_STORE_ID UMETA(DisplayName = "Published Store Id")
 };
 
 USTRUCT(BlueprintType)

@@ -168,7 +168,7 @@ void UAccelByteWarsOnlineSession::CreateSession(
 	if (!GetSessionInt())
 	{
 		UE_LOG_ONLINESESSION(Warning, TEXT("Session interface is null"))
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnCreateSessionComplete(SessionName, false);
 		}));
@@ -177,7 +177,7 @@ void UAccelByteWarsOnlineSession::CreateSession(
 	if (SessionTemplateName.IsEmpty())
 	{
 		UE_LOG_ONLINESESSION(Warning, TEXT("Session Template Name can't be empty"))
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnCreateSessionComplete(SessionName, false);
 		}));
@@ -235,7 +235,7 @@ void UAccelByteWarsOnlineSession::CreateSession(
 		if (!GetSessionInt()->CreateSession(LocalUserNum, SessionName, SessionSettings))
 		{
 			UE_LOG_ONLINESESSION(Warning, TEXT("Failed to execute"))
-			ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+			ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 			{
 				OnCreateSessionComplete(SessionName, false);
 			}));
@@ -254,7 +254,7 @@ void UAccelByteWarsOnlineSession::JoinSession(
 	if (!GetSessionInt())
 	{
 		UE_LOG_ONLINESESSION(Warning, TEXT("Session interface null"))
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnJoinSessionComplete(SessionName, EOnJoinSessionCompleteResult::UnknownError);
 		}));
@@ -279,7 +279,7 @@ void UAccelByteWarsOnlineSession::JoinSession(
 		if (!GetSessionInt()->JoinSession(LocalUserNum, SessionName, SearchResult))
 		{
 			UE_LOG_ONLINESESSION(Warning, TEXT("Failed to execute"))
-			ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+			ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 			{
 				OnJoinSessionComplete(SessionName, EOnJoinSessionCompleteResult::UnknownError);
 			}));
@@ -330,7 +330,7 @@ void UAccelByteWarsOnlineSession::LeaveSession(FName SessionName)
 	if (!GetSessionInt())
 	{
 		UE_LOG_ONLINESESSION(Warning, TEXT("Session interface null"))
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnLeaveSessionComplete(SessionName, false);
 		}));
@@ -342,7 +342,7 @@ void UAccelByteWarsOnlineSession::LeaveSession(FName SessionName)
 		if (!GetABSessionInt()->DestroySession(SessionName))
 		{
 			UE_LOG_ONLINESESSION(Warning, TEXT("Failed to execute"))
-			ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+			ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 			{
 				OnLeaveSessionComplete(SessionName, false);
 			}));
@@ -355,7 +355,7 @@ void UAccelByteWarsOnlineSession::LeaveSession(FName SessionName)
 	else
 	{
 		UE_LOG_ONLINESESSION(Log, TEXT("Not in session"))
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnLeaveSessionComplete(SessionName, true);
 		}));
@@ -468,7 +468,7 @@ void UAccelByteWarsOnlineSession::OnLeaveSessionForCreateSessionComplete(
 		if (!GetSessionInt()->CreateSession(LocalUserNum, SessionName, SessionSettings))
 		{
 			UE_LOG_ONLINESESSION(Warning, TEXT("Failed to execute"))
-			ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+			ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 			{
 				OnCreateSessionComplete(SessionName, false);
 			}));
@@ -477,7 +477,7 @@ void UAccelByteWarsOnlineSession::OnLeaveSessionForCreateSessionComplete(
 	else
 	{
 		// Leave Session failed, execute complete delegate as failed
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnCreateSessionComplete(SessionName, false);
 		}));
@@ -498,7 +498,7 @@ void UAccelByteWarsOnlineSession::OnLeaveSessionForJoinSessionComplete(
 		if (!GetSessionInt()->JoinSession(LocalUserNum, SessionName, SearchResult))
 		{
 			UE_LOG_ONLINESESSION(Warning, TEXT("failed to execute"))
-			ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+			ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 			{
 				OnJoinSessionComplete(SessionName, EOnJoinSessionCompleteResult::UnknownError);
 			}));
@@ -507,7 +507,7 @@ void UAccelByteWarsOnlineSession::OnLeaveSessionForJoinSessionComplete(
 	else
 	{
 		// Leave Session failed, execute complete delegate as failed
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnJoinSessionComplete(SessionName, EOnJoinSessionCompleteResult::UnknownError);
 		}));
@@ -527,7 +527,7 @@ void UAccelByteWarsOnlineSession::QueryUserInfo(
 	if (!GetUserInt())
 	{
 		UE_LOG_ONLINESESSION(Warning, TEXT("User interface null"))
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, OnComplete]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, OnComplete]()
 		{
 			OnComplete.ExecuteIfBound(false, {});
 		}));
@@ -538,7 +538,7 @@ void UAccelByteWarsOnlineSession::QueryUserInfo(
 	if (RetrieveUserInfoCache(UserIds, UserInfo))
 	{
 		UE_LOG_ONLINESESSION(Log, TEXT("Cache found"))
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, UserInfo, OnComplete]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, UserInfo, OnComplete]()
 		{
 			UE_LOG_ONLINESESSION(Log, TEXT("trigger OnComplete"))
 			OnComplete.ExecuteIfBound(true, UserInfo);
@@ -580,7 +580,7 @@ void UAccelByteWarsOnlineSession::DSQueryUserInfo(
 	if (DSRetrieveUserInfoCache(UserIds, UserInfo))
 	{
 		UE_LOG_ONLINESESSION(Log, TEXT("Cache found"))
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, OnComplete, UserInfo]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, OnComplete, UserInfo]()
 		{
 			OnComplete.ExecuteIfBound(true, UserInfo);
 		}));
@@ -607,7 +607,7 @@ void UAccelByteWarsOnlineSession::DSQueryUserInfo(
 			}),
 			FErrorHandler::CreateWeakLambda(this, [this, OnComplete](int32, const FString&)
 			{
-				ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, OnComplete]()
+				ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, OnComplete]()
 				{
 					OnDSQueryUserInfoComplete(FListBulkUserInfo(), OnComplete);
 				}));
@@ -820,7 +820,7 @@ void UAccelByteWarsOnlineSession::StartMatchmaking(
 	if (!ensure(GetSessionInt()))
 	{
 		UE_LOG_ONLINESESSION(Warning, TEXT("Session Interface is not valid."));
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnStartMatchmakingComplete(SessionName, FOnlineError(false), {});
 		}));
@@ -851,7 +851,7 @@ void UAccelByteWarsOnlineSession::StartMatchmaking(
 	if (!ensure(PlayerNetId.IsValid()))
 	{
 		UE_LOG_ONLINESESSION(Warning, TEXT("Player UniqueNetId is not valid."));
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnStartMatchmakingComplete(SessionName, FOnlineError(false), {});
 		}));
@@ -898,7 +898,7 @@ void UAccelByteWarsOnlineSession::StartMatchmaking(
 	{
 		UE_LOG_ONLINESESSION(Warning, TEXT("Failed executing"))
 		// Failed to start matchmaking.
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnStartMatchmakingComplete(SessionName, FOnlineError(false), {});
 		}));
@@ -913,7 +913,7 @@ void UAccelByteWarsOnlineSession::CancelMatchmaking(APlayerController* PC, const
 	if (!ensure(GetSessionInt()))
 	{
 		UE_LOG_ONLINESESSION(Warning, TEXT("Session Interface is not valid."));
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnCancelMatchmakingComplete(SessionName, false);
 		}));
@@ -924,7 +924,7 @@ void UAccelByteWarsOnlineSession::CancelMatchmaking(APlayerController* PC, const
 		GetABSessionInt()->CurrentMatchmakingSearchHandle->SearchingPlayerId.IsValid()))
 	{
 		UE_LOG_ONLINESESSION(Warning, TEXT("Searching player ID is not valid."));
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnCancelMatchmakingComplete(SessionName, false);
 		}));
@@ -937,7 +937,7 @@ void UAccelByteWarsOnlineSession::CancelMatchmaking(APlayerController* PC, const
 	{
 		UE_LOG_ONLINESESSION(Warning, TEXT("Failed executing"))
 		// Failed to start matchmaking.
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnCancelMatchmakingComplete(SessionName, false);
 		}));
@@ -1100,7 +1100,7 @@ void UAccelByteWarsOnlineSession::FindSessions(
 		UE_LOG_ONLINESESSION(Log, TEXT("Cache found"))
 
 		// return cache
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
 		{
 			OnFindSessionsComplete(true);
 		}));
@@ -1120,7 +1120,7 @@ void UAccelByteWarsOnlineSession::FindSessions(
 
 	if (!GetSessionInt()->FindSessions(LocalUserNum, SessionSearch))
 	{
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
 		{
 			OnFindSessionsComplete(false);
 		}));
@@ -1529,7 +1529,7 @@ void UAccelByteWarsOnlineSession::CreateParty(const int32 LocalUserNum)
     if (!GetABSessionInt())
     {
         UE_LOG_ONLINESESSION(Warning, TEXT("Cannot create a party. Session Interface is not valid."));
-        ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
         {
             OnCreatePartyComplete(SessionName, false);
         }));
@@ -1556,7 +1556,7 @@ void UAccelByteWarsOnlineSession::CreateParty(const int32 LocalUserNum)
                 }
                 else
                 {
-                    ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+                    ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
                         {
                             OnCreatePartyComplete(SessionName, false);
                         }));
@@ -1584,7 +1584,7 @@ void UAccelByteWarsOnlineSession::LeaveParty(const int32 LocalUserNum)
     if (!GetABSessionInt() || !GetABSessionInt()->IsInPartySession())
     {
         UE_LOG_ONLINESESSION(Warning, TEXT("Cannot leave a party. Session Interface is not valid."));
-        ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
         {
             OnLeavePartyComplete(SessionName, false);
         }));
@@ -1608,7 +1608,7 @@ void UAccelByteWarsOnlineSession::LeaveParty(const int32 LocalUserNum)
             }
             else
             {
-                ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+                ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
                 {
                     OnLeavePartyComplete(SessionName, false);
                 }));
@@ -1646,7 +1646,7 @@ void UAccelByteWarsOnlineSession::SendPartyInvite(const int32 LocalUserNum, cons
     if (!Invitee)
     {
         UE_LOG_ONLINESESSION(Warning, TEXT("Cannot send a party invitation. Invitee's NetId is not valid."));
-        ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SenderId, SessionName, Invitee]()
+        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SenderId, SessionName, Invitee]()
         {
             OnSendPartyInviteComplete(SenderId.ToSharedRef().Get(), SessionName, false, Invitee.ToSharedRef().Get());
         }));
@@ -1666,7 +1666,7 @@ void UAccelByteWarsOnlineSession::JoinParty(const int32 LocalUserNum, const FOnl
     if (!GetABSessionInt())
     {
         UE_LOG_ONLINESESSION(Warning, TEXT("Cannot join a party. Session Interface is not valid."));
-        ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
         {
             OnJoinPartyComplete(SessionName, EOnJoinSessionCompleteResult::Type::UnknownError);
         }));
@@ -1693,7 +1693,7 @@ void UAccelByteWarsOnlineSession::JoinParty(const int32 LocalUserNum, const FOnl
                 }
                 else
                 {
-                    ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, SessionName]()
+                    ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
                     {
                         OnJoinPartyComplete(SessionName, EOnJoinSessionCompleteResult::Type::UnknownError);
                     }));
@@ -1714,7 +1714,7 @@ void UAccelByteWarsOnlineSession::RejectPartyInvite(const int32 LocalUserNum, co
     if (!GetABSessionInt())
     {
         UE_LOG_ONLINESESSION(Warning, TEXT("Cannot reject a party invitation. Session Interface is not valid."));
-        ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this]()
+        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
         {
             OnRejectPartyInviteComplete(false);
         }));
@@ -1725,7 +1725,7 @@ void UAccelByteWarsOnlineSession::RejectPartyInvite(const int32 LocalUserNum, co
     if (!RejecterPC)
     {
         UE_LOG_ONLINESESSION(Warning, TEXT("Cannot reject a party invitation. Rejecter's PlayerController is not valid."));
-        ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this]()
+        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
         {
             OnRejectPartyInviteComplete(false);
         }));
@@ -1736,7 +1736,7 @@ void UAccelByteWarsOnlineSession::RejectPartyInvite(const int32 LocalUserNum, co
     if (!RejecterId)
     {
         UE_LOG_ONLINESESSION(Warning, TEXT("Cannot reject a party invitation. Rejecter's NetId is not valid."));
-        ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this]()
+        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
         {
             OnRejectPartyInviteComplete(false);
         }));
@@ -1767,7 +1767,7 @@ void UAccelByteWarsOnlineSession::KickPlayerFromParty(const int32 LocalUserNum, 
     if (!PC)
     {
         UE_LOG_ONLINESESSION(Warning, TEXT("Cannot kick a player from the party. Kicker's PlayerController is not valid."));
-        ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, KickedPlayer]()
+        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, KickedPlayer]()
         {
             OnKickPlayerFromPartyComplete(false, KickedPlayer.ToSharedRef().Get());
         }));
@@ -1778,7 +1778,7 @@ void UAccelByteWarsOnlineSession::KickPlayerFromParty(const int32 LocalUserNum, 
     if (!PlayerNetId)
     {
         UE_LOG_ONLINESESSION(Warning, TEXT("Cannot kick a player from the party. Kicker's NetId is not valid."));
-        ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, KickedPlayer]()
+        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, KickedPlayer]()
         {
             OnKickPlayerFromPartyComplete(false, KickedPlayer.ToSharedRef().Get());
         }));
@@ -1810,7 +1810,7 @@ void UAccelByteWarsOnlineSession::PromotePartyLeader(const int32 LocalUserNum, c
     if (!PC)
     {
         UE_LOG_ONLINESESSION(Warning, TEXT("Cannot promote new party leader. Promoter's PlayerController is not valid."));
-        ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, NewLeader]()
+        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, NewLeader]()
         {
             OnPromotePartyLeaderComplete(NewLeader.ToSharedRef().Get(), FOnlineError(false));
         }));
@@ -1821,7 +1821,7 @@ void UAccelByteWarsOnlineSession::PromotePartyLeader(const int32 LocalUserNum, c
     if (!PlayerNetId)
     {
         UE_LOG_ONLINESESSION(Warning, TEXT("Cannot promote new party leader. Promoter's NetId is not valid."));
-        ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, NewLeader]()
+        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, NewLeader]()
         {
             OnPromotePartyLeaderComplete(NewLeader.ToSharedRef().Get(), FOnlineError(false));
         }));

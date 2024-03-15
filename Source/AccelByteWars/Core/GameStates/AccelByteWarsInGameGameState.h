@@ -31,6 +31,7 @@ class ACCELBYTEWARS_API AAccelByteWarsInGameGameState : public AAccelByteWarsGam
 	GENERATED_BODY()
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void BeginPlay() override;
 
 public:
 	UFUNCTION(BlueprintCallable)
@@ -67,6 +68,12 @@ public:
 	UPROPERTY(BlueprintReadWrite, Replicated)
 	FVector2D MaxGameBound = { 2500.0, 1400.0 };
 
+	UPROPERTY(BlueprintReadOnly)
+	FVector2D MinGameBoundExtend;
+
+	UPROPERTY(BlueprintReadOnly)
+	FVector2D MaxGameBoundExtend;
+
 	UPROPERTY(BlueprintReadWrite, Replicated)
 	FVector2D MinStarsGameBound = {-1500.0, -1300.0};
 
@@ -75,4 +82,11 @@ public:
 
 	UPROPERTY(Replicated, BlueprintReadWrite)
 	TArray<UAccelByteWarsGameplayObjectComponent*> ActiveGameObjects;
+
+protected:
+	/**
+	 * @brief The maximum "play area". In which object can still exist. If exceeds, object needs to destroy itself.
+	 */
+	UPROPERTY(BlueprintReadWrite, Replicated)
+	float GameBoundExtendMultiplier = 1.5f;
 };

@@ -63,7 +63,7 @@ void UMatchSessionP2POnlineSession::QueryUserInfo(
 	if (!GetUserInt())
 	{
 		UE_LOG_MATCHSESSIONP2P(Warning, TEXT("User interface null"))
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, OnComplete]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, OnComplete]()
 		{
 			OnComplete.ExecuteIfBound(false, {});
 		}));
@@ -74,7 +74,7 @@ void UMatchSessionP2POnlineSession::QueryUserInfo(
 	if (RetrieveUserInfoCache(UserIds, UserInfo))
 	{
 		UE_LOG_MATCHSESSIONP2P(Log, TEXT("Cache found"))
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, UserInfo, OnComplete]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, UserInfo, OnComplete]()
 		{
 			OnComplete.ExecuteIfBound(true, UserInfo);
 		}));
@@ -332,7 +332,7 @@ void UMatchSessionP2POnlineSession::FindSessions(
 		UE_LOG_MATCHSESSIONP2P(Log, TEXT("Cache found"))
 
 		// return cache
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
 		{
 			OnFindSessionsComplete(true);
 		}));
@@ -352,7 +352,7 @@ void UMatchSessionP2POnlineSession::FindSessions(
 
 	if (!GetSessionInt()->FindSessions(LocalUserNum, SessionSearch))
 	{
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
 		{
 			OnFindSessionsComplete(false);
 		}));

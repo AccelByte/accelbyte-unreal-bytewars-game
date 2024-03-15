@@ -31,18 +31,6 @@ void UMatchLobbyWidget::NativeConstruct()
 
 void UMatchLobbyWidget::NativeOnActivated()
 {
-	// Only show session FTUE on online session.
-	if (FFTUEDialogueModel* FTUESession =
-		FFTUEDialogueModel::GetMetadataById("ftue_session_details", FTUEDialogues))
-	{
-		EGameModeNetworkType NetMode = GameState->GameSetup.NetworkType;
-		FTUESession->OnValidateDelegate.Unbind();
-		FTUESession->OnValidateDelegate.BindWeakLambda(this, [NetMode]()
-		{
-			return NetMode != EGameModeNetworkType::LOCAL;
-		});
-	}
-
 	Super::NativeOnActivated();
 
 	// show loading screen on server start travel

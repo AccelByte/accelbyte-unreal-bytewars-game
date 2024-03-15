@@ -34,7 +34,7 @@ void UPartyOnlineSession_Starter::QueryUserInfo(const int32 LocalUserNum, const 
     // Safety
     if (!GetUserInt())
     {
-        ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, OnComplete]()
+        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, OnComplete]()
         {
             OnComplete.ExecuteIfBound(false, {});
         }));
@@ -44,7 +44,7 @@ void UPartyOnlineSession_Starter::QueryUserInfo(const int32 LocalUserNum, const 
     TArray<FUserOnlineAccountAccelByte*> UserInfo;
     if (RetrieveUserInfoCache(UserIds, UserInfo))
     {
-        ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, UserInfo, OnComplete]()
+        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, UserInfo, OnComplete]()
         {
             OnComplete.ExecuteIfBound(true, UserInfo);
         }));

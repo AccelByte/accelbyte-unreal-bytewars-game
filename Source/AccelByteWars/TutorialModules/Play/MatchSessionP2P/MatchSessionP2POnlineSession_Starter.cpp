@@ -52,7 +52,7 @@ void UMatchSessionP2POnlineSession_Starter::QueryUserInfo(
 	if (!GetUserInt())
 	{
 		UE_LOG_MATCHSESSIONP2P(Warning, TEXT("User interface null"))
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, OnComplete]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, OnComplete]()
 		{
 			OnComplete.ExecuteIfBound(false, {});
 		}));
@@ -63,7 +63,7 @@ void UMatchSessionP2POnlineSession_Starter::QueryUserInfo(
 	if (RetrieveUserInfoCache(UserIds, UserInfo))
 	{
 		UE_LOG_MATCHSESSIONP2P(Log, TEXT("Cache found"))
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, UserInfo, OnComplete]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, UserInfo, OnComplete]()
 		{
 			OnComplete.ExecuteIfBound(true, UserInfo);
 		}));

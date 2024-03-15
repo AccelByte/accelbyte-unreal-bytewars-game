@@ -63,7 +63,7 @@ void UMatchSessionDSOnlineSession::QueryUserInfo(
 	if (!GetUserInt())
 	{
 		UE_LOG_MATCHSESSIONDS(Warning, TEXT("User interface null"))
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, OnComplete]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, OnComplete]()
 		{
 			OnComplete.ExecuteIfBound(false, {});
 		}));
@@ -74,7 +74,7 @@ void UMatchSessionDSOnlineSession::QueryUserInfo(
 	if (RetrieveUserInfoCache(UserIds, UserInfo))
 	{
 		UE_LOG_MATCHSESSIONDS(Log, TEXT("Cache found"))
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, UserInfo, OnComplete]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, UserInfo, OnComplete]()
 		{
 			OnComplete.ExecuteIfBound(true, UserInfo);
 		}));
@@ -110,7 +110,7 @@ void UMatchSessionDSOnlineSession::DSQueryUserInfo(
 	if (DSRetrieveUserInfoCache(UserIds, UserInfo))
 	{
 		UE_LOG_MATCHSESSIONDS(Log, TEXT("Cache found"))
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, OnComplete, UserInfo]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, OnComplete, UserInfo]()
 		{
 			OnComplete.ExecuteIfBound(true, UserInfo);
 		}));
@@ -137,7 +137,7 @@ void UMatchSessionDSOnlineSession::DSQueryUserInfo(
 			}),
 			FErrorHandler::CreateWeakLambda(this, [this, OnComplete](int32, const FString&)
 			{
-				ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this, OnComplete]()
+				ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, OnComplete]()
 				{
 					OnDSQueryUserInfoComplete(FListBulkUserInfo(), OnComplete);
 				}));
@@ -378,7 +378,7 @@ void UMatchSessionDSOnlineSession::FindSessions(
 		UE_LOG_MATCHSESSIONDS(Log, TEXT("Cache found"))
 
 		// return cache
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
 		{
 			OnFindSessionsComplete(true);
 		}));
@@ -399,7 +399,7 @@ void UMatchSessionDSOnlineSession::FindSessions(
 
 	if (!GetSessionInt()->FindSessions(LocalUserNum, SessionSearch))
 	{
-		ExecuteNextTick(FSimpleDelegate::CreateWeakLambda(this, [this]()
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
 		{
 			OnFindSessionsComplete(false);
 		}));

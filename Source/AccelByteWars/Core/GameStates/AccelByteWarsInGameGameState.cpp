@@ -21,6 +21,18 @@ void AAccelByteWarsInGameGameState::GetLifetimeReplicatedProps(TArray<FLifetimeP
 	DOREPLIFETIME(ThisClass, MaxGameBound);
 	DOREPLIFETIME(ThisClass, MinStarsGameBound);
 	DOREPLIFETIME(ThisClass, MaxStarsGameBound);
+	DOREPLIFETIME(ThisClass, GameBoundExtendMultiplier);
+}
+
+void AAccelByteWarsInGameGameState::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// calculate extend play area
+	const float NewHalfWidth = (FMath::Abs(MaxGameBound.X - MinGameBound.X) * (GameBoundExtendMultiplier - 1)) / 2;
+	const float NewHalfHeight = (FMath::Abs(MaxGameBound.Y - MinGameBound.Y) * (GameBoundExtendMultiplier - 1)) / 2;
+	MaxGameBoundExtend = {MaxGameBound.X + NewHalfWidth, MaxGameBound.Y + NewHalfHeight};
+	MinGameBoundExtend = {MinGameBound.X - NewHalfWidth, MinGameBound.Y - NewHalfHeight};
 }
 
 bool AAccelByteWarsInGameGameState::HasGameStarted() const

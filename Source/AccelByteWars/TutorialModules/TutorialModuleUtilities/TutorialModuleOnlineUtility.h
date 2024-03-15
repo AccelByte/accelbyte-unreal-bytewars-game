@@ -11,6 +11,7 @@
 #include "OnlineSubsystemAccelByteTypes.h"
 #include "OnlineSubsystemAccelByteSessionSettings.h"
 #include "Core/AccelByteEnvironment.h"
+#include "Core/UI/Components/Prompt/FTUE/FTUEModels.h"
 #include "Core/UI/Components/WidgetValidator/WidgetValidatorModels.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleUtility.h"
 #include "TutorialModuleOnlineUtility.generated.h"
@@ -75,7 +76,10 @@ private:
 	static FString ConvertAccelByteEnvToStringEnv(const ESettingsEnvironment& Environment);
 	static ESettingsEnvironment ConvertOSSEnvToAccelByteEnv(const EOnlineEnvironment::Type& Environment);
 
-	void ExecutePredefinedServiceValidator(FWidgetValidator* WidgetValidator);
+	void ExecutePredefinedServiceValidator(const EServicePredefinedValidator ValidatorType, const TDelegate<void(const bool /*bIsValid*/)>& OnComplete, const UObject* Context);
+	
+	void ExecutePredefinedServiceForFTUE(FFTUEDialogueModel* Dialogue, const FOnFTUEDialogueValidationComplete& OnComplete, const UObject* Context);
+	void ExecutePredefinedServiceForWidgetValidator(FWidgetValidator* WidgetValidator, const UObject* Context);
 
 	FString GetServicePredefinedArgument(const EServicePredifinedArgument Keyword);
 
@@ -84,9 +88,12 @@ private:
 
 	static void CheckUseAGSStarter();
 	
-	inline static FString CurrentPlayerUserIdStr = FString("");
-	inline static FString CurrentPlayerDisplayName = FString("");
-	inline static FString DedicatedServerVersionOverride = FString("");
+	void CacheGeneralInformation(const APlayerController* PC);
+
+	inline static FString CurrentPlayerUserIdStr = TEXT("");
+	inline static FString CurrentPlayerDisplayName = TEXT("");
+	inline static FString CurrentPublishedStoreId = TEXT("");
+	inline static FString DedicatedServerVersionOverride = TEXT("");
 
 	inline static bool bUseAGSStarter = false;
 };

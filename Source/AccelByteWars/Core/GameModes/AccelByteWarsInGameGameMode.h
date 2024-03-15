@@ -182,6 +182,12 @@ private:
 	void SpawnAndPossesPawn(APlayerState* PlayerState);
 
 	TArray<FVector> GetActiveGameObjectsPosition() const;
+public:
+	/**
+	 * @brief Find randomize spawn location that is not occupied with other object and within the gameplay 
+	 */
+	bool FindGoodSpawnLocation(FVector2D& OutCoord);
+private:
 	void SpawnPlanets();
 	bool FindGoodPlanetPosition(FVector& Position) const;
 	
@@ -241,8 +247,14 @@ private:
 	UFUNCTION(Exec)
 	void DrawBoundingBoxOnNextSpawn(const bool bDraw);
 
-private:
+	UFUNCTION(Exec)
+	void ModifyGameBoundExtendModifier(const float NewModifier) const;
+
+protected:
+	UPROPERTY(EditAnywhere)
 	bool bDrawBoundingBox = false;
+
+private:
 	FTimerHandle PlanetSpawningTimerHandle;
 #pragma endregion
 };

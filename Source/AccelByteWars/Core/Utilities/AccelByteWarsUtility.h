@@ -19,6 +19,8 @@ public:
 	/** @brief Always return positive value for Dividend % Modulus. If Modulus is zero, returns -1 as to prevent divide by zero exception. */
 	static int32 PositiveModulo(const int32 Dividend, const int32 Modulus);
 
+	static FString GetGameVersion();
+
 private:
 	static const TMap<FString, EImageFormat> ImageFormatMap;
 };

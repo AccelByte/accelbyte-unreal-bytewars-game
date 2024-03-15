@@ -22,6 +22,6 @@ public:
 	UTutorialModuleDataAsset* AssociateTutorialModule;
 
 protected:
-	void ExecuteNextTick(const FSimpleDelegate& Delegate) const;
+	void ExecuteNextTick(const FTimerDelegate & Delegate) const;
 	virtual void JoinSession(FName SessionName, const FOnlineSessionSearchResult& SearchResult) override {}
 };

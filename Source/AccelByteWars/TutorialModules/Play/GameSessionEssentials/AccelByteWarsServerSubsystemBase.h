@@ -31,7 +31,7 @@ protected:
 	IOnlineSessionPtr GetSessionInt() const;
 	FOnlineSessionV2AccelBytePtr GetABSessionInt() const;
 
-	void ExecuteNextTick(const FSimpleDelegate& Delegate) const;
+	void ExecuteNextTick(const FTimerDelegate & Delegate) const;
 
 private:
 	UPROPERTY()
