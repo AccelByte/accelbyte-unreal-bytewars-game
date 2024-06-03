@@ -79,6 +79,22 @@ void AAccelByteWarsPlayerPawn::Tick(float DeltaTime)
 	}
 }
 
+void AAccelByteWarsPlayerPawn::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	// Destroy all attached actors.
+	if (EndPlayReason == EEndPlayReason::Type::Destroyed) 
+	{
+		TArray<AActor*> Actors;
+		GetAttachedActors(Actors);
+		for (AActor* Actor : Actors)
+		{
+			Actor->Destroy();
+		}
+	}
+
+	Super::EndPlay(EndPlayReason);
+}
+
 void AAccelByteWarsPlayerPawn::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -143,22 +159,19 @@ T* AAccelByteWarsPlayerPawn::SpawnBPActorInWorld(APawn* OwningPawn, const FVecto
 	return NewActor;
 }
 
-void AAccelByteWarsPlayerPawn::Server_GetPlayerSelectedShip_Implementation(APlayerController* PlayerController, AAccelByteWarsPlayerState* ABPlayerState, FLinearColor InColor)
+void AAccelByteWarsPlayerPawn::Server_GetPlayerSelectedShip_Implementation(APlayerController* PlayerController, FLinearColor InColor)
 {
 	if (!HasAuthority())
 	{
 		return;
 	}
 
-	Client_GetPlayerSelectedShip(PlayerController, ABPlayerState, InColor);
+	Client_GetPlayerSelectedShip(PlayerController, InColor);
 }
 
-void AAccelByteWarsPlayerPawn::Client_GetPlayerSelectedShip_Implementation(APlayerController* PlayerController, AAccelByteWarsPlayerState* ABPlayerState, FLinearColor InColor)
+void AAccelByteWarsPlayerPawn::Client_GetPlayerSelectedShip_Implementation(APlayerController* PlayerController, FLinearColor InColor)
 {
 	if (PlayerController == nullptr)
-		return;
-
-	if (ABPlayerState == nullptr)
 		return;
 
 	ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer();
@@ -170,7 +183,7 @@ void AAccelByteWarsPlayerPawn::Client_GetPlayerSelectedShip_Implementation(APlay
 	// If online and primary player, broadcast event to configure player equipment based on online data.
 	if (PlayerController->IsPrimaryPlayer() && OnMatchStarted.IsBound())
 	{
-		OnMatchStarted.Broadcast(this, PlayerController, ABPlayerState, InColor);
+		OnMatchStarted.Broadcast(this, PlayerController, InColor);
 		return;
 	}
 

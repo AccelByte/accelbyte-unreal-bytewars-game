@@ -40,4 +40,6 @@ private:
 
 	UPROPERTY()
 	UCommonInputSubsystem* InputSubsystem;
+
+	bool bIsItemSelected = false;
 };

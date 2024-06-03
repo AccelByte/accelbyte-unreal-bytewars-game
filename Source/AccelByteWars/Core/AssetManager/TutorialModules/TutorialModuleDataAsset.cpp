@@ -521,14 +521,17 @@ void UTutorialModuleDataAsset::ValidateGeneratedWidgets()
 			GeneratedWidget.GenericWidgetClass = nullptr;
 		}
 		if (GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_BUTTON &&
-			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_WIDGET)
+			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_WIDGET &&
+			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_TABLIST)
 		{
 			GeneratedWidget.OtherTutorialModule = nullptr;
 		}
 		if ((GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_ENTRY_BUTTON &&
 			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_WIDGET &&
+			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_ENTRY_TABLIST &&
 			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_BUTTON &&
-			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_WIDGET) ||
+			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_WIDGET &&
+			GeneratedWidget.WidgetType != ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_TABLIST) ||
 			GeneratedWidget.TutorialModuleWidgetClassType != ETutorialModuleWidgetClassType::ASSOCIATE_WIDGET_CLASS)
 		{
 			GeneratedWidget.DefaultTutorialModuleWidgetClass = nullptr;

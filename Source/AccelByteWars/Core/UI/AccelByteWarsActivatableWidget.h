@@ -31,6 +31,7 @@ enum class EAccelByteWarsWidgetInputMode : uint8
 class UTutorialModuleDataAsset;
 class UAccelByteWarsButtonBase;
 class UPanelWidget;
+class UAccelByteWarsTabListWidget;
 
 UCLASS(Abstract, Blueprintable)
 class ACCELBYTEWARS_API UAccelByteWarsActivatableWidget : public UCommonActivatableWidget, public IAccelByteWarsWidgetInterface
@@ -97,13 +98,13 @@ protected:
 	EMouseCaptureMode GameMouseCaptureMode = EMouseCaptureMode::CapturePermanently;
 
 #pragma region "AccelByte SDK Config Menu"
-	// Handle to store action binding to open AccelByte SDK reconfiguration menu.
+	/** Handle to store action binding to open AccelByte SDK reconfiguration menu. */
 	FUIActionBindingHandle OpenSdkConfigHandle;
 #pragma endregion
 
 #pragma region "Tutorial Module"
 public:
-	// The Tutorial Module Data Asset associated with this widget.
+	/** The Tutorial Module Data Asset associated with this widget. */
 	UPROPERTY()
 	UTutorialModuleDataAsset* AssociateTutorialModule;
 
@@ -116,15 +117,22 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Tutorial Module Metadata")
 	TArray<UPanelWidget*> GetGeneratedWidgetContainers();
 
+	/**
+	 * Will only be used for OTHER_TUTORIAL_MODULE_ENTRY_TABLIST and TUTORIAL_MODULE_ENTRY_TABLIST
+	 * @brief Implement this if your module need to use OTHER_TUTORIAL_MODULE_ENTRY_TABLIST or TUTORIAL_MODULE_ENTRY_TABLIST. Otherwise, implement GetGeneratedWidgetContainers instead. 
+	 */
+	UFUNCTION(BlueprintImplementableEvent, Category = "Tutorial Module Metadata")
+	TArray<UAccelByteWarsTabListWidget*> GetGeneratedWidgetTabListContainers();
+
 	bool GetIsAllGeneratedWidgetsShouldNotDisplay() const;
 
-	// The generated widget metadatas injected by one or more Tutorial Modules.
+	/** The generated widget metadatas injected by one or more Tutorial Modules. */
 	TArray<FTutorialModuleGeneratedWidget*> GeneratedWidgets;
 
 protected:
 	void InitializeGeneratedWidgets();
 
-	// If set to true, hide this UI if the generated widgets is empty
+	/** If set to true, hide this UI if the generated widgets is empty */
 	UPROPERTY(EditDefaultsOnly, Category = "Tutorial Module Metadata")
 	bool bHideIfGeneratedWidgetEmpty = false;
 
@@ -133,6 +141,9 @@ private:
 	TWeakObjectPtr<UAccelByteWarsButtonBase> GenerateEntryButton(FTutorialModuleGeneratedWidget& Metadata, UPanelWidget& WidgetContainer);
 	TWeakObjectPtr<UAccelByteWarsButtonBase> GenerateActionButton(FTutorialModuleGeneratedWidget& Metadata, UPanelWidget& WidgetContainer);
 	TWeakObjectPtr<UAccelByteWarsActivatableWidget> GenerateWidget(FTutorialModuleGeneratedWidget& Metadata, UPanelWidget& WidgetContainer);
+	TWeakObjectPtr<UAccelByteWarsButtonBase> GenerateTabListEntryButton(
+		FTutorialModuleGeneratedWidget& Metadata,
+		UAccelByteWarsTabListWidget& WidgetContainer);
 
 	TSubclassOf<UAccelByteWarsActivatableWidget> GetValidEntryWidgetClass(const FTutorialModuleGeneratedWidget& Metadata) const;
 
@@ -142,18 +153,34 @@ private:
 
 #pragma region "First Time User Experience (FTUE)"
 public:
-	// The FTUE dialogues to be shown when this widget is active.
+	/** The FTUE dialogues to be shown when this widget is active. */
 	TArray<FFTUEDialogueModel*> FTUEDialogues;
+	
+	/** Open FTUE Menu Widget from in game state */
+	void OpenFTUEWidget() const;
+
+	/** Hide the FTUE Dev Help Button */
+	void HideFTUEDevHelpButton(const bool bInHideButton = true) const;
+
+	/** Hide the FTUE Dev Help Input Action */
+	void HideFTUEDevHelpInputAction(const bool bInHideInputAction = true) const;
 
 protected:
-	void InitializeFTUEDialogues(bool bShowOnInitialize);
-	void DeinitializeFTUEDialogues();
+	void InitializeFTUEDialogues(bool bShowOnInitialize, bool bIsFirstTime = true) const;
+	void DeinitializeFTUEDialogues() const;
 
 	UPROPERTY(EditAnywhere, Category = "Tutorial Module Metadata", meta = (ToolTip = "Whether this widget should initialize FTUE on activated."))
 	bool bOnActivatedInitializeFTUE = true;
 
 private:
+	/** Generate FTUE DevHelpButton */
+	TWeakObjectPtr<UAccelByteWarsButtonBase> GenerateDevHelpButton();
+	TWeakObjectPtr<UAccelByteWarsButtonBase> GetDevHelpButton() const;
+	void DestroyDevHelpButton() const;
+
 	void ValidateFTUEDialogues();
+	void ValidateDevHelpButton();
+	void OnValidateDialogueComplete(FFTUEDialogueModel* Dialogue, const bool bIsValid);
 #pragma endregion
 
 #pragma region "Widget Validators"

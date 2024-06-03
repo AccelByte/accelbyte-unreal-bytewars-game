@@ -9,6 +9,13 @@
 #define TEXT_PRICE_FREE NSLOCTEXT("AccelByteWars", "free", "Free")
 #define TEXT_PURCHASE NSLOCTEXT("AccelByteWars", "purchase-with", "Purchase with")
 
+UENUM(BlueprintType)
+enum class ECurrencyType : uint8
+{
+	COIN = 0,
+	GEM
+};
+
 UCLASS()
 class UItemDataObject : public UObject
 {
@@ -16,6 +23,7 @@ class UItemDataObject : public UObject
 
 public:
 	FText Title;
+	FText Category;
 	FString Id;
 	FString Sku;
 	FString IconUrl;
@@ -24,14 +32,23 @@ public:
 	bool bConsumable;
 };
 
-UCLASS()
+UCLASS(BlueprintType)
 class UStoreItemPriceDataObject : public UObject
 {
 	GENERATED_BODY()
 
+	UStoreItemPriceDataObject(){}
+	UStoreItemPriceDataObject(ECurrencyType Type, int64 Price) : CurrencyType(Type), RegularPrice(Price), FinalPrice(Price) {}
+	UStoreItemPriceDataObject(ECurrencyType Type, int64 Price, int64 DiscountedPrice) : CurrencyType(Type), RegularPrice(DiscountedPrice), FinalPrice(Price) {}
+
 public:
-	FString CurrencyCode;
+	UPROPERTY(EditAnywhere)
+	ECurrencyType CurrencyType;
+
+	UPROPERTY(EditAnywhere)
 	int64 RegularPrice;
+
+	UPROPERTY(EditAnywhere)
 	int64 FinalPrice;
 
 	bool IsDiscounted() const { return RegularPrice != FinalPrice; }

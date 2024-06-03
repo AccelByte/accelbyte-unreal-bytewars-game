@@ -179,7 +179,8 @@ struct FFTUEDialogueModel
     FServicePredefinedValidator Validator;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
-        Tooltip = "The message to be shown on the FTUE."))
+        Tooltip = "The message to be shown on the FTUE.",
+        MultiLine = true))
     FText Message;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
@@ -221,6 +222,9 @@ struct FFTUEDialogueModel
         EditConditionHides, 
         Tooltip = "The name of the widget to be highlighted."))
     FString TargetWidgetNameToHighlight;
+
+    UPROPERTY()
+    UUserWidget* HighlightedWidget = nullptr;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (
         Tooltip = "The vertical anchor of the FTUE relative to the screen."))
@@ -319,11 +323,13 @@ struct FFTUEDialogueModel
             return Message;
         }
 
+        FString FormattedMessageStr = Message.ToString().ReplaceEscapedCharWithChar();
         FFormatNamedArguments Args;
-        int32 ArgIndex = 0;
-        for (const FServiceArgumentModel& Arg : MessageArguments)
+        for (int ArgIndex = 0; ArgIndex < MessageArguments.Num(); ArgIndex++)
         {
-            FString ArgStr = FString("");
+            const FServiceArgumentModel& Arg = MessageArguments[ArgIndex];
+
+            FString ArgStr;
             if (Arg.bUsePredefinedArgument && Arg.OnGetPredefinedArgument.IsBound())
             {
                 ArgStr = Arg.OnGetPredefinedArgument.Execute(Arg.PredefinedArgument);
@@ -334,10 +340,25 @@ struct FFTUEDialogueModel
             }
             
             Args.Add(FString::Printf(TEXT("%d"), ArgIndex), FText::FromString(ArgStr));
-            ArgIndex++;
+
+            // Mark argument as bold text by wrapping it with a tag (e.g. "<bold>{0}</>").
+            FString TempStr = FormattedMessageStr;
+            const int32 ArgStrStartIndex = TempStr.Find(FString::Printf(TEXT("{%d"), ArgIndex));
+            if (ArgStrStartIndex != INDEX_NONE)
+            {
+                TempStr.InsertAt(ArgStrStartIndex, TEXT("<bold>"));
+
+                const int32 ArgStrEndIndex = TempStr.Find(FString::Printf(TEXT("%d}"), ArgIndex));
+                if (ArgStrEndIndex != INDEX_NONE) 
+                {
+                    TempStr.InsertAt(ArgStrEndIndex + FString::FromInt(ArgIndex).Len() + 1, TEXT("</>"));
+                    FormattedMessageStr = TempStr;
+                }
+            }
         }
 
-        return FText::Format(Message, Args);
+        const FText FormattedMessageText = FText::FromString(FormattedMessageStr);
+        return FText::Format(FormattedMessageText, Args);
     }
 
     static FFTUEDialogueModel* GetMetadataById(const FString& FTUEId);

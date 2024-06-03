@@ -529,7 +529,7 @@ APawn* AAccelByteWarsInGameGameMode::CreatePlayerPawn(const FVector& Location, A
 		return nullptr;
 
 	NewPlayerPawn->SetReplicates(true);
-	NewPlayerPawn->Server_GetPlayerSelectedShip(PlayerController, ABPlayerState, ABPlayerState->TeamColor);
+	NewPlayerPawn->Server_GetPlayerSelectedShip(PlayerController, ABPlayerState->TeamColor);
 
 	return NewPlayerPawn;
 }

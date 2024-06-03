@@ -11,9 +11,9 @@ void UGameOverLeaderboardEntry::InitData(const FText& PlayerName, const int32 Pl
 	Txt_PlayerScore->SetText(FText::FromString(FString::Printf(TEXT("%d"), PlayerScore)));
 	Txt_PlayerKills->SetText(FText::FromString(FString::Printf(TEXT("%d"), PlayerKills)));
 
-	Txt_PlayerName->SetColorAndOpacity(PlayerColor);
-	Txt_PlayerScore->SetColorAndOpacity(PlayerColor);
-	Txt_PlayerKills->SetColorAndOpacity(PlayerColor);
+	Txt_PlayerName->SetColorAndOpacity(FSlateColor(PlayerColor));
+	Txt_PlayerScore->SetColorAndOpacity(FSlateColor(PlayerColor));
+	Txt_PlayerKills->SetColorAndOpacity(FSlateColor(PlayerColor));
 }
 
 void UGameOverLeaderboardEntry::SetPlayerName(const FText& PlayerName)

@@ -11,6 +11,9 @@
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "GameFramework/OnlineSession.h"
 
+#include "Core/UI/Components/Prompt/FTUE/FTUEDialogueWidget.h"
+#include "Core/UI/AccelByteWarsActivatableWidget.h"
+
 #define GAMEINSTANCE_LOG(FormatString, ...) UE_LOG(LogAccelByteWarsGameInstance, Log, TEXT(FormatString), __VA_ARGS__);
 
 void UAccelByteWarsGameInstance::Init()
@@ -185,5 +188,23 @@ void UAccelByteWarsGameInstance::OpenSDKConfigMenu()
 	if (SDKConfigWidgetClass && SDKConfigWidgetClass.Get())
 	{
 		SDKConfigWidgetInstance = GetBaseUIWidget()->PushWidgetToStack(EBaseUIStackType::Prompt, SDKConfigWidgetClass.Get());
+	}
+}
+
+void UAccelByteWarsGameInstance::OpenFTUEMenu()
+{
+	UFTUEDialogueWidget* FTUEWidget = BaseUIWidget->GetFTUEDialogueWidget();
+
+	if (FTUEWidget && FTUEWidget->IsActivated())
+	{
+		return;
+	}
+
+	if (FTUEWidgetClass && FTUEWidgetClass.Get())
+	{
+		GetBaseUIWidget()->SetFTUEDialogueWidget(nullptr);
+		UCommonActivatableWidget* HUDWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::InGameHUD, this);
+		UAccelByteWarsActivatableWidget* HUDWidgetAB = Cast<UAccelByteWarsActivatableWidget>(HUDWidget);
+		HUDWidgetAB->OpenFTUEWidget();
 	}
 }
