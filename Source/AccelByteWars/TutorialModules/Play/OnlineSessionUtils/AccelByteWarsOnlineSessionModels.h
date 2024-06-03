@@ -88,3 +88,10 @@ DECLARE_MULTICAST_DELEGATE_TwoParams(FOnMatchSessionFindSessionsComplete, const 
 #define ACCEPT_PARTY_INVITE_MESSAGE NSLOCTEXT(BYTEWARS_LOCTEXT_NAMESPACE, "Accept Party Invite", "Accept")
 #define REJECT_PARTY_INVITE_MESSAGE NSLOCTEXT(BYTEWARS_LOCTEXT_NAMESPACE, "Reject Party Invite", "Reject")
 #pragma endregion
+
+#pragma region "Lobby"
+#define LOBBY_FAILED_RECONNECT_MESSAGE NSLOCTEXT(BYTEWARS_LOCTEXT_NAMESPACE, "Lobby Failed Reconnect", "Failed reconnect to AGS. Please relogin.")
+#define LOBBY_SUCCESS_RECONNECT_MESSAGE NSLOCTEXT(BYTEWARS_LOCTEXT_NAMESPACE, "Lobby Success Reconnect", "Success reconnect to AGS.")
+#define LOBBY_RECONNECTING_MESSAGE NSLOCTEXT(BYTEWARS_LOCTEXT_NAMESPACE, "Lobby Reconnecting", "Reconnecting to AGS.")
+#define LOBBY_CONNECTION_CLOSED_AUTO_CONNET_MESSAGE NSLOCTEXT(BYTEWARS_LOCTEXT_NAMESPACE, "Lobby Connection Closed Auto Connect", "Disconnected from AGS. Reconnecting.")
+#pragma endregion

@@ -30,6 +30,8 @@ void UMatchmakingDSWidget::NativeOnActivated()
 	OnlineSession->GetOnStartMatchmakingCompleteDelegates()->AddUObject(this, &ThisClass::OnStartMatchmakingComplete);
 	OnlineSession->GetOnCancelMatchmakingCompleteDelegates()->AddUObject(this, &ThisClass::OnCancelMatchmakingComplete);
 	OnlineSession->GetOnMatchmakingCompleteDelegates()->AddUObject(this, &ThisClass::OnMatchmakingComplete);
+	OnlineSession->GetOnLeaveSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnCancelJoinSessionComplete);
+	OnlineSession->GetOnJoinSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnJoinSessionComplete);
 
 	Btn_StartMatchmakingDS->OnClicked().AddUObject(this, &ThisClass::StartMatchmaking);
 
@@ -38,9 +40,6 @@ void UMatchmakingDSWidget::NativeOnActivated()
 	{
 		return;
 	}
-
-	W_Parent->GetProcessingWidget()->OnCancelClicked.AddUObject(this, &ThisClass::CancelMatchmaking);
-	W_Parent->GetProcessingWidget()->OnRetryClicked.AddUObject(this, &ThisClass::StartMatchmaking);
 }
 
 void UMatchmakingDSWidget::NativeOnDeactivated()
@@ -50,6 +49,8 @@ void UMatchmakingDSWidget::NativeOnDeactivated()
 	OnlineSession->GetOnStartMatchmakingCompleteDelegates()->RemoveAll(this);
 	OnlineSession->GetOnCancelMatchmakingCompleteDelegates()->RemoveAll(this);
 	OnlineSession->GetOnMatchmakingCompleteDelegates()->RemoveAll(this);
+	OnlineSession->GetOnJoinSessionCompleteDelegates()->RemoveAll(this);
+	OnlineSession->GetOnLeaveSessionCompleteDelegates()->RemoveAll(this);
 
 	Btn_StartMatchmakingDS->OnClicked().RemoveAll(this);
 
@@ -65,6 +66,11 @@ void UMatchmakingDSWidget::StartMatchmaking() const
 		return;
 	}
 
+	W_Parent->GetProcessingWidget()->OnCancelClicked.Clear();
+	W_Parent->GetProcessingWidget()->OnRetryClicked.Clear();
+	W_Parent->GetProcessingWidget()->OnCancelClicked.AddUObject(this, &ThisClass::CancelButtonClicked);
+	W_Parent->GetProcessingWidget()->OnRetryClicked.AddUObject(this, &ThisClass::StartMatchmaking);
+
 	// Otherwise, start matchmaking.
 	W_Parent->SetLoadingMessage(TEXT_FINDING_MATCH, false);
 	W_Parent->SwitchContent(UQuickPlayWidget::EContentType::LOADING);
@@ -76,14 +82,24 @@ void UMatchmakingDSWidget::StartMatchmaking() const
 		W_Parent->GetSelectedGameModeType());
 }
 
-void UMatchmakingDSWidget::CancelMatchmaking() const
+void UMatchmakingDSWidget::CancelButtonClicked() const
 {
+	bool bIsJoiningMatch = W_Parent->GetProcessingWidget()->LoadingMessage.EqualTo(TEXT_JOINING_MATCH);
+	
 	W_Parent->SetLoadingMessage(TEXT_CANCEL_MATCHMAKING, false);
 	W_Parent->SwitchContent(UQuickPlayWidget::EContentType::LOADING);
-
-	OnlineSession->CancelMatchmaking(
-		GetOwningPlayer(),
-		OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession));
+	
+	if(bIsJoiningMatch)
+	{
+		OnlineSession->LeaveSession(
+			OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession));
+	}
+	else
+	{
+		OnlineSession->CancelMatchmaking(
+			GetOwningPlayer(),
+			OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession));
+	}
 }
 
 void UMatchmakingDSWidget::OnStartMatchmakingComplete(FName SessionName, bool bSucceeded) const
@@ -145,9 +161,35 @@ void UMatchmakingDSWidget::OnMatchmakingComplete(FName SessionName, bool bSuccee
 	}
 }
 
-#pragma region "UI Related"
-UWidget* UMatchmakingDSWidget::NativeGetDesiredFocusTarget() const
+void UMatchmakingDSWidget::OnCancelJoinSessionComplete(FName SessionName, bool bSucceeded) const
 {
-	return Btn_StartMatchmakingDS;
+	// Abort if not a game session.
+	if (!SessionName.IsEqual(OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession)))
+	{
+		return;
+	}
+
+	if (bSucceeded)
+	{
+		W_Parent->SwitchContent(UQuickPlayWidget::EContentType::SELECTGAMEMODE);
+	}
+	else
+	{
+		W_Parent->SetErrorMessage(TEXT_FAILED_CANCEL_MATCH, false);
+		W_Parent->SwitchContent(UQuickPlayWidget::EContentType::ERROR);
+	}
 }
-#pragma endregion 
+
+void UMatchmakingDSWidget::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result) const
+{
+	if(Result == EOnJoinSessionCompleteResult::Success)
+	{
+		W_Parent->SetLoadingMessage(TEXT_JOINING_MATCH, true);
+		W_Parent->SwitchContent(UQuickPlayWidget::EContentType::LOADING);
+	}
+	else
+	{
+		W_Parent->SetErrorMessage(TEXT_FAILED_JOIN_MATCH, true);
+		W_Parent->SwitchContent(UQuickPlayWidget::EContentType::ERROR);
+	}
+}

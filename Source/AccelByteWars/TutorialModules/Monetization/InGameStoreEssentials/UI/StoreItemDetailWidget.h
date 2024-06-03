@@ -19,18 +19,8 @@ class ACCELBYTEWARS_API UStoreItemDetailWidget : public UAccelByteWarsActivatabl
 {
 	GENERATED_BODY()
 
-public:
-	UPROPERTY()
-	UStoreItemDataObject* StoreItemDataObject;
-
-	void Setup(UStoreItemDataObject* Object);
-
-#pragma region "UI related"
-public:
+#pragma region "UI"
 	virtual void NativeOnActivated() override;
-	UWalletBalanceWidget* GetBalanceWidget() const;
-
-protected:
 	virtual void NativeOnDeactivated() override;
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 	virtual UWidget* NativeGetDesiredFocusTarget() const override;
@@ -47,6 +37,12 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_Back;
-
 #pragma endregion 
+
+public:
+	UPROPERTY()
+	UStoreItemDataObject* StoreItemDataObject;
+
+	void Setup(UStoreItemDataObject* Object);
+	UWalletBalanceWidget* GetBalanceWidget() const; 
 };

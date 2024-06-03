@@ -6,6 +6,7 @@
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
 #include "Components/ListView.h"
+#include "CommonButtonBase.h"
 
 void USentFriendRequestsWidget::NativeConstruct()
 {
@@ -22,6 +23,8 @@ void USentFriendRequestsWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
+	Btn_Back->OnClicked().AddUObject(this, &ThisClass::DeactivateWidget);
+
 	// Reset widgets.
 	Ws_FriendRequests->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Empty);
 	Lv_FriendRequests->ClearListItems();
@@ -32,9 +35,20 @@ void USentFriendRequestsWidget::NativeOnActivated()
 
 void USentFriendRequestsWidget::NativeOnDeactivated()
 {
+	Btn_Back->OnClicked().Clear();
+
 	FriendsSubsystem->UnbindOnCachedFriendsDataUpdated(GetOwningPlayer());
 
 	Super::NativeOnDeactivated();
+}
+
+UWidget* USentFriendRequestsWidget::NativeGetDesiredFocusTarget() const
+{
+	if (Lv_FriendRequests->GetListItems().IsEmpty())
+	{
+		return Btn_Back;
+	}
+	return Lv_FriendRequests;
 }
 
 void USentFriendRequestsWidget::GetSentFriendRequestList()
@@ -47,7 +61,6 @@ void USentFriendRequestsWidget::GetSentFriendRequestList()
 		GetOwningPlayer(),
 		FOnGetOutboundFriendRequestListComplete::CreateWeakLambda(this, [this](bool bWasSuccessful, TArray<UFriendData*> FriendRequests, const FString& ErrorMessage)
 		{
-			Lv_FriendRequests->SetUserFocus(GetOwningPlayer());
 			Lv_FriendRequests->ClearListItems();
 
 			if (bWasSuccessful)

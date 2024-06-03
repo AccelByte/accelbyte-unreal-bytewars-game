@@ -16,6 +16,8 @@
 
 #include "Access/AuthEssentials/AuthEssentialsModels.h"
 
+#include "Internationalization/Internationalization.h"
+
 DEFINE_LOG_CATEGORY(LogAccelByteWarsTutorialModuleOnlineUtility);
 
 UTutorialModuleOnlineUtility::UTutorialModuleOnlineUtility()
@@ -719,6 +721,11 @@ FString UTutorialModuleOnlineUtility::GetServicePredefinedArgument(const EServic
         Result = CurrentPublishedStoreId;
         break;
     }
+    case EServicePredifinedArgument::TIME_UTC_NOW:
+    {
+        Result = FDateTime::UtcNow().ToIso8601();
+        break;
+    }
     default:
     {
         break;
@@ -797,6 +804,17 @@ FAccelByteModelsV2GameSessionDSInformation UTutorialModuleOnlineUtility::GetDedi
 bool UTutorialModuleOnlineUtility::IsUseAGSStarter()
 {
     return bUseAGSStarter;
+}
+
+FString UTutorialModuleOnlineUtility::GetPrimaryLanguageSubtag()
+{
+    // Get the current language
+    const FInternationalization& I18N = FInternationalization::Get();
+    
+    // Retrieve the two-letter ISO language name (primary language subtag)
+    FString PrimaryLanguageSubtag = I18N.GetCurrentLanguage()->GetTwoLetterISOLanguageName();
+    
+    return PrimaryLanguageSubtag;
 }
 
 void UTutorialModuleOnlineUtility::CheckUseAGSStarter()

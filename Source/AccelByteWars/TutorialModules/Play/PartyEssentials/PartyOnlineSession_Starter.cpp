@@ -185,7 +185,21 @@ void UPartyOnlineSession_Starter::InitializePartyGeneratedWidgets()
         PromotePartyLeaderButtonMetadata->OnWidgetGenerated.AddUObject(this, &ThisClass::UpdatePartyGeneratedWidgets);
     }
 
-    // On party member update events, update the generated widget.
+    // On party update events, update the generated widget.
+    if (GetOnCreatePartyCompleteDelegates())
+    {
+        GetOnCreatePartyCompleteDelegates()->AddWeakLambda(this, [this](FName SessionName, bool bWasSuccessful)
+        {
+            UpdatePartyGeneratedWidgets();
+        });
+    }
+    if (GetOnLeavePartyCompleteDelegates())
+    {
+        GetOnLeavePartyCompleteDelegates()->AddWeakLambda(this, [this](FName SessionName, bool bWasSuccessful)
+        {
+            UpdatePartyGeneratedWidgets();
+        });
+    }
     if (GetOnPartyMembersChangeDelegates())
     {
         GetOnPartyMembersChangeDelegates()->AddWeakLambda(this, [this](FName SessionName, const FUniqueNetId& Member, bool bJoined)

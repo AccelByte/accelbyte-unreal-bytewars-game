@@ -43,9 +43,6 @@ void UPushNotificationWidget::PushNotification(UPushNotification* Notification)
 	LastNotifications.Insert(Notification, 0);
 	Lv_PushNotification->SetListItems(LastNotifications);
 
-	// Focus the cursor to the new notification entry.
-	Lv_PushNotification->SetUserFocus(GetOwningPlayer());
-
 	// Start notification lifetime.
 	FTimerHandle TimerHandle;
 	NotificationTimers.Add(Notification, TimerHandle);

@@ -4,19 +4,23 @@
 
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
+#include "Core/UI/Components/Info/InfoWidget.h"
 
 void UAccelByteWarsBaseUI::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
 
 	// Register stacks
-	Stacks.Add(EBaseUIStackType::Menu, MenuStack);
 	Stacks.Add(EBaseUIStackType::Prompt, PromptStack);
+	Stacks.Add(EBaseUIStackType::FTUE, FTUEStack);
+	Stacks.Add(EBaseUIStackType::PushNotification, PushNotificationStack);
+	Stacks.Add(EBaseUIStackType::Menu, MenuStack);
 	Stacks.Add(EBaseUIStackType::InGameMenu, InGameMenuStack);
 	Stacks.Add(EBaseUIStackType::InGameHUD, InGameHUDStack);
 
 	if (!IsDesignTime())
 	{
+		// Configure stacks transition behavior.
 		UCommonActivatableWidgetStack* Stack;
 		for (int i = EBaseUIStackType::Prompt; i != EBaseUIStackType::InGameHUD; i++)
 		{
@@ -25,11 +29,27 @@ void UAccelByteWarsBaseUI::NativeOnInitialized()
 
 			Stack->OnTransitioningChanged.AddUObject(this, &UAccelByteWarsBaseUI::OnWidgetTransitionChanged);
 		}
+	
+		// Display project info widget to the target widgets.
+		for (TSubclassOf<UAccelByteWarsActivatableWidget> TargetWidget : ProjectInfoTargetWidgets)
+		{
+			if (!TargetWidget.Get() || !TargetWidget.GetDefaultObject())
+			{
+				continue;
+			}
+
+			TargetWidget.GetDefaultObject()->OnActivated().RemoveAll(this);
+			TargetWidget.GetDefaultObject()->OnDeactivated().RemoveAll(this);
+
+			TargetWidget.GetDefaultObject()->OnActivated().AddUObject(this, &ThisClass::ToggleProjectInfoWidget, true);
+			TargetWidget.GetDefaultObject()->OnDeactivated().AddUObject(this, &ThisClass::ToggleProjectInfoWidget, false);
+		}
 	}
 }
 
 void UAccelByteWarsBaseUI::ClearWidgets()
 {
+	FTUEStack->ClearWidgets();
 	MenuStack->ClearWidgets();
 	InGameMenuStack->ClearWidgets();
 	InGameHUDStack->ClearWidgets();
@@ -46,6 +66,16 @@ void UAccelByteWarsBaseUI::ResetWidget()
 void UAccelByteWarsBaseUI::ToggleBackgroundBlur(const bool bShow) const
 {
 	BackgroundBlur->SetVisibility(bShow ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+}
+
+void UAccelByteWarsBaseUI::ToggleProjectInfoWidget(const bool bShow) const
+{
+	W_ProjectInfo->SetVisibility(bShow ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+
+	if (bShow) 
+	{
+		W_ProjectInfo->RefreshUI();
+	}
 }
 
 UCommonActivatableWidget* UAccelByteWarsBaseUI::GetActiveWidgetOfStack(const EBaseUIStackType TargetStack, const UObject* Context)
@@ -118,6 +148,12 @@ UAccelByteWarsActivatableWidget* UAccelByteWarsBaseUI::PushWidgetToStack(EBaseUI
 	UCommonActivatableWidgetStack* Stack = Stacks[TargetStack];
 	ensure(Stack);
 
+	// safeguard to not add a widget when the world is tearing down
+	if (GetWorld()->bIsTearingDown)
+	{
+		return nullptr;
+	}
+
 	return Cast<UAccelByteWarsActivatableWidget>(Stack->AddWidget(WidgetClass, InitFunc));
 }
 
@@ -141,6 +177,11 @@ UPushNotificationWidget* UAccelByteWarsBaseUI::GetPushNotificationWidget()
 UFTUEDialogueWidget* UAccelByteWarsBaseUI::GetFTUEDialogueWidget()
 {
 	return W_FTUEDialogue;
+}
+
+void UAccelByteWarsBaseUI::SetFTUEDialogueWidget(UFTUEDialogueWidget* InFTUEDialogueWidget)
+{
+	W_FTUEDialogue = InFTUEDialogueWidget;
 }
 
 void UAccelByteWarsBaseUI::OnWidgetTransitionChanged(UCommonActivatableWidgetContainerBase* Widget, bool bIsTransitioning)

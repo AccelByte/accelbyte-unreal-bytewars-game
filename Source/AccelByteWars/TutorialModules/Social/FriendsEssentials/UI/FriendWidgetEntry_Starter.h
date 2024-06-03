@@ -12,7 +12,7 @@
 class UWidgetSwitcher;
 class UCommonButtonBase;
 class UTextBlock;
-class UImage;
+class UAccelByteWarsAsyncImageWidget;
 
 UCLASS(Abstract)
 class ACCELBYTEWARS_API UFriendWidgetEntry_Starter : public UAccelByteWarsWidgetEntry
@@ -32,7 +32,7 @@ protected:
 	UFriendData* CachedFriendData;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
-	UImage* Img_Avatar;
+	UAccelByteWarsAsyncImageWidget* Img_Avatar;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Tb_DisplayName;
@@ -54,6 +54,4 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_Cancel;
-
-	FSlateBrush DefaultAvatarBrush;
 };

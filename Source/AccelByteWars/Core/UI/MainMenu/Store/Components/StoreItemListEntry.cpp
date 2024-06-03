@@ -5,9 +5,11 @@
 
 #include "StoreItemListEntry.h"
 
+#include "Components/Border.h"
 #include "Core/UI/MainMenu/Store/StoreItemModel.h"
 #include "Components/ListView.h"
 #include "Components/TextBlock.h"
+#include "Components/WidgetSwitcher.h"
 #include "Core/UI/Components/AccelByteWarsAsyncImageWidget.h"
 
 void UStoreItemListEntry::NativePreConstruct()
@@ -24,6 +26,7 @@ void UStoreItemListEntry::NativeOnListItemObjectSet(UObject* ListItemObject)
 	if (UStoreItemDataObject* StoreItemDataObject = Cast<UStoreItemDataObject>(ListItemObject))
 	{
 		Setup(StoreItemDataObject);
+		SetOwned(false);
 	}
 	else if (UItemDataObject* ItemDataObject = Cast<UItemDataObject>(ListItemObject))
 	{
@@ -34,14 +37,7 @@ void UStoreItemListEntry::NativeOnListItemObjectSet(UObject* ListItemObject)
 void UStoreItemListEntry::NativeOnEntryReleased()
 {
 	IUserObjectListEntry::NativeOnEntryReleased();
-
-	if (W_EntitlementOuter->HasAnyChildren())
-	{
-		if (UCommonActivatableWidget* Widget = Cast<UCommonActivatableWidget>(W_EntitlementOuter->GetChildAt(0)))
-		{
-			Widget->DeactivateWidget();
-		}
-	}
+	ResetUI();
 }
 
 void UStoreItemListEntry::Setup(UItemDataObject* Object)
@@ -55,6 +51,11 @@ void UStoreItemListEntry::Setup(UItemDataObject* Object)
 	// Set UI
 	Tb_Name->SetText(ItemData->Title);
 	W_Image->LoadImage(ItemData->IconUrl);
+
+	// Only show end of branch category
+	FString Category = ItemData->Category.ToString();
+	Category = Category.RightChop(Category.Find(TEXT("/"), ESearchCase::IgnoreCase, ESearchDir::FromEnd) + 1);
+	Tb_Category->SetText(FText::FromString(Category));
 
 	if (W_EntitlementOuter->HasAnyChildren())
 	{
@@ -80,6 +81,56 @@ void UStoreItemListEntry::Setup(UStoreItemDataObject* Object)
 	// Set UI
 	if (bShowPrices)
 	{
-		Lv_Prices->SetListItems(Object->Prices);
+		// Show only 1 price if one of them is free
+		bool bIsFree = false;
+		for (const UStoreItemPriceDataObject* Data : Object->Prices)
+		{
+			if (Data->RegularPrice == 0)
+			{
+				bIsFree = true;
+			}
+		}
+
+		if (bIsFree)
+		{
+			TArray<UStoreItemPriceDataObject*> Prices;
+			if (Object->Prices.Num() < 1)
+			{
+				return;
+			}
+
+			Prices.Add(Object->Prices[0]);
+			Lv_Prices->SetListItems(Prices);
+		}
+		else
+		{
+			Lv_Prices->SetListItems(Object->Prices);
+		}
 	}
+}
+
+void UStoreItemListEntry::SetOwned(const bool bOwned) const
+{
+	if (bOwned)
+	{
+		Ws_Price->SetActiveWidget(Tb_Owned);
+	}
+	else
+	{
+		Ws_Price->SetActiveWidget(Lv_Prices);
+	}
+
+	B_Root->SetContentColorAndOpacity(bOwned ? OwnedColor : NormalColor);
+}
+
+void UStoreItemListEntry::ResetUI() const
+{
+	if (W_EntitlementOuter->HasAnyChildren())
+	{
+		if (UCommonActivatableWidget* Widget = Cast<UCommonActivatableWidget>(W_EntitlementOuter->GetChildAt(0)))
+		{
+			Widget->DeactivateWidget();
+		}
+	}
+	Lv_Prices->ClearListItems();
 }

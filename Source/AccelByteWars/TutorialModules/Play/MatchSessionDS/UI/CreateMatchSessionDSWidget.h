@@ -42,9 +42,6 @@ protected:
 	UAccelByteWarsOnlineSessionBase* OnlineSession;
 
 #pragma region "UI related"
-protected:
-	virtual UWidget* NativeGetDesiredFocusTarget() const override;
-
 private:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_StartMatchSessionDS;

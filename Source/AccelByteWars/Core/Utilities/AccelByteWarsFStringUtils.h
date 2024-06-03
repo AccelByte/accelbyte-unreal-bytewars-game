@@ -27,7 +27,7 @@ static FString BoolToFString(bool input)
 	return input ? "True" : "False";
 }
 
-static const TCHAR* FStringToTCHAR(FString input)
+static const TCHAR* FStringToTCHAR(const FString& input)
 {
 	return *input;
 }

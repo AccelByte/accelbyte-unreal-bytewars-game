@@ -5,13 +5,14 @@
 #include "AuthEssentialsSubsystem_Starter.h"
 #include "OnlineSubsystemUtils.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
+#include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
 
 void UAuthEssentialsSubsystem_Starter::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
 
     // Get Online Subsystem and make sure it's valid.
-    const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+    FOnlineSubsystemAccelByte* Subsystem = static_cast<FOnlineSubsystemAccelByte*>(Online::GetSubsystem(GetWorld()));
     if (!ensure(Subsystem)) 
     {
         UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and DefaultPlatformService under [OnlineSubsystem] in the Engine.ini set to AccelByte."));
@@ -25,6 +26,7 @@ void UAuthEssentialsSubsystem_Starter::Initialize(FSubsystemCollectionBase& Coll
         UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("Identiy interface is not valid."));
         return;
     }
+    Subsystem->SetLanguage(UTutorialModuleOnlineUtility::GetPrimaryLanguageSubtag());
 }
 
 void UAuthEssentialsSubsystem_Starter::Deinitialize()

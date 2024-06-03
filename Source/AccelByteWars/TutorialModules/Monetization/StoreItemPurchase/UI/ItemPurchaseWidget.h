@@ -7,6 +7,7 @@
 #include "CoreMinimal.h"
 #include "OnlineError.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
+#include "Core/UI/MainMenu/Store/StoreItemModel.h"
 #include "ItemPurchaseWidget.generated.h"
 
 class UAccelByteWarsWidgetSwitcher;
@@ -15,7 +16,8 @@ class UStoreItemPurchaseSubsystem;
 class UStoreItemPriceDataObject;
 class UStoreItemDetailWidget;
 class UStoreItemDataObject;
-class UItemPurchaseWidgetEntry;
+class UItemPurchaseButton;
+class UAccelByteWarsSequentialSelectionWidget;
 
 UCLASS(Abstract)
 class ACCELBYTEWARS_API UItemPurchaseWidget : public UAccelByteWarsActivatableWidget
@@ -33,12 +35,9 @@ private:
 	UStoreItemPurchaseSubsystem* PurchaseSubsystem;
 
 	UPROPERTY()
-	UStoreItemDetailWidget* W_Parent;
-
-	UPROPERTY()
 	UStoreItemDataObject* StoreItemDataObject;
 
-	void OnClickPurchase(const FString& CurrencyCode) const;
+	void OnClickPurchase(const int32 PriceIndex) const;
 	void OnPurchaseComplete(const FOnlineError& Error) const;
 
 #pragma region "FTUE"
@@ -46,15 +45,20 @@ private:
 	void FTUESetup() const;
 #pragma endregion 
 
-#pragma region "UI Related"
+#pragma region "UI"
 protected:
 	virtual UWidget* NativeGetDesiredFocusTarget() const override;
 
 private:
 	void SetupPurchaseButtons(TArray<UStoreItemPriceDataObject*> Prices);
+	void UpdatePrice(const int32 SelectedIndex);
+	int32 GetSelectedAmount() const;
+
+	UPROPERTY()
+	UStoreItemDetailWidget* W_Parent;
 
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<UItemPurchaseWidgetEntry> PurchaseButtonClass;
+	TSubclassOf<UItemPurchaseButton> PurchaseButtonClass;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UAccelByteWarsWidgetSwitcher* Ws_Root;
@@ -67,5 +71,8 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Tb_Error;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UAccelByteWarsSequentialSelectionWidget* Ss_Amount;
 #pragma endregion 
 };

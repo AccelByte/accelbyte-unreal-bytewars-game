@@ -28,8 +28,14 @@ void UFindFriendsWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
+	Btn_Back->OnClicked().AddUObject(this, &ThisClass::DeactivateWidget);
+
 	Edt_SearchBar->SetText(FText::FromString(TEXT("")));
 	Edt_SearchBar->OnTextCommitted.AddDynamic(this, &ThisClass::OnSearchBarCommitted);
+	Btn_Search->OnClicked().AddWeakLambda(this, [this]()
+	{
+		OnSearchBarCommitted(Edt_SearchBar->GetText(), ETextCommit::Type::OnEnter);
+	});
 	Btn_CopyFriendCode->OnClicked().AddUObject(this, &ThisClass::CopyFriendCodeToClipboard);
 
 	// Reset widgets.
@@ -41,10 +47,18 @@ void UFindFriendsWidget::NativeOnActivated()
 
 void UFindFriendsWidget::NativeOnDeactivated()
 {
+	Btn_Back->OnClicked().Clear();
+
 	Edt_SearchBar->OnTextCommitted.Clear();
+	Btn_Search->OnClicked().Clear();
 	Btn_CopyFriendCode->OnClicked().Clear();
 
 	Super::NativeOnDeactivated();
+}
+
+UWidget* UFindFriendsWidget::NativeGetDesiredFocusTarget() const
+{
+	return Edt_SearchBar;
 }
 
 void UFindFriendsWidget::OnSearchBarCommitted(const FText& Text, ETextCommit::Type CommitMethod)

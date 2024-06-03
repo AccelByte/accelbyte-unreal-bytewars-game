@@ -5,6 +5,7 @@
 
 #include "InGameStoreEssentialsSubsystem.h"
 
+#include "OnlineStoreInterfaceV2AccelByte.h"
 #include "OnlineSubsystemUtils.h"
 
 void UInGameStoreEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -15,6 +16,93 @@ void UInGameStoreEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Colle
 	ensure(Subsystem);
 	StoreInterface = Subsystem->GetStoreV2Interface();
 	ensure(StoreInterface);
+}
+
+void UInGameStoreEssentialsSubsystem::GetOrQueryOffersByCategory(
+	const APlayerController* PlayerController,
+	const FString& Category,
+	FOnGetOrQueryOffersByCategory OnComplete)
+{
+	// check overall cache
+	TArray<FOnlineStoreOfferRef> Offers;
+	StoreInterface->GetOffers(Offers);
+
+	// If empty, call query
+	if (Offers.IsEmpty())
+	{
+		const FUniqueNetIdPtr LocalUserNetId = GetUniqueNetIdFromPlayerController(PlayerController);
+		if (!LocalUserNetId.IsValid())
+		{
+			OnComplete.Execute(TArray<UStoreItemDataObject*>());
+			return;
+		}
+
+		OffersByCategoryDelegates.Add(Category, OnComplete);
+		QueryOffers(LocalUserNetId);
+	}
+	// else, call get
+	else
+	{
+		OnComplete.Execute(GetOffersByCategory(Category));
+	}
+}
+
+void UInGameStoreEssentialsSubsystem::GetOrQueryOfferById(
+	const APlayerController* PlayerController,
+	const FUniqueOfferId& OfferId,
+	FOnGetOrQueryOfferById OnComplete)
+{
+	// check overall cache
+	TArray<FOnlineStoreOfferRef> Offers;
+	StoreInterface->GetOffers(Offers);
+
+	// If empty, call query
+	if (Offers.IsEmpty())
+	{
+		const FUniqueNetIdPtr LocalUserNetId = GetUniqueNetIdFromPlayerController(PlayerController);
+		if (!LocalUserNetId.IsValid())
+		{
+			OnComplete.Execute(nullptr);
+			return;
+		}
+
+		OfferByIdDelegates.Add(OfferId, OnComplete);
+		QueryOffers(LocalUserNetId);
+	}
+	// else, call get
+	else
+	{
+		OnComplete.Execute(GetOfferById(OfferId));
+	}
+}
+
+void UInGameStoreEssentialsSubsystem::GetOrQueryCategoriesByRootPath(
+	const APlayerController* PlayerController,
+	const FString& RootPath,
+	FOnGetOrQueryCategories OnComplete)
+{
+	// check overall cache
+	TArray<FOnlineStoreCategory> Categories;
+	StoreInterface->GetCategories(Categories);
+
+	// if empty, query
+	if (Categories.IsEmpty())
+	{
+		const FUniqueNetIdPtr LocalUserNetId = GetUniqueNetIdFromPlayerController(PlayerController);
+		if (!LocalUserNetId.IsValid())
+		{
+			OnComplete.Execute(TArray<FOnlineStoreCategory>());
+			return;
+		}
+
+		CategoriesByRootPathDelegates.Add(RootPath, OnComplete);
+		QueryCategories(LocalUserNetId);
+	}
+	// else, execute immediately
+	else
+	{
+		OnComplete.Execute(GetCategories(RootPath));
+	}
 }
 
 TArray<UStoreItemDataObject*> UInGameStoreEssentialsSubsystem::GetOffersByCategory(const FString Category) const
@@ -34,7 +122,7 @@ TArray<UStoreItemDataObject*> UInGameStoreEssentialsSubsystem::GetOffersByCatego
 
 	for (const TSharedRef<FOnlineStoreOffer>& Offer : FilteredOffers)
 	{
-		StoreItems.Add(ConvertStoreData(Offer.Get()));
+		StoreItems.Add(ConvertStoreData(Offer.Get(), &Category));
 	}
 
 	return StoreItems;
@@ -50,21 +138,19 @@ UStoreItemDataObject* UInGameStoreEssentialsSubsystem::GetOfferById(const FUniqu
 	return StoreItem;
 }
 
-void UInGameStoreEssentialsSubsystem::QueryOffers(const APlayerController* PlayerController)
+void UInGameStoreEssentialsSubsystem::QueryOffers(const FUniqueNetIdPtr UserId)
 {
-	const FUniqueNetIdPtr LocalUserNetId = GetUniqueNetIdFromPlayerController(PlayerController);
-
 	// safety
-	if (!LocalUserNetId.IsValid())
+	if (bIsQueryOfferRunning)
 	{
 		return;
 	}
 
 	StoreInterface->QueryOffersByFilter(
-		*LocalUserNetId.Get(),
+		*UserId.Get(),
 		FOnlineStoreFilter(),
 		FOnQueryOnlineStoreOffersComplete::CreateUObject(this, &ThisClass::OnQueryOffersComplete));
-	bIsQueryRunning = true;
+	bIsQueryOfferRunning = true;
 }
 
 void UInGameStoreEssentialsSubsystem::OnQueryOffersComplete(
@@ -72,14 +158,91 @@ void UInGameStoreEssentialsSubsystem::OnQueryOffersComplete(
 	const TArray<FUniqueOfferId>& OfferIds,
 	const FString& Error)
 {
-	bIsQueryRunning = false;
+	bIsQueryOfferRunning = false;
 
-	TArray<FOnlineStoreOfferRef> Offers;
-	StoreInterface->GetOffers(Offers);
+	TArray<const FString*> OffersByCategoryDelegateToBeDeleted;
+	for (TTuple<const FString /*Category*/, FOnGetOrQueryOffersByCategory> Delegate : OffersByCategoryDelegates)
+	{
+		Delegate.Value.Execute(GetOffersByCategory(Delegate.Key));
 
-	OnQueryOfferCompleteDelegate.Broadcast(bWasSuccessful, Error);
+		// avoid modifying while it still being used
+		OffersByCategoryDelegateToBeDeleted.Add(&Delegate.Key);
+	}
+
+	// delete delegates
+	for (const FString* Key : OffersByCategoryDelegateToBeDeleted)
+	{
+		OffersByCategoryDelegates.Remove(*Key);
+	}
+
+	TArray<const FUniqueOfferId*> OfferByIdDelegateToBeDeleted;
+	for (TTuple<const FUniqueOfferId, FOnGetOrQueryOfferById>& Delegate : OfferByIdDelegates)
+	{
+		Delegate.Value.Execute(GetOfferById(Delegate.Key));
+
+		// avoid modifying while it still being used
+		OfferByIdDelegateToBeDeleted.Add(&Delegate.Key);
+	}
+
+	// delete delegates
+	for (const FUniqueOfferId* Key : OfferByIdDelegateToBeDeleted)
+	{
+		OfferByIdDelegates.Remove(*Key);
+	}
 }
 
+TArray<FOnlineStoreCategory> UInGameStoreEssentialsSubsystem::GetCategories(const FString& RootPath) const
+{
+	TArray<FOnlineStoreCategory> Categories;
+	StoreInterface->GetCategories(Categories);
+
+	TArray<FOnlineStoreCategory> ChildCategories;
+	for (FOnlineStoreCategory& Category : Categories)
+	{
+		if (Category.Id.Find(RootPath) == 0)
+		{
+			ChildCategories.Add(Category);
+		}
+	}
+
+	return ChildCategories;
+}
+
+void UInGameStoreEssentialsSubsystem::QueryCategories(const FUniqueNetIdPtr UserId)
+{
+	// safety
+	if (bIsQueryCategoriesRunning)
+	{
+		return;
+	}
+
+	StoreInterface->QueryCategories(
+		*UserId.Get(),
+		FOnQueryOnlineStoreCategoriesComplete::CreateUObject(this, &ThisClass::OnQueryCategoriesComplete));
+	bIsQueryCategoriesRunning = true;
+}
+
+void UInGameStoreEssentialsSubsystem::OnQueryCategoriesComplete(bool bWasSuccessful, const FString& Error)
+{
+	bIsQueryCategoriesRunning = false;
+
+	TArray<const FString*> KeysToDelete;
+	for (TTuple<const FString, FOnGetOrQueryCategories> Delegate : CategoriesByRootPathDelegates)
+	{
+		Delegate.Value.Execute(GetCategories(Delegate.Key));
+
+		// avoid modifying while it still being used
+		KeysToDelete.Add(&Delegate.Key);
+	}
+
+	// delete delegates
+	for (const FString* Key : KeysToDelete)
+	{
+		CategoriesByRootPathDelegates.Remove(*Key);
+	}
+}
+
+#pragma region "Utilities"
 FUniqueNetIdPtr UInGameStoreEssentialsSubsystem::GetUniqueNetIdFromPlayerController(const APlayerController* PlayerController) const
 {
 	if (!PlayerController)
@@ -100,12 +263,15 @@ FUniqueNetIdPtr UInGameStoreEssentialsSubsystem::GetUniqueNetIdFromPlayerControl
 	return Subsystem->GetIdentityInterface()->GetUniquePlayerId(LocalUserNum);
 }
 
-UStoreItemDataObject* UInGameStoreEssentialsSubsystem::ConvertStoreData(const FOnlineStoreOffer& Offer) const
+UStoreItemDataObject* UInGameStoreEssentialsSubsystem::ConvertStoreData(
+	const FOnlineStoreOffer& Offer,
+	const FString* ParentCategory) const
 {
 	UStoreItemDataObject* StoreItem = NewObject<UStoreItemDataObject>();
 	UItemDataObject* Item = NewObject<UItemDataObject>();
 	Item->Title = Offer.Title;
 	Item->Id = Offer.OfferId;
+	Item->Category = FText::FromString(*Offer.DynamicFields.Find(TEXT("Category")));
 
 	if (const FString* Sku = Offer.DynamicFields.Find(TEXT("Sku")))
 	{
@@ -128,13 +294,24 @@ UStoreItemDataObject* UInGameStoreEssentialsSubsystem::ConvertStoreData(const FO
 		Item->IconUrl = *IconUrl;
 	}
 
-	UStoreItemPriceDataObject* PriceData = NewObject<UStoreItemPriceDataObject>();
-	PriceData->RegularPrice = Offer.RegularPrice;
-	PriceData->FinalPrice = Offer.NumericPrice;
-	PriceData->CurrencyCode = Offer.CurrencyCode;
+	const FOnlineStoreOfferAccelByte* OfferAccelByte = (FOnlineStoreOfferAccelByte*) &Offer;
+	if (!OfferAccelByte)
+	{
+		return StoreItem;
+	}
 
-	StoreItem->Prices.Add(PriceData);
+	for (const FAccelByteModelsItemRegionDataItem& RegionData : OfferAccelByte->RegionData)
+	{
+		UStoreItemPriceDataObject* PriceData = NewObject<UStoreItemPriceDataObject>();
+		PriceData->RegularPrice = RegionData.Price;
+		PriceData->FinalPrice = RegionData.DiscountedPrice;
+		PriceData->CurrencyType = RegionData.CurrencyCode == TEXT("BC") ? ECurrencyType::COIN : ECurrencyType::GEM;
+
+		StoreItem->Prices.Add(PriceData);
+	}
+
 	StoreItem->ItemData = Item;
 
 	return StoreItem;
 }
+#pragma endregion 

@@ -49,6 +49,8 @@ protected:
 private:
 	float CameraTargetY = 600.f;
 
+	UWidget* DesiredFocusTargetButton;
+
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UWidgetSwitcher* Ws_Root;
 

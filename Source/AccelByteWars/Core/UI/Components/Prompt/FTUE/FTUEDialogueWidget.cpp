@@ -7,10 +7,13 @@
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/Components/AccelByteWarsButtonBase.h"
 #include "Components/TextBlock.h"
+#include "Components/RichTextBlock.h"
 
 #include "Blueprint/WidgetBlueprintLibrary.h"
-#include "Components/CanvasPanel.h"
+#include "Components/Border.h"
+#include "Components/ButtonSlot.h"
 #include "Components/CanvasPanelSlot.h"
+#include "Components/HorizontalBoxSlot.h"
 
 DEFINE_LOG_CATEGORY(LogFTUEDialogueWidget);
 
@@ -22,45 +25,55 @@ void UFTUEDialogueWidget::NativeConstruct()
 
 	GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
 
-	Btn_Open->OnClicked().Clear();
-	Btn_Open->OnClicked().AddUObject(this, &ThisClass::ShowDialogues, false);
+	BaseUIWidget = GameInstance->GetBaseUIWidget(false);
 
-	Btn_Prev->OnClicked().Clear();
+	Btn_Next->OnClicked().AddUObject(this, &ThisClass::NextDialogue);
 	Btn_Prev->OnClicked().AddUObject(this, &ThisClass::PrevDialogue);
+	Btn_Close->OnClicked().AddUObject(this, &ThisClass::CloseDialoguesByGroup);
+
+	Cast<UBorder>(W_FTUEInterrupter)->OnMouseButtonUpEvent.BindUFunction(this, FName("OnInterrupterClicked"));
+
+	ResetDialogues();
+}
+
+void UFTUEDialogueWidget::NativeDestruct()
+{
+	Super::NativeDestruct();
 
 	Btn_Next->OnClicked().Clear();
-	Btn_Next->OnClicked().AddUObject(this, &ThisClass::NextDialogue);
+	Btn_Prev->OnClicked().Clear();
+	Btn_Close->OnClicked().Clear();
 
-	// On initialize, close the FTUE.
+	BaseUIWidget->SetFTUEDialogueWidget(nullptr);
 	CloseDialogues();
 }
 
 void UFTUEDialogueWidget::AddDialogues(const TArray<FFTUEDialogueModel*>& Dialogues)
 {
-	// Add dialogues to cache.
-	for (int i = 0; i < Dialogues.Num(); i++) 
+	// Cache dialogues as origin.
+	for (FFTUEDialogueModel* Dialogue : Dialogues)
 	{
-		DialoguesOrigin.AddUnique(Dialogues[i]);
+		DialoguesOrigin.AddUnique(Dialogue);
 	}
-
+	
 	// When the dialogue list is changed, reset the validation.
 	bIsAllDialogueValidated = false;
 }
 
 bool UFTUEDialogueWidget::RemoveAssociateDialogues(const TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass)
 {
-	int32 Removed = DialoguesOrigin.RemoveAll([WidgetClass](const FFTUEDialogueModel* Temp)
+	const int32 Removed = DialoguesOrigin.RemoveAll([WidgetClass](const FFTUEDialogueModel* Temp)
 	{
 		return !Temp || Temp->TargetWidgetClasses.Contains(WidgetClass);
 	});
-
+	
 	// When the dialogue list is changed, reset the validation.
 	bIsAllDialogueValidated = false;
 
 	return Removed > 0;
 }
 
-void UFTUEDialogueWidget::ShowDialogues(bool bFirstTime)
+void UFTUEDialogueWidget::ShowDialogues(const bool bFirstTime)
 {
 	if (W_FTUEDialogue->IsVisible())
 	{
@@ -82,29 +95,53 @@ void UFTUEDialogueWidget::ShowDialogues(bool bFirstTime)
 
 void UFTUEDialogueWidget::CloseDialogues()
 {
-	if (!W_FTUEDialogue->IsVisible()) 
+	if (!IsActivated())
 	{
 		return;
 	}
 
+	// Handle if close button is being spammed repeatedly.
+	if (!BaseUIWidget->GetFTUEDialogueWidget())
+	{
+		BaseUIWidget->SetFTUEDialogueWidget(this);
+	}
+
+	if (!FMath::IsNearlyEqual(W_DarkBorder->GetRenderOpacity(), 0.0f, 0.02f))
+	{
+		PlayFadeOutAnimation(W_DarkBorder);
+	}
+
+	PlayFadeOutAnimation(W_FTUEDialogue, 1, [this]
+	{
+		ResetDialogues();
+		DeactivateWidget();
+		HideFTUEDevHelpInputAction(false);
+	});
+}
+
+void UFTUEDialogueWidget::ResetDialogues()
+{
 	// Tear down FTUE.
 	ClearHighlightedWidget();
 	DeinitializeLastDialogue();
+	DialoguesOrigin.Empty();
+	DialoguesInternal.Empty();
+	DialoguesByGroup.Reset();
 	DialogueIndex = INDEX_NONE;
 	CachedLastDialogue = nullptr;
 
-	// Close the FTUE
+	W_FTUEInterrupter->SetVisibility(ESlateVisibility::Collapsed);
 	W_FTUEDialogue->SetVisibility(ESlateVisibility::Collapsed);
-	W_FTUEInterupter->SetVisibility(ESlateVisibility::Collapsed);
-	TryToggleHelpDev(true);
+	W_DarkBorder->SetVisibility(ESlateVisibility::Collapsed);
+	W_DarkBorder->SetRenderOpacity(1.0f);
 }
 
-void UFTUEDialogueWidget::PauseDialogues()
+void UFTUEDialogueWidget::PauseDialogues() const
 {
 	// Simple hide FTUE to pause dialogues.
 	W_FTUEDialogue->SetVisibility(ESlateVisibility::Collapsed);
-	W_FTUEInterupter->SetVisibility(ESlateVisibility::Collapsed);
-	TryToggleHelpDev(false);
+	W_FTUEInterrupter->SetVisibility(ESlateVisibility::Collapsed);
+	W_DarkBorder->SetVisibility(ESlateVisibility::Collapsed);
 }
 
 void UFTUEDialogueWidget::ResumeDialogues()
@@ -126,10 +163,12 @@ void UFTUEDialogueWidget::ResumeDialogues()
 	W_FTUEDialogue->SetVisibility(ESlateVisibility::Visible);
 	if (CachedLastDialogue)
 	{
-		W_FTUEInterupter->SetVisibility(
+		W_FTUEInterrupter->SetVisibility(
 			CachedLastDialogue->bIsInterrupting ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+		
+		W_DarkBorder->SetVisibility(
+			CachedLastDialogue->bHighlightWidget ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible);
 	}
-	TryToggleHelpDev(false);
 }
 
 void UFTUEDialogueWidget::PrevDialogue()
@@ -142,21 +181,36 @@ void UFTUEDialogueWidget::PrevDialogue()
 	if (DialogueIndex <= 0)
 	{
 		DialogueIndex = 0;
+		CloseDialogues();
 		return;
 	}
 
-	// Try to init dialogue. If fails, fallback.
-	if (!InitializeDialogue(DialoguesInternal[--DialogueIndex]))
+	const TFunction<void()> InitPrevDialogue = [this]
 	{
-		if (DialogueIndex <= 0)
-		{
-			CloseDialogues();
-		}
-		else
+		if (!InitializeDialogue(DialoguesInternal[--DialogueIndex]))
 		{
 			PrevDialogue();
 		}
+	};
+
+	const FFTUEDialogueModel* CurrentDialogue = DialoguesInternal[DialogueIndex];
+	const FFTUEDialogueModel* TargetDialogue = DialoguesInternal[DialogueIndex - 1];
+
+	HandleDarkBorderTransition(CurrentDialogue, TargetDialogue);
+
+	const bool bIsPositionEqual = IsDialoguePositionEqual(CurrentDialogue, TargetDialogue);
+	if (!bIsPositionEqual)
+	{
+		PlayFadeOutAnimation(W_FTUEDialogue, 1, [=]
+		{
+			InitPrevDialogue();
+			PlayFadeInAnimation(W_FTUEDialogue);
+		});
+
+		return;
 	}
+	
+	InitPrevDialogue();
 }
 
 void UFTUEDialogueWidget::NextDialogue()
@@ -173,24 +227,77 @@ void UFTUEDialogueWidget::NextDialogue()
 		return;
 	}
 
-	// Try to init dialogue. If fails, fallback.
-	if (!InitializeDialogue(DialoguesInternal[++DialogueIndex]))
+	const TFunction<void()> InitNextDialogue = [this]
 	{
-		NextDialogue();
+		if (!InitializeDialogue(DialoguesInternal[++DialogueIndex]))
+		{
+			NextDialogue();
+		}
+	};
+	
+	const FFTUEDialogueModel* CurrentDialogue = DialoguesInternal[DialogueIndex];
+	const FFTUEDialogueModel* TargetDialogue = DialoguesInternal[DialogueIndex + 1];
+
+	HandleDarkBorderTransition(CurrentDialogue, TargetDialogue);
+
+	const bool bIsDifferentGroup = CurrentDialogue->Group != TargetDialogue->Group;
+	const bool bIsPositionEqual = IsDialoguePositionEqual(CurrentDialogue, TargetDialogue);
+
+	if (!bIsPositionEqual || bIsDifferentGroup)
+	{
+		PlayFadeOutAnimation(W_FTUEDialogue, 1, [=]
+		{
+			InitNextDialogue();
+			PlayFadeInAnimation(W_FTUEDialogue);
+		});
+
+		return;
 	}
+	
+	InitNextDialogue();
 }
 
-void UFTUEDialogueWidget::TryToggleHelpDev(bool bShow)
+void UFTUEDialogueWidget::JumpToDialogue(const uint_fast8_t TargetIndex)
 {
-	// Always hide the help button if the FTUE is visible or there is no dialogues.
-	if (W_FTUEDialogue->IsVisible() || DialoguesInternal.IsEmpty())
+	if (!W_FTUEDialogue->IsVisible()) 
 	{
-		Btn_Open->SetVisibility(ESlateVisibility::Collapsed);
 		return;
 	}
 
-	// Set visibility based on the given toggle status.
-	Btn_Open->SetVisibility(bShow ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	if (TargetIndex >= DialoguesInternal.Num())
+	{
+		return;
+	}
+
+	const uint_fast8_t CurrentIndex = DialogueIndex;
+	DialogueIndex = TargetIndex;
+
+	const TFunction<void()> InitTargetDialogue = [=]
+	{
+		if (!InitializeDialogue(DialoguesInternal[TargetIndex]))
+		{
+			DialogueIndex = CurrentIndex;
+		}
+	};
+
+	const FFTUEDialogueModel* CurrentDialogue = DialoguesInternal[CurrentIndex];
+	const FFTUEDialogueModel* TargetDialogue = DialoguesInternal[TargetIndex];
+
+	HandleDarkBorderTransition(CurrentDialogue, TargetDialogue);
+
+	const bool bIsPositionEqual = IsDialoguePositionEqual(CurrentDialogue, TargetDialogue);
+	if (!bIsPositionEqual)
+	{
+		PlayFadeOutAnimation(W_FTUEDialogue, 1, [=]
+		{
+			InitTargetDialogue();
+			PlayFadeInAnimation(W_FTUEDialogue);
+		});
+
+		return;
+	}
+
+	InitTargetDialogue();
 }
 
 bool UFTUEDialogueWidget::InitializeDialogue(FFTUEDialogueModel* Dialogue)
@@ -200,118 +307,68 @@ bool UFTUEDialogueWidget::InitializeDialogue(FFTUEDialogueModel* Dialogue)
 		return false;
 	}
 
-	// If first time mode, don't initialize if the dialogue if already shown.
-	if (Dialogue->bIsAlreadyShown && bIsFirstTimeMode)
-	{
-		return false;
-	}
-
 	// Check for highlighted widget.
 	ClearHighlightedWidget();
 	if (Dialogue->bHighlightWidget)
 	{
-		// Look for widget to highlight.
-		const FString WidgetToHighlightStr = Dialogue->TargetWidgetNameToHighlight;
-		UE_LOG_FTUEDIALOGUEWIDGET(Log, TEXT("Widget to highlight: %s"), *WidgetToHighlightStr);
-
-		TArray<UUserWidget*> FoundWidgets;
-		UWidgetBlueprintLibrary::GetAllWidgetsOfClass(this, FoundWidgets, Dialogue->TargetWidgetClassToHighlight.Get(), false);
-		UE_LOG_FTUEDIALOGUEWIDGET(Log, TEXT("Found potential widgets to highlight: %d"), FoundWidgets.Num());
-
-		// Eliminate invalid found widgets.
-		FoundWidgets.RemoveAll([WidgetToHighlightStr](const UUserWidget* Temp)
-			{
-				return !Temp || !Temp->GetName().Equals(WidgetToHighlightStr) || !Temp->IsVisible();
-			});
-		UE_LOG_FTUEDIALOGUEWIDGET(Log, TEXT("Potential widgets to highlight after validation: %d"), FoundWidgets.Num());
-
-		// Try to highlight widget.
-		for (UUserWidget* FoundWidget : FoundWidgets)
+		const IAccelByteWarsWidgetInterface* WidgetInterface = Cast<IAccelByteWarsWidgetInterface>(Dialogue->HighlightedWidget);
+		if (WidgetInterface == nullptr)
 		{
-			// Skip if invalid.
-			if (!FoundWidget)
-			{
-				UE_LOG_FTUEDIALOGUEWIDGET(Warning, TEXT("Highlighted widget is found but it is not valid."));
-				continue;
-			}
-			if (!FoundWidget->IsVisible())
-			{
-				UE_LOG_FTUEDIALOGUEWIDGET(Warning, TEXT("Highlighted widget is found but it is invisible."));
-				continue;
-			}
-
-			// Widget found, highlight widget.
-			if (FoundWidget->GetName().Equals(WidgetToHighlightStr, ESearchCase::CaseSensitive))
-			{
-				// Highlight widget.
-				IAccelByteWarsWidgetInterface* WidgetInterface = Cast<IAccelByteWarsWidgetInterface>(FoundWidget);
-				if (WidgetInterface)
-				{
-					CachedHighlightedWidget = FoundWidget;
-					WidgetInterface->Execute_ToggleHighlight(FoundWidget, true);
-
-					UE_LOG_FTUEDIALOGUEWIDGET(Log, TEXT("Highlighted widget found."));
-				}
-				else
-				{
-					UE_LOG_FTUEDIALOGUEWIDGET(Warning, TEXT("Highlighted widget is found but it is not implementing widget highlighting interface."));
-				}
-
-				break;
-			}
-		}
-
-		// Highlighted widget is not found, abort.
-		if (!CachedHighlightedWidget)
-		{
-			UE_LOG_FTUEDIALOGUEWIDGET(Warning, TEXT("Cannot highlight widget. Skipping FTUE dialogue, highlighted widget is not found or invisible."));
+			UE_LOG_FTUEDIALOGUEWIDGET(Warning, TEXT("Highlighted widget is found but it is not implementing widget highlighting interface."));
 			return false;
 		}
+		
+		// Highlight widget.
+		CachedHighlightedWidget = Dialogue->HighlightedWidget;
+		WidgetInterface->Execute_ToggleHighlight(Dialogue->HighlightedWidget, true);
 	}
 
 	// Check if interrupting.
-	W_FTUEInterupter->SetVisibility(
-		Dialogue->bIsInterrupting ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	W_FTUEInterrupter->SetVisibility(Dialogue->bIsInterrupting ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	W_DarkBorder->SetVisibility(Dialogue->bIsInterrupting ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 
 	// Set navigation buttons.
-	Btn_Next->SetButtonText(
-		(bIsAbleToNavigate && DialogueIndex < DialoguesInternal.Num() - 1) ?
-		LOCTEXT("Next", "Next") :
-		LOCTEXT("X", "X"));
-	Btn_Prev->SetVisibility(
-		(bIsAbleToNavigate && DialogueIndex > 0) ?
-		ESlateVisibility::Visible :
-		ESlateVisibility::Collapsed);
+	InitializeNextButton(Dialogue);
+	InitializePrevButton(Dialogue);
+	InitializeCloseButton();
+
+	InitializePageNumber();
 
 	// Set dialogue message.
-	Txt_Message->SetText(Dialogue->GetFormattedMessage());
+	Tb_Message->SetText(Dialogue->GetFormattedMessage());
 
-	// Setup the action buttons.
+	// Set up the action buttons.
 	Btn_Action1->SetVisibility(ESlateVisibility::Collapsed);
 	Btn_Action2->SetVisibility(ESlateVisibility::Collapsed);
 	switch (Dialogue->ButtonType)
 	{
 	case FFTUEDialogueButtonType::TWO_BUTTONS:
+		Cast<UHorizontalBoxSlot>(Btn_Action1->Slot)->SetPadding(FMargin());
 		InitializeActionButton(Btn_Action2, Dialogue->Button2);
-	case FFTUEDialogueButtonType::ONE_BUTTON:
 		InitializeActionButton(Btn_Action1, Dialogue->Button1);
+		break;
+	case FFTUEDialogueButtonType::ONE_BUTTON:
+		Cast<UHorizontalBoxSlot>(Btn_Action1->Slot)->SetPadding(FMargin(200.0f, 0.0f));
+		InitializeActionButton(Btn_Action1, Dialogue->Button1);
+		break;
+	case FFTUEDialogueButtonType::NO_BUTTON:
 		break;
 	}
 
 	// Set dialogue position.
-	if (UCanvasPanelSlot* WidgetSlot = Cast<UCanvasPanelSlot>(W_FTUEDialogue->Slot))
+	if (UCanvasPanelSlot* WidgetSlot = Cast<UCanvasPanelSlot>(W_FTUEDialogue->Slot)) 
 	{
 		WidgetSlot->SetAutoSize(true);
 		WidgetSlot->SetAnchors(FAnchors(Dialogue->GetAnchor().X, Dialogue->GetAnchor().Y));
 		WidgetSlot->SetAlignment(Dialogue->GetAnchor());
 		WidgetSlot->SetPosition(Dialogue->Position);
 	}
-
+	
 	// Execute last dialogue's on-deactivate event.
 	DeinitializeLastDialogue();
 
 	// Execute current dialogue's on-activated event.
-	if (Dialogue->OnActivateDelegate.IsBound())
+	if (Dialogue->OnActivateDelegate.IsBound()) 
 	{
 		Dialogue->OnActivateDelegate.Broadcast();
 	}
@@ -364,21 +421,130 @@ void UFTUEDialogueWidget::InitializeActionButton(UAccelByteWarsButtonBase* Butto
 	}
 }
 
+void UFTUEDialogueWidget::InitializeNextButton(const FFTUEDialogueModel* Dialogue) const
+{
+	const FFTUEDialogueModel* LastDialogueInGroup = DialoguesByGroup.Find(Dialogue->Group)->Last();
+	const bool bIsDialogueLastInGroup = Dialogue == LastDialogueInGroup;
+
+	Btn_Next->SetButtonText(bIsDialogueLastInGroup ? LOCTEXT("Done", "Done") : LOCTEXT("Next", "Next"));
+	if (!Btn_Next->IsVisible())
+	{
+		Btn_Next->SetVisibility(ESlateVisibility::Visible);
+	}
+
+	Btn_Next->SetFocus();
+}
+
+void UFTUEDialogueWidget::InitializePrevButton(const FFTUEDialogueModel* Dialogue) const
+{
+	const FFTUEDialogueModel* FirstDialogueInGroup = (*DialoguesByGroup.Find(Dialogue->Group))[0];
+	const bool bIsDialogueFirstInGroup = Dialogue == FirstDialogueInGroup;
+
+	Btn_Prev->SetButtonText(LOCTEXT("Prev", "Prev"));
+	Btn_Prev->SetVisibility(bIsDialogueFirstInGroup ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
+}
+
+void UFTUEDialogueWidget::InitializeCloseButton() const
+{
+	Btn_Close->SetVisibility(ESlateVisibility::Visible);
+	Btn_Close->SetTriggeringInputAction(CloseButtonInputActionData);
+	Btn_Close->SetIsFocusable(false);
+}
+
+void UFTUEDialogueWidget::InitializePageNumber() const
+{
+    const TArray<FFTUEDialogueModel*>* DialoguesInGroup = DialoguesByGroup.Find(DialoguesInternal[DialogueIndex]->Group);
+
+    if (DialoguesInGroup && DialoguesInGroup->Num() > 1)
+    {
+	    const int32 IndexInGroup = DialoguesInGroup->IndexOfByPredicate([&](const FFTUEDialogueModel* Dialogue)
+        {
+            return Dialogue == DialoguesInternal[DialogueIndex];
+        });
+
+        if (IndexInGroup != INDEX_NONE)
+        {
+            const FText PageNumberText = FText::Format(
+                LOCTEXT("PageNumber", "{0} of {1}"), IndexInGroup + 1, DialoguesInGroup->Num());
+
+            Tb_PageNumber->SetText(PageNumberText);
+            return;
+        }
+    }
+
+    Tb_PageNumber->SetText(FText());
+}
+
 void UFTUEDialogueWidget::ValidateDialogues()
 {
 	// Clear cached dialogues.
 	DialoguesInternal.Empty();
 
-	// Remove invalid dialogues from the original input.
-	DialoguesOrigin.RemoveAll([](const FFTUEDialogueModel* Temp)
+	DialoguesOrigin.RemoveAll([this](FFTUEDialogueModel* Dialogue)
 	{
-		return !Temp || !Temp->OwnerTutorialModule || !Temp->OwnerTutorialModule->IsActiveAndDependenciesChecked();
+		if (!Dialogue)
+		{
+			return true;
+		}
+		
+		// Remove invalid dialogues from the original input.
+		if (!Dialogue->OwnerTutorialModule || !Dialogue->OwnerTutorialModule->IsActiveAndDependenciesChecked())
+		{
+			return true;
+		}
+
+		if (!Dialogue->bHighlightWidget)
+	 	{
+	 		return false;
+	 	}
+	
+		// Remove invalid dialogues if the widget to highlight is not found.
+	 	const FString WidgetToHighlightString = Dialogue->TargetWidgetNameToHighlight;
+	 	if (WidgetToHighlightString.IsEmpty())
+	 	{
+	 		UE_LOG_FTUEDIALOGUEWIDGET(Warning, TEXT("Cannot validate dialogue. Widget to highlight is empty."));
+	 		return true;
+	 	}
+	
+	 	TArray<UUserWidget*> FoundWidgets;
+	 	UWidgetBlueprintLibrary::GetAllWidgetsOfClass(this, FoundWidgets, Dialogue->TargetWidgetClassToHighlight.Get(), false);
+	 	FoundWidgets.RemoveAll([WidgetToHighlightString](const UUserWidget* FoundWidget)
+	 	{
+	 		return !FoundWidget || !FoundWidget->GetName().Equals(WidgetToHighlightString) || !FoundWidget->IsVisible();
+	 	});
+
+		for (UUserWidget* FoundWidget : FoundWidgets)
+		{
+			if (!FoundWidget)
+			{
+				UE_LOG_FTUEDIALOGUEWIDGET(Warning, TEXT("Highlighted widget is found but it is not valid."));
+				continue;
+			}
+
+			if (!FoundWidget->IsVisible())
+			{
+				UE_LOG_FTUEDIALOGUEWIDGET(Warning, TEXT("Highlighted widget is found but it is invisible."));
+				continue;
+			}
+
+			const bool bIsWidgetFound = FoundWidget->GetName().Equals(WidgetToHighlightString);
+			if (!bIsWidgetFound)
+			{
+				continue;
+			}
+
+			UE_LOG_FTUEDIALOGUEWIDGET(Log, TEXT("Highlighted widget found."));
+			Dialogue->HighlightedWidget = FoundWidget;
+			return false;
+		}
+
+		return FoundWidgets.Num() <= 0;
 	});
 
 	// Abort if no valid dialogues from the original input.
 	if (DialoguesOrigin.IsEmpty()) 
 	{
-		TryToggleHelpDev(false);
+		CloseDialogues();
 		return;
 	}
 
@@ -390,9 +556,7 @@ void UFTUEDialogueWidget::OnValidateDialoguesComplete()
 {
 	bIsAllDialogueValidated = true;
 
-	TryToggleHelpDev(!DialoguesInternal.IsEmpty());
-
-	// Check whether should abort if all dialogues are already shown.
+	// Check whether to abort if all dialogues are already shown.
 	if (bIsFirstTimeMode)
 	{
 		// Reset is already shown dialogue statuses if always show FTUE.
@@ -402,7 +566,8 @@ void UFTUEDialogueWidget::OnValidateDialoguesComplete()
 			{
 				return Temp && Temp->bIsInstigator;
 			});
-			for (FFTUEDialogueModel* Instigator : Instigators)
+
+			for (const FFTUEDialogueModel* Instigator : Instigators)
 			{
 				if (Instigator->Group)
 				{
@@ -419,6 +584,7 @@ void UFTUEDialogueWidget::OnValidateDialoguesComplete()
 		// Abort if all dialogues is already shown.
 		if (IsAllDialoguesAlreadyShown())
 		{
+			CloseDialogues();
 			return;
 		}
 	}
@@ -426,12 +592,12 @@ void UFTUEDialogueWidget::OnValidateDialoguesComplete()
 	// Abort if after validation, the dialogues turns out to be empty.
 	if (DialoguesInternal.IsEmpty())
 	{
+		CloseDialogues();
 		return;
 	}
 
 	// Reinitialize FTUE helpers.
 	ClearHighlightedWidget();
-	DialoguesInternal.Sort();
 	CachedLastDialogue = nullptr;
 	
 	/* If first time mode, get the first dialogue that has not yet shown.
@@ -452,8 +618,20 @@ void UFTUEDialogueWidget::OnValidateDialoguesComplete()
 	// Show FTUE.
 	if (InitializeDialogue(DialoguesInternal[DialogueIndex]))
 	{
+		if (DialoguesInternal[DialogueIndex]->bHighlightWidget)
+		{
+			W_DarkBorder->SetRenderOpacity(0.0f);
+		}
+		else
+		{
+			PlayFadeInAnimation(W_DarkBorder);
+		}
 		W_FTUEDialogue->SetVisibility(ESlateVisibility::Visible);
-		TryToggleHelpDev(false);
+		PlayFadeInAnimation(W_FTUEDialogue);
+	}
+	else
+	{
+		CloseDialogues();
 	}
 }
 
@@ -486,14 +664,25 @@ void UFTUEDialogueWidget::OnValidateDialogueComplete(FFTUEDialogueModel* Dialogu
 	// Add dialogue to internal cache if valid.
 	if (bIsValid && Dialogue)
 	{
-		DialoguesInternal.Add(Dialogue);
+		uint_fast8_t SortIndex = 0;
+		for (; SortIndex < DialoguesInternal.Num(); SortIndex++) 
+		{
+			const FFTUEDialogueModel* CompareDialogue = DialoguesInternal[SortIndex];
+			if (Dialogue->GroupOrderPriority > CompareDialogue->GroupOrderPriority) 
+			{
+				break;
+			}
+		}
+		DialoguesInternal.Insert(Dialogue, SortIndex);
+		
+		TArray<FFTUEDialogueModel*>& DialoguesInGroup = DialoguesByGroup.FindOrAdd(Dialogue->Group);
+		DialoguesInGroup.Add(Dialogue);
 	}
-
 	// Execute validation for next dialogue.
 	ValidateDialogue(NextDialogueToValidateIndex);
 }
 
-void UFTUEDialogueWidget::DeinitializeLastDialogue()
+void UFTUEDialogueWidget::DeinitializeLastDialogue() const
 {
 	if (!CachedLastDialogue) 
 	{
@@ -521,24 +710,254 @@ void UFTUEDialogueWidget::ClearHighlightedWidget()
 {
 	if (CachedHighlightedWidget)
 	{
-		IAccelByteWarsWidgetInterface* WidgetInterface = Cast<IAccelByteWarsWidgetInterface>(CachedHighlightedWidget);
-		if (WidgetInterface)
+		const IAccelByteWarsWidgetInterface* WidgetInterface = Cast<IAccelByteWarsWidgetInterface>(CachedHighlightedWidget);
+		if (!WidgetInterface)
 		{
-			WidgetInterface->Execute_ToggleHighlight(CachedHighlightedWidget, false);
+			return;
 		}
+		WidgetInterface->Execute_ToggleHighlight(CachedHighlightedWidget, false);
 	}
 
 	CachedHighlightedWidget = nullptr;
 }
 
-bool UFTUEDialogueWidget::IsAllDialoguesAlreadyShown()
+void UFTUEDialogueWidget::CloseDialoguesByGroup()
 {
-	TArray<FFTUEDialogueModel*> AlreadyShown = DialoguesInternal.FilterByPredicate([](const FFTUEDialogueModel* Temp)
+    const FFTUEDialogueGroup* CurrentGroup = DialoguesInternal[DialogueIndex]->Group;
+    uint_fast8_t NextGroupIndex = DialoguesInternal.Num();
+
+    for (uint_fast8_t Index = DialogueIndex + 1; Index < DialoguesInternal.Num(); Index++)
+    {
+        if (DialoguesInternal[Index]->Group != CurrentGroup)
+        {
+            NextGroupIndex = Index;
+            break;
+        }
+    }
+
+    if (NextGroupIndex == DialoguesInternal.Num())
+    {
+        CloseDialogues();
+        return;
+    }
+
+    PlayFadeOutAnimation(W_FTUEDialogue, 1, [this, NextGroupIndex]
+    {
+        JumpToDialogue(NextGroupIndex);
+        PlayFadeInAnimation(W_FTUEDialogue);
+    });
+}
+
+void UFTUEDialogueWidget::HandleDarkBorderTransition(const FFTUEDialogueModel* CurrentDialogue,
+	const FFTUEDialogueModel* TargetDialogue, const TFunction<void()>& OnComplete) const
+{
+	const bool bHasHighlight = CurrentDialogue->bHighlightWidget;
+	const bool bTargetHasHighlight = TargetDialogue->bHighlightWidget;
+
+	if (!bHasHighlight && bTargetHasHighlight)
+	{
+		PlayFadeOutAnimation(W_DarkBorder, 1, OnComplete);
+		return;
+	}
+
+	if (bHasHighlight && !bTargetHasHighlight)
+	{
+		PlayFadeInAnimation(W_DarkBorder, 1, OnComplete);
+		return;
+	}
+
+	if (OnComplete)
+	{
+		OnComplete();
+	}
+}
+
+void UFTUEDialogueWidget::OnInterrupterClicked(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent) const
+{
+	if (!W_FTUEDialogue->IsVisible())
+	{
+		return;
+	}
+
+	PlayZoomInOutAnimation(W_FTUEDialogue, 1.0f, {}, 1);
+}
+
+bool UFTUEDialogueWidget::IsAllDialoguesAlreadyShown() const
+{
+	const TArray<FFTUEDialogueModel*> AlreadyShown = DialoguesInternal.FilterByPredicate([](const FFTUEDialogueModel* Temp)
 	{
 		return Temp && Temp->bIsAlreadyShown;
 	});
 
 	return AlreadyShown.Num() == DialoguesInternal.Num();
+}
+
+bool UFTUEDialogueWidget::IsDialoguePositionEqual(const FFTUEDialogueModel* Dialogue,
+	const FFTUEDialogueModel* TargetDialogue)
+{
+	return Dialogue->Position == TargetDialogue->Position;
+}
+
+void UFTUEDialogueWidget::PlayFadeInAnimation(UWidget* TargetWidget, const float AnimationSpeedModifier, 
+	const TFunction<void()>& OnAnimationCompleted, const bool bEnableShrinkIn)
+{
+	if (!IsValid(TargetWidget))
+    {
+        return;
+    }
+
+	const float AnimationDelay = 0.001f / AnimationSpeedModifier;
+	constexpr float ScaleModifier = 0.0005f;
+
+	constexpr float InitialOpacity = 0.0f;
+	constexpr float TargetOpacity = 1.0f;
+	constexpr float OpacityModifier = 0.01f;
+	constexpr float ExpandedScale = ScaleModifier * (TargetOpacity / OpacityModifier);
+
+	TargetWidget->SetIsEnabled(true);
+
+	Async(EAsyncExecution::TaskGraph, [=]
+	{
+		FWidgetTransform InRenderTransform = FWidgetTransform();
+		if (bEnableShrinkIn)
+		{
+			InRenderTransform.Scale += FVector2D(ExpandedScale, ExpandedScale);
+		}
+
+		for (float CurrentOpacity = InitialOpacity; CurrentOpacity <= TargetOpacity; CurrentOpacity += OpacityModifier)
+		{
+			if (bEnableShrinkIn)
+			{
+				InRenderTransform.Scale -= FVector2D(ScaleModifier, ScaleModifier);
+			}
+
+			SetWidgetOpacityAndTransform(TargetWidget, CurrentOpacity, InRenderTransform);
+			FPlatformProcess::Sleep(AnimationDelay);
+		}
+
+		if (!IsValid(TargetWidget) || !OnAnimationCompleted)
+		{
+			return;
+		}
+
+		AsyncTask(ENamedThreads::GameThread, [=]
+		{
+			OnAnimationCompleted();
+		});
+	});
+}
+
+void UFTUEDialogueWidget::PlayFadeOutAnimation(UWidget* TargetWidget, const float AnimationSpeedModifier, 
+	const TFunction<void()>& OnAnimationCompleted, const bool bEnableExpandOut)
+{
+	if (!IsValid(TargetWidget))
+    {
+        return;
+    }
+
+	const float AnimationDelay = 0.001f / AnimationSpeedModifier;
+	constexpr float ScaleModifier = 0.0005f;
+
+	constexpr float InitialOpacity = 1.0f;
+	constexpr float TargetOpacity = 0.0f;
+	constexpr float OpacityModifier = 0.01f;
+
+	TargetWidget->SetIsEnabled(false);
+
+	Async(EAsyncExecution::TaskGraph, [=]
+	{
+        FWidgetTransform InRenderTransform = FWidgetTransform();
+		for (float CurrentOpacity = InitialOpacity; CurrentOpacity >= TargetOpacity; CurrentOpacity -= OpacityModifier)
+		{
+			if (bEnableExpandOut)
+			{
+				InRenderTransform.Scale += FVector2D(ScaleModifier, ScaleModifier);
+			}
+
+			SetWidgetOpacityAndTransform(TargetWidget, CurrentOpacity, InRenderTransform);
+			FPlatformProcess::Sleep(AnimationDelay);
+		}
+		
+		if (!IsValid(TargetWidget) || !OnAnimationCompleted)
+		{
+			return;
+		}
+
+		AsyncTask(ENamedThreads::GameThread, [=]
+		{
+			OnAnimationCompleted();
+		});
+	});
+}
+
+void UFTUEDialogueWidget::PlayZoomInOutAnimation(UWidget* TargetWidget, const float AnimationSpeedModifier,
+	const TFunction<void()>& OnAnimationCompleted, const int BounceCount)
+{
+	if (!IsValid(TargetWidget))
+	{
+		return;
+	}
+
+	const float AnimationDelay = 0.001f / AnimationSpeedModifier;
+	constexpr float ScaleModifier = 0.0005f;
+	constexpr float MaxScale = 1.025f;
+
+	Async(EAsyncExecution::TaskGraph, [=]
+	{
+		FWidgetTransform InRenderTransform = FWidgetTransform();
+		for (int BounceIndex = 0; BounceIndex < BounceCount; BounceIndex++)
+		{
+			for (float CurrentScale = 1.0f; CurrentScale <= MaxScale; CurrentScale += ScaleModifier)
+			{
+				InRenderTransform.Scale = FVector2D(CurrentScale, CurrentScale);
+				SetWidgetOpacityAndTransform(TargetWidget, 1.0f, InRenderTransform);
+				FPlatformProcess::Sleep(AnimationDelay);
+			}
+
+			for (float CurrentScale = MaxScale; CurrentScale >= 1.0f; CurrentScale -= ScaleModifier)
+			{
+				InRenderTransform.Scale = FVector2D(CurrentScale, CurrentScale);
+				SetWidgetOpacityAndTransform(TargetWidget, 1.0f, InRenderTransform);
+				FPlatformProcess::Sleep(AnimationDelay);
+			}
+		}
+
+		if (!IsValid(TargetWidget) || !OnAnimationCompleted)
+		{
+			return;
+		}
+
+		AsyncTask(ENamedThreads::GameThread, [=]
+		{
+			OnAnimationCompleted();
+		});
+	});
+}
+
+void UFTUEDialogueWidget::SetWidgetOpacityAndTransform(UWidget* TargetWidget, const float Opacity,
+	const FWidgetTransform& Transform)
+{
+	AsyncTask(ENamedThreads::GameThread, [=]
+	{
+		if (!IsValid(TargetWidget))
+		{
+			return;
+		}
+
+		TargetWidget->SetRenderTransform(Transform);
+		TargetWidget->SetRenderOpacity(Opacity);
+	});
+}
+
+bool UFTUEDialogueWidget::NativeOnHandleBackAction()
+{
+	if (!W_FTUEDialogue->IsVisible())
+	{
+		return false;
+	}
+
+	NextDialogue();
+	return true;
 }
 
 #undef LOCTEXT_NAMESPACE

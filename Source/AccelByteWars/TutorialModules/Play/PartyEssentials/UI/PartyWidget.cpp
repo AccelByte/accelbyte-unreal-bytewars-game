@@ -28,14 +28,15 @@ void UPartyWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
-	Ws_Party->OnRetryClicked.Clear();
-	Ws_Party->OnRetryClicked.AddUObject(this, &ThisClass::OnRetryButtonClicked);
-
 	Btn_Leave->OnClicked().Clear();
 	Btn_Leave->OnClicked().AddUObject(this, &ThisClass::OnLeaveButtonClicked);
 	
 	// Update the displayed party members on any changes.
 	PartyOnlineSession->GetOnCreatePartyCompleteDelegates()->AddWeakLambda(this, [this](FName SessionName, bool bWasSuccessful)
+	{
+		DisplayParty();
+	});
+	PartyOnlineSession->GetOnLeavePartyCompleteDelegates()->AddWeakLambda(this, [this](FName SessionName, bool bWasSuccessful)
 	{
 		DisplayParty();
 	});
@@ -57,6 +58,7 @@ void UPartyWidget::NativeOnDeactivated()
 
 	// Clear online delegates.
 	PartyOnlineSession->GetOnCreatePartyCompleteDelegates()->RemoveAll(this);
+	PartyOnlineSession->GetOnLeavePartyCompleteDelegates()->RemoveAll(this);
 	PartyOnlineSession->GetOnPartyMembersChangeDelegates()->RemoveAll(this);
 	PartyOnlineSession->GetOnPartySessionUpdateReceivedDelegates()->RemoveAll(this);
 
@@ -65,40 +67,48 @@ void UPartyWidget::NativeOnDeactivated()
 
 void UPartyWidget::DisplayParty()
 {
-	// Not in party.
-	if (!PartyOnlineSession->IsInParty(PartyOnlineSession->GetLocalPlayerUniqueNetId(GetOwningPlayer())))
-	{
-		Ws_Party->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Empty);
-		return;
-	}
-
+	// Show loading.
 	Btn_Leave->SetVisibility(ESlateVisibility::Collapsed);
 	Ws_Party->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Loading);
+
+	// Collect party member user ids.
+	const FUniqueNetIdPtr UserId = PartyOnlineSession->GetLocalPlayerUniqueNetId(GetOwningPlayer());
+	TArray<FUniqueNetIdRef> PartyMemberUserIds = PartyOnlineSession->GetPartyMembers();
+
+	// If not in any party, then only include player user id to query its information.
+	if (PartyMemberUserIds.IsEmpty())
+	{
+		PartyMemberUserIds.Add(UserId.ToSharedRef());
+	}
 
 	// Query and display party member information.
 	PartyOnlineSession->QueryUserInfo(
 		PartyOnlineSession->GetLocalUserNumFromPlayerController(GetOwningPlayer()), 
-		PartyOnlineSession->GetPartyMembers(),
+		PartyMemberUserIds,
 		FOnQueryUsersInfoComplete::CreateWeakLambda(this, [this]
 		(const bool bSucceeded, const TArray<FUserOnlineAccountAccelByte*>& UsersInfo)
 		{
-			// If party members are changed during query, requery the party members information.
-			if (UsersInfo.Num() != PartyOnlineSession->GetPartyMembers().Num()) 
+			// If party members are changed during query, then requery the party members information.
+			const bool bIsInParty = !PartyOnlineSession->GetPartyMembers().IsEmpty();
+			if (bIsInParty)
 			{
-				DisplayParty();
-				return;
-			}
-			for (int32 i = 0; i < UsersInfo.Num(); i++) 
-			{
-				if (!UsersInfo[i]->GetUserId()->IsValid() ||
-					!PartyOnlineSession->GetPartyMembers()[i]->IsValid() ||
-					PartyOnlineSession->GetPartyMembers()[i].Get() != UsersInfo[i]->GetUserId().Get())
+				if (UsersInfo.Num() != PartyOnlineSession->GetPartyMembers().Num())
 				{
 					DisplayParty();
 					return;
 				}
+				for (int32 i = 0; i < UsersInfo.Num(); i++)
+				{
+					if (!UsersInfo[i]->GetUserId()->IsValid() ||
+						!PartyOnlineSession->GetPartyMembers()[i]->IsValid() ||
+						PartyOnlineSession->GetPartyMembers()[i].Get() != UsersInfo[i]->GetUserId().Get())
+					{
+						DisplayParty();
+						return;
+					}
+				}
 			}
-
+			
 			// Request failed.
 			if (!bSucceeded)
 			{
@@ -126,7 +136,9 @@ void UPartyWidget::DisplayParty()
 				// Display party member information.
 				if (i < UsersInfo.Num())
 				{
-					PartyMemberEntry->SetPartyMember(*UsersInfo[i], PartyOnlineSession->IsPartyLeader(UsersInfo[i]->GetUserId()));
+					/* Mark party member as leader if valid.
+					 * If not in any party, then assume the player as the leader.*/
+					PartyMemberEntry->SetPartyMember(*UsersInfo[i], PartyOnlineSession->IsPartyLeader(UsersInfo[i]->GetUserId()) || !bIsInParty);
 				}
 				// Display button to add more party member.
 				else
@@ -136,21 +148,6 @@ void UPartyWidget::DisplayParty()
 			}
 		}
 	));
-}
-
-void UPartyWidget::OnRetryButtonClicked()
-{
-	if (!PartyOnlineSession) 
-	{
-		return;
-	}
-
-	const int32 LocalUserNum = 
-		PartyOnlineSession->GetLocalUserNumFromPlayerController(GetOwningPlayer());
-
-	Ws_Party->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Loading);
-
-	PartyOnlineSession->CreateParty(LocalUserNum);
 }
 
 void UPartyWidget::OnLeaveButtonClicked()

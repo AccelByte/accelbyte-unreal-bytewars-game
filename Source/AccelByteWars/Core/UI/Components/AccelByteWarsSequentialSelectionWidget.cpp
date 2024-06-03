@@ -59,6 +59,8 @@ void UAccelByteWarsSequentialSelectionWidget::SetSelection(TArray<FText>& InSele
 	CurrentIndex = DefaultIndex < InSelections.Num() && DefaultIndex >= 0 ? DefaultIndex : INDEX_NONE;
 
 	DrawSelection();
+
+	OnSelectionChangedDelegate.Broadcast(CurrentIndex);
 }
 
 void UAccelByteWarsSequentialSelectionWidget::ClearSelection()
@@ -78,6 +80,8 @@ void UAccelByteWarsSequentialSelectionWidget::SetSelectedIndex(const int32 Index
 {
 	CurrentIndex = Index;
 	DrawSelection();
+
+	OnSelectionChangedDelegate.Broadcast(CurrentIndex);
 }
 
 void UAccelByteWarsSequentialSelectionWidget::CycleSelection(const ECycleDirection Direction)
@@ -95,6 +99,8 @@ void UAccelByteWarsSequentialSelectionWidget::CycleSelection(const ECycleDirecti
 	CurrentIndex = AccelByteWarsUtility::PositiveModulo(CurrentIndex + Modifier, Selections.Num());
 
 	DrawSelection();
+
+	OnSelectionChangedDelegate.Broadcast(CurrentIndex);
 }
 
 void UAccelByteWarsSequentialSelectionWidget::DrawSelection()

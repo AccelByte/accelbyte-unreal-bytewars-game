@@ -6,22 +6,37 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Core/UI/MainMenu/Store/StoreItemModel.h"
 #include "WalletBalanceWidgetEntry.generated.h"
 
 class UTextBlock;
+class UImage;
 
 UCLASS(Abstract)
 class ACCELBYTEWARS_API UWalletBalanceWidgetEntry : public UUserWidget
 {
 	GENERATED_BODY()
 
+#if WITH_EDITOR
+	virtual void NativePreConstruct() override;
+#endif
+
 public:
-	void Setup(const FText& Balance, const FText& CurrencyCode) const;
+	void Setup(const FText& Balance, const ECurrencyType CurrencyType) const;
+
+	UPROPERTY(EditAnywhere, meta = (ToolTip = "Change symbol for preview purpose"))
+	ECurrencyType DebugCurrencyType;
 
 private:
+	UPROPERTY(EditDefaultsOnly)
+	FSlateBrush Brush_Coin;
+
+	UPROPERTY(EditDefaultsOnly)
+	FSlateBrush Brush_Gem;
+
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Tb_Balance;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UTextBlock* Tb_CurrencyCode;
+	UImage* I_CurrencySymbol;
 };

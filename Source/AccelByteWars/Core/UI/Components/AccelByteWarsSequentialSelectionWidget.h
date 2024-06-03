@@ -35,6 +35,8 @@ public:
 	int32 GetSelectedIndex() const { return CurrentIndex; }
 	FText GetSelected() const { return CurrentIndex > INDEX_NONE ? Selections[CurrentIndex] : FText(); }
 
+	TMulticastDelegate<void(int32 /*SelectedIndex*/)> OnSelectionChangedDelegate;
+
 private:
 	enum class ECycleDirection : uint8
 	{

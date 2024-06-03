@@ -9,6 +9,7 @@
 #include "OnlineSubsystemUtils.h"
 #include "OnlineSubsystemAccelByteTypes.h"
 #include "Core/GameModes/AccelByteWarsGameMode.h"
+#include "Core/GameModes/AccelByteWarsInGameGameMode.h"
 #include "Core/GameStates/AccelByteWarsGameState.h"
 #include "Core/Player/AccelByteWarsPlayerState.h"
 #include "Core/System/AccelByteWarsGameSession.h"
@@ -23,6 +24,7 @@ void UAccelByteWarsServerSubsystemBase::Initialize(FSubsystemCollectionBase& Col
 	AAccelByteWarsGameSession::OnRegisterServerDelegates.AddUObject(this, &ThisClass::RegisterServer);
 	AAccelByteWarsGameSession::OnUnregisterServerDelegates.AddUObject(this, &ThisClass::UnregisterServer);
 	AAccelByteWarsGameMode::OnInitializeListenServerDelegates.AddUObject(this, &ThisClass::OnServerSessionReceived);
+	AAccelByteWarsInGameGameMode::OnGameEndsDelegate.AddUObject(this, &ThisClass::CloseGameSession);
 
 	UOnlineSession* OnlineSession = GetWorld()->GetGameInstance()->GetOnlineSession();
 	if (!ensure(OnlineSession))
@@ -47,6 +49,7 @@ void UAccelByteWarsServerSubsystemBase::Deinitialize()
 	AAccelByteWarsGameSession::OnUnregisterServerDelegates.RemoveAll(this);
 
 	AAccelByteWarsGameMode::OnInitializeListenServerDelegates.RemoveAll(this);
+	AAccelByteWarsInGameGameMode::OnGameEndsDelegate.RemoveAll(this);
 
 	GameSessionOnlineSession->GetOnLeaveSessionCompleteDelegates()->RemoveAll(this);
 }
@@ -54,6 +57,10 @@ void UAccelByteWarsServerSubsystemBase::Deinitialize()
 void UAccelByteWarsServerSubsystemBase::OnServerSessionReceived(FName SessionName)
 {
 	bHasReceivedSession = true;
+	if (!IsRunningDedicatedServer())
+	{
+		UpdateUserCache();
+	}
 }
 
 IOnlineSessionPtr UAccelByteWarsServerSubsystemBase::GetSessionInt() const
@@ -83,6 +90,57 @@ void UAccelByteWarsServerSubsystemBase::OnLeaveSessionComplete(FName SessionName
 	{
 		bHasReceivedSession = false;
 	}
+}
+
+void UAccelByteWarsServerSubsystemBase::UpdateUserCache()
+{
+	const FNamedOnlineSession* NamedOnlineSession =
+			GameSessionOnlineSession->GetSession(
+				GameSessionOnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession));
+	if (!NamedOnlineSession)
+	{
+		return;
+	}
+		
+	const TSharedPtr<FOnlineSessionInfo> SessionInfo = NamedOnlineSession->SessionInfo;
+	if (!SessionInfo.IsValid())
+	{
+		return;
+	}
+
+	const TSharedPtr<FOnlineSessionInfoAccelByteV2> AbSessionInfo = StaticCastSharedPtr<FOnlineSessionInfoAccelByteV2>(SessionInfo);
+	if (!AbSessionInfo.IsValid())
+	{
+		return;
+	}
+	TArray<FAccelByteModelsV2GameSessionTeam> Teams = AbSessionInfo->GetTeamAssignments();
+	for (int i = 0; i < Teams.Num(); ++i)
+	{
+		for (const FString& UserId : Teams[i].UserIDs)
+		{
+			for (TTuple<FUniqueNetIdRepl, TTuple<FUserOnlineAccountAccelByte, int>>& UserInfo : CachedUsersInfo)
+			{
+				if (GameSessionOnlineSession->CompareAccelByteUniqueId(UserInfo.Key, UserId))
+				{
+					UserInfo.Value.Value = i;
+				}
+			}
+		}
+	}	
+}
+
+void UAccelByteWarsServerSubsystemBase::CloseGameSession()
+{
+	UE_LOG_GAMESESSION(Verbose, TEXT("called"));
+
+	if (!GameSessionOnlineSession)
+	{
+		UE_LOG_GAMESESSION(Warning, TEXT("Failed to close game session joinability. Online Session is null"));
+		return;
+	}
+
+	const FName GameSession = GameSessionOnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession);
+	GameSessionOnlineSession->UpdateSessionJoinability(GameSession, EAccelByteV2SessionJoinability::CLOSED);
 }
 
 #pragma region "Authenticating player"
@@ -318,40 +376,7 @@ void UAccelByteWarsServerSubsystemBase::AuthenticatePlayer_OnQueryUserInfoComple
 		}
 
 		// update cache with team id
-		const FNamedOnlineSession* NamedOnlineSession =
-			GameSessionOnlineSession->GetSession(
-				GameSessionOnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession));
-		if (!NamedOnlineSession)
-		{
-			return;
-		}
-
-		const TSharedPtr<FOnlineSessionInfo> SessionInfo = NamedOnlineSession->SessionInfo;
-		if (!SessionInfo.IsValid())
-		{
-			return;
-		}
-
-		const TSharedPtr<FOnlineSessionInfoAccelByteV2> AbSessionInfo = StaticCastSharedPtr<FOnlineSessionInfoAccelByteV2>(SessionInfo);
-		if (!AbSessionInfo.IsValid())
-		{
-			return;
-		}
-
-		TArray<FAccelByteModelsV2GameSessionTeam> Teams = AbSessionInfo->GetTeamAssignments();
-		for (int i = 0; i < Teams.Num(); ++i)
-		{
-			for (const FString& UserId : Teams[i].UserIDs)
-			{
-				for (TTuple<FUniqueNetIdRepl, TTuple<FUserOnlineAccountAccelByte, int>>& UserInfo : CachedUsersInfo)
-				{
-					if (GameSessionOnlineSession->CompareAccelByteUniqueId(UserInfo.Key, UserId))
-					{
-						UserInfo.Value.Value = i;
-					}
-				}
-			}
-		}
+		UpdateUserCache();
 
 		AuthenticatePlayer_CompleteTask(true);
 	}

@@ -106,16 +106,26 @@ void UPrivateChatWidget::AppendChatMessage(const FChatMessage& Message)
 		return;
 	}
 
-	// Display chat message.
-	UChatData* ChatData = NewObject<UChatData>();
-	ChatData->Sender = Message.GetNickname();
-	if (ChatData->Sender.IsEmpty())
+	const FUniqueNetIdAccelByteUserRef SenderABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(Message.GetUserId());
+	if (!SenderABId.Get().IsValid())
 	{
-		ChatData->Sender = UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(Message.GetUserId().Get());	
+		UE_LOG_PRIVATECHAT(Warning, TEXT("Cannot append a private chat message to display. Sender User Id is invalid."));
+		return;
 	}
+
+	// Construct chat message.
+	UChatData* ChatData = NewObject<UChatData>();
 	ChatData->Message = Message.GetBody();
 	ChatData->bIsSenderLocal = PrivateChatSubsystem->IsMessageFromLocalUser(LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId(), Message);
 
+	// If the sender doesn't have display name, then use the default display name.
+	ChatData->Sender = Message.GetNickname();
+	if (ChatData->Sender.IsEmpty() || SenderABId.Get().GetAccelByteId().Equals(ChatData->Sender))
+	{
+		ChatData->Sender = UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(Message.GetUserId().Get());
+	}
+
+	// Display chat message.
 	AppendChatMessage(ChatData);
 }
 

@@ -36,8 +36,6 @@ void UCreateMatchSessionDSWidget::NativeOnActivated()
 		this, &ThisClass::OnSessionServerUpdateReceived);
 
 	Btn_StartMatchSessionDS->OnClicked().AddUObject(this, &ThisClass::CreateSession);
-	W_Parent->GetProcessingWidgetComponent()->OnCancelClicked.AddUObject(this, &ThisClass::CancelJoiningSession);
-	W_Parent->GetProcessingWidgetComponent()->OnRetryClicked.AddUObject(this, &ThisClass::CreateSession);
 }
 
 void UCreateMatchSessionDSWidget::NativeOnDeactivated()
@@ -60,6 +58,12 @@ void UCreateMatchSessionDSWidget::CreateSession() const
 	{
 		return;
 	}
+
+	// Make sure the retry and cancel game session is performed by this class when the DS network type is selected.
+	W_Parent->GetProcessingWidgetComponent()->OnCancelClicked.Clear();
+	W_Parent->GetProcessingWidgetComponent()->OnRetryClicked.Clear();
+	W_Parent->GetProcessingWidgetComponent()->OnCancelClicked.AddUObject(this, &ThisClass::CancelJoiningSession);
+	W_Parent->GetProcessingWidgetComponent()->OnRetryClicked.AddUObject(this, &ThisClass::CreateSession);
 
 	W_Parent->SetLoadingMessage(TEXT_REQUESTING_SESSION_CREATION, false);
 	W_Parent->SwitchContent(UCreateMatchSessionWidget::EContentType::LOADING);
@@ -141,10 +145,3 @@ void UCreateMatchSessionDSWidget::OnSessionServerUpdateReceived(
 		W_Parent->SwitchContent(UCreateMatchSessionWidget::EContentType::ERROR);
 	}
 }
-
-#pragma region "UI Related"
-UWidget* UCreateMatchSessionDSWidget::NativeGetDesiredFocusTarget() const
-{
-	return Btn_StartMatchSessionDS;
-}
-#pragma endregion 

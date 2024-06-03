@@ -50,6 +50,8 @@ protected:
 private:
 	EGameModeType SelectedGameModeType = EGameModeType::FFA;
 
+	UWidget* DesiredFocusTargetButton;
+
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UWidgetSwitcher* Ws_ContentOuter;
 

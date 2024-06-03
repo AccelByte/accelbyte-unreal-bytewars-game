@@ -45,7 +45,7 @@ private:
 	void OnSaveGameSoundOptions(const APlayerController* PlayerController, TDelegate<void()> OnComplete);
 
 	void OnLoadPlayerShipEquipment(const APlayerController* PlayerController, TDelegate<void()> OnComplete);
-	void OnLoadPlayerShipEquipment(AAccelByteWarsPlayerPawn* PlayerPawn, const APlayerController* PlayerController, const AAccelByteWarsPlayerState* ABPlayerState, const FLinearColor InColor);
+	void OnLoadPlayerShipEquipment(AAccelByteWarsPlayerPawn* PlayerPawn, const APlayerController* PlayerController, const FLinearColor InColor);
 	void OnSavePlayerShipEquipment(const APlayerController* PlayerController, TDelegate<void()> OnComplete);
 
 	void OnLoadPlayerEquipmentToSpawnComplete(bool bWasSuccessful, FJsonObject& Result, const FUniqueNetIdPtr UserId, const FLinearColor InColor);

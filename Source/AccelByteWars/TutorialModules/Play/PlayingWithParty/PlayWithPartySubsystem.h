@@ -33,15 +33,28 @@ protected:
 	void InvitePartyMembersToJoinPartyGameSession(const FUniqueNetIdPtr LeaderUserId);
 	void OnPartyGameSessionInviteReceived(const FUniqueNetId& UserId, const FUniqueNetId& FromId, const FOnlineSessionInviteAccelByte& Invite);
 	
-	void UpdatePartyMemberGameSession(const FUniqueNetIdPtr MemberUserId);
+	/**
+	* @brief Update party member game session ID to the party session settings.
+	* @param MemberUserId Which party members need to update their game session ID.
+	* @param bResetGameSessionId If false, update the game session ID with new ID (if any). If true, remove it.
+	*/
+	void UpdatePartyMemberGameSession(const FUniqueNetIdPtr MemberUserId, const bool bResetGameSessionId = false);
+	
 	bool IsGameSessionDifferFromParty(const FUniqueNetIdPtr MemberUserId);
 
 	void OnCreatePartyGameSessionComplete(FName SessionName, bool bSucceeded);
 	void OnJoinPartyGameSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
 	void OnLeavePartyGameSessionComplete(FName SessionName, bool bSucceeded);
 	void OnPartyGameSessionUpdateReceived(FName SessionName);
+	
 	void OnPartyGameSessionFailure(const FUniqueNetId& UserId, ESessionFailure::Type FailureType);
 	void OnPartyGameSessionUpdateConflictError(FName SessionName, FOnlineSessionSettings FailedSessionSettings);
+	void OnPartyGameSessionServerUpdate(FName SessionName);
+	void OnPartyGameSessionServerError(FName SessionName, const FString& ErrorMessage);
+
+	void OnPartyGameSessionParticipantRemoved(FName SessionName, const FUniqueNetId& UserId);
+
+	void OnNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType, const FString& Message);
 
 	bool ValidateToStartPartyGameSession();
 	bool ValidateToJoinPartyGameSession(const FOnlineSessionSearchResult& SessionSearchResult);

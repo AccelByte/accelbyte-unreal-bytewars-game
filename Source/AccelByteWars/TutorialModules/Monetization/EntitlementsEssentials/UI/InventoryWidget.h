@@ -43,7 +43,7 @@ private:
 
 	void ShowEntitlements(const FOnlineError& Error, const TArray<UItemDataObject*> Entitlements) const;
 
-#pragma region "UI Related"
+#pragma region "UI"
 protected:
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 	virtual UWidget* NativeGetDesiredFocusTarget() const override;

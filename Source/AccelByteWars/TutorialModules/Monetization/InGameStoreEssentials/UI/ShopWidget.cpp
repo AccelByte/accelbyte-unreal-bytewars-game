@@ -11,23 +11,28 @@
 #include "Components/WidgetSwitcher.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
+#include "Core/UI/Components/AccelByteWarsTabListWidget.h"
 #include "Core/UI/MainMenu/Store/StoreItemModel.h"
-#include "Monetization/InGameStoreEssentials/InGameStoreEssentialsSubsystem.h"
 
 void UShopWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
-	Btn_Back->OnClicked().AddUObject(this, &ThisClass::DeactivateWidget);
-	StoreSubsystem->OnQueryOfferCompleteDelegate.AddUObject(this, &ThisClass::OnQueryOffersComplete);
+	StoreSubsystem = GetGameInstance()->GetSubsystem<UInGameStoreEssentialsSubsystem>();
+	ensure(StoreSubsystem);
 
+	// event binding
+	Btn_Back->OnClicked().AddUObject(this, &ThisClass::DeactivateWidget);
+	Tl_ItemCategory->OnTabSelected.AddDynamic(this, &ThisClass::SwitchCategory);
 	Tv_ContentOuter->OnItemClicked().AddUObject(this, &ThisClass::OnStoreItemClicked);
 
+	// reset UI
 	SwitchContent(EAccelByteWarsWidgetSwitcherState::Loading);
-	if (!StoreSubsystem->IsQueryRunning())
-	{
-		StoreSubsystem->QueryOffers(GetOwningPlayer());
-	}
+
+	StoreSubsystem->GetOrQueryCategoriesByRootPath(
+		GetOwningPlayer(),
+		RootPath,
+		FOnGetOrQueryCategories::CreateUObject(this, &ThisClass::OnGetOrQueryCategoriesComplete));
 
 	OnActivatedMulticastDelegate.Broadcast(GetOwningPlayer());
 }
@@ -37,78 +42,98 @@ void UShopWidget::NativeOnDeactivated()
 	Super::NativeOnDeactivated();
 
 	Btn_Back->OnClicked().RemoveAll(this);
-	StoreSubsystem->OnQueryOfferCompleteDelegate.RemoveAll(this);
 	Tv_ContentOuter->OnItemClicked().RemoveAll(this);
+	Tl_ItemCategory->OnTabSelected.RemoveAll(this);
+	Tv_ContentOuter->ClearListItems();
 
 	SwitchContent(EAccelByteWarsWidgetSwitcherState::Loading);
 }
 
-void UShopWidget::NativeConstruct()
+void UShopWidget::OnGetOrQueryCategoriesComplete(TArray<FOnlineStoreCategory> Categories)
 {
-	Super::NativeConstruct();
-
-	StoreSubsystem = GetGameInstance()->GetSubsystem<UInGameStoreEssentialsSubsystem>();
-	ensure(StoreSubsystem);
-}
-
-void UShopWidget::LoadStoreItems()
-{
-	Tv_ContentOuter->ClearListItems();
-
-	TArray<UStoreItemDataObject*> StoreItems;
-	for (const FString& Category : Categories)
-	{
-		StoreItems.Append(StoreSubsystem->GetOffersByCategory(Category));
-	}
-
-	if (StoreItems.IsEmpty())
+	if (Categories.IsEmpty())
 	{
 		SwitchContent(EAccelByteWarsWidgetSwitcherState::Empty);
+		return;
 	}
-	else
+
+	Tl_ItemCategory->RemoveAllTabs();
+
+	// register "All" categories entry
+	Tl_ItemCategory->RegisterTabWithPresets(FName(RootPath), FText::FromString("All")); // TODO: Localization
+
+	// register tab list
+	for (const FOnlineStoreCategory& Category : Categories)
 	{
-		Tv_ContentOuter->SetListItems(StoreItems);
-		SwitchContent(EAccelByteWarsWidgetSwitcherState::Not_Empty);
+		// only register end of branch category
+		if (Category.SubCategories.IsEmpty())
+		{
+			Tl_ItemCategory->RegisterTabWithPresets(FName(Category.Id), Category.Description);
+		}
 	}
 }
 
-void UShopWidget::OnQueryOffersComplete(bool bWasSuccessful, FString ErrorMessage)
+void UShopWidget::OnGetOrQueryOffersComplete(const TArray<UStoreItemDataObject*> Offers) const
 {
-	if (bWasSuccessful)
+	TArray<UStoreItemDataObject*> ExistingItems;
+	for (UObject* Object : Tv_ContentOuter->GetListItems())
 	{
-		LoadStoreItems();
+		if (UStoreItemDataObject* ExistingItem = Cast<UStoreItemDataObject>(Object))
+		{
+			ExistingItems.Add(ExistingItem);
+		}
 	}
-	else
-	{
-		Ws_Loader->ErrorMessage = FText::FromString(ErrorMessage);
-		Ws_Loader->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Error);
-	}
+	ExistingItems.Append(Offers);
+	Tv_ContentOuter->SetListItems(ExistingItems);
+
+	SwitchContent(ExistingItems.IsEmpty() ?
+		EAccelByteWarsWidgetSwitcherState::Empty : EAccelByteWarsWidgetSwitcherState::Not_Empty);
 }
 
 void UShopWidget::OnStoreItemClicked(UObject* Item) const
 {
-	Tv_ContentOuter->ClearListItems();
-	Tv_ContentOuter->RegenerateAllEntries();
-	Ws_Loader->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Loading);
+	// play sound
+	FSlateApplication::Get().PlaySound(PressedSlateSound);
 
-	UStoreItemDataObject* StoreItemDataObject = Cast<UStoreItemDataObject>(Item);
-	if (!StoreItemDataObject)
+	if (!IsValid(DetailWidgetClass))
 	{
 		return;
 	}
 
 	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
-	ensure(GameInstance);
-	UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->GetBaseUIWidget());
-	ensure(BaseUIWidget);
+	if (!GameInstance)
+	{
+		return;
+	}
 
-	UStoreItemDetailWidget* DetailsWidget =
-		Cast<UStoreItemDetailWidget>(BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, DetailWidgetClass));
-	ensure(DetailsWidget);
+	UAccelByteWarsBaseUI* BaseUI = GameInstance->GetBaseUIWidget();
+	if (!BaseUI)
+	{
+		return;
+	}
 
-	DetailsWidget->Setup(StoreItemDataObject);
+	UAccelByteWarsActivatableWidget* Widget = BaseUI->PushWidgetToStack(EBaseUIStackType::Menu, DetailWidgetClass);
+
+	UStoreItemDetailWidget* ItemDetailWidget = Cast<UStoreItemDetailWidget>(Widget);
+	UStoreItemDataObject* StoreItem = Cast<UStoreItemDataObject>(Item);
+	if (!ItemDetailWidget || !StoreItem)
+	{
+		return;
+	}
+
+	ItemDetailWidget->Setup(StoreItem);
 }
 
+void UShopWidget::SwitchCategory(FName Id)
+{
+	Tv_ContentOuter->ClearListItems();
+	StoreSubsystem->GetOrQueryOffersByCategory(
+		GetOwningPlayer(),
+		Id.ToString(),
+		FOnGetOrQueryOffersByCategory::CreateUObject(this, &ThisClass::OnGetOrQueryOffersComplete));
+}
+
+#pragma region "UI"
 void UShopWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
@@ -136,7 +161,7 @@ void UShopWidget::SwitchContent(EAccelByteWarsWidgetSwitcherState State) const
 		FocusTarget = Btn_Back;
 		break;
 	case EAccelByteWarsWidgetSwitcherState::Not_Empty:
-		FocusTarget = Btn_Back;
+		FocusTarget = Tv_ContentOuter;
 		break;
 	case EAccelByteWarsWidgetSwitcherState::Empty:
 		FocusTarget = Btn_Back;
@@ -148,3 +173,4 @@ void UShopWidget::SwitchContent(EAccelByteWarsWidgetSwitcherState State) const
 	FocusTarget->SetUserFocus(GetOwningPlayer());
 	Ws_Loader->SetWidgetState(State);
 }
+#pragma endregion 

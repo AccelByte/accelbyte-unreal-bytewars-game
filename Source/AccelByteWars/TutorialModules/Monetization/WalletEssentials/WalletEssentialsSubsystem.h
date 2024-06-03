@@ -16,24 +16,26 @@ class ACCELBYTEWARS_API UWalletEssentialsSubsystem : public UTutorialModuleSubsy
 {
 	GENERATED_BODY()
 
-public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 
-	void GetWalletInfoByCurrencyCode(
+public:
+	void QueryOrGetWalletInfoByCurrencyCode(
 		const APlayerController* OwningPlayer,
 		const FString& CurrencyCode,
 		const bool bAlwaysRequestToService = true) const;
-	FOnGetWalletInfoComplete OnGetWalletInfoCompleteDelegates;
+	FOnGetWalletInfoComplete OnQueryOrGetWalletInfoCompleteDelegates;
 
 private:
-	void OnGetWalletInfoByCurrencyCodeComplete(
+	FOnlineWalletAccelBytePtr WalletInterface;
+
+	void OnQueryOrGetWalletInfoByCurrencyCodeComplete(
 		int32 LocalUserNum,
 		bool bWasSuccessful,
 		const FAccelByteModelsWalletInfo& Response,
 		const FString& Error) const;
 
+#pragma region "Utilities"
 	static int32 GetLocalUserNumFromPlayerController(const APlayerController* PlayerController);
-
-	FOnlineWalletAccelBytePtr WalletInterface;
+#pragma endregion 
 };

@@ -47,7 +47,7 @@ void UCreateMatchSessionWidget::NativeOnDeactivated()
 
 UWidget* UCreateMatchSessionWidget::NativeGetDesiredFocusTarget() const
 {
-	return Btn_TeamDeathMatch;
+	return DesiredFocusTargetButton;
 }
 
 void UCreateMatchSessionWidget::SetSelectedGameMode(EGameModeType GameModeType)
@@ -106,7 +106,9 @@ void UCreateMatchSessionWidget::SwitchContent(const EContentType ContentType)
 		break;
 	}
 
+	DesiredFocusTargetButton = FocusTarget;
 	FocusTarget->SetUserFocus(GetOwningPlayer());
 	Ws_ContentOuter->SetActiveWidget(Target);
 	Btn_GameModeType_BackToCreateSession->SetVisibility(bShowBackButton ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	RequestRefreshFocus();
 }

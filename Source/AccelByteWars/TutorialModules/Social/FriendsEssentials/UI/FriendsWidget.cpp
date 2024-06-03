@@ -25,6 +25,8 @@ void UFriendsWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
+	Btn_Back->OnClicked().AddUObject(this, &ThisClass::DeactivateWidget);
+
 	// Reset widgets.
 	Ws_Friends->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Empty);
 	Tv_Friends->ClearListItems();
@@ -37,11 +39,22 @@ void UFriendsWidget::NativeOnActivated()
 
 void UFriendsWidget::NativeOnDeactivated()
 {
+	Btn_Back->OnClicked().Clear();
+
 	Tv_Friends->OnItemClicked().Clear();
 
 	FriendsSubsystem->UnbindOnCachedFriendsDataUpdated(GetOwningPlayer());
 
 	Super::NativeOnDeactivated();
+}
+
+UWidget* UFriendsWidget::NativeGetDesiredFocusTarget() const
+{
+	if (Tv_Friends->GetListItems().IsEmpty()) 
+	{
+		return Btn_Back;
+	}
+	return Tv_Friends;
 }
 
 void UFriendsWidget::GetFriendList()
@@ -54,7 +67,6 @@ void UFriendsWidget::GetFriendList()
 		GetOwningPlayer(),
 		FOnGetFriendListComplete::CreateWeakLambda(this, [this](bool bWasSuccessful, TArray<UFriendData*> Friends, const FString& ErrorMessage)
 		{
-			Tv_Friends->SetUserFocus(GetOwningPlayer());
 			Tv_Friends->ClearListItems();
 
 			if (bWasSuccessful) 
@@ -75,14 +87,32 @@ void UFriendsWidget::GetFriendList()
 
 void UFriendsWidget::OnFriendEntryClicked(UObject* Item) 
 {
+	if (!Item)
+	{
+		UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Unable to handle friend entry on-click event. The friend entry's object item is not valid."));
+		return;
+	}
+
 	UFriendData* FriendData = Cast<UFriendData>(Item);
-	ensure(FriendData);
+	if (!FriendData)
+	{
+		UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Unable to handle friend entry on-click event. The friend entry's friend data is not valid."));
+		return;
+	}
 
 	UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->GetBaseUIWidget());
-	ensure(BaseUIWidget);
+	if (!BaseUIWidget)
+	{
+		UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Unable to handle friend entry on-click event. Base UI widget is not valid."));
+		return;
+	}
 
 	UFriendDetailsWidget* DetailsWidget = Cast<UFriendDetailsWidget>(BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, FriendDetailsWidgetClass));
-	ensure(DetailsWidget);
+	if (!DetailsWidget)
+	{
+		UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Unable to handle friend entry on-click event. Friend details widget is not valid."));
+		return;
+	}
 
 	DetailsWidget->InitData(FriendData);
 }

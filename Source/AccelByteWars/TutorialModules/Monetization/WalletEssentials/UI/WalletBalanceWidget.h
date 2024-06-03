@@ -6,6 +6,7 @@
 
 #include "CoreMinimal.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
+#include "Core/UI/MainMenu/Store/StoreItemModel.h"
 #include "Models/AccelByteEcommerceModels.h"
 #include "WalletBalanceWidget.generated.h"
 
@@ -30,13 +31,12 @@ private:
 	UPROPERTY()
 	UWalletEssentialsSubsystem* WalletSubsystem;
 
-	UPROPERTY(EditAnywhere)
-	TArray<FString> Currencies = {
-		"BC",
-		"BG"
+	const TMap<FString, ECurrencyType> CurrenciesMap = {
+		{"BC", ECurrencyType::COIN},
+		{"BG", ECurrencyType::GEM}
 	};
 
-#pragma region "UI Related"
+#pragma region "UI"
 private:
 	TMap<FString, UWalletBalanceWidgetEntry*> CurrencyBalanceEntryMap;
 

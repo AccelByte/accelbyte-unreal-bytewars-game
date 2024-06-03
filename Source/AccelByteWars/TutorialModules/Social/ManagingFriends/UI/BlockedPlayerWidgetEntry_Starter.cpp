@@ -4,6 +4,7 @@
 
 #include "BlockedPlayerWidgetEntry_Starter.h"
 #include "Core/Utilities/AccelByteWarsUtility.h"
+#include "Core/UI/Components/AccelByteWarsAsyncImageWidget.h"
 #include "CommonButtonBase.h"
 #include "Components/TextBlock.h"
 #include "Components/Image.h"
@@ -39,39 +40,9 @@ void UBlockedPlayerWidgetEntry_Starter::NativeOnListItemObjectSet(UObject* ListI
 			UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(CachedBlockedPlayerData->UserId.ToSharedRef().Get())));
 	}
 
-	// Store default brush to be used to reset the avatar brush if needed.
-	if (!DefaultAvatarBrush.GetResourceObject())
-	{
-		DefaultAvatarBrush = Img_Avatar->Brush;
-	}
-
 	// Display avatar image.
 	const FString AvatarURL = CachedBlockedPlayerData->AvatarURL;
-	const FString AvatarId = FBase64::Encode(AvatarURL);
-
-	// Try to set avatar image from cache.
-	FCacheBrush CacheAvatarBrush = AccelByteWarsUtility::GetImageFromCache(AvatarId);
-	if (CacheAvatarBrush.IsValid())
-	{
-		Img_Avatar->SetBrush(*CacheAvatarBrush.Get());
-	}
-	// Set avatar image from URL if it is not exists in cache.
-	else if (!AvatarURL.IsEmpty())
-	{
-		AccelByteWarsUtility::GetImageFromURL(
-			AvatarURL,
-			AvatarId,
-			FOnImageReceived::CreateWeakLambda(this, [this](const FCacheBrush ImageResult)
-			{
-				Img_Avatar->SetBrush(*ImageResult.Get());
-			})
-		);
-	}
-	// If no valid avatar, reset it to the default one.
-	else
-	{
-		Img_Avatar->SetBrush(DefaultAvatarBrush);
-	}
+	Img_Avatar->LoadImage(AvatarURL);
 
 	OnListItemObjectSet.Broadcast();
 }

@@ -26,6 +26,7 @@ protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
+	virtual UWidget* NativeGetDesiredFocusTarget() const override;
 
 	UFUNCTION()
 	void OnSearchBarCommitted(const FText& Text, ETextCommit::Type CommitMethod);
@@ -51,6 +52,9 @@ protected:
 	UCommonButtonBase* Btn_CopyFriendCode;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
+	UCommonButtonBase* Btn_Search;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UEditableText* Edt_SearchBar;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
@@ -58,4 +62,7 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UListView* Lv_FindFriends;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
+	UCommonButtonBase* Btn_Back;
 };

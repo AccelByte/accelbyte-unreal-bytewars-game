@@ -36,6 +36,8 @@ protected:
 	void SetPartyMemberColor(const FLinearColor MemberColor);
 
 	UAccelByteWarsOnlineSessionBase* PartyOnlineSession;
+	
+	UPROPERTY()
 	UFriendData* CachedFriendData;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (BlueprintProtected))

@@ -4,6 +4,7 @@
 
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "Core/UI/Components/Prompt/Loading/LoadingWidget.h"
+#include "Core/UI/Components/Prompt/Loading/ReconnectingWidget.h"
 #include "Core/UI/Components/Prompt/PushNotification/PushNotificationWidget.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
@@ -14,7 +15,7 @@ void UPromptSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	Super::Initialize(Collection);
 
 	GameInstance = Cast<UAccelByteWarsGameInstance>(GetWorld()->GetGameInstance());
-	ensure(GameInstance);
+	ensureMsgf(GameInstance, TEXT("GameInstance is nullptr."));
 }
 
 void UPromptSubsystem::Deinitialize()
@@ -89,6 +90,36 @@ void UPromptSubsystem::HideLoading()
 	}
 
 	LoadingWidget->DeactivateWidget();
+}
+
+void UPromptSubsystem::ShowReconnectingThrobber()
+{
+	if (ReconnectingWidget)
+	{
+		ReconnectingWidget->DeactivateWidget();
+	}
+
+	UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->GetBaseUIWidget());
+	if (!ensureMsgf(BaseUIWidget, TEXT("BaseUIWidget is nullptr."))) return;
+
+	ReconnectingWidget = Cast<UReconnectingWidget>(BaseUIWidget->PushWidgetToStack(EBaseUIStackType::InGameMenu, BaseUIWidget->DefaultReconnectingWidgetClass));
+	ReconnectingWidget->OnDeactivated().AddWeakLambda(this, [this]()
+		{
+			ReconnectingWidget = nullptr;
+		});
+
+	GameInstance->bIsReconnecting = true;
+}
+
+void UPromptSubsystem::HideReconnectingThrobber()
+{
+	if (!ReconnectingWidget)
+	{
+		return;
+	}
+
+	ReconnectingWidget->DeactivateWidget();
+	GameInstance->bIsReconnecting = false;
 }
 
 void UPromptSubsystem::PushNotification(UPushNotification* Notification)

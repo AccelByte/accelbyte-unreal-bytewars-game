@@ -159,6 +159,28 @@ UPromptSubsystem* UPartyOnlineSession::GetPromptSubystem()
     return GameInstance->GetSubsystem<UPromptSubsystem>();
 }
 
+void UPartyOnlineSession::OnCreatePartyToInviteMember(FName SessionName, bool bWasSuccessful, const int32 LocalUserNum, const FUniqueNetIdPtr SenderId, const FUniqueNetIdPtr InviteeId)
+{
+    // Abort if not a party session.
+    if (SessionName != GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession))
+    {
+        return;
+    }
+
+    GetOnCreateSessionCompleteDelegates()->Remove(OnCreatePartyToInviteMemberDelegateHandle);
+
+    if (!bWasSuccessful)
+    {
+        UE_LOG_PARTYESSENTIALS(Warning, TEXT("Cannot send a party invitation. Failed to create a new party."));
+        OnSendPartyInviteComplete(SenderId.ToSharedRef().Get(), SessionName, false, InviteeId.ToSharedRef().Get());
+    }
+    else
+    {
+        UE_LOG_PARTYESSENTIALS(Log, TEXT("Party created. Try sending a party invitation."));
+        SendPartyInvite(LocalUserNum, InviteeId);
+    }
+}
+
 void UPartyOnlineSession::OnLeavePartyToTriggerEvent(FName SessionName, bool bSucceeded, const TDelegate<void(bool bWasSuccessful)> OnComplete)
 {
     // Abort if not a party session.
@@ -236,7 +258,21 @@ void UPartyOnlineSession::InitializePartyGeneratedWidgets()
         PromotePartyLeaderButtonMetadata->OnWidgetGenerated.AddUObject(this, &ThisClass::UpdatePartyGeneratedWidgets);
     }
 
-    // On party member update events, update the generated widget.
+    // On party update events, update the generated widget.
+    if (GetOnCreatePartyCompleteDelegates())
+    {
+        GetOnCreatePartyCompleteDelegates()->AddWeakLambda(this, [this](FName SessionName, bool bWasSuccessful)
+        {
+            UpdatePartyGeneratedWidgets();
+        });
+    }
+    if (GetOnLeavePartyCompleteDelegates())
+    {
+        GetOnLeavePartyCompleteDelegates()->AddWeakLambda(this, [this](FName SessionName, bool bWasSuccessful)
+        {
+            UpdatePartyGeneratedWidgets();
+        });
+    }
     if (GetOnPartyMembersChangeDelegates())
     {
         GetOnPartyMembersChangeDelegates()->AddWeakLambda(this, [this](FName SessionName, const FUniqueNetId& Member, bool bJoined)
@@ -255,12 +291,6 @@ void UPartyOnlineSession::InitializePartyGeneratedWidgets()
 
 void UPartyOnlineSession::UpdatePartyGeneratedWidgets()
 {
-    // Abort if not in a party session.
-    if (!GetABSessionInt()->IsInPartySession())
-    {
-        return;
-    }
-
     // Take local user id reference from active widget.
     FUniqueNetIdPtr LocalUserABId = nullptr;
     if (UCommonActivatableWidget* ActiveWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this))
@@ -284,7 +314,7 @@ void UPartyOnlineSession::UpdatePartyGeneratedWidgets()
         {
             Button->SetIsInteractionEnabled(true);
             Button->SetVisibility(
-                (bIsInParty && !bIsFriendInParty) ? 
+                !bIsFriendInParty ?
                 ESlateVisibility::Visible : 
                 ESlateVisibility::Collapsed);
         }
@@ -504,6 +534,8 @@ void UPartyOnlineSession::CreateParty(const int32 LocalUserNum)
     // Always create a new party. Thus, leave any left-over party session first.
     if (GetABSessionInt()->IsInPartySession())
     {
+        UE_LOG_PARTYESSENTIALS(Log, TEXT("Party found. Leave old party before creating a new one."));
+
         if (OnLeaveSessionForTriggerDelegateHandle.IsValid())
         {
             GetOnLeaveSessionCompleteDelegates()->Remove(OnLeaveSessionForTriggerDelegateHandle);
@@ -515,12 +547,16 @@ void UPartyOnlineSession::CreateParty(const int32 LocalUserNum)
             &ThisClass::OnLeavePartyToTriggerEvent,
             TDelegate<void(bool)>::CreateWeakLambda(this, [this, LocalUserNum, SessionName](bool bWasSuccessful)
             {
+                GetOnLeaveSessionCompleteDelegates()->Remove(OnLeaveSessionForTriggerDelegateHandle);
+
                 if (bWasSuccessful)
                 {
+                    UE_LOG_PARTYESSENTIALS(Log, TEXT("Success to leave old party destroyed. Try creating a new party."));
                     CreateParty(LocalUserNum);
                 }
                 else
                 {
+                    UE_LOG_PARTYESSENTIALS(Warning, TEXT("Cannot create a new party. Failed to leave old party."));
                     ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
                     {
                         OnCreatePartyComplete(SessionName, false);
@@ -534,6 +570,7 @@ void UPartyOnlineSession::CreateParty(const int32 LocalUserNum)
     }
 
     // Create a new party session.
+    UE_LOG_PARTYESSENTIALS(Log, TEXT("Create a new party."));
     CreateSession(
         LocalUserNum,
         SessionName,
@@ -546,7 +583,7 @@ void UPartyOnlineSession::LeaveParty(const int32 LocalUserNum)
 {
     const FName SessionName = GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession);
 
-    if (!GetABSessionInt() || !GetABSessionInt()->IsInPartySession())
+    if (!GetABSessionInt())
     {
         UE_LOG_PARTYESSENTIALS(Warning, TEXT("Cannot leave a party. Session Interface is not valid."));
         ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
@@ -556,32 +593,18 @@ void UPartyOnlineSession::LeaveParty(const int32 LocalUserNum)
         return;
     }
 
-    // After leaving a party, automatically create a new one.
-    if (OnLeaveSessionForTriggerDelegateHandle.IsValid())
+    if (!GetABSessionInt()->IsInPartySession())
     {
-        GetOnLeaveSessionCompleteDelegates()->Remove(OnLeaveSessionForTriggerDelegateHandle);
-        OnLeaveSessionForTriggerDelegateHandle.Reset();
-    }
-    OnLeaveSessionForTriggerDelegateHandle = GetOnLeaveSessionCompleteDelegates()->AddUObject(
-        this,
-        &ThisClass::OnLeavePartyToTriggerEvent,
-        TDelegate<void(bool)>::CreateWeakLambda(this, [this, LocalUserNum, SessionName](bool bWasSuccessful)
+        UE_LOG_PARTYESSENTIALS(Warning, TEXT("Cannot leave a party. Not in any party."));
+        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
         {
-            if (bWasSuccessful)
-            {
-                CreateParty(LocalUserNum);
-            }
-            else
-            {
-                ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
-                {
-                    OnLeavePartyComplete(SessionName, false);
-                }));
-            }
-        }
-    ));
+            OnLeavePartyComplete(SessionName, false);
+        }));
+        return;
+    }
 
     // Leave party.
+    UE_LOG_PARTYESSENTIALS(Log, TEXT("Leave party."));
     LeaveSession(SessionName);
 }
 
@@ -618,6 +641,25 @@ void UPartyOnlineSession::SendPartyInvite(const int32 LocalUserNum, const FUniqu
         return;
     }
 
+    // Create a new party first before inviting.
+    if (!GetABSessionInt()->IsInPartySession())
+    {
+        UE_LOG_PARTYESSENTIALS(Log, TEXT("Not in a party session. Creating a new party before sending a party invitation."));
+
+        if (OnCreatePartyToInviteMemberDelegateHandle.IsValid())
+        {
+            GetOnCreateSessionCompleteDelegates()->Remove(OnCreatePartyToInviteMemberDelegateHandle);
+            OnCreatePartyToInviteMemberDelegateHandle.Reset();
+        }
+
+        OnCreatePartyToInviteMemberDelegateHandle = GetOnCreateSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnCreatePartyToInviteMember, LocalUserNum, SenderId, Invitee);
+
+        CreateParty(LocalUserNum);
+        return;
+    }
+
+    // Send party invitation.
+    UE_LOG_PARTYESSENTIALS(Log, TEXT("Send party invitation."));
     GetABSessionInt()->SendSessionInviteToFriend(
         SenderId.ToSharedRef().Get(),
         SessionName,
@@ -641,6 +683,8 @@ void UPartyOnlineSession::JoinParty(const int32 LocalUserNum, const FOnlineSessi
     // Always leave any party before joining a new party.
     if (GetABSessionInt()->IsInPartySession())
     {
+        UE_LOG_PARTYESSENTIALS(Log, TEXT("Party found. Leave old party before joining a new one."));
+
         if (OnLeaveSessionForTriggerDelegateHandle.IsValid())
         {
             GetOnLeaveSessionCompleteDelegates()->Remove(OnLeaveSessionForTriggerDelegateHandle);
@@ -652,12 +696,18 @@ void UPartyOnlineSession::JoinParty(const int32 LocalUserNum, const FOnlineSessi
             &ThisClass::OnLeavePartyToTriggerEvent,
             TDelegate<void(bool)>::CreateWeakLambda(this, [this, LocalUserNum, PartySessionResult, SessionName](bool bWasSuccessful)
             {
+                GetOnLeaveSessionCompleteDelegates()->Remove(OnLeaveSessionForTriggerDelegateHandle);
+
                 if (bWasSuccessful)
                 {
+                    UE_LOG_PARTYESSENTIALS(Log, TEXT("Success to leave old party. Try to joining a new party."));
+
                     JoinParty(LocalUserNum, PartySessionResult);
                 }
                 else
                 {
+                    UE_LOG_PARTYESSENTIALS(Warning, TEXT("Cannot joining a new party. Failed to leave old party."));
+
                     ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
                     {
                         OnJoinPartyComplete(SessionName, EOnJoinSessionCompleteResult::Type::UnknownError);
@@ -671,6 +721,7 @@ void UPartyOnlineSession::JoinParty(const int32 LocalUserNum, const FOnlineSessi
     }
 
     // Join a new party.
+    UE_LOG_PARTYESSENTIALS(Log, TEXT("Join a new party."));
     JoinSession(LocalUserNum, SessionName, PartySessionResult);
 }
 
@@ -708,6 +759,7 @@ void UPartyOnlineSession::RejectPartyInvite(const int32 LocalUserNum, const FOnl
         return;
     }
 
+    UE_LOG_PARTYESSENTIALS(Log, TEXT("Reject party invitation."));
     GetABSessionInt()->RejectInvite(
         RejecterId.ToSharedRef().Get(),
         PartyInvite,
@@ -750,6 +802,7 @@ void UPartyOnlineSession::KickPlayerFromParty(const int32 LocalUserNum, const FU
         return;
     }
 
+    UE_LOG_PARTYESSENTIALS(Log, TEXT("Kick party member."));
     GetABSessionInt()->KickPlayer(
         PlayerNetId.ToSharedRef().Get(),
         GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession),
@@ -793,6 +846,7 @@ void UPartyOnlineSession::PromotePartyLeader(const int32 LocalUserNum, const FUn
         return;
     }
 
+    UE_LOG_PARTYESSENTIALS(Log, TEXT("Promote a new party leader."));
     GetABSessionInt()->PromotePartySessionLeader(
         PlayerNetId.ToSharedRef().Get(),
         GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession),
@@ -1155,55 +1209,66 @@ void UPartyOnlineSession::OnPartyMembersChange(FName SessionName, const FUniqueN
         return;
     }
 
+    // Store status whether the member is the current logged-in player.
+    FUniqueNetIdPtr UserId = nullptr;
+    if (GetIdentityInt())
+    {
+        UserId = GetIdentityInt()->GetUniquePlayerId(0);
+    }
+    const bool bIsMemberTheLoggedInPlayer = UserId && UserId.ToSharedRef().Get() == Member;
+
     const FUniqueNetIdAccelByteUserRef MemberABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(Member.AsShared());
-    const FString MemberABUIdStr = MemberABId->GetAccelByteId();
+    const FString MemberABIdStr = MemberABId->GetAccelByteId();
+
+    /* Since this event could be called multiple times, we cache the party member status.
+     * This cache is used to execute the following functionalities only when the party member status is changed (not the same status).*/
+    if (PartyMemberStatus.Contains(MemberABIdStr))
+    {
+        if (PartyMemberStatus[MemberABIdStr] == bJoined)
+        {
+            // Abort if the status is the same.
+            return;
+        }
+        PartyMemberStatus[MemberABIdStr] = bJoined;
+    }
+    if (!PartyMemberStatus.Contains(MemberABIdStr))
+    {
+        PartyMemberStatus.Add(MemberABIdStr, bJoined);
+    }
 
     UE_LOG_PARTYESSENTIALS(Log, TEXT("Party participant %s %s to/from the party"),
         MemberABId->IsValid() ? *MemberABId->GetAccelByteId() : TEXT("Unknown"),
         bJoined ? TEXT("joined") : TEXT("left"));
 
-    /* Since this event could be called multiple times, we cache the party member status.
-     * This cache is used to execute the following functionalities only when the party member status is changed (not the same status).*/
-    if (PartyMemberStatus.Contains(MemberABUIdStr))
-    {
-        if (PartyMemberStatus[MemberABUIdStr] == bJoined)
-        {
-            // Abort if the status is the same.
-            return;
-        }
-        PartyMemberStatus[MemberABUIdStr] = bJoined;
-    }
-    if (!PartyMemberStatus.Contains(MemberABUIdStr))
-    {
-        PartyMemberStatus.Add(MemberABUIdStr, bJoined);
-    }
-
     // Query member information then display a push notification to show who joined/left the party.
-    QueryUserInfo(0, TPartyMemberArray{ MemberABId },
-        FOnQueryUsersInfoComplete::CreateWeakLambda(this, [this, MemberABId, bJoined]
-        (const bool bSucceeded, const TArray<FUserOnlineAccountAccelByte*>& UsersInfo)
-        {
-            if (UsersInfo.IsEmpty() || !UsersInfo[0] || !GetPromptSubystem())
+    if (!bIsMemberTheLoggedInPlayer)
+    {
+        QueryUserInfo(0, TPartyMemberArray{ MemberABId },
+            FOnQueryUsersInfoComplete::CreateWeakLambda(this, [this, MemberABId, bJoined]
+            (const bool bSucceeded, const TArray<FUserOnlineAccountAccelByte*>& UsersInfo)
             {
-                return;
+                if (UsersInfo.IsEmpty() || !UsersInfo[0] || !GetPromptSubystem())
+                {
+                    return;
+                }
+
+                FUserOnlineAccountAccelByte MemberInfo = *UsersInfo[0];
+
+                const FString MemberDisplayName = MemberInfo.GetDisplayName().IsEmpty() ?
+                    UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(MemberABId.Get()) :
+                    MemberInfo.GetDisplayName();
+
+                const FText NotifMessage = bJoined ?
+                    FText::Format(PARTY_MEMBER_JOINED_MESSAGE, FText::FromString(MemberDisplayName)) :
+                    FText::Format(PARTY_MEMBER_LEFT_MESSAGE, FText::FromString(MemberDisplayName));
+
+                FString AvatarURL;
+                MemberInfo.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
+
+                GetPromptSubystem()->PushNotification(NotifMessage, AvatarURL, true);
             }
-
-            FUserOnlineAccountAccelByte MemberInfo = *UsersInfo[0];
-
-            const FString MemberDisplayName = MemberInfo.GetDisplayName().IsEmpty() ?
-                UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(MemberABId.Get()) :
-                MemberInfo.GetDisplayName();
-
-            const FText NotifMessage = bJoined ?
-                FText::Format(PARTY_MEMBER_JOINED_MESSAGE, FText::FromString(MemberDisplayName)) :
-                FText::Format(PARTY_MEMBER_LEFT_MESSAGE, FText::FromString(MemberDisplayName));
-
-            FString AvatarURL;
-            MemberInfo.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
-
-            GetPromptSubystem()->PushNotification(NotifMessage, AvatarURL, true);
-        }
-    ));
+        ));
+    }
 
     // Show notification if a new party leader is set.
     DisplayCurrentPartyLeader();
@@ -1227,93 +1292,61 @@ void UPartyOnlineSession::OnPartySessionUpdateReceived(FName SessionName)
     OnPartySessionUpdateReceivedDelegates.Broadcast(SessionName);
 }
 
-void UPartyOnlineSession::LeaveRestoredPartyToTriggerEvent(const FUniqueNetId& LocalUserId, const FOnlineError& Result, const TDelegate<void(bool bSucceeded)> OnComplete)
-{
-    // Abort if failed to restore sessions.
-    if (!Result.bSucceeded)
-    {
-        UE_LOG_PARTYESSENTIALS(Warning, TEXT("Failed to leave restored party sessions. Error: %s"), *Result.ErrorMessage.ToString());
-        OnComplete.ExecuteIfBound(false);
-        return;
-    }
-
-    // Safety.
-    if (!GetABSessionInt())
-    {
-        UE_LOG_PARTYESSENTIALS(Warning, TEXT("Failed to leave restored party sessions. Session Interface is not valid."));
-        OnComplete.ExecuteIfBound(false);
-        return;
-    }
-
-    const TArray<FOnlineRestoredSessionAccelByte> RestoredParties = GetABSessionInt()->GetAllRestoredPartySessions();
-
-    // If empty, no need to leave the restored party sessions.
-    if (RestoredParties.IsEmpty())
-    {
-        UE_LOG_PARTYESSENTIALS(Log, TEXT("No need to leave party session, restored party sessions are empty."));
-        OnComplete.ExecuteIfBound(true);
-        return;
-    }
-
-    // Leave the restored party session then invoke the on-complete event.
-    // Since player can only be in a single party, then leave the first restored party session.
-    GetABSessionInt()->LeaveRestoredSession(
-        LocalUserId,
-        RestoredParties[0],
-        FOnLeaveSessionComplete::CreateUObject(this, &ThisClass::OnLeaveRestoredPartyToTriggerEventComplete, OnComplete));
-}
-
-void UPartyOnlineSession::OnLeaveRestoredPartyToTriggerEventComplete(bool bSucceeded, FString SessionId, const TDelegate<void(bool bSucceeded)> OnComplete)
-{
-    if (bSucceeded)
-    {
-        UE_LOG_PARTYESSENTIALS(Log, TEXT("Success to leave restored party session %s"), *SessionId);
-    }
-    else
-    {
-        UE_LOG_PARTYESSENTIALS(Warning, TEXT("Failed to leave restored party session %s"), *SessionId);
-    }
-
-    OnComplete.ExecuteIfBound(bSucceeded);
-}
-
 void UPartyOnlineSession::OnConnectLobbyComplete(int32 LocalUserNum, bool bSucceeded, const FUniqueNetId& UserId, const FString& Error)
 {
     if (!bSucceeded)
     {
-        UE_LOG_PARTYESSENTIALS(Warning, TEXT("Cannot initialize party. Failed to connect to lobby. Error: %s."), *Error);
+        UE_LOG_PARTYESSENTIALS(Warning, TEXT("Cannot restore and leave restored party session. Failed to connect to lobby. Error: %s."), *Error);
         return;
     }
 
-    // Bind event to create a new party when got kicked.
-    GetOnKickedFromPartyDelegates()->AddWeakLambda(this, [this, LocalUserNum](FName SessionName)
-    {
-        if (SessionName.IsEqual(GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession)))
-        {
-            UE_LOG_PARTYESSENTIALS(Log, TEXT("Creating new party after got kicked from the last party"));
-            CreateParty(LocalUserNum);
-        }
-    });
-
-    // Restore and leave party, then create a new party.
+    // Restore and leave old party session.
     GetABSessionInt()->RestoreActiveSessions(
         UserId,
-        FOnRestoreActiveSessionsComplete::CreateUObject(
-            this,
-            &ThisClass::LeaveRestoredPartyToTriggerEvent,
-            TDelegate<void(bool)>::CreateWeakLambda(this, [this, LocalUserNum](bool bSucceeded)
+        FOnRestoreActiveSessionsComplete::CreateWeakLambda(this, [this](const FUniqueNetId& LocalUserId, const FOnlineError& Result)
+        {
+            // Abort if failed to restore party sessions.
+            if (!Result.bSucceeded)
             {
-                if (bSucceeded)
+                UE_LOG_PARTYESSENTIALS(Warning, TEXT("Failed to restore party session. Error: %s"), *Result.ErrorMessage.ToString());
+                return;
+            }
+
+            // Safety.
+            if (!GetABSessionInt())
+            {
+                UE_LOG_PARTYESSENTIALS(Warning, TEXT("Failed to restore party session. Session Interface is not valid."));
+                return;
+            }
+
+            const TArray<FOnlineRestoredSessionAccelByte> RestoredParties = GetABSessionInt()->GetAllRestoredPartySessions();
+
+            // If no restored party session, do nothing.
+            if (RestoredParties.IsEmpty())
+            {
+                UE_LOG_PARTYESSENTIALS(Log, TEXT("No restored party session found. Do nothing."));
+                return;
+            }
+
+            // Leave the first restored active party session.
+            UE_LOG_PARTYESSENTIALS(Log, TEXT("Restored party session found. Leave the restored party session."));
+            GetABSessionInt()->LeaveRestoredSession(
+                LocalUserId,
+                RestoredParties[0],
+                FOnLeaveSessionComplete::CreateWeakLambda(this, [](bool bWasSuccessful, FString SessionId)
                 {
-                    UE_LOG_PARTYESSENTIALS(Log, TEXT("Creating an initial party."));
-                    CreateParty(LocalUserNum);
+                    if (bWasSuccessful)
+                    {
+                        UE_LOG_PARTYESSENTIALS(Log, TEXT("Success to leave restored party session."));
+                    }
+                    else
+                    {
+                        UE_LOG_PARTYESSENTIALS(Warning, TEXT("Failed to leave restored party session."));
+                    }
                 }
-                else
-                {
-                    UE_LOG_PARTYESSENTIALS(Warning, TEXT("Failed to create an initial party. Restoring party session was failed."));
-                }
-            })
-    ));
+            ));
+        })
+    );
 }
 
 #pragma endregion

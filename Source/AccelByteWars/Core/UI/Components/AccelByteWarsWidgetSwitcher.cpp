@@ -215,6 +215,5 @@ void UAccelByteWarsWidgetSwitcher::HandleFTUE()
 	else
 	{
 		FTUEWidget->CloseDialogues();
-		FTUEWidget->TryToggleHelpDev(false);
 	}
 }

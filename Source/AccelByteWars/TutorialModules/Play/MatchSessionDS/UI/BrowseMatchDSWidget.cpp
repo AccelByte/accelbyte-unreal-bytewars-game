@@ -219,10 +219,3 @@ void UBrowseMatchDSWidget::OnSessionServerUpdateReceived(
 		W_Parent->SwitchContent(UBrowseMatchWidget::EContentType::JOIN_ERROR);
 	}
 }
-
-#pragma region "UI Related"
-UWidget* UBrowseMatchDSWidget::NativeGetDesiredFocusTarget() const
-{
-	return Btn_Refresh;
-}
-#pragma endregion 

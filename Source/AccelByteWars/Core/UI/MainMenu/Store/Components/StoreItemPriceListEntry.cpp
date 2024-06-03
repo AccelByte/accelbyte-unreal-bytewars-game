@@ -5,22 +5,62 @@
 
 #include "StoreItemPriceListEntry.h"
 
+#include "Components/Image.h"
 #include "Core/UI/MainMenu/Store/StoreItemModel.h"
 #include "Components/TextBlock.h"
+
+#if WITH_EDITOR
+void UStoreItemPriceListEntry::NativePreConstruct()
+{
+	Super::NativePreConstruct();
+
+	if (IsDesignTime())
+	{
+		I_CurrencySymbol->SetBrush(DebugCurrencyType == ECurrencyType::COIN ? Brush_Coin : Brush_Gem);
+	}
+}
+#endif
+
+void UStoreItemPriceListEntry::Setup(const UStoreItemPriceDataObject* DataObject, const int32 Multiplier) const
+{
+	if (!DataObject)
+	{
+		return;
+	}
+
+	// Set UI
+	// Set Currency Symbol
+	I_CurrencySymbol->SetBrush(DataObject->CurrencyType == ECurrencyType::COIN ? Brush_Coin : Brush_Gem);
+
+	// Set prices
+	const bool bIsRegularPriceFree = DataObject->RegularPrice == 0;
+	const FText RegularPrice = bIsRegularPriceFree ?
+		TEXT_PRICE_FREE :
+		FText::FromString(FString::Printf(TEXT("%lld"), DataObject->RegularPrice * Multiplier));
+	Tb_RegularPrice->SetText(RegularPrice);
+
+	const bool bIsFinalPriceFree = DataObject->FinalPrice == 0;
+	const FText FinalPrice = bIsFinalPriceFree ?
+		TEXT_PRICE_FREE :
+		FText::FromString(FString::Printf(TEXT("%lld"), DataObject->FinalPrice * Multiplier));
+	Tb_FinalPrice->SetText(FinalPrice);
+
+	// hide symbol if both regular and final price is free
+	if (bIsFinalPriceFree)
+	{
+		I_CurrencySymbol->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	// Hide regular price if not discounted
+	if (!DataObject->IsDiscounted())
+	{
+		Tb_RegularPrice->SetVisibility(ESlateVisibility::Collapsed);
+	}
+}
 
 void UStoreItemPriceListEntry::NativeOnListItemObjectSet(UObject* ListItemObject)
 {
 	IUserObjectListEntry::NativeOnListItemObjectSet(ListItemObject);
-
-	// Reset UI
-	const FText EmptyText = FText();
-	Tb_RegularPrice->SetText(EmptyText);
-	Tb_FinalPrice->SetText(EmptyText);
-	Tb_CurrencySymbol_RegularPrice->SetText(EmptyText);
-	Tb_CurrencySymbol_FinalPrice->SetText(EmptyText);
-	Tb_CurrencySymbol_RegularPrice->SetVisibility(ESlateVisibility::Visible);
-	Tb_RegularPrice->SetVisibility(ESlateVisibility::Visible);
-	Tb_CurrencySymbol_FinalPrice->SetVisibility(ESlateVisibility::Visible);
 
 	// Get data
 	const UStoreItemPriceDataObject* PriceDataObject = static_cast<UStoreItemPriceDataObject*>(ListItemObject);
@@ -29,37 +69,23 @@ void UStoreItemPriceListEntry::NativeOnListItemObjectSet(UObject* ListItemObject
 		return;
 	}
 
-	// Set UI
-	// Set Currency Symbol
-	const FText CurrencySymbol = FText::FromString(PriceDataObject->CurrencyCode);
-	Tb_CurrencySymbol_RegularPrice->SetText(CurrencySymbol);
-	Tb_CurrencySymbol_FinalPrice->SetText(CurrencySymbol);
+	Setup(PriceDataObject);
+}
 
-	// Set prices
-	const bool bIsRegularPriceFree = PriceDataObject->RegularPrice == 0;
-	const FText RegularPrice = bIsRegularPriceFree ?
-		TEXT_PRICE_FREE :
-		FText::FromString(FString::Printf(TEXT("%lld"), PriceDataObject->RegularPrice));
-	Tb_RegularPrice->SetText(RegularPrice);
-	if (bIsRegularPriceFree)
-	{
-		Tb_CurrencySymbol_RegularPrice->SetVisibility(ESlateVisibility::Collapsed);
-	}
+void UStoreItemPriceListEntry::NativeOnEntryReleased()
+{
+	IUserObjectListEntry::NativeOnEntryReleased();
 
-	const bool bIsFinalPriceFree = PriceDataObject->FinalPrice == 0;
-	const FText FinalPrice = bIsFinalPriceFree ?
-		TEXT_PRICE_FREE :
-		FText::FromString(FString::Printf(TEXT("%lld"), PriceDataObject->FinalPrice));
-	Tb_FinalPrice->SetText(FinalPrice);
-	if (bIsFinalPriceFree)
-	{
-		Tb_CurrencySymbol_FinalPrice->SetVisibility(ESlateVisibility::Collapsed);
-	}
+	ResetUI();
+}
 
-	// Hide regular price if not discounted
-	if (!PriceDataObject->IsDiscounted())
-	{
-		Tb_CurrencySymbol_RegularPrice->SetVisibility(ESlateVisibility::Collapsed);
-		Tb_RegularPrice->SetVisibility(ESlateVisibility::Collapsed);
-	}
+void UStoreItemPriceListEntry::ResetUI() const
+{
+	const FText EmptyText = FText();
+	Tb_RegularPrice->SetText(EmptyText);
+	Tb_FinalPrice->SetText(EmptyText);
+	Tb_RegularPrice->SetVisibility(ESlateVisibility::Hidden);
+	Tb_FinalPrice->SetVisibility(ESlateVisibility::Visible);
+	I_CurrencySymbol->SetVisibility(ESlateVisibility::Visible);
+	I_CurrencySymbol->SetBrush(Brush_Coin);
 }

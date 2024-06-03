@@ -11,6 +11,7 @@
 
 class UAccelByteWarsWidgetSwitcher;
 class UListView;
+class UCommonButtonBase;
 
 UCLASS(Abstract)
 class ACCELBYTEWARS_API UBlockedPlayersWidget_Starter : public UAccelByteWarsActivatableWidget
@@ -21,6 +22,7 @@ protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
+	virtual UWidget* NativeGetDesiredFocusTarget() const override;
 
 	void GetBlockedPlayerList();
 
@@ -32,4 +34,7 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UListView* Lv_BlockedPlayers;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
+	UCommonButtonBase* Btn_Back;
 };

@@ -19,6 +19,7 @@ void UAccelByteWarsWidgetEntry::NativeOnItemSelectionChanged(bool bIsSelected)
 {
 	IUserObjectListEntry::NativeOnItemSelectionChanged(bIsSelected);
 
+	bIsItemSelected = bIsSelected;
 	ChangeInteractibility(InputSubsystem->GetCurrentInputType());
 }
 
@@ -60,18 +61,19 @@ void UAccelByteWarsWidgetEntry::ChangeInteractibility(ECommonInputType InputType
 		{
 			continue;
 		}
-
-		bool bShouldInteractable;
+		
+		bool bShouldInteractable = false;
 
 		switch (InputType)
 		{
 		case ECommonInputType::Gamepad:
-			bShouldInteractable = IsListItemSelected() && HasUserFocus(GetOwningPlayer());
+			bShouldInteractable = bIsItemSelected && HasUserFocus(GetOwningPlayer());
 			break;
 		default:
 			bShouldInteractable = true;
 		}
 
+		Button->SetIsFocusable(bShouldInteractable);
 		Button->SetIsInteractionEnabled(bShouldInteractable);
 	}
 }

@@ -118,6 +118,12 @@ void UPlayingWithFriendsSubsystem_Starter::OnQueryUserInfoOnGameSessionParticipa
 	FName SessionName,
 	const bool bJoined)
 {
+	// Abort if not a game session.
+	if (!OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession).IsEqual(SessionName))
+	{
+		return;
+	}
+
 	UE_LOG_PLAYINGWITHFRIENDS(Verbose, TEXT("Called"));
 
 	UPromptSubsystem* PromptSubsystem = GetPromptSubsystem();

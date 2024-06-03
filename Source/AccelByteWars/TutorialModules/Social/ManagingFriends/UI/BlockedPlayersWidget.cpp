@@ -5,6 +5,7 @@
 #include "BlockedPlayersWidget.h"
 #include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
 #include "Components/ListView.h"
+#include "CommonButtonBase.h"
 
 void UBlockedPlayersWidget::NativeConstruct()
 {
@@ -18,6 +19,8 @@ void UBlockedPlayersWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
+	Btn_Back->OnClicked().AddUObject(this, &ThisClass::DeactivateWidget);
+
 	// Reset widgets.
 	Ws_BlockedPlayers->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Empty);
 	Lv_BlockedPlayers->ClearListItems();
@@ -28,9 +31,20 @@ void UBlockedPlayersWidget::NativeOnActivated()
 
 void UBlockedPlayersWidget::NativeOnDeactivated()
 {
+	Btn_Back->OnClicked().Clear();
+
 	ManagingFriendsSubsystem->UnbindOnCachedBlockedPlayersDataUpdated(GetOwningPlayer());
 
 	Super::NativeOnDeactivated();
+}
+
+UWidget* UBlockedPlayersWidget::NativeGetDesiredFocusTarget() const
+{
+	if (Lv_BlockedPlayers->GetListItems().IsEmpty())
+	{
+		return Btn_Back;
+	}
+	return Lv_BlockedPlayers;
 }
 
 void UBlockedPlayersWidget::GetBlockedPlayerList()
@@ -43,7 +57,6 @@ void UBlockedPlayersWidget::GetBlockedPlayerList()
 		GetOwningPlayer(),
 		FOnGetBlockedPlayerListComplete::CreateWeakLambda(this, [this](bool bWasSuccessful, TArray<UFriendData*> BlockedPlayers, const FString& ErrorMessage)
 		{
-			Lv_BlockedPlayers->SetUserFocus(GetOwningPlayer());
 			Lv_BlockedPlayers->ClearListItems();
 
 			if (bWasSuccessful)

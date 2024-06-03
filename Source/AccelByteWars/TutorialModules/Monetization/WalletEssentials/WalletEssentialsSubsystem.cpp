@@ -18,7 +18,7 @@ void UWalletEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collection
 	WalletInterface = Subsystem->GetWalletInterface();
 	ensure(WalletInterface);
 
-	WalletInterface->OnGetWalletInfoCompletedDelegates->AddUObject(this, &ThisClass::OnGetWalletInfoByCurrencyCodeComplete);
+	WalletInterface->OnGetWalletInfoCompletedDelegates->AddUObject(this, &ThisClass::OnQueryOrGetWalletInfoByCurrencyCodeComplete);
 }
 
 void UWalletEssentialsSubsystem::Deinitialize()
@@ -28,7 +28,7 @@ void UWalletEssentialsSubsystem::Deinitialize()
 	WalletInterface->OnGetWalletInfoCompletedDelegates->RemoveAll(this);
 }
 
-void UWalletEssentialsSubsystem::GetWalletInfoByCurrencyCode(
+void UWalletEssentialsSubsystem::QueryOrGetWalletInfoByCurrencyCode(
 	const APlayerController* OwningPlayer,
 	const FString& CurrencyCode,
 	const bool bAlwaysRequestToService) const
@@ -38,19 +38,20 @@ void UWalletEssentialsSubsystem::GetWalletInfoByCurrencyCode(
 	{
 		const FAccelByteModelsWalletInfo Response;
 		const FString Error;
-		OnGetWalletInfoByCurrencyCodeComplete(LocalUserNum, false, Response, Error);
+		OnQueryOrGetWalletInfoByCurrencyCodeComplete(LocalUserNum, false, Response, Error);
 	}
 }
 
-void UWalletEssentialsSubsystem::OnGetWalletInfoByCurrencyCodeComplete(
+void UWalletEssentialsSubsystem::OnQueryOrGetWalletInfoByCurrencyCodeComplete(
 	int32 LocalUserNum,
 	bool bWasSuccessful,
 	const FAccelByteModelsWalletInfo& Response,
 	const FString& Error) const
 {
-	OnGetWalletInfoCompleteDelegates.Broadcast(bWasSuccessful, Response);
+	OnQueryOrGetWalletInfoCompleteDelegates.Broadcast(bWasSuccessful, Response);
 }
 
+#pragma region "Utilities"
 int32 UWalletEssentialsSubsystem::GetLocalUserNumFromPlayerController(const APlayerController* PlayerController)
 {
 	if (!PlayerController)
@@ -66,3 +67,4 @@ int32 UWalletEssentialsSubsystem::GetLocalUserNumFromPlayerController(const APla
 
 	return LocalPlayer->GetControllerId();
 }
+#pragma endregion 

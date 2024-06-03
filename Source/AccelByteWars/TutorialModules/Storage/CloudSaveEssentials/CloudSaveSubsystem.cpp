@@ -153,17 +153,11 @@ void UCloudSaveSubsystem::OnLoadPlayerShipEquipment(const APlayerController* Pla
     );
 }
 
-void UCloudSaveSubsystem::OnLoadPlayerShipEquipment(AAccelByteWarsPlayerPawn* PlayerPawn, const APlayerController* PlayerController, const AAccelByteWarsPlayerState* ABPlayerState, const FLinearColor InColor)
+void UCloudSaveSubsystem::OnLoadPlayerShipEquipment(AAccelByteWarsPlayerPawn* PlayerPawn, const APlayerController* PlayerController, const FLinearColor InColor)
 {
     if (!PlayerController)
     {
         UE_LOG_CLOUDSAVE_ESSENTIALS(Warning, TEXT("Cannot get game options from Cloud Save. PlayerController is null."));
-        return;
-    }
-
-    if (!ABPlayerState)
-    {
-        UE_LOG_CLOUDSAVE_ESSENTIALS(Warning, TEXT("Cannot get game options from Cloud Save. PlayerState is null."));
         return;
     }
 

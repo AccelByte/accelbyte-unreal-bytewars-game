@@ -52,28 +52,35 @@ void ULoginWidget::NativeOnDeactivated()
 	Btn_QuitGame->OnClicked().Clear();
 }
 
-void ULoginWidget::SetLoginState(const ELoginState NewState)
+void ULoginWidget::SetLoginState(const ELoginState NewState) const
 {
-	Ws_LoginState->SetActiveWidgetIndex((int)NewState);
+	UWidget* WidgetToActivate;
 
 	switch (NewState)
 	{
 	case ELoginState::Default:
+		WidgetToActivate = Vb_LoginOptions;
 		Btn_LoginWithDeviceId->SetUserFocus(GetOwningPlayer());
 		InitializeFTUEDialogues(true);
 		break;
 	case ELoginState::LoggingIn:
+		WidgetToActivate = Vb_LoginLoading;
 		DeinitializeFTUEDialogues();
+		HideFTUEDevHelpButton();
 		break;
 	case ELoginState::Failed:
+		WidgetToActivate = Vb_LoginFailed;
 		Btn_RetryLogin->SetUserFocus(GetOwningPlayer());
 		DeinitializeFTUEDialogues();
 		break;
 	default:
+		WidgetToActivate = Vb_LoginOptions;
 		Btn_LoginWithDeviceId->SetUserFocus(GetOwningPlayer());
 		InitializeFTUEDialogues(true);
 		break;
 	}
+
+	Ws_LoginState->SetActiveWidget(WidgetToActivate);
 }
 
 void ULoginWidget::OnLoginWithDeviceIdButtonClicked()
@@ -163,6 +170,11 @@ void ULoginWidget::AutoLoginCmd()
 	{
 		UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("Cannot auto login with AccelByte account. Username and password cannot be found from command line."));
 	}
+}
+
+void ULoginWidget::SetButtonLoginVisibility(const ESlateVisibility InSlateVisibility) const
+{
+	Btn_LoginWithDeviceId->SetVisibility(InSlateVisibility);
 }
 
 #undef LOCTEXT_NAMESPACE

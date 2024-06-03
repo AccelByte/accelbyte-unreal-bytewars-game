@@ -25,7 +25,7 @@ void ULeaderboardWeeklyWidget_Starter::NativeOnActivated()
 	// Set leaderboard code based on board-unreal-highestscore-{gamemode} format. 
 	LeaderboardCode = FString::Printf(TEXT("board-unreal-highestscore-%s"), *ULeaderboardsWidget::GetLeaderboardGameMode());
 
-	// Set cycle id to the weekly leaderboard’s cycle id.
+	// Set cycle id to the weekly leaderboard's cycle id.
 	CycleId = FString("<REPLACE_WITH_LEADERBOARD_ID>");
 
 	if (FFTUEDialogueModel* FTUELeaderboard = FFTUEDialogueModel::GetMetadataById("ftue_weekly_leaderboard", FTUEDialogues))

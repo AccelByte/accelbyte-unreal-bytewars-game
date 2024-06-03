@@ -22,8 +22,9 @@ class ACCELBYTEWARS_API ULoginWidget : public UAccelByteWarsActivatableWidget
 	GENERATED_BODY()
 			
 public:
-	void SetLoginState(const ELoginState NewState);
+	void SetLoginState(const ELoginState NewState) const;
 	void OnLoginComplete(bool bWasSuccessful, const FString& ErrorMessage);
+	void SetButtonLoginVisibility(const ESlateVisibility InSlateVisibility) const;
 
 	FOnRetryLogin OnRetryLoginDelegate;
 
@@ -43,8 +44,20 @@ private:
 	UAuthEssentialsSubsystem* AuthSubsystem;
 	UPromptSubsystem* PromptSubsystem;
 
+#pragma region "UI"
+public:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UWidgetSwitcher* Ws_LoginState;
+
+private:
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UWidget* Vb_LoginOptions;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UWidget* Vb_LoginLoading;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UWidget* Vb_LoginFailed;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_LoginWithDeviceId;
@@ -60,4 +73,5 @@ private:
 	
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UAccelByteWarsActivatableWidget> MainMenuWidgetClass;
+#pragma endregion 
 };

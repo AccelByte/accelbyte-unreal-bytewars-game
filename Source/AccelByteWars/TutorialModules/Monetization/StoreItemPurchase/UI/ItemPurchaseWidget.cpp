@@ -5,9 +5,10 @@
 
 #include "ItemPurchaseWidget.h"
 
-#include "Component/ItemPurchaseWidgetEntry.h"
+#include "Component/ItemPurchaseButton.h"
 #include "Components/ListView.h"
 #include "Components/TextBlock.h"
+#include "Core/UI/Components/AccelByteWarsSequentialSelectionWidget.h"
 #include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
 #include "Monetization/InGameStoreEssentials/UI/StoreItemDetailWidget.h"
 #include "Monetization/StoreItemPurchase/StoreItemPurchaseSubsystem.h"
@@ -31,9 +32,21 @@ void UItemPurchaseWidget::NativeOnActivated()
 	Ws_Root->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Not_Empty);
 	Tb_Success->SetVisibility(ESlateVisibility::Collapsed);
 	Tb_Error->SetVisibility(ESlateVisibility::Collapsed);
+	Ss_Amount->SetSelectedIndex(0);
+	Ss_Amount->OnSelectionChangedDelegate.AddUObject(this, &ThisClass::UpdatePrice);
+
+	// show amount if consumable
+	Ss_Amount->SetVisibility(
+		StoreItemDataObject->ItemData->bConsumable ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 
 	// setup delegate
 	PurchaseSubsystem->OnCheckoutCompleteDelegates.AddUObject(this, &ThisClass::OnPurchaseComplete);
+
+	// set focus
+	if (W_PurchaseButtonsOuter->HasAnyChildren())
+	{
+		W_PurchaseButtonsOuter->GetChildAt(0)->SetUserFocus(GetOwningPlayer());
+	}
 
 	FTUESetup();
 }
@@ -43,12 +56,17 @@ void UItemPurchaseWidget::NativeOnDeactivated()
 	Super::NativeOnDeactivated();
 
 	PurchaseSubsystem->OnCheckoutCompleteDelegates.RemoveAll(this);
+	Ss_Amount->OnSelectionChangedDelegate.RemoveAll(this);
 }
 
-void UItemPurchaseWidget::OnClickPurchase(const FString& CurrencyCode) const
+void UItemPurchaseWidget::OnClickPurchase(const int32 PriceIndex) const
 {
 	Ws_Root->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Loading);
-	PurchaseSubsystem->Checkout(GetOwningPlayer(), StoreItemDataObject->ItemData->Id, 1, StoreItemDataObject->ItemData->bConsumable);
+	PurchaseSubsystem->CreateNewOrder(
+		GetOwningPlayer(),
+		StoreItemDataObject,
+		PriceIndex,
+		GetSelectedAmount());
 }
 
 void UItemPurchaseWidget::OnPurchaseComplete(const FOnlineError& Error) const
@@ -69,13 +87,14 @@ void UItemPurchaseWidget::OnPurchaseComplete(const FOnlineError& Error) const
 	}
 	else
 	{
-		Tb_Error->SetText(Error.ErrorMessage);
+		Tb_Error->SetText(FText::FromString(Error.ErrorRaw));
 
 		Tb_Success->SetVisibility(ESlateVisibility::Collapsed);
 		Tb_Error->SetVisibility(ESlateVisibility::Visible);
 	}
 }
 
+#pragma region "FTUE"
 void UItemPurchaseWidget::FTUESetup() const
 {
 	if (W_Parent)
@@ -86,7 +105,9 @@ void UItemPurchaseWidget::FTUESetup() const
 		}
 	}
 }
+#pragma endregion 
 
+#pragma region "UI"
 UWidget* UItemPurchaseWidget::NativeGetDesiredFocusTarget() const
 {
 	UWidget* FocusTarget = Super::NativeGetDesiredFocusTarget();
@@ -102,17 +123,25 @@ UWidget* UItemPurchaseWidget::NativeGetDesiredFocusTarget() const
 void UItemPurchaseWidget::SetupPurchaseButtons(TArray<UStoreItemPriceDataObject*> Prices)
 {
 	W_PurchaseButtonsOuter->ClearChildren();
-	for (const UStoreItemPriceDataObject* Price : Prices)
+	for (int i = 0; i < Prices.Num(); ++i)
 	{
-		UItemPurchaseWidgetEntry* Entry = CreateWidget<UItemPurchaseWidgetEntry>(this, PurchaseButtonClass);
+		UItemPurchaseButton* Entry = CreateWidget<UItemPurchaseButton>(this, PurchaseButtonClass);
 		ensure(Entry);
 
-		Entry->Setup(Price->CurrencyCode, FOnPurchaseClicked::CreateUObject(this, &ThisClass::OnClickPurchase));
+		Entry->SetPrice(Prices[i], GetSelectedAmount());
+		Entry->OnClicked().AddUObject(this, &ThisClass::OnClickPurchase, i);
 		W_PurchaseButtonsOuter->AddChild(Entry);
 	}
-
-	if (W_PurchaseButtonsOuter->HasAnyChildren())
-	{
-		W_PurchaseButtonsOuter->GetChildAt(0)->SetUserFocus(GetOwningPlayer());
-	}
 }
+
+void UItemPurchaseWidget::UpdatePrice(const int32 SelectedIndex)
+{
+	SetupPurchaseButtons(StoreItemDataObject->Prices);
+}
+
+int32 UItemPurchaseWidget::GetSelectedAmount() const
+{
+	const FString AmountString = Ss_Amount->GetSelected().ToString();
+	return FCString::Atoi(*AmountString);
+}
+#pragma endregion 

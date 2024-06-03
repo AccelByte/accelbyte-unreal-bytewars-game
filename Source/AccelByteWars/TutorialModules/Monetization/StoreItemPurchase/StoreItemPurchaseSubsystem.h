@@ -5,11 +5,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "OnlineSubsystemAccelByte.h"
 #include "OnlineSubsystemUtils.h"
 #include "StoreItemPurchaseModel.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
-#include "Interfaces/OnlineExternalUIInterface.h"
-#include "Interfaces/OnlinePurchaseInterface.h"
+#include "Core/UI/MainMenu/Store/StoreItemModel.h"
+
 #include "StoreItemPurchaseSubsystem.generated.h"
 
 UCLASS()
@@ -21,13 +22,27 @@ class ACCELBYTEWARS_API UStoreItemPurchaseSubsystem : public UTutorialModuleSubs
 	virtual void Deinitialize() override;
 
 public:
-	void Checkout(const APlayerController* OwningPlayer, const FUniqueOfferId OfferId, const int32 Quantity, const bool bIsConsumable);
-	FOnCheckoutComplete OnCheckoutCompleteDelegates;
+	void CreateNewOrder(
+		const APlayerController* OwningPlayer,
+		const UStoreItemDataObject* StoreItemData,
+		const int32 SelectedPriceIndex,
+		const int32 Quantity = 1) const;
+	FOnOrderComplete OnCheckoutCompleteDelegates;
 
 private:
-	IOnlinePurchasePtr PurchaseInterface;
+	FOnlinePurchaseAccelBytePtr PurchaseInterface;
 
-	void OnCheckoutComplete(const FOnlineError& Result, const TSharedRef<FPurchaseReceipt>& Receipt) const;
-	
+	const TMap<ECurrencyType, FString> CurrencyCodeMap = {
+		{ECurrencyType::COIN, "BC"},
+		{ECurrencyType::GEM, "BG"}
+	};
+
+	void OnCreateNewOrderComplete(
+		bool bWasSuccessful,
+		const FAccelByteModelsOrderInfo& OrderInfo,
+		const FOnlineErrorAccelByte& OnlineError) const;
+
+#pragma region "Utilities"
 	FUniqueNetIdPtr GetLocalPlayerUniqueNetId(const APlayerController* PlayerController) const;
+#pragma endregion 
 };

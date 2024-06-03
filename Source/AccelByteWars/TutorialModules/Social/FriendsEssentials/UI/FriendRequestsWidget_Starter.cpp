@@ -22,6 +22,8 @@ void UFriendRequestsWidget_Starter::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
+	Btn_Back->OnClicked().AddUObject(this, &ThisClass::DeactivateWidget);
+
 	// Reset widgets.
 	Ws_FriendRequests->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Empty);
 	Lv_FriendRequests->ClearListItems();
@@ -33,9 +35,20 @@ void UFriendRequestsWidget_Starter::NativeOnActivated()
 
 void UFriendRequestsWidget_Starter::NativeOnDeactivated()
 {
+	Btn_Back->OnClicked().Clear();
+
 	// TODO: Unbind event to refresh friend request list here.
 
 	Super::NativeOnDeactivated();
+}
+
+UWidget* UFriendRequestsWidget_Starter::NativeGetDesiredFocusTarget() const
+{
+	if (Lv_FriendRequests->GetListItems().IsEmpty())
+	{
+		return Btn_Back;
+	}
+	return Lv_FriendRequests;
 }
 
 void UFriendRequestsWidget_Starter::GetFriendRequestList()

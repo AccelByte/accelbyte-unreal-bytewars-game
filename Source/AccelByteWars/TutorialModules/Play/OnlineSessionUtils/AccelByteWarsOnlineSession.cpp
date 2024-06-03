@@ -8,6 +8,8 @@
 #include "AccelByteWarsOnlineSessionLog.h"
 #include "OnlineSubsystemAccelByteSessionSettings.h"
 #include "OnlineSubsystemUtils.h"
+#include "OnlineErrorAccelByte.h"
+#include "Core/AccelByteWebSocketErrorTypes.h"
 #include "Core/Player/AccelByteWarsPlayerController.h"
 #include "Core/UI/InGameMenu/Pause/PauseWidget.h"
 #include "Core/UI/MainMenu/MatchLobby/MatchLobbyWidget.h"
@@ -24,24 +26,30 @@ void UAccelByteWarsOnlineSession::RegisterOnlineDelegates()
 {
 	Super::RegisterOnlineDelegates();
 
+	IOnlineSessionPtr SessionInt = GetSessionInt();
+	if (!ensureMsgf(SessionInt, TEXT("OnlineSession interface is nullptr."))) return;
+
+	FOnlineSessionV2AccelBytePtr ABSessionInt = GetABSessionInt();
+	if (!ensureMsgf(ABSessionInt, TEXT("AB OnlineSession interface is nullptr."))) return;
+
 	// Session Essentials
-	GetSessionInt()->AddOnCreateSessionCompleteDelegate_Handle(
+	SessionInt->AddOnCreateSessionCompleteDelegate_Handle(
 		FOnCreateSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnCreateSessionComplete));
-	GetSessionInt()->AddOnJoinSessionCompleteDelegate_Handle(
+	SessionInt->AddOnJoinSessionCompleteDelegate_Handle(
 		FOnJoinSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnJoinSessionComplete));
-	GetABSessionInt()->AddOnSendSessionInviteCompleteDelegate_Handle(
+	ABSessionInt->AddOnSendSessionInviteCompleteDelegate_Handle(
 		FOnSendSessionInviteCompleteDelegate::CreateUObject(this, &ThisClass::OnSendSessionInviteComplete));
-	GetSessionInt()->AddOnDestroySessionCompleteDelegate_Handle(
+	SessionInt->AddOnDestroySessionCompleteDelegate_Handle(
 		FOnDestroySessionCompleteDelegate::CreateUObject(this, &ThisClass::OnLeaveSessionComplete));
 
-	GetABSessionInt()->AddOnV2SessionInviteReceivedDelegate_Handle(
+	ABSessionInt->AddOnV2SessionInviteReceivedDelegate_Handle(
 		FOnV2SessionInviteReceivedDelegate::CreateUObject(this, &ThisClass::OnSessionInviteReceived));
-	GetABSessionInt()->AddOnSessionParticipantsChangeDelegate_Handle(
+	ABSessionInt->AddOnSessionParticipantsChangeDelegate_Handle(
 		FOnSessionParticipantsChangeDelegate::CreateUObject(this, &ThisClass::OnSessionParticipantsChange));
 
 	// Game Session Essentials
-	GetABSessionInt()->OnSessionServerUpdateDelegates.AddUObject(this, &ThisClass::OnSessionServerUpdateReceived);
-	GetABSessionInt()->OnSessionServerErrorDelegates.AddUObject(this, &ThisClass::OnSessionServerErrorReceived);
+	ABSessionInt->OnSessionServerUpdateDelegates.AddUObject(this, &ThisClass::OnSessionServerUpdateReceived);
+	ABSessionInt->OnSessionServerErrorDelegates.AddUObject(this, &ThisClass::OnSessionServerErrorReceived);
 
 	const TDelegate<void(APlayerController*)> LeaveSessionDelegate = TDelegate<void(APlayerController*)>::CreateWeakLambda(
 		this, [this](APlayerController*)
@@ -50,72 +58,84 @@ void UAccelByteWarsOnlineSession::RegisterOnlineDelegates()
 		});
 	UPauseWidget::OnQuitGameDelegate.Add(LeaveSessionDelegate);
 	UMatchLobbyWidget::OnQuitLobbyDelegate.Add(LeaveSessionDelegate);
-    UGameOverWidget::OnQuitGameDelegate.Add(LeaveSessionDelegate);
+	UGameOverWidget::OnQuitGameDelegate.Add(LeaveSessionDelegate);
 
 	// Matchmaking Essentials
-	GetSessionInt()->OnMatchmakingCompleteDelegates.AddUObject(this, &ThisClass::OnMatchmakingComplete);
-	GetSessionInt()->OnCancelMatchmakingCompleteDelegates.AddUObject(this, &ThisClass::OnCancelMatchmakingComplete);
-	GetABSessionInt()->OnBackfillProposalReceivedDelegates.AddUObject(this, &ThisClass::OnBackfillProposalReceived);
+	SessionInt->OnMatchmakingCompleteDelegates.AddUObject(this, &ThisClass::OnMatchmakingComplete);
+	SessionInt->OnCancelMatchmakingCompleteDelegates.AddUObject(this, &ThisClass::OnCancelMatchmakingComplete);
+	ABSessionInt->OnBackfillProposalReceivedDelegates.AddUObject(this, &ThisClass::OnBackfillProposalReceived);
 
 	// Match Session Essentials
-	GetSessionInt()->OnFindSessionsCompleteDelegates.AddUObject(this, &ThisClass::OnFindSessionsComplete);
+	SessionInt->OnFindSessionsCompleteDelegates.AddUObject(this, &ThisClass::OnFindSessionsComplete);
 	SessionSearch->SearchState = EOnlineAsyncTaskState::NotStarted;
 
 	// Party Essentials
-    GetABSessionInt()->OnCreateSessionCompleteDelegates.AddUObject(this, &ThisClass::OnCreatePartyComplete);
-    GetABSessionInt()->OnJoinSessionCompleteDelegates.AddUObject(this, &ThisClass::OnJoinPartyComplete);
-    GetABSessionInt()->OnDestroySessionCompleteDelegates.AddUObject(this, &ThisClass::OnLeavePartyComplete);
-    GetABSessionInt()->OnSendSessionInviteCompleteDelegates.AddUObject(this, &ThisClass::OnSendPartyInviteComplete);
-	GetABSessionInt()->OnSessionInviteRejectedDelegates.AddUObject(this, &ThisClass::OnPartyInviteRejected);
-    GetABSessionInt()->OnV2SessionInviteReceivedDelegates.AddUObject(this, &ThisClass::OnPartyInviteReceived);
-    GetABSessionInt()->OnKickedFromSessionDelegates.AddUObject(this, &ThisClass::OnKickedFromParty);
-    GetABSessionInt()->OnSessionParticipantsChangeDelegates.AddUObject(this, &ThisClass::OnPartyMembersChange);
-    GetABSessionInt()->OnSessionUpdateReceivedDelegates.AddUObject(this, &ThisClass::OnPartySessionUpdateReceived);
-    GetABIdentityInt()->OnConnectLobbyCompleteDelegates->AddUObject(this, &ThisClass::OnConnectLobbyComplete);
-    InitializePartyGeneratedWidgets();
+	ABSessionInt->OnCreateSessionCompleteDelegates.AddUObject(this, &ThisClass::OnCreatePartyComplete);
+	ABSessionInt->OnJoinSessionCompleteDelegates.AddUObject(this, &ThisClass::OnJoinPartyComplete);
+	ABSessionInt->OnDestroySessionCompleteDelegates.AddUObject(this, &ThisClass::OnLeavePartyComplete);
+	ABSessionInt->OnSendSessionInviteCompleteDelegates.AddUObject(this, &ThisClass::OnSendPartyInviteComplete);
+	ABSessionInt->OnSessionInviteRejectedDelegates.AddUObject(this, &ThisClass::OnPartyInviteRejected);
+	ABSessionInt->OnV2SessionInviteReceivedDelegates.AddUObject(this, &ThisClass::OnPartyInviteReceived);
+	ABSessionInt->OnKickedFromSessionDelegates.AddUObject(this, &ThisClass::OnKickedFromParty);
+	ABSessionInt->OnSessionParticipantsChangeDelegates.AddUObject(this, &ThisClass::OnPartyMembersChange);
+	ABSessionInt->OnSessionUpdateReceivedDelegates.AddUObject(this, &ThisClass::OnPartySessionUpdateReceived);
+
+	// Lobby Connection
+	GetABIdentityInt()->OnConnectLobbyCompleteDelegates->AddUObject(this, &ThisClass::OnConnectLobbyComplete);
+
+	InitializePartyGeneratedWidgets();
 }
 
 void UAccelByteWarsOnlineSession::ClearOnlineDelegates()
 {
 	Super::ClearOnlineDelegates();
 
-	// Session Essentials
-	GetSessionInt()->ClearOnCreateSessionCompleteDelegates(this);
-	GetSessionInt()->ClearOnJoinSessionCompleteDelegates(this);
-	GetABSessionInt()->ClearOnSendSessionInviteCompleteDelegates(this);
-	GetSessionInt()->ClearOnDestroySessionCompleteDelegates(this);
+	IOnlineSessionPtr SessionInt = GetSessionInt();
+	if (!ensureMsgf(SessionInt, TEXT("OnlineSession interface is nullptr."))) return;
 
-	GetABSessionInt()->ClearOnV2SessionInviteReceivedDelegates(this);
-	GetABSessionInt()->ClearOnSessionParticipantsChangeDelegates(this);
+	FOnlineSessionV2AccelBytePtr ABSessionInt = GetABSessionInt();
+	if (!ensureMsgf(ABSessionInt, TEXT("AB OnlineSession interface is nullptr."))) return;
+
+	// Session Essentials
+	SessionInt->ClearOnCreateSessionCompleteDelegates(this);
+	SessionInt->ClearOnJoinSessionCompleteDelegates(this);
+	ABSessionInt->ClearOnSendSessionInviteCompleteDelegates(this);
+	SessionInt->ClearOnDestroySessionCompleteDelegates(this);
+
+	ABSessionInt->ClearOnV2SessionInviteReceivedDelegates(this);
+	ABSessionInt->ClearOnSessionParticipantsChangeDelegates(this);
 
 	// Game Session Essentials
-	GetABSessionInt()->OnSessionServerUpdateDelegates.RemoveAll(this);
-	GetABSessionInt()->OnSessionServerErrorDelegates.RemoveAll(this);
+	ABSessionInt->OnSessionServerUpdateDelegates.RemoveAll(this);
+	ABSessionInt->OnSessionServerErrorDelegates.RemoveAll(this);
 
 	UPauseWidget::OnQuitGameDelegate.RemoveAll(this);
 	UMatchLobbyWidget::OnQuitLobbyDelegate.RemoveAll(this);
-    UGameOverWidget::OnQuitGameDelegate.RemoveAll(this);
+	UGameOverWidget::OnQuitGameDelegate.RemoveAll(this);
 
 	// Matchmaking Essentials
-	GetSessionInt()->OnMatchmakingCompleteDelegates.RemoveAll(this);
-	GetSessionInt()->OnCancelMatchmakingCompleteDelegates.RemoveAll(this);
-	GetABSessionInt()->OnBackfillProposalReceivedDelegates.RemoveAll(this);
+	SessionInt->OnMatchmakingCompleteDelegates.RemoveAll(this);
+	SessionInt->OnCancelMatchmakingCompleteDelegates.RemoveAll(this);
+	ABSessionInt->OnBackfillProposalReceivedDelegates.RemoveAll(this);
 
 	// Match Session Essentials
-	GetSessionInt()->OnFindSessionsCompleteDelegates.RemoveAll(this);
+	SessionInt->OnFindSessionsCompleteDelegates.RemoveAll(this);
 
 	// Party Essentials
-	GetABSessionInt()->OnCreateSessionCompleteDelegates.RemoveAll(this);
-	GetABSessionInt()->OnJoinSessionCompleteDelegates.RemoveAll(this);
-	GetABSessionInt()->OnDestroySessionCompleteDelegates.RemoveAll(this);
-	GetABSessionInt()->OnSendSessionInviteCompleteDelegates.RemoveAll(this);
-	GetABSessionInt()->OnSessionInviteRejectedDelegates.RemoveAll(this);
-	GetABSessionInt()->OnV2SessionInviteReceivedDelegates.RemoveAll(this);
-	GetABSessionInt()->OnKickedFromSessionDelegates.RemoveAll(this);
-	GetABSessionInt()->OnSessionParticipantsChangeDelegates.RemoveAll(this);
-	GetABSessionInt()->OnSessionUpdateReceivedDelegates.RemoveAll(this);
-    GetABIdentityInt()->OnConnectLobbyCompleteDelegates->RemoveAll(this);
-    DeinitializePartyGeneratedWidgets();
+	ABSessionInt->OnCreateSessionCompleteDelegates.RemoveAll(this);
+	ABSessionInt->OnJoinSessionCompleteDelegates.RemoveAll(this);
+	ABSessionInt->OnDestroySessionCompleteDelegates.RemoveAll(this);
+	ABSessionInt->OnSendSessionInviteCompleteDelegates.RemoveAll(this);
+	ABSessionInt->OnSessionInviteRejectedDelegates.RemoveAll(this);
+	ABSessionInt->OnV2SessionInviteReceivedDelegates.RemoveAll(this);
+	ABSessionInt->OnKickedFromSessionDelegates.RemoveAll(this);
+	ABSessionInt->OnSessionParticipantsChangeDelegates.RemoveAll(this);
+	ABSessionInt->OnSessionUpdateReceivedDelegates.RemoveAll(this);
+
+	// Lobby Connection
+	GetABIdentityInt()->OnConnectLobbyCompleteDelegates->RemoveAll(this);
+
+	DeinitializePartyGeneratedWidgets();
 }
 
 #pragma region "Session Essentials"
@@ -196,15 +216,15 @@ void UAccelByteWarsOnlineSession::CreateSession(
 
 	if (SessionType == EAccelByteV2SessionType::GameSession)
 	{
-        // Check for DS version override.
-        const FString OverriddenDSVersion = UTutorialModuleOnlineUtility::GetDedicatedServerVersionOverride();
-        if (!OverriddenDSVersion.IsEmpty()) 
-        {
-            SessionSettings.Set(SETTING_GAMESESSION_CLIENTVERSION, OverriddenDSVersion);
-        }
+		// Check for DS version override.
+		const FString OverriddenDSVersion = UTutorialModuleOnlineUtility::GetDedicatedServerVersionOverride();
+		if (!OverriddenDSVersion.IsEmpty()) 
+		{
+			SessionSettings.Set(SETTING_GAMESESSION_CLIENTVERSION, OverriddenDSVersion);
+		}
 
-        // Set local server name for matchmaking request if any.
-        // This is useful if you want to try matchmaking using local dedicated server.
+		// Set local server name for matchmaking request if any.
+		// This is useful if you want to try matchmaking using local dedicated server.
 		FString ServerName;
 		FParse::Value(FCommandLine::Get(), TEXT("-ServerName="), ServerName);
 		if (!ServerName.IsEmpty())
@@ -360,6 +380,28 @@ void UAccelByteWarsOnlineSession::LeaveSession(FName SessionName)
 			OnLeaveSessionComplete(SessionName, true);
 		}));
 	}
+}
+
+void UAccelByteWarsOnlineSession::UpdateSessionJoinability(const FName SessionName, const EAccelByteV2SessionJoinability Joinability)
+{
+	UE_LOG_ONLINESESSION(Verbose, TEXT("called"));
+
+	FOnlineSessionV2AccelBytePtr ABSessionInt = GetABSessionInt();
+	if (!ABSessionInt)
+	{
+		UE_LOG_ONLINESESSION(Warning, TEXT("Session interface is null"));
+		return;
+	}
+
+	FNamedOnlineSession* Session = ABSessionInt->GetNamedSession(SessionName);
+	if (!Session) 
+	{
+		UE_LOG_ONLINESESSION(Warning, TEXT("Session is invalid"));
+		return;
+	}
+	
+	Session->SessionSettings.Set(SETTING_SESSION_JOIN_TYPE, UEnum::GetValueAsString(Joinability));
+	ABSessionInt->UpdateSession(SessionName, Session->SessionSettings);
 }
 
 void UAccelByteWarsOnlineSession::OnCreateSessionComplete(FName SessionName, bool bSucceeded)
@@ -719,24 +761,24 @@ void UAccelByteWarsOnlineSession::OnQueryUserInfoComplete(
 
 	if (bSucceeded)
 	{
-        // Cache the result.
-        CacheUserInfo(LocalUserNum, UserIds);
+		// Cache the result.
+		CacheUserInfo(LocalUserNum, UserIds);
 
-        // Retrieve the result from cache.
-        TArray<FUserOnlineAccountAccelByte*> OnlineUsers;
-        RetrieveUserInfoCache(UserIds, OnlineUsers);
+		// Retrieve the result from cache.
+		TArray<FUserOnlineAccountAccelByte*> OnlineUsers;
+		RetrieveUserInfoCache(UserIds, OnlineUsers);
 
-        // Only include valid users info only.
-        OnlineUsers.RemoveAll([](const FUserOnlineAccountAccelByte* Temp)
-        {
-            return !Temp || !Temp->GetUserId()->IsValid();
-        });
+		// Only include valid users info only.
+		OnlineUsers.RemoveAll([](const FUserOnlineAccountAccelByte* Temp)
+		{
+			return !Temp || !Temp->GetUserId()->IsValid();
+		});
 		
-        UE_LOG_ONLINESESSION(Log, 
-            TEXT("Queried users info: %d, found valid users info: %d"), 
-            UserIds.Num(), OnlineUsers.Num());
+		UE_LOG_ONLINESESSION(Log, 
+			TEXT("Queried users info: %d, found valid users info: %d"), 
+			UserIds.Num(), OnlineUsers.Num());
 
-        OnComplete.ExecuteIfBound(true, OnlineUsers);
+		OnComplete.ExecuteIfBound(true, OnlineUsers);
 	}
 	else
 	{
@@ -872,12 +914,12 @@ void UAccelByteWarsOnlineSession::StartMatchmaking(
 	MatchmakingSearchHandle->QuerySettings.Set(
 		SETTING_SESSION_MATCHPOOL, MatchPoolId, EOnlineComparisonOp::Equals);
 
-    // Check for DS version override.
-    const FString OverriddenDSVersion = UTutorialModuleOnlineUtility::GetDedicatedServerVersionOverride();
-    if (!OverriddenDSVersion.IsEmpty())
-    {
-        MatchmakingSearchHandle->QuerySettings.Set(SETTING_GAMESESSION_CLIENTVERSION, OverriddenDSVersion, EOnlineComparisonOp::Equals);
-    }
+	// Check for DS version override.
+	const FString OverriddenDSVersion = UTutorialModuleOnlineUtility::GetDedicatedServerVersionOverride();
+	if (!OverriddenDSVersion.IsEmpty())
+	{
+		MatchmakingSearchHandle->QuerySettings.Set(SETTING_GAMESESSION_CLIENTVERSION, OverriddenDSVersion, EOnlineComparisonOp::Equals);
+	}
 
 	// Set local server name for matchmaking request if any.
 	// This is useful if you want to try matchmaking using local dedicated server.
@@ -1152,7 +1194,7 @@ void UAccelByteWarsOnlineSession::OnFindSessionsComplete(bool bSucceeded)
 		// trigger Query User info
 		QueryUserInfo(
 			LocalUserNumSearching,
-            UserIds,
+			UserIds,
 			FOnQueryUsersInfoComplete::CreateUObject(this, &ThisClass::OnQueryUserInfoForFindSessionComplete));
 	}
 	else
@@ -1187,1167 +1229,1264 @@ void UAccelByteWarsOnlineSession::OnQueryUserInfoForFindSessionComplete(
 #pragma region "Party Essentials"
 UPromptSubsystem* UAccelByteWarsOnlineSession::GetPromptSubystem()
 {
-    UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
-    if (!GameInstance)
-    {
-        return nullptr;
-    }
+	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+	if (!GameInstance)
+	{
+		return nullptr;
+	}
 
-    return GameInstance->GetSubsystem<UPromptSubsystem>();
+	return GameInstance->GetSubsystem<UPromptSubsystem>();
+}
+
+void UAccelByteWarsOnlineSession::OnCreatePartyToInviteMember(FName SessionName, bool bWasSuccessful, const int32 LocalUserNum, const FUniqueNetIdPtr SenderId, const FUniqueNetIdPtr InviteeId)
+{
+	// Abort if not a party session.
+	if (SessionName != GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession))
+	{
+		return;
+	}
+
+	GetOnCreateSessionCompleteDelegates()->Remove(OnCreatePartyToInviteMemberDelegateHandle);
+
+	if (!bWasSuccessful)
+	{
+		UE_LOG_ONLINESESSION(Warning, TEXT("Cannot send a party invitation. Failed to create a new party."));
+		OnSendPartyInviteComplete(SenderId.ToSharedRef().Get(), SessionName, false, InviteeId.ToSharedRef().Get());
+	}
+	else
+	{
+		UE_LOG_ONLINESESSION(Log, TEXT("Party created. Try sending a party invitation."));
+		SendPartyInvite(LocalUserNum, InviteeId);
+	}
 }
 
 void UAccelByteWarsOnlineSession::OnLeavePartyToTriggerEvent(FName SessionName, bool bSucceeded, const TDelegate<void(bool bWasSuccessful)> OnComplete)
 {
-    // Abort if not a party session.
-    if (SessionName != GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession))
-    {
-        OnComplete.ExecuteIfBound(false);
-        return;
-    }
+	// Abort if not a party session.
+	if (SessionName != GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession))
+	{
+		OnComplete.ExecuteIfBound(false);
+		return;
+	}
 
-    OnComplete.ExecuteIfBound(bSucceeded);
+	OnComplete.ExecuteIfBound(bSucceeded);
 }
 
 void UAccelByteWarsOnlineSession::InitializePartyGeneratedWidgets()
 {
-    // Assign action button to invite player to the party.
-    InviteToPartyButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_invite_to_party"));
-    if (ensure(InviteToPartyButtonMetadata))
-    {
-        InviteToPartyButtonMetadata->ButtonAction.AddWeakLambda(this, [this]()
-        {
-            const UCommonActivatableWidget* ParentWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
-            if (!ParentWidget)
-            {
-                return;
-            }
+	// Assign action button to invite player to the party.
+	InviteToPartyButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_invite_to_party"));
+	if (ensure(InviteToPartyButtonMetadata))
+	{
+		InviteToPartyButtonMetadata->ButtonAction.AddWeakLambda(this, [this]()
+		{
+			const UCommonActivatableWidget* ParentWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
+			if (!ParentWidget)
+			{
+				return;
+			}
 
-            const FUniqueNetIdPtr FriendUserId = GetCurrentDisplayedFriendId();
-            if (FriendUserId)
-            {
-                OnInviteToPartyButtonClicked(GetLocalUserNumFromPlayerController(ParentWidget->GetOwningPlayer()), FriendUserId);
-            }
-        });
-        InviteToPartyButtonMetadata->OnWidgetGenerated.AddUObject(this, &ThisClass::UpdatePartyGeneratedWidgets);
-    }
+			const FUniqueNetIdPtr FriendUserId = GetCurrentDisplayedFriendId();
+			if (FriendUserId)
+			{
+				OnInviteToPartyButtonClicked(GetLocalUserNumFromPlayerController(ParentWidget->GetOwningPlayer()), FriendUserId);
+			}
+		});
+		InviteToPartyButtonMetadata->OnWidgetGenerated.AddUObject(this, &ThisClass::UpdatePartyGeneratedWidgets);
+	}
 
-    // Assign action button to kick player from the party.
-    KickPlayerFromPartyButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_kick_from_party"));
-    if (ensure(KickPlayerFromPartyButtonMetadata))
-    {
-        KickPlayerFromPartyButtonMetadata->ButtonAction.AddWeakLambda(this, [this]()
-        {
-            const UCommonActivatableWidget* ParentWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
-            if (!ParentWidget)
-            {
-                return;
-            }
+	// Assign action button to kick player from the party.
+	KickPlayerFromPartyButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_kick_from_party"));
+	if (ensure(KickPlayerFromPartyButtonMetadata))
+	{
+		KickPlayerFromPartyButtonMetadata->ButtonAction.AddWeakLambda(this, [this]()
+		{
+			const UCommonActivatableWidget* ParentWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
+			if (!ParentWidget)
+			{
+				return;
+			}
 
-            const FUniqueNetIdPtr FriendUserId = GetCurrentDisplayedFriendId();
-            if (FriendUserId)
-            {
-                OnKickPlayerFromPartyButtonClicked(GetLocalUserNumFromPlayerController(ParentWidget->GetOwningPlayer()), FriendUserId);
-            }
-        });
-        KickPlayerFromPartyButtonMetadata->OnWidgetGenerated.AddUObject(this, &ThisClass::UpdatePartyGeneratedWidgets);
-    }
+			const FUniqueNetIdPtr FriendUserId = GetCurrentDisplayedFriendId();
+			if (FriendUserId)
+			{
+				OnKickPlayerFromPartyButtonClicked(GetLocalUserNumFromPlayerController(ParentWidget->GetOwningPlayer()), FriendUserId);
+			}
+		});
+		KickPlayerFromPartyButtonMetadata->OnWidgetGenerated.AddUObject(this, &ThisClass::UpdatePartyGeneratedWidgets);
+	}
 
-    // Assign action button to promote party leader.
-    PromotePartyLeaderButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_promote_party_leader"));
-    if (ensure(PromotePartyLeaderButtonMetadata))
-    {
-        PromotePartyLeaderButtonMetadata->ButtonAction.AddWeakLambda(this, [this]()
-        {
-            const UCommonActivatableWidget* ParentWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
-            if (!ParentWidget)
-            {
-                return;
-            }
+	// Assign action button to promote party leader.
+	PromotePartyLeaderButtonMetadata = FTutorialModuleGeneratedWidget::GetMetadataById(TEXT("btn_promote_party_leader"));
+	if (ensure(PromotePartyLeaderButtonMetadata))
+	{
+		PromotePartyLeaderButtonMetadata->ButtonAction.AddWeakLambda(this, [this]()
+		{
+			const UCommonActivatableWidget* ParentWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
+			if (!ParentWidget)
+			{
+				return;
+			}
 
-            const FUniqueNetIdPtr FriendUserId = GetCurrentDisplayedFriendId();
-            if (FriendUserId)
-            {
-                OnPromotePartyLeaderButtonClicked(GetLocalUserNumFromPlayerController(ParentWidget->GetOwningPlayer()), FriendUserId);
-            }
-        });
-        PromotePartyLeaderButtonMetadata->OnWidgetGenerated.AddUObject(this, &ThisClass::UpdatePartyGeneratedWidgets);
-    }
+			const FUniqueNetIdPtr FriendUserId = GetCurrentDisplayedFriendId();
+			if (FriendUserId)
+			{
+				OnPromotePartyLeaderButtonClicked(GetLocalUserNumFromPlayerController(ParentWidget->GetOwningPlayer()), FriendUserId);
+			}
+		});
+		PromotePartyLeaderButtonMetadata->OnWidgetGenerated.AddUObject(this, &ThisClass::UpdatePartyGeneratedWidgets);
+	}
 
-    // On party member update events, update the generated widget.
-    if (GetOnPartyMembersChangeDelegates())
-    {
-        GetOnPartyMembersChangeDelegates()->AddWeakLambda(this, [this](FName SessionName, const FUniqueNetId& Member, bool bJoined)
-        {
-            UpdatePartyGeneratedWidgets();
-        });
-    }
-    if (GetOnPartySessionUpdateReceivedDelegates())
-    {
-        GetOnPartySessionUpdateReceivedDelegates()->AddWeakLambda(this, [this](FName SessionName)
-        {
-            UpdatePartyGeneratedWidgets();
-        });
-    }
+	// On party update events, update the generated widget.
+	if (GetOnCreatePartyCompleteDelegates())
+	{
+		GetOnCreatePartyCompleteDelegates()->AddWeakLambda(this, [this](FName SessionName, bool bWasSuccessful)
+		{
+			UpdatePartyGeneratedWidgets();
+		});
+	}
+	if (GetOnLeavePartyCompleteDelegates())
+	{
+		GetOnLeavePartyCompleteDelegates()->AddWeakLambda(this, [this](FName SessionName, bool bWasSuccessful)
+		{
+			UpdatePartyGeneratedWidgets();
+		});
+	}
+	if (GetOnPartyMembersChangeDelegates())
+	{
+		GetOnPartyMembersChangeDelegates()->AddWeakLambda(this, [this](FName SessionName, const FUniqueNetId& Member, bool bJoined)
+		{
+			UpdatePartyGeneratedWidgets();
+		});
+	}
+	if (GetOnPartySessionUpdateReceivedDelegates())
+	{
+		GetOnPartySessionUpdateReceivedDelegates()->AddWeakLambda(this, [this](FName SessionName)
+		{
+			UpdatePartyGeneratedWidgets();
+		});
+	}
 }
 
 void UAccelByteWarsOnlineSession::UpdatePartyGeneratedWidgets()
 {
-    // Abort if not in a party session.
-    if (!GetABSessionInt()->IsInPartySession())
-    {
-        return;
-    }
+	// Take local user id reference from active widget.
+	FUniqueNetIdPtr LocalUserABId = nullptr;
+	if (UCommonActivatableWidget* ActiveWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this))
+	{
+		LocalUserABId = GetLocalPlayerUniqueNetId(ActiveWidget->GetOwningPlayer());
+	}
 
-    // Take local user id reference from active widget.
-    FUniqueNetIdPtr LocalUserABId = nullptr;
-    if (UCommonActivatableWidget* ActiveWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this))
-    {
-        LocalUserABId = GetLocalPlayerUniqueNetId(ActiveWidget->GetOwningPlayer());
-    }
+	// Take current displayed friend id.
+	const FUniqueNetIdPtr FriendUserId = GetCurrentDisplayedFriendId();
 
-    // Take current displayed friend id.
-    const FUniqueNetIdPtr FriendUserId = GetCurrentDisplayedFriendId();
+	// Check party information.
+	const bool bIsInParty = IsInParty(LocalUserABId);
+	const bool bIsLeader = IsPartyLeader(LocalUserABId);
+	const bool bIsFriendInParty = IsInParty(FriendUserId);
 
-    // Check party information.
-    const bool bIsInParty = IsInParty(LocalUserABId);
-    const bool bIsLeader = IsPartyLeader(LocalUserABId);
-    const bool bIsFriendInParty = IsInParty(FriendUserId);
+	// Display invite to party button if in a party.
+	if (InviteToPartyButtonMetadata)
+	{
+		if (UAccelByteWarsButtonBase* Button =
+			Cast<UAccelByteWarsButtonBase>(InviteToPartyButtonMetadata->GenerateWidgetRef))
+		{
+			Button->SetIsInteractionEnabled(true);
+			Button->SetVisibility(
+				!bIsFriendInParty ?
+				ESlateVisibility::Visible :
+				ESlateVisibility::Collapsed);
+		}
+	}
 
-    // Display invite to party button if in a party.
-    if (InviteToPartyButtonMetadata)
-    {
-        if (UAccelByteWarsButtonBase* Button =
-            Cast<UAccelByteWarsButtonBase>(InviteToPartyButtonMetadata->GenerateWidgetRef))
-        {
-            Button->SetIsInteractionEnabled(true);
-            Button->SetVisibility(
-                (bIsInParty && !bIsFriendInParty) ?
-                ESlateVisibility::Visible :
-                ESlateVisibility::Collapsed);
-        }
-    }
+	// Display promote leader button if in a party and is the party leader.
+	if (PromotePartyLeaderButtonMetadata)
+	{
+		if (UAccelByteWarsButtonBase* Button =
+			Cast<UAccelByteWarsButtonBase>(PromotePartyLeaderButtonMetadata->GenerateWidgetRef))
+		{
+			Button->SetIsInteractionEnabled(true);
+			Button->SetVisibility(
+				(bIsInParty && bIsFriendInParty && bIsLeader) ?
+				ESlateVisibility::Visible :
+				ESlateVisibility::Collapsed);
+		}
+	}
 
-    // Display promote leader button if in a party and is the party leader.
-    if (PromotePartyLeaderButtonMetadata)
-    {
-        if (UAccelByteWarsButtonBase* Button =
-            Cast<UAccelByteWarsButtonBase>(PromotePartyLeaderButtonMetadata->GenerateWidgetRef))
-        {
-            Button->SetIsInteractionEnabled(true);
-            Button->SetVisibility(
-                (bIsInParty && bIsFriendInParty && bIsLeader) ?
-                ESlateVisibility::Visible :
-                ESlateVisibility::Collapsed);
-        }
-    }
-
-    // Display kick player button if in a party and is the party leader.
-    if (KickPlayerFromPartyButtonMetadata)
-    {
-        if (UAccelByteWarsButtonBase* Button =
-            Cast<UAccelByteWarsButtonBase>(KickPlayerFromPartyButtonMetadata->GenerateWidgetRef))
-        {
-            Button->SetIsInteractionEnabled(true);
-            Button->SetVisibility(
-                (bIsInParty && bIsFriendInParty && bIsLeader) ?
-                ESlateVisibility::Visible :
-                ESlateVisibility::Collapsed);
-        }
-    }
+	// Display kick player button if in a party and is the party leader.
+	if (KickPlayerFromPartyButtonMetadata)
+	{
+		if (UAccelByteWarsButtonBase* Button =
+			Cast<UAccelByteWarsButtonBase>(KickPlayerFromPartyButtonMetadata->GenerateWidgetRef))
+		{
+			Button->SetIsInteractionEnabled(true);
+			Button->SetVisibility(
+				(bIsInParty && bIsFriendInParty && bIsLeader) ?
+				ESlateVisibility::Visible :
+				ESlateVisibility::Collapsed);
+		}
+	}
 }
 
 void UAccelByteWarsOnlineSession::DeinitializePartyGeneratedWidgets()
 {
-    // Unbind party action button delegates.
-    if (InviteToPartyButtonMetadata)
-    {
-        InviteToPartyButtonMetadata->ButtonAction.RemoveAll(this);
-        InviteToPartyButtonMetadata->OnWidgetGenerated.RemoveAll(this);
-    }
-    if (KickPlayerFromPartyButtonMetadata)
-    {
-        KickPlayerFromPartyButtonMetadata->ButtonAction.RemoveAll(this);
-        KickPlayerFromPartyButtonMetadata->OnWidgetGenerated.RemoveAll(this);
-    }
-    if (PromotePartyLeaderButtonMetadata)
-    {
-        PromotePartyLeaderButtonMetadata->ButtonAction.RemoveAll(this);
-        PromotePartyLeaderButtonMetadata->OnWidgetGenerated.RemoveAll(this);
-    }
+	// Unbind party action button delegates.
+	if (InviteToPartyButtonMetadata)
+	{
+		InviteToPartyButtonMetadata->ButtonAction.RemoveAll(this);
+		InviteToPartyButtonMetadata->OnWidgetGenerated.RemoveAll(this);
+	}
+	if (KickPlayerFromPartyButtonMetadata)
+	{
+		KickPlayerFromPartyButtonMetadata->ButtonAction.RemoveAll(this);
+		KickPlayerFromPartyButtonMetadata->OnWidgetGenerated.RemoveAll(this);
+	}
+	if (PromotePartyLeaderButtonMetadata)
+	{
+		PromotePartyLeaderButtonMetadata->ButtonAction.RemoveAll(this);
+		PromotePartyLeaderButtonMetadata->OnWidgetGenerated.RemoveAll(this);
+	}
 
-    // Unbind party event delegates.
-    if (GetOnPartyMembersChangeDelegates())
-    {
-        GetOnPartyMembersChangeDelegates()->RemoveAll(this);
-    }
-    if (GetOnPartySessionUpdateReceivedDelegates())
-    {
-        GetOnPartySessionUpdateReceivedDelegates()->RemoveAll(this);
-    }
+	// Unbind party event delegates.
+	if (GetOnPartyMembersChangeDelegates())
+	{
+		GetOnPartyMembersChangeDelegates()->RemoveAll(this);
+	}
+	if (GetOnPartySessionUpdateReceivedDelegates())
+	{
+		GetOnPartySessionUpdateReceivedDelegates()->RemoveAll(this);
+	}
 }
 
 FUniqueNetIdPtr UAccelByteWarsOnlineSession::GetCurrentDisplayedFriendId()
 {
-    UCommonActivatableWidget* ParentWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
-    if (!ParentWidget)
-    {
-        return nullptr;
-    }
+	UCommonActivatableWidget* ParentWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
+	if (!ParentWidget)
+	{
+		return nullptr;
+	}
 
-    FUniqueNetIdRepl FriendUserId = nullptr;
-    if (const UFriendDetailsWidget* FriendDetailsWidget = Cast<UFriendDetailsWidget>(ParentWidget))
-    {
-        if (FriendDetailsWidget->GetCachedFriendData() &&
-            FriendDetailsWidget->GetCachedFriendData()->UserId &&
-            FriendDetailsWidget->GetCachedFriendData()->UserId.IsValid())
-        {
-            FriendUserId = FriendDetailsWidget->GetCachedFriendData()->UserId;
-        }
-    }
+	FUniqueNetIdRepl FriendUserId = nullptr;
+	if (const UFriendDetailsWidget* FriendDetailsWidget = Cast<UFriendDetailsWidget>(ParentWidget))
+	{
+		if (FriendDetailsWidget->GetCachedFriendData() &&
+			FriendDetailsWidget->GetCachedFriendData()->UserId &&
+			FriendDetailsWidget->GetCachedFriendData()->UserId.IsValid())
+		{
+			FriendUserId = FriendDetailsWidget->GetCachedFriendData()->UserId;
+		}
+	}
 
-    if (FriendUserId == nullptr || !FriendUserId.IsValid())
-    {
-        return nullptr;
-    }
+	if (FriendUserId == nullptr || !FriendUserId.IsValid())
+	{
+		return nullptr;
+	}
 
-    return FriendUserId.GetUniqueNetId();
+	return FriendUserId.GetUniqueNetId();
 }
 
 void UAccelByteWarsOnlineSession::OnInviteToPartyButtonClicked(const int32 LocalUserNum, const FUniqueNetIdPtr& Invitee)
 {
-    // Disable the button to avoid spamming.
-    if (InviteToPartyButtonMetadata)
-    {
-        if (UAccelByteWarsButtonBase* Button =
-            Cast<UAccelByteWarsButtonBase>(InviteToPartyButtonMetadata->GenerateWidgetRef))
-        {
-            Button->SetIsInteractionEnabled(false);
-        }
-    }
+	// Disable the button to avoid spamming.
+	if (InviteToPartyButtonMetadata)
+	{
+		if (UAccelByteWarsButtonBase* Button =
+			Cast<UAccelByteWarsButtonBase>(InviteToPartyButtonMetadata->GenerateWidgetRef))
+		{
+			Button->SetIsInteractionEnabled(false);
+		}
+	}
 
-    SendPartyInvite(LocalUserNum, Invitee);
+	SendPartyInvite(LocalUserNum, Invitee);
 }
 
 void UAccelByteWarsOnlineSession::OnKickPlayerFromPartyButtonClicked(const int32 LocalUserNum, const FUniqueNetIdPtr& KickedPlayer)
 {
-    // Disable the button to avoid spamming.
-    if (KickPlayerFromPartyButtonMetadata)
-    {
-        if (UAccelByteWarsButtonBase* Button =
-            Cast<UAccelByteWarsButtonBase>(KickPlayerFromPartyButtonMetadata->GenerateWidgetRef))
-        {
-            Button->SetIsInteractionEnabled(false);
-        }
-    }
+	// Disable the button to avoid spamming.
+	if (KickPlayerFromPartyButtonMetadata)
+	{
+		if (UAccelByteWarsButtonBase* Button =
+			Cast<UAccelByteWarsButtonBase>(KickPlayerFromPartyButtonMetadata->GenerateWidgetRef))
+		{
+			Button->SetIsInteractionEnabled(false);
+		}
+	}
 
-    KickPlayerFromParty(LocalUserNum, KickedPlayer);
+	KickPlayerFromParty(LocalUserNum, KickedPlayer);
 }
 
 void UAccelByteWarsOnlineSession::OnPromotePartyLeaderButtonClicked(const int32 LocalUserNum, const FUniqueNetIdPtr& NewLeader)
 {
-    // Disable the button to avoid spamming.
-    if (PromotePartyLeaderButtonMetadata)
-    {
-        if (UAccelByteWarsButtonBase* Button =
-            Cast<UAccelByteWarsButtonBase>(PromotePartyLeaderButtonMetadata->GenerateWidgetRef))
-        {
-            Button->SetIsInteractionEnabled(false);
-        }
-    }
+	// Disable the button to avoid spamming.
+	if (PromotePartyLeaderButtonMetadata)
+	{
+		if (UAccelByteWarsButtonBase* Button =
+			Cast<UAccelByteWarsButtonBase>(PromotePartyLeaderButtonMetadata->GenerateWidgetRef))
+		{
+			Button->SetIsInteractionEnabled(false);
+		}
+	}
 
-    PromotePartyLeader(LocalUserNum, NewLeader);
+	PromotePartyLeader(LocalUserNum, NewLeader);
 }
 
 TArray<FUniqueNetIdRef> UAccelByteWarsOnlineSession::GetPartyMembers()
 {
-    if (GetABSessionInt())
-    {
-        const FNamedOnlineSession* PartySession = GetABSessionInt()->GetNamedSession(GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession));
-        if (PartySession)
-        {
-            return PartySession->RegisteredPlayers;
-        }
-    }
+	if (GetABSessionInt())
+	{
+		const FNamedOnlineSession* PartySession = GetABSessionInt()->GetNamedSession(GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession));
+		if (PartySession)
+		{
+			return PartySession->RegisteredPlayers;
+		}
+	}
 
-    return TArray<FUniqueNetIdRef>();
+	return TArray<FUniqueNetIdRef>();
 }
 
 FUniqueNetIdPtr UAccelByteWarsOnlineSession::GetPartyLeader()
 {
-    if (GetABSessionInt())
-    {
-        const FNamedOnlineSession* PartySession = GetABSessionInt()->GetNamedSession(GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession));
-        if (PartySession)
-        {
-            const TSharedPtr<FOnlineSessionInfoAccelByteV2> SessionInfo = StaticCastSharedPtr<FOnlineSessionInfoAccelByteV2>(PartySession->SessionInfo);
-            if (!SessionInfo)
-            {
-                return nullptr;
-            }
+	if (GetABSessionInt())
+	{
+		const FNamedOnlineSession* PartySession = GetABSessionInt()->GetNamedSession(GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession));
+		if (PartySession)
+		{
+			const TSharedPtr<FOnlineSessionInfoAccelByteV2> SessionInfo = StaticCastSharedPtr<FOnlineSessionInfoAccelByteV2>(PartySession->SessionInfo);
+			if (!SessionInfo)
+			{
+				return nullptr;
+			}
 
-            return GetABSessionInt()->GetSessionLeaderId(PartySession);
-        }
-    }
+			return GetABSessionInt()->GetSessionLeaderId(PartySession);
+		}
+	}
 
-    return nullptr;
+	return nullptr;
 }
 
 bool UAccelByteWarsOnlineSession::IsInParty(const FUniqueNetIdPtr UserId)
 {
-    if (!UserId)
-    {
-        return false;
-    }
+	if (!UserId)
+	{
+		return false;
+	}
 
-    const TPartyMemberArray Members = GetPartyMembers();
-    for (const auto& Member : Members)
-    {
-        if (!Member.Get().IsValid())
-        {
-            continue;
-        }
+	const TPartyMemberArray Members = GetPartyMembers();
+	for (const auto& Member : Members)
+	{
+		if (!Member.Get().IsValid())
+		{
+			continue;
+		}
 
-        if (Member.Get() == UserId.ToSharedRef().Get())
-        {
-            return true;
-        }
-    }
+		if (Member.Get() == UserId.ToSharedRef().Get())
+		{
+			return true;
+		}
+	}
 
-    return false;
+	return false;
 }
 
 bool UAccelByteWarsOnlineSession::IsPartyLeader(const FUniqueNetIdPtr UserId)
 {
-    return GetPartyLeader() && UserId && UserId.ToSharedRef().Get() == GetPartyLeader().ToSharedRef().Get();
+	return GetPartyLeader() && UserId && UserId.ToSharedRef().Get() == GetPartyLeader().ToSharedRef().Get();
 }
 
 void UAccelByteWarsOnlineSession::CreateParty(const int32 LocalUserNum)
 {
-    const FName SessionName = GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession);
+	const FName SessionName = GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession);
 
-    // Safety.
-    if (!GetABSessionInt())
-    {
-        UE_LOG_ONLINESESSION(Warning, TEXT("Cannot create a party. Session Interface is not valid."));
-        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
-        {
-            OnCreatePartyComplete(SessionName, false);
-        }));
-        return;
-    }
+	// Safety.
+	if (!GetABSessionInt())
+	{
+		UE_LOG_ONLINESESSION(Warning, TEXT("Cannot create a party. Session Interface is not valid."));
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
+		{
+			OnCreatePartyComplete(SessionName, false);
+		}));
+		return;
+	}
 
-    // Always create a new party. Thus, leave any left-over party session first.
-    if (GetABSessionInt()->IsInPartySession())
-    {
-        if (OnLeaveSessionForTriggerDelegateHandle.IsValid())
-        {
-            GetOnLeaveSessionCompleteDelegates()->Remove(OnLeaveSessionForTriggerDelegateHandle);
-            OnLeaveSessionForTriggerDelegateHandle.Reset();
-        }
+	// Always create a new party. Thus, leave any left-over party session first.
+	if (GetABSessionInt()->IsInPartySession())
+	{
+		UE_LOG_ONLINESESSION(Log, TEXT("Party found. Leave old party before creating a new one."));
 
-        OnLeaveSessionForTriggerDelegateHandle = GetOnLeaveSessionCompleteDelegates()->AddUObject(
-            this,
-            &ThisClass::OnLeavePartyToTriggerEvent,
-            TDelegate<void(bool)>::CreateWeakLambda(this, [this, LocalUserNum, SessionName](bool bWasSuccessful)
-            {
-                if (bWasSuccessful)
-                {
-                    CreateParty(LocalUserNum);
-                }
-                else
-                {
-                    ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
-                        {
-                            OnCreatePartyComplete(SessionName, false);
-                        }));
-                }
-            }
-        ));
+		if (OnLeaveSessionForTriggerDelegateHandle.IsValid())
+		{
+			GetOnLeaveSessionCompleteDelegates()->Remove(OnLeaveSessionForTriggerDelegateHandle);
+			OnLeaveSessionForTriggerDelegateHandle.Reset();
+		}
 
-        LeaveSession(SessionName);
-        return;
-    }
+		OnLeaveSessionForTriggerDelegateHandle = GetOnLeaveSessionCompleteDelegates()->AddUObject(
+			this,
+			&ThisClass::OnLeavePartyToTriggerEvent,
+			TDelegate<void(bool)>::CreateWeakLambda(this, [this, LocalUserNum, SessionName](bool bWasSuccessful)
+			{
+				GetOnLeaveSessionCompleteDelegates()->Remove(OnLeaveSessionForTriggerDelegateHandle);
 
-    // Create a new party session.
-    CreateSession(
-        LocalUserNum,
-        SessionName,
-        FOnlineSessionSettings(),
-        EAccelByteV2SessionType::PartySession,
-        PartySessionTemplate);
+				if (bWasSuccessful)
+				{
+					UE_LOG_ONLINESESSION(Log, TEXT("Success to leave old party destroyed. Try creating a new party."));
+					CreateParty(LocalUserNum);
+				}
+				else
+				{
+					UE_LOG_ONLINESESSION(Warning, TEXT("Cannot create a new party. Failed to leave old party."));
+					ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
+					{
+						OnCreatePartyComplete(SessionName, false);
+					}));
+				}
+			}
+		));
+
+		LeaveSession(SessionName);
+		return;
+	}
+
+	// Create a new party session.
+	UE_LOG_ONLINESESSION(Log, TEXT("Create a new party."));
+	CreateSession(
+		LocalUserNum,
+		SessionName,
+		FOnlineSessionSettings(),
+		EAccelByteV2SessionType::PartySession,
+		PartySessionTemplate);
 }
 
 void UAccelByteWarsOnlineSession::LeaveParty(const int32 LocalUserNum)
 {
-    const FName SessionName = GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession);
+	const FName SessionName = GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession);
 
-    if (!GetABSessionInt() || !GetABSessionInt()->IsInPartySession())
-    {
-        UE_LOG_ONLINESESSION(Warning, TEXT("Cannot leave a party. Session Interface is not valid."));
-        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
-        {
-            OnLeavePartyComplete(SessionName, false);
-        }));
-        return;
-    }
+	if (!GetABSessionInt())
+	{
+		UE_LOG_ONLINESESSION(Warning, TEXT("Cannot leave a party. Session Interface is not valid."));
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
+		{
+			OnLeavePartyComplete(SessionName, false);
+		}));
+		return;
+	}
 
-    // After leaving a party, automatically create a new one.
-    if (OnLeaveSessionForTriggerDelegateHandle.IsValid())
-    {
-        GetOnLeaveSessionCompleteDelegates()->Remove(OnLeaveSessionForTriggerDelegateHandle);
-        OnLeaveSessionForTriggerDelegateHandle.Reset();
-    }
-    OnLeaveSessionForTriggerDelegateHandle = GetOnLeaveSessionCompleteDelegates()->AddUObject(
-        this,
-        &ThisClass::OnLeavePartyToTriggerEvent,
-        TDelegate<void(bool)>::CreateWeakLambda(this, [this, LocalUserNum, SessionName](bool bWasSuccessful)
-        {
-            if (bWasSuccessful)
-            {
-                CreateParty(LocalUserNum);
-            }
-            else
-            {
-                ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
-                {
-                    OnLeavePartyComplete(SessionName, false);
-                }));
-            }
-        }
-    ));
+	if (!GetABSessionInt()->IsInPartySession()) 
+	{
+		UE_LOG_ONLINESESSION(Warning, TEXT("Cannot leave a party. Not in any party."));
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
+		{
+			OnLeavePartyComplete(SessionName, false);
+		}));
+		return;
+	}
 
-    // Leave party.
-    LeaveSession(SessionName);
+	// Leave party.
+	UE_LOG_ONLINESESSION(Log, TEXT("Leave party."));
+	LeaveSession(SessionName);
 }
 
 void UAccelByteWarsOnlineSession::SendPartyInvite(const int32 LocalUserNum, const FUniqueNetIdPtr& Invitee)
 {
-    if (!GetABSessionInt())
-    {
-        UE_LOG_ONLINESESSION(Warning, TEXT("Cannot send a party invitation. Session Interface is not valid."));
-        return;
-    }
+	if (!GetABSessionInt())
+	{
+		UE_LOG_ONLINESESSION(Warning, TEXT("Cannot send a party invitation. Session Interface is not valid."));
+		return;
+	}
 
-    const APlayerController* SenderPC = GetPlayerControllerByLocalUserNum(LocalUserNum);
-    if (!SenderPC)
-    {
-        UE_LOG_ONLINESESSION(Warning, TEXT("Cannot send a party invitation. Sender's PlayerController is not valid."));
-        return;
-    }
+	const APlayerController* SenderPC = GetPlayerControllerByLocalUserNum(LocalUserNum);
+	if (!SenderPC)
+	{
+		UE_LOG_ONLINESESSION(Warning, TEXT("Cannot send a party invitation. Sender's PlayerController is not valid."));
+		return;
+	}
 
-    const FUniqueNetIdPtr SenderId = GetLocalPlayerUniqueNetId(SenderPC);
-    if (!SenderId)
-    {
-        UE_LOG_ONLINESESSION(Warning, TEXT("Cannot send a party invitation. Sender's NetId is not valid."));
-        return;
-    }
+	const FUniqueNetIdPtr SenderId = GetLocalPlayerUniqueNetId(SenderPC);
+	if (!SenderId)
+	{
+		UE_LOG_ONLINESESSION(Warning, TEXT("Cannot send a party invitation. Sender's NetId is not valid."));
+		return;
+	}
 
-    const FName SessionName = GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession);
-    if (!Invitee)
-    {
-        UE_LOG_ONLINESESSION(Warning, TEXT("Cannot send a party invitation. Invitee's NetId is not valid."));
-        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SenderId, SessionName, Invitee]()
-        {
-            OnSendPartyInviteComplete(SenderId.ToSharedRef().Get(), SessionName, false, Invitee.ToSharedRef().Get());
-        }));
-        return;
-    }
+	const FName SessionName = GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession);
+	if (!Invitee)
+	{
+		UE_LOG_ONLINESESSION(Warning, TEXT("Cannot send a party invitation. Invitee's NetId is not valid."));
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SenderId, SessionName, Invitee]()
+		{
+			OnSendPartyInviteComplete(SenderId.ToSharedRef().Get(), SessionName, false, Invitee.ToSharedRef().Get());
+		}));
+		return;
+	}
 
-    GetABSessionInt()->SendSessionInviteToFriend(
-        SenderId.ToSharedRef().Get(),
-        SessionName,
-        Invitee.ToSharedRef().Get());
+	// Create a new party first before inviting.
+	if (!GetABSessionInt()->IsInPartySession())
+	{
+		UE_LOG_ONLINESESSION(Log, TEXT("Not in a party session. Creating a new party before sending a party invitation."));
+
+		if (OnCreatePartyToInviteMemberDelegateHandle.IsValid())
+		{
+			GetOnCreateSessionCompleteDelegates()->Remove(OnCreatePartyToInviteMemberDelegateHandle);
+			OnCreatePartyToInviteMemberDelegateHandle.Reset();
+		}
+
+		OnCreatePartyToInviteMemberDelegateHandle = GetOnCreateSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnCreatePartyToInviteMember, LocalUserNum, SenderId, Invitee);
+
+		CreateParty(LocalUserNum);
+		return;
+	}
+
+	// Send party invitation.
+	UE_LOG_ONLINESESSION(Log, TEXT("Send party invitation."));
+	GetABSessionInt()->SendSessionInviteToFriend(
+		SenderId.ToSharedRef().Get(),
+		SessionName,
+		Invitee.ToSharedRef().Get());
 }
 
 void UAccelByteWarsOnlineSession::JoinParty(const int32 LocalUserNum, const FOnlineSessionSearchResult& PartySessionResult)
 {
-    const FName SessionName = GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession);
+	const FName SessionName = GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession);
 
-    if (!GetABSessionInt())
-    {
-        UE_LOG_ONLINESESSION(Warning, TEXT("Cannot join a party. Session Interface is not valid."));
-        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
-        {
-            OnJoinPartyComplete(SessionName, EOnJoinSessionCompleteResult::Type::UnknownError);
-        }));
-        return;
-    }
+	if (!GetABSessionInt())
+	{
+		UE_LOG_ONLINESESSION(Warning, TEXT("Cannot join a party. Session Interface is not valid."));
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
+		{
+			OnJoinPartyComplete(SessionName, EOnJoinSessionCompleteResult::Type::UnknownError);
+		}));
+		return;
+	}
 
-    // Always leave any party before joining a new party.
-    if (GetABSessionInt()->IsInPartySession())
-    {
-        if (OnLeaveSessionForTriggerDelegateHandle.IsValid())
-        {
-            GetOnLeaveSessionCompleteDelegates()->Remove(OnLeaveSessionForTriggerDelegateHandle);
-            OnLeaveSessionForTriggerDelegateHandle.Reset();
-        }
+	// Always leave any party before joining a new party.
+	if (GetABSessionInt()->IsInPartySession())
+	{
+		UE_LOG_ONLINESESSION(Log, TEXT("Party found. Leave old party before joining a new one."));
 
-        OnLeaveSessionForTriggerDelegateHandle = GetOnLeaveSessionCompleteDelegates()->AddUObject(
-            this,
-            &ThisClass::OnLeavePartyToTriggerEvent,
-            TDelegate<void(bool)>::CreateWeakLambda(this, [this, LocalUserNum, PartySessionResult, SessionName](bool bWasSuccessful)
-            {
-                if (bWasSuccessful)
-                {
-                    JoinParty(LocalUserNum, PartySessionResult);
-                }
-                else
-                {
-                    ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
-                    {
-                        OnJoinPartyComplete(SessionName, EOnJoinSessionCompleteResult::Type::UnknownError);
-                    }));
-                }
-            }
-        ));
+		if (OnLeaveSessionForTriggerDelegateHandle.IsValid())
+		{
+			GetOnLeaveSessionCompleteDelegates()->Remove(OnLeaveSessionForTriggerDelegateHandle);
+			OnLeaveSessionForTriggerDelegateHandle.Reset();
+		}
 
-        LeaveSession(SessionName);
-        return;
-    }
+		OnLeaveSessionForTriggerDelegateHandle = GetOnLeaveSessionCompleteDelegates()->AddUObject(
+			this,
+			&ThisClass::OnLeavePartyToTriggerEvent,
+			TDelegate<void(bool)>::CreateWeakLambda(this, [this, LocalUserNum, PartySessionResult, SessionName](bool bWasSuccessful)
+			{
+				GetOnLeaveSessionCompleteDelegates()->Remove(OnLeaveSessionForTriggerDelegateHandle);
 
-    // Join a new party.
-    JoinSession(LocalUserNum, SessionName, PartySessionResult);
+				if (bWasSuccessful)
+				{
+					UE_LOG_ONLINESESSION(Log, TEXT("Success to leave old party. Try to joining a new party."));
+
+					JoinParty(LocalUserNum, PartySessionResult);
+				}
+				else
+				{
+					UE_LOG_ONLINESESSION(Warning, TEXT("Cannot joining a new party. Failed to leave old party."));
+
+					ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
+					{
+						OnJoinPartyComplete(SessionName, EOnJoinSessionCompleteResult::Type::UnknownError);
+					}));
+				}
+			}
+		));
+
+		LeaveSession(SessionName);
+		return;
+	}
+
+	// Join a new party.
+	UE_LOG_ONLINESESSION(Log, TEXT("Join a new party."));
+	JoinSession(LocalUserNum, SessionName, PartySessionResult);
 }
 
 void UAccelByteWarsOnlineSession::RejectPartyInvite(const int32 LocalUserNum, const FOnlineSessionInviteAccelByte& PartyInvite)
 {
-    if (!GetABSessionInt())
-    {
-        UE_LOG_ONLINESESSION(Warning, TEXT("Cannot reject a party invitation. Session Interface is not valid."));
-        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
-        {
-            OnRejectPartyInviteComplete(false);
-        }));
-        return;
-    }
+	if (!GetABSessionInt())
+	{
+		UE_LOG_ONLINESESSION(Warning, TEXT("Cannot reject a party invitation. Session Interface is not valid."));
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
+		{
+			OnRejectPartyInviteComplete(false);
+		}));
+		return;
+	}
 
-    const APlayerController* RejecterPC = GetPlayerControllerByLocalUserNum(LocalUserNum);
-    if (!RejecterPC)
-    {
-        UE_LOG_ONLINESESSION(Warning, TEXT("Cannot reject a party invitation. Rejecter's PlayerController is not valid."));
-        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
-        {
-            OnRejectPartyInviteComplete(false);
-        }));
-        return;
-    }
+	const APlayerController* RejecterPC = GetPlayerControllerByLocalUserNum(LocalUserNum);
+	if (!RejecterPC)
+	{
+		UE_LOG_ONLINESESSION(Warning, TEXT("Cannot reject a party invitation. Rejecter's PlayerController is not valid."));
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
+		{
+			OnRejectPartyInviteComplete(false);
+		}));
+		return;
+	}
 
-    const FUniqueNetIdPtr RejecterId = GetLocalPlayerUniqueNetId(RejecterPC);
-    if (!RejecterId)
-    {
-        UE_LOG_ONLINESESSION(Warning, TEXT("Cannot reject a party invitation. Rejecter's NetId is not valid."));
-        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
-        {
-            OnRejectPartyInviteComplete(false);
-        }));
-        return;
-    }
+	const FUniqueNetIdPtr RejecterId = GetLocalPlayerUniqueNetId(RejecterPC);
+	if (!RejecterId)
+	{
+		UE_LOG_ONLINESESSION(Warning, TEXT("Cannot reject a party invitation. Rejecter's NetId is not valid."));
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
+		{
+			OnRejectPartyInviteComplete(false);
+		}));
+		return;
+	}
 
-    GetABSessionInt()->RejectInvite(
-        RejecterId.ToSharedRef().Get(),
-        PartyInvite,
-        FOnRejectSessionInviteComplete::CreateUObject(this, &ThisClass::OnRejectPartyInviteComplete));
+	UE_LOG_ONLINESESSION(Log, TEXT("Reject party invitation."));
+	GetABSessionInt()->RejectInvite(
+		RejecterId.ToSharedRef().Get(),
+		PartyInvite,
+		FOnRejectSessionInviteComplete::CreateUObject(this, &ThisClass::OnRejectPartyInviteComplete));
 }
 
 void UAccelByteWarsOnlineSession::KickPlayerFromParty(const int32 LocalUserNum, const FUniqueNetIdPtr& KickedPlayer)
 {
-    if (!GetABSessionInt())
-    {
-        UE_LOG_ONLINESESSION(Warning, TEXT("Cannot kick a player from the party. Session Interface is not valid."));
-        return;
-    }
+	if (!GetABSessionInt())
+	{
+		UE_LOG_ONLINESESSION(Warning, TEXT("Cannot kick a player from the party. Session Interface is not valid."));
+		return;
+	}
 
-    if (!KickedPlayer)
-    {
-        UE_LOG_ONLINESESSION(Warning, TEXT("Cannot kick a player from the party. KickedPlayer's NetId is not valid."));
-        return;
-    }
+	if (!KickedPlayer)
+	{
+		UE_LOG_ONLINESESSION(Warning, TEXT("Cannot kick a player from the party. KickedPlayer's NetId is not valid."));
+		return;
+	}
 
-    const APlayerController* PC = GetPlayerControllerByLocalUserNum(LocalUserNum);
-    if (!PC)
-    {
-        UE_LOG_ONLINESESSION(Warning, TEXT("Cannot kick a player from the party. Kicker's PlayerController is not valid."));
-        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, KickedPlayer]()
-        {
-            OnKickPlayerFromPartyComplete(false, KickedPlayer.ToSharedRef().Get());
-        }));
-        return;
-    }
+	const APlayerController* PC = GetPlayerControllerByLocalUserNum(LocalUserNum);
+	if (!PC)
+	{
+		UE_LOG_ONLINESESSION(Warning, TEXT("Cannot kick a player from the party. Kicker's PlayerController is not valid."));
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, KickedPlayer]()
+		{
+			OnKickPlayerFromPartyComplete(false, KickedPlayer.ToSharedRef().Get());
+		}));
+		return;
+	}
 
-    const FUniqueNetIdPtr PlayerNetId = GetLocalPlayerUniqueNetId(PC);
-    if (!PlayerNetId)
-    {
-        UE_LOG_ONLINESESSION(Warning, TEXT("Cannot kick a player from the party. Kicker's NetId is not valid."));
-        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, KickedPlayer]()
-        {
-            OnKickPlayerFromPartyComplete(false, KickedPlayer.ToSharedRef().Get());
-        }));
-        return;
-    }
+	const FUniqueNetIdPtr PlayerNetId = GetLocalPlayerUniqueNetId(PC);
+	if (!PlayerNetId)
+	{
+		UE_LOG_ONLINESESSION(Warning, TEXT("Cannot kick a player from the party. Kicker's NetId is not valid."));
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, KickedPlayer]()
+		{
+			OnKickPlayerFromPartyComplete(false, KickedPlayer.ToSharedRef().Get());
+		}));
+		return;
+	}
 
-    GetABSessionInt()->KickPlayer(
-        PlayerNetId.ToSharedRef().Get(),
-        GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession),
-        KickedPlayer.ToSharedRef().Get(),
-        FOnKickPlayerComplete::CreateUObject(this, &ThisClass::OnKickPlayerFromPartyComplete));
+	UE_LOG_ONLINESESSION(Log, TEXT("Kick party member."));
+	GetABSessionInt()->KickPlayer(
+		PlayerNetId.ToSharedRef().Get(),
+		GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession),
+		KickedPlayer.ToSharedRef().Get(),
+		FOnKickPlayerComplete::CreateUObject(this, &ThisClass::OnKickPlayerFromPartyComplete));
 }
 
 void UAccelByteWarsOnlineSession::PromotePartyLeader(const int32 LocalUserNum, const FUniqueNetIdPtr& NewLeader)
 {
-    if (!GetABSessionInt())
-    {
-        UE_LOG_ONLINESESSION(Warning, TEXT("Cannot promote new party leader. Session Interface is not valid."));
-        return;
-    }
+	if (!GetABSessionInt())
+	{
+		UE_LOG_ONLINESESSION(Warning, TEXT("Cannot promote new party leader. Session Interface is not valid."));
+		return;
+	}
 
-    if (!NewLeader)
-    {
-        UE_LOG_ONLINESESSION(Warning, TEXT("Cannot promote new party leader. New Leader NetId is not valid."));
-        return;
-    }
+	if (!NewLeader)
+	{
+		UE_LOG_ONLINESESSION(Warning, TEXT("Cannot promote new party leader. New Leader NetId is not valid."));
+		return;
+	}
 
-    const APlayerController* PC = GetPlayerControllerByLocalUserNum(LocalUserNum);
-    if (!PC)
-    {
-        UE_LOG_ONLINESESSION(Warning, TEXT("Cannot promote new party leader. Promoter's PlayerController is not valid."));
-        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, NewLeader]()
-        {
-            OnPromotePartyLeaderComplete(NewLeader.ToSharedRef().Get(), FOnlineError(false));
-        }));
-        return;
-    }
+	const APlayerController* PC = GetPlayerControllerByLocalUserNum(LocalUserNum);
+	if (!PC)
+	{
+		UE_LOG_ONLINESESSION(Warning, TEXT("Cannot promote new party leader. Promoter's PlayerController is not valid."));
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, NewLeader]()
+		{
+			OnPromotePartyLeaderComplete(NewLeader.ToSharedRef().Get(), FOnlineError(false));
+		}));
+		return;
+	}
 
-    const FUniqueNetIdPtr PlayerNetId = GetLocalPlayerUniqueNetId(PC);
-    if (!PlayerNetId)
-    {
-        UE_LOG_ONLINESESSION(Warning, TEXT("Cannot promote new party leader. Promoter's NetId is not valid."));
-        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, NewLeader]()
-        {
-            OnPromotePartyLeaderComplete(NewLeader.ToSharedRef().Get(), FOnlineError(false));
-        }));
-        return;
-    }
+	const FUniqueNetIdPtr PlayerNetId = GetLocalPlayerUniqueNetId(PC);
+	if (!PlayerNetId)
+	{
+		UE_LOG_ONLINESESSION(Warning, TEXT("Cannot promote new party leader. Promoter's NetId is not valid."));
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, NewLeader]()
+		{
+			OnPromotePartyLeaderComplete(NewLeader.ToSharedRef().Get(), FOnlineError(false));
+		}));
+		return;
+	}
 
-    GetABSessionInt()->PromotePartySessionLeader(
-        PlayerNetId.ToSharedRef().Get(),
-        GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession),
-        NewLeader.ToSharedRef().Get(),
-        FOnPromotePartySessionLeaderComplete::CreateUObject(this, &ThisClass::OnPromotePartyLeaderComplete));
+	UE_LOG_ONLINESESSION(Log, TEXT("Promote a new party leader."));
+	GetABSessionInt()->PromotePartySessionLeader(
+		PlayerNetId.ToSharedRef().Get(),
+		GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession),
+		NewLeader.ToSharedRef().Get(),
+		FOnPromotePartySessionLeaderComplete::CreateUObject(this, &ThisClass::OnPromotePartyLeaderComplete));
 }
 
 void UAccelByteWarsOnlineSession::OnCreatePartyComplete(FName SessionName, bool bSucceeded)
 {
-    if (SessionName != GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession))
-    {
-        return;
-    }
+	if (SessionName != GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession))
+	{
+		return;
+	}
 
-    if (bSucceeded)
-    {
-        UE_LOG_ONLINESESSION(Log, TEXT("Success to create a party"));
-    }
-    else
-    {
-        UE_LOG_ONLINESESSION(Warning, TEXT("Failed to create a party"));
-    }
+	if (bSucceeded)
+	{
+		UE_LOG_ONLINESESSION(Log, TEXT("Success to create a party"));
+	}
+	else
+	{
+		UE_LOG_ONLINESESSION(Warning, TEXT("Failed to create a party"));
+	}
 
-    // Cache the party leader.
-    LastPartyLeader = GetPartyLeader();
+	// Cache the party leader.
+	LastPartyLeader = GetPartyLeader();
 
-    // Reset the party member status cache.
-    PartyMemberStatus.Empty();
+	// Reset the party member status cache.
+	PartyMemberStatus.Empty();
 
-    OnCreatePartyCompleteDelegates.Broadcast(SessionName, bSucceeded);
+	OnCreatePartyCompleteDelegates.Broadcast(SessionName, bSucceeded);
 }
 
 void UAccelByteWarsOnlineSession::OnLeavePartyComplete(FName SessionName, bool bSucceeded)
 {
-    if (SessionName != GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession))
-    {
-        return;
-    }
+	if (SessionName != GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession))
+	{
+		return;
+	}
 
-    if (bSucceeded)
-    {
-        UE_LOG_ONLINESESSION(Log, TEXT("Success to leave a party"));
-    }
-    else
-    {
-        UE_LOG_ONLINESESSION(Warning, TEXT("Failed to leave a party"));
-    }
+	if (bSucceeded)
+	{
+		UE_LOG_ONLINESESSION(Log, TEXT("Success to leave a party"));
+	}
+	else
+	{
+		UE_LOG_ONLINESESSION(Warning, TEXT("Failed to leave a party"));
+	}
 
-    OnLeavePartyCompleteDelegates.Broadcast(SessionName, bSucceeded);
+	OnLeavePartyCompleteDelegates.Broadcast(SessionName, bSucceeded);
 }
 
 void UAccelByteWarsOnlineSession::OnSendPartyInviteComplete(const FUniqueNetId& Sender, FName SessionName, bool bWasSuccessful, const FUniqueNetId& Invitee)
 {
-    // Abort if not a party session.
-    if (SessionName != GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession))
-    {
-        return;
-    }
+	// Abort if not a party session.
+	if (SessionName != GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession))
+	{
+		return;
+	}
 
-    const FUniqueNetIdAccelByteUserRef InviteeABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(Invitee.AsShared());
-    if (bWasSuccessful)
-    {
-        UE_LOG_ONLINESESSION(Log, TEXT("Success to send party invitation to %s"),
-            InviteeABId->IsValid() ? *InviteeABId->GetAccelByteId() : TEXT("Unknown"));
-    }
-    else
-    {
-        UE_LOG_ONLINESESSION(Warning, TEXT("Failed to send party invitation to %s"),
-            InviteeABId->IsValid() ? *InviteeABId->GetAccelByteId() : TEXT("Unknown"));
-    }
+	const FUniqueNetIdAccelByteUserRef InviteeABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(Invitee.AsShared());
+	if (bWasSuccessful)
+	{
+		UE_LOG_ONLINESESSION(Log, TEXT("Success to send party invitation to %s"),
+			InviteeABId->IsValid() ? *InviteeABId->GetAccelByteId() : TEXT("Unknown"));
+	}
+	else
+	{
+		UE_LOG_ONLINESESSION(Warning, TEXT("Failed to send party invitation to %s"),
+			InviteeABId->IsValid() ? *InviteeABId->GetAccelByteId() : TEXT("Unknown"));
+	}
 
-    // Display push notification.
-    if (GetPromptSubystem())
-    {
-        GetPromptSubystem()->PushNotification(bWasSuccessful ? SUCCESS_SEND_PARTY_INVITE : FAILED_SEND_PARTY_INVITE);
-    }
+	// Display push notification.
+	if (GetPromptSubystem())
+	{
+		GetPromptSubystem()->PushNotification(bWasSuccessful ? SUCCESS_SEND_PARTY_INVITE : FAILED_SEND_PARTY_INVITE);
+	}
 
-    UpdatePartyGeneratedWidgets();
+	UpdatePartyGeneratedWidgets();
 
-    OnSendPartyInviteCompleteDelegates.Broadcast(Sender, SessionName, bWasSuccessful, Invitee);
+	OnSendPartyInviteCompleteDelegates.Broadcast(Sender, SessionName, bWasSuccessful, Invitee);
 }
 
 void UAccelByteWarsOnlineSession::OnJoinPartyComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
 {
-    if (SessionName != GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession))
-    {
-        return;
-    }
+	if (SessionName != GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession))
+	{
+		return;
+	}
 
-    if (Result == EOnJoinSessionCompleteResult::Type::Success)
-    {
-        UE_LOG_ONLINESESSION(Log, TEXT("Success to join a party"));
-    }
-    else
-    {
-        UE_LOG_ONLINESESSION(Warning, TEXT("Failed to join a party"));
-    }
+	if (Result == EOnJoinSessionCompleteResult::Type::Success)
+	{
+		UE_LOG_ONLINESESSION(Log, TEXT("Success to join a party"));
+	}
+	else
+	{
+		UE_LOG_ONLINESESSION(Warning, TEXT("Failed to join a party"));
+	}
 
-    // Cache the party leader.
-    LastPartyLeader = GetPartyLeader();
+	// Cache the party leader.
+	LastPartyLeader = GetPartyLeader();
 
-    // Reset the party member status cache.
-    PartyMemberStatus.Empty();
+	// Reset the party member status cache.
+	PartyMemberStatus.Empty();
 
-    OnJoinPartyCompleteDelegates.Broadcast(SessionName, Result);
+	OnJoinPartyCompleteDelegates.Broadcast(SessionName, Result);
 }
 
 void UAccelByteWarsOnlineSession::OnRejectPartyInviteComplete(bool bWasSuccessful)
 {
-    if (bWasSuccessful)
-    {
-        UE_LOG_ONLINESESSION(Log, TEXT("Success to reject party invitation"));
-    }
-    else
-    {
-        UE_LOG_ONLINESESSION(Warning, TEXT("Failed to reject party invitation"));
-    }
+	if (bWasSuccessful)
+	{
+		UE_LOG_ONLINESESSION(Log, TEXT("Success to reject party invitation"));
+	}
+	else
+	{
+		UE_LOG_ONLINESESSION(Warning, TEXT("Failed to reject party invitation"));
+	}
 
-    OnRejectPartyInviteCompleteDelegate.ExecuteIfBound(bWasSuccessful);
-    OnRejectPartyInviteCompleteDelegate.Unbind();
+	OnRejectPartyInviteCompleteDelegate.ExecuteIfBound(bWasSuccessful);
+	OnRejectPartyInviteCompleteDelegate.Unbind();
 }
 
 void UAccelByteWarsOnlineSession::OnPartyInviteRejected(FName SessionName, const FUniqueNetId& RejecterId)
 {
-    // Abort if not a party session.
-    if (SessionName != GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession))
-    {
-        return;
-    }
+	// Abort if not a party session.
+	if (SessionName != GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession))
+	{
+		return;
+	}
 
-    const FUniqueNetIdAccelByteUserRef RejecterABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(RejecterId.AsShared());
-    UE_LOG_ONLINESESSION(Log, TEXT("Party invitation is rejected by %s"),
-        RejecterABId->IsValid() ? *RejecterABId->GetAccelByteId() : TEXT("Unknown"));
+	const FUniqueNetIdAccelByteUserRef RejecterABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(RejecterId.AsShared());
+	UE_LOG_ONLINESESSION(Log, TEXT("Party invitation is rejected by %s"),
+		RejecterABId->IsValid() ? *RejecterABId->GetAccelByteId() : TEXT("Unknown"));
 
-    // Display push notification to show who rejected the invitation.
-    QueryUserInfo(0, TPartyMemberArray{ RejecterABId },
-        FOnQueryUsersInfoComplete::CreateWeakLambda(this, [this, RejecterABId](const bool bSucceeded, const TArray<FUserOnlineAccountAccelByte*>& UsersInfo)
-        {
-            if (UsersInfo.IsEmpty() || !UsersInfo[0] || !GetPromptSubystem())
-            {
-                return;
-            }
+	// Display push notification to show who rejected the invitation.
+	QueryUserInfo(0, TPartyMemberArray{ RejecterABId },
+		FOnQueryUsersInfoComplete::CreateWeakLambda(this, [this, RejecterABId](const bool bSucceeded, const TArray<FUserOnlineAccountAccelByte*>& UsersInfo)
+		{
+			if (UsersInfo.IsEmpty() || !UsersInfo[0] || !GetPromptSubystem())
+			{
+				return;
+			}
 
-            FUserOnlineAccountAccelByte MemberInfo = *UsersInfo[0];
+			FUserOnlineAccountAccelByte MemberInfo = *UsersInfo[0];
 
-            const FText NotifMessage = FText::Format(PARTY_INVITE_REJECTED_MESSAGE, FText::FromString(
-                MemberInfo.GetDisplayName().IsEmpty() ?
-                UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(RejecterABId.Get()) :
-                MemberInfo.GetDisplayName()
-            ));
+			const FText NotifMessage = FText::Format(PARTY_INVITE_REJECTED_MESSAGE, FText::FromString(
+				MemberInfo.GetDisplayName().IsEmpty() ?
+				UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(RejecterABId.Get()) :
+				MemberInfo.GetDisplayName()
+			));
 
-            FString AvatarURL;
-            MemberInfo.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
+			FString AvatarURL;
+			MemberInfo.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
 
-            GetPromptSubystem()->PushNotification(NotifMessage, AvatarURL, true);
-        }
-    ));
+			GetPromptSubystem()->PushNotification(NotifMessage, AvatarURL, true);
+		}
+	));
 
-    OnPartyInviteRejectedDelegates.Broadcast(SessionName, RejecterId);
+	OnPartyInviteRejectedDelegates.Broadcast(SessionName, RejecterId);
 }
 
 void UAccelByteWarsOnlineSession::OnPartyInviteReceived(const FUniqueNetId& UserId, const FUniqueNetId& FromId, const FOnlineSessionInviteAccelByte& PartyInvite)
 {
-    // Abort if not a party session.
-    if (UserId == FromId || PartyInvite.SessionType != EAccelByteV2SessionType::PartySession)
-    {
-        return;
-    }
+	// Abort if not a party session.
+	if (UserId == FromId || PartyInvite.SessionType != EAccelByteV2SessionType::PartySession)
+	{
+		return;
+	}
 
-    const APlayerController* PC = GetPlayerControllerByUniqueNetId(UserId.AsShared());
-    if (!PC)
-    {
-        return;
-    }
+	const APlayerController* PC = GetPlayerControllerByUniqueNetId(UserId.AsShared());
+	if (!PC)
+	{
+		return;
+	}
 
-    const FUniqueNetIdAccelByteUserRef SenderABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(FromId.AsShared());
-    UE_LOG_ONLINESESSION(Log, TEXT("Receives party invitation from %s"),
-        SenderABId->IsValid() ? *SenderABId->GetAccelByteId() : TEXT("Unknown"));
+	const FUniqueNetIdAccelByteUserRef SenderABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(FromId.AsShared());
+	UE_LOG_ONLINESESSION(Log, TEXT("Receives party invitation from %s"),
+		SenderABId->IsValid() ? *SenderABId->GetAccelByteId() : TEXT("Unknown"));
 
-    const int32 LocalUserNum = GetLocalUserNumFromPlayerController(PC);
+	const int32 LocalUserNum = GetLocalUserNumFromPlayerController(PC);
 
-    // Display push notification to allow player to accept/reject the party invitation.
-    QueryUserInfo(0, TPartyMemberArray{ SenderABId },
-        FOnQueryUsersInfoComplete::CreateWeakLambda(this, [this, LocalUserNum, SenderABId, PartyInvite]
-        (const bool bSucceeded, const TArray<FUserOnlineAccountAccelByte*>& UsersInfo)
-        {
-            if (UsersInfo.IsEmpty() || !UsersInfo[0] || !GetPromptSubystem())
-            {
-                return;
-            }
+	// Display push notification to allow player to accept/reject the party invitation.
+	QueryUserInfo(0, TPartyMemberArray{ SenderABId },
+		FOnQueryUsersInfoComplete::CreateWeakLambda(this, [this, LocalUserNum, SenderABId, PartyInvite]
+		(const bool bSucceeded, const TArray<FUserOnlineAccountAccelByte*>& UsersInfo)
+		{
+			if (UsersInfo.IsEmpty() || !UsersInfo[0] || !GetPromptSubystem())
+			{
+				return;
+			}
 
-            FUserOnlineAccountAccelByte MemberInfo = *UsersInfo[0];
+			FUserOnlineAccountAccelByte MemberInfo = *UsersInfo[0];
 
-            const FText NotifMessage = FText::Format(PARTY_INVITE_RECEIVED_MESSAGE, FText::FromString(
-                MemberInfo.GetDisplayName().IsEmpty() ?
-                UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(SenderABId.Get()) :
-                MemberInfo.GetDisplayName()
-            ));
+			const FText NotifMessage = FText::Format(PARTY_INVITE_RECEIVED_MESSAGE, FText::FromString(
+				MemberInfo.GetDisplayName().IsEmpty() ?
+				UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(SenderABId.Get()) :
+				MemberInfo.GetDisplayName()
+			));
 
-            FString AvatarURL;
-            MemberInfo.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
+			FString AvatarURL;
+			MemberInfo.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
 
-            GetPromptSubystem()->PushNotification(
-                NotifMessage,
-                AvatarURL,
-                true,
-                ACCEPT_PARTY_INVITE_MESSAGE,
-                REJECT_PARTY_INVITE_MESSAGE,
-                FText::GetEmpty(),
-                FPushNotificationDelegate::CreateWeakLambda(this, [this, LocalUserNum, PartyInvite](EPushNotificationActionResult ActionButtonResult)
-                    {
-                        switch (ActionButtonResult)
-                        {
-                            // Show accept party invitation confirmation.
-                        case EPushNotificationActionResult::Button1:
-                            DisplayJoinPartyConfirmation(LocalUserNum, PartyInvite);
-                            break;
-                            // Reject party invitation.
-                        case EPushNotificationActionResult::Button2:
-                            RejectPartyInvite(LocalUserNum, PartyInvite);
-                            break;
-                        }
-                    }
-            ));
-        }
-    ));
+			GetPromptSubystem()->PushNotification(
+				NotifMessage,
+				AvatarURL,
+				true,
+				ACCEPT_PARTY_INVITE_MESSAGE,
+				REJECT_PARTY_INVITE_MESSAGE,
+				FText::GetEmpty(),
+				FPushNotificationDelegate::CreateWeakLambda(this, [this, LocalUserNum, PartyInvite](EPushNotificationActionResult ActionButtonResult)
+					{
+						switch (ActionButtonResult)
+						{
+							// Show accept party invitation confirmation.
+						case EPushNotificationActionResult::Button1:
+							DisplayJoinPartyConfirmation(LocalUserNum, PartyInvite);
+							break;
+							// Reject party invitation.
+						case EPushNotificationActionResult::Button2:
+							RejectPartyInvite(LocalUserNum, PartyInvite);
+							break;
+						}
+					}
+			));
+		}
+	));
 
-    OnPartyInviteReceivedDelegate.ExecuteIfBound(UserId, FromId, PartyInvite);
-    OnPartyInviteReceivedDelegate.Unbind();
+	OnPartyInviteReceivedDelegate.ExecuteIfBound(UserId, FromId, PartyInvite);
+	OnPartyInviteReceivedDelegate.Unbind();
 }
 
 void UAccelByteWarsOnlineSession::DisplayJoinPartyConfirmation(const int32 LocalUserNum, const FOnlineSessionInviteAccelByte& PartyInvite)
 {
-    // Join the party if not in any party yet.
-    if (!GetABSessionInt()->IsInPartySession() || GetPartyMembers().Num() <= 1)
-    {
-        JoinParty(LocalUserNum, PartyInvite.Session);
-        return;
-    }
+	// Join the party if not in any party yet.
+	if (!GetABSessionInt()->IsInPartySession() || GetPartyMembers().Num() <= 1)
+	{
+		JoinParty(LocalUserNum, PartyInvite.Session);
+		return;
+	}
 
-    // Show confirmation to leave current party and join the new party.
-    GetPromptSubystem()->ShowDialoguePopUp(
-        PARTY_POPUP_MESSAGE,
-        JOIN_NEW_PARTY_CONFIRMATION_MESSAGE,
-        EPopUpType::ConfirmationYesNo,
-        FPopUpResultDelegate::CreateWeakLambda(this, [this, LocalUserNum, PartyInvite](EPopUpResult Result)
-        {
-            switch (Result)
-            {
-            case EPopUpResult::Confirmed:
-                // If confirmed, join the new party.
-                JoinParty(LocalUserNum, PartyInvite.Session);
-                break;
-            case EPopUpResult::Declined:
-                // If declined, reject the party invitation.
-                RejectPartyInvite(LocalUserNum, PartyInvite);
-                break;
-            }
-        }
-    ));
+	// Show confirmation to leave current party and join the new party.
+	GetPromptSubystem()->ShowDialoguePopUp(
+		PARTY_POPUP_MESSAGE,
+		JOIN_NEW_PARTY_CONFIRMATION_MESSAGE,
+		EPopUpType::ConfirmationYesNo,
+		FPopUpResultDelegate::CreateWeakLambda(this, [this, LocalUserNum, PartyInvite](EPopUpResult Result)
+		{
+			switch (Result)
+			{
+			case EPopUpResult::Confirmed:
+				// If confirmed, join the new party.
+				JoinParty(LocalUserNum, PartyInvite.Session);
+				break;
+			case EPopUpResult::Declined:
+				// If declined, reject the party invitation.
+				RejectPartyInvite(LocalUserNum, PartyInvite);
+				break;
+			}
+		}
+	));
 }
 
 void UAccelByteWarsOnlineSession::OnKickPlayerFromPartyComplete(bool bWasSuccessful, const FUniqueNetId& KickedPlayer)
 {
-    const FUniqueNetIdAccelByteUserRef KickedPlayerABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(KickedPlayer.AsShared());
-    if (bWasSuccessful)
-    {
-        UE_LOG_ONLINESESSION(Log, TEXT("Success to kick %s from the party."),
-            KickedPlayerABId->IsValid() ? *KickedPlayerABId->GetAccelByteId() : TEXT("Unknown"));
-    }
-    else
-    {
-        UE_LOG_ONLINESESSION(Warning, TEXT("Failed to kick %s from the party."),
-            KickedPlayerABId->IsValid() ? *KickedPlayerABId->GetAccelByteId() : TEXT("Unknown"));
-    }
+	const FUniqueNetIdAccelByteUserRef KickedPlayerABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(KickedPlayer.AsShared());
+	if (bWasSuccessful)
+	{
+		UE_LOG_ONLINESESSION(Log, TEXT("Success to kick %s from the party."),
+			KickedPlayerABId->IsValid() ? *KickedPlayerABId->GetAccelByteId() : TEXT("Unknown"));
+	}
+	else
+	{
+		UE_LOG_ONLINESESSION(Warning, TEXT("Failed to kick %s from the party."),
+			KickedPlayerABId->IsValid() ? *KickedPlayerABId->GetAccelByteId() : TEXT("Unknown"));
+	}
 
-    OnKickPlayerFromPartyCompleteDelegate.ExecuteIfBound(bWasSuccessful, KickedPlayer);
-    OnKickPlayerFromPartyCompleteDelegate.Unbind();
+	OnKickPlayerFromPartyCompleteDelegate.ExecuteIfBound(bWasSuccessful, KickedPlayer);
+	OnKickPlayerFromPartyCompleteDelegate.Unbind();
 }
 
 void UAccelByteWarsOnlineSession::OnKickedFromParty(FName SessionName)
 {
-    // Abort if not a party session.
-    if (SessionName != GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession))
-    {
-        return;
-    }
+	// Abort if not a party session.
+	if (SessionName != GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession))
+	{
+		return;
+	}
 
-    UE_LOG_ONLINESESSION(Log, TEXT("Current logged player is kicked from the party"));
+	UE_LOG_ONLINESESSION(Log, TEXT("Current logged player is kicked from the party"));
 
-    // Display push notification.
-    if (GetPromptSubystem())
-    {
-        GetPromptSubystem()->PushNotification(KICKED_FROM_PARTY_MESSAGE);
-    }
+	// Display push notification.
+	if (GetPromptSubystem())
+	{
+		GetPromptSubystem()->PushNotification(KICKED_FROM_PARTY_MESSAGE);
+	}
 
-    OnKickedFromPartyDelegates.Broadcast(SessionName);
+	OnKickedFromPartyDelegates.Broadcast(SessionName);
 }
 
 void UAccelByteWarsOnlineSession::OnPromotePartyLeaderComplete(const FUniqueNetId& NewLeader, const FOnlineError& Result)
 {
-    const FUniqueNetIdAccelByteUserRef NewLeaderABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(NewLeader.AsShared());
-    if (Result.bSucceeded)
-    {
-        UE_LOG_ONLINESESSION(Log, TEXT("Success to promote %s as the new party leader."),
-            NewLeaderABId->IsValid() ? *NewLeaderABId->GetAccelByteId() : TEXT("Unknown"));
-    }
-    else
-    {
-        UE_LOG_ONLINESESSION(Warning, TEXT("Failed to promote %s as the new party leader."),
-            NewLeaderABId->IsValid() ? *NewLeaderABId->GetAccelByteId() : TEXT("Unknown"));
-    }
+	const FUniqueNetIdAccelByteUserRef NewLeaderABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(NewLeader.AsShared());
+	if (Result.bSucceeded)
+	{
+		UE_LOG_ONLINESESSION(Log, TEXT("Success to promote %s as the new party leader."),
+			NewLeaderABId->IsValid() ? *NewLeaderABId->GetAccelByteId() : TEXT("Unknown"));
+	}
+	else
+	{
+		UE_LOG_ONLINESESSION(Warning, TEXT("Failed to promote %s as the new party leader."),
+			NewLeaderABId->IsValid() ? *NewLeaderABId->GetAccelByteId() : TEXT("Unknown"));
+	}
 
-    OnPromotePartyLeaderCompleteDelegate.ExecuteIfBound(NewLeader, Result);
-    OnPromotePartyLeaderCompleteDelegate.Unbind();
+	OnPromotePartyLeaderCompleteDelegate.ExecuteIfBound(NewLeader, Result);
+	OnPromotePartyLeaderCompleteDelegate.Unbind();
 }
 
 void UAccelByteWarsOnlineSession::DisplayCurrentPartyLeader()
 {
-    // Abort if the party leader is the same.
-    if (LastPartyLeader && IsPartyLeader(LastPartyLeader))
-    {
-        return;
-    }
+	// Abort if the party leader is the same.
+	if (LastPartyLeader && IsPartyLeader(LastPartyLeader))
+	{
+		return;
+	}
 
-    LastPartyLeader = GetPartyLeader();
-    const FUniqueNetIdAccelByteUserPtr LeaderABId = StaticCastSharedPtr<const FUniqueNetIdAccelByteUser>(LastPartyLeader);
+	LastPartyLeader = GetPartyLeader();
+	const FUniqueNetIdAccelByteUserPtr LeaderABId = StaticCastSharedPtr<const FUniqueNetIdAccelByteUser>(LastPartyLeader);
 
-    // Query party leader information and then display a notification.
-    QueryUserInfo(0, TPartyMemberArray{ LeaderABId.ToSharedRef() },
-        FOnQueryUsersInfoComplete::CreateWeakLambda(this, [this, LeaderABId]
-        (const bool bSucceeded, const TArray<FUserOnlineAccountAccelByte*>& UsersInfo)
-        {
-            if (UsersInfo.IsEmpty() || !UsersInfo[0] || !GetPromptSubystem())
-            {
-                return;
-            }
+	// Query party leader information and then display a notification.
+	QueryUserInfo(0, TPartyMemberArray{ LeaderABId.ToSharedRef() },
+		FOnQueryUsersInfoComplete::CreateWeakLambda(this, [this, LeaderABId]
+		(const bool bSucceeded, const TArray<FUserOnlineAccountAccelByte*>& UsersInfo)
+		{
+			if (UsersInfo.IsEmpty() || !UsersInfo[0] || !GetPromptSubystem())
+			{
+				return;
+			}
 
-            FUserOnlineAccountAccelByte MemberInfo = *UsersInfo[0];
+			FUserOnlineAccountAccelByte MemberInfo = *UsersInfo[0];
 
-            const FText NotifMessage = FText::Format(PARTY_NEW_LEADER_MESSAGE, FText::FromString(
-                MemberInfo.GetDisplayName().IsEmpty() ?
-                UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(LeaderABId.ToSharedRef().Get()) :
-                MemberInfo.GetDisplayName()
-            ));
+			const FText NotifMessage = FText::Format(PARTY_NEW_LEADER_MESSAGE, FText::FromString(
+				MemberInfo.GetDisplayName().IsEmpty() ?
+				UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(LeaderABId.ToSharedRef().Get()) :
+				MemberInfo.GetDisplayName()
+			));
 
-            FString AvatarURL;
-            MemberInfo.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
+			FString AvatarURL;
+			MemberInfo.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
 
-            GetPromptSubystem()->PushNotification(NotifMessage, AvatarURL, true);
-        }
-    ));
+			GetPromptSubystem()->PushNotification(NotifMessage, AvatarURL, true);
+		}
+	));
 }
 
 void UAccelByteWarsOnlineSession::OnPartyMembersChange(FName SessionName, const FUniqueNetId& Member, bool bJoined)
 {
-    // Abort if not a party session.
-    if (SessionName != GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession))
-    {
-        return;
-    }
+	// Abort if not a party session.
+	if (SessionName != GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession))
+	{
+		return;
+	}
 
-    const FUniqueNetIdAccelByteUserRef MemberABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(Member.AsShared());
-    const FString MemberABUIdStr = MemberABId->GetAccelByteId();
+	// Store status whether the member is the current logged-in player.
+	FUniqueNetIdPtr UserId = nullptr;
+	if (GetIdentityInt())
+	{
+		UserId = GetIdentityInt()->GetUniquePlayerId(0);
+	}
+	const bool bIsMemberTheLoggedInPlayer = UserId && UserId.ToSharedRef().Get() == Member;
 
-    UE_LOG_ONLINESESSION(Log, TEXT("Party participant %s %s to/from the party"),
-        MemberABId->IsValid() ? *MemberABId->GetAccelByteId() : TEXT("Unknown"),
-        bJoined ? TEXT("joined") : TEXT("left"));
+	const FUniqueNetIdAccelByteUserRef MemberABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(Member.AsShared());
+	const FString MemberABIdStr = MemberABId->GetAccelByteId();
 
-    /* Since this event could be called multiple times, we cache the party member status.
-     * This cache is used to execute the following functionalities only when the party member status is changed (not the same status).*/
-    if (PartyMemberStatus.Contains(MemberABUIdStr))
-    {
-        if (PartyMemberStatus[MemberABUIdStr] == bJoined)
-        {
-            // Abort if the status is the same.
-            return;
-        }
-        PartyMemberStatus[MemberABUIdStr] = bJoined;
-    }
-    if (!PartyMemberStatus.Contains(MemberABUIdStr))
-    {
-        PartyMemberStatus.Add(MemberABUIdStr, bJoined);
-    }
+	/* Since this event could be called multiple times, we cache the party member status.
+	 * This cache is used to execute the following functionalities only when the party member status is changed (not the same status).*/
+	if (PartyMemberStatus.Contains(MemberABIdStr))
+	{
+		if (PartyMemberStatus[MemberABIdStr] == bJoined)
+		{
+			// Abort if the status is the same.
+			return;
+		}
+		PartyMemberStatus[MemberABIdStr] = bJoined;
+	}
+	if (!PartyMemberStatus.Contains(MemberABIdStr))
+	{
+		PartyMemberStatus.Add(MemberABIdStr, bJoined);
+	}
 
-    // Query member information then display a push notification to show who joined/left the party.
-    QueryUserInfo(0, TPartyMemberArray{ MemberABId },
-        FOnQueryUsersInfoComplete::CreateWeakLambda(this, [this, MemberABId, bJoined]
-        (const bool bSucceeded, const TArray<FUserOnlineAccountAccelByte*>& UsersInfo)
-        {
-            if (UsersInfo.IsEmpty() || !UsersInfo[0] || !GetPromptSubystem())
-            {
-                return;
-            }
+	UE_LOG_ONLINESESSION(Log, TEXT("Party participant %s %s to/from the party"),
+		MemberABId->IsValid() ? *MemberABId->GetAccelByteId() : TEXT("Unknown"),
+		bJoined ? TEXT("joined") : TEXT("left"));
 
-            FUserOnlineAccountAccelByte MemberInfo = *UsersInfo[0];
+	// Query member information then display a push notification to show who joined/left the party.
+	if (!bIsMemberTheLoggedInPlayer)
+	{
+		QueryUserInfo(0, TPartyMemberArray{ MemberABId },
+			FOnQueryUsersInfoComplete::CreateWeakLambda(this, [this, MemberABId, bJoined]
+			(const bool bSucceeded, const TArray<FUserOnlineAccountAccelByte*>& UsersInfo)
+			{
+				if (UsersInfo.IsEmpty() || !UsersInfo[0] || !GetPromptSubystem())
+				{
+					return;
+				}
 
-            const FString MemberDisplayName = MemberInfo.GetDisplayName().IsEmpty() ?
-                UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(MemberABId.Get()) :
-                MemberInfo.GetDisplayName();
+				FUserOnlineAccountAccelByte MemberInfo = *UsersInfo[0];
 
-            const FText NotifMessage = bJoined ?
-                FText::Format(PARTY_MEMBER_JOINED_MESSAGE, FText::FromString(MemberDisplayName)) :
-                FText::Format(PARTY_MEMBER_LEFT_MESSAGE, FText::FromString(MemberDisplayName));
+				const FString MemberDisplayName = MemberInfo.GetDisplayName().IsEmpty() ?
+					UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(MemberABId.Get()) :
+					MemberInfo.GetDisplayName();
 
-            FString AvatarURL;
-            MemberInfo.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
+				const FText NotifMessage = bJoined ?
+					FText::Format(PARTY_MEMBER_JOINED_MESSAGE, FText::FromString(MemberDisplayName)) :
+					FText::Format(PARTY_MEMBER_LEFT_MESSAGE, FText::FromString(MemberDisplayName));
 
-            GetPromptSubystem()->PushNotification(NotifMessage, AvatarURL, true);
-        }
-    ));
+				FString AvatarURL;
+				MemberInfo.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
 
-    // Show notification if a new party leader is set.
-    DisplayCurrentPartyLeader();
+				GetPromptSubystem()->PushNotification(NotifMessage, AvatarURL, true);
+			}
+		));
+	}
 
-    OnPartyMembersChangeDelegates.Broadcast(SessionName, Member, bJoined);
+	// Show notification if a new party leader is set.
+	DisplayCurrentPartyLeader();
+
+	OnPartyMembersChangeDelegates.Broadcast(SessionName, Member, bJoined);
 }
 
 void UAccelByteWarsOnlineSession::OnPartySessionUpdateReceived(FName SessionName)
 {
-    // Abort if not a party session.
-    if (SessionName != GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession))
-    {
-        return;
-    }
+	// Abort if not a party session.
+	if (SessionName != GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession))
+	{
+		return;
+	}
 
-    UE_LOG_ONLINESESSION(Log, TEXT("Party session is updated"));
+	UE_LOG_ONLINESESSION(Log, TEXT("Party session is updated"));
 
-    // Show notification if a new party leader is set.
-    DisplayCurrentPartyLeader();
+	// Show notification if a new party leader is set.
+	DisplayCurrentPartyLeader();
 
-    OnPartySessionUpdateReceivedDelegates.Broadcast(SessionName);
+	OnPartySessionUpdateReceivedDelegates.Broadcast(SessionName);
 }
 
-void UAccelByteWarsOnlineSession::LeaveRestoredPartyToTriggerEvent(const FUniqueNetId& LocalUserId, const FOnlineError& Result, const TDelegate<void(bool bSucceeded)> OnComplete)
-{
-    // Abort if failed to restore sessions.
-    if (!Result.bSucceeded)
-    {
-        UE_LOG_ONLINESESSION(Warning, TEXT("Failed to leave restored party sessions. Error: %s"), *Result.ErrorMessage.ToString());
-        OnComplete.ExecuteIfBound(false);
-        return;
-    }
-
-    // Safety.
-    if (!GetABSessionInt())
-    {
-        UE_LOG_ONLINESESSION(Warning, TEXT("Failed to leave restored party sessions. Session Interface is not valid."));
-        OnComplete.ExecuteIfBound(false);
-        return;
-    }
-
-    const TArray<FOnlineRestoredSessionAccelByte> RestoredParties = GetABSessionInt()->GetAllRestoredPartySessions();
-
-    // If empty, no need to leave the restored party sessions.
-    if (RestoredParties.IsEmpty())
-    {
-        UE_LOG_ONLINESESSION(Log, TEXT("No need to leave party session, restored party sessions are empty."));
-        OnComplete.ExecuteIfBound(true);
-        return;
-    }
-
-    // Leave the restored party session then invoke the on-complete event.
-    // Since player can only be in a single party, then leave the first restored party session.
-    GetABSessionInt()->LeaveRestoredSession(
-        LocalUserId,
-        RestoredParties[0],
-        FOnLeaveSessionComplete::CreateUObject(this, &ThisClass::OnLeaveRestoredPartyToTriggerEventComplete, OnComplete));
-}
-
-void UAccelByteWarsOnlineSession::OnLeaveRestoredPartyToTriggerEventComplete(bool bSucceeded, FString SessionId, const TDelegate<void(bool bSucceeded)> OnComplete)
-{
-    if (bSucceeded)
-    {
-        UE_LOG_ONLINESESSION(Log, TEXT("Success to leave restored party session %s"), *SessionId);
-    }
-    else
-    {
-        UE_LOG_ONLINESESSION(Warning, TEXT("Failed to leave restored party session %s"), *SessionId);
-    }
-
-    OnComplete.ExecuteIfBound(bSucceeded);
-}
+#pragma endregion
 
 void UAccelByteWarsOnlineSession::OnConnectLobbyComplete(int32 LocalUserNum, bool bSucceeded, const FUniqueNetId& UserId, const FString& Error)
 {
-    if (!bSucceeded)
-    {
-        UE_LOG_ONLINESESSION(Warning, TEXT("Cannot initialize party. Failed to connect to lobby. Error: %s."), *Error);
-        return;
-    }
+	if (!bSucceeded)
+	{
+		if (Error == TEXT("login-failed-lobby-connect-error") && bIsGameReconnecting)
+		{
+			GetPromptSubystem()->ShowMessagePopUp(
+				FText{},
+				LOBBY_FAILED_RECONNECT_MESSAGE
+			);
+		}
+		
+		bIsGameReconnecting = false;
+		return;
+	}
 
-    // Bind event to create a new party when got kicked.
-    GetOnKickedFromPartyDelegates()->AddWeakLambda(this, [this, LocalUserNum](FName SessionName)
-    {
-        if (SessionName.IsEqual(GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession))) 
-        {
-            UE_LOG_ONLINESESSION(Log, TEXT("Creating new party after got kicked from the last party"));
-            CreateParty(LocalUserNum);
-        }
-    });
+	if (bIsGameReconnecting)
+	{
+		GetPromptSubystem()->ShowMessagePopUp(
+			FText{},
+			LOBBY_SUCCESS_RECONNECT_MESSAGE
+		);
+		bIsGameReconnecting = false;
+	}
 
-    // Restore and leave party, then create a new party.
-    GetABSessionInt()->RestoreActiveSessions(
-        UserId,
-        FOnRestoreActiveSessionsComplete::CreateUObject(
-            this,
-            &ThisClass::LeaveRestoredPartyToTriggerEvent,
-            TDelegate<void(bool)>::CreateWeakLambda(this, [this, LocalUserNum](bool bSucceeded)
-            {
-                if (bSucceeded)
-                {
-                    UE_LOG_ONLINESESSION(Log, TEXT("Creating an initial party."));
-                    CreateParty(LocalUserNum);
-                }
-                else 
-                {
-                    UE_LOG_ONLINESESSION(Warning, TEXT("Failed to create an initial party. Restoring party session was failed."));
-                }
-            })
-    ));
+	FOnlineSessionV2AccelBytePtr ABSessionInt = GetABSessionInt();
+	if (!ensureMsgf(ABSessionInt, TEXT("AB OnlineSession interface is nullptr."))) return;
+
+	// Restore and leave old party session.
+	ABSessionInt->RestoreActiveSessions(
+		UserId,
+		FOnRestoreActiveSessionsComplete::CreateWeakLambda(this, [this](const FUniqueNetId& LocalUserId, const FOnlineError& Result)
+		{
+			// Abort if failed to restore party sessions.
+			if (!Result.bSucceeded)
+			{
+				UE_LOG_ONLINESESSION(Warning, TEXT("Failed to restore party session. Error: %s"), *Result.ErrorMessage.ToString());
+				return;
+			}
+
+			// Safety.
+			if (!GetABSessionInt())
+			{
+				UE_LOG_ONLINESESSION(Warning, TEXT("Failed to restore party session. Session Interface is not valid."));
+				return;
+			}
+
+			const TArray<FOnlineRestoredSessionAccelByte> RestoredParties = GetABSessionInt()->GetAllRestoredPartySessions();
+
+			// If no restored party session, do nothing.
+			if (RestoredParties.IsEmpty())
+			{
+				UE_LOG_ONLINESESSION(Log, TEXT("No restored party session found. Do nothing."));
+				return;
+			}
+
+			// Leave the first restored active party session.
+			UE_LOG_ONLINESESSION(Log, TEXT("Restored party session found. Leave the restored party session."));
+			GetABSessionInt()->LeaveRestoredSession(
+				LocalUserId, 
+				RestoredParties[0],
+				FOnLeaveSessionComplete::CreateWeakLambda(this, [](bool bWasSuccessful, FString SessionId)
+				{
+					if (bWasSuccessful)
+					{
+						UE_LOG_ONLINESESSION(Log, TEXT("Success to leave restored party session."));
+					}
+					else
+					{
+						UE_LOG_ONLINESESSION(Warning, TEXT("Failed to leave restored party session."));
+					}
+				}
+			));
+		})
+	);
+
+	FOnlineIdentityAccelBytePtr ABIdentityInt = GetABIdentityInt();
+	if (!ensureMsgf(ABIdentityInt, TEXT("AB OnlineIdentity interface is nullptr."))) return;
+
+	ABIdentityInt->AccelByteOnLobbyReconnectingDelegates->RemoveAll(this);
+	// TODO: Uncomment if OSS supports reconnected delegate
+	//ABIdentityInt->AccelByteOnLobbyReconnectedDelegates->RemoveAll(this);
+	ABIdentityInt->AccelByteOnLobbyConnectionClosedDelegates->RemoveAll(this);
+
+	ABIdentityInt->AccelByteOnLobbyReconnectingDelegates->AddUObject(this, &ThisClass::OnLobbyReconnecting);
+	// TODO: Uncomment if OSS supports reconnected delegate
+	// GetABIdentityInt()->AccelByteOnLobbyReconnectedDelegates->AddUObject(this, &ThisClass::OnLobbyReconnected);
+	ABIdentityInt->AccelByteOnLobbyConnectionClosedDelegates->AddUObject(this, &ThisClass::OnLobbyConnectionClosed);
+	GetPromptSubystem()->HideReconnectingThrobber();
 }
-#pragma endregion
+
+void UAccelByteWarsOnlineSession::OnLobbyReconnecting(int32 LocalUserNum, const FUniqueNetId& UserId, int32 StatusCode, const FString& Reason, bool bWasClean)
+{
+	// TODO: Uncomment if OSS supports reconnected delegate
+	//GetPromptSubystem()->ShowReconnectingTrobble();
+	GetPromptSubystem()->ShowMessagePopUp(
+		FText{},
+		LOBBY_RECONNECTING_MESSAGE
+	);
+}
+
+void UAccelByteWarsOnlineSession::OnLobbyReconnected(int32 LocalUserNum, const FUniqueNetId& UserId)
+{
+	GetPromptSubystem()->HideReconnectingThrobber();
+}
+
+void UAccelByteWarsOnlineSession::OnLobbyConnectionClosed(int32 LocalUserNum, const FUniqueNetId& UserId, int32 StatusCode, const FString& Reason, bool bWasClean)
+{
+	GetPromptSubystem()->HideReconnectingThrobber();
+
+	if (StatusCode == static_cast<int32>(AccelByte::EWebsocketErrorTypes::DisconnectFromExternalReconnect))
+	{
+		// Do some manual handle to reconnect lobby
+		FOnlineIdentityAccelBytePtr ABIdentityInt = GetABIdentityInt();
+		if (!ensureMsgf(ABIdentityInt, TEXT("AB OnlineIdentity interface is nullptr."))) return;
+		ABIdentityInt->ConnectAccelByteLobby(LocalUserNum);
+		bIsGameReconnecting = true;
+	}
+}

@@ -9,29 +9,12 @@
 #include "Core/UI/MainMenu/Store/Components/StoreItemListEntry.h"
 #include "Monetization/WalletEssentials/UI/WalletBalanceWidget.h"
 
-void UStoreItemDetailWidget::Setup(UStoreItemDataObject* Object)
-{
-	StoreItemDataObject = Object;
-	W_ItemDetail->Setup(StoreItemDataObject);
-}
-
+#pragma region "UI"
 void UStoreItemDetailWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
 	Btn_Back->OnClicked().AddUObject(this, &ThisClass::DeactivateWidget);
-}
-
-UWalletBalanceWidget* UStoreItemDetailWidget::GetBalanceWidget() const
-{
-	UWalletBalanceWidget* Widget = nullptr;
-
-	if (W_WalletOuter->HasAnyChildren())
-	{
-		Widget = Cast<UWalletBalanceWidget>(W_WalletOuter->GetChildAt(0));
-	}
-
-	return Widget;
 }
 
 void UStoreItemDetailWidget::NativeOnDeactivated()
@@ -51,4 +34,23 @@ void UStoreItemDetailWidget::NativeTick(const FGeometry& MyGeometry, float InDel
 UWidget* UStoreItemDetailWidget::NativeGetDesiredFocusTarget() const
 {
 	return W_PurchaseOuter->HasAnyChildren() ? W_PurchaseOuter->GetChildAt(0) : Btn_Back;
+}
+#pragma endregion 
+
+void UStoreItemDetailWidget::Setup(UStoreItemDataObject* Object)
+{
+	StoreItemDataObject = Object;
+	W_ItemDetail->Setup(StoreItemDataObject);
+}
+
+UWalletBalanceWidget* UStoreItemDetailWidget::GetBalanceWidget() const
+{
+	UWalletBalanceWidget* Widget = nullptr;
+
+	if (W_WalletOuter->HasAnyChildren())
+	{
+		Widget = Cast<UWalletBalanceWidget>(W_WalletOuter->GetChildAt(0));
+	}
+
+	return Widget;
 }

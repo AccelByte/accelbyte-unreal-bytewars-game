@@ -35,7 +35,7 @@ void UBrowseMatchWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTi
 
 UWidget* UBrowseMatchWidget::NativeGetDesiredFocusTarget() const
 {
-	return Btn_Back;
+	return DesiredFocusTargetButton;
 }
 
 void UBrowseMatchWidget::SetLoadingMessage(const FText& Text, const bool bBrowse, const bool bEnableCancelButton) const
@@ -114,6 +114,7 @@ void UBrowseMatchWidget::SwitchContent(const EContentType Type)
 		break;
 	}
 
+	DesiredFocusTargetButton = FocusTarget;
 	FocusTarget->SetUserFocus(GetOwningPlayer());
 	Ws_Root->SetActiveWidget(bBrowseMenu ? W_Browse_Outer : W_Joining_Outer);
 	if (bBrowseMenu)
@@ -125,6 +126,7 @@ void UBrowseMatchWidget::SwitchContent(const EContentType Type)
 		Btn_Joining_Back->SetVisibility(bJoin_ShowBackButton ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 		Ws_Joining->SetWidgetState(State);
 	}
+	RequestRefreshFocus();
 
 	// Set FTUE
 	if (Type == EContentType::BROWSE_EMPTY || Type == EContentType::BROWSE_NOT_EMPTY) 

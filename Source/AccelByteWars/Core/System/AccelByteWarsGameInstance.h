@@ -9,6 +9,7 @@
 #include "Core/Settings/GlobalSettingsDataAsset.h"
 #include "Core/PowerUps/PowerUpModels.h"
 #include "Engine/GameInstance.h"
+#include "CommonButtonBase.h"
 #include "AccelByteWarsGameInstance.generated.h"
 
 class ULoadingWidget;
@@ -159,6 +160,8 @@ public:
 	 */
 	bool GetIsPendingFailureNotification(ENetworkFailure::Type& OutFailureType);
 
+	bool bIsReconnecting{ false };
+
 private:
 	/** This is the primary player*/
 	TWeakObjectPtr<ULocalPlayer> PrimaryPlayer;
@@ -271,4 +274,28 @@ private:
 	// Helper variable to reference the initiated AccelByte SDK config menu.
 	UAccelByteWarsActivatableWidget* SDKConfigWidgetInstance;
 #pragma endregion
+
+#pragma region "FTUE Widget"
+public:
+	TSubclassOf<UAccelByteWarsActivatableWidget> GetFTUEWidgetClass() const { return FTUEWidgetClass; }
+
+	TSubclassOf<UCommonButtonStyle> GetDevHelpButtonStyle() const { return DevHelpButtonStyle; }
+
+	FDataTableRowHandle GetDevHelpButtonInputAction() const { return DevHelpInputActionData; }
+
+	// Open FTUE menu when in game state.
+	UFUNCTION(Exec, BlueprintCallable)
+	void OpenFTUEMenu();
+
+protected:
+	// Widget class that represent AccelByte FTUE Widget.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TSubclassOf<UAccelByteWarsActivatableWidget> FTUEWidgetClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TSubclassOf<UCommonButtonStyle> DevHelpButtonStyle;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	FDataTableRowHandle DevHelpInputActionData;
+#pragma endregion 
 };

@@ -11,6 +11,7 @@
 
 class UAccelByteWarsWidgetSwitcher;
 class UListView;
+class UCommonButtonBase;
 
 UCLASS(Abstract)
 class ACCELBYTEWARS_API UFriendRequestsWidget : public UAccelByteWarsActivatableWidget
@@ -21,6 +22,7 @@ protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
+	virtual UWidget* NativeGetDesiredFocusTarget() const override;
 
 	void GetFriendRequestList();
 
@@ -32,4 +34,7 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UListView* Lv_FriendRequests;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
+	UCommonButtonBase* Btn_Back;
 };

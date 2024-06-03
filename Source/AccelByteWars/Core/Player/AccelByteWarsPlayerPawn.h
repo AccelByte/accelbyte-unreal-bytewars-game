@@ -35,7 +35,7 @@
 #include "GameFramework/Pawn.h"
 #include "AccelByteWarsPlayerPawn.generated.h"
 
-DECLARE_MULTICAST_DELEGATE_FourParams(FOnMatchStarted, AAccelByteWarsPlayerPawn* /*PlayerPawn*/, const APlayerController* /*PlayerController*/, const AAccelByteWarsPlayerState* /*PlayerState*/, const FLinearColor /*InColor*/);
+DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnMatchStarted, AAccelByteWarsPlayerPawn* /*PlayerPawn*/, const APlayerController* /*PlayerController*/, const FLinearColor /*InColor*/);
 DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnPlayerEquipmentLoaded, AAccelByteWarsPlayerPawn* /*PlayerPawn*/, const EShipDesign /*SelectedShipDesign*/, const EPowerUpSelection /*SelectedPowerUp*/);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnValidateActivatePowerUp, AAccelByteWarsPlayerPawn* /*PlayerPawn*/, const EPowerUpSelection /*SelectedPowerUp*/);
  
@@ -60,6 +60,8 @@ protected:
 public:	
 	//~UObject overridden functions
 	virtual void Tick(float DeltaTime) override;
+
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	//~End of UObject overridden functions
 
 	/**
@@ -258,13 +260,13 @@ public:
 	 * @brief Gets players selected ship
 	 */
 	UFUNCTION(BlueprintCallable, Server, Reliable, Category = AccelByteWars)
-	void Server_GetPlayerSelectedShip(APlayerController* PlayerController, AAccelByteWarsPlayerState* ABPlayerState, FLinearColor InColor);
+	void Server_GetPlayerSelectedShip(APlayerController* PlayerController, FLinearColor InColor);
 
 	/**
 	 * @brief Gets players selected ship
 	 */
 	UFUNCTION(BlueprintCallable, Client, Reliable, Category = AccelByteWars)
-	void Client_GetPlayerSelectedShip(APlayerController* PlayerController, AAccelByteWarsPlayerState* ABPlayerState, FLinearColor InColor);
+	void Client_GetPlayerSelectedShip(APlayerController* PlayerController, FLinearColor InColor);
 
 	/**
 	 * @brief Visually creates player ship

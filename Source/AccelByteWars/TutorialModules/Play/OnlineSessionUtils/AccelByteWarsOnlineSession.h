@@ -45,6 +45,7 @@ public:
 	virtual void SendSessionInvite(const int32 LocalUserNum, FName SessionName, const FUniqueNetIdPtr Invitee) override;
 	virtual void RejectSessionInvite(const int32 LocalUserNum, const FOnlineSessionInviteAccelByte& Invite) override;
 	virtual void LeaveSession(FName SessionName) override;
+	virtual void UpdateSessionJoinability(const FName SessionName, const EAccelByteV2SessionJoinability Joinability) override;
 
 	virtual FOnCreateSessionComplete* GetOnCreateSessionCompleteDelegates() override
 	{
@@ -349,6 +350,7 @@ public:
 	}
 
 protected:
+	void OnCreatePartyToInviteMember(FName SessionName, bool bWasSuccessful, const int32 LocalUserNum, const FUniqueNetIdPtr SenderId, const FUniqueNetIdPtr InviteeId);
 	void OnLeavePartyToTriggerEvent(FName SessionName, bool bSucceeded, const TDelegate<void(bool bWasSuccessful)> OnComplete);
 
 	void InitializePartyGeneratedWidgets();
@@ -381,12 +383,8 @@ protected:
 	virtual void OnPartyMembersChange(FName SessionName, const FUniqueNetId& Member, bool bJoined) override;
 	virtual void OnPartySessionUpdateReceived(FName SessionName) override;
 
-	void LeaveRestoredPartyToTriggerEvent(const FUniqueNetId& LocalUserId, const FOnlineError& Result, const TDelegate<void(bool bSucceeded)> OnComplete);
-	void OnLeaveRestoredPartyToTriggerEventComplete(bool bSucceeded, FString SessionId, const TDelegate<void(bool bSucceeded)> OnComplete);
-
-	void OnConnectLobbyComplete(int32 LocalUserNum, bool bSucceeded, const FUniqueNetId& UserId, const FString& Error);
-
 private:
+	FDelegateHandle OnCreatePartyToInviteMemberDelegateHandle;
 	FDelegateHandle OnLeaveSessionForTriggerDelegateHandle;
 
 	FTutorialModuleGeneratedWidget* InviteToPartyButtonMetadata;
@@ -414,5 +412,16 @@ private:
 
 	FOnSessionParticipantsChange OnPartyMembersChangeDelegates;
 	FOnSessionUpdateReceived OnPartySessionUpdateReceivedDelegates;
+#pragma endregion
+
+#pragma region "Lobby Essentials"
+protected:
+	void OnConnectLobbyComplete(int32 LocalUserNum, bool bSucceeded, const FUniqueNetId& UserId, const FString& Error);
+	void OnLobbyReconnecting(int32 LocalUserNum, const FUniqueNetId& UserId, int32 StatusCode, const FString& Reason, bool bWasClean);
+	void OnLobbyReconnected(int32 LocalUserNum, const FUniqueNetId& UserId);
+	void OnLobbyConnectionClosed(int32 LocalUserNum, const FUniqueNetId& UserId, int32 StatusCode, const FString& Reason, bool bWasClean);
+
+private:
+	bool bIsGameReconnecting{ false };
 #pragma endregion
 };

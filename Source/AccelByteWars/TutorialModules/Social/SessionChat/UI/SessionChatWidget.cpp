@@ -153,16 +153,26 @@ void USessionChatWidget::AppendChatMessage(const FChatMessage& Message)
 		return;
 	}
 
+	const FUniqueNetIdAccelByteUserRef SenderABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(Message.GetUserId());
+	if (!SenderABId.Get().IsValid())
+	{
+		UE_LOG_SESSIONCHAT(Warning, TEXT("Cannot append a chat message to display. Sender User Id is invalid."));
+		return;
+	}
+
 	// Display chat message.
 	UChatData* ChatData = NewObject<UChatData>();
-	ChatData->Sender = Message.GetNickname();
-	if (ChatData->Sender.IsEmpty())
-	{
-		ChatData->Sender = UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(Message.GetUserId().Get());	
-	}
 	ChatData->Message = Message.GetBody();
 	ChatData->bIsSenderLocal = SessionChatSubsystem->IsMessageFromLocalUser(LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId(), Message);
 
+	// If the sender doesn't have display name, then use the default display name.
+	ChatData->Sender = Message.GetNickname();
+	if (ChatData->Sender.IsEmpty() || SenderABId.Get().GetAccelByteId().Equals(ChatData->Sender))
+	{
+		ChatData->Sender = UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(Message.GetUserId().Get());
+	}
+
+	// Display chat message.
 	AppendChatMessage(ChatData);
 }
 

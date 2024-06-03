@@ -12,6 +12,7 @@
 class UAccelByteWarsGameInstance;
 class UAccelByteWarsWidgetSwitcher;
 class UTileView;
+class UCommonButtonBase;
 
 UCLASS(Abstract)
 class ACCELBYTEWARS_API UFriendsWidget_Starter : public UAccelByteWarsActivatableWidget
@@ -22,6 +23,7 @@ protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
+	virtual UWidget* NativeGetDesiredFocusTarget() const override;
 
 	void GetFriendList();
 	void OnFriendEntryClicked(UObject* Item);
@@ -38,4 +40,7 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UAccelByteWarsActivatableWidget> FriendDetailsWidgetClass;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
+	UCommonButtonBase* Btn_Back;
 };

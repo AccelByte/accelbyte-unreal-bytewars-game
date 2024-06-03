@@ -11,6 +11,7 @@
 #include "Core/AssetManager/TutorialModules/TutorialModuleDataAsset.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleUtility.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
+#include "Core/UI/AccelByteWarsBaseUI.h"
 #include "GameFramework/PlayerState.h"
 #include "Interfaces/IPluginManager.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -24,7 +25,7 @@ void UInfoWidget::RefreshUI()
 	// launch param
 	if (StaticCast<FString>(FCommandLine::Get()).Contains(TEXT("-DemoMode="), ESearchCase::IgnoreCase))
 	{
-		FString DemoMode;
+		FString DemoMode = TEXT("");
 		FParse::Value(FCommandLine::Get(), TEXT("-DemoMode="), DemoMode);
 		if (DemoMode.Equals("true", ESearchCase::IgnoreCase))
 		{
@@ -45,19 +46,26 @@ void UInfoWidget::RefreshUI()
 	}
 #pragma endregion
 
-	// in demo mode, show only on login menu
+	// If demo mode, show only on login menu
 	if (bDemoMode)
 	{
 		if (UTutorialModuleDataAsset* DA = UTutorialModuleUtility::GetTutorialModuleDataAsset(
 			FPrimaryAssetId{ "TutorialModule:AUTHESSENTIALS" }, this, true))
 		{
-			const bool bIsInLoginMenu = DA->GetTutorialModuleUIClass()->IsChildOf(
-				GetFirstOccurenceOuter<UAccelByteWarsActivatableWidget>()->GetClass());
+			const TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass = DA->GetTutorialModuleUIClass();
+			const UCommonActivatableWidget* ActiveWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
+
+			bool bIsInLoginMenu = false;
+			if (ActiveWidget && WidgetClass.Get()) 
+			{
+				bIsInLoginMenu = WidgetClass.Get()->IsChildOf(ActiveWidget->GetClass());
+			}
+
 			SetVisibility(bIsInLoginMenu ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 		}
 	}
 
-	// user info
+	// User info
 	if (bDemoMode)
 	{
 		Text_Username->SetVisibility(ESlateVisibility::Collapsed);
@@ -66,8 +74,8 @@ void UInfoWidget::RefreshUI()
 	}
 	else
 	{
-		FString UserNickname;
-		FString UserId;
+		FString UserNickname = TEXT("");
+		FString UserId = TEXT("");
 		if (GetUserInfo(UserNickname, UserId))
 		{
 			Text_Username->SetText(FText::FromString(UserNickname));
@@ -88,14 +96,10 @@ void UInfoWidget::RefreshUI()
 		Text_BuildInfo->SetText(FText::FromString(BuildInfo));
 	}
 
-	FString ProjectVersion = "";
-	FString PluginsInfo = "";
 	bool bIsBaseGame = true;
 
-	// Project info
-	GConfig->GetString(TEXT("/Script/EngineSettings.GeneralProjectSettings"), TEXT("ProjectVersion"), ProjectVersion, GGameIni);
-
 	// Plugins
+	FString PluginsInfo = TEXT("");
 	IPluginManager& PluginManager = IPluginManager::Get();
 	const TArray<TSharedRef<IPlugin>> Plugins = PluginManager.GetDiscoveredPlugins();
 	for (const TSharedRef<IPlugin>& Plugin : Plugins)
@@ -112,17 +116,42 @@ void UInfoWidget::RefreshUI()
 		}
 	}
 
-	// set text
-	const FString ProjectInfoFinal = bDemoMode ?
-		FString::Printf(
-			TEXT("Version: %s"),
-			*ProjectVersion) :
-		FString::Printf(
-			TEXT("Version: %s (%s)%s"),
-			*ProjectVersion,
-			*FString(bIsBaseGame ? "BaseGame" : "TutorialModules"),
-			*PluginsInfo);
-	Text_ProjectInfo->SetText(FText::FromString(ProjectInfoFinal));
+	// Project version
+	FString ProjectVersion = TEXT("");
+	FString ProjectBuildNumber = TEXT("");
+	GConfig->GetString(TEXT("/Script/EngineSettings.GeneralProjectSettings"), TEXT("ProjectVersion"), ProjectVersion, GGameIni);
+	GConfig->GetString(TEXT("/Script/EngineSettings.GeneralProjectSettings"), TEXT("BuildNumber"), ProjectBuildNumber, GGameIni);
+
+	// Project base URL
+	FString ProjectBaseURL = TEXT("");
+	if (FServiceArgumentModel::OnGetPredefinedArgument.IsBound())
+	{
+		ProjectBaseURL = FServiceArgumentModel::OnGetPredefinedArgument.Execute(EServicePredifinedArgument::ENV_BASE_URL);
+	}
+
+	// Construct project info.
+	FString ProjectInfo = TEXT("");
+	if (bDemoMode) 
+	{
+		// Show only project version and build number.
+		ProjectInfo = FString::Printf(TEXT("Version: %s-%s"), *ProjectVersion, *ProjectBuildNumber);
+	}
+	else
+	{
+		// Show project version, build number, base URL, and plugins.
+		ProjectInfo = FString::Printf(TEXT("Version: %s-%s (%s)"), 
+			*ProjectVersion, *ProjectBuildNumber, *FString(bIsBaseGame ? "BaseGame" : "TutorialModules"));
+
+		if (!ProjectBaseURL.IsEmpty()) 
+		{
+			ProjectInfo.Append(FString::Printf(TEXT("%sBase URL: %s"), LINE_TERMINATOR, *ProjectBaseURL));
+		}
+
+		ProjectInfo.Append(PluginsInfo);
+	}
+
+	// Project info
+	Text_ProjectInfo->SetText(FText::FromString(ProjectInfo));
 }
 
 void UInfoWidget::NativeConstruct()

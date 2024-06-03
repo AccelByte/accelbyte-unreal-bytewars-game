@@ -283,6 +283,28 @@ void USessionEssentialsOnlineSession::LeaveSession(FName SessionName)
 	}
 }
 
+void USessionEssentialsOnlineSession::UpdateSessionJoinability(const FName SessionName, const EAccelByteV2SessionJoinability Joinability)
+{
+	UE_LOG_SESSIONESSENTIALS(Verbose, TEXT("called"));
+
+	FOnlineSessionV2AccelBytePtr ABSessionInt = GetABSessionInt();
+	if (!ABSessionInt)
+	{
+		UE_LOG_SESSIONESSENTIALS(Warning, TEXT("Session interface is null"));
+		return;
+	}
+
+	FNamedOnlineSession* Session = ABSessionInt->GetNamedSession(SessionName);
+	if (!Session)
+	{
+		UE_LOG_SESSIONESSENTIALS(Warning, TEXT("Session is invalid"));
+		return;
+	}
+
+	Session->SessionSettings.Set(SETTING_SESSION_JOIN_TYPE, UEnum::GetValueAsString(Joinability));
+	ABSessionInt->UpdateSession(SessionName, Session->SessionSettings);
+}
+
 void USessionEssentialsOnlineSession::OnCreateSessionComplete(FName SessionName, bool bSucceeded)
 {
 	UE_LOG_SESSIONESSENTIALS(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))

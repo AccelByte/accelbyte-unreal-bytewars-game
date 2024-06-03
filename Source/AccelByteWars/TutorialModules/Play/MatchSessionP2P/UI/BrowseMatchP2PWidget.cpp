@@ -221,10 +221,3 @@ void UBrowseMatchP2PWidget::OnSessionServerUpdateReceived(
 		W_Parent->SwitchContent(UBrowseMatchWidget::EContentType::JOIN_ERROR);
 	}
 }
-
-#pragma region "UI related"
-UWidget* UBrowseMatchP2PWidget::NativeGetDesiredFocusTarget() const
-{
-	return Btn_Refresh;
-}
-#pragma endregion 

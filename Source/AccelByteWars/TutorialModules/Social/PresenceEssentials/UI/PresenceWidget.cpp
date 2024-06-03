@@ -211,6 +211,12 @@ void UPresenceWidget::RefreshPresence()
         PresenceUserId,
         FOnPresenceTaskComplete::CreateWeakLambda(this, [this](const bool bWasSuccessful, const TSharedPtr<FOnlineUserPresenceAccelByte> Presence)
         {
+            // Abort if the widget is being destroyed.
+            if (IsPendingKill() || IsUnreachable()) 
+            {
+                return;
+            }
+
             FString PresenceStr;
 
             // Set offline if presence is invalid.

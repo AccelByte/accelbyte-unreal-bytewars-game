@@ -6,6 +6,9 @@
 
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
+#include "OnlineSubsystemTypes.h"
+#include "OnlineSubsystemAccelByteTypes.h"
+#include "Interfaces/OnlinePresenceInterface.h"
 #include "FriendsEssentialsModels.generated.h"
 
 UENUM()

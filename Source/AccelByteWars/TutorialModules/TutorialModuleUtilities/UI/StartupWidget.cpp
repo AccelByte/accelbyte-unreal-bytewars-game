@@ -75,6 +75,12 @@ void UStartupWidget::StartupGame()
 		return;
 	}
 
+	if (!BaseUIWidget)
+	{
+		Tb_FailedMessage->SetText(LOCTEXT("Start Up Failed", "Start up failed. BaseUIWidget is empty."));
+		Ws_Startup->SetActiveWidget(Pw_Failed);
+	}
+
 	// If auth essentials module is not active, open the Main Menu.
 	if ((!AuthEssentialsDataAsset || !AuthEssentialsDataAsset->IsActiveAndDependenciesChecked()) && BaseUIWidget)
 	{
@@ -83,35 +89,44 @@ void UStartupWidget::StartupGame()
 		return;
 	}
 
-	// If already login, immediately open the Main Menu.
-	if (const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld()))
+	const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+	if (!Subsystem)
 	{
-		if (FOnlineIdentityAccelBytePtr IdentityInterface = StaticCastSharedPtr<FOnlineIdentityAccelByte>(Subsystem->GetIdentityInterface()))
-		{
-			if (IdentityInterface->GetLoginStatus(0) == ELoginStatus::Type::LoggedIn && BaseUIWidget)
-			{
-				DeactivateWidget();
-				BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, MainMenuWidgetClass.Get());
-				return;
-			}
-		}
-	}
-
-	// If not logged in, open the login menu.
-	if (BaseUIWidget)
-	{
-		if (TSubclassOf<UAccelByteWarsActivatableWidget> LoginWidgetClass = AuthEssentialsDataAsset->GetTutorialModuleUIClass()) 
-		{
-			DeactivateWidget();
-			BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, LoginWidgetClass.Get());
-		}
-
+		Tb_FailedMessage->SetText(LOCTEXT("Start Up Failed", "Start up failed. Failed to get Subsystem."));
+		Ws_Startup->SetActiveWidget(Pw_Failed);
 		return;
 	}
 
-	// Fallback, show error message.
-	Tb_FailedMessage->SetText(LOCTEXT("Start Up Failed", "Start up failed. Unknown error occurred."));
-	Ws_Startup->SetActiveWidget(Pw_Failed);
+	const FOnlineIdentityAccelBytePtr IdentityInterface = StaticCastSharedPtr<FOnlineIdentityAccelByte>(Subsystem->GetIdentityInterface());
+	if (!IdentityInterface)
+	{
+		Tb_FailedMessage->SetText(LOCTEXT("Start Up Failed", "Start up failed. Failed to get IdentityInterface."));
+		Ws_Startup->SetActiveWidget(Pw_Failed);
+		return;
+	}
+
+	// If already login, immediately open the Main Menu.
+	if (IdentityInterface->GetLoginStatus(0) == ELoginStatus::Type::LoggedIn && BaseUIWidget)
+	{
+		DeactivateWidget();
+		BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, MainMenuWidgetClass.Get());
+		return;
+	}
+
+	const TSubclassOf<UAccelByteWarsActivatableWidget> LoginWidgetClass = AuthEssentialsDataAsset->GetTutorialModuleUIClass();
+	if (!LoginWidgetClass)
+	{
+		Tb_FailedMessage->SetText(LOCTEXT("Start Up Failed", "Start up failed. LoginWidgetClass is not set."));
+		Ws_Startup->SetActiveWidget(Pw_Failed);
+		return;
+	}
+
+	// If not logged in, open the login menu.
+	DeactivateWidget();
+	if(BaseUIWidget) BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, LoginWidgetClass.Get());
+
+	IdentityInterface->AccelByteOnLogoutCompleteDelegates->RemoveAll(this);
+	IdentityInterface->AccelByteOnLogoutCompleteDelegates->AddUObject(this, &ThisClass::OnLogoutComplete);
 }
 
 void UStartupWidget::QuitGame()
@@ -133,6 +148,18 @@ void UStartupWidget::QuitGame()
 			}
 		})
 	);
+}
+
+void UStartupWidget::OnLogoutComplete(int32 LocalUserNum, bool bWasSuccessful, const FOnlineErrorAccelByte& Error)
+{
+	if (BaseUIWidget)
+	{
+		if (TSubclassOf<UAccelByteWarsActivatableWidget> LoginWidgetClass = AuthEssentialsDataAsset->GetTutorialModuleUIClass())
+		{
+			DeactivateWidget();
+			BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, LoginWidgetClass.Get());
+		}
+	}
 }
 
 #undef LOCTEXT_NAMESPACE

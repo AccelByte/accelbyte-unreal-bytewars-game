@@ -65,8 +65,22 @@ void USessionChatSubsystem_Starter::Deinitialize()
 
 void USessionChatSubsystem_Starter::PushChatRoomMessageReceivedNotification(const FUniqueNetId& Sender, const FChatRoomId& RoomId, const TSharedRef<FChatMessage>& Message)
 {
-    if (!GetChatInterface() || !GetPromptSubsystem())
+    if (!GetChatInterface())
     {
+        UE_LOG_SESSIONCHAT(Warning, TEXT("Cannot push chat room message received notification. Chat Interface is not valid."));
+        return;
+    }
+
+    if (!GetPromptSubsystem())
+    {
+        UE_LOG_SESSIONCHAT(Warning, TEXT("Cannot push chat room message received notification. Prompt Subsystem is not valid."));
+        return;
+    }
+
+    const FUniqueNetIdAccelByteUserRef SenderABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(Message->GetUserId());
+    if (!SenderABId.Get().IsValid())
+    {
+        UE_LOG_SESSIONCHAT(Warning, TEXT("Cannot push chat room message received notification. Sender User Id is not valid."));
         return;
     }
 
@@ -81,10 +95,11 @@ void USessionChatSubsystem_Starter::PushChatRoomMessageReceivedNotification(cons
         }
     }
 
+    // If the sender doesn't have display name, then use the default display name.
     FString SenderStr = Message.Get().GetNickname();
-    if (SenderStr.IsEmpty())
+    if (SenderStr.IsEmpty() || SenderABId.Get().GetAccelByteId().Equals(SenderStr))
     {
-        SenderStr = UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(Sender);
+        SenderStr = UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(Message->GetUserId().Get());
     }
 
     switch (ChatRoomType)

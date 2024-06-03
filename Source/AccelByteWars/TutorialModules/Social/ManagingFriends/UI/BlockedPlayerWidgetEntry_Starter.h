@@ -9,7 +9,7 @@
 #include "Social/ManagingFriends/ManagingFriendsSubsystem_Starter.h"
 #include "BlockedPlayerWidgetEntry_Starter.generated.h"
 
-class UImage;
+class UAccelByteWarsAsyncImageWidget;
 class UTextBlock;
 class UCommonButtonBase;
 
@@ -28,13 +28,11 @@ protected:
 	UFriendData* CachedBlockedPlayerData;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
-	UImage* Img_Avatar;
+	UAccelByteWarsAsyncImageWidget* Img_Avatar;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Tb_DisplayName;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_Unblock;
-
-	FSlateBrush DefaultAvatarBrush;
 };

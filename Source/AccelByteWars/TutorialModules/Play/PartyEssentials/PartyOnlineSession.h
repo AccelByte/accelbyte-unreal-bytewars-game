@@ -96,6 +96,7 @@ public:
 #pragma endregion
 
 protected:
+	void OnCreatePartyToInviteMember(FName SessionName, bool bWasSuccessful, const int32 LocalUserNum, const FUniqueNetIdPtr SenderId, const FUniqueNetIdPtr InviteeId);
 	virtual void OnQueryUserInfoComplete(int32 LocalUserNum, bool bSucceeded, const TArray<FUniqueNetIdRef>& UserIds, const FString& ErrorMessage, const FOnQueryUsersInfoComplete& OnComplete) override;
 
 	void OnLeavePartyToTriggerEvent(FName SessionName, bool bSucceeded, const TDelegate<void(bool bWasSuccessful)> OnComplete);
@@ -132,9 +133,6 @@ protected:
 	virtual void OnPartyMembersChange(FName SessionName, const FUniqueNetId& Member, bool bJoined) override;
 	virtual void OnPartySessionUpdateReceived(FName SessionName) override;
 
-	void LeaveRestoredPartyToTriggerEvent(const FUniqueNetId& LocalUserId, const FOnlineError& Result, const TDelegate<void(bool bSucceeded)> OnComplete);
-	void OnLeaveRestoredPartyToTriggerEventComplete(bool bSucceeded, FString SessionId, const TDelegate<void(bool bSucceeded)> OnComplete);
-
 	void OnConnectLobbyComplete(int32 LocalUserNum, bool bSucceeded, const FUniqueNetId& UserId, const FString& Error);
 
 #pragma endregion
@@ -142,6 +140,7 @@ protected:
 private:
 	FDelegateHandle OnQueryUserInfoCompleteDelegateHandle;
 
+	FDelegateHandle OnCreatePartyToInviteMemberDelegateHandle;
 	FDelegateHandle OnLeaveSessionForTriggerDelegateHandle;
 
 	FTutorialModuleGeneratedWidget* InviteToPartyButtonMetadata;

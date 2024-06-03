@@ -35,21 +35,18 @@ void AAccelByteWarsMainMenuGameMode::BeginPlay()
 	TArray<APlayerController*> PlayerToBeRemoved;
 	for (const APlayerState* PlayerState : ABMainMenuGameState->PlayerArray)
 	{
+		if (!PlayerState) continue;
+
 		APlayerController* PC = PlayerState->GetPlayerController();
-		if (!PC)
-		{
-			continue;
-		}
+		if (!PC) continue;
 
 		// if first controller, skip
 		const int32 ControllerId = UGameplayStatics::GetPlayerControllerID(PC);
-		if (ControllerId == 0)
-		{
-			continue;
-		}
+		if (ControllerId == 0) continue;
 
 		PlayerToBeRemoved.Add(PC);
 	}
+
 	// remove players
 	for (APlayerController* PlayerController : PlayerToBeRemoved)
 	{
@@ -74,46 +71,49 @@ void AAccelByteWarsMainMenuGameMode::BeginPlay()
 		}
 	});
 
+	UPromptSubsystem* PromptSubsystem = GetGameInstance()->GetSubsystem<UPromptSubsystem>();
+
 	// check if last connection was failed
 	ENetworkFailure::Type FailureType;
 	if (GameInstance->GetIsPendingFailureNotification(FailureType))
 	{
-		if (UPromptSubsystem* PromptSubsystem = GetGameInstance()->GetSubsystem<UPromptSubsystem>())
+		FText FailureMessage;
+		switch (FailureType)
 		{
-			FText FailureMessage;
-
-			switch (FailureType)
-			{
-			case ENetworkFailure::NetDriverAlreadyExists:
-				FailureMessage = TEXT_ERROR_NET_DRIVER_EXIST;
-				break;
-			case ENetworkFailure::NetDriverCreateFailure:
-				FailureMessage = TEXT_ERROR_NET_DRIVER_INIT;
-				break;
-			case ENetworkFailure::NetDriverListenFailure:
-				FailureMessage = TEXT_ERROR_NET_DRIVER_LISTEN;
-				break;
-			case ENetworkFailure::ConnectionLost:
-				FailureMessage = TEXT_CONNECTION_LOST;
-				break;
-			case ENetworkFailure::ConnectionTimeout:
-				FailureMessage = TEXT_CONNECTION_TIMEOUT;
-				break;
-			case ENetworkFailure::OutdatedClient:
-				FailureMessage = TEXT_CLIENT_OUTDATED;
-				break;
-			case ENetworkFailure::OutdatedServer:
-				FailureMessage = TEXT_SERVER_OUTDATED;
-				break;
-			case ENetworkFailure::PendingConnectionFailure:
-				FailureMessage = TEXT_PENDING_CONNECTION_FAILED;
-				break;
-			default:
-				FailureMessage = TEXT_CONNECTION_FAILED_GENERIC;
-			}
-
-			PromptSubsystem->ShowMessagePopUp(TEXT_CONNECTION_FAILED, FailureMessage);
+		case ENetworkFailure::NetDriverAlreadyExists:
+			FailureMessage = TEXT_ERROR_NET_DRIVER_EXIST;
+			break;
+		case ENetworkFailure::NetDriverCreateFailure:
+			FailureMessage = TEXT_ERROR_NET_DRIVER_INIT;
+			break;
+		case ENetworkFailure::NetDriverListenFailure:
+			FailureMessage = TEXT_ERROR_NET_DRIVER_LISTEN;
+			break;
+		case ENetworkFailure::ConnectionLost:
+			FailureMessage = TEXT_CONNECTION_LOST;
+			break;
+		case ENetworkFailure::ConnectionTimeout:
+			FailureMessage = TEXT_CONNECTION_TIMEOUT;
+			break;
+		case ENetworkFailure::OutdatedClient:
+			FailureMessage = TEXT_CLIENT_OUTDATED;
+			break;
+		case ENetworkFailure::OutdatedServer:
+			FailureMessage = TEXT_SERVER_OUTDATED;
+			break;
+		case ENetworkFailure::PendingConnectionFailure:
+			FailureMessage = TEXT_PENDING_CONNECTION_FAILED;
+			break;
+		default:
+			FailureMessage = TEXT_CONNECTION_FAILED_GENERIC;
 		}
+
+		if(PromptSubsystem) PromptSubsystem->ShowMessagePopUp(TEXT_CONNECTION_FAILED, FailureMessage);
+	}
+
+	if (GameInstance->bIsReconnecting && PromptSubsystem)
+	{
+		PromptSubsystem->ShowReconnectingThrobber();
 	}
 }
 

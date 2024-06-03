@@ -5,5 +5,4 @@
 #pragma once
 #include "OnlineError.h"
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnCheckoutComplete, const FOnlineError& /*Error*/)
-DECLARE_DELEGATE_OneParam(FOnPurchaseClicked, const FString& /*CurrencyCode*/)
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnOrderComplete, const FOnlineError& /*Error*/)

@@ -6,6 +6,7 @@
 
 #include "CoreMinimal.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
+#include "Interfaces/OnlineSessionInterface.h"
 #include "MatchmakingDSWidget.generated.h"
 
 class UAccelByteWarsOnlineSessionBase;
@@ -25,20 +26,19 @@ protected:
 	void StartMatchmaking() const;
 
 	UFUNCTION()
-	void CancelMatchmaking() const;
+	void CancelButtonClicked() const;
 
 	void OnStartMatchmakingComplete(FName SessionName, bool bSucceeded) const;
 	void OnCancelMatchmakingComplete(FName SessionName, bool bSucceeded) const;
 	void OnMatchmakingComplete(FName SessionName, bool bSucceeded) const;
+	void OnCancelJoinSessionComplete(FName SessionName, bool bSucceeded) const;
+	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result) const;
 
 private:
 	UPROPERTY()
 	UAccelByteWarsOnlineSessionBase* OnlineSession;
 
 #pragma region "UI related"
-protected:
-	virtual UWidget* NativeGetDesiredFocusTarget() const override;
-
 private:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_StartMatchmakingDS;

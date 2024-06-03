@@ -92,6 +92,14 @@ void UPrivateChatSubsystem_Starter::PushPrivateChatMessageReceivedNotification(c
 {
     if (!GetPromptSubsystem())
     {
+        UE_LOG_PRIVATECHAT(Warning, TEXT("Cannot push private chat message received notification. Prompt Subsystem is not valid."));
+        return;
+    }
+
+    const FUniqueNetIdAccelByteUserRef SenderABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(Message->GetUserId());
+    if (!SenderABId.Get().IsValid())
+    {
+        UE_LOG_PRIVATECHAT(Warning, TEXT("Cannot push private chat message received notification. Sender User Id is not valid."));
         return;
     }
 
@@ -100,24 +108,20 @@ void UPrivateChatSubsystem_Starter::PushPrivateChatMessageReceivedNotification(c
     if (const UPrivateChatWidget_Starter* PrivateChatWidget = Cast<UPrivateChatWidget_Starter>(ActiveWidget))
     {
         const FUniqueNetIdAccelByteUserPtr CurrentRecipientABId = StaticCastSharedPtr<const FUniqueNetIdAccelByteUser>(PrivateChatWidget->GetPrivateChatRecipient());
-        const FUniqueNetIdAccelByteUserRef SenderABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(Message->GetUserId());
 
-        if (!CurrentRecipientABId || !SenderABId.Get().IsValid())
+        if (!CurrentRecipientABId || CurrentRecipientABId->GetAccelByteId().Equals(SenderABId->GetAccelByteId()))
         {
             return;
         }
-        
-        if (CurrentRecipientABId->GetAccelByteId().Equals(SenderABId->GetAccelByteId()))
-        {
-            return;   
-        }
     }
 
+    // If the sender doesn't have display name, then use the default display name.
     FString SenderStr = Message.Get().GetNickname();
-    if (SenderStr.IsEmpty()) 
+    if (SenderStr.IsEmpty() || SenderABId.Get().GetAccelByteId().Equals(SenderStr))
     {
         SenderStr = UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(Message->GetUserId().Get());
     }
+
     GetPromptSubsystem()->PushNotification(FText::Format(PRIVATE_CHAT_RECEIVED_MESSAGE, FText::FromString(SenderStr)));
 }
 

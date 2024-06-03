@@ -83,12 +83,13 @@ void UQuickPlayWidget::SwitchContent(const EContentType State)
 		break;
 	}
 
+	DesiredFocusTargetButton = BackButtonTarget;
 	FocusTarget->SetUserFocus(GetOwningPlayer());
 	Ws_ContentOuter->SetActiveWidget(WidgetTarget);
 	Ws_Processing->SetWidgetState(ProcessingState);
 
 	BackButtonTarget->SetVisibility(bShowBackButton ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-	bIsBackHandler = bShowBackButton;
+	RequestRefreshFocus();
 }
 
 void UQuickPlayWidget::NativeOnActivated()
@@ -128,7 +129,7 @@ void UQuickPlayWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 
 UWidget* UQuickPlayWidget::NativeGetDesiredFocusTarget() const
 {
-	return Btn_SelectGameMode_Back;
+	return DesiredFocusTargetButton;
 }
 
 void UQuickPlayWidget::SelectGameMode(EGameModeType GameModeType)

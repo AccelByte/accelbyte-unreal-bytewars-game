@@ -9,43 +9,51 @@ void UStoreItemPurchaseSubsystem::Initialize(FSubsystemCollectionBase& Collectio
 {
 	Super::Initialize(Collection);
 
-	PurchaseInterface = Online::GetSubsystem(GetWorld())->GetPurchaseInterface();
+	const IOnlinePurchasePtr PurchasePtr = Online::GetSubsystem(GetWorld())->GetPurchaseInterface();
+	ensure(PurchasePtr);
+
+	PurchaseInterface = StaticCastSharedPtr<FOnlinePurchaseAccelByte>(PurchasePtr);
 	ensure(PurchaseInterface);
+
+	PurchaseInterface->OnCreateNewOrderCompleteDelegates.AddUObject(this, &ThisClass::OnCreateNewOrderComplete);
 }
 
 void UStoreItemPurchaseSubsystem::Deinitialize()
 {
 	Super::Deinitialize();
+
+	PurchaseInterface->ClearOnCreateNewOrderCompleteDelegates(this);
 }
 
-void UStoreItemPurchaseSubsystem::Checkout(
+void UStoreItemPurchaseSubsystem::CreateNewOrder(
 	const APlayerController* OwningPlayer,
-	const FUniqueOfferId OfferId,
-	const int32 Quantity,
-	const bool bIsConsumable)
+	const UStoreItemDataObject* StoreItemData,
+	const int32 SelectedPriceIndex,
+	const int32 Quantity) const
 {
-	FPurchaseCheckoutRequest Request;
-	FPurchaseCheckoutRequest::FPurchaseOfferEntry PurchaseOfferEntry{
-		FOfferNamespace(),
-		OfferId,
+	UStoreItemPriceDataObject* SelectedPrice = StoreItemData->Prices[SelectedPriceIndex];
+	FAccelByteModelsOrderCreate Order{
+		StoreItemData->ItemData->Id,
 		Quantity,
-		bIsConsumable
+		static_cast<int32>(SelectedPrice->RegularPrice) * Quantity,
+		static_cast<int32>(SelectedPrice->FinalPrice) * Quantity,
+		CurrencyCodeMap[SelectedPrice->CurrencyType]
 	};
-	Request.PurchaseOffers.Add(PurchaseOfferEntry);
 
-	PurchaseInterface->Checkout(
+	PurchaseInterface->CreateNewOrder(
 		*GetLocalPlayerUniqueNetId(OwningPlayer).Get(),
-		Request,
-		FOnPurchaseCheckoutComplete::CreateUObject(this, &ThisClass::OnCheckoutComplete));
+		Order);
 }
 
-void UStoreItemPurchaseSubsystem::OnCheckoutComplete(
-	const FOnlineError& Result,
-	const TSharedRef<FPurchaseReceipt>& Receipt) const
+void UStoreItemPurchaseSubsystem::OnCreateNewOrderComplete(
+	bool bWasSuccessful,
+	const FAccelByteModelsOrderInfo& OrderInfo,
+	const FOnlineErrorAccelByte& OnlineError) const
 {
-	OnCheckoutCompleteDelegates.Broadcast(Result);
+	OnCheckoutCompleteDelegates.Broadcast(OnlineError);
 }
 
+#pragma region "Utilities"
 FUniqueNetIdPtr UStoreItemPurchaseSubsystem::GetLocalPlayerUniqueNetId(const APlayerController* PlayerController) const
 {
 	if (!ensure(PlayerController)) 
@@ -61,3 +69,4 @@ FUniqueNetIdPtr UStoreItemPurchaseSubsystem::GetLocalPlayerUniqueNetId(const APl
 
 	return LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId();
 }
+#pragma endregion 

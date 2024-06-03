@@ -155,5 +155,11 @@ void UPartyWidgetEntry::OpenPlayerActionMenu()
 	// Display player action menu widget.
 	UFriendDetailsWidget* DetailsWidget = 
 		Cast<UFriendDetailsWidget>(BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, FriendDetailsWidgetClass));
+	if (!DetailsWidget) 
+	{
+		UE_LOG_PARTYESSENTIALS(Warning, TEXT("Cannot open player action menu. Player action menu is not valid."));
+		return;
+	}
+
 	DetailsWidget->InitData(CachedFriendData);
 }

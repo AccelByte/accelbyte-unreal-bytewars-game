@@ -58,6 +58,7 @@ public:
 	virtual void SendSessionInvite(const int32 LocalUserNum, FName SessionName, const FUniqueNetIdPtr Invitee){}
 	virtual void RejectSessionInvite(const int32 LocalUserNum, const FOnlineSessionInviteAccelByte& Invite){}
 	virtual void LeaveSession(FName SessionName){}
+	virtual void UpdateSessionJoinability(const FName SessionName, const EAccelByteV2SessionJoinability Joinability){}
 
 	virtual FOnCreateSessionComplete* GetOnCreateSessionCompleteDelegates(){ return nullptr; }
 	virtual FOnJoinSessionComplete* GetOnJoinSessionCompleteDelegates(){ return nullptr; }

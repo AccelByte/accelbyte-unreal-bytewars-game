@@ -50,28 +50,35 @@ void ULoginWidget_Starter::NativeOnDeactivated()
 	Btn_QuitGame->OnClicked().Clear();
 }
 
-void ULoginWidget_Starter::SetLoginState(const ELoginState NewState)
+void ULoginWidget_Starter::SetLoginState(const ELoginState NewState) const
 {
-	Ws_LoginState->SetActiveWidgetIndex((int)NewState);
+	UWidget* WidgetToActivate;
 
 	switch (NewState)
 	{
 	case ELoginState::Default:
+		WidgetToActivate = Vb_LoginOptions;
 		Btn_LoginWithDeviceId->SetUserFocus(GetOwningPlayer());
 		InitializeFTUEDialogues(true);
 		break;
 	case ELoginState::LoggingIn:
+		WidgetToActivate = Vb_LoginLoading;
 		DeinitializeFTUEDialogues();
+		HideFTUEDevHelpButton();
 		break;
 	case ELoginState::Failed:
+		WidgetToActivate = Vb_LoginFailed;
 		Btn_RetryLogin->SetUserFocus(GetOwningPlayer());
 		DeinitializeFTUEDialogues();
 		break;
 	default:
+		WidgetToActivate = Vb_LoginOptions;
 		Btn_LoginWithDeviceId->SetUserFocus(GetOwningPlayer());
 		InitializeFTUEDialogues(true);
 		break;
 	}
+
+	Ws_LoginState->SetActiveWidget(WidgetToActivate);
 }
 
 void ULoginWidget_Starter::OnLoginWithDeviceIdButtonClicked()
@@ -111,6 +118,11 @@ void ULoginWidget_Starter::OnLoginComplete(bool bWasSuccessful, const FString& E
 {
 	// TODO: Handle on login complete event.
 	UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("On login complete event is not yet implemented."));
+}
+
+void ULoginWidget_Starter::SetButtonLoginVisibility(const ESlateVisibility InSlateVisibility) const
+{
+	Btn_LoginWithDeviceId->SetVisibility(InSlateVisibility);
 }
 
 #undef LOCTEXT_NAMESPACE

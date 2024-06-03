@@ -16,7 +16,7 @@ void UWalletBalanceWidget::NativeOnActivated()
 	WalletSubsystem = GetGameInstance()->GetSubsystem<UWalletEssentialsSubsystem>();
 	ensure(WalletSubsystem);
 
-	WalletSubsystem->OnGetWalletInfoCompleteDelegates.AddUObject(this, &ThisClass::ShowBalance);
+	WalletSubsystem->OnQueryOrGetWalletInfoCompleteDelegates.AddUObject(this, &ThisClass::ShowBalance);
 
 	UpdateBalance(false);
 }
@@ -25,7 +25,7 @@ void UWalletBalanceWidget::NativeOnDeactivated()
 {
 	Super::NativeOnDeactivated();
 
-	WalletSubsystem->OnGetWalletInfoCompleteDelegates.RemoveAll(this);
+	WalletSubsystem->OnQueryOrGetWalletInfoCompleteDelegates.RemoveAll(this);
 }
 
 void UWalletBalanceWidget::UpdateBalance(const bool bAlwaysRequestToService)
@@ -33,17 +33,16 @@ void UWalletBalanceWidget::UpdateBalance(const bool bAlwaysRequestToService)
 	W_Root->ClearChildren();
 	CurrencyBalanceEntryMap.Empty();
 
-	for (const FString& Currency : Currencies)
+	for (const TTuple<FString, ECurrencyType>& Currency : CurrenciesMap)
 	{
-		const FString CurrencyUpper = Currency.ToUpper();
 		UWalletBalanceWidgetEntry* Entry = CreateWidget<UWalletBalanceWidgetEntry>(this, CurrencyBalanceClass);
 		ensure(Entry);
 
-		Entry->Setup(FText::FromString("..."), FText::FromString(CurrencyUpper));
+		Entry->Setup(FText::FromString("..."), Currency.Value);
 		W_Root->AddChild(Entry);
-		CurrencyBalanceEntryMap.Add(CurrencyUpper, Entry);
+		CurrencyBalanceEntryMap.Add(Currency.Key, Entry);
 
-		WalletSubsystem->GetWalletInfoByCurrencyCode(GetOwningPlayer(), CurrencyUpper, bAlwaysRequestToService);
+		WalletSubsystem->QueryOrGetWalletInfoByCurrencyCode(GetOwningPlayer(), Currency.Key, bAlwaysRequestToService);
 	}
 }
 
@@ -58,6 +57,6 @@ void UWalletBalanceWidget::ShowBalance(bool bWasSuccessful, const FAccelByteMode
 	{
 		Entry->Setup(
 			bWasSuccessful ? FText::FromString(FString::FromInt(Response.Balance)) : TEXT_BALANCE_ERROR,
-			FText::FromString(Response.CurrencyCode.ToUpper()));
+			CurrenciesMap[Response.CurrencyCode]);
 	}
 }

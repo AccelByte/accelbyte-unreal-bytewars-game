@@ -38,6 +38,9 @@ private:
 	UAccelByteWarsOnlineSessionBase* GameSessionOnlineSession;
 
 	void OnLeaveSessionComplete(FName SessionName, bool bSucceeded);
+	void UpdateUserCache();
+
+	void CloseGameSession();
 
 #pragma region "Authenticating player"
 public:

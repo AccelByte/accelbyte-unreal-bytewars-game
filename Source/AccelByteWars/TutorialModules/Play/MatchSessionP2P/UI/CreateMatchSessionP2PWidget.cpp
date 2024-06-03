@@ -36,8 +36,6 @@ void UCreateMatchSessionP2PWidget::NativeOnActivated()
 	OnlineSession->GetOnSessionServerUpdateReceivedDelegates()->AddUObject(this, &ThisClass::OnSessionServerUpdateReceived);
 
 	Btn_StartMatchSessionP2P->OnClicked().AddUObject(this, &ThisClass::CreateSession);
-	W_Parent->GetProcessingWidgetComponent()->OnCancelClicked.AddUObject(this, &ThisClass::CancelJoiningSession);
-	W_Parent->GetProcessingWidgetComponent()->OnRetryClicked.AddUObject(this, &ThisClass::CreateSession);
 }
 
 void UCreateMatchSessionP2PWidget::NativeOnDeactivated()
@@ -60,6 +58,12 @@ void UCreateMatchSessionP2PWidget::CreateSession() const
 	{
 		return;
 	}
+
+	// Make sure the retry and cancel game session is performed by this class when the P2P network type is selected.
+	W_Parent->GetProcessingWidgetComponent()->OnCancelClicked.Clear();
+	W_Parent->GetProcessingWidgetComponent()->OnRetryClicked.Clear();
+	W_Parent->GetProcessingWidgetComponent()->OnCancelClicked.AddUObject(this, &ThisClass::CancelJoiningSession);
+	W_Parent->GetProcessingWidgetComponent()->OnRetryClicked.AddUObject(this, &ThisClass::CreateSession);
 
 	W_Parent->SetLoadingMessage(TEXT_REQUESTING_SESSION_CREATION, false);
 	W_Parent->SwitchContent(UCreateMatchSessionWidget::EContentType::LOADING);
@@ -141,10 +145,3 @@ void UCreateMatchSessionP2PWidget::OnSessionServerUpdateReceived(
 		W_Parent->SwitchContent(UCreateMatchSessionWidget::EContentType::ERROR);
 	}
 }
-
-#pragma region "UI related"
-UWidget* UCreateMatchSessionP2PWidget::NativeGetDesiredFocusTarget() const
-{
-	return Btn_StartMatchSessionP2P;
-}
-#pragma endregion 

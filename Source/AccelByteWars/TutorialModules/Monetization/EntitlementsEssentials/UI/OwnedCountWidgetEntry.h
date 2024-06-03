@@ -27,7 +27,7 @@ private:
 
 	void ShowOwnedCount();
 
-#pragma region "UI Related"
+#pragma region "UI"
 private:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Tb_OwnedCount;

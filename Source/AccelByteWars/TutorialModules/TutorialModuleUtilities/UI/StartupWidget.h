@@ -15,6 +15,7 @@ class UCommonButtonBase;
 class UPromptSubsystem;
 class UTutorialModuleDataAsset;
 class UAccelByteWarsBaseUI;
+class FOnlineErrorAccelByte;
 
 UCLASS(Abstract)
 class ACCELBYTEWARS_API UStartupWidget : public UAccelByteWarsActivatableWidget
@@ -28,6 +29,7 @@ protected:
 
 	void StartupGame();
 	void QuitGame();
+	void OnLogoutComplete(int32 LocalUserNum, bool bWasSuccessful, const FOnlineErrorAccelByte& Error);
 
 	UAccelByteWarsBaseUI* BaseUIWidget;
 	UPromptSubsystem* PromptSubsystem;

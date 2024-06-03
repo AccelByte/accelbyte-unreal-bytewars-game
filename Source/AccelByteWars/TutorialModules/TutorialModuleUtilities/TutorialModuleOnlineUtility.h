@@ -66,6 +66,8 @@ public:
 
 	static bool IsUseAGSStarter();
 
+	static FString GetPrimaryLanguageSubtag();
+
 private:
 	static void CheckForDedicatedServerVersionOverride();
 

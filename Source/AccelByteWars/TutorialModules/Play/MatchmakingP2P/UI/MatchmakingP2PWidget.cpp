@@ -30,6 +30,8 @@ void UMatchmakingP2PWidget::NativeOnActivated()
 	OnlineSession->GetOnStartMatchmakingCompleteDelegates()->AddUObject(this, &ThisClass::OnStartMatchmakingComplete);
 	OnlineSession->GetOnCancelMatchmakingCompleteDelegates()->AddUObject(this, &ThisClass::OnCancelMatchmakingComplete);
 	OnlineSession->GetOnMatchmakingCompleteDelegates()->AddUObject(this, &ThisClass::OnMatchmakingComplete);
+	OnlineSession->GetOnJoinSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnJoinSessionComplete);
+	OnlineSession->GetOnLeaveSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnCancelJoinSessionComplete);
 
 	Btn_StartMatchmakingP2P->OnClicked().AddUObject(this, &ThisClass::StartMatchmaking);
 
@@ -38,9 +40,6 @@ void UMatchmakingP2PWidget::NativeOnActivated()
 	{
 		return;
 	}
-
-	W_Parent->GetProcessingWidget()->OnCancelClicked.AddUObject(this, &ThisClass::CancelMatchmaking);
-	W_Parent->GetProcessingWidget()->OnRetryClicked.AddUObject(this, &ThisClass::StartMatchmaking);
 }
 
 void UMatchmakingP2PWidget::NativeOnDeactivated()
@@ -50,6 +49,8 @@ void UMatchmakingP2PWidget::NativeOnDeactivated()
 	OnlineSession->GetOnStartMatchmakingCompleteDelegates()->RemoveAll(this);
 	OnlineSession->GetOnCancelMatchmakingCompleteDelegates()->RemoveAll(this);
 	OnlineSession->GetOnMatchmakingCompleteDelegates()->RemoveAll(this);
+	OnlineSession->GetOnJoinSessionCompleteDelegates()->RemoveAll(this);
+	OnlineSession->GetOnLeaveSessionCompleteDelegates()->RemoveAll(this);
 
 	Btn_StartMatchmakingP2P->OnClicked().RemoveAll(this);
 
@@ -65,6 +66,11 @@ void UMatchmakingP2PWidget::StartMatchmaking() const
 		return;
 	}
 
+	W_Parent->GetProcessingWidget()->OnCancelClicked.Clear();
+	W_Parent->GetProcessingWidget()->OnRetryClicked.Clear();
+	W_Parent->GetProcessingWidget()->OnCancelClicked.AddUObject(this, &ThisClass::CancelButtonClicked);
+	W_Parent->GetProcessingWidget()->OnRetryClicked.AddUObject(this, &ThisClass::StartMatchmaking);
+
 	// Otherwise, start matchmaking.
 	W_Parent->SetLoadingMessage(TEXT_FINDING_MATCH, false);
 	W_Parent->SwitchContent(UQuickPlayWidget::EContentType::LOADING);
@@ -76,14 +82,24 @@ void UMatchmakingP2PWidget::StartMatchmaking() const
 		W_Parent->GetSelectedGameModeType());
 }
 
-void UMatchmakingP2PWidget::CancelMatchmaking() const
+void UMatchmakingP2PWidget::CancelButtonClicked() const
 {
+	bool bIsJoiningMatch = W_Parent->GetProcessingWidget()->LoadingMessage.EqualTo(TEXT_JOINING_MATCH);
+	
 	W_Parent->SetLoadingMessage(TEXT_CANCEL_MATCHMAKING, false);
 	W_Parent->SwitchContent(UQuickPlayWidget::EContentType::LOADING);
-
-	OnlineSession->CancelMatchmaking(
-		GetOwningPlayer(),
-		OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession));
+	
+	if(bIsJoiningMatch)
+	{
+		OnlineSession->LeaveSession(
+			OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession));
+	}
+	else
+	{
+		OnlineSession->CancelMatchmaking(
+			GetOwningPlayer(),
+			OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession));
+	}
 }
 
 void UMatchmakingP2PWidget::OnStartMatchmakingComplete(FName SessionName, bool bSucceeded) const
@@ -145,9 +161,35 @@ void UMatchmakingP2PWidget::OnMatchmakingComplete(FName SessionName, bool bSucce
 	}
 }
 
-#pragma region "UI Related"
-UWidget* UMatchmakingP2PWidget::NativeGetDesiredFocusTarget() const
+void UMatchmakingP2PWidget::OnCancelJoinSessionComplete(FName SessionName, bool bSucceeded) const
 {
-	return Btn_StartMatchmakingP2P;
+	// Abort if not a game session.
+	if (!SessionName.IsEqual(OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession)))
+	{
+		return;
+	}
+
+	if (bSucceeded)
+	{
+		W_Parent->SwitchContent(UQuickPlayWidget::EContentType::SELECTGAMEMODE);
+	}
+	else
+	{
+		W_Parent->SetErrorMessage(TEXT_FAILED_CANCEL_MATCH, false);
+		W_Parent->SwitchContent(UQuickPlayWidget::EContentType::ERROR);
+	}
 }
-#pragma endregion 
+
+void UMatchmakingP2PWidget::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result) const
+{
+	if(Result == EOnJoinSessionCompleteResult::Success)
+	{
+		W_Parent->SetLoadingMessage(TEXT_JOINING_MATCH, true);
+		W_Parent->SwitchContent(UQuickPlayWidget::EContentType::LOADING);
+	}
+	else
+	{
+		W_Parent->SetErrorMessage(TEXT_FAILED_JOIN_MATCH, true);
+		W_Parent->SwitchContent(UQuickPlayWidget::EContentType::ERROR);
+	}
+}
