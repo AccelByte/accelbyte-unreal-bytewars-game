@@ -216,6 +216,19 @@ TArray<int32> AAccelByteWarsGameState::GetRemainingTeams() const
 	return RemainingTeams;
 }
 
+TArray<int32> AAccelByteWarsGameState::GetEmptyTeams() const
+{
+	TArray<int32> EmptyTeams;
+	for (const FGameplayTeamData& Team : Teams)
+	{
+		if (Team.TeamMembers.IsEmpty())
+		{
+			EmptyTeams.Add(Team.TeamId);
+		}
+	}
+	return EmptyTeams;
+}
+
 bool AAccelByteWarsGameState::GetTeamDataByTeamId(
 	const int32 TeamId,
 	FGameplayTeamData& OutTeamData,
@@ -332,35 +345,38 @@ bool AAccelByteWarsGameState::AddPlayerToTeam(
 
 bool AAccelByteWarsGameState::RemovePlayerFromTeam(const FUniqueNetIdRepl UniqueNetId, const int32 ControllerId)
 {
-	int AssignedTeamIndex = INDEX_NONE;
-	bool bStatus = false;
 	if (UniqueNetId.IsValid())
 	{
 		for (FGameplayTeamData& Team : Teams)
 		{
-			bStatus = Team.TeamMembers.Remove(FGameplayPlayerData{UniqueNetId, ControllerId}) > 0;
-			if (bStatus)
+			if (Team.TeamMembers.Remove(FGameplayPlayerData{UniqueNetId, ControllerId}) > 0)
 			{
 				if (HasAuthority())
 				{
 					OnNotify_Teams();
 				}
-
-				AssignedTeamIndex = Teams.Find(Team);
-				break;
+				return true;
 			}
 		}
 	}
 
-	// Remove the team if it is empty.
-	if (AssignedTeamIndex != INDEX_NONE && Teams[AssignedTeamIndex].TeamMembers.IsEmpty())
+	return false;
+}
+
+void AAccelByteWarsGameState::RemoveEmptyTeam()
+{
+	TArray<FGameplayTeamData> TeamDataToRemove;
+	for (const FGameplayTeamData& Team : Teams)
 	{
-		Teams.RemoveAt(AssignedTeamIndex);
-		if (HasAuthority())
+		if (Team.TeamMembers.IsEmpty())
 		{
-			OnNotify_Teams();
+			TeamDataToRemove.Add(Team);
 		}
 	}
 
-	return bStatus;
+	// delete teams
+	for (const FGameplayTeamData& ToRemove : TeamDataToRemove)
+	{
+		Teams.Remove(ToRemove);
+	}
 }
