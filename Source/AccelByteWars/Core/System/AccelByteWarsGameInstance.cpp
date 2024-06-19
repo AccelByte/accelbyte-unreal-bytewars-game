@@ -91,7 +91,7 @@ void UAccelByteWarsGameInstance::OnNetworkFailure(
 	if (!LastFailureMessage.Equals(Message))
 	{
 		const AAccelByteWarsInGameGameState* GameState = Cast<AAccelByteWarsInGameGameState>(GetWorld()->GetGameState());
-		if(GameState->GameStatus == EGameStatus::GAME_ENDS)
+		if(GameState && GameState->GameStatus == EGameStatus::GAME_ENDS)
 		{
 			// ignore network error if already at GAME_ENDS state, as it only wait to back to main menu
 			return;
