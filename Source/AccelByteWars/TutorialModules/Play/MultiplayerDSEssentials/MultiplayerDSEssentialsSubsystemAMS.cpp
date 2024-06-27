@@ -8,6 +8,7 @@
 #include "MultiplayerDSEssentialsLog.h"
 #include "OnlineSubsystemUtils.h"
 #include "Core/System/AccelByteWarsGameSession.h"
+#include "Core/GameModes/AccelByteWarsGameMode.h"
 
 void UMultiplayerDSEssentialsSubsystemAMS::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -21,6 +22,7 @@ void UMultiplayerDSEssentialsSubsystemAMS::Initialize(FSubsystemCollectionBase& 
 	ensure(ABSessionInt);
 	
 	ABSessionInt->OnAMSDrainReceivedDelegates.AddUObject(this, &ThisClass::OnAMSDrainReceived);
+	ABSessionInt->OnV2SessionEndedDelegates.AddUObject(this, &ThisClass::OnV2SessionEnded);
 }
 
 void UMultiplayerDSEssentialsSubsystemAMS::Deinitialize()
@@ -70,6 +72,8 @@ void UMultiplayerDSEssentialsSubsystemAMS::OnRegisterServerComplete(const bool b
 	{
 		bServerAlreadyRegister = true;
 	}
+
+	AAccelByteWarsGameMode::OnRegisterServerCompleteDelegates.Broadcast(bSucceeded);
 }
 
 void UMultiplayerDSEssentialsSubsystemAMS::UnregisterServer(const FName SessionName)
@@ -146,4 +150,11 @@ void UMultiplayerDSEssentialsSubsystemAMS::OnAMSDrainReceived()
 	UE_LOG_MultiplayerDSEssentials(Log, TEXT("Received AMS drain message; Shutting down the server now!"));
 
 	OnUnregisterServerComplete(true);
+}
+
+void UMultiplayerDSEssentialsSubsystemAMS::OnV2SessionEnded(const FName SessionName)
+{
+	UE_LOG_MultiplayerDSEssentials(Log, TEXT("Received AMS session ended notification; Shutting down the server now!"));
+
+	UnregisterServer(SessionName);
 }

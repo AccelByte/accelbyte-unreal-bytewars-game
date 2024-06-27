@@ -21,14 +21,14 @@ void ULeaderboardWidgetEntry::NativeOnListItemObjectSet(UObject* ListItemObject)
 		return;
 	}
 
+	const bool bUnranked = LeaderboardRank->Rank <= 0;
+
 	// Display the player's rank. If no rank, display it as #?.
-	Tb_Rank->SetText(FText::FromString(FString::Printf(TEXT("#%s"), 
-		LeaderboardRank->Rank <= 0 ? TEXT("?") : *FString::FromInt(LeaderboardRank->Rank))));
+	Tb_Rank->SetText(bUnranked ? FText::FromString(TEXT("?")) : FText::AsNumber(LeaderboardRank->Rank));
 
 	// Display the player's display name.
 	Tb_DisplayName->SetText(FText::FromString(LeaderboardRank->DisplayName));
 
-	// Display the player's score. If no score, display it as empty.
-	Tb_Score->SetText(FText::FromString(FString::Printf(TEXT("%s"),
-		LeaderboardRank->Score <= 0 ? TEXT("") : *FString::FromInt((int32)LeaderboardRank->Score))));
+	// Display the player's score. If no rank, display it as empty.
+	Tb_Score->SetText(bUnranked ? FText::FromString(TEXT("")) : FText::AsNumber(LeaderboardRank->Score));
 }

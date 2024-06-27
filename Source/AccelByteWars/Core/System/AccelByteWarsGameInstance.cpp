@@ -6,6 +6,7 @@
 #include "Core/System/AccelByteWarsGameInstance.h"
 
 #include "Core/AssetManager/AccelByteWarsAssetManager.h"
+#include "Core/GameStates/AccelByteWarsInGameGameState.h"
 #include "Core/UI/GameUIManagerSubsystem.h"
 #include "Core/Player/CommonLocalPlayer.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
@@ -89,6 +90,12 @@ void UAccelByteWarsGameInstance::OnNetworkFailure(
 	// Only change the FailureType if the Message is different
 	if (!LastFailureMessage.Equals(Message))
 	{
+		const AAccelByteWarsInGameGameState* GameState = Cast<AAccelByteWarsInGameGameState>(GetWorld()->GetGameState());
+		if(GameState && GameState->GameStatus == EGameStatus::GAME_ENDS)
+		{
+			// ignore network error if already at GAME_ENDS state, as it only wait to back to main menu
+			return;
+		}
 		LastFailureMessage = Message;
 		bPendingFailureNotification = true;
 		LastFailureType = FailureType;

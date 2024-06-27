@@ -289,46 +289,53 @@ void AAccelByteWarsGameMode::AssignTeamManually(int32& InOutTeamId) const
 	switch (ABGameState->GameSetup.GameModeType)
 	{
 	case EGameModeType::FFA:
-		// Try to assign to an empty team first.
-		if (ABGameState->Teams.Num() >= ABGameState->GameSetup.MaxTeamNum)
+		InOutTeamId = INDEX_NONE;
+
+		// Assign to empty team first
+		for (const int EmptyTeamId : ABGameState->GetEmptyTeams())
 		{
-			// Assign to empty team.
-			InOutTeamId = INDEX_NONE;
-			for (const FGameplayTeamData& Team : ABGameState->Teams)
-			{
-				if (Team.TeamMembers.IsEmpty())
-				{
-					InOutTeamId = Team.TeamId;
-					break;
-				}
-			}
+			InOutTeamId = EmptyTeamId;
+			break;
 		}
-		// Assign to a new team
-		else
+
+		// Assign to a new team only if it hasn't reached max team
+		if (ABGameState->Teams.Num() < ABGameState->GameSetup.MaxTeamNum && InOutTeamId == INDEX_NONE)
 		{
 			InOutTeamId = ABGameState->Teams.Num();
 		}
 		break;
 	case EGameModeType::TDM:
-		// Try to assign to least populated team.
-		if (ABGameState->Teams.Num() >= ABGameState->GameSetup.MaxTeamNum)
+		InOutTeamId = INDEX_NONE;
+
+		// Assign to empty team first
+		for (const int EmptyTeamId : ABGameState->GetEmptyTeams())
 		{
-			// The least populated team should less than the maximum players per team.
-			uint8 CurrentTeamMemberNum = ABGameState->GameSetup.MaxPlayers / ABGameState->GameSetup.MaxTeamNum;
-			InOutTeamId = INDEX_NONE;
-			for (const FGameplayTeamData& Team : ABGameState->Teams)
+			InOutTeamId = EmptyTeamId;
+			break;
+		}
+
+		if (InOutTeamId == INDEX_NONE)
+		{
+			// Assign to least populated team.
+			if (ABGameState->Teams.Num() >= ABGameState->GameSetup.MaxTeamNum)
 			{
-				if (Team.TeamMembers.Num() < CurrentTeamMemberNum)
+				// The least populated team should less than the maximum players per team.
+				uint8 CurrentTeamMemberNum = ABGameState->GameSetup.MaxPlayers / ABGameState->GameSetup.MaxTeamNum;
+				InOutTeamId = INDEX_NONE;
+				for (const FGameplayTeamData& Team : ABGameState->Teams)
 				{
-					CurrentTeamMemberNum = Team.TeamMembers.Num();
-					InOutTeamId = Team.TeamId;
+					if (Team.TeamMembers.Num() < CurrentTeamMemberNum)
+					{
+						CurrentTeamMemberNum = Team.TeamMembers.Num();
+						InOutTeamId = Team.TeamId;
+					}
 				}
 			}
-		}
-		// Assign to a new team
-		else
-		{
-			InOutTeamId = ABGameState->Teams.Num();
+			// Assign to a new team
+			else
+			{
+				InOutTeamId = ABGameState->Teams.Num();
+			}
 		}
 		break;
 	default:
@@ -352,6 +359,9 @@ void AAccelByteWarsGameMode::DelayedServerTravel(const FString& URL) const
 
 	ABGameState->bIsServerTravelling = true;
 	ABGameState->OnNotify_IsServerTravelling();
+
+	// remove empty team
+	ABGameState->RemoveEmptyTeam();
 
 	// Delay server travel to let the game clients informed that the game is about to start.
 	FTimerHandle TimerHandle;

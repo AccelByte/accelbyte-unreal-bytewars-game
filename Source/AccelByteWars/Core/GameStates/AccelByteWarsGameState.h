@@ -78,6 +78,13 @@ public:
 	TArray<int32> GetRemainingTeams() const;
 
 	/**
+	 * @brief Get teams with no team members
+	 * @return TeamIds
+	 */
+	UFUNCTION(BlueprintCallable)
+	TArray<int32> GetEmptyTeams() const;
+
+	/**
 	 * @brief Get Team info and data by Team Id
 	 * @param TeamId Target TeamId
 	 * @param OutTeamData Output: Team info and data
@@ -152,6 +159,11 @@ public:
 	 * @return true if operation successful
 	 */
 	bool RemovePlayerFromTeam(FUniqueNetIdRepl UniqueNetId, const int32 ControllerId = 0);
+
+	/**
+	 * @brief Remove team that doesn't have registered member
+	 */
+	void RemoveEmptyTeam();
 	
 	// Countdown to show that the server is simulated to crash.
 	UPROPERTY(Replicated)

@@ -32,6 +32,7 @@ private:
 	void OnSendServerReadyComplete(const bool bSucceeded);
 
 	void OnAMSDrainReceived();
+	void OnV2SessionEnded(const FName SessionName);
 
 	bool bServerAlreadyRegister;
 	bool bUnregisterServerRunning;

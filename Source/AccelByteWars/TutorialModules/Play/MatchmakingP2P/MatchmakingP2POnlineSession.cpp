@@ -368,8 +368,8 @@ void UMatchmakingP2POnlineSession::CancelMatchmaking(APlayerController* PC, cons
 		return;
 	}
 
-	if (!ensure(GetABSessionInt()->CurrentMatchmakingSearchHandle.IsValid() &&
-		GetABSessionInt()->CurrentMatchmakingSearchHandle->SearchingPlayerId.IsValid()))
+	if (!ensure(GetABSessionInt()->GetCurrentMatchmakingSearchHandle().IsValid() &&
+		GetABSessionInt()->GetCurrentMatchmakingSearchHandle()->GetSearchingPlayerId().IsValid()))
 	{
 		UE_LOG_MATCHMAKINGP2P(Warning, TEXT("Searching player ID is not valid."));
 		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
@@ -380,7 +380,7 @@ void UMatchmakingP2POnlineSession::CancelMatchmaking(APlayerController* PC, cons
 	}
 
 	if (!GetSessionInt()->CancelMatchmaking(
-		*GetABSessionInt()->CurrentMatchmakingSearchHandle->SearchingPlayerId,
+		*GetABSessionInt()->GetCurrentMatchmakingSearchHandle()->GetSearchingPlayerId(),
 		GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession)))
 	{
 		UE_LOG_MATCHMAKINGP2P(Warning, TEXT("Failed executing"))
@@ -417,11 +417,11 @@ void UMatchmakingP2POnlineSession::OnMatchmakingComplete(FName SessionName, bool
 {
 	UE_LOG_MATCHMAKINGP2P(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
 
-	const TSharedPtr<FOnlineSessionSearchAccelByte> CurrentMatchmakingSearchHandle = GetABSessionInt()->CurrentMatchmakingSearchHandle;
+	const TSharedPtr<FOnlineSessionSearchAccelByte> CurrentMatchmakingSearchHandle = GetABSessionInt()->GetCurrentMatchmakingSearchHandle();
 	if (!bSucceeded ||
 		!ensure(CurrentMatchmakingSearchHandle.IsValid()) /*This might happen when the MM finished just as we are about to cancel it*/ ||
 		!ensure(CurrentMatchmakingSearchHandle->SearchResults.IsValidIndex(0)) ||
-		!ensure(CurrentMatchmakingSearchHandle->SearchingPlayerId.IsValid()))
+		!ensure(CurrentMatchmakingSearchHandle->GetSearchingPlayerId().IsValid()))
 	{
 		UE_LOG_MATCHMAKINGP2P(Warning, TEXT("There is no match result returned."));
 		OnMatchmakingCompleteDelegates.Broadcast(SessionName, false);
@@ -432,7 +432,7 @@ void UMatchmakingP2POnlineSession::OnMatchmakingComplete(FName SessionName, bool
 
 	// Get searching player
 	const int32 LocalUserNum =
-		GetLocalUserNumFromPlayerController(GetPlayerControllerByUniqueNetId(CurrentMatchmakingSearchHandle->SearchingPlayerId));
+		GetLocalUserNumFromPlayerController(GetPlayerControllerByUniqueNetId(CurrentMatchmakingSearchHandle->GetSearchingPlayerId()));
 
 	// Join the first session from matchmaking result.
 	JoinSession(

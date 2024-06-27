@@ -212,7 +212,7 @@ void UPresenceWidget::RefreshPresence()
         FOnPresenceTaskComplete::CreateWeakLambda(this, [this](const bool bWasSuccessful, const TSharedPtr<FOnlineUserPresenceAccelByte> Presence)
         {
             // Abort if the widget is being destroyed.
-            if (IsPendingKill() || IsUnreachable()) 
+            if (!IsValid(this) || IsUnreachable()) 
             {
                 return;
             }

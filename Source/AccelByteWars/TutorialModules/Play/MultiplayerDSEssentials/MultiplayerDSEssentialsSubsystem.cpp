@@ -8,6 +8,7 @@
 #include "MultiplayerDSEssentialsLog.h"
 #include "OnlineSubsystemUtils.h"
 #include "Core/System/AccelByteWarsGameSession.h"
+#include "Core/GameModes/AccelByteWarsGameMode.h"
 
 void UMultiplayerDSEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -65,6 +66,8 @@ void UMultiplayerDSEssentialsSubsystem::OnRegisterServerComplete(const bool bSuc
 	{
 		bServerAlreadyRegister = true;
 	}
+
+	AAccelByteWarsGameMode::OnRegisterServerCompleteDelegates.Broadcast(bSucceeded);
 }
 
 void UMultiplayerDSEssentialsSubsystem::UnregisterServer(const FName SessionName)
