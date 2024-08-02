@@ -6,6 +6,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
+#include "Core/UI/AccelByteWarsWidgetModels.h"
 #include "TutorialModuleUtility.generated.h"
 
 class UUserWidget;
@@ -143,6 +144,9 @@ struct FTutorialModuleGeneratedWidget
 
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (Tooltip = "The widget class that will be generated or will be opened when the entry button is clicked", EditCondition = "WidgetType==ETutorialModuleGeneratedWidgetType::GENERIC_WIDGET_ENTRY_BUTTON||WidgetType==ETutorialModuleGeneratedWidgetType::GENERIC_WIDGET", EditConditionHides))
 	TSubclassOf<UAccelByteWarsActivatableWidget> GenericWidgetClass;
+
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (Tooltip = "The base UI target stack where the widget class will be opened when the entry button is clicked", EditCondition = "WidgetType==ETutorialModuleGeneratedWidgetType::GENERIC_WIDGET_ENTRY_BUTTON||WidgetType==ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_ENTRY_BUTTON", EditConditionHides))
+	EBaseUIStackType TargetStackToSpawn = EBaseUIStackType::Menu;
 
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, meta = (Tooltip = "The text that will be displayed on the entry button", EditCondition = "WidgetType==ETutorialModuleGeneratedWidgetType::TUTORIAL_MODULE_ENTRY_BUTTON||WidgetType==ETutorialModuleGeneratedWidgetType::OTHER_TUTORIAL_MODULE_ENTRY_BUTTON||WidgetType==ETutorialModuleGeneratedWidgetType::GENERIC_WIDGET_ENTRY_BUTTON||WidgetType==ETutorialModuleGeneratedWidgetType::ACTION_BUTTON", EditConditionHides))
 	ETutorialModuleButtonType ButtonType = ETutorialModuleButtonType::TEXT_BUTTON;

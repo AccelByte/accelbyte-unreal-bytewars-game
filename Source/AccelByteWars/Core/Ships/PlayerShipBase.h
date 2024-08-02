@@ -5,16 +5,18 @@
 #pragma once
 
 #include "AccelByteWars/Core/Components/AccelByteWarsProceduralMeshComponent.h"
-#include "PlayerShipModels.h"
-#include "Net/UnrealNetwork.h"
 #include "CoreMinimal.h"
+#include "Core/AssetManager/InGameItems/InGameItemUtility.h"
 #include "GameFramework/Actor.h"
 #include "PlayerShipBase.generated.h"
 
-UCLASS()
-class ACCELBYTEWARS_API APlayerShipBase : public AActor
+UCLASS(Abstract)
+class ACCELBYTEWARS_API APlayerShipBase : public AActor, public IInGameItemInterface
 {
 	GENERATED_BODY()
+
+	virtual void OnEquip() override;
+	virtual void OnUse() override;
 
 public:
 	// Sets default values for this actor's properties
@@ -23,6 +25,12 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+	UPROPERTY(ReplicatedUsing = OnRepNotifyGlowModifier)
+	float GlowModifier = 1.0f;
+
+	UFUNCTION()
+	void OnRepNotifyGlowModifier();
 
 public:
 	// Called every frame
@@ -36,4 +44,6 @@ public:
 
 	virtual void SetShipColor(FLinearColor InColor) {}
 
+	/** @brief Set and update glow modifier to all connected client */
+	void SetGlowModifier(const float Modifier);
 };

@@ -37,15 +37,21 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ClearButtonBindings();
 
+	UFUNCTION(BlueprintCallable)
+	void CallOnClick();
+
 protected:
 	// UUserWidget interface
 	virtual void NativePreConstruct() override;
 	virtual void NativeConstruct() override;
+	virtual void NativeOnAddedToFocusPath(const FFocusEvent& InFocusEvent) override;
+	virtual void NativeOnRemovedFromFocusPath(const FFocusEvent& InFocusEvent) override;
 	// End of UUserWidget interface
 
 	// UCommonButtonBase interface
 	virtual void UpdateInputActionWidget() override;
 	virtual void OnInputMethodChanged(ECommonInputType CurrentInputType) override;
+	virtual void NativeOnHovered() override;
 	// End of UCommonButtonBase interface
 
 	void RefreshButtonText();
@@ -67,6 +73,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Button")
 	bool bShowExclamationMark = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Button")
+	bool bSelectedByKeyboard = false;
 	
 private:
 	UPROPERTY(EditAnywhere, Category = "Button", meta = (EditCondition = "ButtonType==EAccelByteWarsButtonBaseType::TEXT_BUTTON", EditConditionHides))

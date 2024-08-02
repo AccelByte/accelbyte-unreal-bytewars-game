@@ -21,15 +21,13 @@ class ACCELBYTEWARS_API UStoreItemListEntry final : public UAccelByteWarsActivat
 {
 	GENERATED_BODY()
 
-	virtual void NativePreConstruct() override;
 	virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;
 	virtual void NativeOnEntryReleased() override;
 
 public:
-	void Setup(UItemDataObject* Object);
-	void Setup(UStoreItemDataObject* Object);
+	void Setup(const UStoreItemDataObject* Object);
 	void SetOwned(const bool bOwned) const;
-	UItemDataObject* GetItemData() const { return ItemData; }
+	const UStoreItemDataObject* GetItemData() const { return ItemData; }
 
 private:
 	void ResetUI() const;
@@ -37,11 +35,8 @@ private:
 	const FLinearColor NormalColor = {1.0f, 1.0f, 1.0f, 1.0f};
 	const FLinearColor OwnedColor = {0.5f, 0.5f, 0.5f, 1.0f};
 
-	UPROPERTY(EditAnywhere)
-	bool bShowPrices = true;
-
 	UPROPERTY()
-	UItemDataObject* ItemData;
+	const UStoreItemDataObject* ItemData;
 	
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UBorder* B_Root;

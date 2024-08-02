@@ -20,6 +20,7 @@ void UPauseWidget::NativeOnActivated()
 
 	Btn_Resume->OnClicked().AddUObject(this, &UPauseWidget::ResumeGame);
 	Btn_Restart->OnClicked().AddUObject(this, &UPauseWidget::RestartGame);
+	Btn_HelpOptions->OnClicked().AddUObject(this, &UPauseWidget::OpenHelpOptions);
 	Btn_Quit->OnClicked().AddUObject(this, &UPauseWidget::QuitGame);
 
 	SetInputModeToUIOnly();
@@ -32,6 +33,7 @@ void UPauseWidget::NativeOnDeactivated()
 	// Unbind buttons click event.
 	Btn_Resume->OnClicked().RemoveAll(this);
 	Btn_Restart->OnClicked().RemoveAll(this);
+	Btn_HelpOptions->OnClicked().RemoveAll(this);
 	Btn_Quit->OnClicked().RemoveAll(this);
 
 	SetInputModeToGameOnly();
@@ -48,6 +50,23 @@ void UPauseWidget::RestartGame()
 	{
 		GameMode->DelayedServerTravel("/Game/ByteWars/Maps/GalaxyWorld/GalaxyWorld");
 	}
+}
+
+void UPauseWidget::OpenHelpOptions()
+{
+	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+	if(!ensure(GameInstance)) 
+	{
+		return;
+	}
+
+	UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->GetBaseUIWidget());
+	if (!ensure(BaseUIWidget)) 
+	{
+		return;
+	}
+
+	BaseUIWidget->PushWidgetToStack(GetWidgetStackType(), HelpOptionsWidgetClass);
 }
 
 void UPauseWidget::QuitGame()

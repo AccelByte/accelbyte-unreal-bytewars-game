@@ -42,12 +42,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Prompt Subsystem")
 	void HideLoading();
 
-	UFUNCTION(BlueprintCallable, Category = "Prompt Subsystem")
-	void ShowReconnectingThrobber();
-
-	UFUNCTION(BlueprintCallable, Category = "Prompt Subsystem")
-	void HideReconnectingThrobber();
-
 	void PushNotification(UPushNotification* Notification);
 
 	/* Push a notification (Blueprint). */
@@ -60,5 +54,4 @@ public:
 private:
 	UAccelByteWarsGameInstance* GameInstance;
 	ULoadingWidget* LoadingWidget;
-	UReconnectingWidget* ReconnectingWidget;
 };

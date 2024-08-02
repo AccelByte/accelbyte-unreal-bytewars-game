@@ -5,6 +5,7 @@
 #include "Core/UI/MainMenu/HelpOptions/HelpOptionsWidget.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
+#include "Core/GameStates/AccelByteWarsMainMenuGameState.h"
 #include "CommonButtonBase.h"
 
 void UHelpOptionsWidget::NativeOnActivated()
@@ -19,18 +20,26 @@ void UHelpOptionsWidget::NativeOnActivated()
 
 	Btn_Help->OnClicked().AddWeakLambda(this, [this, BaseUIWidget]()
 	{
-		BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, HelpWidgetClass);
+		BaseUIWidget->PushWidgetToStack(GetWidgetStackType(), HelpWidgetClass);
 	});
 
 	Btn_Options->OnClicked().AddWeakLambda(this, [this, BaseUIWidget]()
 	{
-		BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, OptionsWidgetClass);
+		BaseUIWidget->PushWidgetToStack(GetWidgetStackType(), OptionsWidgetClass);
 	});
 
 	Btn_Credits->OnClicked().AddWeakLambda(this, [this, BaseUIWidget]()
 	{
-		BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, CreditsWidgetClass);
+		BaseUIWidget->PushWidgetToStack(GetWidgetStackType(), CreditsWidgetClass);
 	});
+
+	if (GetWorld())
+	{
+		// Only show the credits button if in the Main Menu level.
+		const TWeakObjectPtr<AAccelByteWarsMainMenuGameState> MainMenuGameState = 
+			MakeWeakObjectPtr<AAccelByteWarsMainMenuGameState>(Cast<AAccelByteWarsMainMenuGameState>(GetWorld()->GetGameState()));
+		Btn_Credits->SetVisibility(MainMenuGameState.IsValid() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	}
 
 	Btn_Back->OnClicked().AddUObject(this, &UHelpOptionsWidget::DeactivateWidget);
 }

@@ -8,7 +8,7 @@
 #include "Core/Ships/PlayerShipBase.h"
 #include "PlayerShipDoubleTriangle.generated.h"
 
-UCLASS()
+UCLASS(Abstract)
 class ACCELBYTEWARS_API APlayerShipDoubleTriangle : public APlayerShipBase
 {
 	GENERATED_BODY()

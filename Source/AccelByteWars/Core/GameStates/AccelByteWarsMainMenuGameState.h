@@ -14,7 +14,8 @@ enum class ELobbyStatus : uint8
 {
 	IDLE = 0,
 	LOBBY_COUNTDOWN_STARTED,
-	GAME_STARTED
+	GAME_STARTED,
+	NOT_ENOUGH_PLAYER,
 };
 #pragma endregion 
 
@@ -26,6 +27,14 @@ class ACCELBYTEWARS_API AAccelByteWarsMainMenuGameState : public AAccelByteWarsG
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 public:
+	float GetLobbyShutdownCountdown() const;
+	void ReduceLobbyShutdownCountdown(const float DeltaSeconds);
+	void ResetLobbyShutdownCountdown();
+
+protected:
+	virtual void BeginPlay() override;
+
+public:
 	// Current lobby status.
 	UPROPERTY(BlueprintReadWrite, Replicated)
 	ELobbyStatus LobbyStatus = ELobbyStatus::IDLE;
@@ -33,4 +42,9 @@ public:
 	// Lobby countdown before starting the game.
 	UPROPERTY(BlueprintReadWrite, Replicated)
 	float LobbyCountdown = 30.f;
+
+private:
+	// Lobby countdown before starting the game.
+	UPROPERTY(Replicated)
+	float LobbyShutdownCountdown = 30.f;
 };

@@ -6,6 +6,10 @@
 
 #include "AccelByteWars/Core/Actor/AccelByteWarsMissile.h"
 #include "AccelByteWars/Core/Player/AccelByteWarsPlayerPawn.h"
+#include "Components/SphereComponent.h"
+#include "Core/Player/AccelByteWarsPlayerController.h"
+#include "Core/Player/AccelByteWarsPlayerState.h"
+#include "Kismet/GameplayStatics.h"
 
 APowerUpByteBomb::APowerUpByteBomb()
 {
@@ -17,12 +21,25 @@ APowerUpByteBomb::APowerUpByteBomb()
 	// Setup audio component
 	BombAudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("BombAudioComponent"));
 	BombAudioComponent->SetupAttachment(RootComponent);
-	BombAudioComponent->OnAudioFinished.AddUniqueDynamic(this, &ThisClass::DestroyPowerUp);
+	BombAudioComponent->OnAudioFinished.AddUniqueDynamic(this, &ThisClass::DestroyItem);
 
 	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 	SetReplicateMovement(false);
-	bReplicates = true;
+
+	if (!IsRunningGame() && (GIsEditor && (GetWorld() && GetWorld()->WorldType != EWorldType::PIE)))
+	{
+		return;
+	}
+
+	// check if there are missiles
+	TArray<AActor*> FoundMissiles;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AAccelByteWarsMissile::StaticClass(), FoundMissiles);
+	if (FoundMissiles.IsEmpty())
+	{
+		APowerUpByteBomb::DestroyItem();
+		return;
+	}
 }
 
 void APowerUpByteBomb::BeginPlay()
@@ -30,58 +47,44 @@ void APowerUpByteBomb::BeginPlay()
 	Super::BeginPlay();
 }
 
-void APowerUpByteBomb::Server_ShakeCamera_Implementation(APawn* ByteBombOwner, TSubclassOf<class UCameraShakeBase> Shake)
+void APowerUpByteBomb::OnUse()
 {
-	if (ByteBombOwner == nullptr)
-		return;
+	IInGameItemInterface::OnUse();
 
-	for (FConstPlayerControllerIterator Iterator = ByteBombOwner->GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
+	if (!HasAuthority())
 	{
-		APlayerController* PlayerController = Iterator->Get();
-		if (PlayerController == nullptr)
-			return;
-
-		PlayerController->ClientStartCameraShake(Shake, 0.2f);
+		return;
 	}
-}
 
-void APowerUpByteBomb::Server_DestroyAllEnemyMissiles_Implementation(APawn* ByteBombOwner, int32 TeamId)
-{
-	if (ByteBombOwner == nullptr)
-		return;
-
+	// check if there are enemy's missiles
+	bool bEnemyMissileFound = false;
 	TArray<AActor*> FoundMissiles;
-	UGameplayStatics::GetAllActorsOfClass(ByteBombOwner->GetWorld(), AAccelByteWarsMissile::StaticClass(), FoundMissiles);
-
-	for (int i = 0; i < FoundMissiles.Num(); i++)
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AAccelByteWarsMissile::StaticClass(), FoundMissiles);
+	for (AActor* Actor : FoundMissiles)
 	{
-		AAccelByteWarsMissile* Missile = Cast<AAccelByteWarsMissile>(FoundMissiles[i]);
-		if (Missile == nullptr)
-			continue;
-
-		AAccelByteWarsPlayerPawn* MissileOwner = Cast<AAccelByteWarsPlayerPawn>(Missile->Owner);
-		if (MissileOwner == nullptr)
-			continue;
-
-		AAccelByteWarsPlayerController* ABPlayerController = Cast<AAccelByteWarsPlayerController>(MissileOwner->GetController());
-		if (ABPlayerController == nullptr)
-			continue;
-
-		if (ABPlayerController->PlayerState == nullptr)
-			continue;
-
-		AAccelByteWarsPlayerState* ABPlayerState = static_cast<AAccelByteWarsPlayerState*>(ABPlayerController->PlayerState);
-		if (ABPlayerState == nullptr)
-			continue;
-
-		if (ABPlayerState->TeamId != TeamId)
+		if (const AAccelByteWarsMissile* Missile = Cast<AAccelByteWarsMissile>(Actor);
+			Missile && GetTeamIdFromPawn(Missile->GetOwner()) != GetTeamIdFromPawn(GetOwner()))
 		{
-			Missile->DestroyByPowerUp();
+			bEnemyMissileFound = true;
+			break;
 		}
 	}
+	if (!bEnemyMissileFound)
+	{
+		APowerUpByteBomb::DestroyItem();
+		return;
+	}
+
+	ShakeCamera();
+	DestroyAllEnemyMissiles(GetTeamIdFromPawn(GetOwner()));
 }
 
-void APowerUpByteBomb::DestroyPowerUp()
+void APowerUpByteBomb::OnEquip()
+{
+	IInGameItemInterface::OnEquip();
+}
+
+void APowerUpByteBomb::DestroyItem()
 {
 	if (BombAudioComponent) 
 	{
@@ -89,4 +92,60 @@ void APowerUpByteBomb::DestroyPowerUp()
 	}
 
 	Destroy();
+}
+
+void APowerUpByteBomb::ShakeCamera()
+{
+	for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
+	{
+		APlayerController* PlayerController = Iterator->Get();
+		if (PlayerController == nullptr)
+			return;
+
+		constexpr float Scale = 0.2f;
+		PlayerController->ClientStartCameraShake(ShakeClass, Scale);
+	}
+}
+
+void APowerUpByteBomb::DestroyAllEnemyMissiles(int32 TeamId)
+{
+	TArray<AActor*> FoundMissiles;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AAccelByteWarsMissile::StaticClass(), FoundMissiles);
+
+	for (AActor* Actor : FoundMissiles)
+	{
+		if (AAccelByteWarsMissile* Missile = Cast<AAccelByteWarsMissile>(Actor);
+			Missile && GetTeamIdFromPawn(Missile->Owner) != TeamId)
+		{
+			Missile->DestroyByPowerUp();
+		}
+	}
+}
+
+int32 APowerUpByteBomb::GetTeamIdFromPawn(const AActor* Actor) const
+{
+	const AAccelByteWarsPlayerPawn* MissileOwner = Cast<AAccelByteWarsPlayerPawn>(Actor);
+	if (MissileOwner == nullptr)
+	{
+		return INDEX_NONE;
+	}
+
+	const AAccelByteWarsPlayerController* ABPlayerController = Cast<AAccelByteWarsPlayerController>(MissileOwner->GetController());
+	if (ABPlayerController == nullptr)
+	{
+		return INDEX_NONE;
+	}
+
+	if (ABPlayerController->PlayerState == nullptr)
+	{
+		return INDEX_NONE;
+	}
+
+	const AAccelByteWarsPlayerState* ABPlayerState = static_cast<AAccelByteWarsPlayerState*>(ABPlayerController->PlayerState);
+	if (ABPlayerState == nullptr)
+	{
+		return INDEX_NONE;
+	}
+
+	return ABPlayerState->TeamId;
 }

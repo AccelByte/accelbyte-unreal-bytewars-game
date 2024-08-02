@@ -30,19 +30,19 @@ void UStoreItemPriceListEntry::Setup(const UStoreItemPriceDataObject* DataObject
 
 	// Set UI
 	// Set Currency Symbol
-	I_CurrencySymbol->SetBrush(DataObject->CurrencyType == ECurrencyType::COIN ? Brush_Coin : Brush_Gem);
+	I_CurrencySymbol->SetBrush(DataObject->GetCurrencyType() == ECurrencyType::COIN ? Brush_Coin : Brush_Gem);
 
 	// Set prices
-	const bool bIsRegularPriceFree = DataObject->RegularPrice == 0;
+	const bool bIsRegularPriceFree = DataObject->GetRegularPrice() == 0;
 	const FText RegularPrice = bIsRegularPriceFree ?
 		TEXT_PRICE_FREE :
-		FText::FromString(FString::Printf(TEXT("%lld"), DataObject->RegularPrice * Multiplier));
+		FText::FromString(FString::Printf(TEXT("%lld"), DataObject->GetRegularPrice() * Multiplier));
 	Tb_RegularPrice->SetText(RegularPrice);
 
-	const bool bIsFinalPriceFree = DataObject->FinalPrice == 0;
+	const bool bIsFinalPriceFree = DataObject->GetFinalPrice() == 0;
 	const FText FinalPrice = bIsFinalPriceFree ?
 		TEXT_PRICE_FREE :
-		FText::FromString(FString::Printf(TEXT("%lld"), DataObject->FinalPrice * Multiplier));
+		FText::FromString(FString::Printf(TEXT("%lld"), DataObject->GetFinalPrice() * Multiplier));
 	Tb_FinalPrice->SetText(FinalPrice);
 
 	// hide symbol if both regular and final price is free

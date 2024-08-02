@@ -10,6 +10,7 @@
 #include "FTUEModels.generated.h"
 
 DECLARE_DELEGATE_TwoParams(FOnFTUEDialogueValidationComplete, FFTUEDialogueModel* /*Dialogue*/, const bool /*bIsValid*/);
+DECLARE_DELEGATE_OneParam(FOnValidateDialoguesComplete, const bool /*bIsInterrupted*/);
 
 class UAccelByteWarsActivatableWidget;
 class UCommonUserWidget;
@@ -44,6 +45,14 @@ enum class FFTUEDialogueButtonType : uint8
     NO_BUTTON = 0 UMETA(DisplayName = "No Button"),
     ONE_BUTTON UMETA(DisplayName = "One Button"),
     TWO_BUTTONS UMETA(DisplayName = "Two Buttons")
+};
+
+UENUM(BlueprintType)
+enum class EValidationResult : uint8
+{
+    NONE = 0,
+    VALID,
+    NOT_VALID
 };
 
 USTRUCT(BlueprintType)
@@ -275,6 +284,11 @@ struct FFTUEDialogueModel
     
     inline static TDelegate<void(FFTUEDialogueModel* /*Dialogue*/, const FOnFTUEDialogueValidationComplete& /*OnComplete*/, const UObject* /*Context*/)> OnPredefinedValidationDelegate;
 
+    static TMap<const UObject*, TArray<FFTUEDialogueModel*>> DialoguesToValidate;
+    static TArray<const UObject*> ValidationInterruptRequest;
+
+    EValidationResult ValidationResult = EValidationResult::NONE;
+
     void ExecuteValidation(const FOnFTUEDialogueValidationComplete& OnComplete, const UObject* Context);
 
     FVector2D GetAnchor() const
@@ -385,6 +399,10 @@ struct FFTUEDialogueModel
     {
         return GroupOrderPriority < Other.GroupOrderPriority || OrderPriority < Other.OrderPriority;
     }
+
+    static void ValidateDialogues(const TArray<FFTUEDialogueModel*>& Dialogues, const UObject* Context, FOnValidateDialoguesComplete& OnComplete);
+    static void ValidateDialogue(const TArray<FFTUEDialogueModel*>& Dialogues, const UObject* Context, FOnValidateDialoguesComplete& OnComplete, int32 Index);
+    static void TryInterruptValidation(const UObject* Context);
 };
 
 USTRUCT(BlueprintType)

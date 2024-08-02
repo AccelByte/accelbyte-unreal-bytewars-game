@@ -10,6 +10,8 @@
 typedef TSharedPtr<const FSlateBrush> FCacheBrush;
 DECLARE_DELEGATE_OneParam(FOnImageReceived, FCacheBrush);
 
+class UCommonUserWidget;
+
 class ACCELBYTEWARS_API AccelByteWarsUtility
 {
 public:
@@ -20,6 +22,14 @@ public:
 	static int32 PositiveModulo(const int32 Dividend, const int32 Modulus);
 
 	static FString GetGameVersion();
+
+	static TArray<UUserWidget*> FindWidgetsOnTheScreen(
+		const FString& WidgetName, 
+		const TSubclassOf<UUserWidget> WidgetClass, 
+		const bool bTopLevelOnly, 
+		UObject* Context);
+
+	static bool IsUseVersionChecker();
 
 private:
 	static const TMap<FString, EImageFormat> ImageFormatMap;

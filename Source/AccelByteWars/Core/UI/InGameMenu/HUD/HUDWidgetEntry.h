@@ -6,7 +6,6 @@
 
 #include "CoreMinimal.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
-#include "Core/PowerUps/PowerUpModels.h"
 #include "HUDWidgetEntry.generated.h"
 
 class UTextBlock;
@@ -22,7 +21,7 @@ class ACCELBYTEWARS_API UHUDWidgetEntry : public UAccelByteWarsActivatableWidget
 
 public:
 	UFUNCTION(BlueprintCallable)
-	void SetPowerUpValues(const TArray<TEnumAsByte<EPowerUpSelection>>& SelectedPowerUps, const TArray<int32>& PowerUpCounts);
+	void SetPowerUpValues(const FString& ItemId, const int32 Count, const int32 MemberIndex);
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Text_Value_Left;

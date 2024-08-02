@@ -7,6 +7,7 @@
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
 #include "Core/Utilities/AccelByteWarsUtilityLog.h"
+#include "Core/UI/AccelByteWarsWidgetModels.h"
 #include "Core/UI/AccelByteWarsWidgetInterface.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleUtility.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleDataAsset.h"
@@ -18,15 +19,6 @@ ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogAccelByteWarsActivatableWidget,
 { \
 	UE_LOG_FUNC(LogAccelByteWarsActivatableWidget, Verbosity, Format, ##__VA_ARGS__) \
 }
-
-UENUM(BlueprintType)
-enum class EAccelByteWarsWidgetInputMode : uint8
-{
-	Default,
-	GameAndMenu,
-	Game,
-	Menu
-};
 
 class UTutorialModuleDataAsset;
 class UAccelByteWarsButtonBase;
@@ -55,6 +47,15 @@ public:
 	virtual TOptional<FUIInputConfig> GetDesiredInputConfig() const override;
 	//~End of UCommonActivatableWidget interface
 
+	// Set the value which base widget UI stack where this widget is spawned.
+	void SetWidgetStackType(const EBaseUIStackType StackType);
+
+	// Get the value which base widget UI stack where this widget is spawned.
+	EBaseUIStackType GetWidgetStackType() const;
+
+	// Set whether to allow the UI to move the camera location or not.
+	void AllowMoveCamera(bool bAllow);
+	
 protected:
 	/** Change the owning player controller input mode to game only and also hide the mouse cursor */
 	UFUNCTION(BlueprintCallable)
@@ -96,6 +97,12 @@ protected:
 	/** The desired mouse behavior when the game gets input. */
 	UPROPERTY(EditDefaultsOnly, Category = Input)
 	EMouseCaptureMode GameMouseCaptureMode = EMouseCaptureMode::CapturePermanently;
+
+	// The base widget UI stack where this widget is spawned.
+	EBaseUIStackType WidgetStackType = EBaseUIStackType::Menu;
+
+	// Whether to allow the UI to move the camera location or not. 
+	bool bAllowMoveCamera = true;
 
 #pragma region "AccelByte SDK Config Menu"
 	/** Handle to store action binding to open AccelByte SDK reconfiguration menu. */
@@ -168,10 +175,12 @@ public:
 protected:
 	void InitializeFTUEDialogues(bool bShowOnInitialize, bool bIsFirstTime = true) const;
 	void DeinitializeFTUEDialogues() const;
+	mutable FOnValidateDialoguesComplete CreateFTUEWidgetDelegate;
 
 	UPROPERTY(EditAnywhere, Category = "Tutorial Module Metadata", meta = (ToolTip = "Whether this widget should initialize FTUE on activated."))
 	bool bOnActivatedInitializeFTUE = true;
 
+	bool bLoadFTUEImmediately = true;
 private:
 	/** Generate FTUE DevHelpButton */
 	TWeakObjectPtr<UAccelByteWarsButtonBase> GenerateDevHelpButton();

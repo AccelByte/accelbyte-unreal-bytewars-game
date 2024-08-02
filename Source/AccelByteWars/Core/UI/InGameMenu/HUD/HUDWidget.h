@@ -5,9 +5,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
 #include "Core/UI/Components/Countdown/CountdownWidget.h"
-#include "Core/PowerUps/PowerUpModels.h"
 #include "HUDWidget.generated.h"
 
 class UHUDWidgetEntry;
@@ -20,24 +20,14 @@ class ACCELBYTEWARS_API UHUDWidget : public UAccelByteWarsActivatableWidget
 
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
+	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
 public:
 	/**
-	 * @brief Set HUD entries value
-	 * @param Value Value to be displayed
-	 * @param Index Team's index. Currently, this HUD only supports 4 team (0 - 3)
-	 * @param BoxIndex Box index. 0 = left; 1 = middle; 2 = right
+	 * @brief Update HUD to the current data of teams and player states
 	 */
 	UFUNCTION(BlueprintCallable)
-	bool SetValue(const FString Value, const int32 Index, const int32 BoxIndex);
-
-	/**
-	 * @brief Set HUD power up entries value
-	 * @param SelectedPowerUps All power-ups equipped by team members.
-	 * @param TeamIndex Team's index. Currently, this HUD only supports 4 team (0 - 3)
-	 */
-	UFUNCTION(BlueprintCallable)
-	bool SetPowerUps(const TArray<TEnumAsByte<EPowerUpSelection>>& SelectedPowerUps, const TArray<int32>& PowerUpCounts, const int32 TeamIndex);
+	void UpdateHUD();
 
 	/**
 	 * @brief Change the color of HUD entry. Will only be executed when Color is not the same with current HUD entry's color
@@ -54,13 +44,6 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable)
 	bool ToggleEntry(const int32 Index, const bool bActivate);
-
-	/**
-	 * @brief Set Time Left value
-	 * @param TimeLeft Time Left
-	 */
-	UFUNCTION(BlueprintCallable)
-	void SetTimerValue(const float TimeLeft);
 
 	/**
 	 * @brief Retrieve the start and end position, on screen, of the top bar on the HUD
@@ -101,6 +84,15 @@ private:
 
 	UPROPERTY()
 	AAccelByteWarsInGameGameState* ByteWarsGameState;
+
+	UFUNCTION()
+	bool SetValue(const FString Value, const int32 TeamIndex, const int32 BoxIndex);
+
+	UFUNCTION(BlueprintCallable)
+	void SetTimerValue(const float TimeLeft);
+
+	UFUNCTION()
+	void UpdatePowerUpDisplay(const FGameplayPlayerData& PlayerData, const int32 TeamMemberIndex) const;
 
 	UFUNCTION()
 	ECountdownState SetPreGameCountdownState() const;

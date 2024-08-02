@@ -7,9 +7,9 @@
 #include "CoreMinimal.h"
 #include "Core/Settings/GameModeDataAssets.h"
 #include "Core/Settings/GlobalSettingsDataAsset.h"
-#include "Core/PowerUps/PowerUpModels.h"
 #include "Engine/GameInstance.h"
 #include "CommonButtonBase.h"
+#include "Core/Player/AccelByteWarsPlayerState.h"
 #include "AccelByteWarsGameInstance.generated.h"
 
 class ULoadingWidget;
@@ -50,9 +50,6 @@ public:
 
 	UPROPERTY(BlueprintReadWrite)
 	int32 NumLivesLeft = 1;
-
-	UPROPERTY(BlueprintReadWrite)
-	TEnumAsByte<EPowerUpSelection> SelectedPowerUp = EPowerUpSelection::NONE;
 
 	UPROPERTY(BlueprintReadWrite)
 	int32 PowerUpCount = 0;
@@ -128,6 +125,69 @@ class ACCELBYTEWARS_API UAccelByteWarsGameInstance : public UGameInstance
 
 	virtual void Init() override;
 	virtual void Shutdown() override;
+
+#pragma region "Player Equipment"
+protected:
+	TMap<int32 /*player index*/, TArray<FEquippedItem>> EquippedItems;
+
+	void UpdateEquippedItems(const int32 PlayerIndex, const TArray<FEquippedItem>& InItems);
+
+public:
+
+	/**
+	 * @brief Get specified local player's equipped items
+	 * @param PlayerIndex Target Local Player index
+	 * @return Equipped items
+	 */
+	TArray<FEquippedItem>* GetEquippedItems(const int32 PlayerIndex);
+
+	/**
+	 * @brief Update specified local player's equipped items by providing in-game item ID.
+	 * @param PlayerIndex Target Local Player index
+	 * @param InGameItemIds In-game item ID and Quantity map to update player equipments to
+	 */
+	void UpdateEquippedItemsByInGameItemId(const int32 PlayerIndex, const TMap<FString, int32>& InGameItemIds);
+
+	/**
+	 * @brief Modify equipped item count by providing in-game item ID. Will do nothing if provided in-game item ID doesn't match the player's equipped items.
+	 * @param PlayerIndex Target Local Player index
+	 * @param ItemId Item ID to modify
+	 * @param Modifier Set positive value to increase and negative to decrease quantity
+	 */
+	void ModifyEquippedItemCountByInGameItemId(const int32 PlayerIndex, const FString& ItemId, const int32 Modifier);
+
+	/**
+	 * @brief Update specified local player's equipped items by providing item SKU.
+	 * @param PlayerIndex Target Local Player index
+	 * @param Platform 3rd party platform where this SKU supposed to be used
+	 * @param Skus Item SKU and Quantity map to update player equipments to
+	 * @return True if item equipped item successfully updated, false otherwise.
+	 */
+	bool UpdateEquippedItemsBySku(const int32 PlayerIndex, const EItemSkuPlatform Platform, const TMap<FString, int32> Skus);
+
+	/**
+	 * @brief Remove specified item from player's equipped items.
+	 * @param PlayerIndex Target Local Player index
+	 * @param Platform 3rd party platform where this SKU supposed to be used
+	 * @param Sku Item SKU to unequip
+	 */
+	void UnEquipItemBySku(const int32 PlayerIndex, const EItemSkuPlatform Platform, const FString& Sku);
+
+	/**
+	 * @brief Unequip all specified player's equipped items
+	 * @param PlayerIndex Target Local Player index
+	 */
+	void UnEquipAll(const int32 PlayerIndex);
+
+	/**
+	 * @brief Check if specified item SKU equipped by specified player or not.
+	 * @param PlayerIndex Target Local Player index
+	 * @param Platform 3rd party platform where this SKU supposed to be used
+	 * @param Sku Item SKU and Quantity map to update player equipments to
+	 * @return True if item is equipped. False otherwise
+	 */
+	bool IsItemEquippedBySku(const int32 PlayerIndex, const EItemSkuPlatform Platform, const FString& Sku);
+#pragma endregion 
 	
 public:
 	/**
@@ -160,7 +220,7 @@ public:
 	 */
 	bool GetIsPendingFailureNotification(ENetworkFailure::Type& OutFailureType);
 
-	bool bIsReconnecting{ false };
+	bool bIsReconnecting = false;
 
 private:
 	/** This is the primary player*/
@@ -189,18 +249,6 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = Sounds)
 	void SetSFXVolume(float InVolume);
 
-	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = Sounds)
-	int32 GetShipSelection();
-
-	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = Sounds)
-	void SetShipSelection(int32 InShipSeleciton);
-
-	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = Sounds)
-	int32 GetShipPowerUp();
-
-	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = Sounds)
-	void SetShipPowerUp(int32 InShipPowerUp);
-
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = GameSettings)
 	bool GetFTUEAlwaysOnSetting();
 
@@ -208,10 +256,12 @@ public:
 	void SetFTUEAlwaysOnSetting(bool InValue);
 
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = GameSettings)
-	void LoadGameSettings();
+	void LoadGameSettings(const int32 UserIndex);
 
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = GameSettings)
-	void SaveGameSettings();
+	void SaveGameSettings(const int32 UserIndex);
+
+	void SaveGameSettings(const APlayerController* PlayerController);
 
 	UFUNCTION(BlueprintCallable, BlueprintPure)
 	UAccelByteWarsBaseUI* GetBaseUIWidget(bool bAutoActivate = true);

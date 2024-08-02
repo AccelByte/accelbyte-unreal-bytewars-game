@@ -6,7 +6,6 @@
 
 #include "CoreMinimal.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
-#include "Core/PowerUps/PowerUpModels.h"
 #include "PowerUpWidgetEntry.generated.h"
 
 class UTextBlock;
@@ -18,12 +17,9 @@ class ACCELBYTEWARS_API UPowerUpWidgetEntry : public UAccelByteWarsActivatableWi
 	GENERATED_BODY()
 	
 public:
-	void SetValue(const TEnumAsByte<EPowerUpSelection> PowerUp, const int32 PowerUpCount);
+	void SetValue(const FString& ItemId, const int32 Count) const;
 
 protected:
-	UPROPERTY(EditDefaultsOnly)
-	TArray<TSoftObjectPtr<UTexture2D>> PowerUpTextures;
-
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UImage* Img_PowerUp;
 

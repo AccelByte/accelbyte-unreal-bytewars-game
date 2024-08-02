@@ -5,43 +5,39 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Core/PowerUps/PowerUpBase.h"
+#include "Core/AssetManager/InGameItems/InGameItemUtility.h"
 #include "PowerUpByteBomb.generated.h"
 
-UCLASS()
-class ACCELBYTEWARS_API APowerUpByteBomb : public APowerUpBase
+UCLASS(Abstract)
+class ACCELBYTEWARS_API APowerUpByteBomb : public AActor, public IInGameItemInterface
 {
 	GENERATED_BODY()
 
-protected:
-	//~UObject overridden functions
 	virtual void BeginPlay() override;
-	//~End of UObject overridden functions
+	virtual void OnUse() override;
+	virtual void OnEquip() override;
+	virtual EItemType GetType() override { return EItemType::PowerUp; }
+
+	UFUNCTION()
+	virtual void DestroyItem() override;
 
 public:
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class UCameraShakeBase> ShakeClass;
 
 	APowerUpByteBomb();
-	
-	/**
-	 * @brief Explodes the Byte Bomb
-	 */
-	UFUNCTION(BlueprintImplementableEvent, Category = AccelByteWars)
-		void InitiateExplosion();
 
 	/**
 	 * @brief Simple EZ to use camera shake, called from BP
 	 */
-	UFUNCTION(BlueprintCallable, Server, Reliable, Category = AccelByteWars)
-		void Server_ShakeCamera(APawn* ByteBombOwner, TSubclassOf<class UCameraShakeBase> Shake);
+	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
+	void ShakeCamera();
 
 	/**
 	 * @brief Destroys all enemy missiles
 	 */
-	UFUNCTION(BlueprintCallable, Server, Reliable, Category = AccelByteWars)
-		void Server_DestroyAllEnemyMissiles(APawn* ByteBombOwner, int32 TeamId);
-
-	UFUNCTION(Category = AccelByteWars)
-		virtual void DestroyPowerUp() override;
+	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
+	void DestroyAllEnemyMissiles(int32 TeamId);
 	
 	/**
 	* @brief A do-nothing sphere component used for positioning
@@ -54,4 +50,7 @@ public:
 	*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AccelByteWars)
 	UAudioComponent* BombAudioComponent = nullptr;
+
+protected:
+	int32 GetTeamIdFromPawn(const AActor* Actor) const;
 };

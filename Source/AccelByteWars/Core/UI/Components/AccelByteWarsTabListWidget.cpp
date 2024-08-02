@@ -63,6 +63,7 @@ void UAccelByteWarsTabListWidget::NativeDestruct()
 {
 	Super::NativeDestruct();
 
+	PreviouslySelectedTabId = FName();
 	OnTabButtonCreation.RemoveAll(this);
 }
 
@@ -78,6 +79,20 @@ void UAccelByteWarsTabListWidget::HandleTabRemoval_Implementation(FName TabNameI
 	Super::HandleTabRemoval_Implementation(TabNameID, TabButton);
 
 	W_TabButtonContainer->RemoveChild(TabButton);
+}
+
+void UAccelByteWarsTabListWidget::ParentOnActivated()
+{
+	if (!PreviouslySelectedTabId.IsNone())
+	{
+		SelectTabByID(PreviouslySelectedTabId);
+		PreviouslySelectedTabId = FName();
+	}
+}
+
+void UAccelByteWarsTabListWidget::ParentOnDeactivated()
+{
+	PreviouslySelectedTabId = GetSelectedTabId();
 }
 
 bool UAccelByteWarsTabListWidget::RegisterTabWithPresets(

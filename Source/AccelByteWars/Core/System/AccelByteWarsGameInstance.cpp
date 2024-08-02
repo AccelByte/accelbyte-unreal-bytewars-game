@@ -6,6 +6,7 @@
 #include "Core/System/AccelByteWarsGameInstance.h"
 
 #include "Core/AssetManager/AccelByteWarsAssetManager.h"
+#include "Core/AssetManager/InGameItems/InGameItemDataAsset.h"
 #include "Core/GameStates/AccelByteWarsInGameGameState.h"
 #include "Core/UI/GameUIManagerSubsystem.h"
 #include "Core/Player/CommonLocalPlayer.h"
@@ -39,6 +40,162 @@ void UAccelByteWarsGameInstance::Shutdown()
 	OnGameInstanceShutdownDelegate.Broadcast();
 
 	Super::Shutdown();
+}
+
+void UAccelByteWarsGameInstance::UpdateEquippedItems(const int32 PlayerIndex, const TArray<FEquippedItem>& InItems)
+{
+	if (TArray<FEquippedItem>* PlayerItems = EquippedItems.Find(PlayerIndex))
+	{
+		for (const FEquippedItem& InItem : InItems)
+		{
+			// overwrite item with same type
+			bool bFound = false;
+			for (FEquippedItem& PlayerItem : *PlayerItems)
+			{
+				if (PlayerItem.ItemType == InItem.ItemType)
+				{
+					PlayerItem.ItemId = InItem.ItemId;
+					PlayerItem.ItemType = InItem.ItemType;
+					PlayerItem.Count = PlayerItem.Count == 1 ? InItem.Count : PlayerItem.Count;
+					bFound = true;
+					break;
+				}
+			}
+			if (!bFound)
+			{
+				PlayerItems->Add(InItem);
+			}
+		}
+	}
+	else
+	{
+		EquippedItems.Add(PlayerIndex, InItems);
+	}
+}
+
+TArray<FEquippedItem>* UAccelByteWarsGameInstance::GetEquippedItems(const int32 PlayerIndex)
+{
+	return EquippedItems.Find(PlayerIndex) ? &EquippedItems[PlayerIndex] : nullptr;
+}
+
+void UAccelByteWarsGameInstance::UpdateEquippedItemsByInGameItemId(const int32 PlayerIndex, const TMap<FString, int32>& InGameItemIds)
+{
+	// Get items
+	TArray<FEquippedItem> InItems;
+	for (const TTuple<FString, int>& InGameItemId : InGameItemIds)
+	{
+		if (const UInGameItemDataAsset* ItemDataAsset = UInGameItemUtility::GetItemDataAsset(InGameItemId.Key))
+		{
+			InItems.Add({ItemDataAsset->Type, ItemDataAsset->Id, InGameItemId.Value});
+		}
+	}
+
+	UpdateEquippedItems(PlayerIndex, InItems);
+}
+
+void UAccelByteWarsGameInstance::ModifyEquippedItemCountByInGameItemId(
+	const int32 PlayerIndex,
+	const FString& ItemId,
+	const int32 Modifier)
+{
+	if (EquippedItems.Find(PlayerIndex))
+	{
+		for (FEquippedItem& EquippedItem : EquippedItems[PlayerIndex])
+		{
+			if (EquippedItem.ItemId.Equals(ItemId))
+			{
+				EquippedItem.Count += Modifier;
+				return;
+			}
+		}
+	}
+}
+
+bool UAccelByteWarsGameInstance::UpdateEquippedItemsBySku(
+	const int32 PlayerIndex,
+	const EItemSkuPlatform Platform,
+	const TMap<FString, int32> Skus)
+{
+	bool bSucceeded = false;
+
+	// Get items
+	TArray<FEquippedItem> InItems;
+	for (const TTuple<FString, int>& Sku : Skus)
+	{
+		if (const UInGameItemDataAsset* ItemDataAsset = UInGameItemUtility::GetItemDataAssetBySku(Platform, Sku.Key))
+		{
+			InItems.Add({ItemDataAsset->Type, ItemDataAsset->Id, Sku.Value});
+			bSucceeded = true;
+		}
+		else
+		{
+			GAMEINSTANCE_LOG("SKU (%s) doesn't match with any in-game item", *Sku.Key);
+		}
+	}
+
+	UpdateEquippedItems(PlayerIndex, InItems);
+	return bSucceeded;
+}
+
+void UAccelByteWarsGameInstance::UnEquipItemBySku(
+	const int32 PlayerIndex,
+	const EItemSkuPlatform Platform,
+	const FString& Sku)
+{
+	if (TArray<FEquippedItem>* PlayerItems = EquippedItems.Find(PlayerIndex))
+	{
+		const UInGameItemDataAsset* ItemDataAsset = UInGameItemUtility::GetItemDataAssetBySku(Platform, Sku);
+		if (!ItemDataAsset)
+		{
+			return;
+		}
+
+		PlayerItems->Remove(FEquippedItem{ItemDataAsset->Type, ItemDataAsset->Id});
+	}
+}
+
+void UAccelByteWarsGameInstance::UnEquipAll(const int32 PlayerIndex)
+{
+	EquippedItems.Remove(PlayerIndex);
+}
+
+bool UAccelByteWarsGameInstance::IsItemEquippedBySku(
+	const int32 PlayerIndex,
+	const EItemSkuPlatform Platform,
+	const FString& Sku)
+{
+	if (TArray<FEquippedItem>* PlayerItems = EquippedItems.Find(PlayerIndex))
+	{
+		FString ItemId;
+		if (const UInGameItemDataAsset* ItemDataAsset = UInGameItemUtility::GetItemDataAssetBySku(Platform, Sku))
+		{
+			ItemId = ItemDataAsset->Id;
+		}
+
+		for (FEquippedItem& PlayerItem : *PlayerItems)
+		{	
+			if (PlayerItem.ItemId == ItemId)
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+void UAccelByteWarsGameInstance::SaveGameSettings(const APlayerController* PlayerController)
+{
+	if (!PlayerController)
+	{
+		return;
+	}
+
+	const ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer();
+	ensure(LocalPlayer != nullptr);
+	const int32 LocalUserNum = LocalPlayer->GetControllerId();
+
+	SaveGameSettings(LocalUserNum);
 }
 
 UAccelByteWarsBaseUI* UAccelByteWarsGameInstance::GetBaseUIWidget(bool bAutoActivate)

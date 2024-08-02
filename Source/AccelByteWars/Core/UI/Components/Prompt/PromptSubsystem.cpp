@@ -92,36 +92,6 @@ void UPromptSubsystem::HideLoading()
 	LoadingWidget->DeactivateWidget();
 }
 
-void UPromptSubsystem::ShowReconnectingThrobber()
-{
-	if (ReconnectingWidget)
-	{
-		ReconnectingWidget->DeactivateWidget();
-	}
-
-	UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->GetBaseUIWidget());
-	if (!ensureMsgf(BaseUIWidget, TEXT("BaseUIWidget is nullptr."))) return;
-
-	ReconnectingWidget = Cast<UReconnectingWidget>(BaseUIWidget->PushWidgetToStack(EBaseUIStackType::InGameMenu, BaseUIWidget->DefaultReconnectingWidgetClass));
-	ReconnectingWidget->OnDeactivated().AddWeakLambda(this, [this]()
-		{
-			ReconnectingWidget = nullptr;
-		});
-
-	GameInstance->bIsReconnecting = true;
-}
-
-void UPromptSubsystem::HideReconnectingThrobber()
-{
-	if (!ReconnectingWidget)
-	{
-		return;
-	}
-
-	ReconnectingWidget->DeactivateWidget();
-	GameInstance->bIsReconnecting = false;
-}
-
 void UPromptSubsystem::PushNotification(UPushNotification* Notification)
 {
 	// Notification can only be displayed on Main Menu level.

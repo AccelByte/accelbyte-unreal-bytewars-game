@@ -80,7 +80,11 @@ void UOptionsWidget::FinalizeOptions()
 	W_OptionSFXVolumeScalar->OnScalarValueChangedDelegate.RemoveAll(GameInstance);
 	W_OptionFTUEAlwaysOnToggler->OnToggleValueChangedDelegate.RemoveAll(GameInstance);
 
-	GameInstance->SaveGameSettings();
+	const ULocalPlayer* LocalPlayer = GetOwningPlayer()->GetLocalPlayer();
+	ensure(LocalPlayer != nullptr);
+	const int32 LocalUserNum = LocalPlayer->GetControllerId();
+
+	GameInstance->SaveGameSettings(LocalUserNum);
 }
 
 #undef LOCTEXT_NAMESPACE

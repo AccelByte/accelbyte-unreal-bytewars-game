@@ -33,6 +33,7 @@ protected:
 private:
 	void ResumeGame();
 	void RestartGame();
+	void OpenHelpOptions();
 	void QuitGame();
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
@@ -42,5 +43,11 @@ private:
 	UCommonButtonBase* Btn_Restart;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UCommonButtonBase* Btn_HelpOptions;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_Quit;
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UAccelByteWarsActivatableWidget> HelpOptionsWidgetClass;
 };

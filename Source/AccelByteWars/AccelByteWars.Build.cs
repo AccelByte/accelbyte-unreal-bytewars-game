@@ -50,7 +50,8 @@ public class AccelByteWars : ModuleRules
 			"NetworkReplayStreaming",
 			"AudioModulation",
 			"Niagara",
-			"ProceduralMeshComponent"
+			"ProceduralMeshComponent",
+			"MediaAssets",
 		});
 
 		// Uncomment if you are using Slate UI

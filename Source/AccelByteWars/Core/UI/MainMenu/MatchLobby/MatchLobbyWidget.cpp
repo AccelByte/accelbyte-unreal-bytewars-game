@@ -59,17 +59,12 @@ void UMatchLobbyWidget::NativeOnActivated()
 	Btn_Start->OnClicked().AddUObject(this, &UMatchLobbyWidget::StartMatch);
 	Btn_Quit->OnClicked().AddUObject(this, &UMatchLobbyWidget::LeaveMatch);
 
-	GameState->OnTeamsChanged.AddDynamic(this, &ThisClass::GenerateMultiplayerTeamEntries);
+	GameState->OnTeamsChanged.AddUObject(this, &ThisClass::GenerateMultiplayerTeamEntries);
 
 	// if on P2P game, only enable Btn_Start for host
 	if (GameState->GameSetup.NetworkType == EGameModeNetworkType::P2P)
 	{
 		Btn_Start->SetVisibility(GetOwningPlayer()->HasAuthority() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-	}
-
-	if (OnEnterLobbyDelegate.IsBound())
-	{
-		OnEnterLobbyDelegate.Broadcast(GetOwningPlayer());
 	}
 }
 
@@ -80,7 +75,7 @@ void UMatchLobbyWidget::NativeOnDeactivated()
 	Btn_Start->OnClicked().Clear();
 	Btn_Quit->OnClicked().Clear();
 
-	GameState->OnTeamsChanged.RemoveDynamic(this, &ThisClass::GenerateMultiplayerTeamEntries);
+	GameState->OnTeamsChanged.RemoveAll(this);
 
 	FTimerHandle TimerHandle;
 	GetWorld()->GetTimerManager().SetTimer(TimerHandle, [this]() 

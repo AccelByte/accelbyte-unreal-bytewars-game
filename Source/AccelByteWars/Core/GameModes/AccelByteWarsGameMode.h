@@ -60,9 +60,16 @@ public:
 
 	void DelayedServerTravel(const FString& URL) const;
 
+	/** @brief Shutdown DS and call unregister server if possible */
+	void CloseGame(const FString& Reason) const;
+
+	/** @brief Set the flag to allow immediate shutdown when the last player logs out */
+	void SetImmediatelyShutdownWhenEmpty(const bool bAllow) const;
+
 	inline static FOnPlayerPostLogin OnPlayerPostLoginDelegates;
 	inline static FOnInitializeListenServer OnInitializeListenServerDelegates;
 	inline static TMulticastDelegate<void(bool /*bSucceeded*/)> OnRegisterServerCompleteDelegates;
+	static inline TMulticastDelegate<void(TDelegate<void()>)> OnPreGameShutdown;
 
 protected:
 	/**
@@ -93,10 +100,15 @@ protected:
 	UAccelByteWarsGameInstance* GameInstance = nullptr;
 
 private:
+	UFUNCTION()
+	void CloseGameInternal() const;
+
 	UPROPERTY()
 	AAccelByteWarsGameState* ABGameState = nullptr;
 
 	/* Helper variable to check whether server should simulate 
 	 * crash or not based on the availability of launch param.*/
 	bool bShouldSimulateServerCrash = false;
+
+	mutable bool bImmediatelyShutdownWhenEmpty = false;
 };

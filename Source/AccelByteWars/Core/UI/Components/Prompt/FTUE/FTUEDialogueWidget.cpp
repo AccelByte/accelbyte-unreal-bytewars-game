@@ -5,11 +5,11 @@
 #include "Core/UI/Components/Prompt/FTUE/FTUEDialogueWidget.h"
 
 #include "Core/System/AccelByteWarsGameInstance.h"
+#include "Core/Utilities/AccelByteWarsUtility.h"
 #include "Core/UI/Components/AccelByteWarsButtonBase.h"
 #include "Components/TextBlock.h"
 #include "Components/RichTextBlock.h"
 
-#include "Blueprint/WidgetBlueprintLibrary.h"
 #include "Components/Border.h"
 #include "Components/ButtonSlot.h"
 #include "Components/CanvasPanelSlot.h"
@@ -506,12 +506,12 @@ void UFTUEDialogueWidget::ValidateDialogues()
 	 		return true;
 	 	}
 	
-	 	TArray<UUserWidget*> FoundWidgets;
-	 	UWidgetBlueprintLibrary::GetAllWidgetsOfClass(this, FoundWidgets, Dialogue->TargetWidgetClassToHighlight.Get(), false);
-	 	FoundWidgets.RemoveAll([WidgetToHighlightString](const UUserWidget* FoundWidget)
-	 	{
-	 		return !FoundWidget || !FoundWidget->GetName().Equals(WidgetToHighlightString) || !FoundWidget->IsVisible();
-	 	});
+	 	TArray<UUserWidget*> FoundWidgets = 
+			AccelByteWarsUtility::FindWidgetsOnTheScreen(
+				WidgetToHighlightString, 
+				Dialogue->TargetWidgetClassToHighlight.Get(), 
+				false, 
+				this);
 
 		for (UUserWidget* FoundWidget : FoundWidgets)
 		{
@@ -538,7 +538,7 @@ void UFTUEDialogueWidget::ValidateDialogues()
 			return false;
 		}
 
-		return FoundWidgets.Num() <= 0;
+		return FoundWidgets.IsEmpty();
 	});
 
 	// Abort if no valid dialogues from the original input.

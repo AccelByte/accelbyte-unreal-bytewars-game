@@ -85,3 +85,11 @@ void UAccelByteWarsProceduralMeshComponent::UpdateColor(const FLinearColor InCol
 	if (Material != nullptr)
 		Material->SetVectorParameterValue(FName("EmissiveColour"), Color);
 }
+
+void UAccelByteWarsProceduralMeshComponent::SetGlowBrightness(const float Brightness) const
+{
+	if (Material)
+	{
+		Material->SetScalarParameterValue(FName("Glow"), Glow * Brightness);
+	}
+}

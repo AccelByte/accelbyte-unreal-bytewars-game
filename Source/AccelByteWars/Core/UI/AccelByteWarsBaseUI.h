@@ -9,6 +9,7 @@
 #include "Components/BackgroundBlur.h"
 #include "Components/Prompt/Loading/LoadingWidget.h"
 #include "Components/Prompt/Loading/ReconnectingWidget.h"
+#include "Core/UI/AccelByteWarsWidgetModels.h"
 #include "Core/UI/Components/Prompt/PushNotification/PushNotificationWidget.h"
 #include "Widgets/CommonActivatableWidgetContainer.h"
 #include "AccelByteWarsBaseUI.generated.h"
@@ -17,17 +18,6 @@ class UInfoWidget;
 class UPopUpWidget;
 class UFTUEDialogueWidget;
 class AccelByteWarsActivatableWidget;
-
-UENUM()
-enum EBaseUIStackType
-{
-	Prompt UMETA(DisplayName = "Prompt"),
-	FTUE UMETA(DisplayName = "FTUE"),
-	PushNotification UMETA(DisplayName = "Push Notification"),
-	Menu UMETA(DisplayName = "Menu"),
-	InGameMenu UMETA(DisplayName = "In-Game Menu"),
-	InGameHUD UMETA(DisplayName = "In-Game HUD")
-};
 
 UCLASS()
 class ACCELBYTEWARS_API UAccelByteWarsBaseUI : public UCommonUserWidget
@@ -66,7 +56,7 @@ public:
 	void SetFTUEDialogueWidget(UFTUEDialogueWidget* InFTUEDialogueWidget);
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Base UI Settings")
-	TMap<TEnumAsByte<EBaseUIStackType>, UCommonActivatableWidgetStack*> Stacks;
+	TMap<EBaseUIStackType, UCommonActivatableWidgetStack*> Stacks;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Prompt Settings")
 	TSubclassOf<UPopUpWidget> DefaultPopUpWidgetClass;
@@ -75,15 +65,14 @@ public:
 	TSubclassOf<ULoadingWidget> DefaultLoadingWidgetClass;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Prompt Settings")
-	TSubclassOf<UReconnectingWidget> DefaultReconnectingWidgetClass;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Prompt Settings")
 	TSubclassOf<UPushNotificationWidget> DefaultPushNotificationWidgetClass;
 
 private:
 	bool bStacksCleared = false;
 
 	void OnWidgetTransitionChanged(UCommonActivatableWidgetContainerBase* Widget, bool bIsTransitioning);
+
+	void OnDisplayedWidgetChanged(UCommonActivatableWidget* Widget, const EBaseUIStackType StackType);
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UBackgroundBlur* BackgroundBlur;
