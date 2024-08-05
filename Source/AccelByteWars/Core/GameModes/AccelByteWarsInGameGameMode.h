@@ -8,6 +8,7 @@
 #include "Core/Components/AccelByteWarsGameplayObjectComponent.h"
 #include "Core/GameModes/AccelByteWarsGameMode.h"
 #include "Core/GameStates/AccelByteWarsInGameGameState.h"
+#include "Core/Player/AccelByteWarsPlayerPawn.h"
 #include "Engine/SCS_Node.h"
 #include "AccelByteWarsInGameGameMode.generated.h"
 
@@ -113,11 +114,8 @@ public:
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 	//~End of AGameModeBase overridden functions
 
-	/**
-	 * @brief Direct path to ABPawn to be spawned
-	 */
-	UPROPERTY(BlueprintReadOnly, Category = AccelByteWars)
-		FString PawnBlueprintPath = "Blueprint'/Game/ByteWars/Blueprints/Player/ABPawn.ABPawn_C'";
+	UPROPERTY(BlueprintReadOnly, EditAnywhere)
+	TSubclassOf<AAccelByteWarsPlayerPawn> PawnClass;
 
 	virtual void DelayedPlayerTeamSetupWithPredefinedData(APlayerController* PlayerController) override;
 
@@ -159,9 +157,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void IncreasePlayerKilledAttempt(const APlayerController* TargetPlayer);
 
-	UFUNCTION(BlueprintCallable)
-	void OnRefreshPlayerSelectedPowerUp(const APlayerController* TargetPlayer, const EPowerUpSelection SelectedPowerUp, const int32 PowerUpCount);
-
 private:
 	UFUNCTION()
 	void RemoveFromActiveGameObjects(AActor* DestroyedActor);
@@ -175,7 +170,6 @@ protected:
 
 #pragma region "Gameplay logic"
 private:
-	void CloseGame(const FString& Reason) const;
 	void StartGame();
 	void SetupGameplayObject(AActor* Object) const;
 	int32 GetLivingTeamCount() const;
@@ -196,7 +190,7 @@ private:
 
 protected:
 	UFUNCTION()
-	APawn* CreatePlayerPawn(const FVector& Location, APlayerController* PlayerController);
+	AAccelByteWarsPlayerPawn* CreatePlayerPawn(const FVector& Location, APlayerController* PlayerController) const;
 #pragma endregion 
 
 #pragma region "Countdown related"

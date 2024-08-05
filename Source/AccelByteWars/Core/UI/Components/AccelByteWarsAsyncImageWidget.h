@@ -22,7 +22,13 @@ class ACCELBYTEWARS_API UAccelByteWarsAsyncImageWidget final : public UCommonUse
 	GENERATED_BODY()
 
 public:
+	/**
+	 * Retrieve image from the given URL. Will use DefaultBrush if URL isn't valid
+	 * @param ImageUrl URL to retrieve image from
+	 */
+	UFUNCTION(BlueprintCallable)
 	void LoadImage(const FString& ImageUrl);
+
 	void SetImageTint(const FLinearColor& Color);
 
 	/** The stretching rule to apply when content is stretched */

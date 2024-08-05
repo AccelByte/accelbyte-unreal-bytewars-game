@@ -13,22 +13,12 @@
 #include "Core/GameStates/AccelByteWarsMainMenuGameState.h"
 #include "Core/GameStates/AccelByteWarsInGameGameState.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
-#include "Core/UI/MainMenu/MatchLobby/MatchLobbyWidget.h"
 
 #include "Play/OnlineSessionUtils/AccelByteWarsOnlineSessionBase.h"
 
 void UPresenceEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
-
-    // On lobby, set level status to "In Match" and activity status to "In Lobby".
-    UMatchLobbyWidget::OnEnterLobbyDelegate.AddWeakLambda(this, [this](const APlayerController* PC)
-    {
-        LevelStatus = TEXT_PRESENCE_LEVEL_GAMEPLAY.ToString();
-        ActivityStatus = TEXT_PRESENCE_ACTIVITY_LOBBY.ToString();
-
-        UpdatePrimaryPlayerPresenceStatus();
-    });
 
     // On world loaded, update level status.
     FWorldDelegates::OnPostWorldInitialization.AddWeakLambda(this, [this](UWorld* World, const UWorld::InitializationValues IVS)
@@ -141,7 +131,6 @@ void UPresenceEssentialsSubsystem::Deinitialize()
 
     // Unbind events.
     AAccelByteWarsGameState::OnInitialized.RemoveAll(this);
-    UMatchLobbyWidget::OnEnterLobbyDelegate.RemoveAll(this);
 
     FWorldDelegates::OnPostWorldInitialization.RemoveAll(this);
     if (GetWorld())
@@ -274,8 +263,18 @@ void UPresenceEssentialsSubsystem::OnLevelLoaded()
     if (const AAccelByteWarsMainMenuGameState* MainMenuGameState = Cast<AAccelByteWarsMainMenuGameState>(GameState))
     {
         // Set level status to "In Main Menu".
-        LevelStatus = TEXT_PRESENCE_LEVEL_MAINMENU.ToString();
-        ActivityStatus = FString("");
+        if (MainMenuGameState->GetNetMode() == ENetMode::NM_Standalone) 
+        {
+            LevelStatus = TEXT_PRESENCE_LEVEL_MAINMENU.ToString();
+            ActivityStatus = FString("");
+        }
+        /* Already travelled to online session.
+         * Set level status to "In Match" and activity status to "In Lobby".*/
+        else 
+        {
+            LevelStatus = TEXT_PRESENCE_LEVEL_GAMEPLAY.ToString();
+            ActivityStatus = TEXT_PRESENCE_ACTIVITY_LOBBY.ToString();
+        }
     }
     else if (const AAccelByteWarsInGameGameState* InGameGameState = Cast<AAccelByteWarsInGameGameState>(GameState))
     {

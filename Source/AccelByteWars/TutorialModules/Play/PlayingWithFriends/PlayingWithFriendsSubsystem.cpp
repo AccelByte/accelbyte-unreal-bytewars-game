@@ -193,6 +193,12 @@ void UPlayingWithFriendsSubsystem::OnQueryUserInfoOnGameSessionParticipantChange
 		return;
 	}
 
+	// Only handle the event if the player already travelled to online session.
+	if (GetWorld() && GetWorld()->GetNetMode() == ENetMode::NM_Standalone)
+	{
+		return;
+	}
+
 	// Only handle the event if the game session is in the game server.
 	if (!IsMatchSessionGameSessionReceivedServer())
 	{

@@ -6,11 +6,21 @@
 
 #include "Core/Actor/AccelByteWarsMissile.h"
 #include "Core/Player/AccelByteWarsPlayerPawn.h"
+#include "Kismet/GameplayStatics.h"
 
 #include "Kismet/KismetMathLibrary.h"
 
 APowerUpByteShield::APowerUpByteShield()
 {
+	// check if owning pawn already has a shield up
+	if (const AAccelByteWarsPlayerPawn* Pawn = Cast<AAccelByteWarsPlayerPawn>(Owner))
+	{
+		if (Pawn->GetActivePowerUp())
+		{
+			APowerUpByteShield::DestroyItem();
+		}
+	}
+
 	// Setup a do nothing root component
 	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("ShieldSphereComponent"));
 	SphereComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -27,27 +37,52 @@ APowerUpByteShield::APowerUpByteShield()
 
 	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-	SetReplicateMovement(true);
+	AActor::SetReplicateMovement(true);
 	bReplicates = true;
 }
 
-// Called every frame
 void APowerUpByteShield::Tick(float DeltaTime)
 {
-	if (IsShieldActive)
+	if (IsShieldActive && HasAuthority())
 	{
 		CurrentCollisionTickRate += DeltaTime;
 		CurrentShieldLifetime += DeltaTime;
 
 		if (CurrentShieldLifetime > MaxShieldLifetime)
 		{
-			Server_ShieldExpired();
+			ShieldExpired();
 			IsShieldActive = false;
 		}
 
 		CheckCollision();
 		CurrentCollisionTickRate = 0.0f;
 	}
+}
+
+void APowerUpByteShield::OnUse()
+{
+	IInGameItemInterface::OnUse();
+
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	if (AAccelByteWarsPlayerPawn* Pawn = Cast<AAccelByteWarsPlayerPawn>(GetOwner()))
+	{
+		AttachToActor(Pawn, FAttachmentTransformRules::SnapToTargetIncludingScale);
+		SetShieldColor(Pawn->GetPawnColor());
+	}
+}
+
+void APowerUpByteShield::OnEquip()
+{
+	IInGameItemInterface::OnEquip();
+}
+
+void APowerUpByteShield::DestroyItem()
+{
+	ShieldExpired();
 }
 
 void APowerUpByteShield::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -76,21 +111,21 @@ void APowerUpByteShield::CheckCollision()
 			continue;
 
 		if (HasAuthority())
-			Server_ShieldHitByMissile(ABMissile);
+			ShieldHitByMissile(ABMissile);
 	}
 }
 
-void APowerUpByteShield::Server_ShieldHitByMissile_Implementation(AAccelByteWarsMissile* ABMissile)
+void APowerUpByteShield::ShieldHitByMissile(AAccelByteWarsMissile* ABMissile)
 {
 	// Destroy the missile and the shield
 	ABMissile->DestroyByPowerUp();
-	Server_ShieldExpired();
+	ShieldExpired();
 
 	IsShieldActive = false;
 	OnRepNotify_IsShieldActive();
 }
 
-void APowerUpByteShield::Server_ShieldExpired_Implementation()
+void APowerUpByteShield::ShieldExpired()
 {
 	if (ShieldFx != nullptr)
 		ShieldFx->Deactivate();
@@ -99,9 +134,4 @@ void APowerUpByteShield::Server_ShieldExpired_Implementation()
 		ShieldAudioComponent->Stop();
 
 	Destroy();
-}
-
-void APowerUpByteShield::DestroyPowerUp()
-{
-	Server_ShieldExpired();
 }

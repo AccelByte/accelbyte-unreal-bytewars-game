@@ -22,7 +22,7 @@ void UItemPurchaseWidget_Starter::NativeOnActivated()
 	ensure(W_Parent);
 
 	StoreItemDataObject = W_Parent->StoreItemDataObject;
-	ensure(StoreItemDataObject);
+	ensure(StoreItemDataObject.IsValid());
 
 	PurchaseSubsystem = GetGameInstance()->GetSubsystem<UStoreItemPurchaseSubsystem_Starter>();
 	ensure(PurchaseSubsystem);
@@ -60,7 +60,7 @@ void UItemPurchaseWidget_Starter::FTUESetup() const
 	{
 		if (FFTUEDialogueModel* FTUE = FFTUEDialogueModel::GetMetadataById("ftue_purchase_itemid", W_Parent->FTUEDialogues))
 		{
-			FTUE->Button1.URLArguments[2].Argument = StoreItemDataObject->ItemData->Id;
+			FTUE->Button1.URLArguments[2].Argument = StoreItemDataObject->GetStoreItemId();
 		}
 	}
 }
@@ -96,7 +96,7 @@ void UItemPurchaseWidget_Starter::SetupPurchaseButtons(TArray<UStoreItemPriceDat
 
 void UItemPurchaseWidget_Starter::UpdatePrice(const int32 SelectedIndex)
 {
-	SetupPurchaseButtons(StoreItemDataObject->Prices);
+	SetupPurchaseButtons(StoreItemDataObject->GetPrices());
 }
 
 int32 UItemPurchaseWidget_Starter::GetSelectedAmount() const

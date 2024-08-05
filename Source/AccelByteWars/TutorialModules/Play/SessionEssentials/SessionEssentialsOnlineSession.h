@@ -58,6 +58,10 @@ public:
 	{
 		return &OnLeaveSessionCompleteDelegates;
 	}
+	virtual FOnUpdateSessionComplete* GetOnUpdateSessionCompleteDelegates() override
+	{
+		return &OnUpdateSessionCompleteDelegates;
+	}
 
 	virtual FOnV2SessionInviteReceived* GetOnSessionInviteReceivedDelegates() override
 	{
@@ -81,6 +85,7 @@ protected:
 		const FUniqueNetId& InviteeId) override;
 	virtual void OnRejectSessionInviteComplete(bool bSucceeded) override;
 	virtual void OnLeaveSessionComplete(FName SessionName, bool bSucceeded) override;
+	virtual void OnUpdateSessionComplete(FName SessionName, bool bSucceeded) override;
 
 	virtual void OnSessionInviteReceived(
 		const FUniqueNetId& UserId,
@@ -97,6 +102,7 @@ private:
 	FOnSendSessionInviteComplete OnSendSessionInviteCompleteDelegates;
 	FOnRejectSessionInviteCompleteMulticast OnRejectSessionInviteCompleteDelegates;
 	FOnDestroySessionComplete OnLeaveSessionCompleteDelegates;
+	FOnUpdateSessionComplete OnUpdateSessionCompleteDelegates;
 
 	FOnV2SessionInviteReceived OnSessionInviteReceivedDelegates;
 	FOnSessionParticipantsChange OnSessionParticipantsChangeDelegates;

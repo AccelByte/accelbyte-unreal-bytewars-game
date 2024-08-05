@@ -21,13 +21,16 @@ void UAccelByteWarsBaseUI::NativeOnInitialized()
 	if (!IsDesignTime())
 	{
 		// Configure stacks transition behavior.
-		UCommonActivatableWidgetStack* Stack;
-		for (int i = EBaseUIStackType::Prompt; i != EBaseUIStackType::InGameHUD; i++)
+		for (const EBaseUIStackType StackType : TEnumRange<EBaseUIStackType>())
 		{
-			Stack = Stacks[static_cast<EBaseUIStackType>(i)];
-			ensure(Stack);
+			TWeakObjectPtr<UCommonActivatableWidgetStack> Stack = MakeWeakObjectPtr<UCommonActivatableWidgetStack>(Stacks[StackType]);
+			if (!ensure(Stack.IsValid())) 
+			{
+				continue;
+			}
 
 			Stack->OnTransitioningChanged.AddUObject(this, &UAccelByteWarsBaseUI::OnWidgetTransitionChanged);
+			Stack->OnDisplayedWidgetChanged().AddUObject(this, &UAccelByteWarsBaseUI::OnDisplayedWidgetChanged, StackType);
 		}
 	
 		// Display project info widget to the target widgets.
@@ -104,18 +107,17 @@ TArray<UCommonActivatableWidget*> UAccelByteWarsBaseUI::GetAllWidgetsBelowStacks
 {
 	// Get all widgets below given stack.
 	TArray<UCommonActivatableWidget*> Result;
-	int32 StackInt = (int32)CurrentStack;
-	for (int32 i = StackInt; i <= EBaseUIStackType::InGameHUD; i++)
+	for (const EBaseUIStackType StackType : TEnumRange<EBaseUIStackType>())
 	{
-		if (i == (int32)CurrentStack) 
+		if (StackType <= CurrentStack)
 		{
 			continue;
 		}
 
-		UCommonActivatableWidget* ActiveStack = Stacks[static_cast<EBaseUIStackType>(i)]->GetActiveWidget();
-		if (ActiveStack) 
+		TWeakObjectPtr<UCommonActivatableWidget> ActiveStack = MakeWeakObjectPtr<UCommonActivatableWidget>(Stacks[StackType]->GetActiveWidget());
+		if (ActiveStack.IsValid())
 		{
-			Result.Add(ActiveStack);
+			Result.Add(ActiveStack.Get());
 		}
 	}
 
@@ -124,18 +126,18 @@ TArray<UCommonActivatableWidget*> UAccelByteWarsBaseUI::GetAllWidgetsBelowStacks
 
 EBaseUIStackType UAccelByteWarsBaseUI::GetTopMostActiveStack()
 {
-	EBaseUIStackType StackType = EBaseUIStackType::Prompt;
+	EBaseUIStackType TopMostStackType = EBaseUIStackType::Prompt;
 	
-	for (int i = EBaseUIStackType::Prompt; i <= EBaseUIStackType::InGameHUD; i++)
+	for (const EBaseUIStackType StackType : TEnumRange<EBaseUIStackType>())
 	{
-		StackType = static_cast<EBaseUIStackType>(i);
+		TopMostStackType = StackType;
 		if (Stacks[StackType]->GetActiveWidget())
 		{
 			break;
 		}
 	}
 
-	return StackType;
+	return TopMostStackType;
 }
 
 UAccelByteWarsActivatableWidget* UAccelByteWarsBaseUI::PushWidgetToStack(EBaseUIStackType TargetStack, TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass)
@@ -154,7 +156,13 @@ UAccelByteWarsActivatableWidget* UAccelByteWarsBaseUI::PushWidgetToStack(EBaseUI
 		return nullptr;
 	}
 
-	return Cast<UAccelByteWarsActivatableWidget>(Stack->AddWidget(WidgetClass, InitFunc));
+	TWeakObjectPtr<UAccelByteWarsActivatableWidget> NewWidget = MakeWeakObjectPtr<UAccelByteWarsActivatableWidget>(Cast<UAccelByteWarsActivatableWidget>(Stack->AddWidget(WidgetClass, InitFunc)));
+	if (NewWidget.IsValid())
+	{
+		NewWidget->SetWidgetStackType(TargetStack);
+	}
+
+	return NewWidget.Get();
 }
 
 UPushNotificationWidget* UAccelByteWarsBaseUI::GetPushNotificationWidget()
@@ -187,14 +195,14 @@ void UAccelByteWarsBaseUI::SetFTUEDialogueWidget(UFTUEDialogueWidget* InFTUEDial
 void UAccelByteWarsBaseUI::OnWidgetTransitionChanged(UCommonActivatableWidgetContainerBase* Widget, bool bIsTransitioning)
 {
 	// Set auto focus to top most stack widget.
-	EBaseUIStackType StackType;
-	UCommonActivatableWidgetStack* Stack;
 	bool bIsTopMostStackFound = false;
-
-	for (int i = EBaseUIStackType::Prompt; i <= EBaseUIStackType::InGameHUD; i++)
+	for (const EBaseUIStackType StackType : TEnumRange<EBaseUIStackType>())
 	{
-		StackType = static_cast<EBaseUIStackType>(i);
-		Stack = Stacks[StackType];
+		TWeakObjectPtr<UCommonActivatableWidgetStack> Stack = MakeWeakObjectPtr<UCommonActivatableWidgetStack>(Stacks[StackType]);
+		if (!Stack.IsValid()) 
+		{
+			continue;
+		}
 
 		if (!bIsTopMostStackFound && Stack->GetActiveWidget())
 		{
@@ -204,5 +212,21 @@ void UAccelByteWarsBaseUI::OnWidgetTransitionChanged(UCommonActivatableWidgetCon
 		}
 
 		Stack->SetVisibility(ESlateVisibility::HitTestInvisible);
+	}
+}
+
+void UAccelByteWarsBaseUI::OnDisplayedWidgetChanged(UCommonActivatableWidget* Widget, const EBaseUIStackType StackType)
+{
+	TWeakObjectPtr<UAccelByteWarsActivatableWidget> NewWidget = MakeWeakObjectPtr<UAccelByteWarsActivatableWidget>(Cast<UAccelByteWarsActivatableWidget>(Widget));
+	if (NewWidget.IsValid())
+	{
+		// Moving the camera location only allowed on Menu stack.
+		NewWidget->AllowMoveCamera(StackType == EBaseUIStackType::Menu);
+	}
+
+	// For game menu, to make the UI visible above the level, toggle the background blur.
+	if (StackType == EBaseUIStackType::Menu || StackType == EBaseUIStackType::InGameMenu)
+	{
+		ToggleBackgroundBlur(NewWidget.IsValid());
 	}
 }

@@ -76,3 +76,28 @@ void UGameUIManagerSubsystem::SwitchToUIController(UGameUIController* InUIContro
 		CurrentUIController = InUIController;
 	}
 }
+
+void UGameUIManagerSubsystem::GetLastHoveredButton(UAccelByteWarsButtonBase*& LastHovered)
+{
+	LastHovered = LastHoveredButton;
+}
+
+void UGameUIManagerSubsystem::SetSelectedButton(UAccelByteWarsButtonBase* NewSelectedButton)
+{
+	LastSelectedButton = NewSelectedButton;
+}
+
+void UGameUIManagerSubsystem::SetHoveredButton(UAccelByteWarsButtonBase* NewHoveredButton)
+{
+	LastHoveredButton = NewHoveredButton;
+}
+
+UAccelByteWarsButtonBase* UGameUIManagerSubsystem::GetLastSelectedButton()
+{
+	return LastSelectedButton;
+}
+
+UAccelByteWarsButtonBase* UGameUIManagerSubsystem::GetLastHoveredButton()
+{
+	return LastHoveredButton;
+}

@@ -4,6 +4,7 @@
 
 #include "AccelByteWarsButtonBase.h"
 #include "CommonActionWidget.h"
+#include "Core/UI/GameUIManagerSubsystem.h"
 
 void UAccelByteWarsButtonBase::NativePreConstruct()
 {
@@ -26,6 +27,34 @@ void UAccelByteWarsButtonBase::NativeConstruct()
 
 	OnClicked().RemoveAll(this);
 	OnClicked().AddUObject(this, &ThisClass::ToggleExclamationMark, false);
+}
+
+void UAccelByteWarsButtonBase::NativeOnAddedToFocusPath(const FFocusEvent& InFocusEvent)
+{
+	Super::NativeOnAddedToFocusPath(InFocusEvent);
+
+	if (UGameUIManagerSubsystem* UIManager = GetGameInstance()->GetSubsystem<UGameUIManagerSubsystem>())
+	{
+		if (UAccelByteWarsButtonBase* LastHoveredButton = UIManager->GetLastHoveredButton())
+		{
+			if (LastHoveredButton->IsHovered())
+			{
+				return;
+			}
+		}
+
+		UIManager->SetSelectedButton(this);
+		SetSelectedInternal(true);
+		bSelectedByKeyboard = true;
+	}
+}
+
+void UAccelByteWarsButtonBase::NativeOnRemovedFromFocusPath(const FFocusEvent& InFocusEvent)
+{
+	Super::NativeOnRemovedFromFocusPath(InFocusEvent);
+
+	SetSelectedInternal(false);
+	bSelectedByKeyboard = false;
 }
 
 void UAccelByteWarsButtonBase::UpdateInputActionWidget()
@@ -80,7 +109,30 @@ void UAccelByteWarsButtonBase::OnInputMethodChanged(ECommonInputType CurrentInpu
 	UpdateButtonStyle();
 }
 
+void UAccelByteWarsButtonBase::NativeOnHovered()
+{
+	Super::NativeOnHovered();
+
+	if (UGameUIManagerSubsystem* UIManager = GetGameInstance()->GetSubsystem<UGameUIManagerSubsystem>())
+	{
+		UIManager->SetHoveredButton(this);
+
+		if (UAccelByteWarsButtonBase* LastSelectedButton = UIManager->GetLastSelectedButton())
+		{
+			LastSelectedButton->SetSelectedInternal(false);
+		}
+	}
+}
+
 void UAccelByteWarsButtonBase::ClearButtonBindings()
 {
 	OnClicked().Clear();
+}
+
+void UAccelByteWarsButtonBase::CallOnClick()
+{
+	if (OnClicked().IsBound())
+	{
+		OnClicked().Broadcast();
+	}
 }

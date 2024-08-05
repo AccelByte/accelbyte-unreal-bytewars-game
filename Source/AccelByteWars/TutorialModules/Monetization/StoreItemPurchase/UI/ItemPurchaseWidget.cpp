@@ -28,7 +28,7 @@ void UItemPurchaseWidget::NativeOnActivated()
 	ensure(PurchaseSubsystem);
 
 	// setup UI
-	SetupPurchaseButtons(StoreItemDataObject->Prices);
+	SetupPurchaseButtons(StoreItemDataObject->GetPrices());
 	Ws_Root->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Not_Empty);
 	Tb_Success->SetVisibility(ESlateVisibility::Collapsed);
 	Tb_Error->SetVisibility(ESlateVisibility::Collapsed);
@@ -36,8 +36,7 @@ void UItemPurchaseWidget::NativeOnActivated()
 	Ss_Amount->OnSelectionChangedDelegate.AddUObject(this, &ThisClass::UpdatePrice);
 
 	// show amount if consumable
-	Ss_Amount->SetVisibility(
-		StoreItemDataObject->ItemData->bConsumable ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	Ss_Amount->SetVisibility(StoreItemDataObject->GetIsConsumable() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 
 	// setup delegate
 	PurchaseSubsystem->OnCheckoutCompleteDelegates.AddUObject(this, &ThisClass::OnPurchaseComplete);
@@ -80,7 +79,7 @@ void UItemPurchaseWidget::OnPurchaseComplete(const FOnlineError& Error) const
 		Tb_Error->SetVisibility(ESlateVisibility::Collapsed);
 
 		// update wallet
-		if (UWalletBalanceWidget* Widget = W_Parent->GetBalanceWidget())
+		if (TWeakObjectPtr<UWalletBalanceWidget> Widget = W_Parent->GetBalanceWidget(); Widget.IsValid())
 		{
 			Widget->UpdateBalance(true);
 		}
@@ -101,7 +100,7 @@ void UItemPurchaseWidget::FTUESetup() const
 	{
 		if (FFTUEDialogueModel* FTUE = FFTUEDialogueModel::GetMetadataById("ftue_purchase_itemid", W_Parent->FTUEDialogues))
 		{
-			FTUE->Button1.URLArguments[2].Argument = StoreItemDataObject->ItemData->Id;
+			FTUE->Button1.URLArguments[2].Argument = StoreItemDataObject->GetStoreItemId();
 		}
 	}
 }
@@ -136,7 +135,7 @@ void UItemPurchaseWidget::SetupPurchaseButtons(TArray<UStoreItemPriceDataObject*
 
 void UItemPurchaseWidget::UpdatePrice(const int32 SelectedIndex)
 {
-	SetupPurchaseButtons(StoreItemDataObject->Prices);
+	SetupPurchaseButtons(StoreItemDataObject->GetPrices());
 }
 
 int32 UItemPurchaseWidget::GetSelectedAmount() const

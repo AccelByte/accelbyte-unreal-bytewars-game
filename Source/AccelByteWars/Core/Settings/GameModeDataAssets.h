@@ -84,6 +84,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 StartGameCountdown = 30;
 
+	// Lobby countdown used to shut the game down when the session has started and there's no player inside 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (EditCondition="NetworkType == EGameModeNetworkType::DS"))
+	int32 NotEnoughPlayerShutdownLobbyCountdown = 15;
+
 	// Countdown used to shut the game down when the game ends. Set to -1 to disable.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 GameEndsShutdownCountdown = 30;

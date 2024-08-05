@@ -25,16 +25,42 @@ public:
 	void Initialize(FSubsystemCollectionBase& Collection) override;
 	void Deinitialize() override;
 
+	FOnLoadPlayerEquipmentComplete OnLoadPlayerEquipmentCompleteDelegates;
+
 #pragma region Module.5 Function Declarations
 public:
-	void SetPlayerRecord(const APlayerController* PlayerController, const FString& RecordKey, const FJsonObject& RecordData, const FOnSetCloudSaveRecordComplete& OnSetRecordComplete);
-	void GetPlayerRecord(const APlayerController* PlayerController, const FString& RecordKey, const FOnGetCloudSaveRecordComplete& OnGetRecordComplete);
-	void DeletePlayerRecord(const APlayerController* PlayerController, const FString& RecordKey, const FOnDeleteCloudSaveRecordComplete& OnDeleteRecordComplete);
+	void SetPlayerRecord(
+		const APlayerController* PlayerController,
+		const FString& RecordKey,
+		const FJsonObject& RecordData,
+		const FOnSetCloudSaveRecordComplete& OnSetRecordComplete);
+	void GetPlayerRecord(
+		const APlayerController* PlayerController,
+		const FString& RecordKey,
+		const FOnGetCloudSaveRecordComplete& OnGetRecordComplete);
+	void DeletePlayerRecord(
+		const APlayerController* PlayerController,
+		const FString& RecordKey,
+		const FOnDeleteCloudSaveRecordComplete& OnDeleteRecordComplete);
 
 private:
-	void OnSetPlayerRecordComplete(int32 LocalUserNum, const FOnlineError& Result, const FString& Key, const FOnSetCloudSaveRecordComplete OnSetRecordComplete);
-	void OnGetPlayerRecordComplete(int32 LocalUserNum, const FOnlineError& Result, const FString& Key, const FAccelByteModelsUserRecord& UserRecord, const FOnGetCloudSaveRecordComplete OnGetRecordComplete);
-	void OnDeletePlayerRecordComplete(int32 LocalUserNum, const FOnlineError& Result, const FString& Key, const FOnDeleteCloudSaveRecordComplete OnDeleteRecordComplete);
+	TMultiMap<FString, FOnSetCloudSaveRecordComplete> SetPlayerRecordParams;
+	TMultiMap<FString, FOnGetCloudSaveRecordComplete> GetPlayerRecordParams;
+	TMultiMap<FString, FOnDeleteCloudSaveRecordComplete> DeletePlayerRecordParams;
+
+	void OnSetPlayerRecordComplete(
+		int32 LocalUserNum,
+		const FOnlineError& Result,
+		const FString& Key);
+	void OnGetPlayerRecordComplete(
+		int32 LocalUserNum,
+		const FOnlineError& Result,
+		const FString& Key,
+		const FAccelByteModelsUserRecord& UserRecord);
+	void OnDeletePlayerRecordComplete(
+		int32 LocalUserNum,
+		const FOnlineError& Result,
+		const FString& Key);
 #pragma endregion
 
 private:
@@ -44,14 +70,13 @@ private:
 	void OnLoadGameSoundOptions(const APlayerController* PlayerController, TDelegate<void()> OnComplete);
 	void OnSaveGameSoundOptions(const APlayerController* PlayerController, TDelegate<void()> OnComplete);
 
-	void OnLoadPlayerShipEquipment(const APlayerController* PlayerController, TDelegate<void()> OnComplete);
-	void OnLoadPlayerShipEquipment(AAccelByteWarsPlayerPawn* PlayerPawn, const APlayerController* PlayerController, const FLinearColor InColor);
-	void OnSavePlayerShipEquipment(const APlayerController* PlayerController, TDelegate<void()> OnComplete);
+	void LoadPlayerEquipment(const APlayerController* PlayerController);
+	void SavePlayersEquipment();
 
-	void OnLoadPlayerEquipmentToSpawnComplete(bool bWasSuccessful, FJsonObject& Result, const FUniqueNetIdPtr UserId, const FLinearColor InColor);
+#pragma region "Utilities"
+	
+	int32 GetLocalUserIndex(const APlayerController* PlayerController) const;
+#pragma endregion 
 
-	FDelegateHandle OnSetPlayerRecordCompletedDelegateHandle;
-	FDelegateHandle OnGetPlayerRecordCompletedDelegateHandle;
-	FDelegateHandle OnDeletePlayerRecordCompletedDelegateHandle;
 	FOnlineCloudSaveAccelBytePtr CloudSaveInterface;
 };

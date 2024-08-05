@@ -5,14 +5,19 @@
 #include "PowerUpWidgetEntry.h"
 #include "Components/TextBlock.h"
 #include "Components/Image.h"
+#include "Core/AssetManager/InGameItems/InGameItemDataAsset.h"
+#include "Core/AssetManager/InGameItems/InGameItemUtility.h"
 
-void UPowerUpWidgetEntry::SetValue(const TEnumAsByte<EPowerUpSelection> PowerUp, const int32 PowerUpCount)
+void UPowerUpWidgetEntry::SetValue(const FString& ItemId, const int32 Count) const
 {
-	UTexture2D* PowerUpTexture = nullptr;
-	if (PowerUpTextures.IsValidIndex(PowerUp)) 
+	if (const UInGameItemDataAsset* ItemDataAsset = UInGameItemUtility::GetItemDataAsset(ItemId))
 	{
-		Img_PowerUp->SetBrushFromSoftTexture(PowerUpTextures[PowerUp]);
-	}
+		if (ItemDataAsset->Type != EItemType::PowerUp || !ItemDataAsset->Icon)
+		{
+			return;
+		}
 
-	Tb_PowerUpCount->SetText(FText::FromString(FString::Printf(TEXT("%dx"), PowerUpCount)));
+		Img_PowerUp->SetBrushFromTexture(ItemDataAsset->Icon);
+		Tb_PowerUpCount->SetText(FText::FromString(FString::Printf(TEXT("%dx"), Count)));
+	}
 }

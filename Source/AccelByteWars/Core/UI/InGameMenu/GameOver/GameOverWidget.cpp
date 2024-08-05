@@ -14,11 +14,7 @@
 #include "Core/GameStates/AccelByteWarsInGameGameState.h"
 #include "Kismet/KismetMathLibrary.h"
 
-void UGameOverWidget::SetWinner(const FText& PlayerName, const FLinearColor& Color)
-{
-	Txt_Winner->SetText(PlayerName);
-	Txt_Winner->SetColorAndOpacity(Color);
-}
+#define LOCTEXT_NAMESPACE "AccelByteWars"
 
 UGameOverLeaderboardEntry* UGameOverWidget::AddLeaderboardEntry(const FText& PlayerName, const int32 PlayerScore, const int32 PlayerKills, const FLinearColor& PlayerColor)
 {
@@ -97,6 +93,7 @@ void UGameOverWidget::SetupLeaderboard()
 	int32 HighestScore = INDEX_NONE;
 	int32 WinnerTeamId = INDEX_NONE;
 	FString WinnerPlayerName = TEXT("");
+	bool bIsWinnerLocalPlayer = false;
 
 	// Generate leaderboard entries.
 	const ENetMode NetMode = GetOwningPlayer()->GetNetMode();
@@ -127,12 +124,7 @@ void UGameOverWidget::SetupLeaderboard()
 			PlayerIndex++;
 
 			FString PlayerName = FString::Printf(TEXT("Player %d"), PlayerIndex);
-			const bool bIsLocalPlayer = LocalPlayerNetId.IsValid() && LocalPlayerNetId == Member.UniqueNetId && NetMode != ENetMode::NM_Standalone;
-			if (bIsLocalPlayer)
-			{
-				PlayerName = NSLOCTEXT("AccelByteWars", "Game Over Widget Local Player Identifier", "You").ToString();
-			}
-			else if (!Member.PlayerName.IsEmpty())
+			if (!Member.PlayerName.IsEmpty())
 			{
 				PlayerName = Member.PlayerName;
 			}
@@ -140,24 +132,29 @@ void UGameOverWidget::SetupLeaderboard()
 			if (Team.TeamId == WinnerTeamId) 
 			{
 				WinnerPlayerName = PlayerName;
+				bIsWinnerLocalPlayer = LocalPlayerNetId.IsValid() && LocalPlayerNetId == Member.UniqueNetId && NetMode != ENetMode::NM_Standalone;
 			}
 
 			AddLeaderboardEntry(FText::FromString(PlayerName), Member.Score, Member.KillCount, TeamColor);
 		}
 	}
 
-	// Display draw game.
-	if (WinnerTeamId == INDEX_NONE) 
+	// Display the winner.
+	const bool bIsDraw = WinnerTeamId == INDEX_NONE;
+	if (bIsDraw)
 	{
-		Ws_Winner->SetActiveWidgetIndex(1);
+		Txt_Winner->SetText(LOCTEXT("Game over draw", "Game Draw!"));
+		Txt_Winner->SetColorAndOpacity(FLinearColor::White);
 	}
-	// Display winner team.
 	else 
 	{
-		Ws_Winner->SetActiveWidgetIndex(0);
-
 		const FString WinnerName = GameState->GameSetup.bIsTeamGame ? FString::Printf(TEXT("Team %d"), WinnerTeamId + 1) : WinnerPlayerName;
-		SetWinner(FText::FromString(WinnerName), GameInstance->GetTeamColor(WinnerTeamId));
+		const FText WinnerLabel = bIsWinnerLocalPlayer ?
+			LOCTEXT("Game over local player wins", "You Win!") :
+			FText::Format(LOCTEXT("Game over other player wins", "{0} Wins!"), FFormatOrderedArguments { FFormatArgumentValue(FText::FromString(WinnerName)) });
+
+		Txt_Winner->SetText(WinnerLabel);
+		Txt_Winner->SetColorAndOpacity(GameInstance->GetTeamColor(WinnerTeamId));
 	}
 }
 
@@ -205,3 +202,5 @@ int UGameOverWidget::GetCountdownValue()
 void UGameOverWidget::OnCountdownFinished()
 {
 }
+
+#undef LOCTEXT_NAMESPACE

@@ -10,27 +10,16 @@
 #include "Components/ListView.h"
 #include "Components/TextBlock.h"
 #include "Components/WidgetSwitcher.h"
+#include "Core/AssetManager/InGameItems/InGameItemDataAsset.h"
 #include "Core/UI/Components/AccelByteWarsAsyncImageWidget.h"
-
-void UStoreItemListEntry::NativePreConstruct()
-{
-	Super::NativePreConstruct();
-
-	Lv_Prices->SetVisibility(bShowPrices ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-}
 
 void UStoreItemListEntry::NativeOnListItemObjectSet(UObject* ListItemObject)
 {
 	IUserObjectListEntry::NativeOnListItemObjectSet(ListItemObject);
 
-	if (UStoreItemDataObject* StoreItemDataObject = Cast<UStoreItemDataObject>(ListItemObject))
+	if (const UStoreItemDataObject* StoreItemDataObject = Cast<UStoreItemDataObject>(ListItemObject))
 	{
 		Setup(StoreItemDataObject);
-		SetOwned(false);
-	}
-	else if (UItemDataObject* ItemDataObject = Cast<UItemDataObject>(ListItemObject))
-	{
-		Setup(ItemDataObject);
 	}
 }
 
@@ -40,20 +29,56 @@ void UStoreItemListEntry::NativeOnEntryReleased()
 	ResetUI();
 }
 
-void UStoreItemListEntry::Setup(UItemDataObject* Object)
+void UStoreItemListEntry::Setup(const UStoreItemDataObject* Object)
 {
 	ItemData = Object;
 
 	// Reset UI
 	Tb_Name->SetText(FText());
 	W_Image->LoadImage("");
+	Lv_Prices->ClearListItems();
 
 	// Set UI
-	Tb_Name->SetText(ItemData->Title);
-	W_Image->LoadImage(ItemData->IconUrl);
+	Tb_Name->SetText(ItemData->GetTitle());
+	if (const FString* Sku = ItemData->GetSkuMap().Find(EItemSkuPlatform::AccelByte))
+	{
+		if (const UInGameItemDataAsset* Item = UInGameItemUtility::GetItemDataAssetBySku(EItemSkuPlatform::AccelByte, *Sku))
+		{
+			W_Image->DefaultBrush = Item->DefaultImage;
+		}
+	}
+	W_Image->LoadImage(ItemData->GetIconUrl());
+	if (ItemData->GetShouldShowPrices())
+	{
+		// Show only 1 price if one of them is free
+		bool bIsFree = false;
+		for (const UStoreItemPriceDataObject* Data : ItemData->GetPrices())
+		{
+			if (Data->GetRegularPrice() == 0)
+			{
+				bIsFree = true;
+			}
+		}
+
+		if (bIsFree)
+		{
+			TArray<UStoreItemPriceDataObject*> Prices;
+			if (ItemData->GetPrices().Num() < 1)
+			{
+				return;
+			}
+
+			Prices.Add(ItemData->GetPrices()[0]);
+			Lv_Prices->SetListItems(Prices);
+		}
+		else
+		{
+			Lv_Prices->SetListItems(ItemData->GetPrices());
+		}
+	}
 
 	// Only show end of branch category
-	FString Category = ItemData->Category.ToString();
+	FString Category = ItemData->GetCategory().ToString();
 	Category = Category.RightChop(Category.Find(TEXT("/"), ESearchCase::IgnoreCase, ESearchDir::FromEnd) + 1);
 	Tb_Category->SetText(FText::FromString(Category));
 
@@ -67,44 +92,6 @@ void UStoreItemListEntry::Setup(UItemDataObject* Object)
 				Widget->DeactivateWidget();
 			}
 			Widget->ActivateWidget();
-		}
-	}
-}
-
-void UStoreItemListEntry::Setup(UStoreItemDataObject* Object)
-{
-	Setup(Object->ItemData);
-
-	// Reset UI
-	Lv_Prices->ClearListItems();
-
-	// Set UI
-	if (bShowPrices)
-	{
-		// Show only 1 price if one of them is free
-		bool bIsFree = false;
-		for (const UStoreItemPriceDataObject* Data : Object->Prices)
-		{
-			if (Data->RegularPrice == 0)
-			{
-				bIsFree = true;
-			}
-		}
-
-		if (bIsFree)
-		{
-			TArray<UStoreItemPriceDataObject*> Prices;
-			if (Object->Prices.Num() < 1)
-			{
-				return;
-			}
-
-			Prices.Add(Object->Prices[0]);
-			Lv_Prices->SetListItems(Prices);
-		}
-		else
-		{
-			Lv_Prices->SetListItems(Object->Prices);
 		}
 	}
 }

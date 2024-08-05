@@ -6,9 +6,7 @@
 
 #include "CoreMinimal.h"
 #include "OnlineSubsystemAccelByte.h"
-#include "WalletEssentialsModel.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
-#include "Models/AccelByteEcommerceModels.h"
 #include "WalletEssentialsSubsystem_Starter.generated.h"
 
 UCLASS()

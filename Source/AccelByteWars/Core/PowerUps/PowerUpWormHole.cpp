@@ -4,6 +4,7 @@
 
 #include "Core/PowerUps/PowerUpWormHole.h"
 
+#include "Core/GameModes/AccelByteWarsInGameGameMode.h"
 #include "Core/Player/AccelByteWarsPlayerPawn.h"
 
 APowerUpWormHole::APowerUpWormHole()
@@ -29,18 +30,44 @@ APowerUpWormHole::APowerUpWormHole()
 	bReplicates = true;
 }
 
-// Called every frame
 void APowerUpWormHole::Tick(float DeltaTime)
 {
-	if (MarkAsExpired)
+	if (MarkAsExpired && HasAuthority())
 	{	
 		CurrentWormHoleLifetime += DeltaTime;
 		if (CurrentWormHoleLifetime > MaxWormHoleLifetime)
 		{
 			MarkAsExpired = false;
-			Server_WormHoleExpired();
+			WormHoleExpired();
 		}
 	}
+}
+
+void APowerUpWormHole::OnUse()
+{
+	IInGameItemInterface::OnUse();
+
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	// set color
+	if (const AAccelByteWarsPlayerPawn* Pawn = Cast<AAccelByteWarsPlayerPawn>(GetOwner()))
+	{
+		SetWormHoleColor(Pawn->GetPawnColor());
+	}
+	Server_InitiateWormHoleGenerator();
+}
+
+void APowerUpWormHole::OnEquip()
+{
+	IInGameItemInterface::OnEquip();
+}
+
+void APowerUpWormHole::DestroyItem()
+{
+	WormHoleExpired();
 }
 
 void APowerUpWormHole::Server_InitiateWormHoleGenerator_Implementation()
@@ -85,7 +112,7 @@ void APowerUpWormHole::Multicast_InitiateWormHoleGenerator_Implementation(AActor
 	ActorToMove->SetActorLocation(NewPawnLocation);
 }
 
-void APowerUpWormHole::Server_WormHoleExpired_Implementation()
+void APowerUpWormHole::WormHoleExpired()
 {
 	if (WormHoleFx != nullptr)
 		WormHoleFx->Deactivate();
@@ -94,9 +121,4 @@ void APowerUpWormHole::Server_WormHoleExpired_Implementation()
 		WormHoleAudioComponent->Stop();
 
 	Destroy();
-}
-
-void APowerUpWormHole::DestroyPowerUp()
-{
-	Server_WormHoleExpired();
 }

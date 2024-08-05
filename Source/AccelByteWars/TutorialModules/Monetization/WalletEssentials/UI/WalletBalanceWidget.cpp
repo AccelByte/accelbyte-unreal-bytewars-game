@@ -33,17 +33,8 @@ void UWalletBalanceWidget::UpdateBalance(const bool bAlwaysRequestToService)
 	W_Root->ClearChildren();
 	CurrencyBalanceEntryMap.Empty();
 
-	for (const TTuple<FString, ECurrencyType>& Currency : CurrenciesMap)
-	{
-		UWalletBalanceWidgetEntry* Entry = CreateWidget<UWalletBalanceWidgetEntry>(this, CurrencyBalanceClass);
-		ensure(Entry);
-
-		Entry->Setup(FText::FromString("..."), Currency.Value);
-		W_Root->AddChild(Entry);
-		CurrencyBalanceEntryMap.Add(Currency.Key, Entry);
-
-		WalletSubsystem->QueryOrGetWalletInfoByCurrencyCode(GetOwningPlayer(), Currency.Key, bAlwaysRequestToService);
-	}
+	UpdateBalanceInternal(ECurrencyType::COIN, bAlwaysRequestToService);
+	UpdateBalanceInternal(ECurrencyType::GEM, bAlwaysRequestToService);
 }
 
 void UWalletBalanceWidget::ShowBalance(bool bWasSuccessful, const FAccelByteModelsWalletInfo& Response) const
@@ -57,6 +48,20 @@ void UWalletBalanceWidget::ShowBalance(bool bWasSuccessful, const FAccelByteMode
 	{
 		Entry->Setup(
 			bWasSuccessful ? FText::FromString(FString::FromInt(Response.Balance)) : TEXT_BALANCE_ERROR,
-			CurrenciesMap[Response.CurrencyCode]);
+			FPreConfigCurrency::GetTypeFromCode(Response.CurrencyCode));
 	}
+}
+
+void UWalletBalanceWidget::UpdateBalanceInternal(const ECurrencyType CurrencyType, const bool bAlwaysRequestToService)
+{
+	const FString CurrencyCode = FPreConfigCurrency::GetCodeFromType(CurrencyType);
+
+	UWalletBalanceWidgetEntry* Entry = CreateWidget<UWalletBalanceWidgetEntry>(this, CurrencyBalanceClass);
+	ensure(Entry);
+
+	Entry->Setup(FText::FromString("..."), CurrencyType);
+	W_Root->AddChild(Entry);
+	CurrencyBalanceEntryMap.Add(CurrencyCode, Entry);
+
+	WalletSubsystem->QueryOrGetWalletInfoByCurrencyCode(GetOwningPlayer(), CurrencyCode, bAlwaysRequestToService);
 }

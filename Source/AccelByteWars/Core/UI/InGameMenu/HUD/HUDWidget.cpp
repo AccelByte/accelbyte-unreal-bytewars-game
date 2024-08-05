@@ -48,6 +48,11 @@ void UHUDWidget::NativeConstruct()
 		Widget_NotEnoughPlayerCountdown->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
+	// Setup HUD update callback
+	ByteWarsGameState->OnTeamsChanged.AddUObject(this, &ThisClass::UpdateHUD);
+	ByteWarsGameState->OnPowerUpChanged.AddUObject(this, &ThisClass::UpdateHUD);
+	UpdateHUD();
+
 	// Setup simulate crash countdown
 	if (ByteWarsGameState->SimulateServerCrashCountdown != INDEX_NONE)
 	{
@@ -100,102 +105,57 @@ void UHUDWidget::NativeDestruct()
 
 	Widget_PreGameCountdown->OnCountdownFinishedDelegate.Remove(OnPreGameCountdownFinishedDelegateHandle);
 	Widget_NotEnoughPlayerCountdown->OnCountdownFinishedDelegate.Remove(OnNotEnoughPlayerCountdownFinishedDelegateHandle);
+	ByteWarsGameState->OnTeamsChanged.RemoveAll(this);
+	ByteWarsGameState->OnPowerUpChanged.RemoveAll(this);
 }
 
-bool UHUDWidget::SetValue(const FString Value, const int32 Index, const int32 BoxIndex)
+void UHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
-	if (Index < 0 || Index > 3)
-	{
-		return false;
-	}
+	Super::NativeTick(MyGeometry, InDeltaTime);
 
-	if (BoxIndex < 0 || BoxIndex > 2)
-	{
-		return false;
-	}
-
-	const UHUDWidgetEntry* TargetWidget;
-	switch (Index)
-	{
-	case 0:
-		TargetWidget = Widget_HUDNameValueP1;
-		break;
-	case 1:
-		TargetWidget = Widget_HUDNameValueP2;
-		break;
-	case 2:
-		TargetWidget = Widget_HUDNameValueP3;
-		break;
-	case 3:
-		TargetWidget = Widget_HUDNameValueP4;
-		break;
-	default:
-		return false;
-	}
-
-	if (!TargetWidget)
-	{
-		return false;
-	}
-
-	UTextBlock* TargetTextBlock;
-	switch (BoxIndex)
-	{
-	case 0:
-		TargetTextBlock = TargetWidget->Text_Value_Left;
-		break;
-	case 1:
-		TargetTextBlock = TargetWidget->Text_Value_Middle;
-		break;
-	case 2:
-		TargetTextBlock = TargetWidget->Text_Value_Right;
-		break;
-	default:
-		return false;
-	}
-
-	if (!TargetTextBlock) 
-	{
-		return false;
-	}
-
-	TargetTextBlock->SetText(FText::FromString(Value));
-	return true;
+	SetTimerValue(ByteWarsGameState->TimeLeft);
 }
 
-bool UHUDWidget::SetPowerUps(const TArray<TEnumAsByte<EPowerUpSelection>>& SelectedPowerUps, const TArray<int32>& PowerUpCounts, const int32 TeamIndex)
+void UHUDWidget::UpdateHUD()
 {
-	if (TeamIndex < 0 || TeamIndex > 3)
+	for (const FGameplayTeamData& TeamData : ByteWarsGameState->Teams)
 	{
-		return false;
-	}
+		// Toggle entry
+		if (TeamData.TeamMembers.IsEmpty())
+		{
+			ToggleEntry(TeamData.TeamId, false);
+			continue;
+		}
+		ToggleEntry(TeamData.TeamId, true);
 
-	UHUDWidgetEntry* TargetWidget;
-	switch (TeamIndex)
-	{
-	case 0:
-		TargetWidget = Widget_HUDNameValueP1;
-		break;
-	case 1:
-		TargetWidget = Widget_HUDNameValueP2;
-		break;
-	case 2:
-		TargetWidget = Widget_HUDNameValueP3;
-		break;
-	case 3:
-		TargetWidget = Widget_HUDNameValueP4;
-		break;
-	default:
-		return false;
-	}
-	
-	if (!TargetWidget) 
-	{
-		return false;
-	}
+		// Set color
+		UGameInstance* GameInstance = GetGameInstance();
+		if (!GameInstance)
+		{
+			return;
+		}
+		UAccelByteWarsGameInstance* AbGameInstance = Cast<UAccelByteWarsGameInstance>(GameInstance);
+		if (!AbGameInstance)
+		{
+			return;
+		}
 
-	TargetWidget->SetPowerUpValues(SelectedPowerUps, PowerUpCounts);
-	return true;
+		if (!SetColorChecked(TeamData.TeamId, AbGameInstance->GetTeamColor(TeamData.TeamId)))
+		{
+			return;
+		}
+
+		// Update lives left, score, and kill count
+		SetValue(FString::FromInt(TeamData.GetTeamLivesLeft()), TeamData.TeamId, 0);
+		SetValue(FString::FromInt(TeamData.GetTeamScore()), TeamData.TeamId, 1);
+		SetValue(FString::FromInt(TeamData.GetTeamKillCount()), TeamData.TeamId, 2);
+
+		// Update PowerUps
+		for (int i = 0; i < TeamData.TeamMembers.Num(); ++i)
+		{
+			UpdatePowerUpDisplay(TeamData.TeamMembers[i], i);
+		}
+	}
 }
 
 bool UHUDWidget::SetColorChecked(const int32 Index, const FLinearColor Color)
@@ -273,12 +233,6 @@ bool UHUDWidget::ToggleEntry(const int32 Index, const bool bActivate)
 	return true;
 }
 
-void UHUDWidget::SetTimerValue(const float TimeLeft)
-{
-	const FText Text = UKismetTextLibrary::Conv_IntToText(UKismetMathLibrary::FFloor(TimeLeft));
-	Widget_HUDNameValueTimer->Text_Value_Middle->SetText(Text);
-}
-
 void UHUDWidget::GetVisibleHUDPixelPosition(FVector2D& OutMinPixelPosition, FVector2D& OutMaxPixelPosition) const
 {
 	FVector2D ViewportPosition;
@@ -297,6 +251,135 @@ void UHUDWidget::GetVisibleHUDPixelPosition(FVector2D& OutMinPixelPosition, FVec
 	OutMaxPixelPosition.Y = OutMinPixelPosition.Y + CachedGeometrySize.Y;
 
 	return;
+}
+
+bool UHUDWidget::SetValue(const FString Value, const int32 TeamIndex, const int32 BoxIndex)
+{
+	if (TeamIndex < 0 || TeamIndex > 3)
+	{
+		return false;
+	}
+
+	if (BoxIndex < 0 || BoxIndex > 2)
+	{
+		return false;
+	}
+
+	const UHUDWidgetEntry* TargetWidget;
+	switch (TeamIndex)
+	{
+	case 0:
+		TargetWidget = Widget_HUDNameValueP1;
+		break;
+	case 1:
+		TargetWidget = Widget_HUDNameValueP2;
+		break;
+	case 2:
+		TargetWidget = Widget_HUDNameValueP3;
+		break;
+	case 3:
+		TargetWidget = Widget_HUDNameValueP4;
+		break;
+	default:
+		return false;
+	}
+
+	if (!TargetWidget)
+	{
+		return false;
+	}
+
+	UTextBlock* TargetTextBlock;
+	switch (BoxIndex)
+	{
+	case 0:
+		// Lives left
+		TargetTextBlock = TargetWidget->Text_Value_Left;
+		break;
+	case 1:
+		// Score
+		TargetTextBlock = TargetWidget->Text_Value_Middle;
+		break;
+	case 2:
+		// Kills
+		TargetTextBlock = TargetWidget->Text_Value_Right;
+		break;
+	default:
+		return false;
+	}
+
+	if (!TargetTextBlock) 
+	{
+		return false;
+	}
+
+	TargetTextBlock->SetText(FText::FromString(Value));
+	return true;
+}
+
+void UHUDWidget::SetTimerValue(const float TimeLeft)
+{
+	const FText Text = UKismetTextLibrary::Conv_IntToText(UKismetMathLibrary::FFloor(TimeLeft));
+	Widget_HUDNameValueTimer->Text_Value_Middle->SetText(Text);
+}
+
+void UHUDWidget::UpdatePowerUpDisplay(const FGameplayPlayerData& PlayerData, const int32 TeamMemberIndex) const
+{
+	// Get player state
+	APlayerState* PlayerState = nullptr;
+	for (const TObjectPtr<APlayerState> SearchPlayerState : ByteWarsGameState->PlayerArray)
+	{
+		// construct player's identification
+		int32 ControllerId = INDEX_NONE;
+		if (const APlayerController* PC = SearchPlayerState->GetPlayerController())
+		{
+			if (const ULocalPlayer* LP = PC->GetLocalPlayer())
+			{
+				ControllerId = LP->GetLocalPlayerIndex();
+			}
+		}
+		FGameplayPlayerData SearchPlayerData{SearchPlayerState->GetUniqueId(), ControllerId};
+		if (PlayerData == SearchPlayerData)
+		{
+			PlayerState = SearchPlayerState;
+			break;
+		}
+	}
+	if (!PlayerState)
+	{
+		return;
+	}
+
+	// get equipped power up
+	AAccelByteWarsPlayerState* AbPs = Cast<AAccelByteWarsPlayerState>(PlayerState);
+	if (!AbPs)
+	{
+		return;
+	}
+	const FEquippedItem EquippedItem = AbPs->GetEquippedItem(EItemType::PowerUp, true);
+	if (EquippedItem.ItemId.IsEmpty())
+	{
+		return;
+	}
+
+	// update widget
+	UHUDWidgetEntry* TargetWidget = nullptr;
+	switch (AbPs->TeamId)
+	{
+	case 0:
+		TargetWidget = Widget_HUDNameValueP1;
+		break;
+	case 1:
+		TargetWidget = Widget_HUDNameValueP2;
+		break;
+	case 2:
+		TargetWidget = Widget_HUDNameValueP3;
+		break;
+	case 3:
+		TargetWidget = Widget_HUDNameValueP4;
+		break;
+	}
+	TargetWidget->SetPowerUpValues(EquippedItem.ItemId, EquippedItem.Count, TeamMemberIndex);
 }
 
 ECountdownState UHUDWidget::SetPreGameCountdownState() const

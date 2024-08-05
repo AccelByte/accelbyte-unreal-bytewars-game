@@ -124,6 +124,12 @@ void UPlayingWithFriendsSubsystem_Starter::OnQueryUserInfoOnGameSessionParticipa
 		return;
 	}
 
+	// Only handle the event if the player already travelled to online session.
+	if (GetWorld() && GetWorld()->GetNetMode() == ENetMode::NM_Standalone)
+	{
+		return;
+	}
+
 	UE_LOG_PLAYINGWITHFRIENDS(Verbose, TEXT("Called"));
 
 	UPromptSubsystem* PromptSubsystem = GetPromptSubsystem();

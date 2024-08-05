@@ -6,22 +6,12 @@
 
 #include "AccelByteWars/Core/Components/AccelByteWarsProceduralMeshComponent.h"
 #include "AccelByteWars/Core/Components/AccelByteWarsGameplayObjectComponent.h"
-#include "AccelByteWars/Core/GameModes/AccelByteWarsGameMode.h"
-#include "AccelByteWars/Core/GameModes/AccelByteWarsInGameGameMode.h"
-#include "AccelByteWars/Core/Player/AccelByteWarsPlayerState.h"
-#include "AccelByteWars/Core/Player/AccelByteWarsPlayerController.h"
-#include "AccelByteWars/Core/GameStates/AccelByteWarsInGameGameState.h"
-#include "Core/Utilities/AccelByteWarsUtilityLog.h"
-#include "Net/UnrealNetwork.h"
 #include "NiagaraComponent.h"
 #include "Components/AudioComponent.h"
-#include "Kismet/KismetMathLibrary.h"
-#include "Kismet/GameplayStatics.h"
-
-#include "Net/UnrealNetwork.h"
-#include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "AccelByteWarsMissile.generated.h"
+
+class AAccelByteWarsGameMode;
 
 UCLASS()
 class ACCELBYTEWARS_API AAccelByteWarsMissile : public AActor
@@ -35,6 +25,7 @@ public:
 protected:
 	//~UObject overridden functions
 	virtual void BeginPlay() override;
+	virtual void Destroyed() override;
 	//~End of UObject overridden functions
 
 public:	

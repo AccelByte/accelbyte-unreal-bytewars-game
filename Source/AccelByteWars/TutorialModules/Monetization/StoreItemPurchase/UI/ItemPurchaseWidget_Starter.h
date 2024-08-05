@@ -34,8 +34,7 @@ private:
 	UPROPERTY()
 	UStoreItemPurchaseSubsystem_Starter* PurchaseSubsystem;
 
-	UPROPERTY()
-	UStoreItemDataObject* StoreItemDataObject;
+	TWeakObjectPtr<UStoreItemDataObject> StoreItemDataObject;
 
 #pragma region "Tutorial"
 	// put your code here

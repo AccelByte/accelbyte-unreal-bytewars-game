@@ -22,6 +22,7 @@
 #include "Components/OverlaySlot.h"
 
 #include "Core/UI/Components/Prompt/FTUE/FTUEDialogueWidget.h"
+#include "Core/Utilities/AccelByteWarsUtility.h"
 
 DEFINE_LOG_CATEGORY(LogAccelByteWarsActivatableWidget);
 
@@ -61,8 +62,10 @@ void UAccelByteWarsActivatableWidget::NativePreConstruct()
 
 void UAccelByteWarsActivatableWidget::NativeOnActivated()
 {
+	InitializeGeneratedWidgets();
+	
 	// Execute on-activated event for default object.
-	if (GetClass()) 
+	if (GetClass())
 	{
 		if (const UAccelByteWarsActivatableWidget* DefaultObj = Cast<UAccelByteWarsActivatableWidget>(GetClass()->GetDefaultObject()))
 		{
@@ -79,13 +82,26 @@ void UAccelByteWarsActivatableWidget::NativeOnActivated()
 		SetVisibility(bIsTutorialModuleActive ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	}
 
-	InitializeGeneratedWidgets();
 	ValidateDevHelpButton();
 	ExecuteWidgetValidators();
-	InitializeFTUEDialogues(bOnActivatedInitializeFTUE);
+	if(bLoadFTUEImmediately)
+	{
+		InitializeFTUEDialogues(bOnActivatedInitializeFTUE);
+	}
 
 	SetVisibility(GetIsAllGeneratedWidgetsShouldNotDisplay() ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
 	RequestRefreshFocus();
+
+	// Tell the tab list that the generated widget is done constructing
+	for (UAccelByteWarsTabListWidget* WidgetTabList : GetGeneratedWidgetTabListContainers())
+	{
+		if (!WidgetTabList)
+		{
+			continue;
+		}
+
+		WidgetTabList->ParentOnActivated();
+	}
 }
 
 void UAccelByteWarsActivatableWidget::NativeOnDeactivated()
@@ -102,6 +118,17 @@ void UAccelByteWarsActivatableWidget::NativeOnDeactivated()
 	}
 
 	Super::NativeOnDeactivated();
+
+	// Tell the tab list that the generated widget is done deactivating
+	for (UAccelByteWarsTabListWidget* WidgetTabList : GetGeneratedWidgetTabListContainers())
+	{
+		if (!WidgetTabList)
+		{
+			continue;
+		}
+
+		WidgetTabList->ParentOnDeactivated();
+	}
 }
 
 TOptional<FUIInputConfig> UAccelByteWarsActivatableWidget::GetDesiredInputConfig() const
@@ -118,6 +145,21 @@ TOptional<FUIInputConfig> UAccelByteWarsActivatableWidget::GetDesiredInputConfig
 	default:
 		return TOptional<FUIInputConfig>();
 	}
+}
+
+void UAccelByteWarsActivatableWidget::SetWidgetStackType(const EBaseUIStackType StackType)
+{
+	WidgetStackType = StackType;
+}
+
+EBaseUIStackType UAccelByteWarsActivatableWidget::GetWidgetStackType() const
+{
+	return WidgetStackType;
+}
+
+void UAccelByteWarsActivatableWidget::AllowMoveCamera(bool bAllow)
+{
+	bAllowMoveCamera = bAllow;
 }
 
 void UAccelByteWarsActivatableWidget::PostLoad()
@@ -188,10 +230,15 @@ bool UAccelByteWarsActivatableWidget::GetIsAllGeneratedWidgetsShouldNotDisplay()
 
 void UAccelByteWarsActivatableWidget::MoveCameraToTargetLocation(const float DeltaTime, const FVector TargetLocation, const float InterpSpeed)
 {
+	if (!bAllowMoveCamera)
+	{
+		return;
+	}
+
 	AActor* Camera = UGameplayStatics::GetActorOfClass(GetWorld(), ACameraActor::StaticClass());
 	if (Camera == nullptr) 
 	{
-		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot move the camera to active menu. Camera is not found."));
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot move the camera to target location. Camera is not found."));
 		return;
 	}
 
@@ -425,7 +472,7 @@ TWeakObjectPtr<UAccelByteWarsButtonBase> UAccelByteWarsActivatableWidget::Genera
 		}
 
 		// Execute action.
-		BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, EntryWidgetClass);
+		BaseUIWidget->PushWidgetToStack(Metadata.TargetStackToSpawn, EntryWidgetClass);
 	});
 	Metadata.GenerateWidgetRef = Button.Get();
 
@@ -749,8 +796,16 @@ void UAccelByteWarsActivatableWidget::HideFTUEDevHelpButton(const bool bInHideBu
 void UAccelByteWarsActivatableWidget::HideFTUEDevHelpInputAction(const bool bInHideInputAction) const
 {
 	const TWeakObjectPtr<UAccelByteWarsButtonBase> DevHelpButton = GetDevHelpButton();
-	if (DevHelpButton == nullptr)
+	if (!DevHelpButton.IsValid())
 	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot hide FTUE dev help input action. The Dev Help button is null."));
+		return;
+	}
+
+	const bool bIsTearingDown = GetWorld() && GetWorld()->bIsTearingDown;
+	if (bIsTearingDown)
+	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot hide FTUE dev help input action as the UWorld is tearing down."));
 		return;
 	}
 
@@ -765,27 +820,6 @@ void UAccelByteWarsActivatableWidget::InitializeFTUEDialogues(const bool bShowOn
 		return;
 	}
 
-	UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetWorld()->GetGameInstance());
-	if (!GameInstance)
-	{
-		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot initialize FTUE dialogues. Game Instance is not valid."));
-		return;
-	}
-
-	UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget();
-	if (!BaseUIWidget)
-	{
-		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot initialize FTUE dialogues. Base UI widget is not valid."));
-		return;
-	}
-
-	UFTUEDialogueWidget* FTUEWidget = BaseUIWidget->GetFTUEDialogueWidget();
-	if (IsValid(FTUEWidget)) 
-	{
-		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot initialize FTUE dialogues. FTUE dialogue widget is already initialized."));
-		return;
-	}
-
 	if (FTUEDialogues.IsEmpty())
 	{
 		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot initialize FTUE dialogues. Widget didn't have FTUE dialogues."));
@@ -797,43 +831,93 @@ void UAccelByteWarsActivatableWidget::InitializeFTUEDialogues(const bool bShowOn
 		return;
 	}
 
-	UAccelByteWarsActivatableWidget* FTUEWidgetInstance = BaseUIWidget->PushWidgetToStack(EBaseUIStackType::FTUE, GameInstance->GetFTUEWidgetClass().Get());
-	FTUEWidget = StaticCast<UFTUEDialogueWidget*>(FTUEWidgetInstance);
-	BaseUIWidget->SetFTUEDialogueWidget(FTUEWidget);
-
-	// Assign FTUE dialogues.
-	FTUEWidget->AddDialogues(FTUEDialogues);
-
-	// If prompt is active, pause the FTUE.
-	const EBaseUIStackType TopMostActiveStack = BaseUIWidget->GetTopMostActiveStack();
-	if (TopMostActiveStack == EBaseUIStackType::Prompt) 
+	// Create FTUE widget only after validation finished, to avoid input blocked if validation take a long time  
+	CreateFTUEWidgetDelegate.Unbind();
+	CreateFTUEWidgetDelegate.BindWeakLambda(this, [this, bIsFirstTime](const bool bIsInterrupted) mutable
 	{
-		const UCommonActivatableWidget* PromptWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(TopMostActiveStack, this);
-		if (!PromptWidget || !PromptWidget->IsActivated())
+		if(bIsInterrupted)
 		{
 			return;
 		}
-
-		FTUEWidget->PauseDialogues();
-	}
-	// Deinitialize FTUE for other widgets below the current active stack.
-	else 
-	{
-		for (UCommonActivatableWidget* WidgetBelow : BaseUIWidget->GetAllWidgetsBelowStacks(EBaseUIStackType::Menu))
+		
+		UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetWorld()->GetGameInstance());
+		if (!GameInstance)
 		{
-			UAccelByteWarsActivatableWidget* OtherWidget = Cast<UAccelByteWarsActivatableWidget>(WidgetBelow);
-			if (!OtherWidget || OtherWidget == this)
-			{
-				continue;
-			}
-
-			OtherWidget->DeinitializeFTUEDialogues();
+			UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot initialize FTUE dialogues. Game Instance is not valid."));
+			return;
 		}
-	}
 
-	// Try to auto show the FTUE dialogues.
-	FTUEWidget->ShowDialogues(bIsFirstTime);
-	HideFTUEDevHelpInputAction(bIsFirstTime);
+		UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget();
+		if (!BaseUIWidget)
+		{
+			UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot initialize FTUE dialogues. Base UI widget is not valid."));
+			return;
+		}
+
+		UFTUEDialogueWidget* FTUEWidget = BaseUIWidget->GetFTUEDialogueWidget();
+		if (IsValid(FTUEWidget)) 
+		{
+			UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot initialize FTUE dialogues. FTUE dialogue widget is already initialized."));
+			return;
+		}
+		
+		UAccelByteWarsActivatableWidget* FTUEWidgetInstance = BaseUIWidget->PushWidgetToStack(EBaseUIStackType::FTUE, GameInstance->GetFTUEWidgetClass().Get());
+		if(FTUEWidgetInstance == nullptr)
+		{
+			UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot initialize FTUE dialogues. Failed to push widget to stack."));
+			return;
+		}
+
+		FTUEWidget = StaticCast<UFTUEDialogueWidget*>(FTUEWidgetInstance);
+		BaseUIWidget->SetFTUEDialogueWidget(FTUEWidget);
+
+		// Assign FTUE dialogues.
+		if(AccelByteWarsUtility::IsUseVersionChecker())
+		{
+			FTUEWidget->AddDialogues(FTUEDialogues);
+		}
+		else
+		{
+			// Remove check version dialog if check version setting is off
+			TArray<FFTUEDialogueModel*> Dialogues = FTUEDialogues.FilterByPredicate([](const FFTUEDialogueModel* Dialogue)
+			{
+				return Dialogue->Validator.ValidatorType != EServicePredefinedValidator::IS_VALID_CONFIG_VERSION;
+			});
+			FTUEWidget->AddDialogues(Dialogues);
+		}
+
+		// If prompt is active, pause the FTUE.
+		const EBaseUIStackType TopMostActiveStack = BaseUIWidget->GetTopMostActiveStack();
+		if (TopMostActiveStack == EBaseUIStackType::Prompt) 
+		{
+			const UCommonActivatableWidget* PromptWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(TopMostActiveStack, this);
+			if (PromptWidget && PromptWidget->IsActivated())
+			{
+				FTUEWidget->PauseDialogues();
+				return;
+			}
+		}
+		// Deinitialize FTUE for other widgets below the current active stack.
+		else 
+		{
+			for (UCommonActivatableWidget* WidgetBelow : BaseUIWidget->GetAllWidgetsBelowStacks(EBaseUIStackType::Menu))
+			{
+				UAccelByteWarsActivatableWidget* OtherWidget = Cast<UAccelByteWarsActivatableWidget>(WidgetBelow);
+				if (!OtherWidget || OtherWidget == this)
+				{
+					continue;
+				}
+
+				OtherWidget->DeinitializeFTUEDialogues();
+			}
+		}
+
+		// Try to auto show the FTUE dialogues.
+		FTUEWidget->ShowDialogues(bIsFirstTime);
+		HideFTUEDevHelpInputAction(bIsFirstTime);
+	});
+	
+	FFTUEDialogueModel::ValidateDialogues(FTUEDialogues, this, CreateFTUEWidgetDelegate);
 }
 
 void UAccelByteWarsActivatableWidget::DeinitializeFTUEDialogues() const
@@ -858,6 +942,9 @@ void UAccelByteWarsActivatableWidget::DeinitializeFTUEDialogues() const
 		return;
 	}
 
+	// Cancel ongoing FTUE validation (if any) for this widget
+	FFTUEDialogueModel::TryInterruptValidation(this);
+	
 	UFTUEDialogueWidget* FTUEWidget = BaseUIWidget->GetFTUEDialogueWidget();
 	if (!IsValid(FTUEWidget))
 	{
@@ -879,10 +966,9 @@ void UAccelByteWarsActivatableWidget::DeinitializeFTUEDialogues() const
 		const UCommonActivatableWidget* PromptWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(TopMostActiveStack, this);
 		if (!PromptWidget || !PromptWidget->IsActivated())
 		{
-			return;
+			FTUEWidget->ResumeDialogues();
 		}
 
-		FTUEWidget->ResumeDialogues();
 	}
 	// Initialize FTUE for other widgets below the current active stack.
 	else

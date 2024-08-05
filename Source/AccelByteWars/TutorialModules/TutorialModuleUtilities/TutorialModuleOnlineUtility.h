@@ -65,6 +65,7 @@ public:
 	static void OverrideSDKConfig(const TMap<FString, FString>& ClientConfigs, const TMap<FString, FString>& ServerConfigs);
 
 	static bool IsUseAGSStarter();
+	static bool IsUseVersionChecker();
 
 	static FString GetPrimaryLanguageSubtag();
 
@@ -88,7 +89,8 @@ private:
 	static FNamedOnlineSession* GetOnlineSession(const FName SessionName, const UObject* Context);
 	static FAccelByteModelsV2GameSessionDSInformation GetDedicatedServer(const UObject* Context);
 
-	static void CheckUseAGSStarter();
+	void IntializeAGSStaterIfValid();
+	static void CheckUseVersionChecker();
 	
 	void CacheGeneralInformation(const APlayerController* PC);
 
@@ -98,4 +100,6 @@ private:
 	inline static FString DedicatedServerVersionOverride = TEXT("");
 
 	inline static bool bUseAGSStarter = false;
+	inline static bool bUseVersionChecker = true;
+	inline static FString StudioNameAGSStarter = TEXT("");
 };

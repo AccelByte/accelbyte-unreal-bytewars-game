@@ -3,6 +3,7 @@
 // and restrictions contact your company contract manager.
 
 #include "Core/Ships/PlayerShipD.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 APlayerShipD::APlayerShipD()

@@ -17,13 +17,6 @@ void AAccelByteWarsPlayerController::OnPossess(APawn* InPawn)
 	ABPlayerHUD = Cast<AHUDPlayer>(GetHUD());
 }
 
-void AAccelByteWarsPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(AAccelByteWarsPlayerController, ShipDesign);
-}
-
 void AAccelByteWarsPlayerController::TriggerLobbyStart_Implementation()
 {
 	if (AAccelByteWarsMainMenuGameState* GameState = Cast<AAccelByteWarsMainMenuGameState>(GetWorld()->GetGameState()))
@@ -47,12 +40,6 @@ void AAccelByteWarsPlayerController::LoadingPlayerAssignment() const
 			PromptSubsystem->HideLoading();
 		}
 	}
-}
-
-void AAccelByteWarsPlayerController::Server_SelectPlayerShipDesign_Implementation(const EShipDesign SelectedShipDesign)
-{
-	ShipDesign = SelectedShipDesign;
-	OnRepNotify_ShipDesign();
 }
 
 void AAccelByteWarsPlayerController::OnRepNotify_ShipDesign()

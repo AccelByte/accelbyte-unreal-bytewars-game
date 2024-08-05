@@ -3,6 +3,24 @@
 #include "Core/Ships/PlayerShipBase.h"
 
 #include "Core/Utilities/AccelByteWarsUtilityLog.h"
+#include "Net/UnrealNetwork.h"
+
+void APlayerShipBase::OnEquip()
+{
+	IInGameItemInterface::OnEquip();
+}
+
+void APlayerShipBase::OnUse()
+{
+	IInGameItemInterface::OnUse();
+}
+
+void APlayerShipBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ThisClass, GlowModifier);
+}
 
 // Sets default values
 APlayerShipBase::APlayerShipBase()
@@ -22,9 +40,29 @@ void APlayerShipBase::BeginPlay()
 	AccelByteWarsProceduralMesh->MeshSetup();
 }
 
+void APlayerShipBase::OnRepNotifyGlowModifier()
+{
+	AccelByteWarsProceduralMesh->SetGlowBrightness(GlowModifier);
+}
+
 // Called every frame
 void APlayerShipBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+}
+
+void APlayerShipBase::SetGlowModifier(const float Modifier)
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	GlowModifier = Modifier;
+
+	if (!IsRunningDedicatedServer())
+	{
+		OnRepNotifyGlowModifier();
+	}
 }

@@ -7,6 +7,7 @@
 
 #include "OnlineStoreInterfaceV2AccelByte.h"
 #include "OnlineSubsystemUtils.h"
+#include "Core/AssetManager/InGameItems/InGameItemUtility.h"
 
 void UInGameStoreEssentialsSubsystem_Starter::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -43,55 +44,63 @@ FUniqueNetIdPtr UInGameStoreEssentialsSubsystem_Starter::GetUniqueNetIdFromPlaye
 	return Subsystem->GetIdentityInterface()->GetUniquePlayerId(LocalUserNum);
 }
 
-UStoreItemDataObject* UInGameStoreEssentialsSubsystem_Starter::ConvertStoreData(
-	const FOnlineStoreOffer& Offer,
-	const FString* ParentCategory) const
+UStoreItemDataObject* UInGameStoreEssentialsSubsystem_Starter::ConvertStoreData(const FOnlineStoreOffer& Offer) const
 {
-	UStoreItemDataObject* StoreItem = NewObject<UStoreItemDataObject>();
-	UItemDataObject* Item = NewObject<UItemDataObject>();
-	Item->Title = Offer.Title;
-	Item->Id = Offer.OfferId;
-	Item->Category = FText::FromString(*Offer.DynamicFields.Find(TEXT("Category")));
-
-	if (const FString* Sku = Offer.DynamicFields.Find(TEXT("Sku")))
+	TMap<EItemSkuPlatform, FString> SkuMap;
+	if (const FString* SkuPtr = Offer.DynamicFields.Find(TEXT("Sku")))
 	{
-		Item->Sku = *Sku;
+		SkuMap.Add(EItemSkuPlatform::AccelByte, *SkuPtr);
 	}
-	if (const FString* Consumable = Offer.DynamicFields.Find(TEXT("IsConsumable")))
+	bool bConsumable = false;
+	if (const FString* ConsumablePtr = Offer.DynamicFields.Find(TEXT("IsConsumable")))
 	{
-		Item->bConsumable = Consumable->Equals("true");
+		bConsumable = ConsumablePtr->Equals("true");
 	}
-	if (const FString* ItemCategory = Offer.DynamicFields.Find(TEXT("Category")))
+	FText Category;
+	if (const FString* CategoryPtr = Offer.DynamicFields.Find(TEXT("Category")))
 	{
-		StoreItem->Category = *ItemCategory;
+		Category = FText::FromString(*CategoryPtr);
 	}
-	if (const FString* ItemType = Offer.DynamicFields.Find(TEXT("ItemType")))
+	FString ItemType;
+	if (const FString* ItemTypePtr = Offer.DynamicFields.Find(TEXT("ItemType")))
 	{
-		StoreItem->ItemType = *ItemType;
+		ItemType = *ItemTypePtr;
 	}
-	if (const FString* IconUrl = Offer.DynamicFields.Find(TEXT("IconUrl")))
+	FString IconUrl;
+	if (const FString* IconUrlPtr = Offer.DynamicFields.Find(TEXT("IconUrl")))
 	{
-		Item->IconUrl = *IconUrl;
-	}
-
-	const FOnlineStoreOfferAccelByte* OfferAccelByte = (FOnlineStoreOfferAccelByte*) &Offer;
-	if (!OfferAccelByte)
-	{
-		return StoreItem;
+		IconUrl = *IconUrlPtr;
 	}
 
-	for (const FAccelByteModelsItemRegionDataItem& RegionData : OfferAccelByte->RegionData)
+	TArray<UStoreItemPriceDataObject*> Prices;
+	if (const FOnlineStoreOfferAccelByte* OfferAccelByte = (FOnlineStoreOfferAccelByte*) &Offer)
 	{
-		UStoreItemPriceDataObject* PriceData = NewObject<UStoreItemPriceDataObject>();
-		PriceData->RegularPrice = RegionData.Price;
-		PriceData->FinalPrice = RegionData.DiscountedPrice;
-		PriceData->CurrencyType = RegionData.CurrencyCode == TEXT("BC") ? ECurrencyType::COIN : ECurrencyType::GEM;
+		for (const FAccelByteModelsItemRegionDataItem& RegionData : OfferAccelByte->RegionData)
+		{
+			UStoreItemPriceDataObject* PriceData = NewObject<UStoreItemPriceDataObject>();
+			PriceData->Setup(
+				FPreConfigCurrency::GetTypeFromCode(RegionData.CurrencyCode),
+				RegionData.Price,
+				RegionData.DiscountedPrice);
 
-		StoreItem->Prices.Add(PriceData);
+			Prices.Add(PriceData);
+		}
 	}
 
-	StoreItem->ItemData = Item;
-
-	return StoreItem;
+	UStoreItemDataObject* Item = NewObject<UStoreItemDataObject>();
+	const FString EmptyEntitlementId;
+	constexpr int32 Count = 1;
+	Item->Setup(
+		Offer.Title,
+		Category,
+		ItemType,
+		Offer.OfferId,
+		EmptyEntitlementId,
+		IconUrl,
+		SkuMap,
+		Prices,
+		Count,
+		bConsumable);
+	return Item;
 }
 #pragma endregion 

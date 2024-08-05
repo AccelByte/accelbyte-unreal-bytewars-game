@@ -22,8 +22,8 @@ DEFINE_LOG_CATEGORY(LogAccelByteWarsTutorialModuleOnlineUtility);
 
 UTutorialModuleOnlineUtility::UTutorialModuleOnlineUtility()
 {
-    // Try to check for AGS Starter mode.
-    CheckUseAGSStarter();
+    // Try to check if use version checker.
+    CheckUseVersionChecker();
 
     // Try to override environment config.
     CheckForEnvironmentConfigOverride();
@@ -33,6 +33,9 @@ UTutorialModuleOnlineUtility::UTutorialModuleOnlineUtility()
 
     // Try to override server version.
     CheckForDedicatedServerVersionOverride();
+
+    // Initialize AGS Starter if valid.
+    IntializeAGSStaterIfValid();
 
     // Trigger to get general predefined argument.
     FServiceArgumentModel::OnGetPredefinedArgument.BindUObject(this, &ThisClass::GetServicePredefinedArgument);
@@ -466,120 +469,120 @@ void UTutorialModuleOnlineUtility::ExecutePredefinedServiceValidator(const EServ
 
     switch (ValidatorType)
     {
-    case EServicePredefinedValidator::IS_REQUIRED_AMS_ACCOUNT:
-    {
-        AccelByte::FRegistry::AMS.GetAccount(
-            AccelByte::THandler<FAccelByteModelsAMSGetAccountResponse>::CreateWeakLambda(this, [OnComplete](const FAccelByteModelsAMSGetAccountResponse& Result)
+        case EServicePredefinedValidator::IS_REQUIRED_AMS_ACCOUNT:
+        {
+            AccelByte::FRegistry::AMS.GetAccount(
+                AccelByte::THandler<FAccelByteModelsAMSGetAccountResponse>::CreateWeakLambda(this, [OnComplete](const FAccelByteModelsAMSGetAccountResponse& Result)
+                {
+                    UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Log, TEXT("Success to get AMS account configuration. AMS account id: %s"), *(!Result.Id.IsEmpty() ? Result.Id : FString("empty")));
+                    OnComplete.ExecuteIfBound(!Result.Id.IsEmpty());
+                }),
+                FErrorHandler::CreateWeakLambda(this, [OnComplete](int32 ErrorCode, const FString& ErrorMessage)
+                {
+                    UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Failed to get AMS account configuration. Error: %s"), *ErrorMessage);
+                    OnComplete.ExecuteIfBound(false);
+                }
+            ));
+            break;
+        }
+        case EServicePredefinedValidator::IS_VALID_CONFIG_VERSION:
+        {
+            const FString GameVersion = GetServicePredefinedArgument(EServicePredifinedArgument::GAME_VERSION);
+
+            AccelByte::FRegistry::Configurations.Get(
+                FString("bytewars_config_version"),
+                THandler<FAccelByteModelsConfiguration>::CreateWeakLambda(this, [GameVersion, OnComplete](const FAccelByteModelsConfiguration& Result)
+                {
+                    if (Result.Value.IsEmpty()) 
+                    {
+                        UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Log, TEXT("Failed to get config version from backend. Config version value is empty."));
+                        return;
+                    }
+
+                    UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Log, TEXT("Success to get config version from backend. Config version value: %s, Game client version: %s"), *Result.Value, *GameVersion);
+                    OnComplete.ExecuteIfBound(Result.Value.Equals(GameVersion));
+                }),
+                FErrorHandler::CreateWeakLambda(this, [OnComplete](int32 ErrorCode, const FString& ErrorMessage)
+                {
+                    UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Failed to get config version from backend. Error: %s"), *ErrorMessage);
+                    OnComplete.ExecuteIfBound(false);
+                })
+            );
+            break;
+        }
+        case EServicePredefinedValidator::IS_ONLINE_SESSION:
+        {
+            const FString SessionId = GetServicePredefinedArgument(EServicePredifinedArgument::GAME_SESSION_ID);
+            OnComplete.ExecuteIfBound(!SessionId.IsEmpty());
+            break;
+        }
+        case EServicePredefinedValidator::IS_LOCAL_NETWORK:
+        {
+            const UWorld* World = Context->GetWorld();
+            if (!World)
             {
-                UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Log, TEXT("Success to get AMS account configuration. AMS account id: %s"), *(!Result.Id.IsEmpty() ? Result.Id : FString("empty")));
-                OnComplete.ExecuteIfBound(!Result.Id.IsEmpty());
-            }),
-            FErrorHandler::CreateWeakLambda(this, [OnComplete](int32 ErrorCode, const FString& ErrorMessage)
+                UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Failed to check local network type. World is not valid"));
+                OnComplete.ExecuteIfBound(false);
+                return;
+            }
+
+            if (const AAccelByteWarsGameState* GameState = Cast<AAccelByteWarsGameState>(World->GetGameState()))
             {
-                UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Failed to get AMS account configuration. Error: %s"), *ErrorMessage);
+                OnComplete.ExecuteIfBound(GameState->GameSetup.NetworkType == EGameModeNetworkType::LOCAL);
+            }
+            else
+            {
+                UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Failed to check local network type. Game State is not valid"));
                 OnComplete.ExecuteIfBound(false);
             }
-        ));
-        break;
-    }
-    case EServicePredefinedValidator::IS_VALID_CONFIG_VERSION:
-    {
-        const FString GameVersion = GetServicePredefinedArgument(EServicePredifinedArgument::GAME_VERSION);
-
-        AccelByte::FRegistry::Configurations.Get(
-            FString("bytewars_config_version"),
-            THandler<FAccelByteModelsConfiguration>::CreateWeakLambda(this, [GameVersion, OnComplete](const FAccelByteModelsConfiguration& Result)
+            break;
+        }
+        case EServicePredefinedValidator::IS_P2P_NETWORK:
+        {
+            const UWorld* World = Context->GetWorld();
+            if (!World) 
             {
-                if (Result.Value.IsEmpty()) 
-                {
-                    UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Log, TEXT("Failed to get config version from backend. Config version value is empty."));
-                    return;
-                }
-
-                UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Log, TEXT("Success to get config version from backend. Config version value: %s, Game client version: %s"), *Result.Value, *GameVersion);
-                OnComplete.ExecuteIfBound(Result.Value.Equals(GameVersion));
-            }),
-            FErrorHandler::CreateWeakLambda(this, [OnComplete](int32 ErrorCode, const FString& ErrorMessage)
-            {
-                UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Failed to get config version from backend. Error: %s"), *ErrorMessage);
+                UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Failed to check P2P network type. World is not valid"));
                 OnComplete.ExecuteIfBound(false);
-            })
-        );
-        break;
-    }
-    case EServicePredefinedValidator::IS_ONLINE_SESSION:
-    {
-        const FString SessionId = GetServicePredefinedArgument(EServicePredifinedArgument::GAME_SESSION_ID);
-        OnComplete.ExecuteIfBound(!SessionId.IsEmpty());
-        break;
-    }
-    case EServicePredefinedValidator::IS_LOCAL_NETWORK:
-    {
-        const UWorld* World = Context->GetWorld();
-        if (!World)
-        {
-            UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Failed to check local network type. World is not valid"));
-            OnComplete.ExecuteIfBound(false);
-            return;
-        }
+                return;
+            }
 
-        if (const AAccelByteWarsGameState* GameState = Cast<AAccelByteWarsGameState>(World->GetGameState()))
-        {
-            OnComplete.ExecuteIfBound(GameState->GameSetup.NetworkType == EGameModeNetworkType::LOCAL);
+            if (const AAccelByteWarsGameState* GameState = Cast<AAccelByteWarsGameState>(World->GetGameState())) 
+            {
+                OnComplete.ExecuteIfBound(GameState->GameSetup.NetworkType == EGameModeNetworkType::P2P);
+            }
+            else 
+            {
+                UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Failed to check P2P network type. Game State is not valid"));
+                OnComplete.ExecuteIfBound(false);
+            }
+            break;
         }
-        else
+        case EServicePredefinedValidator::IS_DS_NETWORK:
         {
-            UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Failed to check local network type. Game State is not valid"));
-            OnComplete.ExecuteIfBound(false);
-        }
-        break;
-    }
-    case EServicePredefinedValidator::IS_P2P_NETWORK:
-    {
-        const UWorld* World = Context->GetWorld();
-        if (!World) 
-        {
-            UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Failed to check P2P network type. World is not valid"));
-            OnComplete.ExecuteIfBound(false);
-            return;
-        }
+            const UWorld* World = Context->GetWorld();
+            if (!World)
+            {
+                UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Failed to check DS network type. World is not valid"));
+                OnComplete.ExecuteIfBound(false);
+                return;
+            }
 
-        if (const AAccelByteWarsGameState* GameState = Cast<AAccelByteWarsGameState>(World->GetGameState())) 
-        {
-            OnComplete.ExecuteIfBound(GameState->GameSetup.NetworkType == EGameModeNetworkType::P2P);
+            if (const AAccelByteWarsGameState* GameState = Cast<AAccelByteWarsGameState>(World->GetGameState()))
+            {
+                OnComplete.ExecuteIfBound(GameState->GameSetup.NetworkType == EGameModeNetworkType::DS);
+            }
+            else
+            {
+                UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Failed to check DS network type. Game State is not valid"));
+                OnComplete.ExecuteIfBound(false);
+            }
+            break;
         }
-        else 
+        default:
         {
-            UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Failed to check P2P network type. Game State is not valid"));
-            OnComplete.ExecuteIfBound(false);
+            break;
         }
-        break;
-    }
-    case EServicePredefinedValidator::IS_DS_NETWORK:
-    {
-        const UWorld* World = Context->GetWorld();
-        if (!World)
-        {
-            UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Failed to check DS network type. World is not valid"));
-            OnComplete.ExecuteIfBound(false);
-            return;
-        }
-
-        if (const AAccelByteWarsGameState* GameState = Cast<AAccelByteWarsGameState>(World->GetGameState()))
-        {
-            OnComplete.ExecuteIfBound(GameState->GameSetup.NetworkType == EGameModeNetworkType::DS);
-        }
-        else
-        {
-            UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Failed to check DS network type. Game State is not valid"));
-            OnComplete.ExecuteIfBound(false);
-        }
-        break;
-    }
-    default:
-    {
-        break;
-    }
     }
 }
 
@@ -631,105 +634,94 @@ void UTutorialModuleOnlineUtility::ExecutePredefinedServiceForWidgetValidator(FW
 
 FString UTutorialModuleOnlineUtility::GetServicePredefinedArgument(const EServicePredifinedArgument Keyword)
 {
-    FString Result;
+    FString Result = TEXT("");
 
     switch(Keyword) 
     {
-    case EServicePredifinedArgument::PLAYER_ID:
-    {
-        Result = CurrentPlayerUserIdStr;
-        break;
-    }
-    case EServicePredifinedArgument::PLAYER_DISPLAY_NAME:
-    {
-        Result = CurrentPlayerDisplayName;
-        break;
-    }
-    case EServicePredifinedArgument::GAME_SESSION_ID:
-    {
-        if (FNamedOnlineSession* Session = GetOnlineSession(NAME_GameSession, this))
+        case EServicePredifinedArgument::PLAYER_ID:
         {
-            Result = Session->GetSessionIdStr();
+            Result = CurrentPlayerUserIdStr;
+            break;
         }
-        break;
-    }
-    case EServicePredifinedArgument::PARTY_SESSION_ID:
-    {
-        if (FNamedOnlineSession* Session = GetOnlineSession(NAME_PartySession, this))
+        case EServicePredifinedArgument::PLAYER_DISPLAY_NAME:
         {
-            Result = Session->GetSessionIdStr();
+            Result = CurrentPlayerDisplayName;
+            break;
         }
-        break;
-    }
-    case EServicePredifinedArgument::DEDICATED_SERVER_ID:
-    {
-        Result = GetDedicatedServer(this).Server.Pod_name;
-        break;
-    }
-    case EServicePredifinedArgument::ENV_BASE_URL:
-    {
-        const FString ClientBaseURL = AccelByte::FRegistry::Settings.BaseUrl;
-        const FString ServerBaseURL = AccelByte::FRegistry::ServerSettings.BaseUrl;
-
-        /* Since the environment URL config should be the same between client and server, try to get it from client first.
-         * If it is empty, then get it from server config. */
-        Result = !ClientBaseURL.IsEmpty() ? ClientBaseURL : ServerBaseURL;
-
-        // If using AGS Starter, format the environment URL by omitting the first sub-domain.
-        if (IsUseAGSStarter())
+        case EServicePredifinedArgument::GAME_SESSION_ID:
         {
-            int32 ProtocolIndex = Result.Find(TEXT("://"));
-            if (ProtocolIndex != INDEX_NONE)
+            if (FNamedOnlineSession* Session = GetOnlineSession(NAME_GameSession, this))
             {
-                int32 FirstDomainIndex = Result.Find(TEXT("."), ESearchCase::CaseSensitive, ESearchDir::FromStart, ProtocolIndex);
-                if (FirstDomainIndex != INDEX_NONE)
-                {
-                    // Construct the AGS Starter environment URL.
-                    const FString Protocol = Result.Left(ProtocolIndex) + FString("://");
-                    Result = Protocol + Result.RightChop(FirstDomainIndex + 1);
-                }
+                Result = Session->GetSessionIdStr();
             }
+            break;
         }
-        break;
-    }
-    case EServicePredifinedArgument::GAME_NAMESPACE:
-    {
-        const FString ClientGameNamespace = AccelByte::FRegistry::Settings.Namespace;
-        const FString ServerGameNamespace = AccelByte::FRegistry::ServerSettings.Namespace;
+        case EServicePredifinedArgument::PARTY_SESSION_ID:
+        {
+            if (FNamedOnlineSession* Session = GetOnlineSession(NAME_PartySession, this))
+            {
+                Result = Session->GetSessionIdStr();
+            }
+            break;
+        }
+        case EServicePredifinedArgument::DEDICATED_SERVER_ID:
+        {
+            Result = GetDedicatedServer(this).Server.Pod_name;
+            break;
+        }
+        case EServicePredifinedArgument::ENV_BASE_URL:
+        {
+            const FString ClientBaseURL = AccelByte::FRegistry::Settings.BaseUrl;
+            const FString ServerBaseURL = AccelByte::FRegistry::ServerSettings.BaseUrl;
 
-        /* Since the game namespace config should be the same between client and server, try to get it from client first.
-         * If it is empty, then get it from server config. */
-        Result = !ClientGameNamespace.IsEmpty() ? ClientGameNamespace : ServerGameNamespace;
-        break;
-    }
-    case EServicePredifinedArgument::ADMIN_PORTAL_URL:
-    {
-        // Construct Admin Portal URL.
-        Result = FString::Printf(
-            TEXT("%s/admin/namespaces/%s"),
-            *GetServicePredefinedArgument(EServicePredifinedArgument::ENV_BASE_URL),
-            *GetServicePredefinedArgument(EServicePredifinedArgument::GAME_NAMESPACE));
-        break;
-    }
-    case EServicePredifinedArgument::GAME_VERSION:
-    {
-        Result = AccelByteWarsUtility::GetGameVersion();
-        break;
-    }
-    case EServicePredifinedArgument::PUBLISHED_STORE_ID:
-    {
-        Result = CurrentPublishedStoreId;
-        break;
-    }
-    case EServicePredifinedArgument::TIME_UTC_NOW:
-    {
-        Result = FDateTime::UtcNow().ToIso8601();
-        break;
-    }
-    default:
-    {
-        break;
-    }
+            /* Since the environment URL config should be the same between client and server, try to get it from client first.
+             * If it is empty, then get it from server config. */
+            Result = !ClientBaseURL.IsEmpty() ? ClientBaseURL : ServerBaseURL;
+            break;
+        }
+        case EServicePredifinedArgument::GAME_NAMESPACE:
+        {
+            const FString ClientGameNamespace = AccelByte::FRegistry::Settings.Namespace;
+            const FString ServerGameNamespace = AccelByte::FRegistry::ServerSettings.Namespace;
+
+            /* Since the game namespace config should be the same between client and server, try to get it from client first.
+             * If it is empty, then get it from server config. */
+            Result = !ClientGameNamespace.IsEmpty() ? ClientGameNamespace : ServerGameNamespace;
+            break;
+        }
+        case EServicePredifinedArgument::ADMIN_PORTAL_URL:
+        {
+            const FString GameNamespace = GetServicePredefinedArgument(EServicePredifinedArgument::GAME_NAMESPACE);
+            FString BaseURL = GetServicePredefinedArgument(EServicePredifinedArgument::ENV_BASE_URL);
+
+            // For AGS Starter, the correct Admin Portal subdomain is "{studio_name}.{env}.gamingservices.accelbyte.io"
+            if (IsUseAGSStarter()) 
+            {
+                BaseURL = BaseURL.Replace(*GameNamespace, *StudioNameAGSStarter);
+            }
+
+            Result = FString::Printf(TEXT("%s/admin/namespaces/%s"), *BaseURL, *GameNamespace);
+            break;
+        }
+        case EServicePredifinedArgument::GAME_VERSION:
+        {
+            Result = AccelByteWarsUtility::GetGameVersion();
+            break;
+        }
+        case EServicePredifinedArgument::PUBLISHED_STORE_ID:
+        {
+            Result = CurrentPublishedStoreId;
+            break;
+        }
+        case EServicePredifinedArgument::TIME_UTC_NOW:
+        {
+            Result = FDateTime::UtcNow().ToIso8601();
+            break;
+        }
+        default:
+        {
+            break;
+        }
     }
 
     return Result;
@@ -806,6 +798,11 @@ bool UTutorialModuleOnlineUtility::IsUseAGSStarter()
     return bUseAGSStarter;
 }
 
+bool UTutorialModuleOnlineUtility::IsUseVersionChecker()
+{
+    return bUseVersionChecker;
+}
+
 FString UTutorialModuleOnlineUtility::GetPrimaryLanguageSubtag()
 {
     // Get the current language
@@ -817,11 +814,32 @@ FString UTutorialModuleOnlineUtility::GetPrimaryLanguageSubtag()
     return PrimaryLanguageSubtag;
 }
 
-void UTutorialModuleOnlineUtility::CheckUseAGSStarter()
+void UTutorialModuleOnlineUtility::IntializeAGSStaterIfValid()
+{
+    // Get game namespace from client or server creds.
+    const FString GameNamespace = GetServicePredefinedArgument(EServicePredifinedArgument::GAME_NAMESPACE);
+    const FString BaseURL = GetServicePredefinedArgument(EServicePredifinedArgument::ENV_BASE_URL);
+
+    // AGS Starter is indicated by the game namespace id contained in the base URL.
+    const FString AGSStarterBaseURLSuffix = TEXT("gamingservices.accelbyte.io");
+    bUseAGSStarter = BaseURL.Contains(GameNamespace) && BaseURL.Contains(AGSStarterBaseURLSuffix);
+
+    // Cache the AGS Starter studio name.
+    if (bUseAGSStarter) 
+    {
+        // The studio name is the first word before the dash from the game namespace (e.g. {studioname-gamenamespace}).
+        int32 SpacerIndex = GameNamespace.Find(TEXT("-"));
+        StudioNameAGSStarter = GameNamespace.Left(SpacerIndex);
+    }
+
+    UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Log, TEXT("Is using AGS Starter: %s"), bUseAGSStarter ? TEXT("TRUE") : TEXT("FALSE"));
+}
+
+void UTutorialModuleOnlineUtility::CheckUseVersionChecker()
 {
     // Check for launch parameter first.
     const FString CmdArgs = FCommandLine::Get();
-    const FString CmdStr = FString("-UseAGSStarter=");
+    const FString CmdStr = FString("-UseVersionChecker=");
     bool bValidCmdValue = false;
     if (CmdArgs.Contains(CmdStr, ESearchCase::IgnoreCase))
     {
@@ -829,23 +847,23 @@ void UTutorialModuleOnlineUtility::CheckUseAGSStarter()
         FParse::Value(*CmdArgs, *CmdStr, CmdValue);
         if (!CmdValue.IsEmpty())
         {
-            bUseAGSStarter = CmdValue.Equals(TEXT("TRUE"), ESearchCase::IgnoreCase);
+            bUseVersionChecker = CmdValue.Equals(TEXT("TRUE"), ESearchCase::IgnoreCase);
             bValidCmdValue = true;
 
             UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Log,
-                TEXT("Launch param sets the AGS Starter mode to %s."),
-                bUseAGSStarter ? TEXT("TRUE") : TEXT("FALSE"));
+                TEXT("Launch param sets the version checker to %s."),
+                bUseVersionChecker ? TEXT("TRUE") : TEXT("FALSE"));
         }
     }
 
     // Check for DefaultEngine.ini
     if (!bValidCmdValue)
     {
-        GConfig->GetBool(TEXT("AccelByteTutorialModules"), TEXT("bUseAGSStarter"), bUseAGSStarter, GEngineIni);
+        GConfig->GetBool(TEXT("AccelByteTutorialModules"), TEXT("bUseVersionChecker"), bUseVersionChecker, GEngineIni);
 
         UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Log,
-            TEXT("DefaultEngine.ini sets the AGS Starter mode to %s."),
-            bUseAGSStarter ? TEXT("TRUE") : TEXT("FALSE"));
+            TEXT("DefaultEngine.ini sets the version checker to %s."),
+            bUseVersionChecker ? TEXT("TRUE") : TEXT("FALSE"));
     }
 }
 

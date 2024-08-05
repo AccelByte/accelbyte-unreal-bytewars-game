@@ -5,6 +5,7 @@
 
 #include "Core/Player/AccelByteWarsPlayerState.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
+#include "Core/System/AccelByteWarsGameSession.h"
 #include "Core/System/AccelByteWarsGlobals.h"
 #include "GameFramework/GameSession.h"
 #include "GameFramework/PlayerState.h"
@@ -96,6 +97,14 @@ void AAccelByteWarsGameMode::Logout(AController* Exiting)
 			const bool bSucceeded = RemovePlayer(Cast<APlayerController>(Exiting));
 			GAMEMODE_LOG(Warning, TEXT("Removing player from GameState data. Succeeded: %s"), *FString(bSucceeded ? "TRUE" : "FALSE"));
 		}
+	}
+
+	if (IsRunningDedicatedServer() &&
+		ABGameState->PlayerArray.Num() <= 1 &&
+		bImmediatelyShutdownWhenEmpty &&
+		!ABGameState->bIsServerTravelling)
+	{
+		CloseGame(TEXT("Last player logs out and bImmediatelyShutdownWhenEmpty was set to true"));
 	}
 }
 
@@ -291,24 +300,18 @@ void AAccelByteWarsGameMode::AssignTeamManually(int32& InOutTeamId) const
 	case EGameModeType::FFA:
 		InOutTeamId = INDEX_NONE;
 
-		// Assign to empty team first
-		for (const int EmptyTeamId : ABGameState->GetEmptyTeams())
+		// Assign to empty team
+		for (const int EmptyTeamId : ABGameState->GetEmptyTeamIds())
 		{
 			InOutTeamId = EmptyTeamId;
 			break;
-		}
-
-		// Assign to a new team only if it hasn't reached max team
-		if (ABGameState->Teams.Num() < ABGameState->GameSetup.MaxTeamNum && InOutTeamId == INDEX_NONE)
-		{
-			InOutTeamId = ABGameState->Teams.Num();
 		}
 		break;
 	case EGameModeType::TDM:
 		InOutTeamId = INDEX_NONE;
 
-		// Assign to empty team first
-		for (const int EmptyTeamId : ABGameState->GetEmptyTeams())
+		// Assign to empty team
+		for (const int EmptyTeamId : ABGameState->GetEmptyTeamIds())
 		{
 			InOutTeamId = EmptyTeamId;
 			break;
@@ -369,6 +372,33 @@ void AAccelByteWarsGameMode::DelayedServerTravel(const FString& URL) const
 	{
 		GetWorld()->ServerTravel(URL);
 	}, 1.0f, false);
+}
+
+void AAccelByteWarsGameMode::CloseGame(const FString& Reason) const
+{
+	GAMEMODE_LOG(Warning, TEXT("Unregistering or shutting down server with reason: %s."), *Reason);
+
+	if (!IsRunningDedicatedServer())
+	{
+		GAMEMODE_LOG(Warning, TEXT("Not a Dedicated Server, shut down canceled"));
+		return;
+	}
+
+	if (OnPreGameShutdown.IsBound())
+	{
+		OnPreGameShutdown.Broadcast(TDelegate<void()>::CreateUObject(this, &ThisClass::CloseGameInternal));
+	}
+	else
+	{
+		CloseGameInternal();
+	}
+}
+
+void AAccelByteWarsGameMode::SetImmediatelyShutdownWhenEmpty(const bool bAllow) const
+{
+	bImmediatelyShutdownWhenEmpty = bAllow;
+
+	GAMEMODE_LOG(Log, TEXT("bImmediatelyShutdownWhenEmpty set to %s"), *FString(bAllow ? "TRUE" : "FALSE"));
 }
 
 void AAccelByteWarsGameMode::AddPlayerToTeam(APlayerController* PlayerController, const int32 TeamId)
@@ -508,4 +538,18 @@ void AAccelByteWarsGameMode::SimulateServerCrashCountdownCounting(const float& D
 
 	GAMEMODE_LOG(Warning, TEXT("Simulating server crash in: %ds"), (int32)Countdown);
 	ABGameState->SimulateServerCrashCountdown -= DeltaSeconds;
+}
+
+void AAccelByteWarsGameMode::CloseGameInternal() const
+{
+	AAccelByteWarsGameSession* Session = Cast<AAccelByteWarsGameSession>(GameSession);
+	if (!Session)
+	{
+		GAMEMODE_LOG(Warning, TEXT("The game session is null. Shutting down immediately."));
+		FPlatformMisc::RequestExit(false);
+		return;
+	}
+
+	// Unregister the server.
+	Session->UnregisterServer();
 }

@@ -10,6 +10,7 @@
 #include "OnlineSubsystemAccelByteTypes.h"
 #include "Core/GameModes/AccelByteWarsGameMode.h"
 #include "Core/GameModes/AccelByteWarsInGameGameMode.h"
+#include "Core/GameModes/AccelByteWarsMainMenuGameMode.h"
 #include "Core/GameStates/AccelByteWarsGameState.h"
 #include "Core/Player/AccelByteWarsPlayerState.h"
 #include "Core/System/AccelByteWarsGameSession.h"
@@ -24,7 +25,17 @@ void UAccelByteWarsServerSubsystemBase::Initialize(FSubsystemCollectionBase& Col
 	AAccelByteWarsGameSession::OnRegisterServerDelegates.AddUObject(this, &ThisClass::RegisterServer);
 	AAccelByteWarsGameSession::OnUnregisterServerDelegates.AddUObject(this, &ThisClass::UnregisterServer);
 	AAccelByteWarsGameMode::OnInitializeListenServerDelegates.AddUObject(this, &ThisClass::OnServerSessionReceived);
-	AAccelByteWarsInGameGameMode::OnGameEndsDelegate.AddUObject(this, &ThisClass::CloseGameSession);
+	AAccelByteWarsInGameGameMode::OnGameEndsDelegate.AddWeakLambda(this, [this]()
+	{
+		CloseGameSession();
+	});
+	AAccelByteWarsMainMenuGameMode::OnPreGameShutdown.AddWeakLambda(this, [this](TDelegate<void()> OnComplete)
+	{
+		CloseGameSession(FOnUpdateSessionCompleteDelegate::CreateWeakLambda(this, [OnComplete](FName SessionName, bool bSucceeded)
+		{
+			OnComplete.ExecuteIfBound();
+		}));
+	});
 
 	UOnlineSession* OnlineSession = GetWorld()->GetGameInstance()->GetOnlineSession();
 	if (!ensure(OnlineSession))
@@ -60,6 +71,27 @@ void UAccelByteWarsServerSubsystemBase::OnServerSessionReceived(FName SessionNam
 	if (!IsRunningDedicatedServer())
 	{
 		UpdateUserCache();
+	}
+	else
+	{
+		// On DS, allow the lobby to shutdown if there's no player present on certain amount of time
+		const AGameModeBase* GameMode = GetWorld()->GetAuthGameMode();
+		if (!GameMode)
+		{
+			return;
+		}
+		const AAccelByteWarsMainMenuGameMode* MainMenuGameMode = Cast<AAccelByteWarsMainMenuGameMode>(GameMode);
+		if (!MainMenuGameMode)
+		{
+			return;
+		}
+
+		MainMenuGameMode->SetAllowAutoShutdown(true);
+
+		// Should enable shutdown on last logout or not
+		const FString CmdArgs = FCommandLine::Get();
+		const bool bShutdownOnLastLogout = !CmdArgs.Contains(TEXT("-NoImmediateShutdown"));
+		MainMenuGameMode->SetImmediatelyShutdownWhenEmpty(bShutdownOnLastLogout);
 	}
 }
 
@@ -129,7 +161,7 @@ void UAccelByteWarsServerSubsystemBase::UpdateUserCache()
 	}	
 }
 
-void UAccelByteWarsServerSubsystemBase::CloseGameSession()
+void UAccelByteWarsServerSubsystemBase::CloseGameSession(const FOnUpdateSessionCompleteDelegate& OnComplete)
 {
 	UE_LOG_GAMESESSION(Verbose, TEXT("called"));
 
@@ -137,6 +169,11 @@ void UAccelByteWarsServerSubsystemBase::CloseGameSession()
 	{
 		UE_LOG_GAMESESSION(Warning, TEXT("Failed to close game session joinability. Online Session is null"));
 		return;
+	}
+
+	if (OnComplete.IsBound())
+	{
+		GameSessionOnlineSession->GetOnUpdateSessionCompleteDelegates()->Add(OnComplete);
 	}
 
 	const FName GameSession = GameSessionOnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession);
@@ -454,40 +491,37 @@ void UAccelByteWarsServerSubsystemBase::AuthenticatePlayer_CompleteTask(const bo
 {
 	UE_LOG_GAMESESSION(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
 
-	// update user info in PlayerController and clear retrieved user info from QueryArray
-	for (APlayerController* PlayerController : QueryUserInfoFromSessionQueue)
+	// Update user info in PlayerController and clear retrieved user info from QueryArray.
+	TArray<APlayerController*> PlayersToAuthenticate {};
+	PlayersToAuthenticate.Append(QueryUserInfoFromSessionQueue);
+	for (APlayerController* PlayerController : PlayersToAuthenticate)
 	{
-		if (!PlayerController)
-		{
-			PlayerController = nullptr;
-			continue;
-		}
-
-		APlayerState* PlayerState = PlayerController->PlayerState;
-		if (!PlayerState)
-		{
-			PlayerController = nullptr;
-			continue;
-		}
-
-		AAccelByteWarsPlayerState* AbPlayerState = static_cast<AAccelByteWarsPlayerState*>(PlayerState);
-		if (!AbPlayerState)
-		{
-			PlayerController = nullptr;
-			continue;
-		}
-
-		// trigger delegate as fail if bSucceeded == false
 		if (!bSucceeded)
 		{
 			UE_LOG_GAMESESSION(Warning, TEXT("Info not found, trigger player's delegate as failed"));
-
+			QueryUserInfoFromSessionQueue.Remove(PlayerController);
 			OnAuthenticatePlayerComplete(PlayerController, false);
-			PlayerController = nullptr;
 			continue;
 		}
 
-		// update user's info
+		if (!PlayerController)
+		{
+			UE_LOG_GAMESESSION(Warning, TEXT("PlayerController is null. Trigger player's delegate as failed"));
+			QueryUserInfoFromSessionQueue.Remove(PlayerController);
+			OnAuthenticatePlayerComplete(PlayerController, false);
+			continue;
+		}
+
+		AAccelByteWarsPlayerState* PlayerState = StaticCast<AAccelByteWarsPlayerState*>(PlayerController->PlayerState);
+		if (!PlayerState)
+		{
+			UE_LOG_GAMESESSION(Warning, TEXT("PlayerState is null. Trigger player's delegate as failed"));
+			QueryUserInfoFromSessionQueue.Remove(PlayerController);
+			OnAuthenticatePlayerComplete(PlayerController, false);
+			continue;
+		}
+
+		// Update user's info
 		bool bFound = false;
 		if (IsRunningDedicatedServer())
 		{
@@ -496,9 +530,9 @@ void UAccelByteWarsServerSubsystemBase::AuthenticatePlayer_CompleteTask(const bo
 			if (DSCachedUsersInfo.Contains(UniqueNetId->GetAccelByteId()))
 			{
 				const TTuple<FBaseUserInfo, int>& UserInfo = DSCachedUsersInfo[UniqueNetId->GetAccelByteId()];
-				AbPlayerState->SetPlayerName(UserInfo.Key.DisplayName);
-				AbPlayerState->TeamId = UserInfo.Value;
-				AbPlayerState->AvatarURL = UserInfo.Key.AvatarUrl;
+				PlayerState->SetPlayerName(UserInfo.Key.DisplayName);
+				PlayerState->TeamId = UserInfo.Value;
+				PlayerState->AvatarURL = UserInfo.Key.AvatarUrl;
 
 				bFound = true;
 			}
@@ -509,38 +543,31 @@ void UAccelByteWarsServerSubsystemBase::AuthenticatePlayer_CompleteTask(const bo
 			if (CachedUsersInfo.Contains(UniqueNetId))
 			{
 				const TTuple<FUserOnlineAccountAccelByte, int>& UserInfo = CachedUsersInfo[UniqueNetId];
-				AbPlayerState->SetPlayerName(UserInfo.Key.GetDisplayName());
-				AbPlayerState->TeamId = UserInfo.Value;
-				UserInfo.Key.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AbPlayerState->AvatarURL);
+				PlayerState->SetPlayerName(UserInfo.Key.GetDisplayName());
+				PlayerState->TeamId = UserInfo.Value;
+				UserInfo.Key.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, PlayerState->AvatarURL);
 
 				bFound = true;
 			}
 		}
 
-		if (AbPlayerState->TeamId != INDEX_NONE && bFound)
+		QueryUserInfoFromSessionQueue.Remove(PlayerController);
+
+		if (PlayerState->TeamId != INDEX_NONE && bFound)
 		{
+			// Trigger success delegate
 			UE_LOG_GAMESESSION(Verbose, TEXT("Trigger player's delegate as succeeded"));
-
-			// trigger delegate
 			OnAuthenticatePlayerComplete(PlayerController, true);
-
-			PlayerController = nullptr;
 		}
 		else
 		{
+			// Retrigger sequence
 			UE_LOG_GAMESESSION(Verbose, TEXT("Info not found, re-attempt RefreshSession"));
-
-			// re-trigger sequence
 			AuthenticatePlayer_AddPlayerControllerToQueryQueue(PlayerController);
 		}
 	}
 
-	// remove nullptr
-	QueryUserInfoFromSessionQueue.RemoveAll([](const APlayerController* Element)
-	{
-		UE_LOG_GAMESESSION(Verbose, TEXT("Removing player from queue"));
-		return !Element;
-	});
+	PlayersToAuthenticate.Empty();
 }
 
 void UAccelByteWarsServerSubsystemBase::OnAuthenticatePlayerComplete(

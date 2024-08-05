@@ -16,11 +16,12 @@ class UCommonButtonBase;
 class UAccelByteWarsAsyncImageWidget;
 class UTextBlock;
 class UTileView;
+class UImage;
 class UEntitlementsEssentialsSubsystem;
 class UAccelByteWarsWidgetSwitcher;
-
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnInventoryMenuActivated, const APlayerController* /*PlayerController*/, const TDelegate<void()> /*Callback*/);
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnInventoryMenuDeactivated, const APlayerController* /*PlayerController*/, const TDelegate<void()> /*Callback*/);
+class UWidgetSwitcher;
+class UMultiLineEditableText;
+class UMediaPlayer;
 
 UCLASS(Abstract)
 class ACCELBYTEWARS_API UInventoryWidget : public UAccelByteWarsActivatableWidget
@@ -28,8 +29,9 @@ class ACCELBYTEWARS_API UInventoryWidget : public UAccelByteWarsActivatableWidge
 	GENERATED_BODY()
 
 public:
-	inline static FOnInventoryMenuActivated OnInventoryMenuActivated;
-	inline static FOnInventoryMenuDeactivated OnInventoryMenuDeactivated;
+	inline static FSimpleMulticastDelegate OnInventoryMenuDeactivated;
+	FSimpleMulticastDelegate OnEquipped;
+	FSimpleMulticastDelegate OnUnequipped;
 
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
@@ -41,29 +43,44 @@ private:
 	UPROPERTY(EditAnywhere)
 	bool bIsConsumable = true;
 
-	void ShowEntitlements(const FOnlineError& Error, const TArray<UItemDataObject*> Entitlements) const;
+	void ShowEntitlements(const FOnlineError& Error, const TArray<UStoreItemDataObject*> Entitlements) const;
+
+#pragma region "Byte Wars specific"
+private:
+	void OnClickListItem(UObject* Object);
+	void OnClickEquip() const;
+	void OnClickUnEquip() const;
+#pragma endregion 
 
 #pragma region "UI"
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UMediaPlayer* MediaPlayer;
+
 protected:
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 	virtual UWidget* NativeGetDesiredFocusTarget() const override;
+	void SwitchActionButton(bool bShowEquipButton) const;
+	void SwitchToDefaultState() const;
 
 private:
-	void OnClickListItem(UObject* Object);
-	void OnClickEquip();
-	void OnClickUnequip();
-
 	UPROPERTY()
-	UItemDataObject* SelectedItem;
+	UStoreItemDataObject* SelectedItem;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UAccelByteWarsWidgetSwitcher* Ws_Root;
 
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UAccelByteWarsAsyncImageWidget* W_SelectedItem_Preview;
+	UPROPERTY(EditAnywhere)
+	FSlateBrush DefaultPreviewImage;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UTextBlock* Tb_SelectedItem_Title;
+	UImage* W_SelectedItemPreview;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UTextBlock* Tb_SelectedItemTitle;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UMultiLineEditableText* Tb_Description;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTileView* Tv_Content;

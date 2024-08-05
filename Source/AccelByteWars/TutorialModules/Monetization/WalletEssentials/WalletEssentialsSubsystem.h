@@ -8,7 +8,6 @@
 #include "OnlineSubsystemAccelByte.h"
 #include "WalletEssentialsModel.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
-#include "Models/AccelByteEcommerceModels.h"
 #include "WalletEssentialsSubsystem.generated.h"
 
 UCLASS()

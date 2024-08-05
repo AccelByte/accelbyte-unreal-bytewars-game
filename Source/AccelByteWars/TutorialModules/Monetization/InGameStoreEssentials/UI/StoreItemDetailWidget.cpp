@@ -37,19 +37,27 @@ UWidget* UStoreItemDetailWidget::NativeGetDesiredFocusTarget() const
 }
 #pragma endregion 
 
-void UStoreItemDetailWidget::Setup(UStoreItemDataObject* Object)
+void UStoreItemDetailWidget::Setup(const UStoreItemDataObject* Object)
 {
-	StoreItemDataObject = Object;
+	// Copy the object since we don't want the ShouldShowPrices to be set on the original data
+	StoreItemDataObject = NewObject<UStoreItemDataObject>();
+	StoreItemDataObject->Setup(Object);
+	StoreItemDataObject->SetShouldShowPrices(false);
+
 	W_ItemDetail->Setup(StoreItemDataObject);
 }
 
-UWalletBalanceWidget* UStoreItemDetailWidget::GetBalanceWidget() const
+TWeakObjectPtr<UWalletBalanceWidget> UStoreItemDetailWidget::GetBalanceWidget() const
 {
-	UWalletBalanceWidget* Widget = nullptr;
+	TWeakObjectPtr<UWalletBalanceWidget> Widget = nullptr;
 
 	if (W_WalletOuter->HasAnyChildren())
 	{
-		Widget = Cast<UWalletBalanceWidget>(W_WalletOuter->GetChildAt(0));
+		UWalletBalanceWidget* WidgetRawPtr = Cast<UWalletBalanceWidget>(W_WalletOuter->GetChildAt(0));
+		if (WidgetRawPtr)
+		{
+			Widget = MakeWeakObjectPtr(WidgetRawPtr);
+		}
 	}
 
 	return Widget;

@@ -50,8 +50,8 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FGameStateVoidDelegate OnIsServerTravellingChanged;
 
-	UPROPERTY(BlueprintAssignable)
-	FGameStateVoidDelegate OnTeamsChanged;
+	FSimpleMulticastDelegate OnTeamsChanged;
+	FSimpleMulticastDelegate OnPowerUpChanged;
 
 	// Static delegate to be called when the game state is initialized and replicated.
 	inline static FSimpleMulticastDelegate OnInitialized;
@@ -71,18 +71,18 @@ public:
 	void AssignCustomGameMode(const FOnlineSessionSettings* Setting);
 
 	/**
-	 * @brief Get teams with at least one member have life count more than 1
+	 * @brief Get team IDs with at least one member have life count more than 1
 	 * @return TeamIds
 	 */
 	UFUNCTION(BlueprintCallable)
-	TArray<int32> GetRemainingTeams() const;
+	TArray<int32> GetRemainingTeamIds() const;
 
 	/**
-	 * @brief Get teams with no team members
-	 * @return TeamIds
+	 * @brief Get team IDs with no team members, including teams that have not been created.
+	 * @return TeamIds INDEX_NONE means there's no empty team / assignable team
 	 */
 	UFUNCTION(BlueprintCallable)
-	TArray<int32> GetEmptyTeams() const;
+	TArray<int32> GetEmptyTeamIds() const;
 
 	/**
 	 * @brief Get Team info and data by Team Id

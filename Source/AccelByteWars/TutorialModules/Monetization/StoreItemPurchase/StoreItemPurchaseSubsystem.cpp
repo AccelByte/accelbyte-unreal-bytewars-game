@@ -27,17 +27,17 @@ void UStoreItemPurchaseSubsystem::Deinitialize()
 
 void UStoreItemPurchaseSubsystem::CreateNewOrder(
 	const APlayerController* OwningPlayer,
-	const UStoreItemDataObject* StoreItemData,
+	const TWeakObjectPtr<UStoreItemDataObject> StoreItemData,
 	const int32 SelectedPriceIndex,
 	const int32 Quantity) const
 {
-	UStoreItemPriceDataObject* SelectedPrice = StoreItemData->Prices[SelectedPriceIndex];
-	FAccelByteModelsOrderCreate Order{
-		StoreItemData->ItemData->Id,
+	const UStoreItemPriceDataObject* SelectedPrice = StoreItemData->GetPrices()[SelectedPriceIndex];
+	const FAccelByteModelsOrderCreate Order{
+		StoreItemData->GetStoreItemId(),
 		Quantity,
-		static_cast<int32>(SelectedPrice->RegularPrice) * Quantity,
-		static_cast<int32>(SelectedPrice->FinalPrice) * Quantity,
-		CurrencyCodeMap[SelectedPrice->CurrencyType]
+		static_cast<int32>(SelectedPrice->GetRegularPrice()) * Quantity,
+		static_cast<int32>(SelectedPrice->GetFinalPrice()) * Quantity,
+		FPreConfigCurrency::GetCodeFromType(SelectedPrice->GetCurrencyType())
 	};
 
 	PurchaseInterface->CreateNewOrder(

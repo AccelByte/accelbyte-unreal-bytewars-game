@@ -33,28 +33,18 @@ void UHUDWidgetEntry::NativePreConstruct()
 	Hb_PowerUps->SetVisibility(bHidePowerUpWidgets ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
 }
 
-void UHUDWidgetEntry::SetPowerUpValues(const TArray<TEnumAsByte<EPowerUpSelection>>& SelectedPowerUps, const TArray<int32>& PowerUpCounts)
+void UHUDWidgetEntry::SetPowerUpValues(const FString& ItemId, const int32 Count, const int32 MemberIndex)
 {
-	// Hide the power ups first.
-	for (auto& PowerUpWidget : PowerUpWidgets) 
+	if (!PowerUpWidgets.IsValidIndex(MemberIndex))
 	{
-		PowerUpWidget->SetVisibility(ESlateVisibility::Collapsed);
+		return;
 	}
+	UPowerUpWidgetEntry* TargetWidget = PowerUpWidgets[MemberIndex];
 
 	// Show the power ups if valid.
-	int32 PowerUpIndex = 0;
-	for (const auto& PowerUp : SelectedPowerUps)
+	if (!ItemId.IsEmpty())
 	{
-		if (PowerUpWidgets.IsValidIndex(PowerUpIndex) && PowerUpCounts.IsValidIndex(PowerUpIndex))
-		{
-			const int32 PowerUpCount = PowerUpCounts[PowerUpIndex];
-			if (PowerUp != 0 && PowerUpCount > 0)
-			{
-				PowerUpWidgets[PowerUpIndex]->SetValue(PowerUp, PowerUpCount);
-				PowerUpWidgets[PowerUpIndex]->SetVisibility(ESlateVisibility::Visible);
-			}
-		}
-
-		PowerUpIndex++;
+		TargetWidget->SetValue(ItemId, Count);
+		TargetWidget->SetVisibility(Count > 0 ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
 	}
 }

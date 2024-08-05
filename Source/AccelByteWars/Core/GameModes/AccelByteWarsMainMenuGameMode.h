@@ -31,19 +31,17 @@ class ACCELBYTEWARS_API AAccelByteWarsMainMenuGameMode : public AAccelByteWarsGa
 public:
 	virtual void InitGameState() override;
 	virtual void BeginPlay() override;
-	virtual APlayerController* Login(
-		UPlayer* NewPlayer,
-		ENetRole InRemoteRole,
-		const FString& Portal,
-		const FString& Options,
-		const FUniqueNetIdRepl& UniqueId,
-		FString& ErrorMessage) override;
 	virtual void Tick(float DeltaSeconds) override;
 
 	UFUNCTION(BlueprintCallable)
 	void CreateLocalGameSetup(const FString& CodeName, const int32 LocalPlayerNum);
 
+	/** @brief Set the flag to allow the auto shutdown checker to execute */
+	void SetAllowAutoShutdown(const bool bAllow) const;
+
 private:
 	UPROPERTY()
 	AAccelByteWarsMainMenuGameState* ABMainMenuGameState = nullptr;
+
+	mutable bool bAllowAutoShutdown = false;
 };

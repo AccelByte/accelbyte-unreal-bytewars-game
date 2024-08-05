@@ -28,13 +28,10 @@ protected:
 	void ShowBalance(bool bWasSuccessful, const FAccelByteModelsWalletInfo& Response) const;
 
 private:
+	void UpdateBalanceInternal(const ECurrencyType CurrencyType, const bool bAlwaysRequestToService);
+
 	UPROPERTY()
 	UWalletEssentialsSubsystem* WalletSubsystem;
-
-	const TMap<FString, ECurrencyType> CurrenciesMap = {
-		{"BC", ECurrencyType::COIN},
-		{"BG", ECurrencyType::GEM}
-	};
 
 #pragma region "UI"
 private:

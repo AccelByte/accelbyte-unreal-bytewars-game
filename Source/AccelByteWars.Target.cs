@@ -10,5 +10,11 @@ public class AccelByteWarsTarget : TargetRules
 		Type = TargetType.Game;
 		DefaultBuildSettings = BuildSettingsVersion.V2;
 		ExtraModuleNames.AddRange( new string[] { "AccelByteWars", "AccelByteUe4Sdk", "OnlineSubsystemAccelByte", "AccelByteNetworkUtilities" } );
+		
+		// Enable logging in shipping builds
+		if (Configuration == UnrealTargetConfiguration.Shipping)
+		{
+			bUseLoggingInShipping = true;
+		}
 	}
 }

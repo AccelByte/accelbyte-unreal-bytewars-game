@@ -5,6 +5,11 @@
 #include "Core/Actor/AccelByteWarsMissile.h"
 
 #include "AccelByteWars/Core/Player/AccelByteWarsPlayerPawn.h"
+#include "Core/GameModes/AccelByteWarsInGameGameMode.h"
+#include "Core/GameStates/AccelByteWarsInGameGameState.h"
+#include "Core/Player/AccelByteWarsPlayerController.h"
+#include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetMathLibrary.h"
 
 // Sets default values
 AAccelByteWarsMissile::AAccelByteWarsMissile()
@@ -56,6 +61,24 @@ void AAccelByteWarsMissile::BeginPlay()
 	
 	// Setup event for OnOwnerDestroyed (in blueprint)
 	DestroyActorOnOwnerDestroyed();
+}
+
+void AAccelByteWarsMissile::Destroyed()
+{
+	Super::Destroyed();
+
+	if (!HasAuthority() || !Owner)
+	{
+		return;
+	}
+
+	AAccelByteWarsPlayerPawn* PlayerPawn = Cast<AAccelByteWarsPlayerPawn>(Owner);
+	if (!PlayerPawn)
+	{
+		return;
+	}
+
+	PlayerPawn->UpdateShipGlow();
 }
 
 // Called every frame

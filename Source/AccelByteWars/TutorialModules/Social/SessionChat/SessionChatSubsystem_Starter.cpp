@@ -105,7 +105,11 @@ void USessionChatSubsystem_Starter::PushChatRoomMessageReceivedNotification(cons
     switch (ChatRoomType)
     {
     case EAccelByteChatRoomType::SESSION_V2:
-        GetPromptSubsystem()->PushNotification(FText::Format(GAMESESSION_CHAT_RECEIVED_MESSAGE, FText::FromString(SenderStr)));
+        // Push the notification only if the player already travelled to online session.
+        if (GetWorld() && GetWorld()->GetNetMode() != ENetMode::NM_Standalone)
+        {
+            GetPromptSubsystem()->PushNotification(FText::Format(GAMESESSION_CHAT_RECEIVED_MESSAGE, FText::FromString(SenderStr)));
+        }
         break;
     case EAccelByteChatRoomType::PARTY_V2:
         GetPromptSubsystem()->PushNotification(FText::Format(PARTY_CHAT_RECEIVED_MESSAGE, FText::FromString(SenderStr)));

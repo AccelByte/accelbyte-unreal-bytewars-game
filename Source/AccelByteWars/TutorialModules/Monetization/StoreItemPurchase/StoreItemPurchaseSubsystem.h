@@ -24,18 +24,13 @@ class ACCELBYTEWARS_API UStoreItemPurchaseSubsystem : public UTutorialModuleSubs
 public:
 	void CreateNewOrder(
 		const APlayerController* OwningPlayer,
-		const UStoreItemDataObject* StoreItemData,
+		const TWeakObjectPtr<UStoreItemDataObject> StoreItemData,
 		const int32 SelectedPriceIndex,
 		const int32 Quantity = 1) const;
 	FOnOrderComplete OnCheckoutCompleteDelegates;
 
 private:
 	FOnlinePurchaseAccelBytePtr PurchaseInterface;
-
-	const TMap<ECurrencyType, FString> CurrencyCodeMap = {
-		{ECurrencyType::COIN, "BC"},
-		{ECurrencyType::GEM, "BG"}
-	};
 
 	void OnCreateNewOrderComplete(
 		bool bWasSuccessful,

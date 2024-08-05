@@ -5,13 +5,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "OnlineError.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
-#include "Blueprint/IUserObjectListEntry.h"
+#include "Core/UI/MainMenu/Store/StoreItemModel.h"
 #include "OwnedCountWidgetEntry.generated.h"
 
+class UStoreItemListEntry;
 class UTextBlock;
 class UEntitlementsEssentialsSubsystem;
-class UItemDataObject;
+class UStoreItemDataObject;
 
 UCLASS(Abstract)
 class ACCELBYTEWARS_API UOwnedCountWidgetEntry : public UAccelByteWarsActivatableWidget
@@ -25,10 +27,16 @@ private:
 	UPROPERTY()
 	UEntitlementsEssentialsSubsystem* EntitlementsSubsystem;
 
-	void ShowOwnedCount();
+	void ShowOwnedCount(const FOnlineError& Error, const UStoreItemDataObject* Entitlement);
+
+	UFUNCTION()
+	void CheckItemEquipped();
 
 #pragma region "UI"
 private:
+	UPROPERTY()
+	UStoreItemListEntry* W_Parent;
+
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Tb_OwnedCount;
 #pragma endregion 

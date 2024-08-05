@@ -6,6 +6,7 @@
 
 #include "Core/Player/AccelByteWarsPlayerPawn.h"
 #include "Core/Components/AccelByteWarsGameplayObjectComponent.h"
+#include "Core/Player/AccelByteWarsPlayerController.h"
 #include "Core/Player/AccelByteWarsPlayerState.h"
 #include "Core/System/AccelByteWarsGameSession.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
@@ -143,6 +144,7 @@ void AAccelByteWarsInGameGameMode::Tick(float DeltaSeconds)
 			ABInGameGameState->PostGameCountdown -= DeltaSeconds;
 			if (ABInGameGameState->PostGameCountdown <= 0)
 			{
+				ABInGameGameState->GameStatus = EGameStatus::INVALID;
 				CloseGame("Game finished");
 			}
 		}
@@ -163,7 +165,7 @@ void AAccelByteWarsInGameGameMode::PostLogin(APlayerController* NewPlayer)
 		return;
 	}
 
-	const AAccelByteWarsPlayerState* AbPlayerState = static_cast<AAccelByteWarsPlayerState*>(PlayerState);
+	AAccelByteWarsPlayerState* AbPlayerState = static_cast<AAccelByteWarsPlayerState*>(PlayerState);
 	if (!AbPlayerState)
 	{
 		return;
@@ -174,6 +176,9 @@ void AAccelByteWarsInGameGameMode::PostLogin(APlayerController* NewPlayer)
 	{
 		SpawnAndPossesPawn(PlayerState);
 	}
+
+	// retrieve player's equipped items
+	AbPlayerState->ClientRetrieveEquippedItems();
 }
 
 void AAccelByteWarsInGameGameMode::DelayedPlayerTeamSetupWithPredefinedData(APlayerController* PlayerController)
@@ -319,6 +324,12 @@ void AAccelByteWarsInGameGameMode::OnShipDestroyed(
 		AddPlayerScore(SourcePlayerState, MissileScore);
 	}
 
+	// Trigger OnNotify manually if this is a P2P host
+	if (!IsRunningDedicatedServer())
+	{
+		ABInGameGameState->OnNotify_Teams();
+	}
+
 	/**
 	 * Respawn ship if there's still lives left
 	 * Respawn first before destroying previous pawn.
@@ -372,23 +383,6 @@ void AAccelByteWarsInGameGameMode::IncreasePlayerKilledAttempt(const APlayerCont
 	PlayerData->NumKilledAttemptInSingleLifetime = TargetPlayerState->NumKilledAttemptInSingleLifetime;
 }
 
-void AAccelByteWarsInGameGameMode::OnRefreshPlayerSelectedPowerUp(const APlayerController* TargetPlayer, const EPowerUpSelection SelectedPowerUp, const int32 PowerUpCount)
-{
-	NULLPTR_CHECK(TargetPlayer);
-
-	AAccelByteWarsPlayerState* TargetPlayerState = Cast<AAccelByteWarsPlayerState>(TargetPlayer->PlayerState);
-	NULLPTR_CHECK(TargetPlayerState);
-
-	FGameplayPlayerData* PlayerData = ABInGameGameState->GetPlayerDataById(TargetPlayerState->GetUniqueId(), GetControllerId(TargetPlayerState));
-	NULLPTR_CHECK(PlayerData);
-	
-	TargetPlayerState->SelectedPowerUp = SelectedPowerUp;
-	TargetPlayerState->PowerUpCount = PowerUpCount;
-
-	PlayerData->SelectedPowerUp = TargetPlayerState->SelectedPowerUp;
-	PlayerData->PowerUpCount = TargetPlayerState->PowerUpCount;
-}
-
 void AAccelByteWarsInGameGameMode::RemoveFromActiveGameObjects(AActor* DestroyedActor)
 {
 	if (UAccelByteWarsGameplayObjectComponent* Component =
@@ -399,24 +393,6 @@ void AAccelByteWarsInGameGameMode::RemoveFromActiveGameObjects(AActor* Destroyed
 }
 
 #pragma region "Gameplay logic"
-void AAccelByteWarsInGameGameMode::CloseGame(const FString& Reason) const
-{
-	GAMEMODE_LOG(Warning, TEXT("Unregistering or shutting down server with reason: %s."), *Reason);
-
-	ABInGameGameState->GameStatus = EGameStatus::INVALID;
-
-	AAccelByteWarsGameSession* Session = Cast<AAccelByteWarsGameSession>(GameSession);
-	if (!Session)
-	{
-		GAMEMODE_LOG(Warning, TEXT("Cannot unregister server, the game session is null. Shutting down immediately."));
-		FPlatformMisc::RequestExit(false);
-		return;
-	}
-
-	// Unregister the server.
-	Session->UnregisterServer();
-}
-
 void AAccelByteWarsInGameGameMode::StartGame()
 {
 	// Spawn player start
@@ -489,26 +465,30 @@ void AAccelByteWarsInGameGameMode::SpawnAndPossesPawn(APlayerState* PlayerState)
 		return;
 
 	// Pawn uses BP class pawn and "expose on spawn"ed parameters, use implementable event
-	APawn* Pawn = CreatePlayerPawn(FindGoodPlayerPosition(ABPlayerState), PlayerController);
+	AAccelByteWarsPlayerPawn* Pawn = CreatePlayerPawn(FindGoodPlayerPosition(ABPlayerState), PlayerController);
 	NULLPTR_CHECK(Pawn);
 
 	// setup and posses
 	SetupGameplayObject(Pawn);
 	PlayerController->Possess(Pawn);
+	Pawn->SetColor(ABPlayerState->TeamColor);
 }
 
-APawn* AAccelByteWarsInGameGameMode::CreatePlayerPawn(const FVector& Location, APlayerController* PlayerController)
+AAccelByteWarsPlayerPawn* AAccelByteWarsInGameGameMode::CreatePlayerPawn(
+	const FVector& Location,
+	APlayerController* PlayerController) const
 {
 	if (PlayerController == nullptr)
 		return nullptr;
 
-	FActorSpawnParameters spawn_parameters;
-	spawn_parameters.Owner = PlayerController;
-	spawn_parameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	FActorSpawnParameters SpawnParameters;
+	SpawnParameters.Owner = PlayerController;
+	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	UClass* generic_class = StaticLoadClass(AActor::StaticClass(), this, *PawnBlueprintPath);
-
-	AAccelByteWarsPlayerPawn* NewPlayerPawn = PlayerController->GetWorld()->SpawnActor<AAccelByteWarsPlayerPawn>(generic_class, FTransform(FRotator::ZeroRotator, Location), spawn_parameters);
+	AAccelByteWarsPlayerPawn* NewPlayerPawn = PlayerController->GetWorld()->SpawnActor<AAccelByteWarsPlayerPawn>(
+		PawnClass,
+		FTransform(FRotator::ZeroRotator, Location),
+		SpawnParameters);
 	if (NewPlayerPawn == nullptr)
 		return nullptr;
 
@@ -529,7 +509,6 @@ APawn* AAccelByteWarsInGameGameMode::CreatePlayerPawn(const FVector& Location, A
 		return nullptr;
 
 	NewPlayerPawn->SetReplicates(true);
-	NewPlayerPawn->Server_GetPlayerSelectedShip(PlayerController, ABPlayerState->TeamColor);
 
 	return NewPlayerPawn;
 }
@@ -745,6 +724,7 @@ void AAccelByteWarsInGameGameMode::NotEnoughPlayerCountdownCounting(const float&
 	ABInGameGameState->NotEnoughPlayerCountdown -= DeltaSeconds;
 	if (ABInGameGameState->NotEnoughPlayerCountdown <= 0)
 	{
+		ABInGameGameState->GameStatus = EGameStatus::INVALID;
 		CloseGame("Not enough player");
 	}
 }
@@ -799,7 +779,7 @@ bool AAccelByteWarsInGameGameMode::FindGoodSpawnLocation(
 	// Negative value means not enough room in the game play area -> skip spawn
 	if (AreaAllowed < 0)
 	{
-		GAMEMODE_LOG(Warning, TEXT("Not enough room, skipping spawn."), *MaxBound.ToString());
+		GAMEMODE_LOG(Warning, TEXT("Not enough room, skipping spawn."));
 		return false;
 	}
 

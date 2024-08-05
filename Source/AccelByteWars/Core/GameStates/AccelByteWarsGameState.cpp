@@ -203,30 +203,43 @@ void AAccelByteWarsGameState::AssignCustomGameMode(const FOnlineSessionSettings*
 	GameSetup = Custom;
 }
 
-TArray<int32> AAccelByteWarsGameState::GetRemainingTeams() const
+TArray<int32> AAccelByteWarsGameState::GetRemainingTeamIds() const
 {
-	TArray<int32> RemainingTeams;
+	TArray<int32> RemainingTeamIds;
 	for (const FGameplayTeamData& Team : Teams)
 	{
 		if (Team.GetTeamLivesLeft() > 0)
 		{
-			RemainingTeams.AddUnique(Team.TeamId);
+			RemainingTeamIds.AddUnique(Team.TeamId);
 		}
 	}
-	return RemainingTeams;
+	return RemainingTeamIds;
 }
 
-TArray<int32> AAccelByteWarsGameState::GetEmptyTeams() const
+TArray<int32> AAccelByteWarsGameState::GetEmptyTeamIds() const
 {
-	TArray<int32> EmptyTeams;
-	for (const FGameplayTeamData& Team : Teams)
+	TArray<int32> EmptyTeamIds;
+
+	// Since team is somewhat of a preset: always have the id of 0 to (MaxTeamNum - 1), if there's a number missed, treat that number as empty team id
+	for (int i = 0; i < GameSetup.MaxTeamNum; ++i)
 	{
-		if (Team.TeamMembers.IsEmpty())
+		// Check if team with this ID exist
+		bool bIsTeamExist = false;
+		for (const FGameplayTeamData& Team : Teams)
 		{
-			EmptyTeams.Add(Team.TeamId);
+			if (Team.TeamId == i && !Team.TeamMembers.IsEmpty())
+			{
+				bIsTeamExist = true;
+				break;
+			}
+		}
+
+		if (!bIsTeamExist)
+		{
+			EmptyTeamIds.Add(i);
 		}
 	}
-	return EmptyTeams;
+	return EmptyTeamIds;
 }
 
 bool AAccelByteWarsGameState::GetTeamDataByTeamId(
@@ -236,14 +249,17 @@ bool AAccelByteWarsGameState::GetTeamDataByTeamId(
 	int32& OutTeamLivesLeft,
 	int32& OutTeamKillCount)
 {
-	if (Teams.IsValidIndex(TeamId))
+	for (const FGameplayTeamData& Team : Teams)
 	{
-		OutTeamData = Teams[TeamId];
-		OutTeamScore = OutTeamData.GetTeamScore();
-		OutTeamLivesLeft = OutTeamData.GetTeamLivesLeft();
-		OutTeamKillCount = OutTeamData.GetTeamKillCount();
+		if (Team.TeamId == TeamId)
+		{
+			OutTeamData = Team;
+			OutTeamScore = OutTeamData.GetTeamScore();
+			OutTeamLivesLeft = OutTeamData.GetTeamLivesLeft();
+			OutTeamKillCount = OutTeamData.GetTeamKillCount();
 
-		return true;
+			return true;
+		}
 	}
 	return false;
 }
@@ -300,31 +316,40 @@ bool AAccelByteWarsGameState::AddPlayerToTeam(
 {
 	if (TeamId <= INDEX_NONE) 
 	{
-		GAMESTATE_LOG(Warning, TEXT("AddPlayerToTeam: Team Index is invalid. Cancelling operation"));
+		GAMESTATE_LOG(Warning, TEXT("AddPlayerToTeam: Team ID (%d) is invalid. Cancelling operation"), TeamId);
 		return false;
 	}
 
 	// check if player have been added to any team
-	FGameplayPlayerData PlayerDataTemp;
-	if (!bForce && GetPlayerDataById(UniqueNetId,PlayerDataTemp, ControllerId))
+	if (FGameplayPlayerData PlayerDataTemp; !bForce && GetPlayerDataById(UniqueNetId,PlayerDataTemp, ControllerId))
 	{
 		GAMESTATE_LOG(Warning, TEXT("AddPlayerToTeam: Player data found. Cancelling operation"));
 		return false;
 	}
 
-	// if team not found, add until index matched TeamId. By design, TeamId represent Index in the array
-	while (!Teams.IsValidIndex(TeamId))
+	// Check if target team ID exist or not. If yes, add player to that team. If not, create a new team then add player to that team.
+	FGameplayTeamData* TargetTeam = nullptr;
+	for (int i = 0; i < Teams.Num(); ++i)
 	{
-		Teams.Add(FGameplayTeamData{Teams.Num()});
+		if (Teams[i].TeamId == TeamId)
+		{
+			TargetTeam = &Teams[i];
+			break;
+		}
+	}
+	if (!TargetTeam)
+	{
+		const int32 AddedTeamIndex = Teams.Add(FGameplayTeamData{TeamId});
+		TargetTeam = &Teams[AddedTeamIndex];
 		if (HasAuthority())
 		{
 			OnNotify_Teams();
 		}
 	}
 
-	// add player's data
+	// Add player's data to the team
 	OutLives = OutLives == INDEX_NONE ? GameSetup.StartingLives : OutLives;
-	Teams[TeamId].TeamMembers.Add(FGameplayPlayerData{
+	TargetTeam->TeamMembers.Add(FGameplayPlayerData{
 		UniqueNetId,
 		ControllerId,
 		PlayerName,

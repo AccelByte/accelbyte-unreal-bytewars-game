@@ -43,6 +43,6 @@ public:
 	UPROPERTY()
 	UStoreItemDataObject* StoreItemDataObject;
 
-	void Setup(UStoreItemDataObject* Object);
-	UWalletBalanceWidget* GetBalanceWidget() const; 
+	void Setup(const UStoreItemDataObject* Object);
+	TWeakObjectPtr<UWalletBalanceWidget> GetBalanceWidget() const; 
 };

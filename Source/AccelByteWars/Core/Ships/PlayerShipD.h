@@ -8,7 +8,7 @@
 #include "Core/Ships/PlayerShipBase.h"
 #include "PlayerShipD.generated.h"
 
-UCLASS()
+UCLASS(Abstract)
 class ACCELBYTEWARS_API APlayerShipD : public APlayerShipBase
 {
 	GENERATED_BODY()

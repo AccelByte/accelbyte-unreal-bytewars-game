@@ -110,35 +110,6 @@ void AAccelByteWarsMainMenuGameMode::BeginPlay()
 
 		if(PromptSubsystem) PromptSubsystem->ShowMessagePopUp(TEXT_CONNECTION_FAILED, FailureMessage);
 	}
-
-	if (GameInstance->bIsReconnecting && PromptSubsystem)
-	{
-		PromptSubsystem->ShowReconnectingThrobber();
-	}
-}
-
-APlayerController* AAccelByteWarsMainMenuGameMode::Login(
-	UPlayer* NewPlayer,
-	ENetRole InRemoteRole,
-	const FString& Portal,
-	const FString& Options,
-	const FUniqueNetIdRepl& UniqueId,
-	FString& ErrorMessage)
-{
-	APlayerController* PlayerController = Super::Login(NewPlayer, InRemoteRole, Portal, Options, UniqueId, ErrorMessage);
-
-#pragma region "Lobby Countdown Implementation"
-	if (IsServer())
-	{
-		// Start lobby countdown.
-		if (!bIsGameplayLevel && ABMainMenuGameState->LobbyStatus == ELobbyStatus::IDLE)
-		{
-			ABMainMenuGameState->LobbyStatus = ELobbyStatus::LOBBY_COUNTDOWN_STARTED;
-		}
-	}
-#pragma endregion
-
-	return PlayerController;
 }
 
 void AAccelByteWarsMainMenuGameMode::Tick(float DeltaSeconds)
@@ -156,6 +127,16 @@ void AAccelByteWarsMainMenuGameMode::Tick(float DeltaSeconds)
 	{
 		switch (ABMainMenuGameState->LobbyStatus)
 		{
+		case ELobbyStatus::IDLE:
+			if (!ABMainMenuGameState->PlayerArray.IsEmpty())
+			{
+				ABMainMenuGameState->LobbyStatus = ELobbyStatus::LOBBY_COUNTDOWN_STARTED;
+			}
+			else if (bAllowAutoShutdown && ABMainMenuGameState->PlayerArray.IsEmpty())
+			{
+				ABMainMenuGameState->LobbyStatus = ELobbyStatus::NOT_ENOUGH_PLAYER;
+			}
+			break;
 		case ELobbyStatus::LOBBY_COUNTDOWN_STARTED:
 			if (ABMainMenuGameState->GameSetup.StartGameCountdown != INDEX_NONE)
 			{
@@ -176,7 +157,28 @@ void AAccelByteWarsMainMenuGameMode::Tick(float DeltaSeconds)
 				DelayedServerTravel("/Game/ByteWars/Maps/GalaxyWorld/GalaxyWorld");
 			}
 			break;
-		default: ;
+		case ELobbyStatus::NOT_ENOUGH_PLAYER:
+			// DS shutdown countdown in case all player disconnected / no player present when session already created
+			if (IsRunningDedicatedServer())
+			{
+				if (!ABMainMenuGameState->PlayerArray.IsEmpty())
+				{
+					ABMainMenuGameState->LobbyStatus = ELobbyStatus::IDLE;
+					ABMainMenuGameState->ResetLobbyShutdownCountdown();
+				}
+				else
+				{
+					if (ABMainMenuGameState->GetLobbyShutdownCountdown() <= 0)
+					{
+						CloseGame(TEXT("No Player logged in since the session have started"));
+					}
+					else
+					{
+						ABMainMenuGameState->ReduceLobbyShutdownCountdown(DeltaSeconds);
+					}
+				}
+			}
+			break;
 		}
 	}
 #pragma endregion 
@@ -197,4 +199,9 @@ void AAccelByteWarsMainMenuGameMode::CreateLocalGameSetup(const FString& CodeNam
 
 		PlayerTeamSetup(PC);
 	}
+}
+
+void AAccelByteWarsMainMenuGameMode::SetAllowAutoShutdown(const bool bAllow) const
+{
+	bAllowAutoShutdown = bAllow;
 }

@@ -23,7 +23,8 @@ public:
 	void GetOrQueryOffersByCategory(
 		const APlayerController* PlayerController,
 		const FString& Category,
-		FOnGetOrQueryOffersByCategory OnComplete);
+		FOnGetOrQueryOffersByCategory OnComplete,
+		bool bForceRefresh = false);
 	void GetOrQueryOfferById(
 		const APlayerController* PlayerController,
 		const FUniqueOfferId& OfferId,
@@ -31,7 +32,8 @@ public:
 	void GetOrQueryCategoriesByRootPath(
 		const APlayerController* PlayerController,
 		const FString& RootPath,
-		FOnGetOrQueryCategories OnComplete);
+		FOnGetOrQueryCategories OnComplete,
+		bool bForceRefresh = false);
 
 private:
 	IOnlineStoreV2Ptr StoreInterface;
@@ -56,7 +58,6 @@ private:
 #pragma region "Utilities"
 	FUniqueNetIdPtr GetUniqueNetIdFromPlayerController(const APlayerController* PlayerController) const;
 	UStoreItemDataObject* ConvertStoreData(
-		const FOnlineStoreOffer& Offer,
-		const FString* ParentCategory = nullptr) const;
+		const FOnlineStoreOffer& Offer) const;
 #pragma endregion 
 };

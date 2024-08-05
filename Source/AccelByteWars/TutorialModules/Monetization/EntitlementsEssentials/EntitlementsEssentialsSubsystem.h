@@ -4,16 +4,11 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
 #include "EntitlementsEssentialsModel.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
-#include "Core/Ships/PlayerShipModels.h"
-#include "Core/PowerUps/PowerUpModels.h"
 #include "OnlineEntitlementsInterfaceAccelByte.h"
-#include "Interfaces/OnlineExternalUIInterface.h"
+#include "Monetization/InGameStoreEssentials/InGameStoreEssentialsModel.h"
 #include "EntitlementsEssentialsSubsystem.generated.h"
-
-class AAccelByteWarsPlayerPawn;
 
 UCLASS()
 class ACCELBYTEWARS_API UEntitlementsEssentialsSubsystem : public UTutorialModuleSubsystem
@@ -22,58 +17,73 @@ class ACCELBYTEWARS_API UEntitlementsEssentialsSubsystem : public UTutorialModul
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
-	virtual bool ShouldCreateSubsystem(UObject* Outer) const override {return true;}
 
 public:
-	UItemDataObject* GetItemEntitlement(const FUniqueNetIdPtr UserId, const FUniqueOfferId ItemId) const;
-
-	void QueryUserEntitlement(const FUniqueNetIdPtr UserId);
-	FOnQueryUserEntitlementsComplete OnQueryUserEntitlementsCompleteDelegates;
-
-	bool GetIsQueryRunning() const { return bIsQueryRunning; }
-
-	void ConsumeItemEntitlement(
-		const FUniqueNetIdPtr UserId,
-		const FString& ItemId,
-		const int32 UseCount, 
+	void GetOrQueryUserEntitlements(
+		const APlayerController* PlayerController,
+		const FOnGetOrQueryUserEntitlementsComplete& OnComplete,
+		const bool bForceRequest = false);
+	void GetOrQueryUserItemEntitlement(
+		const APlayerController* PlayerController,
+		const FUniqueOfferId& StoreItemId,
+		const FOnGetOrQueryUserItemEntitlementComplete& OnComplete,
+		const bool bForceRequest = false);
+	void ConsumeItemEntitlementByInGameId(
+		const APlayerController* PlayerController,
+		const FString& InGameItemId,
+		const int32 UseCount = 1,
+		const FOnConsumeUserEntitlementComplete& OnComplete = FOnConsumeUserEntitlementComplete());
+	void ConsumeEntitlementByEntitlementId(
+		const APlayerController* PlayerController,
+		const FString& EntitlementId,
+		const int32 UseCount = 1,
 		const FOnConsumeUserEntitlementComplete& OnComplete = FOnConsumeUserEntitlementComplete());
 
 private:
+	struct FUserItemEntitlementRequest
+	{
+		const APlayerController* PlayerController;
+		FOnGetOrQueryUserItemEntitlementComplete OnComplete;
+	};
+	struct FConsumeEntitlementRequest
+	{
+		const APlayerController* PlayerController;
+		FOnConsumeUserEntitlementComplete OnComplete;
+	};
+
+	TMultiMap<const APlayerController*, FOnGetOrQueryUserEntitlementsComplete> UserEntitlementsParams;
+	TMultiMap<const FUniqueOfferId /*OfferId*/, FUserItemEntitlementRequest> UserItemEntitlementParams;
+	TMultiMap<const FString /*InGameItemId*/, FConsumeEntitlementRequest> ConsumeEntitlementParams;
+
+	FOnlineEntitlementsAccelBytePtr EntitlementsInterface;
+
+	uint8 QueryProcess = 0;
+	UPROPERTY() TArray<UStoreItemDataObject*> StoreOffers;
+	FUniqueNetIdPtr QueryResultUserId;
+	FOnlineError QueryResultError;
+	void QueryUserEntitlement(const APlayerController* PlayerController);
 	void OnQueryEntitlementComplete(
 		bool bWasSuccessful,
 		const FUniqueNetId& UserId,
 		const FString& Namespace,
-		const FString& Error);
+		const FString& ErrorMessage);
+	void OnQueryStoreOfferComplete(TArray<UStoreItemDataObject*> Offers);
+	void CompleteQuery();
 
 	void OnConsumeEntitlementComplete(
-		bool bWasSuccessful, 
-		const FUniqueNetId& UserId, 
-		const TSharedPtr<FOnlineEntitlement>& Entitlement, 
-		const FOnlineError& Error,
-		const FOnConsumeUserEntitlementComplete OnComplete);
+		bool bWasSuccessful,
+		const FUniqueNetId& UserId,
+		const TSharedPtr<FOnlineEntitlement>& Entitlement,
+		const FOnlineError& Error);
 
-	void OnQueryToConsumeEntitlementComplete(
-		bool bWasSuccessful, 
-		const FUniqueNetId& UserId, 
-		const FString& Namespace, 
-		const FString& Error,
-		const FString ItemId, 
-		const int32 UseCount, 
-		const FOnConsumeUserEntitlementComplete OnComplete);
+	UStoreItemDataObject* GetItemEntitlement(const FUniqueNetIdPtr UserId, const FUniqueOfferId OfferId) const;
 
-	void OnValidateActivatePowerUp(AAccelByteWarsPlayerPawn* PlayerPawn, const EPowerUpSelection SelectedPowerUp);
-	void OnConsumePowerUpComplete(const bool bSucceded, const UItemDataObject* Entitlement, const FUniqueNetIdPtr UserId, const EPowerUpSelection SelectedPowerUp);
+	void UpdatePlayerEquipmentQuantity(const APlayerController* PlayerController, const TArray<FString>& ItemIds);
+	void OnPowerUpActivated(const APlayerController* PlayerController, const FString& ItemId);
 
-	void OnPlayerEquipmentLoaded(AAccelByteWarsPlayerPawn* PlayerPawn, const EShipDesign SelectedShipDesign, const EPowerUpSelection SelectedPowerUp);
-	void OnQueryToSetupPowerUpInfoComplete(bool bWasSuccessful, const FUniqueNetId& UserId, const FString& Namespace, const FString& Error, const EPowerUpSelection SelectedPowerUp);
-
+#pragma region "Utilities"
+	TArray<UStoreItemDataObject*> EntitlementsToDataObjects(TArray<TSharedRef<FOnlineEntitlement>> Entitlements) const;
+	UStoreItemDataObject* EntitlementToDataObject(TSharedRef<FOnlineEntitlement> Entitlement) const;
 	FUniqueNetIdPtr GetLocalPlayerUniqueNetId(const APlayerController* PlayerController) const;
-
-	FOnlineEntitlementsAccelBytePtr EntitlementsInterface;
-
-	bool bIsQueryRunning = false;
-
-	FDelegateHandle ConsumeEntitlementDelegateHandle;
-	FDelegateHandle QueryToConsumeEntitlementDelegateHandle;
-	FDelegateHandle QueryToSetupPowerUpInfoDelegateHandle;
+#pragma endregion
 };

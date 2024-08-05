@@ -40,7 +40,7 @@ private:
 	void OnLeaveSessionComplete(FName SessionName, bool bSucceeded);
 	void UpdateUserCache();
 
-	void CloseGameSession();
+	void CloseGameSession(const FOnUpdateSessionCompleteDelegate& OnComplete = {});
 
 #pragma region "Authenticating player"
 public:

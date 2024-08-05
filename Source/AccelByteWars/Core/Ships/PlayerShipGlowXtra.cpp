@@ -3,6 +3,7 @@
 // and restrictions contact your company contract manager.
 
 #include "Core/Ships/PlayerShipGlowXtra.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 APlayerShipGlowXtra::APlayerShipGlowXtra()

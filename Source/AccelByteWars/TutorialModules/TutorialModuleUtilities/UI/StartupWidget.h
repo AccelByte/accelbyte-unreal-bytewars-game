@@ -13,6 +13,7 @@ class UPanelWidget;
 class UTextBlock;
 class UCommonButtonBase;
 class UPromptSubsystem;
+class UStartupSubsystem;
 class UTutorialModuleDataAsset;
 class UAccelByteWarsBaseUI;
 class FOnlineErrorAccelByte;
@@ -27,12 +28,17 @@ protected:
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
 
+	void CheckCoreComponents();
+	void CheckAutoUseTokenForABLogin();
+	void OnLoginPlatformOnlyComplete(const bool bSucceeded, const FString& ErrorMessage);
+
 	void StartupGame();
 	void QuitGame();
 	void OnLogoutComplete(int32 LocalUserNum, bool bWasSuccessful, const FOnlineErrorAccelByte& Error);
 
 	UAccelByteWarsBaseUI* BaseUIWidget;
 	UPromptSubsystem* PromptSubsystem;
+	UStartupSubsystem* StartupSubsystem;
 
 	FTimerHandle InitTimerHandle;
 

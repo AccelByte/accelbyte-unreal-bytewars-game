@@ -17,6 +17,7 @@ class UStoreItemListEntry;
 class UPanelWidget;
 class UStoreItemDetailWidget;
 class UAccelByteWarsTabListWidget;
+class UWalletBalanceWidget;
 
 UCLASS(Abstract)
 class ACCELBYTEWARS_API UShopWidget : public UAccelByteWarsActivatableWidget
@@ -28,8 +29,11 @@ class ACCELBYTEWARS_API UShopWidget : public UAccelByteWarsActivatableWidget
 
 protected:
 	void OnGetOrQueryCategoriesComplete(TArray<FOnlineStoreCategory> Categories);
+	void OnRefreshCategoriesComplete(TArray<FOnlineStoreCategory> Categories);
 	void OnGetOrQueryOffersComplete(const TArray<UStoreItemDataObject*> Offers) const;
 	void OnStoreItemClicked(UObject* Item) const;
+
+	void OnRefreshButtonClicked();
 
 	UFUNCTION()
 	void SwitchCategory(FName Id);
@@ -44,6 +48,7 @@ private:
 #pragma region "UI"
 public:
 	inline static TMulticastDelegate<void(const APlayerController*)> OnActivatedMulticastDelegate;
+	FSimpleMulticastDelegate OnRefreshButtonClickedDelegates;
 
 protected:
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
@@ -69,8 +74,16 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_Back;
+	
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UCommonButtonBase* Btn_Refresh;
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UAccelByteWarsActivatableWidget> DetailWidgetClass;
+	
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UPanelWidget* W_WalletOuter;
+
+	UWalletBalanceWidget* GetBalanceWidget() const; 
 #pragma endregion 
 };

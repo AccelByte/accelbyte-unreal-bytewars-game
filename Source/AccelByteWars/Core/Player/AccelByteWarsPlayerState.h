@@ -5,9 +5,27 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Core/AssetManager/InGameItems/InGameItemUtility.h"
 #include "GameFramework/PlayerState.h"
-#include "Core/PowerUps/PowerUpModels.h"
 #include "AccelByteWarsPlayerState.generated.h"
+
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnEquippedItemsLoaded, APlayerState* /*Owner*/)
+
+USTRUCT(BlueprintType)
+struct FEquippedItem
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere) EItemType ItemType;
+	UPROPERTY(EditAnywhere) FString ItemId;
+	UPROPERTY(EditAnywhere) int32 Count = 0;
+
+	bool operator== (const FEquippedItem& Other) const
+	{
+		return Other.ItemType == ItemType && Other.ItemId.Equals(ItemId);
+	}
+};
 
 UCLASS()
 class ACCELBYTEWARS_API AAccelByteWarsPlayerState : public APlayerState
@@ -20,6 +38,9 @@ class ACCELBYTEWARS_API AAccelByteWarsPlayerState : public APlayerState
 	//~End of AActor overriden functions
 
 public:
+	/** @brief Called just after server load equipped item data */
+	FOnEquippedItemsLoaded OnEquippedItemsLoadedDelegate;
+
 	UPROPERTY(BlueprintReadWrite, Category = Attributes, Replicated)
 	FString AvatarURL;
 
@@ -38,14 +59,11 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = Attributes, Replicated)
 	int32 NumLivesLeft = INDEX_NONE;
 
-	UPROPERTY(BlueprintReadWrite, Category = Attributes, Replicated)
-	TEnumAsByte<EPowerUpSelection> SelectedPowerUp = EPowerUpSelection::NONE;
-
-	UPROPERTY(BlueprintReadWrite, Category = Attributes, Replicated)
-	int32 PowerUpCount = 0;
-
 	UFUNCTION()
 	void RepNotify_PendingTeamAssignment();
+
+	UFUNCTION()
+	void RepNotify_EquippedItemsChanged();
 
 	UPROPERTY(Replicated, ReplicatedUsing = "RepNotify_PendingTeamAssignment")
 	bool bPendingTeamAssignment = false;
@@ -53,4 +71,44 @@ public:
 	// Number of attempt the player was almost got killed attempt in a single-lifetime
 	UPROPERTY(BlueprintReadWrite, Category = Attributes, Replicated)
 	int32 NumKilledAttemptInSingleLifetime = 0;
+
+	/**
+	 * @brief Get currently equipped item's ID by Item Type. Return empty string if the quantity is less than 0 or no equipped item with given type
+	 * @param ItemType Equipped item's Item Type to retrieve
+	 * @param bForce Set to true to ignore the quantity requirement
+	 */
+	UFUNCTION(BlueprintPure)
+	FString GetEquippedItemId(const EItemType ItemType, const bool bForce = false);
+
+	/**
+	 * @brief Get currently equipped item by Item Type. Return empty if the quantity is less than 0 or no equipped item with given type
+	 * @param ItemType Equipped item's Item Type to retrieve
+	 * @param bForce Set to true to ignore the quantity requirement
+	 */
+	UFUNCTION(BlueprintPure)
+	FEquippedItem GetEquippedItem(const EItemType ItemType, const bool bForce = false);
+
+	/**
+	 * @brief Decrease equipped item count by EItemType
+	 * @param ItemType Equipped item's item type to decrease. Assuming player can only have one item equipped for each type
+	 * @param DecreaseBy Decrease by how much
+	 */
+	UFUNCTION(BlueprintCallable)
+	void DecreaseEquippedItemCount(const EItemType ItemType, int32 DecreaseBy = 1);
+
+	/** @brief Client RPC to retrieve equipped item from its game instance and update it to player state for replication purposes. */
+	UFUNCTION(Client, Reliable)
+	void ClientRetrieveEquippedItems();
+
+protected:
+	/*
+	 * @brief Used in server client logic only, for replication reason. Use the one in GameInstance for anything else.
+	 */
+	UPROPERTY(BlueprintReadWrite, Category = Attributes, ReplicatedUsing = RepNotify_EquippedItemsChanged)
+	TArray<FEquippedItem> EquippedItems;
+
+	UFUNCTION(Server, Reliable)
+	void ServerUpdateEquippedItems(const TArray<FEquippedItem>& Items);
+
+	void NotifyGameState() const;
 };

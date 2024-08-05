@@ -147,14 +147,18 @@ void ULoginWidget::OnLoginComplete(bool bWasSuccessful, const FString& ErrorMess
 
 void ULoginWidget::AutoLoginCmd()
 {
-	FString CmdArgs = FCommandLine::Get();
-	if (!CmdArgs.Contains(TEXT("-AUTH_TYPE=ACCELBYTE")))
+	const FString AccelByteLoginTypeCmd = FString::Printf(TEXT("-%s=%s"), AUTH_TYPE_PARAM, AUTH_TYPE_ACCELBYTE_PARAM);
+	const FString AccelByteLoginUsernameCmd = FString::Printf(TEXT("-%s="), AUTH_LOGIN_PARAM);
+	const FString AccelByteLoginPasswordCmd = FString::Printf(TEXT("-%s="), AUTH_PASSWORD_PARAM);
+
+	const FString CmdArgs = FCommandLine::Get();
+	if (!CmdArgs.Contains(AccelByteLoginTypeCmd, ESearchCase::IgnoreCase))
 	{
 		return;
 	}
 	FString Username, Password;
-	FParse::Value(FCommandLine::Get(), TEXT("-AUTH_LOGIN="), Username);
-	FParse::Value(FCommandLine::Get(), TEXT("-AUTH_PASSWORD="), Password);
+	FParse::Value(FCommandLine::Get(), *AccelByteLoginUsernameCmd, Username);
+	FParse::Value(FCommandLine::Get(), *AccelByteLoginPasswordCmd, Password);
 	if (!Username.IsEmpty() && !Password.IsEmpty())
 	{
 		SetLoginState(ELoginState::LoggingIn);

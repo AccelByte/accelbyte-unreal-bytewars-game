@@ -4,27 +4,99 @@
 
 #include "Core/PowerUps/PowerUpSplitMissile.h"
 
+#include "Core/GameStates/AccelByteWarsInGameGameState.h"
+#include "Core/Player/AccelByteWarsPlayerPawn.h"
+#include "Core/Utilities/AccelByteWarsUtilityLog.h"
+
 APowerUpSplitMissile::APowerUpSplitMissile()
 {
 	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	SetReplicateMovement(true);
 	bReplicates = true;
+
+	// check if should be triggered or not
+	if (const AAccelByteWarsPlayerPawn* Pawn = Cast<AAccelByteWarsPlayerPawn>(GetOwner()))
+	{
+		if (!Pawn->FiredMissile)
+		{
+			APowerUpSplitMissile::DestroyItem();
+			return;
+		}
+
+		const AAccelByteWarsInGameGameState* GameState = Cast<AAccelByteWarsInGameGameState>(GetWorld()->GetGameState());
+		const AAccelByteWarsPlayerState* ABPlayerState = Cast<AAccelByteWarsPlayerState>(Pawn->GetPlayerState());
+		if (!GameState || !ABPlayerState)
+		{
+			return;
+		}
+
+		if (ABPlayerState->MissilesFired > GameState->GameSetup.FiredMissilesLimit)
+		{
+			APowerUpSplitMissile::DestroyItem();
+			return;
+		}
+	}
 }
 
-void APowerUpSplitMissile::Server_FireMissiles_Implementation(APawn* SplitMissileOwner, FTransform InParentTransform, float InFirePowerLevel, float InMinMissileSpeed, float InMaxMissileSpeed, FLinearColor InColor, const FString& InFiredMissileBlueprintPath, const FString& InFiredMissileTrailBlueprintPath)
+void APowerUpSplitMissile::OnUse()
 {
-	if (SplitMissileOwner == nullptr)
+	IInGameItemInterface::OnUse();
+
+	if (!HasAuthority())
+	{
 		return;
+	}
+
+	if (AAccelByteWarsPlayerPawn* Pawn = Cast<AAccelByteWarsPlayerPawn>(GetOwner()))
+	{
+		if (!Pawn->FiredMissile)
+		{
+			DestroyItem();
+			return;
+		}
+
+		FireMissiles();
+		Pawn->FireMissileFx(ParentMissileTransform);
+	}
+}
+
+void APowerUpSplitMissile::OnEquip()
+{
+	IInGameItemInterface::OnEquip();
+}
+
+void APowerUpSplitMissile::DestroyItem()
+{
+	Destroy();
+}
+
+void APowerUpSplitMissile::FireMissiles()
+{
+	AAccelByteWarsPlayerPawn* Pawn = Cast<AAccelByteWarsPlayerPawn>(Owner);
+	if (!Pawn)
+	{
+		return;
+	}
 
 	// Calculate missile spawn location
-	FTransform SpawnTransform = CalculateWhereToSpawnMissile(InParentTransform);
+	const FTransform SpawnTransform = CalculateWhereToSpawnMissile(Pawn->FiredMissile->GetActorTransform());
 
 	// Clamp initial missile speed
-	float clamped_initial_speed = UKismetMathLibrary::MapRangeClamped(InFirePowerLevel, 0.0f, 1.0f, InMinMissileSpeed, InMaxMissileSpeed);
+	const float ClampedInitialSpeed = UKismetMathLibrary::MapRangeClamped(
+		Pawn->FirePowerLevel,
+		0.0f,
+		1.0f,
+		Pawn->MinMissileSpeed,
+		Pawn->MaxMissileSpeed);
 
 	// Spawn left missile actor
-	AAccelByteWarsMissile* LeftFiredMissile = SpawnMissile(SplitMissileOwner, SpawnTransform, clamped_initial_speed, InColor, InFiredMissileBlueprintPath);
+	AAccelByteWarsMissile* LeftFiredMissile = SpawnMissile(
+		Pawn,
+		SpawnTransform,
+		ClampedInitialSpeed,
+		Pawn->GetPawnColor(),
+		Pawn->MissileActor);
 	if (LeftFiredMissile == nullptr)
 		return;
 
@@ -32,7 +104,7 @@ void APowerUpSplitMissile::Server_FireMissiles_Implementation(APawn* SplitMissil
 	LeftFiredMissile->Velocity = LeftFiredMissile->InitialSpeed * -GetActorTransform().GetRotation().GetForwardVector();
 
 	// Spawn right missile actor
-	AAccelByteWarsMissile* RightFiredMissile = SpawnMissile(SplitMissileOwner, SpawnTransform, clamped_initial_speed, InColor, InFiredMissileBlueprintPath);
+	AAccelByteWarsMissile* RightFiredMissile = SpawnMissile(Pawn, SpawnTransform, ClampedInitialSpeed, Pawn->GetPawnColor(), Pawn->MissileActor);
 	if (RightFiredMissile == nullptr)
 		return;
 
@@ -40,36 +112,61 @@ void APowerUpSplitMissile::Server_FireMissiles_Implementation(APawn* SplitMissil
 	RightFiredMissile->Velocity = RightFiredMissile->InitialSpeed * GetActorTransform().GetRotation().GetForwardVector();
 
 	// Spawn left missile trail
-	AAccelByteWarsMissileTrail* LeftMissileTrail = SpawnBPActorInWorld<AAccelByteWarsMissileTrail>(SplitMissileOwner, SpawnTransform.GetLocation(), SpawnTransform.Rotator(), InFiredMissileTrailBlueprintPath, true);
+	AAccelByteWarsMissileTrail* LeftMissileTrail = SpawnBPActorInWorld<AAccelByteWarsMissileTrail>(
+		Pawn,
+		SpawnTransform.GetLocation(),
+		SpawnTransform.Rotator(),
+		Pawn->MissileTrailActor,
+		true);
 	if (LeftMissileTrail == nullptr)
+	{
 		return;
+	}
 
 	// Spawn right missile trail
-	AAccelByteWarsMissileTrail* RightMissileTrail = SpawnBPActorInWorld<AAccelByteWarsMissileTrail>(SplitMissileOwner, SpawnTransform.GetLocation(), SpawnTransform.Rotator(), InFiredMissileTrailBlueprintPath, true);
+	AAccelByteWarsMissileTrail* RightMissileTrail = SpawnBPActorInWorld<AAccelByteWarsMissileTrail>(
+		Pawn,
+		SpawnTransform.GetLocation(),
+		SpawnTransform.Rotator(),
+		Pawn->MissileTrailActor,
+		true);
 	if (LeftMissileTrail == nullptr)
+	{
 		return;
+	}
 
 	// Set Trail colors
-	LeftMissileTrail->Server_SetColor(InColor);
-	RightMissileTrail->Server_SetColor(InColor);
+	LeftMissileTrail->Server_SetColor(Pawn->GetPawnColor());
+	RightMissileTrail->Server_SetColor(Pawn->GetPawnColor());
 
 	// Attach left/right trail to left/right missile actor
-	FAttachmentTransformRules attachment_rules(EAttachmentRule::SnapToTarget, EAttachmentRule::SnapToTarget, EAttachmentRule::KeepRelative, true);
-	LeftMissileTrail->AttachToActor(LeftFiredMissile, attachment_rules);
-	RightMissileTrail->AttachToActor(RightFiredMissile, attachment_rules);
+	const FAttachmentTransformRules AttachmentRules(
+		EAttachmentRule::SnapToTarget,
+		EAttachmentRule::SnapToTarget,
+		EAttachmentRule::KeepRelative,
+		true);
+	LeftMissileTrail->AttachToActor(LeftFiredMissile, AttachmentRules);
+	RightMissileTrail->AttachToActor(RightFiredMissile, AttachmentRules);
 
 	// Increment missiles fired
-	AAccelByteWarsPlayerState* ABPlayerState = Cast<AAccelByteWarsPlayerState>(SplitMissileOwner->GetPlayerState());
+	AAccelByteWarsPlayerState* ABPlayerState = Cast<AAccelByteWarsPlayerState>(Pawn->GetPlayerState());
 	if (ABPlayerState == nullptr)
 		return;
 
 	ABPlayerState->MissilesFired += 2;
+
+	DestroyItem();
 }
 
-AAccelByteWarsMissile* APowerUpSplitMissile::SpawnMissile(APawn* SplitMissileOwner, FTransform SpawnTransform, float InClampedInitialSpeed, FLinearColor InColor, FString InFiredMissileBlueprintPath)
+AAccelByteWarsMissile* APowerUpSplitMissile::SpawnMissile(
+	APawn* SplitMissileOwner,
+	FTransform SpawnTransform,
+	float InClampedInitialSpeed,
+	FLinearColor InColor,
+	TSubclassOf<AActor> InFiredMissileActor)
 {
 	// Spawn right missile actor
-	AAccelByteWarsMissile* FiredMissile = SpawnBPActorInWorld<AAccelByteWarsMissile>(SplitMissileOwner, SpawnTransform.GetLocation(), SpawnTransform.Rotator(), InFiredMissileBlueprintPath, true);
+	AAccelByteWarsMissile* FiredMissile = SpawnBPActorInWorld<AAccelByteWarsMissile>(SplitMissileOwner, SpawnTransform.GetLocation(), SpawnTransform.Rotator(), InFiredMissileActor, true);
 	if (FiredMissile == nullptr)
 		return nullptr;
 
@@ -80,46 +177,39 @@ AAccelByteWarsMissile* APowerUpSplitMissile::SpawnMissile(APawn* SplitMissileOwn
 }
 
 template<class T>
-T* APowerUpSplitMissile::SpawnBPActorInWorld(APawn* OwningPawn, const FVector Location, const FRotator Rotation, FString BlueprintPath, bool ShouldReplicate)
+T* APowerUpSplitMissile::SpawnBPActorInWorld(
+	APawn* OwningPawn,
+	const FVector Location,
+	const FRotator Rotation,
+	TSubclassOf<AActor> ActorClass,
+	bool ShouldReplicate)
 {
 	if (OwningPawn == nullptr)
 		return nullptr;
 
-	FActorSpawnParameters spawn_parameters;
-	spawn_parameters.Owner = OwningPawn;
-	spawn_parameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	FActorSpawnParameters SpawnParameters;
+	SpawnParameters.Owner = OwningPawn;
+	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	UClass* generic_class = StaticLoadClass(AActor::StaticClass(), OwningPawn, *BlueprintPath);
-	if (generic_class == nullptr)
+	T* NewActor = OwningPawn->GetWorld()->SpawnActor<T>(ActorClass, FTransform(Rotation, Location), SpawnParameters);
+	if (NewActor == nullptr)
 	{
-		LOG_TO_CONSOLE("Failed to generate generic class for: " + BlueprintPath);
+		LOG_TO_CONSOLE("Failed to generate actor class for: " + ActorClass->GetName());
 		return nullptr;
 	}
 
-	T* new_actor = OwningPawn->GetWorld()->SpawnActor<T>(generic_class, FTransform(Rotation, Location), spawn_parameters);
-	if (new_actor == nullptr)
-	{
-		LOG_TO_CONSOLE("Failed to generate actor class for: " + BlueprintPath);
-		return nullptr;
-	}
+	NewActor->SetInstigator(OwningPawn);
+	NewActor->SetReplicates(ShouldReplicate);
 
-	new_actor->SetInstigator(OwningPawn);
-	new_actor->SetReplicates(ShouldReplicate);
-
-	return new_actor;
+	return NewActor;
 }
 
-FTransform APowerUpSplitMissile::CalculateWhereToSpawnMissile(FTransform InParentTransform)
+FTransform APowerUpSplitMissile::CalculateWhereToSpawnMissile(const FTransform InParentTransform)
 {
-	FTransform out_transform;
-	out_transform.SetLocation(InParentTransform.GetLocation());
-	out_transform.SetRotation(InParentTransform.GetRotation());
-	out_transform.SetScale3D(FVector(1.0f, 1.0f, 1.0f));
+	FTransform OutTransform;
+	OutTransform.SetLocation(InParentTransform.GetLocation());
+	OutTransform.SetRotation(InParentTransform.GetRotation());
+	OutTransform.SetScale3D(FVector(1.0f, 1.0f, 1.0f));
 
-	return out_transform;
-}
-
-void APowerUpSplitMissile::DestroyPowerUp()
-{
-	Destroy();
+	return OutTransform;
 }

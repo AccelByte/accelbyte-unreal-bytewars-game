@@ -47,6 +47,9 @@ class ACCELBYTEWARS_API UAccelByteWarsTabListWidget : public UCommonTabListWidge
 	virtual void HandleTabRemoval_Implementation(FName TabNameID, UCommonButtonBase* TabButton) override;
 
 public:
+	void ParentOnActivated();
+	void ParentOnDeactivated();
+
 	UFUNCTION()
 	bool GetUsePresetButtonClass() const { return bUsePresetButtonClass; }
 
@@ -94,6 +97,8 @@ protected:
 private:
 	UFUNCTION()
 	void HandleOnTabButtonCreation(FName TabId, UCommonButtonBase* TabButton);
+
+	FName PreviouslySelectedTabId;
 
 	TMap<FName, int32> TargetIndexMap;
 

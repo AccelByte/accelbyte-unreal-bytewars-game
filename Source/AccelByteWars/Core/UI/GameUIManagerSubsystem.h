@@ -5,6 +5,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Components/AccelByteWarsButtonBase.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "GameUIManagerSubsystem.generated.h"
 
@@ -35,6 +36,14 @@ public:
 	virtual void NotifyPlayerRemoved(UCommonLocalPlayer* LocalPlayer);
 	virtual void NotifyPlayerDestroyed(UCommonLocalPlayer* LocalPlayer);
 
+	void SetSelectedButton(UAccelByteWarsButtonBase* NewSelectedButton);
+	void SetHoveredButton(UAccelByteWarsButtonBase* NewHoveredButton);
+	UAccelByteWarsButtonBase* GetLastSelectedButton();
+	UAccelByteWarsButtonBase* GetLastHoveredButton();
+
+	UFUNCTION(BlueprintCallable, BlueprintPure = true, Category = "GameUIManagerSubsystem")
+	void GetLastHoveredButton(UAccelByteWarsButtonBase*& LastHovered);
+
 protected:
 	void SwitchToUIController(UGameUIController* InUIController);
 
@@ -44,4 +53,10 @@ private:
 
 	UPROPERTY(config, EditAnywhere)
 	TSoftClassPtr<UGameUIController> DefaultUIControllerClass;
+
+	UPROPERTY()
+	TObjectPtr<UAccelByteWarsButtonBase> LastSelectedButton = nullptr;
+
+	UPROPERTY()
+	TObjectPtr<UAccelByteWarsButtonBase> LastHoveredButton = nullptr;
 };

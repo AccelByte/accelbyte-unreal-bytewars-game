@@ -21,101 +21,103 @@ void UOwnedCountWidgetEntry::NativeOnActivated()
 	ensure(EntitlementsSubsystem);
 
 	SetVisibility(ESlateVisibility::Collapsed);
-	if (EntitlementsSubsystem->GetIsQueryRunning())
-	{
-		Tb_OwnedCount->SetText(FText::FromString("..."));
-	}
-	else
-	{
-		ShowOwnedCount();
-	}
 
-	EntitlementsSubsystem->OnQueryUserEntitlementsCompleteDelegates.AddWeakLambda(
-		this,
-		[this](const FOnlineError& Error, const TArray<UItemDataObject*> Entitlements)
+	W_Parent = GetFirstOccurenceOuter<UStoreItemListEntry>();
+	if (W_Parent)
+	{
+		// Get item.
+		const UStoreItemDataObject* ItemData = W_Parent->GetItemData();
+		if (!ItemData)
 		{
-			ShowOwnedCount();
-		});
+			return;
+		}
+
+		EntitlementsSubsystem->GetOrQueryUserItemEntitlement(
+			GetOwningPlayer(),
+			ItemData->GetStoreItemId(),
+			FOnGetOrQueryUserItemEntitlementComplete::CreateUObject(this, &ThisClass::ShowOwnedCount));
+	}
 }
 
 void UOwnedCountWidgetEntry::NativeOnDeactivated()
 {
 	Super::NativeOnDeactivated();
 
-	EntitlementsSubsystem->OnQueryUserEntitlementsCompleteDelegates.RemoveAll(this);
+	if (UInventoryWidget* ParentWidget = GetFirstOccurenceOuter<UInventoryWidget>())
+	{
+		ParentWidget->OnEquipped.RemoveAll(this);
+		ParentWidget->OnUnequipped.RemoveAll(this);
+	}
 }
 
-void UOwnedCountWidgetEntry::ShowOwnedCount()
+void UOwnedCountWidgetEntry::ShowOwnedCount(const FOnlineError& Error, const UStoreItemDataObject* Entitlement)
 {
-	if (UStoreItemListEntry* W_Parent = GetFirstOccurenceOuter<UStoreItemListEntry>())
+	if (!Error.bSucceeded || !Entitlement)
 	{
-		UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
-		if (!GameInstance)
-		{
-			return;
-		}
-
-		UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget();
-		if (!BaseUIWidget)
-		{
-			return;
-		}
-
-		// Get item.
-		const UItemDataObject* ItemData = W_Parent->GetItemData();
-		if (!ItemData)
-		{
-			return;
-		}
-
-		FUniqueNetIdPtr UserId;
-		if (const APlayerController* PC = GetOwningPlayer();
-			const ULocalPlayer * LocalPlayer = PC->GetLocalPlayer())
-		{
-			UserId = LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId();
-		}
-
-		// Get entitlement.
-		const UItemDataObject* EntitlementData = EntitlementsSubsystem->GetItemEntitlement(UserId, ItemData->Id);
-		if (!EntitlementData)
-		{
-			return;
-		}
-
-		// Set owned count.
-		FText Text;
-		if (EntitlementData->bConsumable && EntitlementData->Count > 0)
-		{
-			const FString TextString = FString::Printf(TEXT("%d x"), EntitlementData->Count);
-			Text = FText::FromString(TextString);
-		}
-		else if (!EntitlementData->bConsumable)
-		{
-			Text = TEXT_OWNED;
-		}
-		Tb_OwnedCount->SetText(Text);
-
-		// Check if this widget is spawned in the inventory widget.
-		bool bIsInInventory = false;
-		if (Cast<UInventoryWidget>(BaseUIWidget->GetActiveWidgetOfStack(EBaseUIStackType::Menu, this)))
-		{
-			bIsInInventory = true;
-		}
-
-		// Highlight the entitlement item if it is equipped.
-		if (bIsInInventory) 
-		{
-			const FString EquippedShip = ConvertShipDesignToItemId((EShipDesign)GameInstance->GetShipSelection());
-			const FString EquippedPowerUp = ConvertPowerUpToItemId((EPowerUpSelection)GameInstance->GetShipPowerUp());
-			const bool bIsEquipped = (ItemData->Id.Equals(EquippedShip) || ItemData->Id.Equals(EquippedPowerUp));
-
-			W_Parent->Execute_ToggleHighlight(W_Parent, bIsEquipped);
-		}
-
-		// Show the owned count if not empty.
-		SetVisibility(Tb_OwnedCount->GetText().IsEmpty() || 
-			(bIsInInventory && !EntitlementData->bConsumable) ? 
-			ESlateVisibility::Collapsed : 
-			ESlateVisibility::Visible);
+		return;
 	}
+
+	// Set owned count.
+	FText Text;
+	if (Entitlement->GetIsConsumable() && Entitlement->GetCount() > 0)
+	{
+		const FString TextString = FString::Printf(TEXT("%d x"), Entitlement->GetCount());
+		Text = FText::FromString(TextString);
+	}
+	else if (!Entitlement->GetIsConsumable())
+	{
+		Text = TEXT_OWNED;
+	}
+	Tb_OwnedCount->SetText(Text);
+
+	// Show the owned count if not empty.
+	SetVisibility(Tb_OwnedCount->GetText().IsEmpty() || 
+		!Entitlement->GetIsConsumable() ? 
+		ESlateVisibility::Collapsed : 
+		ESlateVisibility::Visible);
+
+	if (UInventoryWidget* ParentWidget = GetFirstOccurenceOuter<UInventoryWidget>())
+	{
+		CheckItemEquipped();
+		ParentWidget->OnEquipped.AddUObject(this, &ThisClass::CheckItemEquipped);
+		ParentWidget->OnUnequipped.AddUObject(this, &ThisClass::CheckItemEquipped);
+	}
+}
+
+void UOwnedCountWidgetEntry::CheckItemEquipped()
+{
+	// Only if currently on inventory menu
+	if (!GetFirstOccurenceOuter<UInventoryWidget>())
+	{
+		return;
+	}
+
+	const UStoreItemListEntry* ParentWidget = GetFirstOccurenceOuter<UStoreItemListEntry>();
+	if (!ParentWidget)
+	{
+		return;
+	}
+
+	const UStoreItemDataObject* Item = ParentWidget->GetItemData();
+	if (!Item)
+	{
+		return;
+	}
+
+	// Highlight the entitlement item if it is equipped and inside the inventory menu
+	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+	if (!GameInstance)
+	{
+		return;
+	}
+
+	bool bEquipped = false;
+	if (!Item->GetSkuMap().IsEmpty() && Item->GetSkuMap().Find(EItemSkuPlatform::AccelByte))
+	{
+		bEquipped = GameInstance->IsItemEquippedBySku(
+			GetOwningPlayer()->GetLocalPlayer()->GetControllerId(),
+			EItemSkuPlatform::AccelByte,
+			Item->GetSkuMap()[EItemSkuPlatform::AccelByte]);
+	}
+	W_Parent->Execute_ToggleHighlight(W_Parent, bEquipped);
 }

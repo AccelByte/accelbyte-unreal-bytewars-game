@@ -8,7 +8,7 @@
 #include "Core/Ships/PlayerShipBase.h"
 #include "PlayerShipGlowXtra.generated.h"
 
-UCLASS()
+UCLASS(Abstract)
 class ACCELBYTEWARS_API APlayerShipGlowXtra : public APlayerShipBase
 {
 	GENERATED_BODY()

@@ -13,9 +13,13 @@
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "Core/UI/Components/AccelByteWarsTabListWidget.h"
 #include "Core/UI/MainMenu/Store/StoreItemModel.h"
+#include "Monetization/WalletEssentials/UI/WalletBalanceWidget.h"
 
 void UShopWidget::NativeOnActivated()
 {
+	// will load FTUE later after finished loading store items. 
+	bLoadFTUEImmediately = false;
+	
 	Super::NativeOnActivated();
 
 	StoreSubsystem = GetGameInstance()->GetSubsystem<UInGameStoreEssentialsSubsystem>();
@@ -23,6 +27,7 @@ void UShopWidget::NativeOnActivated()
 
 	// event binding
 	Btn_Back->OnClicked().AddUObject(this, &ThisClass::DeactivateWidget);
+	Btn_Refresh->OnClicked().AddUObject(this, &ThisClass::OnRefreshButtonClicked);
 	Tl_ItemCategory->OnTabSelected.AddDynamic(this, &ThisClass::SwitchCategory);
 	Tv_ContentOuter->OnItemClicked().AddUObject(this, &ThisClass::OnStoreItemClicked);
 
@@ -42,6 +47,7 @@ void UShopWidget::NativeOnDeactivated()
 	Super::NativeOnDeactivated();
 
 	Btn_Back->OnClicked().RemoveAll(this);
+	Btn_Refresh->OnClicked().RemoveAll(this);
 	Tv_ContentOuter->OnItemClicked().RemoveAll(this);
 	Tl_ItemCategory->OnTabSelected.RemoveAll(this);
 	Tv_ContentOuter->ClearListItems();
@@ -70,6 +76,36 @@ void UShopWidget::OnGetOrQueryCategoriesComplete(TArray<FOnlineStoreCategory> Ca
 		{
 			Tl_ItemCategory->RegisterTabWithPresets(FName(Category.Id), Category.Description);
 		}
+	}
+}
+
+void UShopWidget::OnRefreshCategoriesComplete(TArray<FOnlineStoreCategory> Categories)
+{
+	FName LastSelectedTab = Tl_ItemCategory->GetSelectedTabId();
+	Tl_ItemCategory->SetVisibility(ESlateVisibility::Visible);
+	
+	//temporary unbind, as it will automatically select first tab when rebuild tab list, while we want to keep the previous tab selection 
+	Tl_ItemCategory->OnTabSelected.RemoveDynamic(this, &ThisClass::SwitchCategory);
+	
+	OnGetOrQueryCategoriesComplete(Categories);
+
+	//reselect tab if exist, otherwise select all item tab
+	const bool bLastSelectedTabExist = Categories.ContainsByPredicate([&LastSelectedTab](FOnlineStoreCategory& Category)
+	{
+		return Category.SubCategories.IsEmpty() && Category.Id.Equals(LastSelectedTab.ToString());
+	});
+	const FName TabSelectionTarget = bLastSelectedTabExist ? LastSelectedTab : FName(RootPath);
+	Tl_ItemCategory->SelectTabByID(TabSelectionTarget);
+	StoreSubsystem->GetOrQueryOffersByCategory(
+		GetOwningPlayer(),
+		TabSelectionTarget.ToString(),
+		FOnGetOrQueryOffersByCategory::CreateUObject(this, &ThisClass::OnGetOrQueryOffersComplete),
+		true);
+
+	//re-add after manually select and switch category, because re-add before it will be unstable	
+	if(IsActivated())
+	{
+		Tl_ItemCategory->OnTabSelected.AddDynamic(this, &ThisClass::SwitchCategory);
 	}
 }
 
@@ -115,13 +151,37 @@ void UShopWidget::OnStoreItemClicked(UObject* Item) const
 	UAccelByteWarsActivatableWidget* Widget = BaseUI->PushWidgetToStack(EBaseUIStackType::Menu, DetailWidgetClass);
 
 	UStoreItemDetailWidget* ItemDetailWidget = Cast<UStoreItemDetailWidget>(Widget);
-	UStoreItemDataObject* StoreItem = Cast<UStoreItemDataObject>(Item);
+	const UStoreItemDataObject* StoreItem = Cast<UStoreItemDataObject>(Item);
 	if (!ItemDetailWidget || !StoreItem)
 	{
 		return;
 	}
 
 	ItemDetailWidget->Setup(StoreItem);
+}
+
+void UShopWidget::OnRefreshButtonClicked()
+{
+	OnRefreshButtonClickedDelegates.Broadcast();
+
+	SwitchContent(EAccelByteWarsWidgetSwitcherState::Loading);
+
+	Tv_ContentOuter->ClearListItems();	
+	Tl_ItemCategory->SetVisibility(ESlateVisibility::Hidden);
+
+	//refresh store item
+	StoreSubsystem->GetOrQueryCategoriesByRootPath(
+		GetOwningPlayer(),
+		RootPath,
+		FOnGetOrQueryCategories::CreateUObject(this, &ThisClass::OnRefreshCategoriesComplete),
+		true);
+	
+	//refresh balance
+	UWalletBalanceWidget* BalanceWidget = GetBalanceWidget();
+	if(BalanceWidget != nullptr)
+	{
+		BalanceWidget->UpdateBalance(true);
+	}
 }
 
 void UShopWidget::SwitchCategory(FName Id)
@@ -162,6 +222,8 @@ void UShopWidget::SwitchContent(EAccelByteWarsWidgetSwitcherState State) const
 		break;
 	case EAccelByteWarsWidgetSwitcherState::Not_Empty:
 		FocusTarget = Tv_ContentOuter;
+		// Initialize FTUE after item shops available 
+		InitializeFTUEDialogues(bOnActivatedInitializeFTUE);
 		break;
 	case EAccelByteWarsWidgetSwitcherState::Empty:
 		FocusTarget = Btn_Back;
@@ -172,5 +234,20 @@ void UShopWidget::SwitchContent(EAccelByteWarsWidgetSwitcherState State) const
 
 	FocusTarget->SetUserFocus(GetOwningPlayer());
 	Ws_Loader->SetWidgetState(State);
+
+	//disable refresh button on loading state
+	Btn_Refresh->SetIsEnabled(State != EAccelByteWarsWidgetSwitcherState::Loading);
+}
+
+UWalletBalanceWidget* UShopWidget::GetBalanceWidget() const
+{
+	UWalletBalanceWidget* Widget = nullptr;
+
+	if (W_WalletOuter->HasAnyChildren())
+	{
+		Widget = Cast<UWalletBalanceWidget>(W_WalletOuter->GetChildAt(0));
+	}
+
+	return Widget;
 }
 #pragma endregion 

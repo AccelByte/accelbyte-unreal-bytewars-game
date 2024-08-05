@@ -2,7 +2,8 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-#include "Core/Utilities/AccelByteWarsUtility.h"
+#include "AccelByteWarsUtility.h"
+#include "Blueprint/WidgetBlueprintLibrary.h"
 #include "Runtime/ImageWrapper/Public/IImageWrapperModule.h"
 #include "Runtime/Online/HTTP/Public/Http.h"
 
@@ -52,6 +53,10 @@ void AccelByteWarsUtility::GetImageFromURL(const FString& Url, const FString& Im
 
 				OnReceived.ExecuteIfBound(ImageBrush);
 			}
+		}
+		else
+		{
+			OnReceived.ExecuteIfBound(FCacheBrush());
 		}
 	});
 
@@ -107,4 +112,52 @@ FString AccelByteWarsUtility::GetGameVersion()
 	GConfig->GetString(*ProjectVerSectionPath, *ProjectVerConfig, ProjectVersionStr, GGameIni);
 
 	return ProjectVersionStr;
+}
+
+TArray<UUserWidget*> AccelByteWarsUtility::FindWidgetsOnTheScreen(
+	const FString& WidgetName, 
+	const TSubclassOf<UUserWidget> WidgetClass, 
+	const bool bTopLevelOnly, 
+	UObject* Context)
+{
+	TArray<UUserWidget*> FoundWidgets;
+	if (WidgetName.IsEmpty() || !WidgetClass.Get()) 
+	{
+		return FoundWidgets;
+	}
+
+	UWidgetBlueprintLibrary::GetAllWidgetsOfClass(Context, FoundWidgets, WidgetClass.Get(), bTopLevelOnly);
+	FoundWidgets.RemoveAll([WidgetName](const UUserWidget* FoundWidget)
+	{
+		return !FoundWidget || !FoundWidget->GetName().Equals(WidgetName) || !FoundWidget->IsVisible();
+	});
+
+	return FoundWidgets;
+}
+
+bool AccelByteWarsUtility::IsUseVersionChecker()
+{
+	// Check for launch parameter first.
+	const FString CmdArgs = FCommandLine::Get();
+	const FString CmdStr = FString("-UseVersionChecker=");
+	bool bValidCmdValue = false;
+	bool bUseVersionChecker = false;
+	if (CmdArgs.Contains(CmdStr, ESearchCase::IgnoreCase))
+	{
+		FString CmdValue;
+		FParse::Value(*CmdArgs, *CmdStr, CmdValue);
+		if (!CmdValue.IsEmpty())
+		{
+			bUseVersionChecker = CmdValue.Equals(TEXT("TRUE"), ESearchCase::IgnoreCase);
+			bValidCmdValue = true;
+		}
+	}
+
+	// Check for DefaultEngine.ini
+	if (!bValidCmdValue)
+	{
+		GConfig->GetBool(TEXT("AccelByteTutorialModules"), TEXT("bUseVersionChecker"), bUseVersionChecker, GEngineIni);
+	}
+
+	return bUseVersionChecker;
 }

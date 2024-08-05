@@ -65,6 +65,7 @@ public:
 	virtual FOnSendSessionInviteComplete* GetOnSendSessionInviteCompleteDelegates(){ return nullptr; }
 	virtual FOnRejectSessionInviteCompleteMulticast* GetOnRejectSessionInviteCompleteDelegate() { return nullptr; }
 	virtual FOnDestroySessionComplete* GetOnLeaveSessionCompleteDelegates(){ return nullptr; }
+	virtual FOnUpdateSessionComplete* GetOnUpdateSessionCompleteDelegates(){ return nullptr; }
 
 	virtual FOnV2SessionInviteReceived* GetOnSessionInviteReceivedDelegates(){ return nullptr; }
 	virtual FOnSessionParticipantsChange* GetOnSessionParticipantsChange() { return nullptr; }
@@ -80,6 +81,7 @@ protected:
 		const FUniqueNetId& InviteeId){}
 	virtual void OnRejectSessionInviteComplete(bool bSucceeded){}
 	virtual void OnLeaveSessionComplete(FName SessionName, bool bSucceeded){}
+	virtual void OnUpdateSessionComplete(FName SessionName, bool bSucceeded){}
 
 	virtual void OnSessionInviteReceived(
 		const FUniqueNetId& UserId,

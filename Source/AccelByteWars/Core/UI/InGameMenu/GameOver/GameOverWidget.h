@@ -27,9 +27,6 @@ class ACCELBYTEWARS_API UGameOverWidget : public UAccelByteWarsActivatableWidget
 	
 public:
 	UFUNCTION(BlueprintCallable)
-	void SetWinner(const FText& PlayerName, const FLinearColor& Color);
-
-	UFUNCTION(BlueprintCallable)
 	UGameOverLeaderboardEntry* AddLeaderboardEntry(const FText& PlayerName, const int32 PlayerScore, const int32 PlayerKills, const FLinearColor& PlayerColor);
 
 	inline static FOnQuitGame OnQuitGameDelegate;
@@ -60,9 +57,6 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_Quit;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UWidgetSwitcher* Ws_Winner;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Txt_Winner;

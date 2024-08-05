@@ -90,6 +90,7 @@ DECLARE_MULTICAST_DELEGATE_TwoParams(FOnMatchSessionFindSessionsComplete, const 
 #pragma endregion
 
 #pragma region "Lobby"
+#define LOBBY_CONNECT_ERROR_CODE TEXT("login-failed-lobby-connect-error")
 #define LOBBY_FAILED_RECONNECT_MESSAGE NSLOCTEXT(BYTEWARS_LOCTEXT_NAMESPACE, "Lobby Failed Reconnect", "Failed reconnect to AGS. Please relogin.")
 #define LOBBY_SUCCESS_RECONNECT_MESSAGE NSLOCTEXT(BYTEWARS_LOCTEXT_NAMESPACE, "Lobby Success Reconnect", "Success reconnect to AGS.")
 #define LOBBY_RECONNECTING_MESSAGE NSLOCTEXT(BYTEWARS_LOCTEXT_NAMESPACE, "Lobby Reconnecting", "Reconnecting to AGS.")

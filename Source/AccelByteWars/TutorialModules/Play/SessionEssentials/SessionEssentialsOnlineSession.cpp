@@ -20,6 +20,8 @@ void USessionEssentialsOnlineSession::RegisterOnlineDelegates()
 		FOnSendSessionInviteCompleteDelegate::CreateUObject(this, &ThisClass::OnSendSessionInviteComplete));
 	GetSessionInt()->AddOnDestroySessionCompleteDelegate_Handle(
 		FOnDestroySessionCompleteDelegate::CreateUObject(this, &ThisClass::OnLeaveSessionComplete));
+	GetSessionInt()->AddOnUpdateSessionCompleteDelegate_Handle(
+		FOnUpdateSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnUpdateSessionComplete));
 
 	GetABSessionInt()->AddOnV2SessionInviteReceivedDelegate_Handle(
 		FOnV2SessionInviteReceivedDelegate::CreateUObject(this, &ThisClass::OnSessionInviteReceived));
@@ -35,6 +37,7 @@ void USessionEssentialsOnlineSession::ClearOnlineDelegates()
 	GetSessionInt()->ClearOnJoinSessionCompleteDelegates(this);
 	GetABSessionInt()->ClearOnSendSessionInviteCompleteDelegates(this);
 	GetSessionInt()->ClearOnDestroySessionCompleteDelegates(this);
+	GetSessionInt()->ClearOnUpdateSessionCompleteDelegates(this);
 
 	GetABSessionInt()->ClearOnV2SessionInviteReceivedDelegates(this);
 	GetABSessionInt()->ClearOnSessionParticipantsChangeDelegates(this);
@@ -343,6 +346,13 @@ void USessionEssentialsOnlineSession::OnLeaveSessionComplete(FName SessionName, 
 
 	bLeavingSession = false;
 	OnLeaveSessionCompleteDelegates.Broadcast(SessionName, bSucceeded);
+}
+
+void USessionEssentialsOnlineSession::OnUpdateSessionComplete(FName SessionName, bool bSucceeded)
+{
+	UE_LOG_SESSIONESSENTIALS(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
+
+	OnUpdateSessionCompleteDelegates.Broadcast(SessionName, bSucceeded);
 }
 
 void USessionEssentialsOnlineSession::OnSessionInviteReceived(

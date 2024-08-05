@@ -10,6 +10,7 @@
 #include "Core/AssetManager/TutorialModules/TutorialModuleDataAsset.h"
 
 #include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
+#include "TutorialModuleUtilities/StartupSubsystem.h"
 
 #include "OnlineSubsystemUtils.h"
 #include "OnlineIdentityInterfaceAccelByte.h"
@@ -32,6 +33,7 @@ void UStartupWidget::NativeConstruct()
 	{
 		BaseUIWidget = GameInstance->GetBaseUIWidget();
 		PromptSubsystem = GameInstance->GetSubsystem<UPromptSubsystem>();
+		StartupSubsystem = GameInstance->GetSubsystem<UStartupSubsystem>();
 	}
 }
 
@@ -46,12 +48,12 @@ void UStartupWidget::NativeOnActivated()
 	{
 		bIsInitialized = true;
 		Ws_Startup->SetActiveWidget(Pw_Init);
-		GetWorld()->GetTimerManager().SetTimer(InitTimerHandle, this, &ThisClass::StartupGame, InitDelay, false);
+		GetWorld()->GetTimerManager().SetTimer(InitTimerHandle, this, &ThisClass::CheckCoreComponents, InitDelay, false);
 	}
 	else 
 	{
 		Pw_Init->SetVisibility(ESlateVisibility::Collapsed);
-		StartupGame();
+		CheckCoreComponents();
 	}
 }
 
@@ -63,12 +65,12 @@ void UStartupWidget::NativeOnDeactivated()
 	Super::NativeOnDeactivated();
 }
 
-void UStartupWidget::StartupGame()
+void UStartupWidget::CheckCoreComponents()
 {
 	GetWorld()->GetTimerManager().ClearTimer(InitTimerHandle);
 
 	// Check whether the sdk configuration is valid.
-	if (!UTutorialModuleOnlineUtility::IsAccelByteSDKInitialized(this)) 
+	if (!UTutorialModuleOnlineUtility::IsAccelByteSDKInitialized(this))
 	{
 		Tb_FailedMessage->SetText(LOCTEXT("SDK Init Failed", "AccelByte SDK is not initialized. Please enable it and set up your credentials."));
 		Ws_Startup->SetActiveWidget(Pw_Failed);
@@ -81,6 +83,96 @@ void UStartupWidget::StartupGame()
 		Ws_Startup->SetActiveWidget(Pw_Failed);
 	}
 
+	CheckAutoUseTokenForABLogin();
+}
+
+void UStartupWidget::CheckAutoUseTokenForABLogin()
+{
+	if (!ensure(PromptSubsystem) || !ensure(StartupSubsystem))
+	{
+		UE_LOG_STARTUP(Warning, TEXT("Failed to check auto use token for AccelByte login. Invalid subsystems"));
+		return;
+	}
+	
+	// If auto consume platform token, startup the game immediately.
+	if (StartupSubsystem->IsAutoUseTokenForABLogin())
+	{
+		StartupGame();
+		return;
+	}
+
+	PromptSubsystem->ShowLoading(LOCTEXT("Login platform only initiation", "Logging in with the platform only"));
+
+	// Login using platform only.
+	StartupSubsystem->LoginPlatformOnly(GetOwningPlayer(), FOnLoginPlatformCompleteDelegate::CreateUObject(this, &ThisClass::OnLoginPlatformOnlyComplete));
+}
+
+void UStartupWidget::OnLoginPlatformOnlyComplete(const bool bSucceeded, const FString& ErrorMessage)
+{
+	if (!ensure(PromptSubsystem) || !ensure(StartupSubsystem))
+	{
+		UE_LOG_STARTUP(Warning, TEXT("Failed to handle on login platform only. Invalid subsystems"));
+		return;
+	}
+
+	PromptSubsystem->HideLoading();
+
+	// If failed, show error message and button to quit the game.
+	if (!bSucceeded)
+	{
+		FFormatOrderedArguments Args;
+		Args.Add(FFormatArgumentValue(FText::FromString(ErrorMessage)));
+
+		const FText FailedMessage = FText::Format(
+			LOCTEXT(
+				"Login platform only failed message", 
+				"Failed to login with platform only. Click Ok to quit the game. Error: {0}"), 
+			Args);
+
+		PromptSubsystem->ShowDialoguePopUp(
+			ERROR_PROMPT_TEXT,
+			FailedMessage,
+			EPopUpType::MessageOk,
+			FPopUpResultDelegate::CreateWeakLambda(this, [](EPopUpResult Result)
+			{
+				FPlatformMisc::RequestExit(false);
+			}
+		));
+		return;
+	}
+
+	FOnlineAccountCredentials PlatformCredentials = StartupSubsystem->GetPlatformCredentials();
+	
+	// For display purpose, construct truncated token if necessary.
+	const int32 TokenLengthLimit = 20;
+	const FString TokenStr = FString::Printf(TEXT("%s%s"), 
+		*PlatformCredentials.Token.Left(TokenLengthLimit), 
+		PlatformCredentials.Token.Len() > TokenLengthLimit ? TEXT("...") : TEXT(""));
+
+	FFormatOrderedArguments Args;
+	Args.Add(FFormatArgumentValue(FText::FromString(PlatformCredentials.Type)));
+	Args.Add(FFormatArgumentValue(FText::FromString(TokenStr)));
+
+	const FText SuccessMessage = FText::Format(
+		LOCTEXT(
+			"Login platform only success message",
+			"Success to login with platform only. Platform name: {0}. Platform token: {1}"),
+		Args);
+
+	// Show success message and startup game on message closed.
+	PromptSubsystem->ShowDialoguePopUp(
+		MESSAGE_PROMPT_TEXT,
+		SuccessMessage,
+		EPopUpType::MessageOk,
+		FPopUpResultDelegate::CreateWeakLambda(this, [this](EPopUpResult Result)
+		{
+			StartupGame();
+		}
+	));
+}
+
+void UStartupWidget::StartupGame()
+{
 	// If auth essentials module is not active, open the Main Menu.
 	if ((!AuthEssentialsDataAsset || !AuthEssentialsDataAsset->IsActiveAndDependenciesChecked()) && BaseUIWidget)
 	{
@@ -123,7 +215,7 @@ void UStartupWidget::StartupGame()
 
 	// If not logged in, open the login menu.
 	DeactivateWidget();
-	if(BaseUIWidget) BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, LoginWidgetClass.Get());
+	if (BaseUIWidget) BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, LoginWidgetClass.Get());
 
 	IdentityInterface->AccelByteOnLogoutCompleteDelegates->RemoveAll(this);
 	IdentityInterface->AccelByteOnLogoutCompleteDelegates->AddUObject(this, &ThisClass::OnLogoutComplete);

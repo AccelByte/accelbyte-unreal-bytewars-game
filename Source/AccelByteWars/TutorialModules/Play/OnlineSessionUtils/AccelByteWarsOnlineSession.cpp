@@ -41,6 +41,8 @@ void UAccelByteWarsOnlineSession::RegisterOnlineDelegates()
 		FOnSendSessionInviteCompleteDelegate::CreateUObject(this, &ThisClass::OnSendSessionInviteComplete));
 	SessionInt->AddOnDestroySessionCompleteDelegate_Handle(
 		FOnDestroySessionCompleteDelegate::CreateUObject(this, &ThisClass::OnLeaveSessionComplete));
+	SessionInt->AddOnUpdateSessionCompleteDelegate_Handle(
+		FOnUpdateSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnUpdateSessionComplete));
 
 	ABSessionInt->AddOnV2SessionInviteReceivedDelegate_Handle(
 		FOnV2SessionInviteReceivedDelegate::CreateUObject(this, &ThisClass::OnSessionInviteReceived));
@@ -101,6 +103,7 @@ void UAccelByteWarsOnlineSession::ClearOnlineDelegates()
 	SessionInt->ClearOnJoinSessionCompleteDelegates(this);
 	ABSessionInt->ClearOnSendSessionInviteCompleteDelegates(this);
 	SessionInt->ClearOnDestroySessionCompleteDelegates(this);
+	SessionInt->ClearOnUpdateSessionCompleteDelegates(this);
 
 	ABSessionInt->ClearOnV2SessionInviteReceivedDelegates(this);
 	ABSessionInt->ClearOnSessionParticipantsChangeDelegates(this);
@@ -182,7 +185,7 @@ void UAccelByteWarsOnlineSession::CreateSession(
 	const EAccelByteV2SessionType SessionType,
 	const FString& SessionTemplateName)
 {
-	UE_LOG_ONLINESESSION(Verbose, TEXT("called"))
+	UE_LOG_ONLINESESSION(Verbose, TEXT("Called"))
 
 	// safety
 	if (!GetSessionInt())
@@ -268,7 +271,7 @@ void UAccelByteWarsOnlineSession::JoinSession(
 	FName SessionName,
 	const FOnlineSessionSearchResult& SearchResult)
 {
-	UE_LOG_ONLINESESSION(Verbose, TEXT("called"))
+	UE_LOG_ONLINESESSION(Verbose, TEXT("Called"))
 
 	// safety
 	if (!GetSessionInt())
@@ -344,7 +347,7 @@ void UAccelByteWarsOnlineSession::RejectSessionInvite(
 
 void UAccelByteWarsOnlineSession::LeaveSession(FName SessionName)
 {
-	UE_LOG_ONLINESESSION(Verbose, TEXT("called"))
+	UE_LOG_ONLINESESSION(Verbose, TEXT("Called"))
 
 	// safety
 	if (!GetSessionInt())
@@ -384,7 +387,7 @@ void UAccelByteWarsOnlineSession::LeaveSession(FName SessionName)
 
 void UAccelByteWarsOnlineSession::UpdateSessionJoinability(const FName SessionName, const EAccelByteV2SessionJoinability Joinability)
 {
-	UE_LOG_ONLINESESSION(Verbose, TEXT("called"));
+	UE_LOG_ONLINESESSION(Verbose, TEXT("Called"));
 
 	FOnlineSessionV2AccelBytePtr ABSessionInt = GetABSessionInt();
 	if (!ABSessionInt)
@@ -406,7 +409,7 @@ void UAccelByteWarsOnlineSession::UpdateSessionJoinability(const FName SessionNa
 
 void UAccelByteWarsOnlineSession::OnCreateSessionComplete(FName SessionName, bool bSucceeded)
 {
-	UE_LOG_ONLINESESSION(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
+	UE_LOG_ONLINESESSION(Log, TEXT("Succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
 
 #pragma region "P2P Match Session implementation"
 	/*
@@ -424,7 +427,7 @@ void UAccelByteWarsOnlineSession::OnCreateSessionComplete(FName SessionName, boo
 
 void UAccelByteWarsOnlineSession::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
 {
-	UE_LOG_ONLINESESSION(Log, TEXT("succeeded: %s"), *FString(Result == EOnJoinSessionCompleteResult::Success ? "TRUE": "FALSE"))
+	UE_LOG_ONLINESESSION(Log, TEXT("Succeeded: %s"), *FString(Result == EOnJoinSessionCompleteResult::Success ? "TRUE": "FALSE"))
 
 #pragma region "P2P Matchmaking implementation"
 	/*
@@ -446,21 +449,21 @@ void UAccelByteWarsOnlineSession::OnSendSessionInviteComplete(
 	bool bSucceeded,
 	const FUniqueNetId& InviteeId)
 {
-	UE_LOG_ONLINESESSION(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE" : "FALSE"))
+	UE_LOG_ONLINESESSION(Log, TEXT("Succeeded: %s"), *FString(bSucceeded ? "TRUE" : "FALSE"))
 
 	OnSendSessionInviteCompleteDelegates.Broadcast(LocalSenderId, SessionName, bSucceeded, InviteeId);
 }
 
 void UAccelByteWarsOnlineSession::OnRejectSessionInviteComplete(bool bSucceeded)
 {
-	UE_LOG_ONLINESESSION(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE" : "FALSE"))
+	UE_LOG_ONLINESESSION(Log, TEXT("Succeeded: %s"), *FString(bSucceeded ? "TRUE" : "FALSE"))
 
 	OnRejectSessionInviteCompleteDelegates.Broadcast(bSucceeded);
 }
 
 void UAccelByteWarsOnlineSession::OnLeaveSessionComplete(FName SessionName, bool bSucceeded)
 {
-	UE_LOG_ONLINESESSION(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
+	UE_LOG_ONLINESESSION(Log, TEXT("Succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
 
 #pragma region "Game Session implementation"
 	if (bSucceeded)
@@ -473,12 +476,19 @@ void UAccelByteWarsOnlineSession::OnLeaveSessionComplete(FName SessionName, bool
 	OnLeaveSessionCompleteDelegates.Broadcast(SessionName, bSucceeded);
 }
 
+void UAccelByteWarsOnlineSession::OnUpdateSessionComplete(FName SessionName, bool bSucceeded)
+{
+	UE_LOG_ONLINESESSION(Log, TEXT("Succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
+
+	OnUpdateSessionCompleteDelegates.Broadcast(SessionName, bSucceeded);
+}
+
 void UAccelByteWarsOnlineSession::OnSessionInviteReceived(
 	const FUniqueNetId& UserId,
 	const FUniqueNetId& FromId,
 	const FOnlineSessionInviteAccelByte& Invite)
 {
-	UE_LOG_ONLINESESSION(Log, TEXT("from: %s"), *FromId.ToDebugString())
+	UE_LOG_ONLINESESSION(Log, TEXT("From: %s"), *FromId.ToDebugString())
 
 	OnSessionInviteReceivedDelegates.Broadcast(UserId, FromId, Invite);
 }
@@ -488,7 +498,7 @@ void UAccelByteWarsOnlineSession::OnSessionParticipantsChange(FName SessionName,
 {
 	UE_LOG_ONLINESESSION(
 		Log,
-		TEXT("session name: %s | Member: %s [%s]"),
+		TEXT("Session name: %s | Member: %s [%s]"),
 		*SessionName.ToString(),
 		*Member.ToDebugString(),
 		*FString(bJoined ? "Joined" : "Left"))
@@ -502,7 +512,7 @@ void UAccelByteWarsOnlineSession::OnLeaveSessionForCreateSessionComplete(
 	const int32 LocalUserNum,
 	const FOnlineSessionSettings SessionSettings)
 {
-	UE_LOG_ONLINESESSION(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
+	UE_LOG_ONLINESESSION(Log, TEXT("Succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
 	OnLeaveSessionCompleteDelegates.Remove(OnLeaveSessionForCreateSessionCompleteDelegateHandle);
 
 	if (bSucceeded)
@@ -532,14 +542,14 @@ void UAccelByteWarsOnlineSession::OnLeaveSessionForJoinSessionComplete(
 	const int32 LocalUserNum,
 	const FOnlineSessionSearchResult SearchResult)
 {
-	UE_LOG_ONLINESESSION(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
+	UE_LOG_ONLINESESSION(Log, TEXT("Succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
 	OnLeaveSessionCompleteDelegates.Remove(OnLeaveSessionForJoinSessionCompleteDelegateHandle);
 
 	if (bSucceeded)
 	{
 		if (!GetSessionInt()->JoinSession(LocalUserNum, SessionName, SearchResult))
 		{
-			UE_LOG_ONLINESESSION(Warning, TEXT("failed to execute"))
+			UE_LOG_ONLINESESSION(Warning, TEXT("Failed to execute"))
 			ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 			{
 				OnJoinSessionComplete(SessionName, EOnJoinSessionCompleteResult::UnknownError);
@@ -563,7 +573,7 @@ void UAccelByteWarsOnlineSession::QueryUserInfo(
 	const TArray<FUniqueNetIdRef>& UserIds,
 	const FOnQueryUsersInfoComplete& OnComplete)
 {
-	UE_LOG_ONLINESESSION(Verbose, TEXT("called"))
+	UE_LOG_ONLINESESSION(Verbose, TEXT("Called"))
 
 	// safety
 	if (!GetUserInt())
@@ -582,7 +592,7 @@ void UAccelByteWarsOnlineSession::QueryUserInfo(
 		UE_LOG_ONLINESESSION(Log, TEXT("Cache found"))
 		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, UserInfo, OnComplete]()
 		{
-			UE_LOG_ONLINESESSION(Log, TEXT("trigger OnComplete"))
+			UE_LOG_ONLINESESSION(Log, TEXT("Trigger OnComplete"))
 			OnComplete.ExecuteIfBound(true, UserInfo);
 		}));
 	}
@@ -616,7 +626,7 @@ void UAccelByteWarsOnlineSession::DSQueryUserInfo(
 	const TArray<FUniqueNetIdRef>& UserIds,
 	const FOnDSQueryUsersInfoComplete& OnComplete)
 {
-	UE_LOG_ONLINESESSION(Verbose, TEXT("called"))
+	UE_LOG_ONLINESESSION(Verbose, TEXT("Called"))
 
 	const TArray<const FBaseUserInfo*> UserInfo;
 	if (DSRetrieveUserInfoCache(UserIds, UserInfo))
@@ -660,7 +670,7 @@ void UAccelByteWarsOnlineSession::DSQueryUserInfo(
 
 bool UAccelByteWarsOnlineSession::TravelToSession(const FName SessionName)
 {
-	UE_LOG_ONLINESESSION(Verbose, TEXT("called"))
+	UE_LOG_ONLINESESSION(Verbose, TEXT("Called"))
 
 	if (GetSessionType(SessionName) != EAccelByteV2SessionType::GameSession)
 	{
@@ -753,7 +763,7 @@ void UAccelByteWarsOnlineSession::OnQueryUserInfoComplete(
 	const FString& ErrorMessage,
 	const FOnQueryUsersInfoComplete& OnComplete)
 {
-	UE_LOG_ONLINESESSION(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
+	UE_LOG_ONLINESESSION(Log, TEXT("Succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
 
 	// reset delegate handle
 	GetUserInt()->OnQueryUserInfoCompleteDelegates->Remove(OnQueryUserInfoCompleteDelegateHandle);
@@ -790,7 +800,7 @@ void UAccelByteWarsOnlineSession::OnDSQueryUserInfoComplete(
 	const FListBulkUserInfo& UserInfoList,
 	const FOnDSQueryUsersInfoComplete& OnComplete)
 {
-	UE_LOG_ONLINESESSION(Verbose, TEXT("called"))
+	UE_LOG_ONLINESESSION(Verbose, TEXT("Called"))
 
 	// reset delegate handle
 	OnDSQueryUserInfoCompleteDelegateHandle.Reset();
@@ -812,11 +822,11 @@ void UAccelByteWarsOnlineSession::OnDSQueryUserInfoComplete(
 
 void UAccelByteWarsOnlineSession::OnSessionServerUpdateReceived(FName SessionName)
 {
-	UE_LOG_ONLINESESSION(Verbose, TEXT("called"))
+	UE_LOG_ONLINESESSION(Verbose, TEXT("Called"))
 
 	if (bLeaveSessionRunning)
 	{
-		UE_LOG_ONLINESESSION(Warning, TEXT("called but leave session is currently running. Cancelling attempt to travel to server"))
+		UE_LOG_ONLINESESSION(Warning, TEXT("Called but leave session is currently running. Cancelling attempt to travel to server"))
 		OnSessionServerUpdateReceivedDelegates.Broadcast(SessionName, FOnlineError(true), false);
 		return;
 	}
@@ -827,7 +837,7 @@ void UAccelByteWarsOnlineSession::OnSessionServerUpdateReceived(FName SessionNam
 
 void UAccelByteWarsOnlineSession::OnSessionServerErrorReceived(FName SessionName, const FString& Message)
 {
-	UE_LOG_ONLINESESSION(Verbose, TEXT("called"))
+	UE_LOG_ONLINESESSION(Verbose, TEXT("Called"))
 
 	FOnlineError Error;
 	Error.bSucceeded = false;
@@ -838,7 +848,7 @@ void UAccelByteWarsOnlineSession::OnSessionServerErrorReceived(FName SessionName
 
 bool UAccelByteWarsOnlineSession::HandleDisconnectInternal(UWorld* World, UNetDriver* NetDriver)
 {
-	UE_LOG_ONLINESESSION(Verbose, TEXT("called"))
+	UE_LOG_ONLINESESSION(Verbose, TEXT("Called"))
 
 	LeaveSession(GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession));
 	bIsInSessionServer = false;
@@ -856,7 +866,7 @@ void UAccelByteWarsOnlineSession::StartMatchmaking(
 	const EGameModeNetworkType NetworkType,
 	const EGameModeType GameModeType)
 {
-	UE_LOG_ONLINESESSION(Verbose, TEXT("called"))
+	UE_LOG_ONLINESESSION(Verbose, TEXT("Called"))
 
 	// safety
 	if (!ensure(GetSessionInt()))
@@ -949,7 +959,7 @@ void UAccelByteWarsOnlineSession::StartMatchmaking(
 
 void UAccelByteWarsOnlineSession::CancelMatchmaking(APlayerController* PC, const FName& SessionName)
 {
-	UE_LOG_ONLINESESSION(Verbose, TEXT("called"))
+	UE_LOG_ONLINESESSION(Verbose, TEXT("Called"))
 
 	// safety
 	if (!ensure(GetSessionInt()))
@@ -993,7 +1003,7 @@ void UAccelByteWarsOnlineSession::OnStartMatchmakingComplete(
 {
 	UE_LOG_ONLINESESSION(
 		Log,
-		TEXT("succeeded: %s | error: (%s) %s"),
+		TEXT("Succeeded: %s | error: (%s) %s"),
 		*FString(ErrorDetails.bSucceeded ? "TRUE": "FALSE"),
 		*ErrorDetails.ErrorCode, *ErrorDetails.ErrorMessage.ToString())
 
@@ -1002,14 +1012,14 @@ void UAccelByteWarsOnlineSession::OnStartMatchmakingComplete(
 
 void UAccelByteWarsOnlineSession::OnCancelMatchmakingComplete(FName SessionName, bool bSucceeded)
 {
-	UE_LOG_ONLINESESSION(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
+	UE_LOG_ONLINESESSION(Log, TEXT("Succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
 
 	OnCancelMatchmakingCompleteDelegates.Broadcast(SessionName, bSucceeded);
 }
 
 void UAccelByteWarsOnlineSession::OnMatchmakingComplete(FName SessionName, bool bSucceeded)
 {
-	UE_LOG_ONLINESESSION(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
+	UE_LOG_ONLINESESSION(Log, TEXT("Succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
 
 	const TSharedPtr<FOnlineSessionSearchAccelByte> CurrentMatchmakingSearchHandle = GetABSessionInt()->GetCurrentMatchmakingSearchHandle();
 	if (!bSucceeded ||
@@ -1038,7 +1048,7 @@ void UAccelByteWarsOnlineSession::OnMatchmakingComplete(FName SessionName, bool 
 void UAccelByteWarsOnlineSession::OnBackfillProposalReceived(
 	FAccelByteModelsV2MatchmakingBackfillProposalNotif Proposal)
 {
-	UE_LOG_ONLINESESSION(Verbose, TEXT("called"))
+	UE_LOG_ONLINESESSION(Verbose, TEXT("Called"))
 
 	// Safety
 	if (!ensure(GetABSessionInt().IsValid()))
@@ -1054,7 +1064,7 @@ void UAccelByteWarsOnlineSession::OnBackfillProposalReceived(
 		false,
 		FOnAcceptBackfillProposalComplete::CreateWeakLambda(this, [this](bool bSucceeded)
 	{
-		UE_LOG_ONLINESESSION(Log, TEXT("succeeded: %s To accept backfill."), *FString(bSucceeded ? "TRUE": "FALSE"));
+		UE_LOG_ONLINESESSION(Log, TEXT("Succeeded: %s To accept backfill."), *FString(bSucceeded ? "TRUE": "FALSE"));
 		OnAcceptBackfillProposalCompleteDelegates.Broadcast(bSucceeded);
 	}));
 }
@@ -1066,7 +1076,7 @@ void UAccelByteWarsOnlineSession::OnLeaveSessionForReMatchmakingComplete(
 	const EGameModeNetworkType NetworkType,
 	const EGameModeType GameModeType)
 {
-	UE_LOG_ONLINESESSION(Verbose, TEXT("called"))
+	UE_LOG_ONLINESESSION(Verbose, TEXT("Called"))
 
 	OnLeaveSessionCompleteDelegates.Remove(OnLeaveSessionForReMatchmakingCompleteDelegateHandle);
 
@@ -1128,7 +1138,7 @@ void UAccelByteWarsOnlineSession::FindSessions(
 	const int32 MaxQueryNum,
 	const bool bForce)
 {
-	UE_LOG_ONLINESESSION(Verbose, TEXT("called"))
+	UE_LOG_ONLINESESSION(Verbose, TEXT("Called"))
 
 	if (SessionSearch->SearchState == EOnlineAsyncTaskState::InProgress)
 	{
@@ -1171,7 +1181,7 @@ void UAccelByteWarsOnlineSession::FindSessions(
 
 void UAccelByteWarsOnlineSession::OnFindSessionsComplete(bool bSucceeded)
 {
-	UE_LOG_ONLINESESSION(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
+	UE_LOG_ONLINESESSION(Log, TEXT("Succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
 
 	if (bSucceeded)
 	{
@@ -1207,7 +1217,7 @@ void UAccelByteWarsOnlineSession::OnQueryUserInfoForFindSessionComplete(
 	const bool bSucceeded,
 	const TArray<FUserOnlineAccountAccelByte*>& UsersInfo)
 {
-	UE_LOG_ONLINESESSION(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
+	UE_LOG_ONLINESESSION(Log, TEXT("Succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
 
 	if (bSucceeded)
 	{
@@ -2373,31 +2383,41 @@ void UAccelByteWarsOnlineSession::OnPartySessionUpdateReceived(FName SessionName
 
 void UAccelByteWarsOnlineSession::OnConnectLobbyComplete(int32 LocalUserNum, bool bSucceeded, const FUniqueNetId& UserId, const FString& Error)
 {
-	if (!bSucceeded)
+	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+	if (!ensureMsgf(GameInstance, TEXT("Game Instance is null")))
 	{
-		if (Error == TEXT("login-failed-lobby-connect-error") && bIsGameReconnecting)
-		{
-			GetPromptSubystem()->ShowMessagePopUp(
-				FText{},
-				LOBBY_FAILED_RECONNECT_MESSAGE
-			);
-		}
-		
-		bIsGameReconnecting = false;
 		return;
 	}
 
-	if (bIsGameReconnecting)
+	FOnlineIdentityAccelBytePtr ABIdentityInt = GetABIdentityInt();
+	if (!ensureMsgf(ABIdentityInt, TEXT("AB OnlineIdentity interface is nullptr."))) 
 	{
-		GetPromptSubystem()->ShowMessagePopUp(
-			FText{},
-			LOBBY_SUCCESS_RECONNECT_MESSAGE
-		);
-		bIsGameReconnecting = false;
+		return;
 	}
 
 	FOnlineSessionV2AccelBytePtr ABSessionInt = GetABSessionInt();
-	if (!ensureMsgf(ABSessionInt, TEXT("AB OnlineSession interface is nullptr."))) return;
+	if (!ensureMsgf(ABSessionInt, TEXT("AB OnlineSession interface is null.")))
+	{
+		return;
+	}
+
+	if (!bSucceeded)
+	{
+		// Show failed to reconnect to AGS pop-up message.
+		if (Error.Equals(LOBBY_CONNECT_ERROR_CODE) && GameInstance->bIsReconnecting)
+		{
+			GetPromptSubystem()->ShowMessagePopUp(ERROR_PROMPT_TEXT, LOBBY_FAILED_RECONNECT_MESSAGE);
+		}
+		GameInstance->bIsReconnecting = false;
+		return;
+	}
+
+	if (GameInstance->bIsReconnecting)
+	{
+		// Show success to reconnect to AGS pop-up message.
+		GameInstance->bIsReconnecting = false;
+		GetPromptSubystem()->ShowMessagePopUp(MESSAGE_PROMPT_TEXT, LOBBY_SUCCESS_RECONNECT_MESSAGE);
+	}
 
 	// Restore and leave old party session.
 	ABSessionInt->RestoreActiveSessions(
@@ -2447,46 +2467,62 @@ void UAccelByteWarsOnlineSession::OnConnectLobbyComplete(int32 LocalUserNum, boo
 		})
 	);
 
-	FOnlineIdentityAccelBytePtr ABIdentityInt = GetABIdentityInt();
-	if (!ensureMsgf(ABIdentityInt, TEXT("AB OnlineIdentity interface is nullptr."))) return;
-
 	ABIdentityInt->AccelByteOnLobbyReconnectingDelegates->RemoveAll(this);
-	// TODO: Uncomment if OSS supports reconnected delegate
-	//ABIdentityInt->AccelByteOnLobbyReconnectedDelegates->RemoveAll(this);
+	ABIdentityInt->AccelByteOnLobbyReconnectedDelegates->RemoveAll(this);
 	ABIdentityInt->AccelByteOnLobbyConnectionClosedDelegates->RemoveAll(this);
 
 	ABIdentityInt->AccelByteOnLobbyReconnectingDelegates->AddUObject(this, &ThisClass::OnLobbyReconnecting);
-	// TODO: Uncomment if OSS supports reconnected delegate
-	// GetABIdentityInt()->AccelByteOnLobbyReconnectedDelegates->AddUObject(this, &ThisClass::OnLobbyReconnected);
+	ABIdentityInt->AccelByteOnLobbyReconnectedDelegates->AddUObject(this, &ThisClass::OnLobbyReconnected);
 	ABIdentityInt->AccelByteOnLobbyConnectionClosedDelegates->AddUObject(this, &ThisClass::OnLobbyConnectionClosed);
-	GetPromptSubystem()->HideReconnectingThrobber();
 }
 
 void UAccelByteWarsOnlineSession::OnLobbyReconnecting(int32 LocalUserNum, const FUniqueNetId& UserId, int32 StatusCode, const FString& Reason, bool bWasClean)
 {
-	// TODO: Uncomment if OSS supports reconnected delegate
-	//GetPromptSubystem()->ShowReconnectingTrobble();
-	GetPromptSubystem()->ShowMessagePopUp(
-		FText{},
-		LOBBY_RECONNECTING_MESSAGE
-	);
+	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+	if (!ensureMsgf(GameInstance, TEXT("Game Instance is null")))
+	{
+		return;
+	}
+
+	GameInstance->bIsReconnecting = true;
+	GetPromptSubystem()->ShowLoading(LOBBY_RECONNECTING_MESSAGE);
 }
 
-void UAccelByteWarsOnlineSession::OnLobbyReconnected(int32 LocalUserNum, const FUniqueNetId& UserId)
+void UAccelByteWarsOnlineSession::OnLobbyReconnected()
 {
-	GetPromptSubystem()->HideReconnectingThrobber();
+	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+	if (!ensureMsgf(GameInstance, TEXT("Game Instance is null")))
+	{
+		return;
+	}
+
+	GameInstance->bIsReconnecting = false;
+	GetPromptSubystem()->HideLoading();
 }
 
 void UAccelByteWarsOnlineSession::OnLobbyConnectionClosed(int32 LocalUserNum, const FUniqueNetId& UserId, int32 StatusCode, const FString& Reason, bool bWasClean)
 {
-	GetPromptSubystem()->HideReconnectingThrobber();
+	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+	if (!ensureMsgf(GameInstance, TEXT("Game Instance is null")))
+	{
+		return;
+	}
+
+	GameInstance->bIsReconnecting = false;
+	GetPromptSubystem()->HideLoading();
 
 	if (StatusCode == static_cast<int32>(AccelByte::EWebsocketErrorTypes::DisconnectFromExternalReconnect))
 	{
 		// Do some manual handle to reconnect lobby
 		FOnlineIdentityAccelBytePtr ABIdentityInt = GetABIdentityInt();
-		if (!ensureMsgf(ABIdentityInt, TEXT("AB OnlineIdentity interface is nullptr."))) return;
+		if (!ensureMsgf(ABIdentityInt, TEXT("AB OnlineIdentity interface is nullptr."))) 
+		{
+			return;
+		}
+
 		ABIdentityInt->ConnectAccelByteLobby(LocalUserNum);
-		bIsGameReconnecting = true;
+		
+		GameInstance->bIsReconnecting = true;
+		GetPromptSubystem()->ShowLoading(LOBBY_RECONNECTING_MESSAGE);
 	}
 }

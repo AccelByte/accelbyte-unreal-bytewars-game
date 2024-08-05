@@ -67,6 +67,10 @@ public:
 	{
 		return &OnLeaveSessionCompleteDelegates;
 	}
+	virtual FOnUpdateSessionComplete* GetOnUpdateSessionCompleteDelegates() override
+	{
+		return &OnUpdateSessionCompleteDelegates;
+	}
 
 	virtual FOnV2SessionInviteReceived* GetOnSessionInviteReceivedDelegates() override
 	{
@@ -90,6 +94,7 @@ protected:
 		const FUniqueNetId& InviteeId) override;
 	virtual void OnRejectSessionInviteComplete(bool bSucceeded) override;
 	virtual void OnLeaveSessionComplete(FName SessionName, bool bSucceeded) override;
+	virtual void OnUpdateSessionComplete(FName SessionName, bool bSucceeded) override;
 
 	virtual void OnSessionInviteReceived(
 		const FUniqueNetId& UserId,
@@ -106,6 +111,7 @@ private:
 	FOnSendSessionInviteComplete OnSendSessionInviteCompleteDelegates;
 	FOnRejectSessionInviteCompleteMulticast OnRejectSessionInviteCompleteDelegates;
 	FOnDestroySessionComplete OnLeaveSessionCompleteDelegates;
+	FOnUpdateSessionComplete OnUpdateSessionCompleteDelegates;
 
 	FOnV2SessionInviteReceived OnSessionInviteReceivedDelegates;
 	FOnSessionParticipantsChange OnSessionParticipantsChangeDelegates;
@@ -418,10 +424,7 @@ private:
 protected:
 	void OnConnectLobbyComplete(int32 LocalUserNum, bool bSucceeded, const FUniqueNetId& UserId, const FString& Error);
 	void OnLobbyReconnecting(int32 LocalUserNum, const FUniqueNetId& UserId, int32 StatusCode, const FString& Reason, bool bWasClean);
-	void OnLobbyReconnected(int32 LocalUserNum, const FUniqueNetId& UserId);
+	void OnLobbyReconnected();
 	void OnLobbyConnectionClosed(int32 LocalUserNum, const FUniqueNetId& UserId, int32 StatusCode, const FString& Reason, bool bWasClean);
-
-private:
-	bool bIsGameReconnecting{ false };
 #pragma endregion
 };

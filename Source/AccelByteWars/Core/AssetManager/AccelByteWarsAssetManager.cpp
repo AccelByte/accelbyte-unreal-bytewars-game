@@ -8,6 +8,7 @@
 #include "GameFramework/OnlineSession.h"
 #include "GameModes/GameModeDataAsset.h"
 #include "GameModes/GameModeTypeDataAsset.h"
+#include "InGameItems/InGameItemDataAsset.h"
 #include "TutorialModules/TutorialModuleDataAsset.h"
 #include "Widgets/Notifications/SNotificationList.h"
 
@@ -47,6 +48,7 @@ void UAccelByteWarsAssetManager::PopulateAssetCache()
 
 	// Load tutorial module assets
 	AssetTypesToLoad.Add(UTutorialModuleDataAsset::TutorialModuleAssetType);
+	AssetTypesToLoad.Add(UInGameItemDataAsset::InGameItemAssetType);
 	LoadAssetsOfType(AssetTypesToLoad);
 }
 
