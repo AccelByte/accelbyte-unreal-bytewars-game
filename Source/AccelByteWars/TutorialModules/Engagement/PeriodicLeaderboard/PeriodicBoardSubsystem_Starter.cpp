@@ -4,6 +4,7 @@
 
 #include "Engagement/PeriodicLeaderboard/PeriodicBoardSubsystem_Starter.h"
 #include "OnlineSubsystemUtils.h"
+#include "TutorialModuleUtilities/StartupSubsystem.h"
 
 void UPeriodicBoardSubsystem_Starter::Initialize(FSubsystemCollectionBase& Collection)
 {

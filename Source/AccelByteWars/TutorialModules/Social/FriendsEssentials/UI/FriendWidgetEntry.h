@@ -19,6 +19,9 @@ class ACCELBYTEWARS_API UFriendWidgetEntry : public UAccelByteWarsWidgetEntry
 {
 	GENERATED_BODY()
 
+public:
+	UFriendData* GetCachedFriendData() const { return CachedFriendData; }
+
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;
@@ -28,7 +31,10 @@ protected:
 	void OnRejectButtonClicked();
 	void OnCancelButtonClicked();
 
+	UPROPERTY()
 	UFriendsSubsystem* FriendsSubsystem;
+
+	UPROPERTY()
 	UFriendData* CachedFriendData;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))

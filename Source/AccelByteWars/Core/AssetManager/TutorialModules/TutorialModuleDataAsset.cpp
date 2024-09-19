@@ -11,6 +11,8 @@
 #include "Widgets/Notifications/SNotificationList.h"
 #include "Framework/Notifications/NotificationManager.h"
 #include "JsonObjectConverter.h"
+#include "Core/GameModes/AccelByteWarsGameMode.h"
+#include "Core/Utilities/AccelByteWarsUtility.h"
 
 DEFINE_LOG_CATEGORY(LogTutorialModuleDataAsset);
 
@@ -24,6 +26,8 @@ TArray<FWidgetValidator*> UTutorialModuleDataAsset::CachedWidgetValidators;
 
 TSet<FString> UTutorialModuleDataAsset::FTUEDialogueUsedIds;
 TArray<FFTUEDialogueModel*> UTutorialModuleDataAsset::CachedFTUEDialogues;
+
+TMultiMap<FString, UGUICheatWidgetEntry*> UTutorialModuleDataAsset::CachedGUICheatEntries;
 
 UTutorialModuleDataAsset::UTutorialModuleDataAsset() 
 {
@@ -253,6 +257,7 @@ void UTutorialModuleDataAsset::ValidateDataAssetProperties()
 	ValidateGeneratedWidgets();
 	ValidateWidgetValidators();
 	ValidateFTUEDialogues();
+	ValidateGUICheatEntries();
 
 	LastCodeName = CodeName;
 }
@@ -955,3 +960,127 @@ void UTutorialModuleDataAsset::ShowPopupMessage(const FString& Message) const
 	FSlateNotificationManager::Get().AddNotification(Info);
 }
 #endif
+
+#pragma region "GUI Cheat"
+void UTutorialModuleDataAsset::ValidateGUICheatEntries()
+{
+	if (!AccelByteWarsUtility::GetFlagValueOrDefault(FLAG_GUI_CHEAT, FLAG_GUI_CHEAT_SECTION, true))
+	{
+		return;
+	}
+
+	// Clean up entries
+	for (const FGUICheatEntry& LastGUICheatEntry : LastGUICheatEntries)
+	{
+		for (const TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : LastGUICheatEntry.TargetWidgetClasses)
+		{
+			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
+			{
+				continue;
+			}
+
+			TargetWidgetClass.GetDefaultObject()->GUICheatWidgetEntries.RemoveAll([this](const UGUICheatWidgetEntry* Temp)
+			{
+				return !Temp || !Temp->OwnerTutorialModule || Temp->OwnerTutorialModule == this;
+			});
+		}
+		for (const TSubclassOf<AAccelByteWarsGameState>& TargetGameModeClass : LastGUICheatEntry.TargetGameStateClasses)
+		{
+			if (!TargetGameModeClass || !TargetGameModeClass.GetDefaultObject())
+			{
+				continue;
+			}
+
+			TargetGameModeClass.GetDefaultObject()->GUICheatWidgetEntries.RemoveAll([this](const UGUICheatWidgetEntry* Temp)
+			{
+				return !Temp || !Temp->OwnerTutorialModule || Temp->OwnerTutorialModule == this;
+			});
+		}
+	}
+	for (const FGUICheatEntry& GUICheatEntry : GUICheatEntries)
+	{
+		for (const TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : GUICheatEntry.TargetWidgetClasses)
+		{
+			if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
+			{
+				continue;
+			}
+
+			TargetWidgetClass.GetDefaultObject()->GUICheatWidgetEntries.RemoveAll([this](const UGUICheatWidgetEntry* Temp)
+			{
+				return !Temp || !Temp->OwnerTutorialModule || Temp->OwnerTutorialModule == this;
+			});
+		}
+		for (const TSubclassOf<AAccelByteWarsGameState>& TargetGameModeClass : GUICheatEntry.TargetGameStateClasses)
+		{
+			if (!TargetGameModeClass || !TargetGameModeClass.GetDefaultObject())
+			{
+				continue;
+			}
+
+			TargetGameModeClass.GetDefaultObject()->GUICheatWidgetEntries.RemoveAll([this](const UGUICheatWidgetEntry* Temp)
+			{
+				return !Temp || !Temp->OwnerTutorialModule || Temp->OwnerTutorialModule == this;
+			});
+		}
+	}
+
+	// Remove invalid entries
+	TArray<FString> IdsToRemove;
+	for (const TTuple<FString, UGUICheatWidgetEntry*>& Entry : CachedGUICheatEntries)
+	{
+		if (!Entry.Value)
+		{
+			IdsToRemove.Add(Entry.Key);
+		}
+	}
+	for (const FString& ToRemove : IdsToRemove)
+	{
+		CachedGUICheatEntries.Remove(ToRemove);
+	}
+
+	// Assign fresh entries
+	for (const FGUICheatEntry& GUICheatEntry : GUICheatEntries)
+	{
+		// Assign the generated widget to the target widget class.
+		if (IsActiveAndDependenciesChecked())
+		{
+			for (const TSubclassOf<UAccelByteWarsActivatableWidget>& TargetWidgetClass : GUICheatEntry.TargetWidgetClasses)
+			{
+				if (!TargetWidgetClass || !TargetWidgetClass.GetDefaultObject())
+				{
+					continue;
+				}
+
+				// Construct entry
+				UGUICheatWidgetEntry* Entry = NewObject<UGUICheatWidgetEntry>();
+				Entry->OwnerTutorialModule = this;
+				Entry->Name = GUICheatEntry.Name;
+				Entry->ParamNames = GUICheatEntry.ParamNames;
+
+				TargetWidgetClass.GetDefaultObject()->GUICheatWidgetEntries.Add(Entry);
+				CachedGUICheatEntries.Add(GUICheatEntry.Id, Entry);
+			}
+			for (const TSubclassOf<AAccelByteWarsGameState>& TargetGameModeClass : GUICheatEntry.TargetGameStateClasses)
+			{
+				if (!TargetGameModeClass || !TargetGameModeClass.GetDefaultObject())
+				{
+					continue;
+				}
+
+				// Construct entry
+				UGUICheatWidgetEntry* Entry = NewObject<UGUICheatWidgetEntry>();
+				Entry->OwnerTutorialModule = this;
+				Entry->Name = GUICheatEntry.Name;
+				Entry->ParamNames = GUICheatEntry.ParamNames;
+
+				TargetGameModeClass.GetDefaultObject()->GUICheatWidgetEntries.Add(Entry);
+				CachedGUICheatEntries.Add(GUICheatEntry.Id, Entry);
+			}
+		}
+	}
+
+	// Save cache for clean up later
+	LastGUICheatEntries = GUICheatEntries;
+}
+#pragma endregion 

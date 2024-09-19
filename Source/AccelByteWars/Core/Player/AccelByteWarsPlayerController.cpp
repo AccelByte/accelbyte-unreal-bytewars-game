@@ -5,6 +5,7 @@
 #include "Core/Player/AccelByteWarsPlayerController.h"
 
 #include "AccelByteWarsPlayerState.h"
+#include "Core/GameModes/AccelByteWarsInGameGameMode.h"
 #include "Core/GameStates/AccelByteWarsMainMenuGameState.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
@@ -91,4 +92,26 @@ void AAccelByteWarsPlayerController::DelayedClientTravel(const FString& Url, con
 		3.0f,
 		false,
 		3.0f);
+}
+
+void AAccelByteWarsPlayerController::ClientInstructInstaKillPlayer(const TArray<APlayerState*>& PlayerStates)
+{
+	ServerInstructInstaKillPlayer(PlayerStates);
+}
+
+void AAccelByteWarsPlayerController::ServerInstructInstaKillPlayer_Implementation(const TArray<APlayerState*>& PlayerStates)
+{
+	AGameModeBase* GameModeBase = GetWorld()->GetAuthGameMode();
+	if (!GameModeBase)
+	{
+		return;
+	}
+
+	AAccelByteWarsInGameGameMode* InGameGameMode = Cast<AAccelByteWarsInGameGameMode>(GameModeBase);
+	if (!InGameGameMode)
+	{
+		return;
+	}
+
+	InGameGameMode->InstaKillPlayers(PlayerStates);
 }

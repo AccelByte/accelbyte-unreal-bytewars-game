@@ -11,6 +11,7 @@
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "OnlineSubsystemUtils.h"
 #include "Interfaces/OnlineUserInterface.h"
+#include "TutorialModuleUtilities/StartupSubsystem.h"
 #include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
 
 void UPlayingWithFriendsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -182,8 +183,8 @@ void UPlayingWithFriendsSubsystem::JoinGameSessionConfirmation(
 }
 
 void UPlayingWithFriendsSubsystem::OnQueryUserInfoOnGameSessionParticipantChange(
-	const bool bSucceeded,
-	const TArray<FUserOnlineAccountAccelByte*>& UsersInfo,
+	const FOnlineError& Error,
+	const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo,
 	FName SessionName,
 	const bool bJoined)
 {
@@ -208,12 +209,12 @@ void UPlayingWithFriendsSubsystem::OnQueryUserInfoOnGameSessionParticipantChange
 	UE_LOG_PLAYINGWITHFRIENDS(Verbose, TEXT("Called"));
 
 	UPromptSubsystem* PromptSubsystem = GetPromptSubsystem();
-	if (!bSucceeded || UsersInfo.IsEmpty() || !PromptSubsystem)
+	if (!Error.bSucceeded || UsersInfo.IsEmpty() || !PromptSubsystem)
 	{
 		return;
 	}
 
-	for (const FUserOnlineAccountAccelByte* User : UsersInfo)
+	for (const TSharedPtr<FUserOnlineAccountAccelByte>& User : UsersInfo)
 	{
 		const bool bIsLeaderInfo = OnlineSession->CompareAccelByteUniqueId(
 			FUniqueNetIdRepl(User->GetUserId()),
@@ -303,7 +304,7 @@ void UPlayingWithFriendsSubsystem::OnSendGameSessionInviteComplete(
 		return;
 	}
 
-	UE_LOG_PLAYINGWITHFRIENDS(Verbose, TEXT("Succeedded: %s"), *FString(bSucceeded ? "TRUE" : "FALSE"));
+	UE_LOG_PLAYINGWITHFRIENDS(Verbose, TEXT("Succeedded: %s"), *FString(bSucceeded ? TEXT("TRUE") : TEXT("FALSE")));
 
 	if (!SessionName.IsEqual(OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession)))
 	{
@@ -321,7 +322,7 @@ void UPlayingWithFriendsSubsystem::OnSendGameSessionInviteComplete(
 
 void UPlayingWithFriendsSubsystem::OnRejectGameSessionInviteComplete(bool bSucceeded) const
 {
-	UE_LOG_PLAYINGWITHFRIENDS(Verbose, TEXT("Succeedded: %s"), *FString(bSucceeded ? "TRUE" : "FALSE"));
+	UE_LOG_PLAYINGWITHFRIENDS(Verbose, TEXT("Succeedded: %s"), *FString(bSucceeded ? TEXT("TRUE") : TEXT("FALSE")));
 
 	OnRejectGameSessionInviteCompleteDelegates.Broadcast(bSucceeded);
 }
@@ -355,7 +356,7 @@ void UPlayingWithFriendsSubsystem::OnJoinSessionComplete(
 	const bool bSucceeded = CompletionType == EOnJoinSessionCompleteResult::Success;
 	FText ErrorMessage;
 
-	UE_LOG_PLAYINGWITHFRIENDS(Verbose, TEXT("Succeedded: %s"), *FString(bSucceeded ? "TRUE" : "FALSE"));
+	UE_LOG_PLAYINGWITHFRIENDS(Verbose, TEXT("Succeedded: %s"), *FString(bSucceeded ? TEXT("TRUE") : TEXT("FALSE")));
 
 	switch (CompletionType)
 	{
@@ -417,26 +418,29 @@ void UPlayingWithFriendsSubsystem::OnGameSessionInviteReceived(
 	}
 
 	const FUniqueNetIdAccelByteUserRef FromABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(FromId.AsShared());
-	OnlineSession->QueryUserInfo(
-		LocalUserNum,
-		TPartyMemberArray{FromABId},
-		FOnQueryUsersInfoComplete::CreateWeakLambda(
-			this,
-			[this, Invite, LocalUserNum](const bool bSucceeded, const TArray<FUserOnlineAccountAccelByte*>& UsersInfo)
+	if (UStartupSubsystem* StartupSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UStartupSubsystem>())
+	{
+		StartupSubsystem->QueryUserInfo(
+			0,
+			TPartyMemberArray{FromABId},
+			FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [this, Invite, LocalUserNum](
+				const FOnlineError& Error,
+				const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
 			{
 				/**
 				 * For some reason, calling ShowInviteReceivedPopup through CreateUObject crashes the game.
 				 * WeakLambda used in place of that.
 				 */
-				if (bSucceeded)
+				if (Error.bSucceeded)
 				{
 					ShowInviteReceivedPopup(UsersInfo, LocalUserNum, Invite);
 				}
 			}));
+	}
 }
 
 void UPlayingWithFriendsSubsystem::ShowInviteReceivedPopup(
-	const TArray<FUserOnlineAccountAccelByte*>& UsersInfo,
+	const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo,
 	const int32 LocalUserNum,
 	const FOnlineSessionInviteAccelByte Invite)
 {
@@ -446,7 +450,7 @@ void UPlayingWithFriendsSubsystem::ShowInviteReceivedPopup(
 		return;
 	}
 
-	const FUserOnlineAccountAccelByte* User = UsersInfo[0];
+	const TSharedPtr<FUserOnlineAccountAccelByte> User = UsersInfo[0];
 	const FText Message = FText::Format(
 		TEXT_FORMAT_INVITED,
 		FText::FromString(User->GetDisplayName().IsEmpty() ?
@@ -531,12 +535,15 @@ void UPlayingWithFriendsSubsystem::OnGameSessionParticipantsChange(
 		}
 	}
 
-	OnlineSession->QueryUserInfo(
-		LocalUserNum,
-		UsersToQuery,
-		FOnQueryUsersInfoComplete::CreateUObject(
-			this,
-			&ThisClass::OnQueryUserInfoOnGameSessionParticipantChange,
-			SessionName,
-			bJoined));
+	if (UStartupSubsystem* StartupSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UStartupSubsystem>())
+	{
+		StartupSubsystem->QueryUserInfo(
+			0,
+			UsersToQuery,
+			FOnQueryUsersInfoCompleteDelegate::CreateUObject(
+				this,
+				&ThisClass::OnQueryUserInfoOnGameSessionParticipantChange,
+				SessionName,
+				bJoined));
+	}
 }

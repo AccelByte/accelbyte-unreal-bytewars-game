@@ -7,6 +7,7 @@
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/GameStates/AccelByteWarsMainMenuGameState.h"
 #include "CommonButtonBase.h"
+#include "Components/VerticalBox.h"
 
 void UHelpOptionsWidget::NativeOnActivated()
 {
@@ -35,10 +36,13 @@ void UHelpOptionsWidget::NativeOnActivated()
 
 	if (GetWorld())
 	{
-		// Only show the credits button if in the Main Menu level.
+		// Change visibility for menus that only show at Main Menu
 		const TWeakObjectPtr<AAccelByteWarsMainMenuGameState> MainMenuGameState = 
 			MakeWeakObjectPtr<AAccelByteWarsMainMenuGameState>(Cast<AAccelByteWarsMainMenuGameState>(GetWorld()->GetGameState()));
-		Btn_Credits->SetVisibility(MainMenuGameState.IsValid() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+		const ESlateVisibility NewVisibility = MainMenuGameState.IsValid() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed;
+		
+		Btn_Credits->SetVisibility(NewVisibility);
+		Vb_GeneratedButtonMainMenuOnly->SetVisibility(NewVisibility);
 	}
 
 	Btn_Back->OnClicked().AddUObject(this, &UHelpOptionsWidget::DeactivateWidget);

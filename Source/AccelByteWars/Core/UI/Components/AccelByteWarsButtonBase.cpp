@@ -3,12 +3,23 @@
 // and restrictions contact your company contract manager.
 
 #include "AccelByteWarsButtonBase.h"
-#include "CommonActionWidget.h"
+#include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/GameUIManagerSubsystem.h"
+#include "CommonActionWidget.h"
 
 void UAccelByteWarsButtonBase::NativePreConstruct()
 {
 	Super::NativePreConstruct();
+
+	// If button click sound is not assigned, use the default button sound
+	const UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+	ClickSound = PressedSlateSoundOverride;
+	if (!ClickSound.GetResourceObject() && GameInstance)
+	{
+		ClickSound = GameInstance->GetDefaultButtonClickSound();
+	}
+
+	SetAllowClickSound(bAllowClickSound);
 
 	UpdateButtonStyle();
 	RefreshButtonText();
@@ -44,7 +55,7 @@ void UAccelByteWarsButtonBase::NativeOnAddedToFocusPath(const FFocusEvent& InFoc
 		}
 
 		UIManager->SetSelectedButton(this);
-		SetSelectedInternal(true);
+		SetSelectedInternal(true, false);
 		bSelectedByKeyboard = true;
 	}
 }
@@ -53,7 +64,7 @@ void UAccelByteWarsButtonBase::NativeOnRemovedFromFocusPath(const FFocusEvent& I
 {
 	Super::NativeOnRemovedFromFocusPath(InFocusEvent);
 
-	SetSelectedInternal(false);
+	SetSelectedInternal(false, false);
 	bSelectedByKeyboard = false;
 }
 
@@ -77,6 +88,12 @@ void UAccelByteWarsButtonBase::SetButtonImage(const FSlateBrush& InBrush)
 {
 	ButtonBrush = InBrush;
 	RefreshButtonImage();
+}
+
+void UAccelByteWarsButtonBase::SetAllowClickSound(bool bAllow)
+{
+	bAllowClickSound = bAllow;
+	SetPressedSoundOverride(bAllowClickSound ? Cast<USoundBase>(ClickSound.GetResourceObject()) : nullptr);
 }
 
 void UAccelByteWarsButtonBase::RefreshButtonText()
@@ -119,7 +136,7 @@ void UAccelByteWarsButtonBase::NativeOnHovered()
 
 		if (UAccelByteWarsButtonBase* LastSelectedButton = UIManager->GetLastSelectedButton())
 		{
-			LastSelectedButton->SetSelectedInternal(false);
+			LastSelectedButton->SetSelectedInternal(false, false);
 		}
 	}
 }

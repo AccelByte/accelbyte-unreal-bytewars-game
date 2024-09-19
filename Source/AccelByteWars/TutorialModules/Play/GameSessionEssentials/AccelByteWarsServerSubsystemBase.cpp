@@ -15,6 +15,7 @@
 #include "Core/Player/AccelByteWarsPlayerState.h"
 #include "Core/System/AccelByteWarsGameSession.h"
 #include "Play/OnlineSessionUtils/AccelByteWarsOnlineSessionBase.h"
+#include "TutorialModuleUtilities/StartupSubsystem.h"
 
 void UAccelByteWarsServerSubsystemBase::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -382,10 +383,13 @@ void UAccelByteWarsServerSubsystemBase::AuthenticatePlayer_OnRefreshSessionCompl
 		}
 		else
 		{
-			GameSessionOnlineSession->QueryUserInfo(
-				0,
-				UniqueNetIds,
-				FOnQueryUsersInfoComplete::CreateUObject(this, &ThisClass::AuthenticatePlayer_OnQueryUserInfoComplete));
+			if (UStartupSubsystem* StartupSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UStartupSubsystem>())
+			{
+				StartupSubsystem->QueryUserInfo(
+					0,
+					UniqueNetIds,
+					FOnQueryUsersInfoCompleteDelegate::CreateUObject(this, &ThisClass::AuthenticatePlayer_OnQueryUserInfoComplete));
+			}
 		}
 	}
 	else
@@ -395,17 +399,17 @@ void UAccelByteWarsServerSubsystemBase::AuthenticatePlayer_OnRefreshSessionCompl
 }
 
 void UAccelByteWarsServerSubsystemBase::AuthenticatePlayer_OnQueryUserInfoComplete(
-	const bool bSucceeded,
-	const TArray<FUserOnlineAccountAccelByte*>& OnlineUsers)
+	const FOnlineError& Error,
+	const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
 {
-	UE_LOG_GAMESESSION(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
+	UE_LOG_GAMESESSION(Log, TEXT("succeeded: %s"), *FString(Error.bSucceeded ? "TRUE": "FALSE"))
 
 	bQueryUserInfoFromSessionRunning = false;
 
-	if (bSucceeded)
+	if (Error.bSucceeded)
 	{
 		// cache data
-		for (const FUserOnlineAccountAccelByte* OnlineUser : OnlineUsers)
+		for (const TSharedPtr<FUserOnlineAccountAccelByte>& OnlineUser : UsersInfo)
 		{
 			TPair<FUserOnlineAccountAccelByte, int32>& UserInfo = CachedUsersInfo.FindOrAdd(FUniqueNetIdRepl(OnlineUser->GetUserId()));
 			UserInfo.Key = *OnlineUser;

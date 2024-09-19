@@ -17,12 +17,17 @@ UCLASS()
 class ACCELBYTEWARS_API UProfileWidget : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
+
+public:
+	FUniqueNetIdPtr GetNetId() const { return NetId; }
 	
 protected:
 	virtual void NativeOnActivated() override;
 
 	void ShowPlayerProfile();
 	void CopyPlayerUserIdToClipboard();
+
+	FUniqueNetIdPtr NetId;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UAccelByteWarsAsyncImageWidget* Img_Avatar;

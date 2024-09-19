@@ -9,13 +9,15 @@
 #include "PlayerEntryWidget.generated.h"
 
 class UTextBlock;
-class UBorder;
+class UHorizontalBox;
 class UAccelByteWarsAsyncImageWidget;
 
 UCLASS()
 class ACCELBYTEWARS_API UPlayerEntryWidget : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
+
+	virtual void NativeOnActivated() override;
 
 public:
 	UFUNCTION(BlueprintCallable)
@@ -29,8 +31,17 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void SetAvatarTint(const FLinearColor& Color);
+
+	void SetNetId(FUniqueNetIdPtr Id);
+	FUniqueNetIdPtr GetNetId() const;
+
+protected:
+	FUniqueNetIdPtr NetId;
 	
 private:
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UHorizontalBox* Hb_PlatformOuter;
+
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UAccelByteWarsAsyncImageWidget* Img_Avatar;
 

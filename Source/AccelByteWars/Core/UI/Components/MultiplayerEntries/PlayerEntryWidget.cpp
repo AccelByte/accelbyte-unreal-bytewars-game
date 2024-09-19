@@ -3,9 +3,18 @@
 // and restrictions contact your company contract manager.
 
 #include "Core/UI/Components/MultiplayerEntries/PlayerEntryWidget.h"
+
+#include "Components/HorizontalBox.h"
 #include "Core/UI/Components/AccelByteWarsAsyncImageWidget.h"
 #include "Components/TextBlock.h"
-#include "Components/Border.h"
+
+void UPlayerEntryWidget::NativeOnActivated()
+{
+	Super::NativeOnActivated();
+
+	Hb_PlatformOuter->SetVisibility(Hb_PlatformOuter->HasAnyChildren() ?
+		ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+}
 
 void UPlayerEntryWidget::SetUsername(const FText& Username)
 {
@@ -25,4 +34,14 @@ void UPlayerEntryWidget::SetTextColor(const FLinearColor& Color)
 void UPlayerEntryWidget::SetAvatarTint(const FLinearColor& Color)
 {
 	Img_Avatar->SetImageTint(Color);
+}
+
+void UPlayerEntryWidget::SetNetId(FUniqueNetIdPtr Id)
+{
+	NetId = Id;
+}
+
+FUniqueNetIdPtr UPlayerEntryWidget::GetNetId() const
+{
+	return NetId;
 }

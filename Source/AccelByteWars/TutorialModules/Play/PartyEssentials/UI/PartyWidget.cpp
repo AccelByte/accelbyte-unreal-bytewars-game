@@ -12,6 +12,7 @@
 #include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
 #include "Components/HorizontalBox.h"
 #include "CommonButtonBase.h"
+#include "TutorialModuleUtilities/StartupSubsystem.h"
 
 void UPartyWidget::NativeConstruct()
 {
@@ -82,72 +83,78 @@ void UPartyWidget::DisplayParty()
 	}
 
 	// Query and display party member information.
-	PartyOnlineSession->QueryUserInfo(
-		PartyOnlineSession->GetLocalUserNumFromPlayerController(GetOwningPlayer()), 
-		PartyMemberUserIds,
-		FOnQueryUsersInfoComplete::CreateWeakLambda(this, [this]
-		(const bool bSucceeded, const TArray<FUserOnlineAccountAccelByte*>& UsersInfo)
-		{
-			// If party members are changed during query, then requery the party members information.
-			const bool bIsInParty = !PartyOnlineSession->GetPartyMembers().IsEmpty();
-			if (bIsInParty)
+	if (UStartupSubsystem* StartupSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UStartupSubsystem>())
+	{
+		StartupSubsystem->QueryUserInfo(
+			PartyOnlineSession->GetLocalUserNumFromPlayerController(GetOwningPlayer()),
+			PartyMemberUserIds,
+			FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [this](
+				const FOnlineError& Error,
+				const TArray<TSharedPtr<FUserOnlineAccountAccelByte>> UsersInfo)
 			{
-				if (UsersInfo.Num() != PartyOnlineSession->GetPartyMembers().Num())
+				// If party members are changed during query, then requery the party members information.
+				const bool bIsInParty = !PartyOnlineSession->GetPartyMembers().IsEmpty();
+				if (bIsInParty)
 				{
-					DisplayParty();
-					return;
-				}
-				for (int32 i = 0; i < UsersInfo.Num(); i++)
-				{
-					if (!UsersInfo[i]->GetUserId()->IsValid() ||
-						!PartyOnlineSession->GetPartyMembers()[i]->IsValid() ||
-						PartyOnlineSession->GetPartyMembers()[i].Get() != UsersInfo[i]->GetUserId().Get())
+					if (UsersInfo.Num() != PartyOnlineSession->GetPartyMembers().Num())
 					{
 						DisplayParty();
 						return;
 					}
+					for (int32 i = 0; i < UsersInfo.Num(); i++)
+					{
+						if (!UsersInfo[i]->GetUserId()->IsValid() ||
+							!PartyOnlineSession->GetPartyMembers()[i]->IsValid() ||
+							PartyOnlineSession->GetPartyMembers()[i].Get() != UsersInfo[i]->GetUserId().Get())
+						{
+							DisplayParty();
+							return;
+						}
+					}
 				}
-			}
-			
-			// Request failed.
-			if (!bSucceeded)
-			{
-				Ws_Party->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Error);
-				return;
-			}
 
-			// Clean up last party member list.
-			Ws_Party->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Not_Empty);
-			Hb_Party->ClearChildren();
-			Btn_Leave->SetVisibility(ESlateVisibility::Visible);
-
-			// Display party members.
-			for (int32 i = 0; i < MaxPartyMembers; i++)
-			{
-				if (i < UsersInfo.Num() && !UsersInfo[i])
+				// Request failed.
+				if (!Error.bSucceeded)
 				{
-					continue;
+					Ws_Party->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Error);
+					return;
 				}
 
-				const TWeakObjectPtr<UPartyWidgetEntry> PartyMemberEntry =
-					MakeWeakObjectPtr<UPartyWidgetEntry>(CreateWidget<UPartyWidgetEntry>(this, PartyWidgetEntryClass.Get()));
-				Hb_Party->AddChild(PartyMemberEntry.Get());
+				// Clean up last party member list.
+				Ws_Party->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Not_Empty);
+				Hb_Party->ClearChildren();
+				Btn_Leave->SetVisibility(ESlateVisibility::Visible);
 
-				// Display party member information.
-				if (i < UsersInfo.Num())
+				// Display party members.
+				for (int32 i = 0; i < MaxPartyMembers; i++)
 				{
-					/* Mark party member as leader if valid.
-					 * If not in any party, then assume the player as the leader.*/
-					PartyMemberEntry->SetPartyMember(*UsersInfo[i], PartyOnlineSession->IsPartyLeader(UsersInfo[i]->GetUserId()) || !bIsInParty);
+					if (i < UsersInfo.Num() && !UsersInfo[i])
+					{
+						continue;
+					}
+
+					const TWeakObjectPtr<UPartyWidgetEntry> PartyMemberEntry =
+						MakeWeakObjectPtr<UPartyWidgetEntry>(
+							CreateWidget<UPartyWidgetEntry>(this, PartyWidgetEntryClass.Get()));
+					Hb_Party->AddChild(PartyMemberEntry.Get());
+
+					// Display party member information.
+					if (i < UsersInfo.Num())
+					{
+						/* Mark party member as leader if valid.
+						 * If not in any party, then assume the player as the leader.*/
+						PartyMemberEntry->SetPartyMember(*UsersInfo[i],
+						                                 PartyOnlineSession->IsPartyLeader(UsersInfo[i]->GetUserId()) ||
+						                                 !bIsInParty);
+					}
+					// Display button to add more party member.
+					else
+					{
+						PartyMemberEntry->ResetPartyMember();
+					}
 				}
-				// Display button to add more party member.
-				else
-				{
-					PartyMemberEntry->ResetPartyMember();
-				}
-			}
-		}
-	));
+			}));
+	}
 }
 
 void UPartyWidget::OnLeaveButtonClicked()

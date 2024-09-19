@@ -41,54 +41,6 @@ void UMatchSessionDSOnlineSession_Starter::ClearOnlineDelegates()
 	// TODO: Add your delegates cleanup here
 }
 
-void UMatchSessionDSOnlineSession_Starter::QueryUserInfo(
-	const int32 LocalUserNum,
-	const TArray<FUniqueNetIdRef>& UserIds,
-	const FOnQueryUsersInfoComplete& OnComplete)
-{
-	UE_LOG_MATCHSESSIONDS(Verbose, TEXT("called"))
-
-	// safety
-	if (!GetUserInt())
-	{
-		UE_LOG_MATCHSESSIONDS(Warning, TEXT("User interface null"))
-		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, OnComplete]()
-		{
-			OnComplete.ExecuteIfBound(false, {});
-		}));
-		return;
-	}
-
-	TArray<FUserOnlineAccountAccelByte*> UserInfo;
-	if (RetrieveUserInfoCache(UserIds, UserInfo))
-	{
-		UE_LOG_MATCHSESSIONDS(Log, TEXT("Cache found"))
-		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, UserInfo, OnComplete]()
-		{
-			OnComplete.ExecuteIfBound(true, UserInfo);
-		}));
-	}
-	// Some data does not exist in cache, query everything
-	else
-	{
-		// Bind delegate
-		OnQueryUserInfoCompleteDelegateHandle = GetUserInt()->OnQueryUserInfoCompleteDelegates->AddWeakLambda(
-			this, [OnComplete, this](
-				int32 LocalUserNum,
-				bool bSucceeded,
-				const TArray<FUniqueNetIdRef>& UserIds,
-				const FString& ErrorMessage)
-			{
-				OnQueryUserInfoComplete(LocalUserNum, bSucceeded, UserIds, ErrorMessage, OnComplete);
-			});
-
-		if (!GetUserInt()->QueryUserInfo(LocalUserNum, UserIds))
-		{
-			OnQueryUserInfoComplete(LocalUserNum, false, UserIds, "", OnComplete);
-		}
-	}
-}
-
 void UMatchSessionDSOnlineSession_Starter::DSQueryUserInfo(
 	const TArray<FUniqueNetIdRef>& UserIds,
 	const FOnDSQueryUsersInfoComplete& OnComplete)
@@ -135,46 +87,6 @@ void UMatchSessionDSOnlineSession_Starter::DSQueryUserInfo(
 	}
 }
 
-void UMatchSessionDSOnlineSession_Starter::OnQueryUserInfoComplete(
-	int32 LocalUserNum,
-	bool bSucceeded,
-	const TArray<FUniqueNetIdRef>& UserIds,
-	const FString& ErrorMessage,
-	const FOnQueryUsersInfoComplete& OnComplete)
-{
-	UE_LOG_MATCHSESSIONDS(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE" : "FALSE"))
-
-	// reset delegate handle
-	GetUserInt()->OnQueryUserInfoCompleteDelegates->Remove(OnQueryUserInfoCompleteDelegateHandle);
-	OnQueryUserInfoCompleteDelegateHandle.Reset();
-
-	if (bSucceeded)
-	{
-		// Cache the result.
-		CacheUserInfo(LocalUserNum, UserIds);
-
-		// Retrieve the result from cache.
-		TArray<FUserOnlineAccountAccelByte*> OnlineUsers;
-		RetrieveUserInfoCache(UserIds, OnlineUsers);
-
-		// Only include valid users info only.
-		OnlineUsers.RemoveAll([](const FUserOnlineAccountAccelByte* Temp)
-		{
-			return !Temp || !Temp->GetUserId()->IsValid();
-		});
-
-		UE_LOG_MATCHSESSIONDS(Log,
-			TEXT("Queried users info: %d, found valid users info: %d"),
-			UserIds.Num(), OnlineUsers.Num());
-
-		OnComplete.ExecuteIfBound(true, OnlineUsers);
-	}
-	else
-	{
-		OnComplete.ExecuteIfBound(false, {});
-	}
-}
-
 void UMatchSessionDSOnlineSession_Starter::OnDSQueryUserInfoComplete(
 	const FListBulkUserInfo& UserInfoList,
 	const FOnDSQueryUsersInfoComplete& OnComplete)
@@ -201,9 +113,9 @@ void UMatchSessionDSOnlineSession_Starter::OnDSQueryUserInfoComplete(
 
 void UMatchSessionDSOnlineSession_Starter::OnQueryUserInfoForFindSessionComplete(
 	const bool bSucceeded,
-	const TArray<FUserOnlineAccountAccelByte*>& UsersInfo)
+	const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
 {
-	UE_LOG_MATCHSESSIONDS(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE" : "FALSE"))
+	UE_LOG_MATCHSESSIONDS(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? TEXT("TRUE") : TEXT("FALSE")))
 
 	if (bSucceeded)
 	{

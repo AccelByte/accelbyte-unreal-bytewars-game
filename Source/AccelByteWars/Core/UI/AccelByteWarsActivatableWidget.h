@@ -6,6 +6,7 @@
 
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
+#include "Components/Prompt/GUICheat/GUICheatModels.h"
 #include "Core/Utilities/AccelByteWarsUtilityLog.h"
 #include "Core/UI/AccelByteWarsWidgetModels.h"
 #include "Core/UI/AccelByteWarsWidgetInterface.h"
@@ -202,4 +203,14 @@ public:
 private:
 	void ValidateWidgetValidators();
 #pragma endregion
+
+#pragma region "GUI Cheat"
+public:
+	UPROPERTY()
+	TArray<UGUICheatWidgetEntry*> GUICheatWidgetEntries;
+
+protected:
+	void InitializeGUICheatWidgetEntries();
+	void DeInitializeGUICheatWidgetEntries() const;
+#pragma endregion 
 };

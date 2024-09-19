@@ -5,7 +5,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UObject/NoExportTypes.h"
+#include "OnlineSubsystemAccelByteUtils.h"
 #include "AuthEssentialsModels.generated.h"
 
 #define AUTH_TYPE_ACCELBYTE_PARAM TEXT("ACCELBYTE")
@@ -37,4 +37,18 @@ class UAuthEssentialsModels
 {
 public:
 	inline static FOnLoginSuccess OnLoginSuccessDelegate;
+
+	static EAccelBytePlatformType GetPlatformType(FUniqueNetIdPtr NetId)
+	{
+		if (!ensure(NetId))
+		{
+			return EAccelBytePlatformType::None;
+		}
+		const FUniqueNetIdAccelByteUserPtr UserABId = StaticCastSharedPtr<const FUniqueNetIdAccelByteUser>(NetId);
+		if (!ensure(UserABId))
+		{
+			return EAccelBytePlatformType::None;
+		}
+		return FOnlineSubsystemAccelByteUtils::GetAccelBytePlatformTypeFromAuthType(UserABId->GetPlatformType());
+	}
 };

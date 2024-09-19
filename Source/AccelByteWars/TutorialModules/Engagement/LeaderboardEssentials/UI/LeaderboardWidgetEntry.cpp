@@ -11,6 +11,7 @@ void ULeaderboardWidgetEntry::SetLeaderboardRank(ULeaderboardRank* LeaderboardRa
 	NativeOnListItemObjectSet(LeaderboardRank);
 }
 
+// @@@SNIPSTART LeaderboardWidgetEntry.cpp-NativeOnListItemObjectSet
 void ULeaderboardWidgetEntry::NativeOnListItemObjectSet(UObject* ListItemObject)
 {
 	Super::NativeOnListItemObjectSet(ListItemObject);
@@ -32,3 +33,4 @@ void ULeaderboardWidgetEntry::NativeOnListItemObjectSet(UObject* ListItemObject)
 	// Display the player's score. If no rank, display it as empty.
 	Tb_Score->SetText(bUnranked ? FText::FromString(TEXT("")) : FText::AsNumber(LeaderboardRank->Score));
 }
+// @@@SNIPEND

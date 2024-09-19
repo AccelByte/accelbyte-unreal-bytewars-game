@@ -6,11 +6,14 @@
 
 #include "CoreMinimal.h"
 
+// @@@SNIPSTART CloudSaveModels.h-define
+// @@@MULTISNIP SoundOptionKey {"selectedLines": ["1-4"]}
 #define GAME_OPTIONS_KEY FString(TEXT("GameOptions"))
 #define SOUND_OPTIONS_KEY FString(TEXT("Sound"))
-#define PLAYER_EQUIPMENT_KEY FString(TEXT("PlayerEquipment"))
 #define SOUND_OPTIONS_MUSIC_KEY FString(TEXT("musicvolume"))
 #define SOUND_OPTIONS_SFX_KEY FString(TEXT("sfxvolume"))
+#define PLAYER_EQUIPMENT_KEY FString(TEXT("PlayerEquipment"))
+// @@@SNIPEND
 
 DECLARE_DELEGATE_OneParam(FOnSetCloudSaveRecordComplete, bool /*bWasSuccessful*/);
 

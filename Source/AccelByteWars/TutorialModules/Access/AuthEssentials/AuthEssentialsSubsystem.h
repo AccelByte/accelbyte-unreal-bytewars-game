@@ -38,9 +38,24 @@ public:
 	 */
 	void ClearAuthCredentials();
 
+	TSharedPtr<FUserOnlineAccountAccelByte> GetLoggedInUserOnlineAccount(const int LocalUserIndex = 0) const;
+	
+	TSharedPtr<FUserOnlineAccountAccelByte> GetOrQueryLoggedInUserOnlineAccount();
+
 protected:
 	void OnLoginComplete(int32 LocalUserNum, bool bLoginWasSuccessful, const FUniqueNetId& UserId, const FString& LoginError, const FAuthOnLoginCompleteDelegate OnLoginComplete);
 
 	FOnlineIdentityAccelBytePtr IdentityInterface;
 	FOnlineAccountCredentials Credentials;
+
+#pragma region "CLI Cheat"
+protected:
+	virtual TArray<FCheatCommandEntry> GetCheatCommandEntries() override;
+
+private:
+	const FString CommandMyUserInfo = TEXT("ab.user.MyUserInfo");
+
+	UFUNCTION()
+	void DisplayMyUserInfo(const TArray<FString>& Args) const;
+#pragma endregion 
 };

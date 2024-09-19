@@ -12,15 +12,15 @@
 UENUM(BlueprintType)
 enum class EGameModeType : uint8
 {
-	FFA,
-	TDM
+	FFA = 0, /* Elimination */
+	TDM /* Team Deathmatch */
 };
 
 // Game mode networking mode
 UENUM(BlueprintType)
 enum class EGameModeNetworkType : uint8
 {
-	DS,
+	DS = 0,
 	P2P,
 	LOCAL
 };
@@ -54,6 +54,7 @@ public:
 	EGameModeType GameModeType = EGameModeType::FFA;
 	
 	// Game mode alias; Used for online integration.
+	// DO NOT use "CustomGame" as the code name, as it is used to flag an actual custom game
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FString CodeName;
 
@@ -162,24 +163,97 @@ public:
 	}
 };
 
-#define GAMESETUP_GameModeCode FName(TEXT("GAMEMODECODE"))
-#define GAMESETUP_GameModeType FName(TEXT("GAMEMODETYPE"))
-#define GAMESETUP_DisplayName FName(TEXT("DISPLAYNAME"))
-#define GAMESETUP_NetworkType FName(TEXT("NETWORKTYPE"))
-#define GAMESETUP_IsTeamGame FName(TEXT("ISTEAMGAME"))
-#define GAMESETUP_MaxTeamNum FName(TEXT("MAXTEAMNUM"))
-#define GAMESETUP_MaxPlayers FName(TEXT("MAXPLAYERS"))
-#define GAMESETUP_MatchTime FName(TEXT("MATCHTIME"))
-#define GAMESETUP_StartGameCountdown FName(TEXT("STARTGAMECOUNTDOWN"))
-#define GAMESETUP_GameEndsShutdownCountdown FName(TEXT("GAMEENDSSHUTDOWNCOUNTDOWN"))
-#define GAMESETUP_MinimumTeamCountToPreventAutoShutdown FName(TEXT("MINIMUMTEAMCOUNTTOPREVENTAUTOSHUTDOWN"))
-#define GAMESETUP_NotEnoughPlayerShutdownCountdown FName(TEXT("NOTENOUGHPLAYERSHUTDOWNCOUNTDOWN"))
-#define GAMESETUP_ScoreLimit FName(TEXT("SCORELIMIT"))
-#define GAMESETUP_FiredMissilesLimit FName(TEXT("FIREDMISSILESLIMIT"))
-#define GAMESETUP_StartingLives FName(TEXT("STARTINGLIVES"))
-#define GAMESETUP_BaseScoreForKill FName(TEXT("BASESCOREFORKILL"))
-#define GAMESETUP_TimeScoreIncrement FName(TEXT("TIMESCOREINCREMENT"))
-#define GAMESETUP_TimeScoreDeltaTime FName(TEXT("TIMESCOREDELTATIME"))
-#define GAMESETUP_SkimInitialScore FName(TEXT("SKIMINITIALSCORE"))
-#define GAMESETUP_SkimScoreDeltaTime FName(TEXT("SKIMSCOREDELTATIME"))
-#define GAMESETUP_SkimScoreAdditionalMultiplier FName(TEXT("SKIMSCOREADDITIONALMULTIPLIER"))
+USTRUCT(BlueprintType)
+struct FGameStatsModel
+{
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY(EditAnywhere)
+	FString CodeName = TEXT("");
+
+	UPROPERTY(EditAnywhere)
+	FText DisplayName = FText::GetEmpty();
+};
+
+USTRUCT(BlueprintType)
+struct FGameStatsData : public FTableRowBase
+{
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	EGameModeType GameModeType = EGameModeType::FFA;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	FGameStatsModel HighestScoreStats{};
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	FGameStatsModel TotalScoreStats{};
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	FGameStatsModel MatchesPlayedStats{};
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	FGameStatsModel MatchesWonStats{};
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	FGameStatsModel KillCountStats{};
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	FGameStatsModel DeathStats{};
+
+	TArray<FString> GetStatsCodes() const
+	{
+		const TArray<FString> StatsCodes
+		{
+			HighestScoreStats.CodeName,
+			TotalScoreStats.CodeName,
+			MatchesPlayedStats.CodeName,
+			MatchesWonStats.CodeName,
+			KillCountStats.CodeName,
+			DeathStats.CodeName
+		};
+
+		return StatsCodes;
+	}
+
+	TArray<FGameStatsModel> GetStatsModels() const
+	{
+		const TArray<FGameStatsModel> StatsData
+		{
+			HighestScoreStats,
+			TotalScoreStats,
+			MatchesPlayedStats,
+			MatchesWonStats,
+			KillCountStats,
+			DeathStats
+		};
+
+		return StatsData;
+	}
+};
+
+#define GAMESETUP_GameModeCode FName(TEXT("GAMEMODECODE")) /*String*/
+#define GAMESETUP_IsCustomGame FName(TEXT("ISCUSTOMGAME")) /*bool*/
+#define GAMESETUP_GameModeType FName(TEXT("GAMEMODETYPE")) /*String based on EGameModeType*/
+#define GAMESETUP_DisplayName FName(TEXT("DISPLAYNAME")) /*String*/
+#define GAMESETUP_NetworkType FName(TEXT("NETWORKTYPE")) /*String based on EGameModeNetworkType*/
+#define GAMESETUP_IsTeamGame FName(TEXT("ISTEAMGAME")) /*bool*/
+#define GAMESETUP_MaxTeamNum FName(TEXT("MAXTEAMNUM")) /*int32*/
+#define GAMESETUP_MaxPlayers FName(TEXT("MAXPLAYERS")) /*int32*/
+#define GAMESETUP_MatchTime FName(TEXT("MATCHTIME")) /*int32; -1 = no limit*/
+#define GAMESETUP_StartGameCountdown FName(TEXT("STARTGAMECOUNTDOWN")) /*int32*/
+#define GAMESETUP_GameEndsShutdownCountdown FName(TEXT("GAMEENDSSHUTDOWNCOUNTDOWN")) /*int32*/
+#define GAMESETUP_MinimumTeamCountToPreventAutoShutdown FName(TEXT("MINIMUMTEAMCOUNTTOPREVENTAUTOSHUTDOWN")) /*int32*/
+#define GAMESETUP_NotEnoughPlayerShutdownCountdown FName(TEXT("NOTENOUGHPLAYERSHUTDOWNCOUNTDOWN")) /*int32*/
+#define GAMESETUP_ScoreLimit FName(TEXT("SCORELIMIT")) /*int32*/
+#define GAMESETUP_FiredMissilesLimit FName(TEXT("FIREDMISSILESLIMIT")) /*int32; -1 = no limit*/
+#define GAMESETUP_StartingLives FName(TEXT("STARTINGLIVES")) /*int32*/
+#define GAMESETUP_BaseScoreForKill FName(TEXT("BASESCOREFORKILL")) /*int32*/
+#define GAMESETUP_TimeScoreIncrement FName(TEXT("TIMESCOREINCREMENT")) /*int32*/
+#define GAMESETUP_TimeScoreDeltaTime FName(TEXT("TIMESCOREDELTATIME")) /*int32*/
+#define GAMESETUP_SkimInitialScore FName(TEXT("SKIMINITIALSCORE")) /*int32*/
+#define GAMESETUP_SkimScoreDeltaTime FName(TEXT("SKIMSCOREDELTATIME")) /*int32*/
+#define GAMESETUP_SkimScoreAdditionalMultiplier FName(TEXT("SKIMSCOREADDITIONALMULTIPLIER")) /*int32*/
+#define GAMESTATS_GameModeSinglePlayer FName(TEXT("SINGLEPLAYER")) /*String*/
+#define GAMESTATS_GameModeElimination FName(TEXT("ELIMINATION")) /*String*/
+#define GAMESTATS_GameModeTeamDeathmatch FName(TEXT("TEAMDEATHMATCH")) /*String*/

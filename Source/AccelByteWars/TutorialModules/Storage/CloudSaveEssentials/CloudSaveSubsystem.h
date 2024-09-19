@@ -28,6 +28,8 @@ public:
 	FOnLoadPlayerEquipmentComplete OnLoadPlayerEquipmentCompleteDelegates;
 
 #pragma region Module.5 Function Declarations
+// @@@SNIPSTART CloudSaveSubsystem.h-public
+// @@@MULTISNIP PlayerRecordDeclaration {"selectedLines": ["1-14"]}
 public:
 	void SetPlayerRecord(
 		const APlayerController* PlayerController,
@@ -42,7 +44,10 @@ public:
 		const APlayerController* PlayerController,
 		const FString& RecordKey,
 		const FOnDeleteCloudSaveRecordComplete& OnDeleteRecordComplete);
+// @@@SNIPEND
 
+// @@@SNIPSTART CloudSaveSubsystem.h-private
+// @@@MULTISNIP PlayerRecordCallback {"selectedLines": ["1", "6-18"]}
 private:
 	TMultiMap<FString, FOnSetCloudSaveRecordComplete> SetPlayerRecordParams;
 	TMultiMap<FString, FOnGetCloudSaveRecordComplete> GetPlayerRecordParams;
@@ -61,6 +66,7 @@ private:
 		int32 LocalUserNum,
 		const FOnlineError& Result,
 		const FString& Key);
+// @@@SNIPEND
 #pragma endregion
 
 private:

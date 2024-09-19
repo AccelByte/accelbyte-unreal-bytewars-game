@@ -9,21 +9,19 @@
 #include "OnlineStatisticInterfaceAccelByte.h"
 #include "StatsProfileWidget_Starter.generated.h"
 
-class UStatsEssentialsSubsystem_Starter;
-class UWidgetSwitcher;
+class UAccelByteWarsWidgetSwitcher;
 class UCommonButtonBase;
 class UDynamicEntryBox;
+class UStatsEssentialsSubsystem_Starter;
 
 UCLASS()
 class ACCELBYTEWARS_API UStatsProfileWidget_Starter : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
 
-public:
-	virtual void NativeOnActivated() override;
-
 protected:
 	virtual void NativeConstruct() override;
+	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
@@ -36,26 +34,20 @@ private:
 	UCommonButtonBase* Btn_Back;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UCommonButtonBase* Btn_Retry;
+	UAccelByteWarsWidgetSwitcher* Ws_Loader;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UWidgetSwitcher* Ws_Outer;
+	UDynamicEntryBox* Deb_SinglePlayerStats;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UWidget* W_StatsListOuter;
+	UDynamicEntryBox* Deb_EliminationStats;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UWidget* W_LoadingOuter;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UWidget* W_FailedOuter;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UWidget* W_EmptyOuter;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UDynamicEntryBox* Deb_StatsList;
+	UDynamicEntryBox* Deb_TeamDeathmatchStats;
 
 	UPROPERTY()
-	UStatsEssentialsSubsystem_Starter* EssentialsSubsystem;
+	TMap<FName, UDynamicEntryBox*> StatsDataEntryList{};
+
+	UPROPERTY()
+	UStatsEssentialsSubsystem_Starter* StatsEssentialsSubsystem;
 };

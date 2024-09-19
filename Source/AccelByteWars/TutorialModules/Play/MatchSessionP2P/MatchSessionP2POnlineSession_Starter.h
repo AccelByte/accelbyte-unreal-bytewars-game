@@ -22,11 +22,6 @@ public:
 		{{EGameModeNetworkType::P2P, EGameModeType::TDM}, ""}
 	};
 
-	virtual void QueryUserInfo(
-		const int32 LocalUserNum,
-		const TArray<FUniqueNetIdRef>& UserIds,
-		const FOnQueryUsersInfoComplete& OnComplete) override;
-
 	virtual FOnServerSessionUpdateReceived* GetOnSessionServerUpdateReceivedDelegates() override
 	{
 		return &OnSessionServerUpdateReceivedDelegates;
@@ -37,29 +32,18 @@ public:
 		return &OnFindSessionsCompleteDelegates;
 	}
 
-protected:
-	virtual void OnQueryUserInfoComplete(
-		int32 LocalUserNum,
-		bool bSucceeded,
-		const TArray<FUniqueNetIdRef>& UserIds,
-		const FString& ErrorMessage,
-		const FOnQueryUsersInfoComplete& OnComplete) override;
-
 private:
 	bool bIsInSessionServer = false;
 	TSharedRef<FOnlineSessionSearch> SessionSearch = MakeShared<FOnlineSessionSearch>(FOnlineSessionSearch());
 	int32 LocalUserNumSearching;
-
-	FDelegateHandle OnQueryUserInfoCompleteDelegateHandle;
-	FDelegateHandle OnDSQueryUserInfoCompleteDelegateHandle;
 
 	FOnServerSessionUpdateReceived OnSessionServerUpdateReceivedDelegates;
 
 	FOnMatchSessionFindSessionsComplete OnFindSessionsCompleteDelegates;
 
 	void OnQueryUserInfoForFindSessionComplete(
-		const bool bSucceeded,
-		const TArray<FUserOnlineAccountAccelByte*>& UsersInfo);
+		const FOnlineError& Error,
+		const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo);
 
 #pragma region "Match Session with P2P declarations"
 public:

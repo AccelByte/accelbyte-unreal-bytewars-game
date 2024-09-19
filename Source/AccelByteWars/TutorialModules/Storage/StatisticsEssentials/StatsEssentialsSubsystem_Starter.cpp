@@ -8,6 +8,7 @@
 #include "OnlineSubsystem.h"
 #include "OnlineSubsystemUtils.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleUtility.h"
+#include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/GameModes/AccelByteWarsInGameGameMode.h"
 #include "Core/Player/AccelByteWarsPlayerState.h"
 
@@ -30,10 +31,10 @@ void UStatsEssentialsSubsystem_Starter::Initialize(FSubsystemCollectionBase& Col
 	// bind delegate if module active
 	if (UTutorialModuleUtility::IsTutorialModuleActive(FPrimaryAssetId{ "TutorialModule:STATSESSENTIALS" }, this))
 	{
-		AAccelByteWarsInGameGameMode::OnGameEndsDelegate.AddUObject(this, &ThisClass::UpdatePlayersStatOnGameEnds);
+		AAccelByteWarsInGameGameMode::OnGameEndsDelegate.AddUObject(this, &ThisClass::UpdateConnectedPlayersStatsOnGameEnds);
 	}
 }
 
-void UStatsEssentialsSubsystem_Starter::UpdatePlayersStatOnGameEnds()
+void UStatsEssentialsSubsystem_Starter::UpdateConnectedPlayersStatsOnGameEnds()
 {
 }

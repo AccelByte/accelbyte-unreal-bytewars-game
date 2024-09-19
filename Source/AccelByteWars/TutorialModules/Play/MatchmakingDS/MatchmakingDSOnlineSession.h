@@ -20,10 +20,6 @@ public:
 
 #pragma region "Game Session Essentials"
 public:
-	virtual void QueryUserInfo(
-		const int32 LocalUserNum,
-		const TArray<FUniqueNetIdRef>& UserIds,
-		const FOnQueryUsersInfoComplete& OnComplete) override;
 	virtual void DSQueryUserInfo(
 		const TArray<FUniqueNetIdRef>& UserIds,
 		const FOnDSQueryUsersInfoComplete& OnComplete) override;
@@ -36,11 +32,6 @@ public:
 	}
 
 protected:
-	virtual void OnQueryUserInfoComplete(
-		int32 LocalUserNum,
-		bool bSucceeded,
-		const TArray<FUniqueNetIdRef>& UserIds,
-		const FString& ErrorMessage, const FOnQueryUsersInfoComplete& OnComplete) override;
 	virtual void OnDSQueryUserInfoComplete(const FListBulkUserInfo& UserInfoList, const FOnDSQueryUsersInfoComplete& OnComplete) override;
 
 	virtual void OnSessionServerUpdateReceived(FName SessionName) override;
@@ -51,7 +42,6 @@ protected:
 private:
 	bool bIsInSessionServer = false;
 
-	FDelegateHandle OnQueryUserInfoCompleteDelegateHandle;
 	FDelegateHandle OnDSQueryUserInfoCompleteDelegateHandle;
 
 	FOnServerSessionUpdateReceived OnSessionServerUpdateReceivedDelegates;

@@ -51,9 +51,6 @@ void USectionWidgetEntry::NativeTick(const FGeometry& MyGeometry, float InDeltaT
 
 void USectionWidgetEntry::OnItemClicked(UObject* Item) const
 {
-	// play sound
-	FSlateApplication::Get().PlaySound(PressedSlateSound);
-
 	if (!IsValid(DetailWidgetClass))
 	{
 		return;

@@ -220,7 +220,7 @@ int32 AAccelByteWarsInGameGameMode::AddPlayerScore(
 	}
 
 	FGameplayPlayerData* PlayerData =
-		ABInGameGameState->GetPlayerDataById(PlayerState->GetUniqueId(),GetControllerId(PlayerState));
+		ABInGameGameState->GetPlayerDataById(PlayerState->GetUniqueId(), AccelByteWarsUtility::GetControllerId(PlayerState));
 	if (!PlayerData)
 	{
 		GAMEMODE_LOG(Warning, TEXT("Player is not in Teams data. Add player to team via AddToTeam. Operation cancelled"));
@@ -252,7 +252,7 @@ int32 AAccelByteWarsInGameGameMode::DecreasePlayerLife(APlayerState* PlayerState
 	}
 
 	FGameplayPlayerData* PlayerData =
-		ABInGameGameState->GetPlayerDataById(PlayerState->GetUniqueId(),GetControllerId(PlayerState));
+		ABInGameGameState->GetPlayerDataById(PlayerState->GetUniqueId(), AccelByteWarsUtility::GetControllerId(PlayerState));
 	if (!PlayerData)
 	{
 		GAMEMODE_LOG(Warning, TEXT("Player is not in Teams data. Add player to team via AddToTeam. Operation cancelled"));
@@ -262,10 +262,12 @@ int32 AAccelByteWarsInGameGameMode::DecreasePlayerLife(APlayerState* PlayerState
 	// decrease life num in PlayerState
 	AccelByteWarsPlayerState->NumLivesLeft -= Decrement;
 	AccelByteWarsPlayerState->NumKilledAttemptInSingleLifetime = 0;
+	AccelByteWarsPlayerState->Deaths += Decrement;
 
 	// match life num in GameState to PlayerState
 	PlayerData->NumLivesLeft = AccelByteWarsPlayerState->NumLivesLeft;
 	PlayerData->NumKilledAttemptInSingleLifetime = AccelByteWarsPlayerState->NumKilledAttemptInSingleLifetime;
+	PlayerData->Deaths = AccelByteWarsPlayerState->Deaths;
 
 	return AccelByteWarsPlayerState->NumLivesLeft;
 }
@@ -303,7 +305,7 @@ void AAccelByteWarsInGameGameMode::OnShipDestroyed(
 	NULLPTR_CHECK(ShipPlayerState);
 
 	// Broadcast on-player die event.
-	OnPlayerDieDelegate.Broadcast(ShipPC, ShipActor, SourcePlayerController);
+	ABInGameGameState->MulticastOnPlayerDie(ShipPlayerState, ShipActor->GetActorLocation(), SourcePlayerState);
 
 	// Let the ABPawn know they've been destroyed to cleanup UI
 	const AAccelByteWarsPlayerPawn* ABPawn = Cast<AAccelByteWarsPlayerPawn>(ShipOwner);
@@ -354,11 +356,10 @@ void AAccelByteWarsInGameGameMode::OnShipDestroyed(
 	}
 
 	// If score limit reached, end game
-	FGameplayTeamData TeamData;
-	float TeamScore;
-	int32 TeamLivesLeft;
-	int32 TeamKillCount;
-	ABInGameGameState->GetTeamDataByTeamId(SourcePlayerState->TeamId, TeamData, TeamScore, TeamLivesLeft, TeamKillCount);
+	FGameplayTeamData TeamData{};
+	float TeamScore = 0;
+	int32 TeamLivesLeft = 0, TeamKillCount = 0, TeamDeaths = 0;
+	ABInGameGameState->GetTeamDataByTeamId(SourcePlayerState->TeamId, TeamData, TeamScore, TeamLivesLeft, TeamKillCount, TeamDeaths);
 	if (ABInGameGameState->GameSetup.ScoreLimit >= 0)
 	{
 		if (TeamScore >= ABInGameGameState->GameSetup.ScoreLimit)
@@ -376,11 +377,45 @@ void AAccelByteWarsInGameGameMode::IncreasePlayerKilledAttempt(const APlayerCont
 	AAccelByteWarsPlayerState* TargetPlayerState = Cast<AAccelByteWarsPlayerState>(TargetPlayer->PlayerState);
 	NULLPTR_CHECK(TargetPlayerState);
 
-	FGameplayPlayerData* PlayerData = ABInGameGameState->GetPlayerDataById(TargetPlayerState->GetUniqueId(), GetControllerId(TargetPlayerState));
+	FGameplayPlayerData* PlayerData = ABInGameGameState->GetPlayerDataById(TargetPlayerState->GetUniqueId(), AccelByteWarsUtility::GetControllerId(TargetPlayerState));
 	NULLPTR_CHECK(PlayerData);
 
 	TargetPlayerState->NumKilledAttemptInSingleLifetime++;
 	PlayerData->NumKilledAttemptInSingleLifetime = TargetPlayerState->NumKilledAttemptInSingleLifetime;
+}
+
+void AAccelByteWarsInGameGameMode::InstaKillPlayers(const TArray<APlayerState*>& PlayerStates)
+{
+	// Treat as suicide
+	for (APlayerState* PlayerState : PlayerStates)
+	{
+		if (!PlayerState)
+		{
+			continue;
+		}
+
+		APlayerController* PlayerController = PlayerState->GetPlayerController();
+		if (!PlayerController)
+		{
+			return;
+		}
+
+		UPlayer* Player = PlayerState->GetNetOwningPlayer();
+		if (!Player)
+		{
+			continue;
+		}
+
+		// Find ship from active game objects
+		for (UAccelByteWarsGameplayObjectComponent* Component : ABInGameGameState->ActiveGameObjects)
+		{
+			if (Component && Component->ObjectType == EGameplayObjectType::SHIP && Component->GetOwner()->GetNetOwningPlayer() == Player)
+			{
+				OnShipDestroyed(Component, 0, PlayerController);
+				break;
+			}
+		}
+	}
 }
 
 void AAccelByteWarsInGameGameMode::RemoveFromActiveGameObjects(AActor* DestroyedActor)

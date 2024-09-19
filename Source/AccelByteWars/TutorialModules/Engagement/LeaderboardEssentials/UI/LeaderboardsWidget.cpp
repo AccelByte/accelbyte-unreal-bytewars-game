@@ -27,6 +27,7 @@ void ULeaderboardsWidget::NativeOnDeactivated()
 	Super::NativeOnDeactivated();
 }
 
+// @@@SNIPSTART LeaderboardsWidget.cpp-OpenLeaderboardsPeriod
 void ULeaderboardsWidget::OpenLeaderboardsPeriod(const FString InGameMode)
 {
 	LeaderboardGameMode = InGameMode;
@@ -39,3 +40,4 @@ void ULeaderboardsWidget::OpenLeaderboardsPeriod(const FString InGameMode)
 
 	BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, LeaderboardsPeriodWidgetClass);
 }
+// @@@SNIPEND

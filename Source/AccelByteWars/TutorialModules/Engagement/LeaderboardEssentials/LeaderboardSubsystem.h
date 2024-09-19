@@ -11,6 +11,7 @@
 #include "OnlineLeaderboardInterfaceAccelByte.h"
 #include "LeaderboardEssentialsLog.h"
 #include "LeaderboardEssentialsModels.h"
+#include "TutorialModuleUtilities/StartupSubsystem.h"
 #include "LeaderboardSubsystem.generated.h"
 
 UCLASS()
@@ -18,8 +19,13 @@ class ACCELBYTEWARS_API ULeaderboardSubsystem : public UTutorialModuleSubsystem
 {
 	GENERATED_BODY()
 	
-#pragma region Module.6 Function Declarations
+// @@@SNIPSTART LeaderboardSubsystem.h-public
+// @@@MULTISNIP GetRankings {"selectedLines": ["1", "11"]}
+// @@@MULTISNIP GetPlayerRanking {"selectedLines": ["1", "18"]}
 public:
+	void Initialize(FSubsystemCollectionBase& Collection) override;
+
+#pragma region Module.6 Function Declarations
 	/**
 	 * @brief Get rankings of a leaderboard.
 	 * @param PC PlayerController to determine who's credential is going to be used for the API call.
@@ -34,7 +40,12 @@ public:
 	 * @param LeaderboardCode The leaderboard code (id) to be read.
 	 */
 	void GetPlayerRanking(const APlayerController* PC, const FString& LeaderboardCode, const FOnGetLeaderboardRankingComplete& OnComplete = FOnGetLeaderboardRankingComplete());
-
+// @@@SNIPEND
+	
+// @@@SNIPSTART LeaderboardSubsystem.h-protected
+// @@@MULTISNIP Interface {"selectedLines": ["1", "21-22"]}
+// @@@MULTISNIP OnGetRankingsComplete {"selectedLines": ["1", "8"]}
+// @@@MULTISNIP OnQueryUserInfoComplete {"selectedLines": ["1", "10-15"]}
 protected:
 	/**
 	 * @brief Callback when get rankings of a leaderboard is complete.
@@ -44,12 +55,14 @@ protected:
 	 */
 	void OnGetRankingsComplete(bool bWasSuccessful, const int32 LocalUserNum, const FOnlineLeaderboardReadRef LeaderboardObj, const FOnGetLeaderboardRankingComplete OnComplete);
 
+	void OnQueryUserInfoComplete(
+		const FOnlineError& Error,
+		const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo,
+		const int32 LocalUserNum,
+		const FOnlineLeaderboardReadRef LeaderboardObj,
+		const FOnGetLeaderboardRankingComplete OnComplete);
 #pragma endregion
 
-public:
-	void Initialize(FSubsystemCollectionBase& Collection) override;
-
-protected:
 	FUniqueNetIdPtr GetUniqueNetIdFromPlayerController(const APlayerController* PC) const;
 	int32 GetLocalUserNumFromPlayerController(const APlayerController* PC) const;
 
@@ -57,5 +70,5 @@ protected:
 	FOnlineLeaderboardAccelBytePtr LeaderboardInterface;
 
 	FDelegateHandle OnLeaderboardReadCompleteDelegateHandle;
-	FDelegateHandle OnQueryUserInfoCompleteDelegateHandle;
+// @@@SNIPEND
 };

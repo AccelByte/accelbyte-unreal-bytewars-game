@@ -15,12 +15,17 @@ class ACCELBYTEWARS_API ULeaderboardsWidget : public UAccelByteWarsActivatableWi
 {
 	GENERATED_BODY()
 	
+// @@@SNIPSTART LeaderboardsWidget.h-public
+// @@@MULTISNIP GetLeaderboardGameMode {"selectedLines": ["1-5"]}
 public:
 	static FString GetLeaderboardGameMode() 
 	{
 		return LeaderboardGameMode;
 	}
-
+// @@@SNIPEND
+	
+// @@@SNIPSTART LeaderboardsWidget.h-protected
+// @@@MULTISNIP LeaderboardUI {"selectedLines": ["1", "9-16"]}
 protected:
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
@@ -40,4 +45,5 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UAccelByteWarsActivatableWidget> LeaderboardsPeriodWidgetClass;
+// @@@SNIPEND
 };

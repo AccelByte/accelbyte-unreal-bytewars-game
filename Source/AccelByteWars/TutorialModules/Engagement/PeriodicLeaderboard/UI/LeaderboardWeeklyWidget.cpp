@@ -20,6 +20,9 @@ void ULeaderboardWeeklyWidget::NativeConstruct()
 	ensure(PeriodicLeaderboardSubsystem);
 }
 
+// @@@SNIPSTART LeaderboardWeeklyWidget.cpp-NativeOnActivated
+// @@@MULTISNIP SetWidgetStateExample {"selectedLines": ["9"]}
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "6-9", "43"]}
 void ULeaderboardWeeklyWidget::NativeOnActivated()
 {
 	// Set leaderboard code based on board-unreal-highestscore-{gamemode} format. 
@@ -63,7 +66,10 @@ void ULeaderboardWeeklyWidget::NativeOnActivated()
 			})
 	);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART LeaderboardWeeklyWidget.cpp-GetWeeklyRankings
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "45"]}
 void ULeaderboardWeeklyWidget::GetWeeklyRankings()
 {
 	FUniqueNetIdRepl PlayerNetId = GetOwningPlayer()->GetLocalPlayer()->GetPreferredUniqueNetId();
@@ -109,7 +115,10 @@ void ULeaderboardWeeklyWidget::GetWeeklyRankings()
 		}
 	));
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART LeaderboardWeeklyWidget.cpp-GetPlayerWeeklyRanking
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "19"]}
 void ULeaderboardWeeklyWidget::GetPlayerWeeklyRanking()
 {
 	PeriodicLeaderboardSubsystem->GetPlayerPeriodicRanking(
@@ -129,16 +138,21 @@ void ULeaderboardWeeklyWidget::GetPlayerWeeklyRanking()
 		}
 	));
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART LeaderboardWeeklyWidget.cpp-DisplayPlayerWeeklyRank
 void ULeaderboardWeeklyWidget::DisplayPlayerWeeklyRank(const ULeaderboardRank* PlayerRank)
 {
 	// Display player rank information.
 	const bool bIsRanked = (PlayerRank && PlayerRank->Rank > 0);
 	ULeaderboardRank* PlayerRankToDisplay = NewObject<ULeaderboardRank>();
-	PlayerRankToDisplay->DisplayName = bIsRanked ? RANKED_MESSAGE.ToString() : UNRANKED_MESSAGE.ToString();
-	PlayerRankToDisplay->Rank = bIsRanked ? PlayerRank->Rank : -1;
-	PlayerRankToDisplay->Score = bIsRanked ? PlayerRank->Score : -1;
+	PlayerRankToDisplay->Init(
+		bIsRanked ? PlayerRank->UserId : nullptr,
+		bIsRanked ? PlayerRank->Rank : -1,
+		bIsRanked ? RANKED_MESSAGE.ToString() : UNRANKED_MESSAGE.ToString(),
+		bIsRanked ? PlayerRank->Score : -1);
 
 	PlayerRankPanel->SetLeaderboardRank(PlayerRankToDisplay);
 	PlayerRankPanel->SetVisibility(ESlateVisibility::HitTestInvisible);
 }
+// @@@SNIPEND

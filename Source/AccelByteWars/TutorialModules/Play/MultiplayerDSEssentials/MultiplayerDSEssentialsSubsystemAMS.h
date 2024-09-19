@@ -21,6 +21,16 @@ public:
 protected:
 	virtual bool IsAMSServer() const override { return true; }
 
+// @@@SNIPSTART MultiplayerDSEssentialsSubsystemAMS.h-private
+// @@@MULTISNIP RegisterServer {"selectedLines": ["1-2"]}
+// @@@MULTISNIP OnRegisterServerComplete {"selectedLines": ["1", "3"]}
+// @@@MULTISNIP UnregisterServer {"selectedLines": ["1", "5"]}
+// @@@MULTISNIP OnUnregisterServerComplete {"selectedLines": ["1", "6"]}
+// @@@MULTISNIP SendServerReady {"selectedLines": ["1", "8"]}
+// @@@MULTISNIP OnSendServerReadyComplete {"selectedLines": ["1", "9"]}
+// @@@MULTISNIP OnAMSDrainReceived {"selectedLines": ["1", "11"]}
+// @@@MULTISNIP OnV2SessionEnded {"selectedLines": ["1", "12"]}
+// @@@MULTISNIP HelperVariable {"selectedLines": ["1", "14-16"]}
 private:
 	void RegisterServer(const FName SessionName);
 	void OnRegisterServerComplete(const bool bSucceeded);
@@ -37,4 +47,5 @@ private:
 	bool bServerAlreadyRegister;
 	bool bUnregisterServerRunning;
 	FOnlineSessionV2AccelBytePtr ABSessionInt;
+// @@@SNIPEND
 };

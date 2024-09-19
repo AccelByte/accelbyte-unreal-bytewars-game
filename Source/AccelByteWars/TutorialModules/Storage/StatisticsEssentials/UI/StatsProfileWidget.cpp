@@ -5,6 +5,9 @@
 
 #include "StatsProfileWidget.h"
 
+#include "Core/System/AccelByteWarsGameInstance.h"
+#include "Core/Utilities/AccelByteWarsUtility.h"
+#include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
 #include "CommonButtonBase.h"
 #include "Components/WidgetSwitcher.h"
 #include "Components/DynamicEntryBox.h"
@@ -12,30 +15,38 @@
 
 #include "Storage/StatisticsEssentials/StatsEssentialsSubsystem.h"
 
-void UStatsProfileWidget::NativeOnActivated()
-{
-	Super::NativeOnActivated();
-
-	Btn_Back->OnClicked().AddUObject(this, &ThisClass::DeactivateWidget);
-	Btn_Retry->OnClicked().AddUObject(this, &ThisClass::StartQueryLocalUserStats);
-
-	StartQueryLocalUserStats();
-}
-
 void UStatsProfileWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	EssentialsSubsystem = GetGameInstance()->GetSubsystem<UStatsEssentialsSubsystem>();
-	ensure(EssentialsSubsystem);
+	StatsEssentialsSubsystem = GetGameInstance()->GetSubsystem<UStatsEssentialsSubsystem>();
+	ensure(StatsEssentialsSubsystem);
 }
+
+// @@@SNIPSTART StatsProfileWidget.cpp-NativeOnActivated
+void UStatsProfileWidget::NativeOnActivated()
+{
+	Super::NativeOnActivated();
+
+	StatsDataEntryList.Empty();
+	StatsDataEntryList.Add(GAMESTATS_GameModeSinglePlayer, Deb_SinglePlayerStats);
+	StatsDataEntryList.Add(GAMESTATS_GameModeElimination, Deb_EliminationStats);
+	StatsDataEntryList.Add(GAMESTATS_GameModeTeamDeathmatch, Deb_TeamDeathmatchStats);
+
+	Btn_Back->OnClicked().AddUObject(this, &ThisClass::DeactivateWidget);
+	Ws_Loader->OnRetryClicked.AddUObject(this, &ThisClass::QueryLocalUserStats);
+
+	QueryLocalUserStats();
+}
+// @@@SNIPEND
 
 void UStatsProfileWidget::NativeOnDeactivated()
 {
-	Super::NativeOnDeactivated();
-
+	StatsDataEntryList.Empty();
 	Btn_Back->OnClicked().Clear();
-	Btn_Retry->OnClicked().Clear();
+	Ws_Loader->OnRetryClicked.Clear();
+
+	Super::NativeOnDeactivated();
 }
 
 void UStatsProfileWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
@@ -45,53 +56,115 @@ void UStatsProfileWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaT
 	MoveCameraToTargetLocation(InDeltaTime, FVector(60.0f, 600.0f, 160.0f));
 }
 
-void UStatsProfileWidget::StartQueryLocalUserStats()
+// @@@SNIPSTART StatsProfileWidget.cpp-QueryLocalUserStats
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "34"]}
+void UStatsProfileWidget::QueryLocalUserStats()
 {
-	const int32 LocalUserNum = GetOwningPlayer()->GetLocalPlayer()->GetControllerId();
-	const bool bStarted = EssentialsSubsystem->QueryLocalUserStats(
-		LocalUserNum,
+	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+	if (!GameInstance) 
+	{
+		UE_LOG_STATSESSENTIALS(Warning, TEXT("Failed to query local user stats. Game instance is invalid."));
+		Ws_Loader->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Error);
+		return;
+	}
+
+	TArray<FString> StatsCodes{};
+	for (const TTuple<FName, UDynamicEntryBox*>& EntryList : StatsDataEntryList)
+	{
+		FGameStatsData StatsData{};
+		if (GameInstance->GetGameStatsDataById(EntryList.Key, StatsData)) 
 		{
-			UStatsEssentialsSubsystem::StatsCode_HighestElimination,
-			UStatsEssentialsSubsystem::StatsCode_KillCount,
-			UStatsEssentialsSubsystem::StatsCode_HighestSinglePlayer,
-			UStatsEssentialsSubsystem::StatsCode_HighestTeamDeathMatch
-		},
+			StatsCodes.Append(StatsData.GetStatsCodes());
+		}
+	}
+
+	if (StatsCodes.IsEmpty())
+	{
+		UE_LOG_STATSESSENTIALS(Warning, TEXT("Failed to query local user stats. No statistics code to query."));
+		Ws_Loader->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Empty);
+		return;
+	}
+
+	const bool bStarted = StatsEssentialsSubsystem->QueryLocalUserStats(
+		AccelByteWarsUtility::GetLocalUserNum(GetOwningPlayer()),
+		StatsCodes,
 		FOnlineStatsQueryUsersStatsComplete::CreateUObject(this, &ThisClass::OnQueryLocalUserStatsComplete));
 
-	// Show loading
-	const bool bLoading = Ws_Outer->GetActiveWidget() == W_LoadingOuter;
-	Ws_Outer->SetActiveWidget((bLoading || bStarted) ? W_LoadingOuter : W_FailedOuter);
+	Ws_Loader->SetWidgetState(bStarted ? EAccelByteWarsWidgetSwitcherState::Loading : EAccelByteWarsWidgetSwitcherState::Error);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART StatsProfileWidget.cpp-OnQueryLocalUserStatsComplete
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-4", "71"]}
 void UStatsProfileWidget::OnQueryLocalUserStatsComplete(
 	const FOnlineError& ResultState,
 	const TArray<TSharedRef<const FOnlineStatsUserStats>>& UsersStatsResult)
 {
-	// clear previous entries
-	Deb_StatsList->Reset();
-
 	if (!ResultState.bSucceeded)
 	{
-		Ws_Outer->SetActiveWidget(W_FailedOuter);
+		UE_LOG_STATSESSENTIALS(Warning, TEXT("Failed to handle on-complete query local user stats. Error: %s"), *ResultState.ErrorMessage.ToString());
+		Ws_Loader->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Error);
 		return;
 	}
 
-	for (const TSharedRef<const FOnlineStatsUserStats>& UsersStats : UsersStatsResult)
+	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+	if (!GameInstance)
 	{
-		for (const TTuple<FString, FVariantData>& Stat : UsersStats->Stats)
-		{
-			// by default, AB OSS store stats value as float
-			float StatValue;
-			Stat.Value.GetValue(StatValue);
+		UE_LOG_STATSESSENTIALS(Warning, TEXT("Failed to handle on-complete query local user stats. Game instance is invalid."));
+		Ws_Loader->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Error);
+		return;
+	}
 
-			// Add entry object
-			const UStatsProfileWidgetEntry* WidgetEntry = Deb_StatsList->CreateEntry<UStatsProfileWidgetEntry>();
-			WidgetEntry->Setup(
-				FText::FromStringTable("/Game/TutorialModules/Storage/StatisticsEssentials/String/ST_StatsKey.ST_StatsKey", Stat.Key),
-				FText::AsNumber(StatValue));
+	FUniqueNetIdPtr UserId = AccelByteWarsUtility::GetUserId(GetOwningPlayer());
+	if (!UserId.IsValid())
+	{
+		UE_LOG_STATSESSENTIALS(Warning, TEXT("Failed to handle on-complete query local user stats. User id is invalid."));
+		Ws_Loader->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Error);
+		return;
+	}
+
+	// Get stats for the target user.
+	TSharedPtr<const FOnlineStatsUserStats> TargetUserStats = nullptr;
+	for (TSharedRef<const FOnlineStatsUserStats> const& UserStats : UsersStatsResult)
+	{
+		if (UserStats.Get().Account.Get() == UserId.ToSharedRef().Get())
+		{
+			TargetUserStats = UserStats;
+			break;
+		}
+	}
+	if (!TargetUserStats) 
+	{
+		UE_LOG_STATSESSENTIALS(Warning, TEXT("Failed to handle on-complete query local user stats. Local user's statistics is not found."));
+		Ws_Loader->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Empty);
+		return;
+	}
+
+	// Generate stats entries.
+	for (const TTuple<FName, UDynamicEntryBox*>& EntryList : StatsDataEntryList)
+	{
+		FGameStatsData StatsData{};
+		TWeakObjectPtr<UDynamicEntryBox> TargetStatsList = EntryList.Value;
+		if (!TargetStatsList.IsValid() || !GameInstance->GetGameStatsDataById(EntryList.Key, StatsData))
+		{
+			UE_LOG_STATSESSENTIALS(Warning, TEXT("Failed to handle on-complete query local user stats. Invalid properties to generate widget entry."));
+			continue;
+		}
+
+		TargetStatsList->Reset(true);
+		for (const FGameStatsModel& StatsModel : StatsData.GetStatsModels())
+		{
+			float StatsValue = 0;
+			if (const FVariantData* Stats = TargetUserStats->Stats.Find(StatsModel.CodeName))
+			{
+				Stats->GetValue(StatsValue);
+			}
+
+			const TWeakObjectPtr<UStatsProfileWidgetEntry> WidgetEntry = TargetStatsList->CreateEntry<UStatsProfileWidgetEntry>();
+			WidgetEntry->Setup(StatsModel.DisplayName, FText::AsNumber(StatsValue));
 		}
 	}
 
-	// show empty message if user doesn't have any stats, show list otherwise
-	Ws_Outer->SetActiveWidget(UsersStatsResult.Num() > 0 ? Deb_StatsList : W_EmptyOuter);
+	Ws_Loader->SetWidgetState(UsersStatsResult.IsEmpty() ? EAccelByteWarsWidgetSwitcherState::Empty : EAccelByteWarsWidgetSwitcherState::Not_Empty);
 }
+// @@@SNIPEND

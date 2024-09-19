@@ -6,13 +6,25 @@
 #include "Core/UI/InGameMenu/HUD/HUDWidget.h"
 
 #include "HUDWidgetEntry.h"
+#include "HUDKillFeedWidgetEntry.h"
 #include "Blueprint/SlateBlueprintLibrary.h"
 #include "Components/TextBlock.h"
+#include "Core/GameModes/AccelByteWarsInGameGameMode.h"
 #include "Core/GameStates/AccelByteWarsInGameGameState.h"
 #include "Core/GameStates/AccelByteWarsGameState.h"
 #include "Core/Settings/GameModeDataAssets.h"
+#include "Core/Utilities/AccelByteWarsUtility.h"
+#include "Core/UI/Components/Prompt/PushNotification/PushNotificationWidget.h"
+#include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetTextLibrary.h"
+
+// defines for spectating text effect
+#define FADE_DURATION 2 // Single fade in/out duration
+#define TOTAL_DURATION (2 * FADE_DURATION) // Total duration per cycle (n second fade out n second fade in )
+#define MIN_OPACITY 0.3f
+#define OPACITY_RANGE (1 - MIN_OPACITY)
+#define NORMALIZED_MID_VALUE 0.5f
 
 void UHUDWidget::NativeConstruct()
 {
@@ -52,6 +64,8 @@ void UHUDWidget::NativeConstruct()
 	ByteWarsGameState->OnTeamsChanged.AddUObject(this, &ThisClass::UpdateHUD);
 	ByteWarsGameState->OnPowerUpChanged.AddUObject(this, &ThisClass::UpdateHUD);
 	UpdateHUD();
+	
+	ByteWarsGameState->OnTeamsChanged.AddUObject(this, &ThisClass::CheckSpectatingText);
 
 	// Setup simulate crash countdown
 	if (ByteWarsGameState->SimulateServerCrashCountdown != INDEX_NONE)
@@ -70,6 +84,8 @@ void UHUDWidget::NativeConstruct()
 	{
 		Widget_SimulateServerCrashCountdown->SetVisibility(ESlateVisibility::Collapsed);
 	}
+
+	Text_Spectating->SetVisibility(ESlateVisibility::Collapsed);
 
 	// Only show dedicated server FTUE on online session.
 	if (FFTUEDialogueModel* FTUEDedicatedServer =
@@ -97,6 +113,8 @@ void UHUDWidget::NativeConstruct()
 			FTUEDedicatedServer->Button1.TargetURL = FString("{0}/ams/fleets-manager/any/server/{1}");
 		}
 	}
+
+	AAccelByteWarsInGameGameState::OnPlayerDieDelegate.AddUObject(this, &ThisClass::OnPlayerDie);
 }
 
 void UHUDWidget::NativeDestruct()
@@ -107,6 +125,8 @@ void UHUDWidget::NativeDestruct()
 	Widget_NotEnoughPlayerCountdown->OnCountdownFinishedDelegate.Remove(OnNotEnoughPlayerCountdownFinishedDelegateHandle);
 	ByteWarsGameState->OnTeamsChanged.RemoveAll(this);
 	ByteWarsGameState->OnPowerUpChanged.RemoveAll(this);
+
+	AAccelByteWarsInGameGameState::OnPlayerDieDelegate.RemoveAll(this);
 }
 
 void UHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
@@ -114,6 +134,7 @@ void UHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 	Super::NativeTick(MyGeometry, InDeltaTime);
 
 	SetTimerValue(ByteWarsGameState->TimeLeft);
+	UpdateSpectatingTextEffect(InDeltaTime);
 }
 
 void UHUDWidget::UpdateHUD()
@@ -461,3 +482,73 @@ int UHUDWidget::UpdateSimulateServerCrashCountdownValue() const
 void UHUDWidget::OnSimulateServerCrashCountdownFinished()
 {
 }
+
+void UHUDWidget::OnPlayerDie(const AAccelByteWarsPlayerState* DeathPlayer, const FVector DeathLocation, const AAccelByteWarsPlayerState* Killer)
+{
+	if (!ByteWarsGameState)
+	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot handle on-player die event. Game state is null."));
+		return;
+	}
+
+	FGameplayPlayerData* KillerPlayerData =
+		ByteWarsGameState->GetPlayerDataById(Killer->GetUniqueId(), AccelByteWarsUtility::GetControllerId(Killer));
+
+	FGameplayPlayerData* VictimPlayerData =
+		ByteWarsGameState->GetPlayerDataById(DeathPlayer->GetUniqueId(), AccelByteWarsUtility::GetControllerId(DeathPlayer));
+
+	if (!KillerPlayerData || !VictimPlayerData)
+	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot handle on-player die event. Player data is null."));
+		return;
+	}
+
+	TWeakObjectPtr<UHUDKillFeedData> KillFeed = NewObject<UHUDKillFeedData>();
+	KillFeed->Killer = *KillerPlayerData;
+	KillFeed->Victim = *VictimPlayerData;
+
+	W_KillFeed->PushNotification(KillFeed.Get());
+}
+
+void UHUDWidget::UpdateSpectatingTextEffect(float DeltaTime)
+{
+	// will make text effect fade out and fade in, each for FADE_DURATION second
+	if(Text_Spectating->GetVisibility() == ESlateVisibility::Visible)
+	{
+		SpectatingTextVisibleRunningTime += DeltaTime;		
+
+		// Fractional value is in range 0 < Fractional < 1
+		// ChangeFactor should have similar value for Fraction time 't' and '1.0 - t', and within range 0 < ChangeFactor < 1
+		const float Fractional = FMath::Frac(SpectatingTextVisibleRunningTime / TOTAL_DURATION);
+		const float ChangeFactor = ((Fractional < NORMALIZED_MID_VALUE ? 1 - Fractional : Fractional) - NORMALIZED_MID_VALUE) / NORMALIZED_MID_VALUE;
+		const float Opacity = MIN_OPACITY + (ChangeFactor * OPACITY_RANGE);
+		Text_Spectating->SetOpacity(Opacity);
+	}
+}
+
+void UHUDWidget::CheckSpectatingText()
+{
+	// check local player remaining lives, and show spectating text if no local player do not have remaining live
+	AAccelByteWarsInGameGameState* ABGameState = Cast<AAccelByteWarsInGameGameState>(UGameplayStatics::GetGameState(GetWorld()));
+	if(ABGameState && !ABGameState->HasGameEnded())
+	{
+		const APlayerController* LocalPlayerController =  GetGameInstance()->GetFirstLocalPlayerController();
+		if(LocalPlayerController != nullptr &&  LocalPlayerController->PlayerState != nullptr
+			&& Text_Spectating->GetVisibility() != ESlateVisibility::Visible)
+		{
+			// check using FGameplayPlayerData because num lives from player state have wrong value
+			const FGameplayPlayerData* PlayerData = ABGameState->GetPlayerDataById(LocalPlayerController->PlayerState->GetUniqueId());
+			if(PlayerData && PlayerData->NumLivesLeft <=0)
+			{
+				Text_Spectating->SetVisibility(ESlateVisibility::Visible);
+				SpectatingTextVisibleRunningTime = 0.0f;
+			}
+		}
+	}
+}
+
+#undef FADE_DURATION
+#undef TOTAL_DURATION
+#undef MIN_OPACITY
+#undef OPACITY_RANGE
+#undef NORMALIZED_MID_VALUE

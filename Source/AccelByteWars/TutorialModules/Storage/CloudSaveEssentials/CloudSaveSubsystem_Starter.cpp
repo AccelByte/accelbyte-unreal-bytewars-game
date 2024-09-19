@@ -54,12 +54,12 @@ void UCloudSaveSubsystem_Starter::UnbindDelegates()
     // TODO: Unbind your delegates here.
 }
 
-void UCloudSaveSubsystem_Starter::OnLoadGameSoundOptions(const APlayerController* PC, TDelegate<void()> OnComplete)
+void UCloudSaveSubsystem_Starter::OnLoadGameSoundOptions(const APlayerController* PlayerController, TDelegate<void()> OnComplete)
 {
     // TODO: Implement to load game sound options from Cloud Save here.
 }
 
-void UCloudSaveSubsystem_Starter::OnSaveGameSoundOptions(const APlayerController* PC, TDelegate<void()> OnComplete)
+void UCloudSaveSubsystem_Starter::OnSaveGameSoundOptions(const APlayerController* PlayerController, TDelegate<void()> OnComplete)
 {
     // TODO: Implement to save game sound options to Cloud Save here.
 }
@@ -71,5 +71,17 @@ void UCloudSaveSubsystem_Starter::OnSaveGameSoundOptions(const APlayerController
 // TODO: Add your Module.5 function definitions here.
 
 #pragma endregion
+
+#pragma region "Utilities"
+int32 UCloudSaveSubsystem_Starter::GetLocalUserIndex(const APlayerController* PlayerController) const
+{
+    const ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer();
+    if (!ensure(LocalPlayer != nullptr))
+    {
+        return INDEX_NONE;
+    }
+    return LocalPlayer->GetControllerId();
+}
+#pragma endregion 
 
 #undef LOCTEXT_NAMESPACE

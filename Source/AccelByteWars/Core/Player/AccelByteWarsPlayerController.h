@@ -46,4 +46,14 @@ public:
 
 private:
 	bool bDelayedClientTravelStarted = false;
+
+#pragma region "Testing purposes"
+public:
+	UFUNCTION()
+	void ClientInstructInstaKillPlayer(const TArray<APlayerState*>& PlayerStates);
+
+protected:
+	UFUNCTION(Server, Reliable)
+	void ServerInstructInstaKillPlayer(const TArray<APlayerState*>& PlayerStates);
+#pragma endregion 
 };

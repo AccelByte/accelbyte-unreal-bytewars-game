@@ -13,11 +13,11 @@
 
 void UProfileWidget::NativeOnActivated()
 {
-	Super::NativeOnActivated();
-
 	Btn_CopyUserId->OnClicked().AddUObject(this, &ThisClass::CopyPlayerUserIdToClipboard);
 
 	ShowPlayerProfile();
+
+	Super::NativeOnActivated();
 }
 
 void UProfileWidget::ShowPlayerProfile()
@@ -60,6 +60,8 @@ void UProfileWidget::ShowPlayerProfile()
 	{
 		UE_LOG_STATSESSENTIALS(Warning, TEXT("Failed to show player profile. User Account is not valid."));
 	}
+
+	NetId = UserId;
 
 	// Show display name.
 	FString DisplayName = UserAccount->GetDisplayName();

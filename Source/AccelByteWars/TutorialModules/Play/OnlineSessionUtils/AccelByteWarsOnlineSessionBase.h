@@ -92,10 +92,6 @@ protected:
 
 #pragma region "Game Session Essentials"
 public:
-	virtual void QueryUserInfo(
-		const int32 LocalUserNum,
-		const TArray<FUniqueNetIdRef>& UserIds,
-		const FOnQueryUsersInfoComplete& OnComplete){}
 	virtual void DSQueryUserInfo(const TArray<FUniqueNetIdRef>& UserIds, const FOnDSQueryUsersInfoComplete& OnComplete){}
 
 	virtual bool TravelToSession(const FName SessionName){ return false; }
@@ -103,12 +99,6 @@ public:
 	virtual FOnServerSessionUpdateReceived* GetOnSessionServerUpdateReceivedDelegates(){ return nullptr; }
 
 protected:
-	virtual void OnQueryUserInfoComplete(
-		int32 LocalUserNum,
-		bool bSucceeded,
-		const TArray<FUniqueNetIdRef>& UserIds,
-		const FString& ErrorMessage,
-		const FOnQueryUsersInfoComplete& OnComplete){}
 	virtual void OnDSQueryUserInfoComplete(
 		const FListBulkUserInfo& UserInfoList,
 		const FOnDSQueryUsersInfoComplete& OnComplete){}
@@ -120,17 +110,12 @@ protected:
 
 #pragma region "Query caching workaround"
 protected:
-	bool RetrieveUserInfoCache(
-		const TArray<FUniqueNetIdRef>& UserIds,
-		TArray<FUserOnlineAccountAccelByte*>& OutUserInfo);
 	bool DSRetrieveUserInfoCache(
 		const TArray<FUniqueNetIdRef>& UserIds,
 		TArray<const FBaseUserInfo*> OutUserInfo);
-	void CacheUserInfo(const FPlatformTypes::int32 LocalUserNum, const TArray<FUniqueNetIdRef>& UserIds);
 	void CacheUserInfo(const FListBulkUserInfo& UserInfoList);
 
 private:
-	TArray<FUserOnlineAccountAccelByte> CachedUsersInfo = {};
 	TArray<FBaseUserInfo> DSCachedUsersInfo = {};
 #pragma endregion 
 #pragma endregion 
@@ -162,7 +147,7 @@ protected:
 #pragma region "Utilities"
 	TArray<FMatchSessionEssentialInfo> SimplifySessionSearchResult(
 		const TArray<FOnlineSessionSearchResult>& SearchResults,
-		const TArray<FUserOnlineAccountAccelByte*> UsersInfo,
+		const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo,
 		const TMap<TPair<EGameModeNetworkType, EGameModeType>,
 		FString>& SessionTemplateNames);
 #pragma endregion 

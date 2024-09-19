@@ -6,6 +6,7 @@
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "OnlineSubsystemUtils.h"
+#include "TutorialModuleUtilities/StartupSubsystem.h"
 
 #define LOCTEXT_NAMESPACE "AccelByteWars"
 
@@ -112,31 +113,33 @@ void UFriendsSubsystem::GetCacheFriendList(const int32 LocalUserNum, const FOnGe
             FriendIds.Add(CachedFriend.Get().GetUserId());
         }
 
-        // Create callback to handle queried friends' user information.
-        OnQueryUserInfoCompleteDelegateHandle = UserInterface->AddOnQueryUserInfoCompleteDelegate_Handle(
-            LocalUserNum,
-            FOnQueryUserInfoCompleteDelegate::CreateWeakLambda(this, [this, OnComplete](int32 LocalUserNum, bool bWasSuccessful, const TArray<FUniqueNetIdRef>& UserIds, const FString& Error)
-            {
-                UserInterface->ClearOnQueryUserInfoCompleteDelegate_Handle(LocalUserNum, OnQueryUserInfoCompleteDelegateHandle);
-
-                // Refresh friends data with queried friend's user information.
-                TArray<TSharedRef<FOnlineFriend>> NewCachedFriendList;
-                FriendsInterface->GetFriendsList(LocalUserNum, TEXT(""), NewCachedFriendList);
-                for (const TSharedRef<FOnlineFriend>& NewCachedFriend : NewCachedFriendList)
-                {
-                    // Update friend's avatar URL based on queried friend's user information.
-                    FString UserAvatarURL;
-                    TSharedPtr<FOnlineUser> UserInfo = UserInterface->GetUserInfo(LocalUserNum, NewCachedFriend.Get().GetUserId().Get());
-                    UserInfo->GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, UserAvatarURL);
-                    StaticCastSharedRef<FOnlineFriendAccelByte>(NewCachedFriend).Get().SetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, UserAvatarURL);
-                }
-
-                OnComplete.ExecuteIfBound(true, NewCachedFriendList, TEXT(""));
-            }
-        ));
-
         // Query friends' user information.
-        UserInterface->QueryUserInfo(LocalUserNum, FriendIds);
+        if (UStartupSubsystem* StartupSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UStartupSubsystem>())
+        {
+            StartupSubsystem->QueryUserInfo(
+                LocalUserNum,
+                FriendIds,
+                FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [this, OnComplete, LocalUserNum](
+                    const FOnlineError& Error,
+		            const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
+                {
+                    // Refresh friends data with queried friend's user information.
+                    TArray<TSharedRef<FOnlineFriend>> NewCachedFriendList;
+                    FriendsInterface->GetFriendsList(LocalUserNum, TEXT(""), NewCachedFriendList);
+                    for (const TSharedRef<FOnlineFriend>& NewCachedFriend : NewCachedFriendList)
+                    {
+                        // Update friend's avatar URL based on queried friend's user information.
+                        FString UserAvatarURL;
+                        TSharedPtr<FOnlineUser> UserInfo = UserInterface->GetUserInfo(
+                            LocalUserNum, NewCachedFriend.Get().GetUserId().Get());
+                        UserInfo->GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, UserAvatarURL);
+                        StaticCastSharedRef<FOnlineFriendAccelByte>(NewCachedFriend).Get().SetUserAttribute(
+                            ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, UserAvatarURL);
+                    }
+
+                    OnComplete.ExecuteIfBound(true, NewCachedFriendList, TEXT(""));
+                }));
+        }
     }
     // If none, request to backend then get the cached the friend list.
     else
@@ -184,42 +187,28 @@ void UFriendsSubsystem::GetSelfFriendCode(const APlayerController* PC, const FOn
     }
 
     // If not available on cache then query the user info to get friend code.
-    OnQueryUserToGetFriendCodeDelegateHandle = UserInterface->AddOnQueryUserInfoCompleteDelegate_Handle(
-        LocalUserNum,
-        FOnQueryUserInfoCompleteDelegate::CreateWeakLambda(this, [this, OnComplete](int32 LocalUserNum, bool bWasSuccessful, const TArray<FUniqueNetIdRef>& UserIds, const FString& ErrorStr)
-        {
-            UserInterface->ClearOnQueryUserInfoCompleteDelegate_Handle(LocalUserNum, OnQueryUserToGetFriendCodeDelegateHandle);
-
-            if (!bWasSuccessful || UserIds.IsEmpty()) 
+    if (UStartupSubsystem* StartupSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UStartupSubsystem>())
+    {
+        StartupSubsystem->QueryUserInfo(
+            LocalUserNum,
+            TPartyMemberArray{ LocalPlayerId.ToSharedRef() },
+            FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [this, OnComplete](
+                const FOnlineError& Error,
+                const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
             {
-                UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Failed to get self friend code. Query user info is failed."));
-                OnComplete.ExecuteIfBound(false, nullptr, TEXT(""));
-                return;
-            }
+                if (!Error.bSucceeded || UsersInfo.IsEmpty())
+                {
+                    UE_LOG_FRIENDS_ESSENTIALS(
+                        Warning, TEXT("Failed to get self friend code. Query user info is failed."));
+                    OnComplete.ExecuteIfBound(false, nullptr, TEXT(""));
+                    return;
+                }
 
-            const FUniqueNetIdRef UserId = UserIds[0];
-            const TSharedPtr<FOnlineUser> UserInfo = UserInterface->GetUserInfo(LocalUserNum, UserId.Get());
-            if (!UserInfo) 
-            {
-                UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Failed to get self friend code. User info is not found."));
-                OnComplete.ExecuteIfBound(false, nullptr, TEXT(""));
-                return;
-            }
-
-            const TSharedPtr<FUserOnlineAccountAccelByte> UserAccount = StaticCastSharedPtr<FUserOnlineAccountAccelByte>(UserInfo);
-            if (!UserAccount) 
-            {
-                UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Failed to get self friend code. User account is not found."));
-                OnComplete.ExecuteIfBound(false, nullptr, TEXT(""));
-                return;
-            }
-
-            const FString FriendCode = UserAccount->GetPublicCode();
-            UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Success to get self friend code: %s"), *FriendCode);
-            OnComplete.ExecuteIfBound(true, UFriendData::ConvertToFriendData(UserInfo.ToSharedRef()), FriendCode);
-        }
-    ));
-    UserInterface->QueryUserInfo(LocalUserNum, TPartyMemberArray{ LocalPlayerId.ToSharedRef() });
+                const FString FriendCode = UsersInfo[0]->GetPublicCode();
+                UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Success to get self friend code: %s"), *FriendCode);
+                OnComplete.ExecuteIfBound(true, UFriendData::ConvertToFriendData(UsersInfo[0].ToSharedRef()), FriendCode);
+            }));
+    }
 }
 
 void UFriendsSubsystem::FindFriend(const APlayerController* PC, const FString& InKeyword, const FOnFindFriendComplete& OnComplete)
@@ -274,23 +263,25 @@ void UFriendsSubsystem::OnFindFriendComplete(bool bWasSuccessful, const FUniqueN
         }
 
         // Request the found user information to backend (to retrieve avatar URL, display name, etc.)
-        OnQueryUserInfoCompleteDelegateHandle = UserInterface->AddOnQueryUserInfoCompleteDelegate_Handle(
-            LocalUserNum,
-            FOnQueryUserInfoCompleteDelegate::CreateWeakLambda(this, [this, OnComplete](int32 LocalUserNum, bool bWasSuccessful, const TArray<FUniqueNetIdRef>& UserIds, const FString& ErrorStr)
-            {
-                UserInterface->ClearOnQueryUserInfoCompleteDelegate_Handle(LocalUserNum, OnQueryUserInfoCompleteDelegateHandle);
-
-                if (bWasSuccessful && !UserIds.IsEmpty())
+        if (UStartupSubsystem* StartupSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UStartupSubsystem>())
+        {
+            StartupSubsystem->QueryUserInfo(
+                LocalUserNum,
+                TPartyMemberArray{ FoundUserId.AsShared() },
+                FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [this, OnComplete](
+                    const FOnlineError& Error,
+                    const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
                 {
-                    OnComplete.ExecuteIfBound(true, UFriendData::ConvertToFriendData(UserInterface->GetUserInfo(LocalUserNum, UserIds[0].Get()).ToSharedRef()), TEXT(""));
-                }
-                else
-                {
-                    OnComplete.ExecuteIfBound(false, nullptr, ErrorStr);
-                }
-            }
-        ));
-        UserInterface->QueryUserInfo(LocalUserNum, TPartyMemberArray{ FoundUserId.AsShared() });
+                    if (Error.bSucceeded && !UsersInfo.IsEmpty())
+                    {
+                        OnComplete.ExecuteIfBound(true, UFriendData::ConvertToFriendData(UsersInfo[0].ToSharedRef()), TEXT(""));
+                    }
+                    else
+                    {
+                        OnComplete.ExecuteIfBound(false, nullptr, Error.ErrorMessage.ToString());
+                    }
+                }));
+        }
     }
     else
     {
@@ -634,5 +625,60 @@ void UFriendsSubsystem::GetFriendList(const APlayerController* PC, const FOnGetF
 
 #pragma endregion
 
+TArray<UTutorialModuleSubsystem::FCheatCommandEntry> UFriendsSubsystem::GetCheatCommandEntries()
+{
+    TArray<FCheatCommandEntry> OutArray = {};
+
+    // Show local user (index 0) friends
+    OutArray.Add(FCheatCommandEntry(
+        *CommandReadFriendList,
+        TEXT("Print friend list"),
+        FConsoleCommandWithArgsDelegate::CreateUObject(this, &ThisClass::DisplayFriendList)));
+
+    return OutArray;
+}
+
+void UFriendsSubsystem::DisplayFriendList(const TArray<FString>& Args)
+{
+    // Construct OnComplete to display the info
+    FOnGetFriendListComplete OnGetFriendListComplete = FOnGetFriendListComplete::CreateWeakLambda(
+        this, [this](bool bWasSuccessful, TArray<UFriendData*> Friends, const FString& ErrorMessage)
+        {
+            FString OutString = FString::Printf(LINE_TERMINATOR);
+            if (!bWasSuccessful)
+            {
+                OutString = TEXT("Query failed");
+            }
+            else
+            {
+                if (Friends.IsEmpty())
+                {
+                    OutString = TEXT("Friend list is empty");
+                }
+                else
+                {
+                    for (const UFriendData* Friend : Friends)
+                    {
+                        OutString += FString::Printf(
+                            TEXT("%s%s (%s)%s%sDisplay name: %s%sAvatar URL: %s"),
+                            LINE_TERMINATOR,
+                            *Friend->GetName(),
+                            *Friend->UserId->ToDebugString(),
+                            LINE_TERMINATOR,
+                            *Friend->DisplayName,
+                            LINE_TERMINATOR,
+                            *Friend->AvatarURL,
+                            LINE_TERMINATOR);
+                    }
+                }
+            }
+
+            GetWorld()->GetGameViewport()->ViewportConsole->OutputText(OutString);
+        });
+
+    GetFriendList(
+        GetWorld()->GetFirstLocalPlayerFromController()->PlayerController,
+        OnGetFriendListComplete);
+}
 
 #undef LOCTEXT_NAMESPACE

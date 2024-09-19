@@ -90,8 +90,7 @@ void UGameOverWidget::NativeOnDeactivated()
 
 void UGameOverWidget::SetupLeaderboard()
 {
-	int32 HighestScore = INDEX_NONE;
-	int32 WinnerTeamId = INDEX_NONE;
+	int32 WinnerTeamId = GameState->GetWinnerTeamId();
 	FString WinnerPlayerName = TEXT("");
 	bool bIsWinnerLocalPlayer = false;
 
@@ -101,19 +100,9 @@ void UGameOverWidget::SetupLeaderboard()
 	int32 PlayerIndex = 0;
 	for (const FGameplayTeamData& Team : GameState->Teams) 
 	{
-		if (Team.TeamMembers.IsEmpty()) continue;
-
-		// Get team with highest score.
-		if (Team.GetTeamScore() > HighestScore) 
+		if (Team.TeamMembers.IsEmpty())
 		{
-			HighestScore = Team.GetTeamScore();
-			WinnerTeamId = Team.TeamId;
-		}
-		// No winner, draw.
-		else if (Team.GetTeamScore() == HighestScore)
-		{
-			WinnerTeamId = INDEX_NONE;
-			WinnerPlayerName = TEXT("");
+			continue;
 		}
 
 		const FLinearColor TeamColor = GameInstance->GetTeamColor(Team.TeamId);

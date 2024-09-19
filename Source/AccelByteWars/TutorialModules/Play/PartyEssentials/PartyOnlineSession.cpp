@@ -12,6 +12,7 @@
 #include "Core/UI/Components/AccelByteWarsButtonBase.h"
 
 #include "Social/FriendsEssentials/UI/FriendDetailsWidget.h"
+#include "TutorialModuleUtilities/StartupSubsystem.h"
 
 void UPartyOnlineSession::RegisterOnlineDelegates()
 {
@@ -66,85 +67,6 @@ void UPartyOnlineSession::ClearOnlineDelegates()
     if (GetABIdentityInt())
     {
         GetABIdentityInt()->OnConnectLobbyCompleteDelegates->RemoveAll(this);
-    }
-}
-
-void UPartyOnlineSession::QueryUserInfo(const int32 LocalUserNum, const TArray<FUniqueNetIdRef>& UserIds, const FOnQueryUsersInfoComplete& OnComplete)
-{
-    // Safety
-    if (!GetUserInt())
-    {
-        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, OnComplete]()
-        {
-            OnComplete.ExecuteIfBound(false, {});
-        }));
-        return;
-    }
-
-    TArray<FUserOnlineAccountAccelByte*> UserInfo;
-    if (RetrieveUserInfoCache(UserIds, UserInfo))
-    {
-        ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, UserInfo, OnComplete]()
-        {
-            OnComplete.ExecuteIfBound(true, UserInfo);
-        }));
-    }
-    // Some data does not exist in cache, query everything
-    else
-    {
-        // Bind delegate
-        if (OnQueryUserInfoCompleteDelegateHandle.IsValid())
-        {
-            GetUserInt()->OnQueryUserInfoCompleteDelegates->Remove(OnQueryUserInfoCompleteDelegateHandle);
-            OnQueryUserInfoCompleteDelegateHandle.Reset();
-        }
-        OnQueryUserInfoCompleteDelegateHandle = GetUserInt()->OnQueryUserInfoCompleteDelegates->AddWeakLambda(
-            this, [OnComplete, this](
-                int32 LocalUserNum,
-                bool bSucceeded,
-                const TArray<FUniqueNetIdRef>& UserIds,
-                const FString& ErrorMessage)
-            {
-                OnQueryUserInfoComplete(LocalUserNum, bSucceeded, UserIds, ErrorMessage, OnComplete);
-            });
-
-        if (!GetUserInt()->QueryUserInfo(LocalUserNum, UserIds))
-        {
-            OnQueryUserInfoComplete(LocalUserNum, false, UserIds, "", OnComplete);
-        }
-    }
-}
-
-void UPartyOnlineSession::OnQueryUserInfoComplete(int32 LocalUserNum, bool bSucceeded, const TArray<FUniqueNetIdRef>& UserIds, const FString& ErrorMessage, const FOnQueryUsersInfoComplete& OnComplete)
-{
-    // reset delegate handle
-    GetUserInt()->OnQueryUserInfoCompleteDelegates->Remove(OnQueryUserInfoCompleteDelegateHandle);
-    OnQueryUserInfoCompleteDelegateHandle.Reset();
-
-    if (bSucceeded)
-    {
-        // Cache the result.
-        CacheUserInfo(LocalUserNum, UserIds);
-
-        // Retrieve the result from cache.
-        TArray<FUserOnlineAccountAccelByte*> OnlineUsers;
-        RetrieveUserInfoCache(UserIds, OnlineUsers);
-
-        // Only include valid users info only.
-        OnlineUsers.RemoveAll([](const FUserOnlineAccountAccelByte* Temp)
-        {
-            return !Temp || !Temp->GetUserId()->IsValid();
-        });
-
-        UE_LOG_PARTYESSENTIALS(Log,
-            TEXT("Queried users info: %d, found valid users info: %d"),
-            UserIds.Num(), OnlineUsers.Num());
-
-        OnComplete.ExecuteIfBound(true, OnlineUsers);
-    }
-    else
-    {
-        OnComplete.ExecuteIfBound(false, {});
     }
 }
 
@@ -982,28 +904,33 @@ void UPartyOnlineSession::OnPartyInviteRejected(FName SessionName, const FUnique
         RejecterABId->IsValid() ? *RejecterABId->GetAccelByteId() : TEXT("Unknown"));
 
     // Display push notification to show who rejected the invitation.
-    QueryUserInfo(0, TPartyMemberArray{ RejecterABId },
-        FOnQueryUsersInfoComplete::CreateWeakLambda(this, [this, RejecterABId](const bool bSucceeded, const TArray<FUserOnlineAccountAccelByte*>& UsersInfo)
-        {
-            if (UsersInfo.IsEmpty() || !UsersInfo[0] || !GetPromptSubystem())
+    if (UStartupSubsystem* StartupSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UStartupSubsystem>())
+    {
+        StartupSubsystem->QueryUserInfo(
+            0,
+            TPartyMemberArray{ RejecterABId },
+            FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [this, RejecterABId](
+                const FOnlineError& Error, const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
             {
-                return;
-            }
+                if (UsersInfo.IsEmpty() || !UsersInfo[0] || !GetPromptSubystem())
+                {
+                    return;
+                }
 
-            FUserOnlineAccountAccelByte MemberInfo = *UsersInfo[0];
+                FUserOnlineAccountAccelByte MemberInfo = *UsersInfo[0];
 
-            const FText NotifMessage = FText::Format(PARTY_INVITE_REJECTED_MESSAGE, FText::FromString(
-                MemberInfo.GetDisplayName().IsEmpty() ?
-                UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(RejecterABId.Get()) :
-                MemberInfo.GetDisplayName()
-            ));
+                const FText NotifMessage = FText::Format(PARTY_INVITE_REJECTED_MESSAGE, FText::FromString(
+                    MemberInfo.GetDisplayName().IsEmpty() ?
+                    UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(RejecterABId.Get()) :
+                    MemberInfo.GetDisplayName()
+                ));
 
-            FString AvatarURL;
-            MemberInfo.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
+                FString AvatarURL;
+                MemberInfo.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
 
-            GetPromptSubystem()->PushNotification(NotifMessage, AvatarURL, true);
-        }
-    ));
+                GetPromptSubystem()->PushNotification(NotifMessage, AvatarURL, true);
+            }));
+    }
 
     OnPartyInviteRejectedDelegates.Broadcast(SessionName, RejecterId);
 }
@@ -1029,50 +956,54 @@ void UPartyOnlineSession::OnPartyInviteReceived(const FUniqueNetId& UserId, cons
     const int32 LocalUserNum = GetLocalUserNumFromPlayerController(PC);
 
     // Display push notification to allow player to accept/reject the party invitation.
-    QueryUserInfo(0, TPartyMemberArray{ SenderABId },
-        FOnQueryUsersInfoComplete::CreateWeakLambda(this, [this, LocalUserNum, SenderABId, PartyInvite]
-        (const bool bSucceeded, const TArray<FUserOnlineAccountAccelByte*>& UsersInfo)
-        {
-            if (UsersInfo.IsEmpty() || !UsersInfo[0] || !GetPromptSubystem())
+    if (UStartupSubsystem* StartupSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UStartupSubsystem>())
+    {
+        StartupSubsystem->QueryUserInfo(
+            0,
+            TPartyMemberArray{ SenderABId },
+            FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [this, SenderABId, PartyInvite, LocalUserNum](
+                const FOnlineError& Error, const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
             {
-                return;
-            }
-
-            FUserOnlineAccountAccelByte MemberInfo = *UsersInfo[0];
-
-            const FText NotifMessage = FText::Format(PARTY_INVITE_RECEIVED_MESSAGE, FText::FromString(
-                MemberInfo.GetDisplayName().IsEmpty() ?
-                UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(SenderABId.Get()) :
-                MemberInfo.GetDisplayName()
-            ));
-
-            FString AvatarURL;
-            MemberInfo.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
-
-            GetPromptSubystem()->PushNotification(
-                NotifMessage,
-                AvatarURL,
-                true,
-                ACCEPT_PARTY_INVITE_MESSAGE,
-                REJECT_PARTY_INVITE_MESSAGE,
-                FText::GetEmpty(),
-                FPushNotificationDelegate::CreateWeakLambda(this, [this, LocalUserNum, PartyInvite](EPushNotificationActionResult ActionButtonResult)
+                if (UsersInfo.IsEmpty() || !UsersInfo[0] || !GetPromptSubystem())
                 {
-                    switch (ActionButtonResult)
-                    {
-                    // Show accept party invitation confirmation.
-                    case EPushNotificationActionResult::Button1:
-                        DisplayJoinPartyConfirmation(LocalUserNum, PartyInvite);
-                        break;
-                    // Reject party invitation.
-                    case EPushNotificationActionResult::Button2:
-                        RejectPartyInvite(LocalUserNum, PartyInvite);
-                        break;
-                    }
+                    return;
                 }
-            ));
-        }
-    ));
+
+                FUserOnlineAccountAccelByte MemberInfo = *UsersInfo[0];
+
+                const FText NotifMessage = FText::Format(PARTY_INVITE_RECEIVED_MESSAGE, FText::FromString(
+                    MemberInfo.GetDisplayName().IsEmpty() ?
+                    UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(SenderABId.Get()) :
+                    MemberInfo.GetDisplayName()
+                ));
+
+                FString AvatarURL;
+                MemberInfo.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
+
+                GetPromptSubystem()->PushNotification(
+                    NotifMessage,
+                    AvatarURL,
+                    true,
+                    ACCEPT_PARTY_INVITE_MESSAGE,
+                    REJECT_PARTY_INVITE_MESSAGE,
+                    FText::GetEmpty(),
+                    FPushNotificationDelegate::CreateWeakLambda(this, [this, LocalUserNum, PartyInvite](EPushNotificationActionResult ActionButtonResult)
+                    {
+                        switch (ActionButtonResult)
+                        {
+                        // Show accept party invitation confirmation.
+                        case EPushNotificationActionResult::Button1:
+                            DisplayJoinPartyConfirmation(LocalUserNum, PartyInvite);
+                            break;
+                        // Reject party invitation.
+                        case EPushNotificationActionResult::Button2:
+                            RejectPartyInvite(LocalUserNum, PartyInvite);
+                            break;
+                        }
+                    }
+                ));
+            }));
+    }
 
     OnPartyInviteReceivedDelegate.ExecuteIfBound(UserId, FromId, PartyInvite);
     OnPartyInviteReceivedDelegate.Unbind();
@@ -1176,29 +1107,33 @@ void UPartyOnlineSession::DisplayCurrentPartyLeader()
     const FUniqueNetIdAccelByteUserPtr LeaderABId = StaticCastSharedPtr<const FUniqueNetIdAccelByteUser>(LastPartyLeader);
 
     // Query party leader information and then display a notification.
-    QueryUserInfo(0, TPartyMemberArray{ LeaderABId.ToSharedRef() },
-        FOnQueryUsersInfoComplete::CreateWeakLambda(this, [this, LeaderABId]
-        (const bool bSucceeded, const TArray<FUserOnlineAccountAccelByte*>& UsersInfo)
-        {
-            if (UsersInfo.IsEmpty() || !UsersInfo[0] || !GetPromptSubystem())
+    if (UStartupSubsystem* StartupSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UStartupSubsystem>())
+    {
+        StartupSubsystem->QueryUserInfo(
+            0,
+            TPartyMemberArray{ LeaderABId.ToSharedRef() },
+            FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [this, LeaderABId](
+                const FOnlineError& Error, const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
             {
-                return;
-            }
+                if (UsersInfo.IsEmpty() || !UsersInfo[0] || !GetPromptSubystem())
+                {
+                    return;
+                }
 
-            FUserOnlineAccountAccelByte MemberInfo = *UsersInfo[0];
+                FUserOnlineAccountAccelByte MemberInfo = *UsersInfo[0];
 
-            const FText NotifMessage = FText::Format(PARTY_NEW_LEADER_MESSAGE, FText::FromString(
-                MemberInfo.GetDisplayName().IsEmpty() ?
-                UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(LeaderABId.ToSharedRef().Get()) :
-                MemberInfo.GetDisplayName()
-            ));
+                const FText NotifMessage = FText::Format(PARTY_NEW_LEADER_MESSAGE, FText::FromString(
+                    MemberInfo.GetDisplayName().IsEmpty() ?
+                    UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(LeaderABId.ToSharedRef().Get()) :
+                    MemberInfo.GetDisplayName()
+                ));
 
-            FString AvatarURL;
-            MemberInfo.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
+                FString AvatarURL;
+                MemberInfo.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
 
-            GetPromptSubystem()->PushNotification(NotifMessage, AvatarURL, true);
-        }
-    ));
+                GetPromptSubystem()->PushNotification(NotifMessage, AvatarURL, true);
+            }));
+    }
 }
 
 void UPartyOnlineSession::OnPartyMembersChange(FName SessionName, const FUniqueNetId& Member, bool bJoined)
@@ -1243,31 +1178,36 @@ void UPartyOnlineSession::OnPartyMembersChange(FName SessionName, const FUniqueN
     // Query member information then display a push notification to show who joined/left the party.
     if (!bIsMemberTheLoggedInPlayer)
     {
-        QueryUserInfo(0, TPartyMemberArray{ MemberABId },
-            FOnQueryUsersInfoComplete::CreateWeakLambda(this, [this, MemberABId, bJoined]
-            (const bool bSucceeded, const TArray<FUserOnlineAccountAccelByte*>& UsersInfo)
-            {
-                if (UsersInfo.IsEmpty() || !UsersInfo[0] || !GetPromptSubystem())
+        if (UStartupSubsystem* StartupSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UStartupSubsystem>())
+        {
+            StartupSubsystem->QueryUserInfo(
+                0,
+                TPartyMemberArray{ MemberABId },
+                FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [this, MemberABId, bJoined](
+                    const FOnlineError& Error,
+                    const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
                 {
-                    return;
-                }
+                    if (UsersInfo.IsEmpty() || !UsersInfo[0] || !GetPromptSubystem())
+                    {
+                        return;
+                    }
 
-                FUserOnlineAccountAccelByte MemberInfo = *UsersInfo[0];
+                    FUserOnlineAccountAccelByte MemberInfo = *UsersInfo[0];
 
-                const FString MemberDisplayName = MemberInfo.GetDisplayName().IsEmpty() ?
-                    UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(MemberABId.Get()) :
-                    MemberInfo.GetDisplayName();
+                    const FString MemberDisplayName = MemberInfo.GetDisplayName().IsEmpty() ?
+                        UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(MemberABId.Get()) :
+                        MemberInfo.GetDisplayName();
 
-                const FText NotifMessage = bJoined ?
-                    FText::Format(PARTY_MEMBER_JOINED_MESSAGE, FText::FromString(MemberDisplayName)) :
-                    FText::Format(PARTY_MEMBER_LEFT_MESSAGE, FText::FromString(MemberDisplayName));
+                    const FText NotifMessage = bJoined ?
+                        FText::Format(PARTY_MEMBER_JOINED_MESSAGE, FText::FromString(MemberDisplayName)) :
+                        FText::Format(PARTY_MEMBER_LEFT_MESSAGE, FText::FromString(MemberDisplayName));
 
-                FString AvatarURL;
-                MemberInfo.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
+                    FString AvatarURL;
+                    MemberInfo.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
 
-                GetPromptSubystem()->PushNotification(NotifMessage, AvatarURL, true);
-            }
-        ));
+                    GetPromptSubystem()->PushNotification(NotifMessage, AvatarURL, true);
+                }));
+        }
     }
 
     // Show notification if a new party leader is set.

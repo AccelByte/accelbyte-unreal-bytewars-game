@@ -37,6 +37,8 @@ protected:
 
 	void OnSendFriendRequestComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& FriendId, const FString& ListName, const FString& ErrorStr, const FOnSendFriendRequestComplete OnComplete);
 	void OnSendFriendRequestByFriendCodeComplete(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& FriendId, const FString& ListName, const FString& ErrorStr, const FOnSendFriendRequestComplete OnComplete);
+
+
 #pragma endregion
 
 #pragma region Module.8b Function Declarations
@@ -69,8 +71,6 @@ public:
 	FUniqueNetIdPtr GetUniqueNetIdFromPlayerController(const APlayerController* PC) const;
 	int32 GetLocalUserNumFromPlayerController(const APlayerController* PC) const;
 
-	FDelegateHandle OnQueryUserToGetFriendCodeDelegateHandle;
-	FDelegateHandle OnQueryUserInfoCompleteDelegateHandle;
 	FDelegateHandle OnRejectFriendRequestCompleteDelegateHandle;
 	FDelegateHandle OnCancelFriendRequestCompleteDelegateHandle;
 
@@ -80,4 +80,15 @@ public:
 
 	FOnlineUserAccelBytePtr UserInterface;
 	FOnlineFriendsAccelBytePtr FriendsInterface;
+
+#pragma region "CLI Cheat"
+protected:
+	virtual TArray<FCheatCommandEntry> GetCheatCommandEntries() override;
+
+private:
+	const FString CommandReadFriendList = TEXT("ab.friend.readFriendList");
+
+	UFUNCTION()
+	void DisplayFriendList(const TArray<FString>& Args);
+#pragma endregion 
 };

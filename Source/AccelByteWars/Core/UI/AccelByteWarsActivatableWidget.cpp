@@ -56,6 +56,7 @@ void UAccelByteWarsActivatableWidget::NativePreConstruct()
 
 		GeneratedWidgets = DefaultObj->GeneratedWidgets;
 		WidgetValidators = DefaultObj->WidgetValidators;
+		GUICheatWidgetEntries = DefaultObj->GUICheatWidgetEntries;
 		FTUEDialogues = DefaultObj->FTUEDialogues;
 	}
 }
@@ -63,7 +64,8 @@ void UAccelByteWarsActivatableWidget::NativePreConstruct()
 void UAccelByteWarsActivatableWidget::NativeOnActivated()
 {
 	InitializeGeneratedWidgets();
-	
+	InitializeGUICheatWidgetEntries();
+
 	// Execute on-activated event for default object.
 	if (GetClass())
 	{
@@ -107,6 +109,7 @@ void UAccelByteWarsActivatableWidget::NativeOnActivated()
 void UAccelByteWarsActivatableWidget::NativeOnDeactivated()
 {
 	DeinitializeFTUEDialogues();
+	DeInitializeGUICheatWidgetEntries();
 
 	// Execute on-deactivated event for default object.
 	if (GetClass()) 
@@ -647,8 +650,7 @@ TWeakObjectPtr<UAccelByteWarsButtonBase> UAccelByteWarsActivatableWidget::Genera
 		Metadata.TabNameId,
 		Metadata.ButtonText,
 		EntryWidget,
-		Metadata.TabIndex,
-		true))
+		Metadata.TabIndex))
 	{
 		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(
 			Warning,
@@ -1186,6 +1188,77 @@ void UAccelByteWarsActivatableWidget::ExecuteWidgetValidators()
 		}
 	}
 }
+
+#pragma region "GUI Cheat"
+void UAccelByteWarsActivatableWidget::InitializeGUICheatWidgetEntries()
+{
+	if (!AccelByteWarsUtility::GetFlagValueOrDefault(FLAG_GUI_CHEAT, FLAG_GUI_CHEAT_SECTION, true))
+	{
+		return;
+	}
+
+	UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetWorld()->GetGameInstance());
+	ensure(GameInstance);
+
+	UAccelByteWarsBaseUI* BaseUI = GameInstance->GetBaseUIWidget();
+	if (!BaseUI)
+	{
+		return;
+	}
+
+	// Add entry
+	for (UGUICheatWidgetEntry* Entry : GUICheatWidgetEntries)
+	{
+		if (!Entry)
+		{
+			UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("GUICheat widget entry is invalid"))
+			continue;
+		}
+
+		BaseUI->AddGUICheatEntry(Entry);
+	}
+}
+
+void UAccelByteWarsActivatableWidget::DeInitializeGUICheatWidgetEntries() const
+{
+	if (!AccelByteWarsUtility::GetFlagValueOrDefault(FLAG_GUI_CHEAT, FLAG_GUI_CHEAT_SECTION, true))
+	{
+		return;
+	}
+
+	if (IsUnreachable())
+	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot deinitialize GUI Cheat as the widget begin to tear down."));
+		return;
+	}
+
+	if (GetWorld()->bIsTearingDown)
+	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot deinitialize GUI Cheat as the world begin to tear down."));
+		return;
+	}
+
+	UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetWorld()->GetGameInstance());
+	if (!GameInstance)
+	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot deinitialize GUI Cheat as Game Instance is invalid."));
+		return;
+	}
+
+	UAccelByteWarsBaseUI* BaseUI = GameInstance->GetBaseUIWidget(false);
+	if (!BaseUI)
+	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot deinitialize GUI Cheat as Base UI is invalid."));
+		return;
+	}
+
+	// Remove entries
+	for (UGUICheatWidgetEntry* Entry : GUICheatWidgetEntries)
+	{
+		BaseUI->RemoveGUICheatEntry(Entry);
+	}
+}
+#pragma endregion 
 
 #undef LOCTEXT_NAMESPACE
 #undef BTN_DEV_HELP_NAME

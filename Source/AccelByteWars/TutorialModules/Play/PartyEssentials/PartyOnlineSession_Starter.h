@@ -20,15 +20,11 @@ public:
 	virtual void RegisterOnlineDelegates() override;
 	virtual void ClearOnlineDelegates() override;
 
-	virtual void QueryUserInfo(const int32 LocalUserNum, const TArray<FUniqueNetIdRef>& UserIds, const FOnQueryUsersInfoComplete& OnComplete) override;
-
 #pragma region "Party Essentials Module Function Declarations"
 	// TODO: Add your party essentials module public function declarations here.
 #pragma endregion
 
 protected:
-	virtual void OnQueryUserInfoComplete(int32 LocalUserNum, bool bSucceeded, const TArray<FUniqueNetIdRef>& UserIds, const FString& ErrorMessage, const FOnQueryUsersInfoComplete& OnComplete) override;
-
 	void OnLeavePartyToTriggerEvent(FName SessionName, bool bSucceeded, const TDelegate<void(bool bWasSuccessful)> OnComplete);
 
 	void InitializePartyGeneratedWidgets();
@@ -47,8 +43,6 @@ protected:
 #pragma endregion
 
 private:
-	FDelegateHandle OnQueryUserInfoCompleteDelegateHandle;
-
 	FDelegateHandle OnLeaveSessionForTriggerDelegateHandle;
 
 	FTutorialModuleGeneratedWidget* InviteToPartyButtonMetadata;

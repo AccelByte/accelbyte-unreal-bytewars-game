@@ -35,11 +35,20 @@ private:
 	void BindDelegates();
 	void UnbindDelegates();
 
-	void OnLoadGameSoundOptions(const APlayerController* PC, TDelegate<void()> OnComplete);
-	void OnSaveGameSoundOptions(const APlayerController* PC, TDelegate<void()> OnComplete);
+	void OnLoadGameSoundOptions(const APlayerController* PlayerController, TDelegate<void()> OnComplete);
+	void OnSaveGameSoundOptions(const APlayerController* PlayerController, TDelegate<void()> OnComplete);
 
 	FDelegateHandle OnSetPlayerRecordCompletedDelegateHandle;
 	FDelegateHandle OnGetPlayerRecordCompletedDelegateHandle;
 	FDelegateHandle OnDeletePlayerRecordCompletedDelegateHandle;
+
+	TMultiMap<FString, FOnSetCloudSaveRecordComplete> SetPlayerRecordParams;
+	TMultiMap<FString, FOnGetCloudSaveRecordComplete> GetPlayerRecordParams;
+	TMultiMap<FString, FOnDeleteCloudSaveRecordComplete> DeletePlayerRecordParams;
+
+#pragma region "Utilities"
+	int32 GetLocalUserIndex(const APlayerController* PlayerController) const;
+#pragma endregion 
+
 	FOnlineCloudSaveAccelBytePtr CloudSaveInterface;
 };

@@ -8,15 +8,34 @@
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "UI/StartupWidget.h"
 #include "OnlineSubsystemUtils.h"
+#include "StartupLog.h"
 #include "Access/AuthEssentials/AuthEssentialsModels.h"
 #include "Access/AuthEssentials/UI/LoginWidget.h"
 #include "Access/AuthEssentials/UI/LoginWidget_Starter.h"
+#include "Core/GameModes/AccelByteWarsInGameGameMode.h"
+#include "Core/Player/AccelByteWarsPlayerController.h"
 
 void UStartupSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
 
+    // Initialize online user interface
+    const UWorld* World = GetWorld();
+    ensure(World);
+    UserInterface = Online::GetUserInterface(World);
+
     InitializePlatformLogin();
+
+#pragma region "Core game cheats"
+    if (UGUICheatWidgetEntry* GUICheatEntryKillSelf = FTutorialModuleGeneratedWidget::GetGUICheatMetadataById(GUI_CHEAT_ENTRY_KILL_SELF))
+    {
+        GUICheatEntryKillSelf->OnClicked.AddDynamic(this, &ThisClass::KillSelf);
+    }
+    if (UGUICheatWidgetEntry* GUICheatEntryKillOthers = FTutorialModuleGeneratedWidget::GetGUICheatMetadataById(GUI_CHEAT_ENTRY_KILL_OTHERS))
+    {
+        GUICheatEntryKillOthers->OnClicked.AddDynamic(this, &ThisClass::KillOthers);
+    }
+#pragma endregion 
 }
 
 void UStartupSubsystem::Deinitialize()
@@ -25,6 +44,146 @@ void UStartupSubsystem::Deinitialize()
 
     DeinitializePlatformLogin();
 }
+
+#pragma region "Common functions"
+bool UStartupSubsystem::CompareAccelByteUniqueId(
+    const FUniqueNetIdRepl& FirstUniqueNetId,
+    const FUniqueNetIdRepl& SecondUniqueNetId) const
+{
+    if (!FirstUniqueNetId.IsValid() || !SecondUniqueNetId.IsValid())
+    {
+        return false;
+    }
+
+    // compare directly first
+    if (FirstUniqueNetId == SecondUniqueNetId)
+    {
+        return true;
+    }
+
+    // if false, attempt to compare AB User Id first
+    if (!FirstUniqueNetId->GetType().IsEqual(ACCELBYTE_USER_ID_TYPE) ||
+        !SecondUniqueNetId->GetType().IsEqual(ACCELBYTE_USER_ID_TYPE))
+    {
+        return false;
+    }
+	
+    const FUniqueNetIdAccelByteUserPtr FirstAbUniqueNetId = FUniqueNetIdAccelByteUser::TryCast(*FirstUniqueNetId);
+    const FUniqueNetIdAccelByteUserPtr SecondAbUniqueNetId = FUniqueNetIdAccelByteUser::TryCast(*SecondUniqueNetId);
+
+    if (!FirstAbUniqueNetId.IsValid() || !SecondAbUniqueNetId.IsValid())
+    {
+        return false;
+    }
+
+    const FString FirstAbUserId = FirstAbUniqueNetId->GetAccelByteId();
+    const FString SecondAbUserId = SecondAbUniqueNetId->GetAccelByteId();
+
+    return FirstAbUserId.Equals(SecondAbUserId);
+}
+
+bool UStartupSubsystem::CompareAccelByteUniqueId(
+    const FUniqueNetIdRepl& FirstUniqueNetId,
+    const FString& SecondAbUserId) const
+{
+    if (!FirstUniqueNetId.IsValid() || !FirstUniqueNetId->GetType().IsEqual(ACCELBYTE_USER_ID_TYPE))
+    {
+        return false;
+    }
+
+    const FUniqueNetIdAccelByteUserPtr FirstAbUniqueNetId = FUniqueNetIdAccelByteUser::TryCast(*FirstUniqueNetId);
+    if (!FirstAbUniqueNetId.IsValid())
+    {
+        return false;
+    }
+    const FString FirstAbUserId = FirstAbUniqueNetId->GetAccelByteId();
+
+    return FirstAbUserId.Equals(SecondAbUserId);
+}
+
+void UStartupSubsystem::QueryUserInfo(
+    const int32 LocalUserNum,
+    const TArray<FUniqueNetIdRef>& UserIds,
+    const FOnQueryUsersInfoCompleteDelegate& OnComplete)
+{
+    // safety
+    if (!UserInterface)
+    {
+        UE_LOG_STARTUP(Warning, TEXT("User interface is invalid"))
+        GetWorld()->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this, OnComplete]()
+        {
+            OnComplete.ExecuteIfBound(
+                FOnlineError::CreateError(
+                    TEXT(""),
+                    EOnlineErrorResult::RequestFailure,
+                    TEXT(""),
+                    FText::FromString(TEXT(""))),
+                {});
+        }));
+        return;
+    }
+
+    // Call query right away since the it will check for cache first internally
+    if (OnQueryUserInfoCompleteDelegateHandle.IsValid())
+    {
+        UserInterface->OnQueryUserInfoCompleteDelegates->Remove(OnQueryUserInfoCompleteDelegateHandle);
+        OnQueryUserInfoCompleteDelegateHandle.Reset();
+    }
+    OnQueryUserInfoCompleteDelegateHandle = UserInterface->OnQueryUserInfoCompleteDelegates->AddWeakLambda(
+        this, [OnComplete, this](
+            int32 LocalUserNum,
+            bool bSucceeded,
+            const TArray<FUniqueNetIdRef>& UserIds,
+            const FString& ErrorMessage)
+        {
+            OnQueryUserInfoComplete(LocalUserNum, bSucceeded, UserIds, ErrorMessage, OnComplete);
+        });
+
+    if (!UserInterface->QueryUserInfo(LocalUserNum, UserIds))
+    {
+        OnQueryUserInfoComplete(LocalUserNum, false, UserIds, "", OnComplete);
+    }
+}
+
+void UStartupSubsystem::OnQueryUserInfoComplete(
+    int32 LocalUserNum,
+    bool bSucceeded,
+    const TArray<FUniqueNetIdRef>& UserIds,
+    const FString& ErrorMessage,
+    const FOnQueryUsersInfoCompleteDelegate& OnComplete)
+{
+    // reset delegate handle
+    UserInterface->OnQueryUserInfoCompleteDelegates->Remove(OnQueryUserInfoCompleteDelegateHandle);
+    OnQueryUserInfoCompleteDelegateHandle.Reset();
+
+    if (bSucceeded)
+    {
+        // Retrieve the result from cache.
+        TArray<TSharedPtr<FUserOnlineAccountAccelByte>> OnlineUsers;
+        for (const FUniqueNetIdRef& UserId : UserIds)
+        {
+            TSharedPtr<FOnlineUser> OnlineUser = UserInterface->GetUserInfo(0, UserId.Get());
+            if (!OnlineUser.IsValid() || !OnlineUser->GetUserId()->IsValid())
+            {
+                continue;
+            }
+            OnlineUsers.Add(StaticCastSharedPtr<FUserOnlineAccountAccelByte>(OnlineUser));
+        }
+
+        OnComplete.ExecuteIfBound(FOnlineError::Success(), OnlineUsers);
+    }
+    else
+    {
+        OnComplete.ExecuteIfBound(
+            FOnlineError::CreateError(
+                TEXT(""),
+                EOnlineErrorResult::RequestFailure,
+                TEXT(""),
+                FText::FromString(ErrorMessage)),
+            {});
+    }
+}
+#pragma endregion 
 
 #pragma region Login with Platform Only
 
@@ -439,3 +598,126 @@ void UStartupSubsystem::OnLoginPlatformCredsToAccelByteComplete(
 }
 
 #pragma endregion
+
+TArray<UTutorialModuleSubsystem::FCheatCommandEntry> UStartupSubsystem::GetCheatCommandEntries()
+{
+    TArray<FCheatCommandEntry> OutArray = {};
+
+    // Retrieve and display user info given AB's ID
+    OutArray.Add(FCheatCommandEntry(
+        *CommandUserInfo,
+        TEXT("Query user info by user id. Requires user id as the first param"),
+        FConsoleCommandWithArgsDelegate::CreateUObject(this, &ThisClass::DisplayUserInfo)));
+
+    return OutArray;
+}
+
+void UStartupSubsystem::DisplayUserInfo(const TArray<FString>& Args)
+{
+    if (Args.Num() < 1)
+    {
+        return;
+    }
+
+    // Construct UniqueNetId
+    FUniqueNetIdAccelByteUserRef UniqueNetId = FUniqueNetIdAccelByteUser::Create(Args[0]);
+
+    QueryUserInfo(0, {UniqueNetId}, FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(
+        this, [this](
+            const FOnlineError& Error,
+            const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
+        {
+            if (!Error.bSucceeded || UsersInfo.IsEmpty())
+            {
+                return;
+            }
+
+            const TSharedPtr<FUserOnlineAccountAccelByte> UserInfo = UsersInfo[0];
+            if (!UserInfo.IsValid())
+            {
+                return;
+            }
+            const FUniqueNetIdAccelByteUserRef UserABId = StaticCastSharedRef<const
+                FUniqueNetIdAccelByteUser>(UserInfo->GetUserId());
+
+            // Construct info
+            FString AvatarURL = TEXT("");
+            UserInfo->GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
+            const FString OutString = FString::Printf(
+                TEXT(
+                    "%sAB ID: %s%sPlatform type: %s%sPlatform ID: %s%sReal name: %s%sDisplay name: %s%sPublic Code: %s%sPlatform User ID: %s%sUser country: %s%sAccess token: %s%sSimultaneous platform ID: %s%sSimultaneous platform user ID: %s%s Connected to lobby: %s%s Connected to chat: %s%sAvatar URL: %s"),
+                LINE_TERMINATOR,
+                *UserABId->GetAccelByteId(),
+                LINE_TERMINATOR,
+                *UserABId->GetPlatformType(),
+                LINE_TERMINATOR,
+                *UserABId->GetPlatformId(),
+                LINE_TERMINATOR,
+                *UserInfo->GetRealName(),
+                LINE_TERMINATOR,
+                *UserInfo->GetDisplayName(),
+                LINE_TERMINATOR,
+                *UserInfo->GetPublicCode(),
+                LINE_TERMINATOR,
+                *UserInfo->GetPlatformUserId(),
+                LINE_TERMINATOR,
+                *UserInfo->GetUserCountry(),
+                LINE_TERMINATOR,
+                *UserInfo->GetAccessToken(),
+                LINE_TERMINATOR,
+                *UserInfo->GetSimultaneousPlatformID(),
+                LINE_TERMINATOR,
+                *UserInfo->GetSimultaneousPlatformUserID(),
+                LINE_TERMINATOR,
+                *FString(UserInfo->IsConnectedToLobby() ? TEXT("TRUE") : TEXT("FALSE")),
+                LINE_TERMINATOR,
+                *FString(UserInfo->IsConnectedToChat() ? TEXT("TRUE") : TEXT("FALSE")),
+                LINE_TERMINATOR,
+                *AvatarURL);
+
+            GetWorld()->GetGameViewport()->ViewportConsole->OutputText(OutString);
+        }));
+}
+
+void UStartupSubsystem::KillSelf(const TArray<FString>& Args)
+{
+    APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
+    if (!PlayerController)
+    {
+        return;
+    }
+
+    AAccelByteWarsPlayerController* AccelByteWarsPlayerController = Cast<AAccelByteWarsPlayerController>(PlayerController);
+    if (!AccelByteWarsPlayerController)
+    {
+        return;
+    }
+
+    AccelByteWarsPlayerController->ClientInstructInstaKillPlayer({PlayerController->PlayerState});
+}
+
+void UStartupSubsystem::KillOthers(const TArray<FString>& Args)
+{
+    APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
+    if (!PlayerController)
+    {
+        return;
+    }
+
+    AAccelByteWarsPlayerController* AccelByteWarsPlayerController = Cast<AAccelByteWarsPlayerController>(PlayerController);
+    if (!AccelByteWarsPlayerController)
+    {
+        return;
+    }
+
+    TArray<APlayerState*> PlayerStates = GetWorld()->GetGameState()->PlayerArray;
+
+    // Exclude local user
+    const APlayerState* LocalPlayer = GetWorld()->GetFirstPlayerController()->PlayerState;
+    PlayerStates.RemoveAll([LocalPlayer](const APlayerState* PlayerState)
+    {
+        return PlayerState == LocalPlayer;
+    });
+
+    AccelByteWarsPlayerController->ClientInstructInstaKillPlayer(PlayerStates);
+}

@@ -5,6 +5,9 @@
 
 #include "StatsProfileWidget_Starter.h"
 
+#include "Core/System/AccelByteWarsGameInstance.h"
+#include "Core/Utilities/AccelByteWarsUtility.h"
+#include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
 #include "CommonButtonBase.h"
 #include "Components/WidgetSwitcher.h"
 #include "Components/DynamicEntryBox.h"
@@ -12,27 +15,30 @@
 
 #include "Storage/StatisticsEssentials/StatsEssentialsSubsystem_Starter.h"
 
+void UStatsProfileWidget_Starter::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	StatsEssentialsSubsystem = GetGameInstance()->GetSubsystem<UStatsEssentialsSubsystem_Starter>();
+	ensure(StatsEssentialsSubsystem);
+}
+
 void UStatsProfileWidget_Starter::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
 	Btn_Back->OnClicked().AddUObject(this, &ThisClass::DeactivateWidget);
-}
 
-void UStatsProfileWidget_Starter::NativeConstruct()
-{
-	Super::NativeConstruct();
-
-	EssentialsSubsystem = GetGameInstance()->GetSubsystem<UStatsEssentialsSubsystem_Starter>();
-	ensure(EssentialsSubsystem);
+	// TODO: start to query statistics here.
 }
 
 void UStatsProfileWidget_Starter::NativeOnDeactivated()
 {
-	Super::NativeOnDeactivated();
-
+	StatsDataEntryList.Empty();
 	Btn_Back->OnClicked().Clear();
-	Btn_Retry->OnClicked().Clear();
+	Ws_Loader->OnRetryClicked.Clear();
+
+	Super::NativeOnDeactivated();
 }
 
 void UStatsProfileWidget_Starter::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)

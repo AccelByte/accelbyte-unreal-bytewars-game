@@ -12,6 +12,7 @@
 class UUserWidget;
 class UTutorialModuleDataAsset;
 class UAccelByteWarsActivatableWidget;
+class UGUICheatWidgetEntry;
 
 UENUM(BlueprintType)
 enum class EServicePredefinedValidator : uint8
@@ -182,6 +183,8 @@ struct FTutorialModuleGeneratedWidget
 	UUserWidget* GenerateWidgetRef = nullptr;
 
 	static FTutorialModuleGeneratedWidget* GetMetadataById(const FString& WidgetId);
+
+	static UGUICheatWidgetEntry* GetGUICheatMetadataById(const FString& Id);
 
 	static FTutorialModuleGeneratedWidget* GetMetadataById(const FString& WidgetId, TArray<FTutorialModuleGeneratedWidget*>& GeneratedWidgets)
 	{

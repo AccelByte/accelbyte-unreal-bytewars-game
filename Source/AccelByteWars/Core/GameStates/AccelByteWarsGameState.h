@@ -10,14 +10,20 @@
 #include "GameFramework/GameStateBase.h"
 #include "AccelByteWarsGameState.generated.h"
 
+class UGUICheatWidgetEntry;
+
 ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogAccelByteWarsGameState, Log, All);
 #define GAMESTATE_LOG(Verbosity, Format, ...) \
 { \
 	UE_LOG(LogAccelByteWarsGameState, Verbosity, TEXT("%s"), *FString::Printf(Format, ##__VA_ARGS__)); \
 }
 
+#define BYTEWARS_LOCTEXT_NAMESPACE "AccelByteWars"
+#define DEFAULT_PLAYER_NAME NSLOCTEXT(BYTEWARS_LOCTEXT_NAMESPACE, "Default Player Name", "Player {0}")
+
 #pragma region "Structs, Enums, and Delegates declaration"
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FGameStateVoidDelegate);
+DECLARE_DELEGATE_RetVal_OneParam(const FString, FOnSetDefaultDisplayNameDelegate, const FUniqueNetId& /*UserId*/)
 #pragma endregion 
 
 UCLASS()
@@ -28,6 +34,7 @@ class ACCELBYTEWARS_API AAccelByteWarsGameState : public AGameStateBase
 public:
 	//~AActor overriden functions
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void PostInitializeComponents() override;
 	//~End of AActor overriden functions
@@ -56,6 +63,8 @@ public:
 	// Static delegate to be called when the game state is initialized and replicated.
 	inline static FSimpleMulticastDelegate OnInitialized;
 
+	inline static FOnSetDefaultDisplayNameDelegate OnSetDefaultDisplayName;
+
 	UFUNCTION()
 	void OnNotify_IsServerTravelling() const;
 
@@ -68,6 +77,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void AssignGameMode(const FString& CodeName);
 
+	/** @brief Refer to GameModeDataAssets.h for a list of game mode variables */
 	void AssignCustomGameMode(const FOnlineSessionSettings* Setting);
 
 	/**
@@ -85,12 +95,27 @@ public:
 	TArray<int32> GetEmptyTeamIds() const;
 
 	/**
+	 * @brief Get winner team ID, calculated based on the highest score.
+	 * @return Winner team ID. Return INDEX_NONE if there is no winner (draw).
+	 */
+	UFUNCTION(BlueprintCallable)
+	int32 GetWinnerTeamId() const;
+
+	UFUNCTION(BlueprintCallable)
+	void GetHighestTeamData(
+		float& OutTeamScore,
+		int32& OutTeamLivesLeft,
+		int32& OutTeamKillCount,
+		int32& OutTeamDeaths);
+
+	/**
 	 * @brief Get Team info and data by Team Id
 	 * @param TeamId Target TeamId
 	 * @param OutTeamData Output: Team info and data
 	 * @param OutTeamScore Output: Total team score
 	 * @param OutTeamLivesLeft Output: Total team lives count
 	 * @param OutTeamKillCount Output: Total team kill count
+	 * @param OutTeamDeaths Output: Total team deaths
 	 * @return True if team found	 */
 	UFUNCTION(BlueprintCallable, meta = (ExpandBoolAsExecs = "ReturnValue"))
 	bool GetTeamDataByTeamId(
@@ -98,7 +123,8 @@ public:
 		FGameplayTeamData& OutTeamData,
 		float& OutTeamScore,
 		int32& OutTeamLivesLeft,
-		int32& OutTeamKillCount);
+		int32& OutTeamKillCount,
+		int32& OutTeamDeaths);
 
 	/**
 	 * @brief Get player's data by unique net id or controller id
@@ -136,6 +162,7 @@ public:
 	 * @param OutLives Specify player's lives num | set -1 to use GameState.GameData.GameSetup's value | will change the referenced value
 	 * @param ControllerId Player's controller id
 	 * @param KillCount Specify player's kill count
+	 * @param Deaths Specify player's death count
 	 * @param PlayerName Specify player's name
 	 * @param AvatarURL Specify player's avatar's picture URL
 	 * @param bForce Force add player even if the player data already exist
@@ -148,6 +175,7 @@ public:
 		const int32 ControllerId = 0,
 		const float Score = 0.0f,
 		const int32 KillCount = 0,
+		const int32 Deaths = 0,
 		const FString PlayerName = TEXT(""),
 		const FString AvatarURL = TEXT(""),
 		const bool bForce = false);
@@ -185,4 +213,14 @@ private:
 	 */
 	UPROPERTY(EditAnywhere)
 	bool bAutoRestoreData = true;
+
+#pragma region "GUI Cheat"
+public:
+	UPROPERTY()
+	TArray<UGUICheatWidgetEntry*> GUICheatWidgetEntries;
+
+protected:
+	void InitializeGUICheatWidgetEntries();
+	void DeInitializeGUICheatWidgetEntries() const;
+#pragma endregion 
 };

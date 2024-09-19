@@ -48,6 +48,12 @@ UTutorialModuleOnlineUtility::UTutorialModuleOnlineUtility()
 
     // Cache general information after login.
     UAuthEssentialsModels::OnLoginSuccessDelegate.AddUObject(this, &ThisClass::CacheGeneralInformation);
+
+    // On player added to team but the display name is empty, set user default display name.
+    AAccelByteWarsGameState::OnSetDefaultDisplayName.BindWeakLambda(this, [](const FUniqueNetId& UserId)
+    {
+        return GetUserDefaultDisplayName(UserId);
+    });
 }
 
 bool UTutorialModuleOnlineUtility::IsAccelByteSDKInitialized(const UObject* Target)

@@ -83,6 +83,44 @@ void UAuthEssentialsSubsystem::ClearAuthCredentials()
     Credentials.Token = TEXT("");
 }
 
+TSharedPtr<FUserOnlineAccountAccelByte> UAuthEssentialsSubsystem::GetLoggedInUserOnlineAccount(const int LocalUserIndex) const
+{
+    /**
+     * Use FUserOnlineAccount instead of FAccelByteUserInfo because it has more info.
+     * FAccelByteUserInfo has LinkedPlatforms info
+     */
+
+    if (!IdentityInterface)
+    {
+        return nullptr;
+    }
+
+    // Get local user
+    const APlayerController* PlayerController = UGameplayStatics::GetPlayerControllerFromID(this, LocalUserIndex);
+    if (!(PlayerController && PlayerController->IsLocalPlayerController()))
+    {
+        return nullptr;
+    }
+
+    // Get ID
+    const ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer();
+    const FUniqueNetIdPtr UserId = LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId();
+    if (!UserId)
+    {
+        return nullptr;
+    }
+
+    // Get OnlineAccount
+    const TSharedPtr<FUserOnlineAccount> UserAccount = IdentityInterface->GetUserAccount(UserId.ToSharedRef().Get());
+    if (!UserAccount)
+    {
+        return nullptr;
+    }
+    const TSharedPtr<FUserOnlineAccountAccelByte> AbUserAccount = StaticCastSharedPtr<FUserOnlineAccountAccelByte>(UserAccount);
+
+    return AbUserAccount;
+}
+
 void UAuthEssentialsSubsystem::OnLoginComplete(int32 LocalUserNum, bool bLoginWasSuccessful, const FUniqueNetId& UserId, const FString& LoginError, const FAuthOnLoginCompleteDelegate OnLoginComplete)
 {
     if (bLoginWasSuccessful)
@@ -96,4 +134,72 @@ void UAuthEssentialsSubsystem::OnLoginComplete(int32 LocalUserNum, bool bLoginWa
 
     IdentityInterface->ClearOnLoginCompleteDelegates(LocalUserNum, this);
     OnLoginComplete.ExecuteIfBound(bLoginWasSuccessful, LoginError);
+}
+
+TArray<UTutorialModuleSubsystem::FCheatCommandEntry> UAuthEssentialsSubsystem::GetCheatCommandEntries()
+{
+    TArray<FCheatCommandEntry> OutArray = {};
+
+    // Get self user info
+    OutArray.Add(FCheatCommandEntry(
+        *CommandMyUserInfo,
+        TEXT("Show logged in user info. Optional param: local user index"),
+        FConsoleCommandWithArgsDelegate::CreateUObject(this, &ThisClass::DisplayMyUserInfo)));
+
+    return OutArray;
+}
+
+void UAuthEssentialsSubsystem::DisplayMyUserInfo(const TArray<FString>& Args) const
+{
+    int LocalUserIndex = 0;
+
+    if (Args.Num() >= 1)
+    {
+        LocalUserIndex = FCString::Atoi(*Args[0]);
+    }
+
+    const TSharedPtr<FUserOnlineAccountAccelByte> OnlineAccount = GetLoggedInUserOnlineAccount(LocalUserIndex);
+    if (!OnlineAccount.IsValid())
+    {
+        return;
+    }
+    const FUniqueNetIdAccelByteUserRef UserABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(
+        OnlineAccount->GetUserId());
+
+    // Construct info
+    FString AvatarURL = TEXT("");
+    OnlineAccount->GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
+    const FString OutString = FString::Printf(
+        TEXT(
+            "%sAB ID: %s%sPlatform type: %s%sPlatform ID: %s%sReal name: %s%sDisplay name: %s%sPublic Code: %s%sPlatform User ID: %s%sUser country: %s%sAccess token: %s%sSimultaneous platform ID: %s%sSimultaneous platform user ID: %s%s Connected to lobby: %s%s Connected to chat: %s%sAvatar URL: %s"),
+        LINE_TERMINATOR,
+        *UserABId->GetAccelByteId(),
+        LINE_TERMINATOR,
+        *UserABId->GetPlatformType(),
+        LINE_TERMINATOR,
+        *UserABId->GetPlatformId(),
+        LINE_TERMINATOR,
+        *OnlineAccount->GetRealName(),
+        LINE_TERMINATOR,
+        *OnlineAccount->GetDisplayName(),
+        LINE_TERMINATOR,
+        *OnlineAccount->GetPublicCode(),
+        LINE_TERMINATOR,
+        *OnlineAccount->GetPlatformUserId(),
+        LINE_TERMINATOR,
+        *OnlineAccount->GetUserCountry(),
+        LINE_TERMINATOR,
+        *OnlineAccount->GetAccessToken(),
+        LINE_TERMINATOR,
+        *OnlineAccount->GetSimultaneousPlatformID(),
+        LINE_TERMINATOR,
+        *OnlineAccount->GetSimultaneousPlatformUserID(),
+        LINE_TERMINATOR,
+        *FString(OnlineAccount->IsConnectedToLobby() ? TEXT("TRUE") : TEXT("FALSE")),
+        LINE_TERMINATOR,
+        *FString(OnlineAccount->IsConnectedToChat() ? TEXT("TRUE") : TEXT("FALSE")),
+        LINE_TERMINATOR,
+        *AvatarURL);
+
+    GetWorld()->GetGameViewport()->ViewportConsole->OutputText(OutString);
 }

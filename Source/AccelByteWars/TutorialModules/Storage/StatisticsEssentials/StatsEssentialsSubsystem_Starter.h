@@ -5,6 +5,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "StatsEssentialsLog.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "OnlineStatisticInterfaceAccelByte.h"
 #include "StatsEssentialsSubsystem_Starter.generated.h"
@@ -15,18 +16,11 @@ class ACCELBYTEWARS_API UStatsEssentialsSubsystem_Starter : public UTutorialModu
 	GENERATED_BODY()
 
 public:
-#pragma region Available stats code list
-	inline static FString StatsCode_HighestElimination = "unreal-highestscore-elimination";
-	inline static FString StatsCode_HighestTeamDeathMatch = "unreal-highestscore-teamdeathmatch";
-	inline static FString StatsCode_HighestSinglePlayer = "unreal-highestscore-singleplayer";
-	inline static FString StatsCode_KillCount = "unreal-killcount";
-#pragma endregion
-
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
 private:
 	UFUNCTION()
-	void UpdatePlayersStatOnGameEnds();
+	void UpdateConnectedPlayersStatsOnGameEnds();
 
 	IOnlineIdentityPtr IdentityPtr;
 	FOnlineStatisticAccelBytePtr ABStatsPtr;

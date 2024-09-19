@@ -18,10 +18,13 @@ class ACCELBYTEWARS_API UStatsProfileWidgetEntry : public UUserWidget
 public:
 	void Setup(FText StatCode, FText StatValue) const;
 
+// @@@SNIPSTART StatsProfileWidgetEntry.h-private
+// @@@MULTISNIP StatsProfileEntryUI {"selectedLines": ["1-6"]}
 private:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Txt_StatName;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Txt_StatValue;
+// @@@SNIPEND
 };

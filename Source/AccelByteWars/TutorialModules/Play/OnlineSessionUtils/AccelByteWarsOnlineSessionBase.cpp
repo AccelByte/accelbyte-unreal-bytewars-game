@@ -185,37 +185,6 @@ bool UAccelByteWarsOnlineSessionBase::CompareAccelByteUniqueId(
 #pragma endregion 
 
 #pragma region "Game Session Essentials | Query caching workaround"
-bool UAccelByteWarsOnlineSessionBase::RetrieveUserInfoCache(
-	const TArray<FUniqueNetIdRef>& UserIds,
-	TArray<FUserOnlineAccountAccelByte*>& OutUserInfo)
-{
-	// safety
-	if (!GetUserInt())
-	{
-		return false;
-	}
-
-	bool bMissingCache = false;
-	for (const FUniqueNetIdRef& UserId : UserIds)
-	{
-		FUserOnlineAccountAccelByte* UserInfo =
-			CachedUsersInfo.FindByPredicate([UserId, this](const FUserOnlineAccountAccelByte& UserOnline)
-			{
-				return CompareAccelByteUniqueId(UserOnline.GetUserId(), UserId);
-			});
-
-		if (UserInfo != nullptr)
-		{
-			OutUserInfo.Add(UserInfo);
-			continue;
-		}
-
-		bMissingCache = true;
-	}
-
-	return !bMissingCache;
-}
-
 bool UAccelByteWarsOnlineSessionBase::DSRetrieveUserInfoCache(
 	const TArray<FUniqueNetIdRef>& UserIds,
 	TArray<const FBaseUserInfo*> OutUserInfo)
@@ -245,26 +214,6 @@ bool UAccelByteWarsOnlineSessionBase::DSRetrieveUserInfoCache(
 	return !bMissingCache;
 }
 
-void UAccelByteWarsOnlineSessionBase::CacheUserInfo(const int32 LocalUserNum, const TArray<FUniqueNetIdRef>& UserIds)
-{
-	for (const FUniqueNetIdRef& UserId : UserIds)
-	{
-		TSharedPtr<FOnlineUser> OnlineUserPtr = GetUserInt()->GetUserInfo(LocalUserNum, UserId.Get());
-		TSharedPtr<FUserOnlineAccountAccelByte> AbOnlineUserPtr = StaticCastSharedPtr<FUserOnlineAccountAccelByte>(OnlineUserPtr);
-		const FUserOnlineAccountAccelByte* OnlineUser = AbOnlineUserPtr.Get();
-
-		if (OnlineUserPtr.IsValid() && OnlineUser)
-		{
-			// store to own cache as a workaround to OSS cache occasionally missing its data
-			CachedUsersInfo.RemoveAll([OnlineUser, this](const FUserOnlineAccountAccelByte& SearchedUser)
-			{
-				return CompareAccelByteUniqueId(SearchedUser.GetUserId(), OnlineUser->GetUserId());
-			});
-			CachedUsersInfo.Add(*OnlineUser);
-		}
-	}
-}
-
 void UAccelByteWarsOnlineSessionBase::CacheUserInfo(const FListBulkUserInfo& UserInfoList)
 {
 	for (const FBaseUserInfo& User : UserInfoList.Data)
@@ -282,7 +231,7 @@ void UAccelByteWarsOnlineSessionBase::CacheUserInfo(const FListBulkUserInfo& Use
 #pragma region "Match Session Essentials | Utilities"
 TArray<FMatchSessionEssentialInfo> UAccelByteWarsOnlineSessionBase::SimplifySessionSearchResult(
 	const TArray<FOnlineSessionSearchResult>& SearchResults,
-	const TArray<FUserOnlineAccountAccelByte*> UsersInfo,
+	const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo,
 	const TMap<TPair<EGameModeNetworkType, EGameModeType>,
 	FString>& PredefinedSessionTemplateNames)
 {
@@ -304,7 +253,7 @@ TArray<FMatchSessionEssentialInfo> UAccelByteWarsOnlineSessionBase::SimplifySess
 		// search the owner's info
 		FString OwnerUsername = "";
 		FString OwnerAvatarUrl = "";
-		for (const FUserOnlineAccountAccelByte* User : UsersInfo)
+		for (const TSharedPtr<FUserOnlineAccountAccelByte>& User : UsersInfo)
 		{
 			if (!User || !Session.OwningUserId.IsValid())
 			{

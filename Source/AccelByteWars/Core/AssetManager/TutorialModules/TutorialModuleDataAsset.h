@@ -9,6 +9,7 @@
 #include "Core/AssetManager/AccelByteWarsAssetModels.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleUtility.h"
 #include "Core/UI/Components/Prompt/FTUE/FTUEModels.h"
+#include "Core/UI/Components/Prompt/GUICheat/GUICheatModels.h"
 #include "Core/UI/Components/WidgetValidator/WidgetValidatorModels.h"
 #include "TutorialModuleDataAsset.generated.h"
 
@@ -261,4 +262,21 @@ private:
 	static TSet<FString> FTUEDialogueUsedIds;
 	static TArray<FFTUEDialogueModel*> CachedFTUEDialogues;
 #pragma endregion
+
+#pragma region "GUI Cheat"
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GUI Cheats")
+	TArray<FGUICheatEntry> GUICheatEntries;
+
+	static TMultiMap<FString, UGUICheatWidgetEntry*> GetCachedGUICheatEntries()
+	{
+		return CachedGUICheatEntries;
+	}
+
+private:
+	TArray<FGUICheatEntry> LastGUICheatEntries;
+	static TMultiMap<FString, UGUICheatWidgetEntry*> CachedGUICheatEntries;
+
+	void ValidateGUICheatEntries();
+#pragma endregion 
 };

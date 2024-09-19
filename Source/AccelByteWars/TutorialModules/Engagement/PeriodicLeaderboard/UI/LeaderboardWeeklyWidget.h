@@ -18,6 +18,10 @@ class ACCELBYTEWARS_API ULeaderboardWeeklyWidget : public UAccelByteWarsActivata
 {
 	GENERATED_BODY()
 	
+// @@@SNIPSTART LeaderboardWeeklyWidget.h-protected
+// @@@MULTISNIP WeeklyLeaderboardUI {"selectedLines": ["1", "27-34"]}
+// @@@MULTISNIP ResultLimit {"selectedLines": ["1", "24-25"]}
+// @@@MULTISNIP GetDisplayRankDeclaration {"selectedLines": ["1", "8", "13", "18"]}
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeOnActivated() override;
@@ -52,4 +56,5 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	ULeaderboardWidgetEntry* PlayerRankPanel;
+// @@@SNIPEND
 };

@@ -20,6 +20,7 @@
 #include "Components/PanelWidget.h"
 #include "Components/TextBlock.h"
 #include "CommonButtonBase.h"
+#include "TutorialModuleUtilities/StartupLog.h"
 
 #define LOCTEXT_NAMESPACE "AccelByteWars"
 

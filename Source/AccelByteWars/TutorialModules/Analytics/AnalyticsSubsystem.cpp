@@ -6,8 +6,7 @@
 #include "Core/AccelByteRegistry.h"
 #include "Api/AccelByteGameTelemetryApi.h"
 #include "GameServerApi/AccelByteServerGameTelemetryApi.h"
-
-#include "Core/GameModes/AccelByteWarsInGameGameMode.h"
+#include "Core/GameStates/AccelByteWarsInGameGameState.h"
 #include "Core/Player/AccelByteWarsPlayerState.h"
 
 DEFINE_LOG_CATEGORY(LogAnalyticsEssentials);
@@ -17,27 +16,24 @@ void UAnalyticsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	Super::Initialize(Collection);
 
 	// Send player's death telemetry.
-	AAccelByteWarsInGameGameMode::OnPlayerDieDelegate.AddWeakLambda(this, [this](const APlayerController* Player, const AActor* PlayerActor, const APlayerController* Killer)
+	AAccelByteWarsInGameGameState::OnPlayerDieDelegate.AddWeakLambda(this, [this](const AAccelByteWarsPlayerState* DeathPlayer, const FVector DeathLocation, const AAccelByteWarsPlayerState* Killer)
 	{
-		if (!Player || !PlayerActor || !Killer) 
+		if (!DeathPlayer || !Killer)
 		{
 			UE_LOG_ANALYTICS(Warning, TEXT("Cannot send player's death telemetry. Either the player or killer is not valid."));
 			return;
 		}
 
-		const AAccelByteWarsPlayerState* PlayerState = Cast<AAccelByteWarsPlayerState>(Player->PlayerState);
-		const AAccelByteWarsPlayerState* KillerState = Cast<AAccelByteWarsPlayerState>(Killer->PlayerState);
-		if (!PlayerState || !KillerState) 
+		if (!GetWorld() && GetWorld()->GetNetMode() == ENetMode::NM_Client)
 		{
-			UE_LOG_ANALYTICS(Warning, TEXT("Cannot send player's death telemetry. Either the player or killer's PlayerState is not valid."));
+			UE_LOG_ANALYTICS(Log, TEXT("Game is running as client. Only standalone, P2P host, and dedicated server can send player's death telemetry."));
 			return;
 		}
 
 		// Collect player's death information.
-		const bool bIsSuicide = (Player == Killer);
-		const bool bIsFriendlyFire = (PlayerState->TeamId == KillerState->TeamId);
+		const bool bIsSuicide = (DeathPlayer == Killer);
+		const bool bIsFriendlyFire = (DeathPlayer->TeamId == Killer->TeamId);
 		const FString DeathCause = bIsSuicide ? FString("Suicide") : (bIsFriendlyFire ? FString("Killed by Teammate") : FString("Killed by Opponent"));
-		const FVector2D DeathLocation(PlayerActor->GetActorLocation().X, PlayerActor->GetActorLocation().Y);
 
 		// Construct player's death telemetry.
 		TSharedPtr<FJsonObject> Payload = MakeShareable(new FJsonObject);
@@ -45,7 +41,7 @@ void UAnalyticsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		Payload->SetStringField(FString("deathType"), bIsFriendlyFire ? FString("Self") : FString("Opponent"));
 		Payload->SetStringField(FString("deathCause"), DeathCause);
 		Payload->SetStringField(FString("deathLocation"), FString::Printf(TEXT("%.3f,%.3f"), DeathLocation.X, DeathLocation.Y));
-		Payload->SetNumberField(FString("attempsNeeded"), PlayerState->NumKilledAttemptInSingleLifetime);
+		Payload->SetNumberField(FString("attempsNeeded"), DeathPlayer->NumKilledAttemptInSingleLifetime);
 
 		// Send player's death telemetry.
 		SendTelemetry(FString("player_Died"), Payload, true);
@@ -56,7 +52,7 @@ void UAnalyticsSubsystem::Deinitialize()
 {
 	Super::Deinitialize();
 	
-	AAccelByteWarsInGameGameMode::OnPlayerDieDelegate.RemoveAll(this);
+	AAccelByteWarsInGameGameState::OnPlayerDieDelegate.RemoveAll(this);
 
 	// Clear game client telemetry immediate events.
 	ClientImmediateTelemetryEventList.Empty();

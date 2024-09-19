@@ -19,23 +19,12 @@ public:
 	virtual void ClearOnlineDelegates() override;
 
 public:
-	virtual void QueryUserInfo(
-		const int32 LocalUserNum,
-		const TArray<FUniqueNetIdRef>& UserIds,
-		const FOnQueryUsersInfoComplete& OnComplete) override;
-
 	const TMap<FString, FString> TargetGameModeMap = {
 		{"unreal-elimination-p2p", "ELIMINATION-P2P"},
 		{"unreal-teamdeathmatch-p2p", "TEAMDEATHMATCH-P2P"}
 	};
 
 protected:
-	virtual void OnQueryUserInfoComplete(
-		int32 LocalUserNum,
-		bool bSucceeded,
-		const TArray<FUniqueNetIdRef>& UserIds,
-		const FString& ErrorMessage, const FOnQueryUsersInfoComplete& OnComplete) override;
-
 	virtual bool HandleDisconnectInternal(UWorld* World, UNetDriver* NetDriver) override;
 
 private:
@@ -45,8 +34,6 @@ private:
 	};
 
 	bool bIsInSessionServer = false;
-
-	FDelegateHandle OnQueryUserInfoCompleteDelegateHandle;
 
 #pragma region "Matchmaking with P2P Function Declarations"
 public:

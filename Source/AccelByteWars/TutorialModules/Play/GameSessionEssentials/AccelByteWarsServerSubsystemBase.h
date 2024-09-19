@@ -49,7 +49,7 @@ public:
 protected:
 	void AuthenticatePlayer_AddPlayerControllerToQueryQueue(APlayerController* PlayerController);
 	void AuthenticatePlayer_OnRefreshSessionComplete(bool bSucceeded);
-	void AuthenticatePlayer_OnQueryUserInfoComplete(const bool bSucceeded, const TArray<FUserOnlineAccountAccelByte*>& OnlineUsers);
+	void AuthenticatePlayer_OnQueryUserInfoComplete(const FOnlineError& Error, const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo);
 	void AuthenticatePlayer_OnDSQueryUserInfoComplete(const bool bSucceeded, const TArray<const FBaseUserInfo*> UserInfos);
 	void AuthenticatePlayer_CompleteTask(const bool bSucceeded);
 

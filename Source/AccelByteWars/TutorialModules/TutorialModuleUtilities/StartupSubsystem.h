@@ -6,11 +6,14 @@
 
 #include "CoreMinimal.h"
 #include "OnlineIdentityInterfaceAccelByte.h"
-#include "StartupLog.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "StartupSubsystem.generated.h"
 
+#define GUI_CHEAT_ENTRY_KILL_SELF TEXT("kill-self")
+#define GUI_CHEAT_ENTRY_KILL_OTHERS TEXT("kill-others")
+
 DECLARE_DELEGATE_TwoParams(FOnLoginPlatformCompleteDelegate, const bool /*bSucceeded*/, const FString& /*ErrorMessage*/);
+DECLARE_DELEGATE_TwoParams(FOnQueryUsersInfoCompleteDelegate, const FOnlineError& /*Error*/, const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& /*UsersInfo*/);
 
 UCLASS()
 class ACCELBYTEWARS_API UStartupSubsystem : public UTutorialModuleSubsystem
@@ -20,6 +23,42 @@ class ACCELBYTEWARS_API UStartupSubsystem : public UTutorialModuleSubsystem
 public:
 	void Initialize(FSubsystemCollectionBase& Collection) override;
 	void Deinitialize() override;
+
+protected:
+	IOnlineUserPtr UserInterface;
+
+#pragma region "Common functions"
+public:
+	bool CompareAccelByteUniqueId(const FUniqueNetIdRepl& FirstUniqueNetId, const FUniqueNetIdRepl& SecondUniqueNetId) const;
+	bool CompareAccelByteUniqueId(const FUniqueNetIdRepl& FirstUniqueNetId, const FString& SecondAbUserId) const;
+
+	virtual void QueryUserInfo(
+		const int32 LocalUserNum,
+		const TArray<FUniqueNetIdRef>& UserIds,
+		const FOnQueryUsersInfoCompleteDelegate& OnComplete);
+
+protected:
+	virtual void OnQueryUserInfoComplete(
+		int32 LocalUserNum,
+		bool bSucceeded,
+		const TArray<FUniqueNetIdRef>& UserIds,
+		const FString& ErrorMessage,
+		const FOnQueryUsersInfoCompleteDelegate& OnComplete);
+
+private:
+	FDelegateHandle OnQueryUserInfoCompleteDelegateHandle; 
+#pragma endregion 
+
+#pragma region "CLI cheat"
+protected:
+	virtual TArray<FCheatCommandEntry> GetCheatCommandEntries() override;
+
+private:
+	const FString CommandUserInfo = TEXT("ab.user.UserInfo");
+
+	UFUNCTION()
+	void DisplayUserInfo(const TArray<FString>& Args);
+#pragma endregion 
 
 #pragma region Login with Platform Only
 
@@ -66,4 +105,13 @@ private:
 	bool bAutoUseTokenForABLogin = true;
 
 #pragma endregion
+
+#pragma region "Core game cheats"
+protected:
+	UFUNCTION()
+	void KillSelf(const TArray<FString>& Args);
+
+	UFUNCTION()
+	void KillOthers(const TArray<FString>& Args);
+#pragma endregion 
 };

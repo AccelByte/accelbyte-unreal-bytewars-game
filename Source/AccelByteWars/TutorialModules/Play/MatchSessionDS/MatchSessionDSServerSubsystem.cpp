@@ -107,9 +107,18 @@ void UMatchSessionDSServerSubsystem::OnServerSessionReceived(FName SessionName)
 		return;
 	}
 
+	// Get game related info from session
 	FString RequestedGameModeCode;
 	Session->SessionSettings.Get(GAMESETUP_GameModeCode, RequestedGameModeCode);
-	if (!RequestedGameModeCode.IsEmpty())
+
+	// Try getting manually set game rules, if GAMESETUP_DisplayName empty, go to the next flow
+	bool bIsCustomGame = false;
+	if (Session->SessionSettings.Get(GAMESETUP_IsCustomGame, bIsCustomGame) && bIsCustomGame)
+	{
+		AbGameState->AssignCustomGameMode(&Session->SessionSettings);
+	}
+	// If not complete, try getting requested game mode
+	else if (!RequestedGameModeCode.IsEmpty())
 	{
 		AbGameState->AssignGameMode(RequestedGameModeCode);
 	}

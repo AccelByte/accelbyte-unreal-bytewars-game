@@ -7,6 +7,7 @@
 #include "OnlineSubsystemUtils.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "Social/FriendsEssentials/UI/FriendDetailsWidget.h"
+#include "TutorialModuleUtilities/StartupSubsystem.h"
 
 void UManagingFriendsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -218,37 +219,38 @@ void UManagingFriendsSubsystem::GetBlockedPlayerList(const APlayerController* PC
             BlockedPlayerIds.Add(CachedBlockedPlayer.Get().GetUserId());
         }
 
-        // Create callback to handle queried blocked players' user information.
-        OnQueryUserInfoCompleteDelegateHandle = UserInterface->AddOnQueryUserInfoCompleteDelegate_Handle(
-            LocalUserNum,
-            FOnQueryUserInfoCompleteDelegate::CreateWeakLambda(this, [this, PlayerNetId, OnComplete](int32 LocalUserNum, bool bWasSuccessful, const TArray<FUniqueNetIdRef>& UserIds, const FString& Error)
-            {
-                UserInterface->ClearOnQueryUserInfoCompleteDelegate_Handle(LocalUserNum, OnQueryUserInfoCompleteDelegateHandle);
-
-                /* Refresh blocked players data with queried blocked players' user information.
-                 * Then, return blocked players to the callback. */
-                TArray<UFriendData*> BlockedPlayers;
-                TArray<TSharedRef<FOnlineBlockedPlayer>> NewCachedBlockedPlayerList;
-                FriendsInterface->GetBlockedPlayers(PlayerNetId->AsShared().Get(), NewCachedBlockedPlayerList);
-                for (const TSharedRef<FOnlineBlockedPlayer>& NewCachedBlockedPlayer : NewCachedBlockedPlayerList)
-                {
-                    // Update blocked player's avatar URL based on queried friend's user information.
-                    FString UserAvatarURL;
-                    TSharedPtr<FOnlineUser> UserInfo = UserInterface->GetUserInfo(LocalUserNum, NewCachedBlockedPlayer.Get().GetUserId().Get());
-                    UserInfo->GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, UserAvatarURL);
-
-                    // Add the updated blocked player to the list.
-                    UFriendData* BlockedPlayer = UFriendData::ConvertToFriendData(NewCachedBlockedPlayer);
-                    BlockedPlayer->AvatarURL = UserAvatarURL;
-                    BlockedPlayers.Add(BlockedPlayer);
-                }
-
-                OnComplete.ExecuteIfBound(true, BlockedPlayers, TEXT(""));
-            }
-        ));
-
         // Query blocked players' user information.
-        UserInterface->QueryUserInfo(LocalUserNum, BlockedPlayerIds);
+        if (UStartupSubsystem* StartupSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UStartupSubsystem>())
+        {
+            StartupSubsystem->QueryUserInfo(
+                LocalUserNum,
+                BlockedPlayerIds,
+                FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [this, PlayerNetId, OnComplete, LocalUserNum](
+                    const FOnlineError& Error,
+                    const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
+                {
+                    /* Refresh blocked players data with queried blocked players' user information.
+                     * Then, return blocked players to the callback. */
+                    TArray<UFriendData*> BlockedPlayers;
+                    TArray<TSharedRef<FOnlineBlockedPlayer>> NewCachedBlockedPlayerList;
+                    FriendsInterface->GetBlockedPlayers(PlayerNetId->AsShared().Get(), NewCachedBlockedPlayerList);
+                    for (const TSharedRef<FOnlineBlockedPlayer>& NewCachedBlockedPlayer : NewCachedBlockedPlayerList)
+                    {
+                        // Update blocked player's avatar URL based on queried friend's user information.
+                        FString UserAvatarURL;
+                        TSharedPtr<FOnlineUser> UserInfo = UserInterface->GetUserInfo(
+                            LocalUserNum, NewCachedBlockedPlayer.Get().GetUserId().Get());
+                        UserInfo->GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, UserAvatarURL);
+
+                        // Add the updated blocked player to the list.
+                        UFriendData* BlockedPlayer = UFriendData::ConvertToFriendData(NewCachedBlockedPlayer);
+                        BlockedPlayer->AvatarURL = UserAvatarURL;
+                        BlockedPlayers.Add(BlockedPlayer);
+                    }
+
+                    OnComplete.ExecuteIfBound(true, BlockedPlayers, TEXT(""));
+                }));
+        }
     }
     // If none, request to backend then get the cached the blocked player list.
     else

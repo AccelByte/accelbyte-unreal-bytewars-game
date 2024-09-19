@@ -8,7 +8,7 @@
 #include "AccelByteWarsOnlineSessionLog.h"
 #include "OnlineSubsystemAccelByteSessionSettings.h"
 #include "OnlineSubsystemUtils.h"
-#include "OnlineErrorAccelByte.h"
+#include "OnlineSessionSettingsAccelByte.h"
 #include "Core/AccelByteWebSocketErrorTypes.h"
 #include "Core/Player/AccelByteWarsPlayerController.h"
 #include "Core/UI/InGameMenu/Pause/PauseWidget.h"
@@ -19,8 +19,12 @@
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "Core/UI/Components/AccelByteWarsButtonBase.h"
+#include "OnlineSettings/RegionPreferencesEssentials/RegionPreferencesSubsystem.h"
 
 #include "Social/FriendsEssentials/UI/FriendDetailsWidget.h"
+#include "TutorialModuleUtilities/StartupSubsystem.h"
+
+class UStartupSubsystem;
 
 void UAccelByteWarsOnlineSession::RegisterOnlineDelegates()
 {
@@ -178,6 +182,8 @@ FName UAccelByteWarsOnlineSession::GetPredefinedSessionNameFromType(const EAccel
 	return SessionName;
 }
 
+// @@@SNIPSTART AccelByteWarsOnlineSession.cpp-CreateSession
+// @@@MULTISNIP SetClientVersionAttribute {"selectedLines": ["1-7", "40-47", "58", "87"]}
 void UAccelByteWarsOnlineSession::CreateSession(
 	const int32 LocalUserNum,
 	FName SessionName,
@@ -228,7 +234,7 @@ void UAccelByteWarsOnlineSession::CreateSession(
 
 		// Set local server name for matchmaking request if any.
 		// This is useful if you want to try matchmaking using local dedicated server.
-		FString ServerName;
+		FString ServerName = TEXT("");
 		FParse::Value(FCommandLine::Get(), TEXT("-ServerName="), ServerName);
 		if (!ServerName.IsEmpty())
 		{
@@ -265,6 +271,7 @@ void UAccelByteWarsOnlineSession::CreateSession(
 		}
 	}
 }
+// @@@SNIPEND
 
 void UAccelByteWarsOnlineSession::JoinSession(
 	const int32 LocalUserNum,
@@ -449,14 +456,14 @@ void UAccelByteWarsOnlineSession::OnSendSessionInviteComplete(
 	bool bSucceeded,
 	const FUniqueNetId& InviteeId)
 {
-	UE_LOG_ONLINESESSION(Log, TEXT("Succeeded: %s"), *FString(bSucceeded ? "TRUE" : "FALSE"))
+	UE_LOG_ONLINESESSION(Log, TEXT("Succeeded: %s"), *FString(bSucceeded ? TEXT("TRUE") : TEXT("FALSE")))
 
 	OnSendSessionInviteCompleteDelegates.Broadcast(LocalSenderId, SessionName, bSucceeded, InviteeId);
 }
 
 void UAccelByteWarsOnlineSession::OnRejectSessionInviteComplete(bool bSucceeded)
 {
-	UE_LOG_ONLINESESSION(Log, TEXT("Succeeded: %s"), *FString(bSucceeded ? "TRUE" : "FALSE"))
+	UE_LOG_ONLINESESSION(Log, TEXT("Succeeded: %s"), *FString(bSucceeded ? TEXT("TRUE") : TEXT("FALSE")))
 
 	OnRejectSessionInviteCompleteDelegates.Broadcast(bSucceeded);
 }
@@ -568,60 +575,6 @@ void UAccelByteWarsOnlineSession::OnLeaveSessionForJoinSessionComplete(
 #pragma endregion 
 
 #pragma region "Game Session Essentials"
-void UAccelByteWarsOnlineSession::QueryUserInfo(
-	const int32 LocalUserNum,
-	const TArray<FUniqueNetIdRef>& UserIds,
-	const FOnQueryUsersInfoComplete& OnComplete)
-{
-	UE_LOG_ONLINESESSION(Verbose, TEXT("Called"))
-
-	// safety
-	if (!GetUserInt())
-	{
-		UE_LOG_ONLINESESSION(Warning, TEXT("User interface null"))
-		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, OnComplete]()
-		{
-			OnComplete.ExecuteIfBound(false, {});
-		}));
-		return;
-	}
-
-	TArray<FUserOnlineAccountAccelByte*> UserInfo;
-	if (RetrieveUserInfoCache(UserIds, UserInfo))
-	{
-		UE_LOG_ONLINESESSION(Log, TEXT("Cache found"))
-		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, UserInfo, OnComplete]()
-		{
-			UE_LOG_ONLINESESSION(Log, TEXT("Trigger OnComplete"))
-			OnComplete.ExecuteIfBound(true, UserInfo);
-		}));
-	}
-	// Some data does not exist in cache, query everything
-	else
-	{
-		// Bind delegate
-		if (OnQueryUserInfoCompleteDelegateHandle.IsValid())
-		{
-			GetUserInt()->OnQueryUserInfoCompleteDelegates->Remove(OnQueryUserInfoCompleteDelegateHandle);
-			OnQueryUserInfoCompleteDelegateHandle.Reset();
-		}
-		OnQueryUserInfoCompleteDelegateHandle = GetUserInt()->OnQueryUserInfoCompleteDelegates->AddWeakLambda(
-			this, [OnComplete, this](
-				int32 LocalUserNum,
-				bool bSucceeded,
-				const TArray<FUniqueNetIdRef>& UserIds,
-				const FString& ErrorMessage)
-			{
-				OnQueryUserInfoComplete(LocalUserNum, bSucceeded, UserIds, ErrorMessage, OnComplete);
-			});
-
-		if (!GetUserInt()->QueryUserInfo(LocalUserNum, UserIds))
-		{
-			OnQueryUserInfoComplete(LocalUserNum, false, UserIds, "", OnComplete);
-		}
-	}
-}
-
 void UAccelByteWarsOnlineSession::DSQueryUserInfo(
 	const TArray<FUniqueNetIdRef>& UserIds,
 	const FOnDSQueryUsersInfoComplete& OnComplete)
@@ -756,46 +709,6 @@ bool UAccelByteWarsOnlineSession::TravelToSession(const FName SessionName)
 	return true;
 }
 
-void UAccelByteWarsOnlineSession::OnQueryUserInfoComplete(
-	int32 LocalUserNum,
-	bool bSucceeded,
-	const TArray<FUniqueNetIdRef>& UserIds,
-	const FString& ErrorMessage,
-	const FOnQueryUsersInfoComplete& OnComplete)
-{
-	UE_LOG_ONLINESESSION(Log, TEXT("Succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
-
-	// reset delegate handle
-	GetUserInt()->OnQueryUserInfoCompleteDelegates->Remove(OnQueryUserInfoCompleteDelegateHandle);
-	OnQueryUserInfoCompleteDelegateHandle.Reset();
-
-	if (bSucceeded)
-	{
-		// Cache the result.
-		CacheUserInfo(LocalUserNum, UserIds);
-
-		// Retrieve the result from cache.
-		TArray<FUserOnlineAccountAccelByte*> OnlineUsers;
-		RetrieveUserInfoCache(UserIds, OnlineUsers);
-
-		// Only include valid users info only.
-		OnlineUsers.RemoveAll([](const FUserOnlineAccountAccelByte* Temp)
-		{
-			return !Temp || !Temp->GetUserId()->IsValid();
-		});
-		
-		UE_LOG_ONLINESESSION(Log, 
-			TEXT("Queried users info: %d, found valid users info: %d"), 
-			UserIds.Num(), OnlineUsers.Num());
-
-		OnComplete.ExecuteIfBound(true, OnlineUsers);
-	}
-	else
-	{
-		OnComplete.ExecuteIfBound(false, {});
-	}
-}
-
 void UAccelByteWarsOnlineSession::OnDSQueryUserInfoComplete(
 	const FListBulkUserInfo& UserInfoList,
 	const FOnDSQueryUsersInfoComplete& OnComplete)
@@ -860,6 +773,8 @@ bool UAccelByteWarsOnlineSession::HandleDisconnectInternal(UWorld* World, UNetDr
 #pragma endregion 
 
 #pragma region "Matchmaking Session Essentials"
+// @@@SNIPSTART AccelByteWarsOnlineSession.cpp-StartMatchmaking
+// @@@MULTISNIP SetClientVersionAttribute {"selectedLines": ["1-6", "60-70", "119"]}
 void UAccelByteWarsOnlineSession::StartMatchmaking(
 	const APlayerController* PC,
 	const FName& SessionName,
@@ -933,7 +848,7 @@ void UAccelByteWarsOnlineSession::StartMatchmaking(
 
 	// Set local server name for matchmaking request if any.
 	// This is useful if you want to try matchmaking using local dedicated server.
-	FString ServerName;
+	FString ServerName = TEXT("");
 	FParse::Value(FCommandLine::Get(), TEXT("-ServerName="), ServerName);
 	if (!ServerName.IsEmpty())
 	{
@@ -941,6 +856,29 @@ void UAccelByteWarsOnlineSession::StartMatchmaking(
 		MatchmakingSearchHandle->QuerySettings.Set(SETTING_GAMESESSION_SERVERNAME, ServerName, EOnlineComparisonOp::Equals);
 	}
 
+	// include region preferences into matchmaking setting
+	if (const UTutorialModuleDataAsset* ModuleDataAsset = UTutorialModuleUtility::GetTutorialModuleDataAsset(
+		FPrimaryAssetId{ "TutorialModule:REGIONPREFERENCES" },
+		this,
+		true))
+	{
+		if (!ModuleDataAsset->IsStarterModeActive())
+		{
+			UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetGameInstance());
+			ensure(GameInstance);
+
+			URegionPreferencesSubsystem* RegionPreferencesSubsystem = GameInstance->GetSubsystem<URegionPreferencesSubsystem>();
+			if(RegionPreferencesSubsystem != nullptr)
+			{
+				TArray<FString> EnabledRegion = RegionPreferencesSubsystem->GetEnabledRegion();
+				if(!EnabledRegion.IsEmpty())
+				{
+					FOnlineSearchSettingsAccelByte::Set(MatchmakingSearchHandle->QuerySettings, SETTING_GAMESESSION_REQUESTEDREGIONS, RegionPreferencesSubsystem->GetEnabledRegion(), EOnlineComparisonOp::In);
+				}
+			}
+		}
+	}
+	
 	if (!GetSessionInt()->StartMatchmaking(
 		USER_ID_TO_MATCHMAKING_USER_ARRAY(PlayerNetId.ToSharedRef()),
 		SessionName,
@@ -956,6 +894,7 @@ void UAccelByteWarsOnlineSession::StartMatchmaking(
 		}));
 	}
 }
+// @@@SNIPEND
 
 void UAccelByteWarsOnlineSession::CancelMatchmaking(APlayerController* PC, const FName& SessionName)
 {
@@ -1124,6 +1063,32 @@ void UAccelByteWarsOnlineSession::CreateMatchSession(
 	{
 		MatchTemplateName = MatchTemplateName.Replace(TEXT("-ams"), TEXT(""));
 	}
+
+	// include region preferences into session setting
+	if(NetworkType == EGameModeNetworkType::DS)
+	{
+		if (const UTutorialModuleDataAsset* ModuleDataAsset = UTutorialModuleUtility::GetTutorialModuleDataAsset(
+			FPrimaryAssetId{ "TutorialModule:REGIONPREFERENCES" },
+			this,
+			true))
+		{
+			if (!ModuleDataAsset->IsStarterModeActive())
+			{
+				UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetGameInstance());
+				ensure(GameInstance);
+	
+				URegionPreferencesSubsystem* RegionPreferencesSubsystem = GameInstance->GetSubsystem<URegionPreferencesSubsystem>();
+				if(RegionPreferencesSubsystem != nullptr)
+				{
+					TArray<FString> EnabledRegion = RegionPreferencesSubsystem->GetEnabledRegion();
+					if(!EnabledRegion.IsEmpty())
+					{
+						FOnlineSessionSettingsAccelByte::Set(SessionSettings, SETTING_GAMESESSION_REQUESTEDREGIONS, RegionPreferencesSubsystem->GetEnabledRegion());
+					}
+				}
+			}
+		}
+	}
 	
 	CreateSession(
 		LocalUserNum,
@@ -1194,6 +1159,25 @@ void UAccelByteWarsOnlineSession::OnFindSessionsComplete(bool bSucceeded)
 				FUniqueNetIdRepl(Element.Session.OwningUserId));
 		});
 
+		// remove session that not in region preferences
+		if (const UTutorialModuleDataAsset* ModuleDataAsset = UTutorialModuleUtility::GetTutorialModuleDataAsset(
+			FPrimaryAssetId{ "TutorialModule:REGIONPREFERENCES" },
+			this,
+			true))
+		{
+			if (!ModuleDataAsset->IsStarterModeActive())
+			{				
+				UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetGameInstance());
+				ensure(GameInstance);
+	
+				URegionPreferencesSubsystem* RegionPreferencesSubsystem = GameInstance->GetSubsystem<URegionPreferencesSubsystem>();
+				if(RegionPreferencesSubsystem != nullptr)
+				{
+					RegionPreferencesSubsystem->FilterSessionSearch(SessionSearch);
+				}
+			}
+		}
+
 		// get owners user info for query user info
 		TArray<FUniqueNetIdRef> UserIds;
 		for (const FOnlineSessionSearchResult& SearchResult : SessionSearch->SearchResults)
@@ -1202,10 +1186,13 @@ void UAccelByteWarsOnlineSession::OnFindSessionsComplete(bool bSucceeded)
 		}
 
 		// trigger Query User info
-		QueryUserInfo(
-			LocalUserNumSearching,
-			UserIds,
-			FOnQueryUsersInfoComplete::CreateUObject(this, &ThisClass::OnQueryUserInfoForFindSessionComplete));
+		if (UStartupSubsystem* StartupSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UStartupSubsystem>())
+		{
+			StartupSubsystem->QueryUserInfo(
+				LocalUserNumSearching,
+				UserIds,
+				FOnQueryUsersInfoCompleteDelegate::CreateUObject(this, &ThisClass::OnQueryUserInfoForFindSessionComplete));
+		}
 	}
 	else
 	{
@@ -1214,12 +1201,12 @@ void UAccelByteWarsOnlineSession::OnFindSessionsComplete(bool bSucceeded)
 }
 
 void UAccelByteWarsOnlineSession::OnQueryUserInfoForFindSessionComplete(
-	const bool bSucceeded,
-	const TArray<FUserOnlineAccountAccelByte*>& UsersInfo)
+	const FOnlineError& Error,
+	const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
 {
-	UE_LOG_ONLINESESSION(Log, TEXT("Succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
+	UE_LOG_ONLINESESSION(Log, TEXT("Succeeded: %s"), *FString(Error.bSucceeded ? "TRUE": "FALSE"))
 
-	if (bSucceeded)
+	if (Error.bSucceeded)
 	{
 		const TArray<FMatchSessionEssentialInfo> MatchSessionSearchResult = SimplifySessionSearchResult(
 			SessionSearch->SearchResults,
@@ -2069,28 +2056,34 @@ void UAccelByteWarsOnlineSession::OnPartyInviteRejected(FName SessionName, const
 		RejecterABId->IsValid() ? *RejecterABId->GetAccelByteId() : TEXT("Unknown"));
 
 	// Display push notification to show who rejected the invitation.
-	QueryUserInfo(0, TPartyMemberArray{ RejecterABId },
-		FOnQueryUsersInfoComplete::CreateWeakLambda(this, [this, RejecterABId](const bool bSucceeded, const TArray<FUserOnlineAccountAccelByte*>& UsersInfo)
-		{
-			if (UsersInfo.IsEmpty() || !UsersInfo[0] || !GetPromptSubystem())
+	if (UStartupSubsystem* StartupSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UStartupSubsystem>())
+	{
+		StartupSubsystem->QueryUserInfo(
+			0,
+			TPartyMemberArray{ RejecterABId },
+			FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [RejecterABId, this](
+				const FOnlineError& Error,
+				const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
 			{
-				return;
-			}
+				if (UsersInfo.IsEmpty() || !UsersInfo[0] || !GetPromptSubystem())
+				{
+					return;
+				}
 
-			FUserOnlineAccountAccelByte MemberInfo = *UsersInfo[0];
+				FUserOnlineAccountAccelByte MemberInfo = *UsersInfo[0];
 
-			const FText NotifMessage = FText::Format(PARTY_INVITE_REJECTED_MESSAGE, FText::FromString(
-				MemberInfo.GetDisplayName().IsEmpty() ?
-				UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(RejecterABId.Get()) :
-				MemberInfo.GetDisplayName()
-			));
+				const FText NotifMessage = FText::Format(PARTY_INVITE_REJECTED_MESSAGE, FText::FromString(
+					MemberInfo.GetDisplayName().IsEmpty() ?
+					UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(RejecterABId.Get()) :
+					MemberInfo.GetDisplayName()
+				));
 
-			FString AvatarURL;
-			MemberInfo.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
+				FString AvatarURL;
+				MemberInfo.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
 
-			GetPromptSubystem()->PushNotification(NotifMessage, AvatarURL, true);
-		}
-	));
+				GetPromptSubystem()->PushNotification(NotifMessage, AvatarURL, true);
+			}));
+	}
 
 	OnPartyInviteRejectedDelegates.Broadcast(SessionName, RejecterId);
 }
@@ -2116,50 +2109,55 @@ void UAccelByteWarsOnlineSession::OnPartyInviteReceived(const FUniqueNetId& User
 	const int32 LocalUserNum = GetLocalUserNumFromPlayerController(PC);
 
 	// Display push notification to allow player to accept/reject the party invitation.
-	QueryUserInfo(0, TPartyMemberArray{ SenderABId },
-		FOnQueryUsersInfoComplete::CreateWeakLambda(this, [this, LocalUserNum, SenderABId, PartyInvite]
-		(const bool bSucceeded, const TArray<FUserOnlineAccountAccelByte*>& UsersInfo)
-		{
-			if (UsersInfo.IsEmpty() || !UsersInfo[0] || !GetPromptSubystem())
+	if (UStartupSubsystem* StartupSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UStartupSubsystem>())
+	{
+		StartupSubsystem->QueryUserInfo(
+			0,
+			TPartyMemberArray{SenderABId},
+			FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [this, SenderABId, PartyInvite, LocalUserNum](
+				const FOnlineError& Error,
+				const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
 			{
-				return;
-			}
+				if (UsersInfo.IsEmpty() || !UsersInfo[0] || !GetPromptSubystem())
+				{
+					return;
+				}
 
-			FUserOnlineAccountAccelByte MemberInfo = *UsersInfo[0];
+				FUserOnlineAccountAccelByte MemberInfo = *UsersInfo[0];
 
-			const FText NotifMessage = FText::Format(PARTY_INVITE_RECEIVED_MESSAGE, FText::FromString(
-				MemberInfo.GetDisplayName().IsEmpty() ?
-				UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(SenderABId.Get()) :
-				MemberInfo.GetDisplayName()
-			));
+				const FText NotifMessage = FText::Format(PARTY_INVITE_RECEIVED_MESSAGE, FText::FromString(
+					MemberInfo.GetDisplayName().IsEmpty() ?
+					UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(SenderABId.Get()) :
+					MemberInfo.GetDisplayName()
+				));
 
-			FString AvatarURL;
-			MemberInfo.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
+				FString AvatarURL;
+				MemberInfo.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
 
-			GetPromptSubystem()->PushNotification(
-				NotifMessage,
-				AvatarURL,
-				true,
-				ACCEPT_PARTY_INVITE_MESSAGE,
-				REJECT_PARTY_INVITE_MESSAGE,
-				FText::GetEmpty(),
-				FPushNotificationDelegate::CreateWeakLambda(this, [this, LocalUserNum, PartyInvite](EPushNotificationActionResult ActionButtonResult)
-					{
-						switch (ActionButtonResult)
+				GetPromptSubystem()->PushNotification(
+					NotifMessage,
+					AvatarURL,
+					true,
+					ACCEPT_PARTY_INVITE_MESSAGE,
+					REJECT_PARTY_INVITE_MESSAGE,
+					FText::GetEmpty(),
+					FPushNotificationDelegate::CreateWeakLambda(this, [this, LocalUserNum, PartyInvite](EPushNotificationActionResult ActionButtonResult)
 						{
-							// Show accept party invitation confirmation.
-						case EPushNotificationActionResult::Button1:
-							DisplayJoinPartyConfirmation(LocalUserNum, PartyInvite);
-							break;
-							// Reject party invitation.
-						case EPushNotificationActionResult::Button2:
-							RejectPartyInvite(LocalUserNum, PartyInvite);
-							break;
+							switch (ActionButtonResult)
+							{
+								// Show accept party invitation confirmation.
+							case EPushNotificationActionResult::Button1:
+								DisplayJoinPartyConfirmation(LocalUserNum, PartyInvite);
+								break;
+								// Reject party invitation.
+							case EPushNotificationActionResult::Button2:
+								RejectPartyInvite(LocalUserNum, PartyInvite);
+								break;
+							}
 						}
-					}
-			));
-		}
-	));
+				));
+			}));
+	}
 
 	OnPartyInviteReceivedDelegate.ExecuteIfBound(UserId, FromId, PartyInvite);
 	OnPartyInviteReceivedDelegate.Unbind();
@@ -2263,29 +2261,34 @@ void UAccelByteWarsOnlineSession::DisplayCurrentPartyLeader()
 	const FUniqueNetIdAccelByteUserPtr LeaderABId = StaticCastSharedPtr<const FUniqueNetIdAccelByteUser>(LastPartyLeader);
 
 	// Query party leader information and then display a notification.
-	QueryUserInfo(0, TPartyMemberArray{ LeaderABId.ToSharedRef() },
-		FOnQueryUsersInfoComplete::CreateWeakLambda(this, [this, LeaderABId]
-		(const bool bSucceeded, const TArray<FUserOnlineAccountAccelByte*>& UsersInfo)
-		{
-			if (UsersInfo.IsEmpty() || !UsersInfo[0] || !GetPromptSubystem())
+	if (UStartupSubsystem* StartupSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UStartupSubsystem>())
+	{
+		StartupSubsystem->QueryUserInfo(
+			0,
+			TPartyMemberArray{ LeaderABId.ToSharedRef() },
+			FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [this, LeaderABId](
+				const FOnlineError& Error,
+				const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
 			{
-				return;
-			}
+				if (UsersInfo.IsEmpty() || !UsersInfo[0] || !GetPromptSubystem())
+				{
+					return;
+				}
 
-			FUserOnlineAccountAccelByte MemberInfo = *UsersInfo[0];
+				FUserOnlineAccountAccelByte MemberInfo = *UsersInfo[0];
 
-			const FText NotifMessage = FText::Format(PARTY_NEW_LEADER_MESSAGE, FText::FromString(
-				MemberInfo.GetDisplayName().IsEmpty() ?
-				UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(LeaderABId.ToSharedRef().Get()) :
-				MemberInfo.GetDisplayName()
-			));
+				const FText NotifMessage = FText::Format(PARTY_NEW_LEADER_MESSAGE, FText::FromString(
+					MemberInfo.GetDisplayName().IsEmpty() ?
+					UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(LeaderABId.ToSharedRef().Get()) :
+					MemberInfo.GetDisplayName()
+				));
 
-			FString AvatarURL;
-			MemberInfo.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
+				FString AvatarURL;
+				MemberInfo.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
 
-			GetPromptSubystem()->PushNotification(NotifMessage, AvatarURL, true);
-		}
-	));
+				GetPromptSubystem()->PushNotification(NotifMessage, AvatarURL, true);
+			}));
+	}
 }
 
 void UAccelByteWarsOnlineSession::OnPartyMembersChange(FName SessionName, const FUniqueNetId& Member, bool bJoined)
@@ -2330,31 +2333,36 @@ void UAccelByteWarsOnlineSession::OnPartyMembersChange(FName SessionName, const 
 	// Query member information then display a push notification to show who joined/left the party.
 	if (!bIsMemberTheLoggedInPlayer)
 	{
-		QueryUserInfo(0, TPartyMemberArray{ MemberABId },
-			FOnQueryUsersInfoComplete::CreateWeakLambda(this, [this, MemberABId, bJoined]
-			(const bool bSucceeded, const TArray<FUserOnlineAccountAccelByte*>& UsersInfo)
-			{
-				if (UsersInfo.IsEmpty() || !UsersInfo[0] || !GetPromptSubystem())
+		if (UStartupSubsystem* StartupSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UStartupSubsystem>())
+		{
+			StartupSubsystem->QueryUserInfo(
+				0,
+				TPartyMemberArray{ MemberABId },
+				FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [this, MemberABId, bJoined](
+					const FOnlineError& Error,
+					const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
 				{
-					return;
-				}
+					if (UsersInfo.IsEmpty() || !UsersInfo[0] || !GetPromptSubystem())
+					{
+						return;
+					}
 
-				FUserOnlineAccountAccelByte MemberInfo = *UsersInfo[0];
+					FUserOnlineAccountAccelByte MemberInfo = *UsersInfo[0];
 
-				const FString MemberDisplayName = MemberInfo.GetDisplayName().IsEmpty() ?
-					UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(MemberABId.Get()) :
-					MemberInfo.GetDisplayName();
+					const FString MemberDisplayName = MemberInfo.GetDisplayName().IsEmpty() ?
+						UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(MemberABId.Get()) :
+						MemberInfo.GetDisplayName();
 
-				const FText NotifMessage = bJoined ?
-					FText::Format(PARTY_MEMBER_JOINED_MESSAGE, FText::FromString(MemberDisplayName)) :
-					FText::Format(PARTY_MEMBER_LEFT_MESSAGE, FText::FromString(MemberDisplayName));
+					const FText NotifMessage = bJoined ?
+						FText::Format(PARTY_MEMBER_JOINED_MESSAGE, FText::FromString(MemberDisplayName)) :
+						FText::Format(PARTY_MEMBER_LEFT_MESSAGE, FText::FromString(MemberDisplayName));
 
-				FString AvatarURL;
-				MemberInfo.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
+					FString AvatarURL;
+					MemberInfo.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
 
-				GetPromptSubystem()->PushNotification(NotifMessage, AvatarURL, true);
-			}
-		));
+					GetPromptSubystem()->PushNotification(NotifMessage, AvatarURL, true);
+				}));
+		}
 	}
 
 	// Show notification if a new party leader is set.

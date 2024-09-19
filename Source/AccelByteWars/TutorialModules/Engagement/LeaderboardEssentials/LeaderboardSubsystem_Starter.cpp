@@ -4,6 +4,7 @@
 
 #include "Engagement/LeaderboardEssentials/LeaderboardSubsystem_Starter.h"
 #include "OnlineSubsystemUtils.h"
+#include "TutorialModuleUtilities/StartupSubsystem.h"
 
 void ULeaderboardSubsystem_Starter::Initialize(FSubsystemCollectionBase& Collection)
 {

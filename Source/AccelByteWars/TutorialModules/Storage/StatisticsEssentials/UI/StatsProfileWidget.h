@@ -9,7 +9,7 @@
 #include "OnlineStatisticInterfaceAccelByte.h"
 #include "StatsProfileWidget.generated.h"
 
-class UWidgetSwitcher;
+class UAccelByteWarsWidgetSwitcher;
 class UCommonButtonBase;
 class UDynamicEntryBox;
 class UStatsEssentialsSubsystem;
@@ -19,44 +19,42 @@ class ACCELBYTEWARS_API UStatsProfileWidget : public UAccelByteWarsActivatableWi
 {
 	GENERATED_BODY()
 
-public:
-	virtual void NativeOnActivated() override;
-
+// @@@SNIPSTART StatsProfileWidget.h-protected
+// @@@MULTISNIP QueryStatsDeclaration {"selectedLines": ["1", "7-10"]}
 protected:
 	virtual void NativeConstruct() override;
+	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
 	UFUNCTION()
-	void StartQueryLocalUserStats();
+	void QueryLocalUserStats();
 
 	void OnQueryLocalUserStatsComplete(const FOnlineError& ResultState, const TArray<TSharedRef<const FOnlineStatsUserStats>>& UsersStatsResult);
-
+// @@@SNIPEND
+	
+// @@@SNIPSTART StatsProfileWidget.h-private
+// @@@MULTISNIP StatsProfileUI {"selectedLines": ["1", "5-18"]}
 private:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_Back;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UCommonButtonBase* Btn_Retry;
+	UAccelByteWarsWidgetSwitcher* Ws_Loader;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UWidgetSwitcher* Ws_Outer;
+	UDynamicEntryBox* Deb_SinglePlayerStats;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UWidget* W_StatsListOuter;
+	UDynamicEntryBox* Deb_EliminationStats;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UWidget* W_LoadingOuter;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UWidget* W_FailedOuter;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UWidget* W_EmptyOuter;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UDynamicEntryBox* Deb_StatsList;
+	UDynamicEntryBox* Deb_TeamDeathmatchStats;
 
 	UPROPERTY()
-	UStatsEssentialsSubsystem* EssentialsSubsystem;
+	TMap<FName, UDynamicEntryBox*> StatsDataEntryList{};
+
+	UPROPERTY()
+	UStatsEssentialsSubsystem* StatsEssentialsSubsystem;
+// @@@SNIPEND
 };

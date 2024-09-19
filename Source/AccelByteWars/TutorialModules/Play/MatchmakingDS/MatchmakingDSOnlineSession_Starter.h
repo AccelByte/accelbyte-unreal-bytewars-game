@@ -19,10 +19,6 @@ public:
 	virtual void ClearOnlineDelegates() override;
 
 public:
-	virtual void QueryUserInfo(
-		const int32 LocalUserNum,
-		const TArray<FUniqueNetIdRef>& UserIds,
-		const FOnQueryUsersInfoComplete& OnComplete) override;
 	virtual void DSQueryUserInfo(
 		const TArray<FUniqueNetIdRef>& UserIds,
 		const FOnDSQueryUsersInfoComplete& OnComplete) override;
@@ -33,11 +29,6 @@ public:
 	};
 
 protected:
-	virtual void OnQueryUserInfoComplete(
-		int32 LocalUserNum,
-		bool bSucceeded,
-		const TArray<FUniqueNetIdRef>& UserIds,
-		const FString& ErrorMessage, const FOnQueryUsersInfoComplete& OnComplete) override;
 	virtual void OnDSQueryUserInfoComplete(const FListBulkUserInfo& UserInfoList, const FOnDSQueryUsersInfoComplete& OnComplete) override;
 
 	virtual bool HandleDisconnectInternal(UWorld* World, UNetDriver* NetDriver) override;
@@ -50,7 +41,6 @@ private:
 
 	bool bIsInSessionServer = false;
 
-	FDelegateHandle OnQueryUserInfoCompleteDelegateHandle;
 	FDelegateHandle OnDSQueryUserInfoCompleteDelegateHandle;
 
 #pragma region "Matchmaking with DS Function Declarations"

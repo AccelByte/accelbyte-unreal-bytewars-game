@@ -31,6 +31,9 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
 	void SetButtonType(const EAccelByteWarsButtonBaseType& InType);
 
+	UFUNCTION(BlueprintCallable)
+	void SetAllowClickSound(bool bAllow);
+
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
 	void ToggleExclamationMark (const bool bShowMark);
 	
@@ -86,4 +89,10 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Button", meta = (EditCondition = "ButtonType==EAccelByteWarsButtonBaseType::IMAGE_BUTTON", EditConditionHides))
 	FSlateBrush ButtonBrush;
+
+	UPROPERTY(EditAnywhere, Category = "Button")
+	bool bAllowClickSound = true;
+
+	UPROPERTY()
+	FSlateSound ClickSound;
 };

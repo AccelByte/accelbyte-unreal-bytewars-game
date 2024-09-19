@@ -68,6 +68,7 @@ public:
 	static bool IsUseVersionChecker();
 
 	static FString GetPrimaryLanguageSubtag();
+	static FAccelByteModelsV2GameSessionDSInformation GetDedicatedServer(const UObject* Context);
 
 private:
 	static void CheckForDedicatedServerVersionOverride();
@@ -87,7 +88,6 @@ private:
 	FString GetServicePredefinedArgument(const EServicePredifinedArgument Keyword);
 
 	static FNamedOnlineSession* GetOnlineSession(const FName SessionName, const UObject* Context);
-	static FAccelByteModelsV2GameSessionDSInformation GetDedicatedServer(const UObject* Context);
 
 	void IntializeAGSStaterIfValid();
 	static void CheckUseVersionChecker();

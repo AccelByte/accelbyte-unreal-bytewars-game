@@ -19,8 +19,6 @@ class ACCELBYTEWARS_API UPartyOnlineSession : public USessionEssentialsOnlineSes
 public:
 	virtual void RegisterOnlineDelegates() override;
 	virtual void ClearOnlineDelegates() override;
-	
-	virtual void QueryUserInfo(const int32 LocalUserNum, const TArray<FUniqueNetIdRef>& UserIds, const FOnQueryUsersInfoComplete& OnComplete) override;
 
 #pragma region "Party Essentials Module Function Declarations"
 
@@ -97,7 +95,6 @@ public:
 
 protected:
 	void OnCreatePartyToInviteMember(FName SessionName, bool bWasSuccessful, const int32 LocalUserNum, const FUniqueNetIdPtr SenderId, const FUniqueNetIdPtr InviteeId);
-	virtual void OnQueryUserInfoComplete(int32 LocalUserNum, bool bSucceeded, const TArray<FUniqueNetIdRef>& UserIds, const FString& ErrorMessage, const FOnQueryUsersInfoComplete& OnComplete) override;
 
 	void OnLeavePartyToTriggerEvent(FName SessionName, bool bSucceeded, const TDelegate<void(bool bWasSuccessful)> OnComplete);
 
@@ -138,8 +135,6 @@ protected:
 #pragma endregion
 
 private:
-	FDelegateHandle OnQueryUserInfoCompleteDelegateHandle;
-
 	FDelegateHandle OnCreatePartyToInviteMemberDelegateHandle;
 	FDelegateHandle OnLeaveSessionForTriggerDelegateHandle;
 

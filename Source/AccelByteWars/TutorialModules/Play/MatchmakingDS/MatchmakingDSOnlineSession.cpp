@@ -6,13 +6,16 @@
 #include "MatchmakingDSOnlineSession.h"
 
 #include "MatchmakingDSLog.h"
+#include "OnlineSessionSettingsAccelByte.h"
 #include "OnlineSubsystemAccelByteSessionSettings.h"
 #include "Core/Player/AccelByteWarsPlayerController.h"
 #include "Core/Settings/GameModeDataAssets.h"
+#include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/InGameMenu/Pause/PauseWidget.h"
 #include "Core/UI/MainMenu/MatchLobby/MatchLobbyWidget.h"
 #include "Core/UI/InGameMenu/GameOver/GameOverWidget.h"
 #include "Interfaces/OnlineUserInterface.h"
+#include "OnlineSettings/RegionPreferencesEssentials/RegionPreferencesSubsystem.h"
 
 void UMatchmakingDSOnlineSession::RegisterOnlineDelegates()
 {
@@ -54,59 +57,6 @@ void UMatchmakingDSOnlineSession::ClearOnlineDelegates()
 }
 
 #pragma region "Game Session Essentials"
-void UMatchmakingDSOnlineSession::QueryUserInfo(
-	const int32 LocalUserNum,
-	const TArray<FUniqueNetIdRef>& UserIds,
-	const FOnQueryUsersInfoComplete& OnComplete)
-{
-	UE_LOG_MATCHMAKINGDS(Verbose, TEXT("called"))
-
-	// safety
-	if (!GetUserInt())
-	{
-		UE_LOG_MATCHMAKINGDS(Warning, TEXT("User interface null"))
-		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, OnComplete]()
-		{
-			OnComplete.ExecuteIfBound(false, {});
-		}));
-		return;
-	}
-
-	TArray<FUserOnlineAccountAccelByte*> UserInfo;
-	if (RetrieveUserInfoCache(UserIds, UserInfo))
-	{
-		UE_LOG_MATCHMAKINGDS(Log, TEXT("Cache found"))
-		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, UserInfo, OnComplete]()
-		{
-			OnComplete.ExecuteIfBound(true, UserInfo);
-		}));
-	}
-	// Some data does not exist in cache, query everything
-	else
-	{
-		// Bind delegate
-		if (OnQueryUserInfoCompleteDelegateHandle.IsValid())
-		{
-			GetUserInt()->OnQueryUserInfoCompleteDelegates->Remove(OnQueryUserInfoCompleteDelegateHandle);
-			OnQueryUserInfoCompleteDelegateHandle.Reset();
-		}
-		OnQueryUserInfoCompleteDelegateHandle = GetUserInt()->OnQueryUserInfoCompleteDelegates->AddWeakLambda(
-			this, [OnComplete, this](
-				int32 LocalUserNum,
-				bool bSucceeded,
-				const TArray<FUniqueNetIdRef>& UserIds,
-				const FString& ErrorMessage)
-			{
-				OnQueryUserInfoComplete(LocalUserNum, bSucceeded, UserIds, ErrorMessage, OnComplete);
-			});
-
-		if (!GetUserInt()->QueryUserInfo(LocalUserNum, UserIds))
-		{
-			OnQueryUserInfoComplete(LocalUserNum, false, UserIds, "", OnComplete);
-		}
-	}
-}
-
 void UMatchmakingDSOnlineSession::DSQueryUserInfo(
 	const TArray<FUniqueNetIdRef>& UserIds,
 	const FOnDSQueryUsersInfoComplete& OnComplete)
@@ -229,46 +179,6 @@ bool UMatchmakingDSOnlineSession::TravelToSession(const FName SessionName)
 	}
 
 	return true;
-}
-
-void UMatchmakingDSOnlineSession::OnQueryUserInfoComplete(
-	int32 LocalUserNum,
-	bool bSucceeded,
-	const TArray<FUniqueNetIdRef>& UserIds,
-	const FString& ErrorMessage,
-	const FOnQueryUsersInfoComplete& OnComplete)
-{
-	UE_LOG_MATCHMAKINGDS(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
-
-	// reset delegate handle
-	GetUserInt()->OnQueryUserInfoCompleteDelegates->Remove(OnQueryUserInfoCompleteDelegateHandle);
-	OnQueryUserInfoCompleteDelegateHandle.Reset();
-
-	if (bSucceeded)
-	{
-		// Cache the result.
-		CacheUserInfo(LocalUserNum, UserIds);
-
-		// Retrieve the result from cache.
-		TArray<FUserOnlineAccountAccelByte*> OnlineUsers;
-		RetrieveUserInfoCache(UserIds, OnlineUsers);
-
-		// Only include valid users info only.
-		OnlineUsers.RemoveAll([](const FUserOnlineAccountAccelByte* Temp)
-		{
-			return !Temp || !Temp->GetUserId()->IsValid();
-		});
-
-		UE_LOG_MATCHMAKINGDS(Log,
-			TEXT("Queried users info: %d, found valid users info: %d"),
-			UserIds.Num(), OnlineUsers.Num());
-
-		OnComplete.ExecuteIfBound(true, OnlineUsers);
-	}
-	else
-	{
-		OnComplete.ExecuteIfBound(false, {});
-	}
 }
 
 void UMatchmakingDSOnlineSession::OnDSQueryUserInfoComplete(
@@ -415,6 +325,29 @@ void UMatchmakingDSOnlineSession::StartMatchmaking(
 		MatchmakingSearchHandle->QuerySettings.Set(SETTING_GAMESESSION_SERVERNAME, ServerName, EOnlineComparisonOp::Equals);
 	}
 
+	// include region preferences into matchmaking setting
+	if (const UTutorialModuleDataAsset* ModuleDataAsset = UTutorialModuleUtility::GetTutorialModuleDataAsset(
+		FPrimaryAssetId{ "TutorialModule:REGIONPREFERENCES" },
+		this,
+		true))
+	{
+		if (!ModuleDataAsset->IsStarterModeActive())
+		{
+			UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetGameInstance());
+			ensure(GameInstance);
+
+			URegionPreferencesSubsystem* RegionPreferencesSubsystem = GameInstance->GetSubsystem<URegionPreferencesSubsystem>();
+			if(RegionPreferencesSubsystem != nullptr)
+			{
+				TArray<FString> EnabledRegion = RegionPreferencesSubsystem->GetEnabledRegion();
+				if(!EnabledRegion.IsEmpty())
+				{
+					FOnlineSearchSettingsAccelByte::Set(MatchmakingSearchHandle->QuerySettings, SETTING_GAMESESSION_REQUESTEDREGIONS, RegionPreferencesSubsystem->GetEnabledRegion(), EOnlineComparisonOp::In);
+				}
+			}
+		}
+	}
+	
 	if (!GetSessionInt()->StartMatchmaking(
 		USER_ID_TO_MATCHMAKING_USER_ARRAY(PlayerNetId.ToSharedRef()),
 		SessionName,

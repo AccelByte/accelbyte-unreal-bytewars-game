@@ -19,11 +19,6 @@ public:
 
 #pragma region "Game Session Essentials"
 public:
-	virtual void QueryUserInfo(
-		const int32 LocalUserNum,
-		const TArray<FUniqueNetIdRef>& UserIds,
-		const FOnQueryUsersInfoComplete& OnComplete) override;
-
 	virtual bool TravelToSession(const FName SessionName) override;
 
 	virtual FOnServerSessionUpdateReceived* GetOnSessionServerUpdateReceivedDelegates() override
@@ -32,13 +27,6 @@ public:
 	}
 
 protected:
-	virtual void OnQueryUserInfoComplete(
-		int32 LocalUserNum,
-		bool bSucceeded,
-		const TArray<FUniqueNetIdRef>& UserIds,
-		const FString& ErrorMessage,
-		const FOnQueryUsersInfoComplete& OnComplete) override;
-
 	virtual void OnSessionServerUpdateReceived(FName SessionName) override;
 	virtual void OnSessionServerErrorReceived(FName SessionName, const FString& Message) override;
 
@@ -50,8 +38,6 @@ protected:
 
 private:
 	bool bIsInSessionServer = false;
-
-	FDelegateHandle OnQueryUserInfoCompleteDelegateHandle;
 
 	FOnServerSessionUpdateReceived OnSessionServerUpdateReceivedDelegates;
 #pragma endregion
@@ -87,7 +73,7 @@ private:
 	FOnMatchSessionFindSessionsComplete OnFindSessionsCompleteDelegates;
 
 	void OnQueryUserInfoForFindSessionComplete(
-		const bool bSucceeded,
-		const TArray<FUserOnlineAccountAccelByte*>& UsersInfo);
+		const FOnlineError& Error,
+		const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo);
 #pragma endregion 
 };

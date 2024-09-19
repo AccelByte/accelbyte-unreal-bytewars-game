@@ -18,13 +18,19 @@ class ACCELBYTEWARS_API UBlockedPlayerWidgetEntry : public UAccelByteWarsWidgetE
 {
 	GENERATED_BODY()
 
+public:
+	UFriendData* GetCachedBlockedFriendData() const { return CachedBlockedPlayerData; }
+
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;
 
 	void OnUnblockButtonClicked();
 
+	UPROPERTY()
 	UManagingFriendsSubsystem* ManagingFriendsSubsystem;
+
+	UPROPERTY()
 	UFriendData* CachedBlockedPlayerData;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))

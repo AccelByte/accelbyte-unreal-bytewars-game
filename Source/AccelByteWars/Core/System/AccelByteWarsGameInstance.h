@@ -49,6 +49,9 @@ public:
 	int32 KillCount = 0;
 
 	UPROPERTY(BlueprintReadWrite)
+	int32 Deaths = 0;
+
+	UPROPERTY(BlueprintReadWrite)
 	int32 NumLivesLeft = 1;
 
 	UPROPERTY(BlueprintReadWrite)
@@ -105,6 +108,16 @@ public:
 			TotalKillCount += Player.KillCount;
 		}
 		return TotalKillCount;
+	}
+
+	int32 GetTeamDeaths() const
+	{
+		int32 TotalDeaths = 0;
+		for (const FGameplayPlayerData& Player : TeamMembers)
+		{
+			TotalDeaths += Player.Deaths;
+		}
+		return TotalDeaths;
 	}
 
 	bool operator==(const FGameplayTeamData& Other) const
@@ -269,7 +282,12 @@ public:
 	UFUNCTION(BlueprintPure)
 	TSubclassOf<UAccelByteWarsButtonBase> GetDefaultButtonClass() const { return DefaultButtonClass; }
 
+	UFUNCTION(BlueprintPure)
+	FSlateSound GetDefaultButtonClickSound() const { return DefaultButtonClickSound; }
+
 	FGameModeData GetGameModeDataByCodeName(const FString CodeName) const;
+
+	bool GetGameStatsDataById(const FName& Id, FGameStatsData& OutGameStatsData) const;
 
 	/**
 	 * @brief Get team color specified in GlobalSettingsDataAsset
@@ -295,11 +313,17 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSubclassOf<UAccelByteWarsButtonBase> DefaultButtonClass;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	FSlateSound DefaultButtonClickSound;
+
 	UPROPERTY(EditAnywhere)
 	UGlobalSettingsDataAsset* GlobalSettingsDataAsset;
 
 	UPROPERTY(EditAnywhere)
 	UDataTable* GameModeDataTable;
+
+	UPROPERTY(EditAnywhere)
+	UDataTable* GameStatsDataTable;
 
 #pragma region "AccelByte SDK Config Menu"
 public:

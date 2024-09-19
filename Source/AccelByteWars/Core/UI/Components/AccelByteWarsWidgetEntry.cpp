@@ -3,7 +3,7 @@
 // and restrictions contact your company contract manager.
 
 #include "Core/UI/Components/AccelByteWarsWidgetEntry.h"
-
+#include "Core/System/AccelByteWarsGameInstance.h"
 #include "CommonButtonBase.h"
 #include "CommonInputSubsystem.h"
 
@@ -21,6 +21,19 @@ void UAccelByteWarsWidgetEntry::NativeOnItemSelectionChanged(bool bIsSelected)
 
 	bIsItemSelected = bIsSelected;
 	ChangeInteractibility(InputSubsystem->GetCurrentInputType());
+}
+
+void UAccelByteWarsWidgetEntry::NativePreConstruct()
+{
+	Super::NativePreConstruct();
+	
+	// If button click sound is not assigned, use the default button sound
+	const UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+	if (!ClickSound.GetResourceObject() && GameInstance)
+	{
+		ClickSound = GameInstance->GetDefaultButtonClickSound();
+	}
+	SetAllowClickSound(bAllowClickSound);
 }
 
 void UAccelByteWarsWidgetEntry::NativeConstruct()
@@ -51,6 +64,16 @@ FReply UAccelByteWarsWidgetEntry::NativeOnFocusReceived(const FGeometry& InGeome
 	ChangeInteractibility(InputSubsystem->GetCurrentInputType());
 
 	return FReply::Handled();
+}
+
+FReply UAccelByteWarsWidgetEntry::NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
+{
+	if (bAllowClickSound && ClickSound.GetResourceObject())
+	{
+		FSlateApplication::Get().PlaySound(ClickSound);
+	}
+
+	return Super::NativeOnMouseButtonUp(InGeometry, InMouseEvent);
 }
 
 void UAccelByteWarsWidgetEntry::ChangeInteractibility(ECommonInputType InputType)

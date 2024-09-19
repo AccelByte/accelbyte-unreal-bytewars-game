@@ -22,10 +22,6 @@ public:
 		{{EGameModeNetworkType::DS, EGameModeType::TDM}, ""}
 	};
 
-	virtual void QueryUserInfo(
-		const int32 LocalUserNum,
-		const TArray<FUniqueNetIdRef>& UserIds,
-		const FOnQueryUsersInfoComplete& OnComplete) override;
 	virtual void DSQueryUserInfo(
 		const TArray<FUniqueNetIdRef>& UserIds,
 		const FOnDSQueryUsersInfoComplete& OnComplete) override;
@@ -41,12 +37,6 @@ public:
 	}
 
 protected:
-	virtual void OnQueryUserInfoComplete(
-		int32 LocalUserNum,
-		bool bSucceeded,
-		const TArray<FUniqueNetIdRef>& UserIds,
-		const FString& ErrorMessage,
-		const FOnQueryUsersInfoComplete& OnComplete) override;
 	virtual void OnDSQueryUserInfoComplete(
 		const FListBulkUserInfo& UserInfoList,
 		const FOnDSQueryUsersInfoComplete& OnComplete) override;
@@ -56,7 +46,6 @@ private:
 	TSharedRef<FOnlineSessionSearch> SessionSearch = MakeShared<FOnlineSessionSearch>(FOnlineSessionSearch());
 	int32 LocalUserNumSearching;
 
-	FDelegateHandle OnQueryUserInfoCompleteDelegateHandle;
 	FDelegateHandle OnDSQueryUserInfoCompleteDelegateHandle;
 
 	FOnServerSessionUpdateReceived OnSessionServerUpdateReceivedDelegates;
@@ -65,7 +54,7 @@ private:
 
 	void OnQueryUserInfoForFindSessionComplete(
 		const bool bSucceeded,
-		const TArray<FUserOnlineAccountAccelByte*>& UsersInfo);
+		const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo);
 
 #pragma region "Match Session with DS declarations"
 public:
@@ -73,5 +62,5 @@ public:
 
 protected:
 	// TODO: Add your module protected function declarations here.
-#pragma endregion 
+#pragma endregion
 };

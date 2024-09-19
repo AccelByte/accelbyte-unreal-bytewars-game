@@ -19,6 +19,8 @@ class ACCELBYTEWARS_API ULeaderboardWidgetEntry : public UAccelByteWarsWidgetEnt
 public:
 	void SetLeaderboardRank(ULeaderboardRank* LeaderboardRank);
 
+// @@@SNIPSTART LeaderboardWidgetEntry.h-protected
+// @@@MULTISNIP LeaderboardEntryUI {"selectedLines": ["1", "4-11"]}
 protected:
 	virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;
 
@@ -30,4 +32,5 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Tb_Score;
+// @@@SNIPEND
 };

@@ -11,6 +11,8 @@
 class UAccelByteWarsGameplayObjectComponent;
 
 #pragma region "Structs, Enums, and Delegates declaration"
+DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnPlayerDieDelegate, const AAccelByteWarsPlayerState* /*DeathPlayer*/, const FVector /*DeathLocation*/, const AAccelByteWarsPlayerState* /*Killer*/);
+
 UENUM(BlueprintType)
 enum class EGameStatus : uint8
 {
@@ -39,6 +41,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	bool HasGameEnded() const;
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastOnPlayerDie(const AAccelByteWarsPlayerState* DeathPlayer, const FVector DeathLocation, const AAccelByteWarsPlayerState* Killer);
 
 	/**
 	 * @brief Current gameplay state
@@ -82,6 +87,8 @@ public:
 
 	UPROPERTY(Replicated, BlueprintReadWrite)
 	TArray<UAccelByteWarsGameplayObjectComponent*> ActiveGameObjects;
+
+	static inline FOnPlayerDieDelegate OnPlayerDieDelegate;
 
 protected:
 	/**

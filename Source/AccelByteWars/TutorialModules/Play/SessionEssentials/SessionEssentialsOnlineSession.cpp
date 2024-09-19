@@ -328,14 +328,14 @@ void USessionEssentialsOnlineSession::OnSendSessionInviteComplete(
 	bool bSucceeded,
 	const FUniqueNetId& InviteeId)
 {
-	UE_LOG_SESSIONESSENTIALS(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE" : "FALSE"))
+	UE_LOG_SESSIONESSENTIALS(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? TEXT("TRUE") : TEXT("FALSE")))
 
 	OnSendSessionInviteCompleteDelegates.Broadcast(LocalSenderId, SessionName, bSucceeded, InviteeId);
 }
 
 void USessionEssentialsOnlineSession::OnRejectSessionInviteComplete(bool bSucceeded)
 {
-	UE_LOG_SESSIONESSENTIALS(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE" : "FALSE"))
+	UE_LOG_SESSIONESSENTIALS(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? TEXT("TRUE") : TEXT("FALSE")))
 
 	OnRejectSessionInviteCompleteDelegates.Broadcast(bSucceeded);
 }

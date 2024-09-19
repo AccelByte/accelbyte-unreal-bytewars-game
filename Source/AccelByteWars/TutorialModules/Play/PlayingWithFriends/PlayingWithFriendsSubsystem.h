@@ -5,6 +5,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Chaos/AABB.h"
+#include "Chaos/AABB.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "Play/OnlineSessionUtils/AccelByteWarsOnlineSessionBase.h"
 #include "PlayingWithFriendsSubsystem.generated.h"
@@ -40,8 +42,8 @@ private:
 
 	void JoinGameSessionConfirmation(const int32 LocalUserNum, const FOnlineSessionInviteAccelByte& Invite);
 	void OnQueryUserInfoOnGameSessionParticipantChange(
-		const bool bSucceeded,
-		const TArray<FUserOnlineAccountAccelByte*>& UsersInfo,
+		const FOnlineError& Error,
+		const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo,
 		FName SessionName,
 		const bool bJoined);
 #pragma endregion 
@@ -69,7 +71,7 @@ private:
 		const FUniqueNetId& FromId,
 		const FOnlineSessionInviteAccelByte& Invite);
 	void ShowInviteReceivedPopup(
-		const TArray<FUserOnlineAccountAccelByte*>& UsersInfo,
+		const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo,
 		const int32 LocalUserNum, const FOnlineSessionInviteAccelByte Invite);
 
 	void OnGameSessionParticipantsChange(FName SessionName, const FUniqueNetId& Member, bool bJoined);

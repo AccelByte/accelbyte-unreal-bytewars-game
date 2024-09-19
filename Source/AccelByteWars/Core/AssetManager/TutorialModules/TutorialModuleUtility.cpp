@@ -101,3 +101,16 @@ FTutorialModuleGeneratedWidget* FTutorialModuleGeneratedWidget::GetMetadataById(
 		
 	return Result;
 }
+
+UGUICheatWidgetEntry* FTutorialModuleGeneratedWidget::GetGUICheatMetadataById(const FString& Id)
+{
+	UGUICheatWidgetEntry* Result = nullptr;
+
+	const TMultiMap<FString, UGUICheatWidgetEntry*>& Entries = UTutorialModuleDataAsset::GetCachedGUICheatEntries();
+	if (UGUICheatWidgetEntry* const* Found = Entries.Find(Id))
+	{
+		Result = *Found;
+	}
+
+	return Result;
+}

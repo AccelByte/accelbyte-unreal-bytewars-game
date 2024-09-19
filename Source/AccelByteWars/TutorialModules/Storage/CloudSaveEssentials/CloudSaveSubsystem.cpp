@@ -18,6 +18,8 @@
 
 #define LOCTEXT_NAMESPACE "AccelByteWars"
 
+// @@@SNIPSTART CloudSaveSubsystem.cpp-Initialize
+// @@@MULTISNIP Interface {"selectedLines": ["1-19", "22"]}
 void UCloudSaveSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
@@ -40,6 +42,7 @@ void UCloudSaveSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
     BindDelegates();
 }
+// @@@SNIPEND
 
 void UCloudSaveSubsystem::Deinitialize()
 {
@@ -49,6 +52,7 @@ void UCloudSaveSubsystem::Deinitialize()
 }
 
 #pragma region Module.5 Function Definitions
+// @@@SNIPSTART CloudSaveSubsystem.cpp-SetPlayerRecord
 void UCloudSaveSubsystem::SetPlayerRecord(
     const APlayerController* PlayerController,
     const FString& RecordKey,
@@ -66,7 +70,9 @@ void UCloudSaveSubsystem::SetPlayerRecord(
     SetPlayerRecordParams.Add(RecordKey, OnSetRecordComplete);
     CloudSaveInterface->ReplaceUserRecord(LocalUserNum, RecordKey, RecordData);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CloudSaveSubsystem.cpp-OnSetPlayerRecordComplete
 void UCloudSaveSubsystem::OnSetPlayerRecordComplete(
     int32 LocalUserNum,
     const FOnlineError& Result,
@@ -91,7 +97,9 @@ void UCloudSaveSubsystem::OnSetPlayerRecordComplete(
     
     SetPlayerRecordParams.Remove(Key);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CloudSaveSubsystem.cpp-GetPlayerRecord
 void UCloudSaveSubsystem::GetPlayerRecord(
     const APlayerController* PlayerController,
     const FString& RecordKey,
@@ -108,7 +116,9 @@ void UCloudSaveSubsystem::GetPlayerRecord(
     GetPlayerRecordParams.Add(RecordKey, OnGetRecordComplete);
     CloudSaveInterface->GetUserRecord(LocalUserNum, RecordKey);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CloudSaveSubsystem.cpp-OnGetPlayerRecordComplete
 void UCloudSaveSubsystem::OnGetPlayerRecordComplete(
     int32 LocalUserNum,
     const FOnlineError& Result,
@@ -137,7 +147,9 @@ void UCloudSaveSubsystem::OnGetPlayerRecordComplete(
 
     GetPlayerRecordParams.Remove(Key);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CloudSaveSubsystem.cpp-DeletePlayerRecord
 void UCloudSaveSubsystem::DeletePlayerRecord(
     const APlayerController* PlayerController,
     const FString& RecordKey,
@@ -154,7 +166,9 @@ void UCloudSaveSubsystem::DeletePlayerRecord(
     DeletePlayerRecordParams.Add(RecordKey, OnDeleteRecordComplete);
     CloudSaveInterface->DeleteUserRecord(LocalUserNum, RecordKey);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CloudSaveSubsystem.cpp-OnDeletePlayerRecordComplete
 void UCloudSaveSubsystem::OnDeletePlayerRecordComplete(
     int32 LocalUserNum,
     const FOnlineError& Result,
@@ -179,9 +193,13 @@ void UCloudSaveSubsystem::OnDeletePlayerRecordComplete(
 
     DeletePlayerRecordParams.Remove(Key);
 }
+// @@@SNIPEND
 #pragma endregion
 
 #pragma region Module.5 General Function Definitions
+// @@@SNIPSTART CloudSaveSubsystem.cpp-BindDelegates
+// @@@MULTISNIP BindPlayerRecordDelegate {"selectedLines": ["1-2", "10-13"]}
+// @@@MULTISNIP PutItAllTogether {"selectedLines": ["1-3", "6-7", "13"]}
 void UCloudSaveSubsystem::BindDelegates()
 {
     UAuthEssentialsModels::OnLoginSuccessDelegate.AddUObject(this, &ThisClass::OnLoadGameSoundOptions, TDelegate<void()>());
@@ -195,7 +213,11 @@ void UCloudSaveSubsystem::BindDelegates()
     CloudSaveInterface->OnGetUserRecordCompletedDelegates->AddUObject(this, &ThisClass::OnGetPlayerRecordComplete);
     CloudSaveInterface->OnDeleteUserRecordCompletedDelegates->AddUObject(this, &ThisClass::OnDeletePlayerRecordComplete);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CloudSaveSubsystem.cpp-UnbindDelegates
+// @@@MULTISNIP UnbindPlayerRecordDelegate {"selectedLines": ["1-2", "9-12"]}
+// @@@MULTISNIP PutItAllTogether {"selectedLines": ["1-6", "12"]}
 void UCloudSaveSubsystem::UnbindDelegates()
 {
     UAuthEssentialsModels::OnLoginSuccessDelegate.RemoveAll(this);
@@ -208,7 +230,9 @@ void UCloudSaveSubsystem::UnbindDelegates()
     CloudSaveInterface->OnGetUserRecordCompletedDelegates->RemoveAll(this);
     CloudSaveInterface->OnDeleteUserRecordCompletedDelegates->RemoveAll(this);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CloudSaveSubsystem.cpp-OnLoadGameSoundOptions
 void UCloudSaveSubsystem::OnLoadGameSoundOptions(const APlayerController* PlayerController, TDelegate<void()> OnComplete)
 {
     if (!PlayerController)
@@ -252,8 +276,9 @@ void UCloudSaveSubsystem::OnLoadGameSoundOptions(const APlayerController* Player
         })
     );
 }
+// @@@SNIPEND
 
-
+// @@@SNIPSTART CloudSaveSubsystem.cpp-OnSaveGameSoundOptions
 void UCloudSaveSubsystem::OnSaveGameSoundOptions(const APlayerController* PlayerController, TDelegate<void()> OnComplete)
 {
     if (!PlayerController)
@@ -289,6 +314,7 @@ void UCloudSaveSubsystem::OnSaveGameSoundOptions(const APlayerController* Player
         }
     ));
 }
+// @@@SNIPEND
 
 void UCloudSaveSubsystem::LoadPlayerEquipment(const APlayerController* PlayerController)
 {

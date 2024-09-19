@@ -56,9 +56,6 @@ protected:
 
 	void SwitchContent(EAccelByteWarsWidgetSwitcherState State) const;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (DisplayName = "Pressed Sound"))
-	FSlateSound PressedSlateSound;
-
 private:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UWidget* W_ListOuter;

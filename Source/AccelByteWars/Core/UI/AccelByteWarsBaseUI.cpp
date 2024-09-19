@@ -4,7 +4,10 @@
 
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
+#include "Components/Prompt/GUICheat/GUICheatWidget.h"
 #include "Core/UI/Components/Info/InfoWidget.h"
+#include "Core/Utilities/AccelByteWarsUtility.h"
+#include "Input/CommonUIInputTypes.h"
 
 void UAccelByteWarsBaseUI::NativeOnInitialized()
 {
@@ -46,6 +49,19 @@ void UAccelByteWarsBaseUI::NativeOnInitialized()
 
 			TargetWidget.GetDefaultObject()->OnActivated().AddUObject(this, &ThisClass::ToggleProjectInfoWidget, true);
 			TargetWidget.GetDefaultObject()->OnDeactivated().AddUObject(this, &ThisClass::ToggleProjectInfoWidget, false);
+		}
+
+		// GUI Cheat setup
+		if (AccelByteWarsUtility::GetFlagValueOrDefault(FLAG_GUI_CHEAT, FLAG_GUI_CHEAT_SECTION, true))
+		{
+			// Bind key to show GUI Cheat
+			OpenGUICheatHandle.Unregister();
+			FBindUIActionArgs GUICheatBinding(
+				OpenGUICheatInputActionData,
+				false,
+				FSimpleDelegate::CreateUObject(this, &ThisClass::ToggleGUICheat));
+			GUICheatBinding.bIsPersistent = true;
+			OpenGUICheatHandle = RegisterUIActionBinding(GUICheatBinding);
 		}
 	}
 }
@@ -140,6 +156,36 @@ EBaseUIStackType UAccelByteWarsBaseUI::GetTopMostActiveStack()
 	return TopMostStackType;
 }
 
+void UAccelByteWarsBaseUI::AddGUICheatEntry(UGUICheatWidgetEntry* Entry)
+{
+	if (!W_GUICheat)
+	{
+		return;
+	}
+
+	W_GUICheat->AddEntry(Entry);
+}
+
+void UAccelByteWarsBaseUI::RemoveGUICheatEntry(UGUICheatWidgetEntry* Entry)
+{
+	if (!W_GUICheat || !Entry)
+	{
+		return;
+	}
+
+	W_GUICheat->RemoveEntry(Entry);
+}
+
+void UAccelByteWarsBaseUI::RemoveGUICheatEntries(UTutorialModuleDataAsset* TutorialModuleDataAsset)
+{
+	if (!W_GUICheat || !TutorialModuleDataAsset)
+	{
+		return;
+	}
+
+	W_GUICheat->RemoveEntries(TutorialModuleDataAsset);
+}
+
 UAccelByteWarsActivatableWidget* UAccelByteWarsBaseUI::PushWidgetToStack(EBaseUIStackType TargetStack, TSubclassOf<UAccelByteWarsActivatableWidget> WidgetClass)
 {
 	return PushWidgetToStack(TargetStack, WidgetClass, [](UCommonActivatableWidget&) {});
@@ -195,24 +241,7 @@ void UAccelByteWarsBaseUI::SetFTUEDialogueWidget(UFTUEDialogueWidget* InFTUEDial
 void UAccelByteWarsBaseUI::OnWidgetTransitionChanged(UCommonActivatableWidgetContainerBase* Widget, bool bIsTransitioning)
 {
 	// Set auto focus to top most stack widget.
-	bool bIsTopMostStackFound = false;
-	for (const EBaseUIStackType StackType : TEnumRange<EBaseUIStackType>())
-	{
-		TWeakObjectPtr<UCommonActivatableWidgetStack> Stack = MakeWeakObjectPtr<UCommonActivatableWidgetStack>(Stacks[StackType]);
-		if (!Stack.IsValid()) 
-		{
-			continue;
-		}
-
-		if (!bIsTopMostStackFound && Stack->GetActiveWidget())
-		{
-			Stack->SetVisibility(ESlateVisibility::Visible);
-			bIsTopMostStackFound = true;
-			continue;
-		}
-
-		Stack->SetVisibility(ESlateVisibility::HitTestInvisible);
-	}
+	FocusOnTopMostStack();
 }
 
 void UAccelByteWarsBaseUI::OnDisplayedWidgetChanged(UCommonActivatableWidget* Widget, const EBaseUIStackType StackType)
@@ -228,5 +257,59 @@ void UAccelByteWarsBaseUI::OnDisplayedWidgetChanged(UCommonActivatableWidget* Wi
 	if (StackType == EBaseUIStackType::Menu || StackType == EBaseUIStackType::InGameMenu)
 	{
 		ToggleBackgroundBlur(NewWidget.IsValid());
+	}
+}
+
+void UAccelByteWarsBaseUI::FocusOnTopMostStack()
+{
+	// Remove focus override
+	if (FocusOverride == W_GUICheat && W_GUICheat->IsEntriesEmpty())
+	{
+		RemoveFocusOverride();
+	}
+
+	bool bIsTopMostStackFound = false;
+	for (const EBaseUIStackType StackType : TEnumRange<EBaseUIStackType>())
+	{
+		TWeakObjectPtr<UCommonActivatableWidgetStack> Stack = MakeWeakObjectPtr<UCommonActivatableWidgetStack>(Stacks[StackType]);
+		if (!Stack.IsValid()) 
+		{
+			continue;
+		}
+
+		if (!bIsTopMostStackFound && Stack->GetActiveWidget() && (!FocusOverride || FocusOverride == Stack))
+		{
+			Stack->SetVisibility(ESlateVisibility::Visible);
+			bIsTopMostStackFound = true;
+			continue;
+		}
+
+		Stack->SetVisibility(ESlateVisibility::HitTestInvisible);
+	}
+}
+
+void UAccelByteWarsBaseUI::OverrideFocus(UWidget* Target)
+{
+	FocusOverride = Target;
+	FocusOnTopMostStack();
+}
+
+void UAccelByteWarsBaseUI::RemoveFocusOverride()
+{
+	FocusOverride = nullptr;
+	FocusOnTopMostStack();
+}
+
+void UAccelByteWarsBaseUI::ToggleGUICheat()
+{
+	if (W_GUICheat->IsActivated())
+	{
+		W_GUICheat->DeactivateWidget();
+		RemoveFocusOverride();
+	}
+	else if (!W_GUICheat->IsEntriesEmpty())
+	{
+		W_GUICheat->ActivateWidget();
+		OverrideFocus(W_GUICheat);
 	}
 }

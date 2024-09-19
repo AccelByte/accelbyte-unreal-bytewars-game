@@ -31,6 +31,8 @@ void UPartyWidgetEntry::NativeConstruct()
 
 void UPartyWidgetEntry::SetPartyMember(const FUserOnlineAccountAccelByte& PartyMember, const bool bIsLeader)
 {
+	W_PartyMember->SetNetId(PartyMember.GetUserId());
+
 	// Display party member information.
 	Ws_PartyMemberState->SetActiveWidget(W_PartyMemberPanel);
 
@@ -65,6 +67,8 @@ void UPartyWidgetEntry::SetPartyMember(const FUserOnlineAccountAccelByte& PartyM
 	CachedFriendData->UserId = PartyMember.GetUserId();
 	CachedFriendData->DisplayName = PartyMember.GetDisplayName();
 	CachedFriendData->AvatarURL = AvatarURL;
+
+	W_PartyMember->ActivateWidget();
 }
 
 void UPartyWidgetEntry::ResetPartyMember()

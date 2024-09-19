@@ -129,26 +129,27 @@ void UAccelbyteWarsServerSubsystem::OnServerSessionReceived(FName SessionName)
 		return;
 	}
 
+	// Get game related info from session
 	FString RequestedGameModeCode;
+	FString SessionTemplateName;
 	Session->SessionSettings.Get(GAMESETUP_GameModeCode, RequestedGameModeCode);
-	if (!RequestedGameModeCode.IsEmpty())
+	Session->SessionSettings.Get(SETTING_SESSION_MATCHPOOL, SessionTemplateName);
+
+	// Try getting manually set game rules
+	bool bIsCustomGame = false;
+	if (Session->SessionSettings.Get(GAMESETUP_IsCustomGame, bIsCustomGame) && bIsCustomGame)
 	{
-		// Used for Match Session session
+		AbGameState->AssignCustomGameMode(&Session->SessionSettings);
+	}
+	// If not complete, try getting requested game mode
+	else if (!RequestedGameModeCode.IsEmpty())
+	{
 		AbGameState->AssignGameMode(RequestedGameModeCode);
 	}
-	else
+	// if not, try to assign game mode base on Match Pool
+	else if (!SessionTemplateName.IsEmpty())
 	{
-		/*
-		 * if requested game mode code does not present -> revert to using session template name
-		 * Used for Matchmaking session.
-		 * SETTING_SESSION_TEMPLATE_NAME is empty -> use ABSessionInfo instead
-		 */
-		FString SessionTemplateName;
-		Session->SessionSettings.Get(SETTING_SESSION_MATCHPOOL, SessionTemplateName);
-		if (!SessionTemplateName.IsEmpty())
-		{
-			AbGameState->AssignGameMode(OnlineSession->MatchmakingTargetGameModeMap[SessionTemplateName]);
-		}
+		AbGameState->AssignGameMode(OnlineSession->MatchmakingTargetGameModeMap[SessionTemplateName]);
 	}
 #pragma endregion
 

@@ -5,6 +5,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "StatsEssentialsLog.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "OnlineStatisticInterfaceAccelByte.h"
 #include "StatsEssentialsSubsystem.generated.h"
@@ -14,15 +15,10 @@ class ACCELBYTEWARS_API UStatsEssentialsSubsystem : public UTutorialModuleSubsys
 {
 	GENERATED_BODY()
 
+// @@@SNIPSTART StatsEssentialsSubsystem.h-public
+// @@@MULTISNIP QueryStatsDeclaration {"selectedLines": ["1", "25-28", "38-42"]}
+// @@@MULTISNIP UpdateStatsDeclaration {"selectedLines": ["1", "12-16", "52-56"]}
 public:
-
-#pragma region Available stats code list
-	inline static FString StatsCode_HighestElimination = "unreal-highestscore-elimination";
-	inline static FString StatsCode_HighestTeamDeathMatch = "unreal-highestscore-teamdeathmatch";
-	inline static FString StatsCode_HighestSinglePlayer = "unreal-highestscore-singleplayer";
-	inline static FString StatsCode_KillCount = "unreal-killcount";
-#pragma endregion 
-
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
 	/**
@@ -66,20 +62,27 @@ public:
 		const FOnlineStatsQueryUsersStatsComplete& OnComplete);
 
 	/**
-	 * @brief Reset all connected users stats value to 0
+	 * @brief Update all connected player statistics
 	 * @param LocalUserNum LocalUserNum to determine who's credential is going to be used for the API call
+	 * @param bToReset Whether to update the statistics to the new value or to reset back to 0.
 	 * @param OnCompleteClient Call upon completion if current instance is not a dedicated server
 	 * @param OnCompleteServer Call upon completion if current instance is a dedicated server
 	 * @return True if Async Task started successfully, false if task already running
 	 */
-	bool ResetConnectedUsersStats(
+	bool UpdateConnectedPlayersStats(
 		const int32 LocalUserNum,
+		const bool bToReset = false,
 		const FOnlineStatsUpdateStatsComplete& OnCompleteClient = {},
 		const FOnUpdateMultipleUserStatItemsComplete& OnCompleteServer = {});
-
+// @@@SNIPEND
+	
+// @@@SNIPSTART StatsEssentialsSubsystem.h-private
+// @@@MULTISNIP Interface {"selectedLines": ["1", "5-6"]}
+// @@@MULTISNIP StatsDelegate {"selectedLines": ["1", "8-10"]}
+// @@@MULTISNIP UpdateConnectedPlayersStatsOnGameEnds {"selectedLines": ["1-3"]}
 private:
 	UFUNCTION()
-	void UpdatePlayersStatOnGameEnds();
+	void UpdateConnectedPlayersStatsOnGameEnds();
 
 	IOnlineIdentityPtr IdentityPtr;
 	FOnlineStatisticAccelBytePtr ABStatsPtr;
@@ -87,4 +90,5 @@ private:
 	FOnlineStatsQueryUsersStatsComplete OnQueryUsersStatsComplete;
 	FOnlineStatsUpdateStatsComplete OnUpdateStatsComplete;
 	FOnUpdateMultipleUserStatItemsComplete OnServerUpdateStatsComplete;
+// @@@SNIPEND
 };

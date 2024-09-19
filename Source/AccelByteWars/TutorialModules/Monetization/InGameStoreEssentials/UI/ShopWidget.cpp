@@ -64,6 +64,7 @@ void UShopWidget::OnGetOrQueryCategoriesComplete(TArray<FOnlineStoreCategory> Ca
 	}
 
 	Tl_ItemCategory->RemoveAllTabs();
+	SwitchContent(EAccelByteWarsWidgetSwitcherState::Not_Empty);
 
 	// register "All" categories entry
 	Tl_ItemCategory->RegisterTabWithPresets(FName(RootPath), FText::FromString("All")); // TODO: Localization
@@ -128,9 +129,6 @@ void UShopWidget::OnGetOrQueryOffersComplete(const TArray<UStoreItemDataObject*>
 
 void UShopWidget::OnStoreItemClicked(UObject* Item) const
 {
-	// play sound
-	FSlateApplication::Get().PlaySound(PressedSlateSound);
-
 	if (!IsValid(DetailWidgetClass))
 	{
 		return;

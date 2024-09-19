@@ -33,6 +33,7 @@ public:
 	AAccelByteWarsGameMode();
 
 	//~AGameModeBase overridden functions
+	
 	virtual void InitGameState() override;
 	virtual void BeginPlay() override;
 	virtual void PostLogin(APlayerController* NewPlayer) override;
@@ -89,7 +90,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	bool bShouldRemovePlayerOnLogoutImmediately = false;
 
-	static int32 GetControllerId(const APlayerState* PlayerState);
 	bool IsServer() const;
 
 	// Countdown functionalities to simulate server crash.

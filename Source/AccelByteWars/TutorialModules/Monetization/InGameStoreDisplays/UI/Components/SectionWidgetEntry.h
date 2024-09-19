@@ -5,8 +5,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Blueprint/IUserObjectListEntry.h"
-#include "Blueprint/UserWidget.h"
+#include "Core/UI/Components/AccelByteWarsWidgetEntry.h"
 #include "SectionWidgetEntry.generated.h"
 
 class UAccelByteWarsActivatableWidget;
@@ -15,7 +14,7 @@ class UBorder;
 class UListView;
 
 UCLASS(Abstract)
-class ACCELBYTEWARS_API USectionWidgetEntry : public UUserWidget, public IUserObjectListEntry
+class ACCELBYTEWARS_API USectionWidgetEntry : public UAccelByteWarsWidgetEntry
 {
 	GENERATED_BODY()
 	
@@ -25,9 +24,6 @@ class ACCELBYTEWARS_API USectionWidgetEntry : public UUserWidget, public IUserOb
 
 protected:
 	void OnItemClicked(UObject* Item) const;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (DisplayName = "Pressed Sound"))
-	FSlateSound PressedSlateSound;
 
 private:
 	FTimespan TimeLeft;

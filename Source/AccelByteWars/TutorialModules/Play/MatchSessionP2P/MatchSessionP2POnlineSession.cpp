@@ -12,6 +12,7 @@
 #include "Core/UI/InGameMenu/GameOver/GameOverWidget.h"
 #include "Interfaces/OnlineIdentityInterface.h"
 #include "Interfaces/OnlineUserInterface.h"
+#include "TutorialModuleUtilities/StartupSubsystem.h"
 
 void UMatchSessionP2POnlineSession::RegisterOnlineDelegates()
 {
@@ -52,54 +53,6 @@ void UMatchSessionP2POnlineSession::ClearOnlineDelegates()
 }
 
 #pragma region "Game Session Essentials"
-void UMatchSessionP2POnlineSession::QueryUserInfo(
-	const int32 LocalUserNum,
-	const TArray<FUniqueNetIdRef>& UserIds,
-	const FOnQueryUsersInfoComplete& OnComplete)
-{
-	UE_LOG_MATCHSESSIONP2P(Verbose, TEXT("called"))
-
-	// safety
-	if (!GetUserInt())
-	{
-		UE_LOG_MATCHSESSIONP2P(Warning, TEXT("User interface null"))
-		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, OnComplete]()
-		{
-			OnComplete.ExecuteIfBound(false, {});
-		}));
-		return;
-	}
-
-	TArray<FUserOnlineAccountAccelByte*> UserInfo;
-	if (RetrieveUserInfoCache(UserIds, UserInfo))
-	{
-		UE_LOG_MATCHSESSIONP2P(Log, TEXT("Cache found"))
-		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, UserInfo, OnComplete]()
-		{
-			OnComplete.ExecuteIfBound(true, UserInfo);
-		}));
-	}
-	// Some data does not exist in cache, query everything
-	else
-	{
-		// Bind delegate
-		OnQueryUserInfoCompleteDelegateHandle = GetUserInt()->OnQueryUserInfoCompleteDelegates->AddWeakLambda(
-			this, [OnComplete, this](
-				int32 LocalUserNum,
-				bool bSucceeded,
-				const TArray<FUniqueNetIdRef>& UserIds,
-				const FString& ErrorMessage)
-			{
-				OnQueryUserInfoComplete(LocalUserNum, bSucceeded, UserIds, ErrorMessage, OnComplete);
-			});
-
-		if (!GetUserInt()->QueryUserInfo(LocalUserNum, UserIds))
-		{
-			OnQueryUserInfoComplete(LocalUserNum, false, UserIds, "", OnComplete);
-		}
-	}
-}
-
 bool UMatchSessionP2POnlineSession::TravelToSession(const FName SessionName)
 {
 	UE_LOG_MATCHSESSIONP2P(Verbose, TEXT("called"))
@@ -179,46 +132,6 @@ bool UMatchSessionP2POnlineSession::TravelToSession(const FName SessionName)
 	}
 
 	return true;
-}
-
-void UMatchSessionP2POnlineSession::OnQueryUserInfoComplete(
-	int32 LocalUserNum,
-	bool bSucceeded,
-	const TArray<FUniqueNetIdRef>& UserIds,
-	const FString& ErrorMessage,
-	const FOnQueryUsersInfoComplete& OnComplete)
-{
-	UE_LOG_MATCHSESSIONP2P(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
-
-	// reset delegate handle
-	GetUserInt()->OnQueryUserInfoCompleteDelegates->Remove(OnQueryUserInfoCompleteDelegateHandle);
-	OnQueryUserInfoCompleteDelegateHandle.Reset();
-
-	if (bSucceeded)
-	{
-		// Cache the result.
-		CacheUserInfo(LocalUserNum, UserIds);
-
-		// Retrieve the result from cache.
-		TArray<FUserOnlineAccountAccelByte*> OnlineUsers;
-		RetrieveUserInfoCache(UserIds, OnlineUsers);
-
-		// Only include valid users info only.
-		OnlineUsers.RemoveAll([](const FUserOnlineAccountAccelByte* Temp)
-		{
-			return !Temp || !Temp->GetUserId()->IsValid();
-		});
-
-		UE_LOG_MATCHSESSIONP2P(Log,
-			TEXT("Queried users info: %d, found valid users info: %d"),
-			UserIds.Num(), OnlineUsers.Num());
-
-		OnComplete.ExecuteIfBound(true, OnlineUsers);
-	}
-	else
-	{
-		OnComplete.ExecuteIfBound(false, {});
-	}
 }
 
 void UMatchSessionP2POnlineSession::OnSessionServerUpdateReceived(FName SessionName)
@@ -382,10 +295,13 @@ void UMatchSessionP2POnlineSession::OnFindSessionsComplete(bool bSucceeded)
 		}
 
 		// trigger Query User info
-		QueryUserInfo(
-			LocalUserNumSearching,
-			UserIds,
-			FOnQueryUsersInfoComplete::CreateUObject(this, &ThisClass::OnQueryUserInfoForFindSessionComplete));
+		if (UStartupSubsystem* StartupSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UStartupSubsystem>())
+		{
+			StartupSubsystem->QueryUserInfo(
+				LocalUserNumSearching,
+				UserIds,
+				FOnQueryUsersInfoCompleteDelegate::CreateUObject(this, &ThisClass::OnQueryUserInfoForFindSessionComplete));
+		}
 	}
 	else
 	{
@@ -394,12 +310,12 @@ void UMatchSessionP2POnlineSession::OnFindSessionsComplete(bool bSucceeded)
 }
 
 void UMatchSessionP2POnlineSession::OnQueryUserInfoForFindSessionComplete(
-	const bool bSucceeded,
-	const TArray<FUserOnlineAccountAccelByte*>& UsersInfo)
+	const FOnlineError& Error,
+	const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
 {
-	UE_LOG_MATCHSESSIONP2P(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
+	UE_LOG_MATCHSESSIONP2P(Log, TEXT("succeeded: %s"), *FString(Error.bSucceeded ? "TRUE": "FALSE"))
 
-	if (bSucceeded)
+	if (Error.bSucceeded)
 	{
 		const TArray<FMatchSessionEssentialInfo> MatchSessionSearchResult = SimplifySessionSearchResult(
 			SessionSearch->SearchResults,

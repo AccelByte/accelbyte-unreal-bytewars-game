@@ -8,6 +8,7 @@
 #include "OnlineSubsystem.h"
 #include "OnlineSubsystemUtils.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleUtility.h"
+#include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/GameModes/AccelByteWarsInGameGameMode.h"
 #include "Core/Player/AccelByteWarsPlayerState.h"
 
@@ -29,10 +30,11 @@ void UStatsEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	// bind delegate if module active
 	if (UTutorialModuleUtility::IsTutorialModuleActive(FPrimaryAssetId{ "TutorialModule:STATSESSENTIALS" }, this))
 	{
-		AAccelByteWarsInGameGameMode::OnGameEndsDelegate.AddUObject(this, &ThisClass::UpdatePlayersStatOnGameEnds);
+		AAccelByteWarsInGameGameMode::OnGameEndsDelegate.AddUObject(this, &ThisClass::UpdateConnectedPlayersStatsOnGameEnds);
 	}
 }
 
+// @@@SNIPSTART StatsEssentialsSubsystem.cpp-UpdateUsersStats
 bool UStatsEssentialsSubsystem::UpdateUsersStats(const int32 LocalUserNum,
 	const TArray<FOnlineStatsUserUpdatedStats>& UpdatedUsersStats,
 	const FOnlineStatsUpdateStatsComplete& OnCompleteClient,
@@ -70,7 +72,9 @@ bool UStatsEssentialsSubsystem::UpdateUsersStats(const int32 LocalUserNum,
 
 	return true;
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART StatsEssentialsSubsystem.cpp-QueryLocalUserStats
 bool UStatsEssentialsSubsystem::QueryLocalUserStats(
 	const int32 LocalUserNum,
 	const TArray<FString>& StatNames,
@@ -79,7 +83,9 @@ bool UStatsEssentialsSubsystem::QueryLocalUserStats(
 	const FUniqueNetIdRef LocalUserId = IdentityPtr->GetUniquePlayerId(LocalUserNum).ToSharedRef();
 	return QueryUserStats(LocalUserNum, {LocalUserId}, StatNames, OnComplete);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART StatsEssentialsSubsystem.cpp-QueryUserStats
 bool UStatsEssentialsSubsystem::QueryUserStats(
 	const int32 LocalUserNum,
 	const TArray<FUniqueNetIdRef>& StatsUsers,
@@ -102,127 +108,184 @@ bool UStatsEssentialsSubsystem::QueryUserStats(
 	ABStatsPtr->QueryStats(LocalUserId, StatsUsers, StatNames, OnQueryUsersStatsComplete);
 	return true;
 }
+// @@@SNIPEND
 
-bool UStatsEssentialsSubsystem::ResetConnectedUsersStats(
-	const int32 LocalUserNum,
-	const FOnlineStatsUpdateStatsComplete& OnCompleteClient,
+// @@@SNIPSTART StatsEssentialsSubsystem.cpp-UpdateConnectedPlayersStats
+bool UStatsEssentialsSubsystem::UpdateConnectedPlayersStats(
+	const int32 LocalUserNum, 
+	const bool bToReset, 
+	const FOnlineStatsUpdateStatsComplete& OnCompleteClient, 
 	const FOnUpdateMultipleUserStatItemsComplete& OnCompleteServer)
 {
-	AGameStateBase* GameState = GetWorld()->GetGameState();
-	if (!ensure(GameState))
+	UE_LOG_STATSESSENTIALS(Log, TEXT("Updating connected player stats to %s"), bToReset ? TEXT("reset") : TEXT("new value"));
+
+	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+	if (!GameInstance)
 	{
+		UE_LOG_STATSESSENTIALS(Warning, TEXT("Failed to update players' statistics. Game instance is invalid."));
 		return false;
 	}
 
-	AAccelByteWarsGameState* ABGameState = Cast<AAccelByteWarsGameState>(GameState);
-	if (!ensure(ABGameState))
+	AAccelByteWarsGameState* GameState = Cast<AAccelByteWarsGameState>(GetWorld()->GetGameState());
+	if (!GameState)
 	{
+		UE_LOG_STATSESSENTIALS(Warning, TEXT("Failed to update players' statistics. Game state is invalid."));
 		return false;
 	}
 
-	// Updated stats builder. Update only existing player -> use PlayerArray
+	// Get valid game stats data.
+	const bool bIsLocalGame = GameState->GameSetup.NetworkType == EGameModeNetworkType::LOCAL;
+	bool bIsGameStatsDataValid = false;
+	FGameStatsData GameStatsData{};
+	if (bIsLocalGame)
+	{
+		bIsGameStatsDataValid = GameInstance->GetGameStatsDataById(GAMESTATS_GameModeSinglePlayer, GameStatsData);
+	}
+	else if (GameState->GameSetup.GameModeType == EGameModeType::FFA)
+	{
+		bIsGameStatsDataValid = GameInstance->GetGameStatsDataById(GAMESTATS_GameModeElimination, GameStatsData);
+	}
+	else if (GameState->GameSetup.GameModeType == EGameModeType::TDM)
+	{
+		bIsGameStatsDataValid = GameInstance->GetGameStatsDataById(GAMESTATS_GameModeTeamDeathmatch, GameStatsData);
+	}
+
+	if (!bIsGameStatsDataValid)
+	{
+		UE_LOG_STATSESSENTIALS(Warning, TEXT("Failed to update players' statistics. No statistics data to update."));
+		return false;
+	}
+
+	// Update players' stats.
 	TArray<FOnlineStatsUserUpdatedStats> UpdatedUsersStats;
+	const int32 WinnerTeamId = GameState->GetWinnerTeamId();
 	for (const TObjectPtr<APlayerState> PlayerState : GameState->PlayerArray)
 	{
 		AAccelByteWarsPlayerState* ABPlayerState = Cast<AAccelByteWarsPlayerState>(PlayerState);
 		if (!ABPlayerState)
 		{
+			UE_LOG_STATSESSENTIALS(Warning, TEXT("Failed to update player's statistics. Player state is invalid."));
 			continue;
 		}
 
 		const FUniqueNetIdRepl& PlayerUniqueId = PlayerState->GetUniqueId();
 		if (!PlayerUniqueId.IsValid())
 		{
+			UE_LOG_STATSESSENTIALS(Warning, TEXT("Failed to update player's statistics. User id is invalid."));
 			continue;
 		}
+
+		FGameplayTeamData TeamData{};
+		float TeamScore = 0;
+		int32 TeamTotalLives = 0, TeamTotalKillCount = 0, TeamTotalDeaths = 0;
+
+		/* Local gameplay only has one valid account, which is the player who logged in to the game.
+		 * Thus, set the stats based on the highest team data.*/
+		if (bIsLocalGame)
+		{
+			GameState->GetHighestTeamData(TeamScore, TeamTotalLives, TeamTotalKillCount, TeamTotalDeaths);
+		}
+		// Each connected players in online gameplay are valid account, thus set the stats based on their respective teams.
+		else 
+		{
+			GameState->GetTeamDataByTeamId(ABPlayerState->TeamId, TeamData, TeamScore, TeamTotalLives, TeamTotalKillCount, TeamTotalDeaths);
+		}
+
+		/* If local gameplay, set the winner status based on whether the game draw or not.
+		 * If online gameplay, set the winner status based on whether the team id matches with the winner team id.*/
+		const bool bIsWinner = bIsLocalGame ? WinnerTeamId != INDEX_NONE : TeamData.TeamId == WinnerTeamId;
 
 		FOnlineStatsUserUpdatedStats UpdatedUserStats(PlayerUniqueId->AsShared());
-		if (IsRunningDedicatedServer())
+		// Reset statistics values to zero.
+		if (bToReset)
 		{
-			// server side stats, need to be set by the server
-			UpdatedUserStats.Stats.Add(StatsCode_HighestElimination, FOnlineStatUpdate{0.0f, FOnlineStatUpdate::EOnlineStatModificationType::Set});
-			UpdatedUserStats.Stats.Add(StatsCode_HighestTeamDeathMatch, FOnlineStatUpdate{0.0f, FOnlineStatUpdate::EOnlineStatModificationType::Set});
-			UpdatedUserStats.Stats.Add(StatsCode_KillCount, FOnlineStatUpdate{0.0f, FOnlineStatUpdate::EOnlineStatModificationType::Set});
-		}
-		else
-		{
-			// client side stats, need to be set by the client
-			UpdatedUserStats.Stats.Add(StatsCode_HighestSinglePlayer, FOnlineStatUpdate{0.0f, FOnlineStatUpdate::EOnlineStatModificationType::Set});
-		}
-	}
-
-	// Update stats
-	return UpdateUsersStats(LocalUserNum, UpdatedUsersStats, OnCompleteClient, OnCompleteServer);
-}
-
-void UStatsEssentialsSubsystem::UpdatePlayersStatOnGameEnds()
-{
-	AGameStateBase* GameState = GetWorld()->GetGameState();
-	if (!ensure(GameState))
-	{
-		return;
-	}
-
-	AAccelByteWarsGameState* ABGameState = Cast<AAccelByteWarsGameState>(GameState);
-	if (!ensure(ABGameState))
-	{
-		return;
-	}
-
-	// Updated stats builder. Update only existing player -> use PlayerArray
-	TArray<FOnlineStatsUserUpdatedStats> UpdatedUsersStats;
-	for (const TObjectPtr<APlayerState> PlayerState : GameState->PlayerArray)
-	{
-		AAccelByteWarsPlayerState* ABPlayerState = Cast<AAccelByteWarsPlayerState>(PlayerState);
-		if (!ABPlayerState)
-		{
-			continue;
-		}
-
-		const FUniqueNetIdRepl& PlayerUniqueId = PlayerState->GetUniqueId();
-		if (!PlayerUniqueId.IsValid())
-		{
-			continue;
-		}
-
-		FOnlineStatsUserUpdatedStats UpdatedUserStats(PlayerUniqueId->AsShared());
-
-		TTuple<FString, FOnlineStatUpdate> StatHighest;
-		TTuple<FString, FOnlineStatUpdate> StatKillCount;
-
-		if (ABGameState->GameSetup.NetworkType == EGameModeNetworkType::LOCAL)
-		{
-			StatHighest.Key = StatsCode_HighestSinglePlayer;
-		}
-		else
-		{
-			switch (ABGameState->GameSetup.GameModeType)
+			for (const FString& Code : GameStatsData.GetStatsCodes())
 			{
-			case EGameModeType::FFA:
-				StatHighest.Key = StatsCode_HighestElimination;
-				break;
-			case EGameModeType::TDM:
-				StatHighest.Key = StatsCode_HighestTeamDeathMatch;
-				break;
-			default: ;
+				UpdatedUserStats.Stats.Add(TTuple<FString, FOnlineStatUpdate>
+				{
+					Code,
+					FOnlineStatUpdate { 0, FOnlineStatUpdate::EOnlineStatModificationType::Set }
+				});
 			}
-
-			StatKillCount.Key = StatsCode_KillCount;
-			StatKillCount.Value = FOnlineStatUpdate{ABPlayerState->KillCount, FOnlineStatUpdate::EOnlineStatModificationType::Sum};
-			UpdatedUserStats.Stats.Add(StatKillCount);
 		}
-
-		FGameplayTeamData TeamData;
-		float TeamScore;
-		int32 TeamTotalLives;
-		int32 TeamTotalKillCount;
-		ABGameState->GetTeamDataByTeamId(ABPlayerState->TeamId, TeamData, TeamScore, TeamTotalLives, TeamTotalKillCount);
-		StatHighest.Value = FOnlineStatUpdate{TeamScore, FOnlineStatUpdate::EOnlineStatModificationType::Largest};
-		UpdatedUserStats.Stats.Add(StatHighest);
+		// Update statistics values.
+		else 
+		{
+			UpdatedUserStats.Stats.Add(TTuple<FString, FOnlineStatUpdate>
+			{
+				GameStatsData.HighestScoreStats.CodeName,
+				FOnlineStatUpdate
+				{
+					TeamScore,
+					FOnlineStatUpdate::EOnlineStatModificationType::Largest
+				}
+			});
+			UpdatedUserStats.Stats.Add(TTuple<FString, FOnlineStatUpdate>
+			{
+				GameStatsData.TotalScoreStats.CodeName,
+				FOnlineStatUpdate
+				{
+					TeamScore,
+					FOnlineStatUpdate::EOnlineStatModificationType::Sum
+				}
+			});
+			UpdatedUserStats.Stats.Add(TTuple<FString, FOnlineStatUpdate>
+			{
+				GameStatsData.MatchesPlayedStats.CodeName,
+				FOnlineStatUpdate
+				{
+					1,
+					FOnlineStatUpdate::EOnlineStatModificationType::Sum
+				}
+			});
+			UpdatedUserStats.Stats.Add(TTuple<FString, FOnlineStatUpdate>
+			{
+				GameStatsData.MatchesWonStats.CodeName,
+				FOnlineStatUpdate
+				{
+					bIsWinner ? 1 : 0,
+					FOnlineStatUpdate::EOnlineStatModificationType::Sum
+				}
+			});
+			UpdatedUserStats.Stats.Add(TTuple<FString, FOnlineStatUpdate>
+			{
+				GameStatsData.KillCountStats.CodeName,
+				FOnlineStatUpdate
+				{
+					TeamTotalKillCount,
+					FOnlineStatUpdate::EOnlineStatModificationType::Sum
+				}
+			});
+			UpdatedUserStats.Stats.Add(TTuple<FString, FOnlineStatUpdate>
+			{
+				GameStatsData.DeathStats.CodeName,
+				FOnlineStatUpdate
+				{
+					TeamTotalDeaths,
+					FOnlineStatUpdate::EOnlineStatModificationType::Sum
+				}
+			});
+		}
 
 		UpdatedUsersStats.Add(UpdatedUserStats);
 	}
 
 	// Update stats
-	UpdateUsersStats(0, UpdatedUsersStats);
+	return UpdateUsersStats(LocalUserNum, UpdatedUsersStats, OnCompleteClient, OnCompleteServer);
 }
+// @@@SNIPEND
+
+// @@@SNIPSTART StatsEssentialsSubsystem.cpp-UpdateConnectedPlayersStatsOnGameEnds
+void UStatsEssentialsSubsystem::UpdateConnectedPlayersStatsOnGameEnds()
+{
+	const bool bStarted = UpdateConnectedPlayersStats(0, false);
+	if (bStarted)
+	{
+		UE_LOG_STATSESSENTIALS(Log, TEXT("Update connected player statistics on game ends is started"));
+	}
+	else 
+	{
+		UE_LOG_STATSESSENTIALS(Warning, TEXT("Update connected player statistics on game ends is failed"));
+	}
+}
+// @@@SNIPEND

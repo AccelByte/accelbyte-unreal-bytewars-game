@@ -34,6 +34,7 @@ void ULeaderboardSubsystem::Initialize(FSubsystemCollectionBase& Collection)
     }
 }
 
+// @@@SNIPSTART LeaderboardSubsystem.cpp-GetUniqueNetIdFromPlayerController
 FUniqueNetIdPtr ULeaderboardSubsystem::GetUniqueNetIdFromPlayerController(const APlayerController* PC) const
 {
     if (!ensure(PC))
@@ -49,7 +50,9 @@ FUniqueNetIdPtr ULeaderboardSubsystem::GetUniqueNetIdFromPlayerController(const 
 
     return LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId();
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART LeaderboardSubsystem.cpp-GetLocalUserNumFromPlayerController
 int32 ULeaderboardSubsystem::GetLocalUserNumFromPlayerController(const APlayerController* PC) const
 {
     if (!PC)
@@ -65,10 +68,11 @@ int32 ULeaderboardSubsystem::GetLocalUserNumFromPlayerController(const APlayerCo
 
     return LocalPlayer->GetControllerId();
 }
-
+// @@@SNIPEND
 
 #pragma region Module.6 Function Definitions
 
+// @@@SNIPSTART LeaderboardSubsystem.cpp-GetRankings
 void ULeaderboardSubsystem::GetRankings(const APlayerController* PC, const FString& LeaderboardCode, const int32 ResultLimit, const FOnGetLeaderboardRankingComplete& OnComplete)
 {
     if (!ensure(LeaderboardInterface.IsValid()) || !ensure(UserInterface.IsValid()))
@@ -92,7 +96,9 @@ void ULeaderboardSubsystem::GetRankings(const APlayerController* PC, const FStri
     OnLeaderboardReadCompleteDelegateHandle = LeaderboardInterface->AddOnLeaderboardReadCompleteDelegate_Handle(FOnLeaderboardReadCompleteDelegate::CreateUObject(this, &ThisClass::OnGetRankingsComplete, LocalUserNum, LeaderboardObj, OnComplete));
     LeaderboardInterface->ReadLeaderboardsAroundRank(0, ResultLimit, LeaderboardObj);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART LeaderboardSubsystem.cpp-GetPlayerRanking
 void ULeaderboardSubsystem::GetPlayerRanking(const APlayerController* PC, const FString& LeaderboardCode, const FOnGetLeaderboardRankingComplete& OnComplete)
 {
     if (!ensure(LeaderboardInterface.IsValid()) || !ensure(UserInterface.IsValid()))
@@ -123,7 +129,9 @@ void ULeaderboardSubsystem::GetPlayerRanking(const APlayerController* PC, const 
     OnLeaderboardReadCompleteDelegateHandle = LeaderboardInterface->AddOnLeaderboardReadCompleteDelegate_Handle(FOnLeaderboardReadCompleteDelegate::CreateUObject(this, &ThisClass::OnGetRankingsComplete, LocalUserNum, LeaderboardObj, OnComplete));
     LeaderboardInterface->ReadLeaderboards(TPartyMemberArray{ PlayerNetId->AsShared() }, LeaderboardObj);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART LeaderboardSubsystem.cpp-OnGetRankingsComplete
 void ULeaderboardSubsystem::OnGetRankingsComplete(bool bWasSuccessful, const int32 LocalUserNum, const FOnlineLeaderboardReadRef LeaderboardObj, const FOnGetLeaderboardRankingComplete OnComplete)
 {
     ensure(UserInterface);
@@ -149,68 +157,80 @@ void ULeaderboardSubsystem::OnGetRankingsComplete(bool bWasSuccessful, const int
     }
 
     // Query leaderboard members' user information.
-    OnQueryUserInfoCompleteDelegateHandle = UserInterface->AddOnQueryUserInfoCompleteDelegate_Handle(
-        LocalUserNum,
-        FOnQueryUserInfoCompleteDelegate::CreateWeakLambda(this, [this, LeaderboardObj, OnComplete](int32 LocalUserNum, bool bWasSuccessful, const TArray<FUniqueNetIdRef>& UserIds, const FString& ErrorStr)
-        {
-            if (!ensure(UserInterface)) 
-            {
-                UE_LOG_LEADERBOARD_ESSENTIALS(Warning, TEXT("Cannot get leaderboard. User Interface is not valid."));
-                return;
-            }
-            UserInterface->ClearOnQueryUserInfoCompleteDelegate_Handle(LocalUserNum, OnQueryUserInfoCompleteDelegateHandle);
-
-            if (!bWasSuccessful) 
-            {
-                UE_LOG_LEADERBOARD_ESSENTIALS(Warning, TEXT("Failed to get leaderboard with code: %s. Error: %s"), *LeaderboardObj->LeaderboardName.ToString(), *ErrorStr);
-                OnComplete.ExecuteIfBound(false, TArray<ULeaderboardRank*>());
-                return;
-            }
-
-            UE_LOG_LEADERBOARD_ESSENTIALS(Warning, TEXT("Success to get leaderboard rankings with code: %s"), *LeaderboardObj->LeaderboardName.ToString());
-
-            // Return leaderboard information along with its members' user info.
-            TArray<ULeaderboardRank*> Rankings;
-            for (const FOnlineStatsRow& Row : LeaderboardObj->Rows)
-            {
-                if (!Row.PlayerId.IsValid())
-                {
-                    continue;
-                }
-
-                // Get the member's display name.
-                const TSharedPtr<FOnlineUser> LeaderboardMember = UserInterface->GetUserInfo(LocalUserNum, Row.PlayerId->AsShared().Get());
-                const FString DisplayName = !LeaderboardMember->GetDisplayName().IsEmpty() ?
-                    LeaderboardMember->GetDisplayName() : 
-                    FText::Format(DEFAULT_LEADERBOARD_DISPLAY_NAME, FText::FromString(Row.NickName.Left(5))).ToString();
-
-                // Get the member's stat value.
-                float Score = 0;
-                if (Row.Columns.Contains(FName("AllTime_Point")))
-                {
-                    // The stat key is "AllTime_Point" if it was retrieved from FOnlineLeaderboardAccelByte::ReadLeaderboardsAroundRank().
-                    Row.Columns[FName("AllTime_Point")].GetValue(Score);
-                }
-                else if (Row.Columns.Contains(FName("Point")))
-                {
-                    // The stat key is "Point" if it was retrieved from FOnlineLeaderboardAccelByte::ReadLeaderboards()
-                    Row.Columns[FName("Point")].GetValue(Score);
-                }
-
-                // Add a new ranking object.
-                ULeaderboardRank* NewRanking = NewObject<ULeaderboardRank>();
-                NewRanking->UserId = Row.PlayerId;
-                NewRanking->Rank = Row.Rank;
-                NewRanking->DisplayName = DisplayName;
-                NewRanking->Score = Score;
-                Rankings.Add(NewRanking);
-            }
-
-            OnComplete.ExecuteIfBound(true, Rankings);
-        }
-    ));
-
-    UserInterface->QueryUserInfo(LocalUserNum, LeaderboardMembers);
+    if (UStartupSubsystem* StartupSubsystem = GetGameInstance()->GetSubsystem<UStartupSubsystem>())
+    {
+        StartupSubsystem->QueryUserInfo(
+            LocalUserNum,
+            LeaderboardMembers,
+            FOnQueryUsersInfoCompleteDelegate::CreateUObject(this, &ThisClass::OnQueryUserInfoComplete, LocalUserNum, LeaderboardObj, OnComplete));
+    }
+    else
+    {
+        OnComplete.ExecuteIfBound(false, TArray<ULeaderboardRank*>());
+    }
 }
+// @@@SNIPEND
+
+// @@@SNIPSTART LeaderboardSubsystem.cpp-OnQueryUserInfoComplete
+void ULeaderboardSubsystem::OnQueryUserInfoComplete(
+    const FOnlineError& Error,
+    const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo,
+    const int32 LocalUserNum,
+    const FOnlineLeaderboardReadRef LeaderboardObj,
+    const FOnGetLeaderboardRankingComplete OnComplete)
+{
+    if (!ensure(UserInterface))
+    {
+        UE_LOG_LEADERBOARD_ESSENTIALS(Warning, TEXT("Cannot get leaderboard. User Interface is not valid."));
+        return;
+    }
+
+    if (!Error.bSucceeded)
+    {
+        UE_LOG_LEADERBOARD_ESSENTIALS(Warning, TEXT("Failed to get leaderboard with code: %s. Error: %s"), *Error.ErrorCode, *Error.ErrorMessage.ToString());
+        OnComplete.ExecuteIfBound(false, TArray<ULeaderboardRank*>());
+        return;
+    }
+
+    UE_LOG_LEADERBOARD_ESSENTIALS(Warning, TEXT("Success to get leaderboard rankings with code: %s"), *LeaderboardObj->LeaderboardName.ToString());
+
+    // Return leaderboard information along with its members' user info.
+    TArray<ULeaderboardRank*> Rankings;
+    for (const FOnlineStatsRow& Row : LeaderboardObj->Rows)
+    {
+        if (!Row.PlayerId.IsValid())
+        {
+            continue;
+        }
+
+        // Get the member's display name.
+        const TSharedPtr<FOnlineUser> LeaderboardMember =
+            UserInterface->GetUserInfo(LocalUserNum, Row.PlayerId->AsShared().Get());
+        const FString DisplayName = !LeaderboardMember->GetDisplayName().IsEmpty() ?
+            LeaderboardMember->GetDisplayName() :
+            FText::Format(DEFAULT_LEADERBOARD_DISPLAY_NAME, FText::FromString(Row.NickName.Left(5))).ToString();
+
+        // Get the member's stat value.
+        float Score = 0.0f;
+        if (Row.Columns.Contains(FName("AllTime_Point")))
+        {
+            // The stat key is "AllTime_Point" if it was retrieved from FOnlineLeaderboardAccelByte::ReadLeaderboardsAroundRank().
+            Row.Columns[FName("AllTime_Point")].GetValue(Score);
+        }
+        else if (Row.Columns.Contains(FName("Point")))
+        {
+            // The stat key is "Point" if it was retrieved from FOnlineLeaderboardAccelByte::ReadLeaderboards()
+            Row.Columns[FName("Point")].GetValue(Score);
+        }
+
+        // Add a new ranking object.
+        ULeaderboardRank* NewRanking = NewObject<ULeaderboardRank>();
+        NewRanking->Init(Row.PlayerId, Row.Rank, DisplayName, Score);
+        Rankings.Add(NewRanking);
+    }
+
+    OnComplete.ExecuteIfBound(true, Rankings);
+}
+// @@@SNIPEND
 
 #pragma endregion

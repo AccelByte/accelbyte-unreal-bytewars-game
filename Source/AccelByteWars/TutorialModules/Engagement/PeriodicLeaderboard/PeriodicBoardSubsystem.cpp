@@ -6,6 +6,7 @@
 #include "OnlineSubsystemUtils.h"
 
 #include "Core/AccelByteRegistry.h"
+#include "TutorialModuleUtilities/StartupSubsystem.h"
 
 void UPeriodicBoardSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -36,6 +37,7 @@ void UPeriodicBoardSubsystem::Initialize(FSubsystemCollectionBase& Collection)
     }
 }
 
+// @@@SNIPSTART PeriodicBoardSubsystem.cpp-GetUniqueNetIdFromPlayerController
 FUniqueNetIdPtr UPeriodicBoardSubsystem::GetUniqueNetIdFromPlayerController(const APlayerController* PC) const
 {
     if (!ensure(PC))
@@ -51,7 +53,9 @@ FUniqueNetIdPtr UPeriodicBoardSubsystem::GetUniqueNetIdFromPlayerController(cons
 
     return LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId();
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PeriodicBoardSubsystem.cpp-GetLocalUserNumFromPlayerController
 int32 UPeriodicBoardSubsystem::GetLocalUserNumFromPlayerController(const APlayerController* PC) const
 {
     if (!PC)
@@ -67,10 +71,11 @@ int32 UPeriodicBoardSubsystem::GetLocalUserNumFromPlayerController(const APlayer
 
     return LocalPlayer->GetControllerId();
 }
-
+// @@@SNIPEND
 
 #pragma region Module.13 Function Definitions
 
+// @@@SNIPSTART PeriodicBoardSubsystem.cpp-GetPeriodicRankings
 void UPeriodicBoardSubsystem::GetPeriodicRankings(const APlayerController* PC, const FString& LeaderboardCode, const FString& CycleId, const int32 ResultLimit, const FOnGetLeaderboardRankingComplete& OnComplete)
 {
     if (!ensure(LeaderboardInterface.IsValid()) || !ensure(UserInterface.IsValid()))
@@ -94,7 +99,9 @@ void UPeriodicBoardSubsystem::GetPeriodicRankings(const APlayerController* PC, c
     OnLeaderboardReadCompleteDelegateHandle = LeaderboardInterface->AddOnLeaderboardReadCompleteDelegate_Handle(FOnLeaderboardReadCompleteDelegate::CreateUObject(this, &ThisClass::OnGetPeriodicRankingsComplete, LocalUserNum, LeaderboardObj, OnComplete));
     LeaderboardInterface->ReadLeaderboardCycleAroundRank(0, ResultLimit, CycleId, LeaderboardObj);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PeriodicBoardSubsystem.cpp-GetPlayerPeriodicRanking
 void UPeriodicBoardSubsystem::GetPlayerPeriodicRanking(const APlayerController* PC, const FString& LeaderboardCode, const FString& CycleId, const FOnGetLeaderboardRankingComplete& OnComplete)
 {
     if (!ensure(LeaderboardInterface.IsValid()) || !ensure(UserInterface.IsValid()))
@@ -125,7 +132,9 @@ void UPeriodicBoardSubsystem::GetPlayerPeriodicRanking(const APlayerController* 
     OnLeaderboardReadCompleteDelegateHandle = LeaderboardInterface->AddOnLeaderboardReadCompleteDelegate_Handle(FOnLeaderboardReadCompleteDelegate::CreateUObject(this, &ThisClass::OnGetPeriodicRankingsComplete, LocalUserNum, LeaderboardObj, OnComplete));
     LeaderboardInterface->ReadLeaderboardsCycle(TPartyMemberArray{ PlayerNetId->AsShared() }, LeaderboardObj, CycleId);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PeriodicBoardSubsystem.cpp-GetLeaderboardCycleIdByName
 void UPeriodicBoardSubsystem::GetLeaderboardCycleIdByName(const FString& InCycleName, const EAccelByteCycle& InCycleType, const FOnGetLeaderboardsCycleIdComplete& OnComplete)
 {
     AccelByte::FRegistry::Statistic.GetListStatCycleConfigs(
@@ -160,8 +169,14 @@ void UPeriodicBoardSubsystem::GetLeaderboardCycleIdByName(const FString& InCycle
             })
         );
 }
+// @@@SNIPEND
 
-void UPeriodicBoardSubsystem::OnGetPeriodicRankingsComplete(bool bWasSuccessful, const int32 LocalUserNum, const FOnlineLeaderboardReadRef LeaderboardObj, const FOnGetLeaderboardRankingComplete OnComplete)
+// @@@SNIPSTART PeriodicBoardSubsystem.cpp-OnGetPeriodicRankingsComplete
+void UPeriodicBoardSubsystem::OnGetPeriodicRankingsComplete(
+    bool bWasSuccessful,
+    const int32 LocalUserNum,
+    const FOnlineLeaderboardReadRef LeaderboardObj,
+    const FOnGetLeaderboardRankingComplete OnComplete)
 {
     ensure(UserInterface);
     ensure(LeaderboardInterface);
@@ -186,68 +201,87 @@ void UPeriodicBoardSubsystem::OnGetPeriodicRankingsComplete(bool bWasSuccessful,
     }
 
     // Query periodic leaderboard members' user information.
-    OnQueryUserInfoCompleteDelegateHandle = UserInterface->AddOnQueryUserInfoCompleteDelegate_Handle(
-        LocalUserNum,
-        FOnQueryUserInfoCompleteDelegate::CreateWeakLambda(this, [this, LeaderboardObj, OnComplete](int32 LocalUserNum, bool bWasSuccessful, const TArray<FUniqueNetIdRef>& UserIds, const FString& ErrorStr)
-        {
-            if (!ensure(UserInterface))
-            {
-                UE_LOG_PERIODIC_LEADERBOARD(Warning, TEXT("Cannot get periodic leaderboard. User Interface is not valid."));
-                return;
-            }
-            UserInterface->ClearOnQueryUserInfoCompleteDelegate_Handle(LocalUserNum, OnQueryUserInfoCompleteDelegateHandle);
-
-            if (!bWasSuccessful)
-            {
-                UE_LOG_PERIODIC_LEADERBOARD(Warning, TEXT("Failed to get periodic leaderboard with code: %s. Error: %s"), *LeaderboardObj->LeaderboardName.ToString(), *ErrorStr);
-                OnComplete.ExecuteIfBound(false, TArray<ULeaderboardRank*>());
-                return;
-            }
-
-            UE_LOG_PERIODIC_LEADERBOARD(Warning, TEXT("Success to get periodic leaderboard rankings with code: %s"), *LeaderboardObj->LeaderboardName.ToString());
-
-            // Return periodic leaderboard information along with its members' user info.
-            TArray<ULeaderboardRank*> Rankings;
-            for (const FOnlineStatsRow& Row : LeaderboardObj->Rows)
-            {
-                if (!Row.PlayerId.IsValid())
-                {
-                    continue;
-                }
-
-                // Get the member's display name.
-                const TSharedPtr<FOnlineUser> LeaderboardMember = UserInterface->GetUserInfo(LocalUserNum, Row.PlayerId->AsShared().Get());
-                const FString DisplayName = !LeaderboardMember->GetDisplayName().IsEmpty() ?
-                    LeaderboardMember->GetDisplayName() :
-                    FText::Format(DEFAULT_LEADERBOARD_DISPLAY_NAME, FText::FromString(Row.NickName.Left(5))).ToString();
-
-                // Get the member's stat value.
-                float Score = 0;
-                if (Row.Columns.Contains(FName("Cycle_Point")))
-                {
-                    // The stat key is "Cycle_Point" if it was retrieved from FOnlineLeaderboardAccelByte::ReadLeaderboardCycleAroundRank().
-                    Row.Columns[FName("Cycle_Point")].GetValue(Score);
-                }
-                else if (Row.Columns.Contains(FName("Point")))
-                {
-                    // The stat key is "Point" if it was retrieved from FOnlineLeaderboardAccelByte::ReadLeaderboardsCycle()
-                    Row.Columns[FName("Point")].GetValue(Score);
-                }
-
-                // Add a new ranking object.
-                ULeaderboardRank* NewRanking = NewObject<ULeaderboardRank>();
-                NewRanking->UserId = Row.PlayerId;
-                NewRanking->Rank = Row.Rank;
-                NewRanking->DisplayName = DisplayName;
-                NewRanking->Score = Score;
-                Rankings.Add(NewRanking);
-            }
-
-            OnComplete.ExecuteIfBound(true, Rankings);
-        }
-    ));
-
-    UserInterface->QueryUserInfo(LocalUserNum, LeaderboardMembers);
+    if (UStartupSubsystem* StartupSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UStartupSubsystem>())
+    {
+        StartupSubsystem->QueryUserInfo(
+            LocalUserNum,
+            LeaderboardMembers,
+            FOnQueryUsersInfoCompleteDelegate::CreateUObject(this, &ThisClass::OnQueryUserInfoComplete, LocalUserNum, LeaderboardObj, OnComplete));
+    }
+    else
+    {
+        UE_LOG_PERIODIC_LEADERBOARD(Warning, TEXT("Startup subsystem is invalid"));
+        OnComplete.ExecuteIfBound(false, TArray<ULeaderboardRank*>());
+    }
 }
+// @@@SNIPEND
+
+// @@@SNIPSTART PeriodicBoardSubsystem.cpp-OnQueryUserInfoComplete
+void UPeriodicBoardSubsystem::OnQueryUserInfoComplete(
+    const FOnlineError& Error,
+    const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo,
+    const int32 LocalUserNum,
+    const FOnlineLeaderboardReadRef LeaderboardObj,
+    const FOnGetLeaderboardRankingComplete OnComplete)
+{
+    if (!ensure(UserInterface))
+    {
+        UE_LOG_PERIODIC_LEADERBOARD(Warning, TEXT("Cannot get periodic leaderboard. User Interface is not valid."));
+        return;
+    }
+
+    if (!Error.bSucceeded)
+    {
+        UE_LOG_PERIODIC_LEADERBOARD(
+            Warning,
+            TEXT("Failed to get periodic leaderboard with code: %s. Error: %s"),
+            *LeaderboardObj->LeaderboardName.ToString(), *Error.ErrorMessage.ToString());
+        OnComplete.ExecuteIfBound(false, TArray<ULeaderboardRank*>());
+        return;
+    }
+
+    UE_LOG_PERIODIC_LEADERBOARD(
+        Warning,
+        TEXT("Success to get periodic leaderboard rankings with code: %s"),
+        *LeaderboardObj->LeaderboardName.ToString());
+
+    // Return periodic leaderboard information along with its members' user info.
+    TArray<ULeaderboardRank*> Rankings;
+    for (const FOnlineStatsRow& Row : LeaderboardObj->Rows)
+    {
+        if (!Row.PlayerId.IsValid())
+        {
+            continue;
+        }
+
+        // Get the member's display name.
+        const TSharedPtr<FOnlineUser> LeaderboardMember = UserInterface->GetUserInfo(
+            LocalUserNum, Row.PlayerId->AsShared().Get());
+        const FString DisplayName = !LeaderboardMember->GetDisplayName().IsEmpty() ?
+            LeaderboardMember->GetDisplayName() : 
+            FText::Format(DEFAULT_LEADERBOARD_DISPLAY_NAME, FText::FromString(Row.NickName.Left(5))).ToString();
+
+        // Get the member's stat value.
+        float Score = 0;
+        if (Row.Columns.Contains(FName("Cycle_Point")))
+        {
+            // The stat key is "Cycle_Point" if it was retrieved from FOnlineLeaderboardAccelByte::ReadLeaderboardCycleAroundRank().
+            Row.Columns[FName("Cycle_Point")].GetValue(Score);
+        }
+        else if (Row.Columns.Contains(FName("Point")))
+        {
+            // The stat key is "Point" if it was retrieved from FOnlineLeaderboardAccelByte::ReadLeaderboardsCycle()
+            Row.Columns[FName("Point")].GetValue(Score);
+        }
+
+        // Add a new ranking object.
+        ULeaderboardRank* NewRanking = NewObject<ULeaderboardRank>();
+        NewRanking->Init(Row.PlayerId, Row.Rank, DisplayName, Score);
+        Rankings.Add(NewRanking);
+    }
+
+    OnComplete.ExecuteIfBound(true, Rankings);
+}
+// @@@SNIPEND
 
 #pragma endregion

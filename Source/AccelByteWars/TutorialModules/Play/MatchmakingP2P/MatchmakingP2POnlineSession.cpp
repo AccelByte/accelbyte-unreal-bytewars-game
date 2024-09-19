@@ -73,53 +73,6 @@ void UMatchmakingP2POnlineSession::OnLeaveSessionComplete(FName SessionName, boo
 }
 
 #pragma region "Game Session Essentials"
-void UMatchmakingP2POnlineSession::QueryUserInfo(
-	const int32 LocalUserNum,
-	const TArray<FUniqueNetIdRef>& UserIds, const FOnQueryUsersInfoComplete& OnComplete)
-{
-	UE_LOG_MATCHMAKINGP2P(Verbose, TEXT("called"))
-
-	// safety
-	if (!GetUserInt())
-	{
-		UE_LOG_MATCHMAKINGP2P(Warning, TEXT("User interface null"))
-		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, OnComplete]()
-		{
-			OnComplete.ExecuteIfBound(false, {});
-		}));
-		return;
-	}
-
-	TArray<FUserOnlineAccountAccelByte*> UserInfo;
-	if (RetrieveUserInfoCache(UserIds, UserInfo))
-	{
-		UE_LOG_MATCHMAKINGP2P(Log, TEXT("Cache found"))
-		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, UserInfo, OnComplete]()
-		{
-			OnComplete.ExecuteIfBound(true, UserInfo);
-		}));
-	}
-	// Some data does not exist in cache, query everything
-	else
-	{
-		// Bind delegate
-		OnQueryUserInfoCompleteDelegateHandle = GetUserInt()->OnQueryUserInfoCompleteDelegates->AddWeakLambda(
-			this, [OnComplete, this](
-				int32 LocalUserNum,
-				bool bSucceeded,
-				const TArray<FUniqueNetIdRef>& UserIds,
-				const FString& ErrorMessage)
-			{
-				OnQueryUserInfoComplete(LocalUserNum, bSucceeded, UserIds, ErrorMessage, OnComplete);
-			});
-
-		if (!GetUserInt()->QueryUserInfo(LocalUserNum, UserIds))
-		{
-			OnQueryUserInfoComplete(LocalUserNum, false, UserIds, "", OnComplete);
-		}
-	}
-}
-
 bool UMatchmakingP2POnlineSession::TravelToSession(const FName SessionName)
 {
 	UE_LOG_MATCHMAKINGP2P(Verbose, TEXT("called"))
@@ -199,45 +152,6 @@ bool UMatchmakingP2POnlineSession::TravelToSession(const FName SessionName)
 	}
 
 	return true;
-}
-
-void UMatchmakingP2POnlineSession::OnQueryUserInfoComplete(
-	int32 LocalUserNum,
-	bool bSucceeded,
-	const TArray<FUniqueNetIdRef>& UserIds,
-	const FString& ErrorMessage, const FOnQueryUsersInfoComplete& OnComplete)
-{
-	UE_LOG_MATCHMAKINGP2P(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
-
-	// reset delegate handle
-	GetUserInt()->OnQueryUserInfoCompleteDelegates->Remove(OnQueryUserInfoCompleteDelegateHandle);
-	OnQueryUserInfoCompleteDelegateHandle.Reset();
-
-	if (bSucceeded)
-	{
-		// Cache the result.
-		CacheUserInfo(LocalUserNum, UserIds);
-
-		// Retrieve the result from cache.
-		TArray<FUserOnlineAccountAccelByte*> OnlineUsers;
-		RetrieveUserInfoCache(UserIds, OnlineUsers);
-
-		// Only include valid users info only.
-		OnlineUsers.RemoveAll([](const FUserOnlineAccountAccelByte* Temp)
-		{
-			return !Temp || !Temp->GetUserId()->IsValid();
-		});
-
-		UE_LOG_MATCHMAKINGP2P(Log,
-			TEXT("Queried users info: %d, found valid users info: %d"),
-			UserIds.Num(), OnlineUsers.Num());
-
-		OnComplete.ExecuteIfBound(true, OnlineUsers);
-	}
-	else
-	{
-		OnComplete.ExecuteIfBound(false, {});
-	}
 }
 
 void UMatchmakingP2POnlineSession::OnSessionServerUpdateReceived(FName SessionName)
