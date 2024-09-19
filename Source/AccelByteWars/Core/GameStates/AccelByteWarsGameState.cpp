@@ -6,6 +6,9 @@
 #include "AccelByteWarsGameState.h"
 
 #include "Core/System/AccelByteWarsGameInstance.h"
+#include "AccelByteWars/Core/Utilities/AccelByteWarsUtility.h"
+#include "Core/UI/AccelByteWarsBaseUI.h"
+#include "Core/UI/Components/Prompt/GUICheat/GUICheatModels.h"
 #include "Net/UnrealNetwork.h"
 
 DEFINE_LOG_CATEGORY(LogAccelByteWarsGameState);
@@ -21,8 +24,23 @@ void AAccelByteWarsGameState::GetLifetimeReplicatedProps(TArray<FLifetimePropert
 	DOREPLIFETIME(ThisClass, SimulateServerCrashCountdown);
 }
 
+void AAccelByteWarsGameState::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// Refresh Tutorial Module metadata based on the default object.
+	if (const AAccelByteWarsGameState* DefaultObj = Cast<AAccelByteWarsGameState>(GetClass()->GetDefaultObject()))
+	{
+		GUICheatWidgetEntries = DefaultObj->GUICheatWidgetEntries;
+	}
+
+	InitializeGUICheatWidgetEntries();
+}
+
 void AAccelByteWarsGameState::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	DeInitializeGUICheatWidgetEntries();
+
 	Super::EndPlay(EndPlayReason);
 
 	// backup Teams data to GameInstance
@@ -98,7 +116,17 @@ void AAccelByteWarsGameState::AssignCustomGameMode(const FOnlineSessionSettings*
 		return;
 	}
 
+	GAMESTATE_LOG(Log, TEXT("Assigning custom game mode"));
+
 	FGameModeData Custom;
+
+	if (bool bIsCustomGame; Setting->Get(GAMESETUP_IsCustomGame, bIsCustomGame))
+	{
+		if (bIsCustomGame)
+		{
+			Custom.CodeName = TEXT("CustomGame");
+		}
+	}
 
 	if (FString GameModeTypeString; Setting->Get(GAMESETUP_GameModeType, GameModeTypeString))
 	{
@@ -115,82 +143,82 @@ void AAccelByteWarsGameState::AssignCustomGameMode(const FOnlineSessionSettings*
 		Custom.SetNetworkTypeWithString(NetworkTypeString);
 	}
 
-	if (int32 IsTeamGameString; Setting->Get(GAMESETUP_IsTeamGame, IsTeamGameString))
+	if (bool bIsTeamGame; Setting->Get(GAMESETUP_IsTeamGame, bIsTeamGame))
 	{
-		Custom.bIsTeamGame = static_cast<bool>(IsTeamGameString);
+		Custom.bIsTeamGame = bIsTeamGame;
 	}
 
-	if (int32 MaxTeamNum; Setting->Get(GAMESETUP_MaxTeamNum, MaxTeamNum))
+	if (double MaxTeamNum; Setting->Get(GAMESETUP_MaxTeamNum, MaxTeamNum))
 	{
 		Custom.MaxTeamNum = MaxTeamNum;
 	}
 
-	if (int32 MaxPlayers; Setting->Get(GAMESETUP_MaxPlayers, MaxPlayers))
+	if (double MaxPlayers; Setting->Get(GAMESETUP_MaxPlayers, MaxPlayers))
 	{
 		Custom.MaxPlayers = MaxPlayers;
 	}
 
-	if (int32 MatchTime; Setting->Get(GAMESETUP_MatchTime, MatchTime))
+	if (double MatchTime; Setting->Get(GAMESETUP_MatchTime, MatchTime))
 	{
 		Custom.MatchTime = MatchTime;
 	}
 
-	if (int32 StartGameCountdown; Setting->Get(GAMESETUP_StartGameCountdown, StartGameCountdown))
+	if (double StartGameCountdown; Setting->Get(GAMESETUP_StartGameCountdown, StartGameCountdown))
 	{
 		Custom.StartGameCountdown = StartGameCountdown;
 	}
 
-	if (int32 GameEndsShutdownCountdown; Setting->Get(GAMESETUP_GameEndsShutdownCountdown, GameEndsShutdownCountdown))
+	if (double GameEndsShutdownCountdown; Setting->Get(GAMESETUP_GameEndsShutdownCountdown, GameEndsShutdownCountdown))
 	{
 		Custom.GameEndsShutdownCountdown = GameEndsShutdownCountdown;
 	}
 
-	if (int32 MinimumTeamCountToPreventAutoShutdown; Setting->Get(GAMESETUP_MinimumTeamCountToPreventAutoShutdown, MinimumTeamCountToPreventAutoShutdown))
+	if (double MinimumTeamCountToPreventAutoShutdown; Setting->Get(GAMESETUP_MinimumTeamCountToPreventAutoShutdown, MinimumTeamCountToPreventAutoShutdown))
 	{
 		Custom.MinimumTeamCountToPreventAutoShutdown = MinimumTeamCountToPreventAutoShutdown;
 	}
 
-	if (int32 NotEnoughPlayerShutdownCountdown; Setting->Get(GAMESETUP_NotEnoughPlayerShutdownCountdown, NotEnoughPlayerShutdownCountdown))
+	if (double NotEnoughPlayerShutdownCountdown; Setting->Get(GAMESETUP_NotEnoughPlayerShutdownCountdown, NotEnoughPlayerShutdownCountdown))
 	{
 		Custom.NotEnoughPlayerShutdownCountdown = NotEnoughPlayerShutdownCountdown;
 	}
 
-	if (int32 ScoreLimit; Setting->Get(GAMESETUP_ScoreLimit, ScoreLimit))
+	if (double ScoreLimit; Setting->Get(GAMESETUP_ScoreLimit, ScoreLimit))
 	{
 		Custom.ScoreLimit = ScoreLimit;
 	}
 
-	if (int32 FiredMissilesLimit; Setting->Get(GAMESETUP_FiredMissilesLimit, FiredMissilesLimit))
+	if (double FiredMissilesLimit; Setting->Get(GAMESETUP_FiredMissilesLimit, FiredMissilesLimit))
 	{
 		Custom.FiredMissilesLimit = FiredMissilesLimit;
 	}
 
-	if (int32 StartingLives; Setting->Get(GAMESETUP_StartingLives, StartingLives))
+	if (double StartingLives; Setting->Get(GAMESETUP_StartingLives, StartingLives))
 	{
 		Custom.StartingLives = StartingLives;
 	}
 
-	if (int32 BaseScoreForKill; Setting->Get(GAMESETUP_BaseScoreForKill, BaseScoreForKill))
+	if (double BaseScoreForKill; Setting->Get(GAMESETUP_BaseScoreForKill, BaseScoreForKill))
 	{
 		Custom.BaseScoreForKill = BaseScoreForKill;
 	}
 
-	if (int32 TimeScoreIncrement; Setting->Get(GAMESETUP_TimeScoreIncrement, TimeScoreIncrement))
+	if (double TimeScoreIncrement; Setting->Get(GAMESETUP_TimeScoreIncrement, TimeScoreIncrement))
 	{
 		Custom.TimeScoreIncrement = TimeScoreIncrement;
 	}
 
-	if (int32 TimeScoreDeltaTime; Setting->Get(GAMESETUP_TimeScoreDeltaTime, TimeScoreDeltaTime))
+	if (double TimeScoreDeltaTime; Setting->Get(GAMESETUP_TimeScoreDeltaTime, TimeScoreDeltaTime))
 	{
 		Custom.TimeScoreDeltaTime = TimeScoreDeltaTime;
 	}
 
-	if (int32 SkimInitialScore; Setting->Get(GAMESETUP_SkimInitialScore, SkimInitialScore))
+	if (double SkimInitialScore; Setting->Get(GAMESETUP_SkimInitialScore, SkimInitialScore))
 	{
 		Custom.SkimInitialScore = SkimInitialScore;
 	}
 
-	if (int32 SkimScoreDeltaTime; Setting->Get(GAMESETUP_SkimScoreDeltaTime, SkimScoreDeltaTime))
+	if (double SkimScoreDeltaTime; Setting->Get(GAMESETUP_SkimScoreDeltaTime, SkimScoreDeltaTime))
 	{
 		Custom.SkimScoreDeltaTime = SkimScoreDeltaTime;
 	}
@@ -242,12 +270,42 @@ TArray<int32> AAccelByteWarsGameState::GetEmptyTeamIds() const
 	return EmptyTeamIds;
 }
 
+int32 AAccelByteWarsGameState::GetWinnerTeamId() const
+{
+	int32 WinnerTeamId = INDEX_NONE;
+	int32 HighestScore = INDEX_NONE;
+
+	for (const FGameplayTeamData& Team : Teams)
+	{
+		// Empty team does not count.
+		if (Team.TeamMembers.IsEmpty())
+		{
+			continue;
+		}
+
+		// Get winner team with highest score.
+		if (Team.GetTeamScore() > HighestScore)
+		{
+			HighestScore = Team.GetTeamScore();
+			WinnerTeamId = Team.TeamId;
+		}
+		// If multiple team has the same highest score, it's a draw.
+		else if (Team.GetTeamScore() == HighestScore)
+		{
+			WinnerTeamId = INDEX_NONE;
+		}
+	}
+
+	return WinnerTeamId;
+}
+
 bool AAccelByteWarsGameState::GetTeamDataByTeamId(
 	const int32 TeamId,
 	FGameplayTeamData& OutTeamData,
 	float& OutTeamScore,
 	int32& OutTeamLivesLeft,
-	int32& OutTeamKillCount)
+	int32& OutTeamKillCount,
+	int32& OutTeamDeaths)
 {
 	for (const FGameplayTeamData& Team : Teams)
 	{
@@ -257,11 +315,31 @@ bool AAccelByteWarsGameState::GetTeamDataByTeamId(
 			OutTeamScore = OutTeamData.GetTeamScore();
 			OutTeamLivesLeft = OutTeamData.GetTeamLivesLeft();
 			OutTeamKillCount = OutTeamData.GetTeamKillCount();
-
+			OutTeamDeaths = OutTeamData.GetTeamDeaths();
 			return true;
 		}
 	}
 	return false;
+}
+
+void AAccelByteWarsGameState::GetHighestTeamData(
+	float& OutTeamScore,
+	int32& OutTeamLivesLeft,
+	int32& OutTeamKillCount,
+	int32& OutTeamDeaths)
+{
+	OutTeamScore = 0;
+	OutTeamLivesLeft = 0;
+	OutTeamKillCount = 0;
+	OutTeamDeaths = 0;
+
+	for (const FGameplayTeamData& Team : Teams)
+	{
+		OutTeamScore = OutTeamScore < Team.GetTeamScore() ? Team.GetTeamScore() : OutTeamScore;
+		OutTeamLivesLeft = OutTeamLivesLeft < Team.GetTeamLivesLeft() ? Team.GetTeamLivesLeft() : OutTeamLivesLeft;
+		OutTeamKillCount = OutTeamKillCount < Team.GetTeamKillCount() ? Team.GetTeamKillCount() : OutTeamKillCount;
+		OutTeamDeaths = OutTeamDeaths < Team.GetTeamDeaths() ? Team.GetTeamDeaths() : OutTeamDeaths;
+	}
 }
 
 bool AAccelByteWarsGameState::GetPlayerDataById(
@@ -310,6 +388,7 @@ bool AAccelByteWarsGameState::AddPlayerToTeam(
 	const int32 ControllerId,
 	const float Score,
 	const int32 KillCount,
+	const int32 Deaths,
 	const FString PlayerName,
 	const FString AvatarURL,
 	const bool bForce)
@@ -321,7 +400,7 @@ bool AAccelByteWarsGameState::AddPlayerToTeam(
 	}
 
 	// check if player have been added to any team
-	if (FGameplayPlayerData PlayerDataTemp; !bForce && GetPlayerDataById(UniqueNetId,PlayerDataTemp, ControllerId))
+	if (FGameplayPlayerData PlayerDataTemp; !bForce && GetPlayerDataById(UniqueNetId, PlayerDataTemp, ControllerId))
 	{
 		GAMESTATE_LOG(Warning, TEXT("AddPlayerToTeam: Player data found. Cancelling operation"));
 		return false;
@@ -347,16 +426,47 @@ bool AAccelByteWarsGameState::AddPlayerToTeam(
 		}
 	}
 
+	// Set default player name if it is empty.
+	FString FinalPlayerName = PlayerName;
+	if (PlayerName.IsEmpty()) 
+	{
+		// Set default player name based on the player index in the teams.
+		if (GetNetMode() == ENetMode::NM_Standalone) 
+		{
+			int32 PlayerIndex = TargetTeam->TeamMembers.Num();
+			for (const FGameplayTeamData& Team : Teams)
+			{
+				if (Team.TeamId == TeamId)
+				{
+					break;
+				}
+				PlayerIndex += Team.TeamMembers.Num();
+			}
+
+			FinalPlayerName = FText::Format(DEFAULT_PLAYER_NAME, PlayerIndex + 1).ToString();
+		}
+		// Set default display name from assigned delegate.
+		else if (OnSetDefaultDisplayName.IsBound() && UniqueNetId.IsValid()) 
+		{
+			FinalPlayerName = OnSetDefaultDisplayName.Execute(UniqueNetId.GetUniqueNetId().ToSharedRef().Get());
+		}
+		else 
+		{
+			GAMESTATE_LOG(Warning, TEXT("Failed to set default display name. No handler is valid."));
+		}
+	}
+
 	// Add player's data to the team
 	OutLives = OutLives == INDEX_NONE ? GameSetup.StartingLives : OutLives;
 	TargetTeam->TeamMembers.Add(FGameplayPlayerData{
 		UniqueNetId,
 		ControllerId,
-		PlayerName,
+		FinalPlayerName,
 		AvatarURL,
 		TeamId,
 		Score,
 		KillCount,
+		Deaths,
 		OutLives
 	});
 
@@ -403,5 +513,58 @@ void AAccelByteWarsGameState::RemoveEmptyTeam()
 	for (const FGameplayTeamData& ToRemove : TeamDataToRemove)
 	{
 		Teams.Remove(ToRemove);
+	}
+}
+
+void AAccelByteWarsGameState::InitializeGUICheatWidgetEntries()
+{
+	if (!AccelByteWarsUtility::GetFlagValueOrDefault(FLAG_GUI_CHEAT, FLAG_GUI_CHEAT_SECTION, true))
+	{
+		return;
+	}
+
+	UAccelByteWarsBaseUI* BaseUI = GameInstance->GetBaseUIWidget();
+	if (!BaseUI)
+	{
+		return;
+	}
+
+	// Add entry
+	for (UGUICheatWidgetEntry* Entry : GUICheatWidgetEntries)
+	{
+		if (!Entry)
+		{
+			GAMESTATE_LOG(Warning, TEXT("GUICheat widget entry is invalid"))
+			continue;
+		}
+
+		BaseUI->AddGUICheatEntry(Entry);
+	}
+}
+
+void AAccelByteWarsGameState::DeInitializeGUICheatWidgetEntries() const
+{
+	if (!AccelByteWarsUtility::GetFlagValueOrDefault(FLAG_GUI_CHEAT, FLAG_GUI_CHEAT_SECTION, true))
+	{
+		return;
+	}
+
+	if (IsUnreachable())
+	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot deinitialize GUI Cheat as the widget begin to tear down."));
+		return;
+	}
+
+	UAccelByteWarsBaseUI* BaseUI = GameInstance->GetBaseUIWidget(false);
+	if (!BaseUI)
+	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot deinitialize GUI Cheat as Base UI is invalid."));
+		return;
+	}
+
+	// Remove entries
+	for (UGUICheatWidgetEntry* Entry : GUICheatWidgetEntries)
+	{
+		BaseUI->RemoveGUICheatEntry(Entry);
 	}
 }

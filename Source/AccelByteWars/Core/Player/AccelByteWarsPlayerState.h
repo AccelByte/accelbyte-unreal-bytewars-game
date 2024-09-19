@@ -57,6 +57,9 @@ public:
 	int32 KillCount = 0;
 
 	UPROPERTY(BlueprintReadWrite, Category = Attributes, Replicated)
+	int32 Deaths = 0;
+
+	UPROPERTY(BlueprintReadWrite, Category = Attributes, Replicated)
 	int32 NumLivesLeft = INDEX_NONE;
 
 	UFUNCTION()

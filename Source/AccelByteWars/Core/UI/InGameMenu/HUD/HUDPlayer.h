@@ -15,7 +15,7 @@ class ACCELBYTEWARS_API AHUDPlayer : public AHUD
 	GENERATED_BODY()
 
 public:
-	UFUNCTION(BlueprintImplementableEvent, Category = AccelByteWars)
-		void UpdatePowerBarUI(FVector2D NewPosition, FLinearColor InColor);
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = AccelByteWars)
+	void UpdatePowerBarUI(FVector2D NewPosition, FLinearColor InColor);
 	
 };

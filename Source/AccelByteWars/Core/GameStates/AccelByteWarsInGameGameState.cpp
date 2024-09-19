@@ -68,3 +68,8 @@ bool AAccelByteWarsInGameGameState::HasGameEnded() const
 
 	return bEnded;
 }
+
+void AAccelByteWarsInGameGameState::MulticastOnPlayerDie_Implementation(const AAccelByteWarsPlayerState* DeathPlayer, const FVector DeathLocation, const AAccelByteWarsPlayerState* Killer)
+{
+	OnPlayerDieDelegate.Broadcast(DeathPlayer, DeathLocation, Killer);
+}

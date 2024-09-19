@@ -6,7 +6,6 @@
 
 #include "CoreMinimal.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
-#include "Core/UI/Components/Prompt/PushNotification/PushNotificationModels.h"
 #include "PushNotificationWidget.generated.h"
 
 class UCommonButtonBase;
@@ -18,8 +17,8 @@ class ACCELBYTEWARS_API UPushNotificationWidget : public UAccelByteWarsActivatab
 	GENERATED_BODY()
 	
 public:
-	void PushNotification(UPushNotification* Notification);
-	void RemoveNotification(UPushNotification* Notification);
+	void PushNotification(UObject* Notification);
+	void RemoveNotification(UObject* Notification);
 	void DismissAllNotifications();
 
 protected:
@@ -27,12 +26,12 @@ protected:
 	virtual void NativeOnDeactivated() override;
 
 	void TryPushPendingNotifications();
-	void OnNotificationLifeTimeEnds(UPushNotification* Notification);
+	void OnNotificationLifeTimeEnds(UObject* Notification);
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UListView* Lv_PushNotification;
 
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_Dismiss;
 
 	UPROPERTY(EditDefaultsOnly)
@@ -41,9 +40,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	uint32 MaxNotificationStack = 5;
 
-	UPROPERTY()
-	TArray<UPushNotification*> PendingNotifications;
+	UPROPERTY(EditDefaultsOnly)
+	bool bRequireWidgetActivation = true;
 
 	UPROPERTY()
-	TMap<UPushNotification*, FTimerHandle> NotificationTimers;
+	TArray<UObject*> PendingNotifications;
+
+	UPROPERTY()
+	TMap<UObject*, FTimerHandle> NotificationTimers;
 };

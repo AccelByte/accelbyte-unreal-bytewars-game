@@ -6,6 +6,7 @@
 #include "Blueprint/WidgetBlueprintLibrary.h"
 #include "Runtime/ImageWrapper/Public/IImageWrapperModule.h"
 #include "Runtime/Online/HTTP/Public/Http.h"
+#include "Engine/Classes/GameFramework/PlayerState.h"
 
 const TMap<FString, EImageFormat> AccelByteWarsUtility::ImageFormatMap =
 {
@@ -160,4 +161,76 @@ bool AccelByteWarsUtility::IsUseVersionChecker()
 	}
 
 	return bUseVersionChecker;
+}
+
+int32 AccelByteWarsUtility::GetControllerId(const APlayerState* PlayerState)
+{
+	int32 ControllerId = 0;
+	if (const APlayerController* PC = PlayerState->GetPlayerController())
+	{
+		if (const ULocalPlayer* LP = PC->GetLocalPlayer())
+		{
+			ControllerId = LP->GetLocalPlayerIndex();
+		}
+	}
+	return ControllerId;
+}
+
+int32 AccelByteWarsUtility::GetLocalUserNum(const APlayerController* PC)
+{
+	int32 LocalUserNum = 0;
+	if (PC)
+	{
+		if (const ULocalPlayer* LP = PC->GetLocalPlayer())
+		{
+			LocalUserNum = LP->GetControllerId();
+		}
+	}
+	return LocalUserNum;
+}
+
+FUniqueNetIdPtr AccelByteWarsUtility::GetUserId(const APlayerController* PC)
+{
+	FUniqueNetIdPtr UniqueNetId = nullptr;
+	if (PC)
+	{
+		if (const ULocalPlayer* LP = PC->GetLocalPlayer())
+		{
+			UniqueNetId = LP->GetPreferredUniqueNetId().GetUniqueNetId();
+		}
+	}
+	return UniqueNetId;
+}
+
+bool AccelByteWarsUtility::GetFlagValueOrDefault(
+	const FString& Keyword,
+	const FString& ConfigSectionKeyword,
+	const bool DefaultValue)
+{
+	bool bIsActive = DefaultValue;
+
+	// Check launch param
+	const FString CmdArgs = FCommandLine::Get();
+	const FString CmdKeyword = FString::Printf(TEXT("-%s="), *Keyword);
+	if (CmdArgs.Contains(*CmdKeyword, ESearchCase::IgnoreCase))
+	{
+		FString ValueInString = TEXT("");
+		FParse::Value(*CmdArgs, *CmdKeyword, ValueInString);
+
+		if (ValueInString.Equals(TEXT("TRUE"), ESearchCase::IgnoreCase))
+		{
+			bIsActive = true;
+		}
+		else if (ValueInString.Equals(TEXT("FALSE"), ESearchCase::IgnoreCase))
+		{
+			bIsActive = false;
+		}
+	}
+	// Check DefaultEngine.ini
+	else
+	{
+		bIsActive = GConfig->GetBoolOrDefault(*ConfigSectionKeyword, *Keyword, bIsActive, GEngineIni);
+	}
+
+	return bIsActive;
 }

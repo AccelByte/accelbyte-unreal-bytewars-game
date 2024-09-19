@@ -11,6 +11,7 @@
 #include "HUDWidget.generated.h"
 
 class UHUDWidgetEntry;
+class UPushNotificationWidget;
 class AAccelByteWarsInGameGameState;
 
 UCLASS()
@@ -81,6 +82,12 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCountdownWidget* Widget_SimulateServerCrashCountdown;
+	
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UTextBlock* Text_Spectating;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UPushNotificationWidget* W_KillFeed;
 
 	UPROPERTY()
 	AAccelByteWarsInGameGameState* ByteWarsGameState;
@@ -121,7 +128,15 @@ private:
 	UFUNCTION()
 	void OnSimulateServerCrashCountdownFinished();
 
+	UFUNCTION()
+	void OnPlayerDie(const AAccelByteWarsPlayerState* DeathPlayer, const FVector DeathLocation, const AAccelByteWarsPlayerState* Killer);
+
+	void UpdateSpectatingTextEffect(float DeltaTime);
+	void CheckSpectatingText();
+	
 	FDelegateHandle OnPreGameCountdownFinishedDelegateHandle;
 	FDelegateHandle OnNotEnoughPlayerCountdownFinishedDelegateHandle;
 	FDelegateHandle OnSimulateServerCrashCountdownFinishedDelegateHandle;
+
+	float SpectatingTextVisibleRunningTime = 0.0f;
 };

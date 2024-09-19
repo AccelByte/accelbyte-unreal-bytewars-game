@@ -11,6 +11,10 @@ typedef TSharedPtr<const FSlateBrush> FCacheBrush;
 DECLARE_DELEGATE_OneParam(FOnImageReceived, FCacheBrush);
 
 class UCommonUserWidget;
+class APlayerState;
+
+#define FLAG_GUI_CHEAT TEXT("GUICheatOverride")
+#define FLAG_GUI_CHEAT_SECTION TEXT("AccelByteTutorialModules")
 
 class ACCELBYTEWARS_API AccelByteWarsUtility
 {
@@ -28,8 +32,20 @@ public:
 		const TSubclassOf<UUserWidget> WidgetClass, 
 		const bool bTopLevelOnly, 
 		UObject* Context);
-
+	
 	static bool IsUseVersionChecker();
+	static int32 GetControllerId(const APlayerState* PlayerState);
+	static int32 GetLocalUserNum(const APlayerController* PC);
+	static FUniqueNetIdPtr GetUserId(const APlayerController* PC);
+
+	/**
+	 * @brief Get flag's value is set to TRUE / FALSE on launch param (first prio) or DefaultEngine.ini (second prio). Return DefaultValue if not set
+	 * @param Keyword Flag keyword. Setting this as "flag" will make the function look for "-flag" in the launch param
+	 * @param ConfigSectionKeyword DefaultEngine.ini [section] where the flag located
+	 * @param DefaultValue Default Value if flag not found anywhere
+	 * @return Whether the flag is set as true or false
+	 */
+	static bool GetFlagValueOrDefault(const FString& Keyword, const FString& ConfigSectionKeyword, const bool DefaultValue);
 
 private:
 	static const TMap<FString, EImageFormat> ImageFormatMap;

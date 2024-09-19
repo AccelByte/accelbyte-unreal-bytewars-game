@@ -28,9 +28,13 @@ void UStoreItemPriceListEntry::Setup(const UStoreItemPriceDataObject* DataObject
 		return;
 	}
 
-	// Set UI
-	// Set Currency Symbol
-	I_CurrencySymbol->SetBrush(DataObject->GetCurrencyType() == ECurrencyType::COIN ? Brush_Coin : Brush_Gem);
+	// Set currency symbol
+	const ESlateVisibility NewVisibility = (DataObject->GetCurrencyType() != ECurrencyType::NONE) ? ESlateVisibility::Visible : ESlateVisibility::Collapsed;
+	if (NewVisibility == ESlateVisibility::Visible)
+	{
+		I_CurrencySymbol->SetBrush(DataObject->GetCurrencyType() == ECurrencyType::COIN ? Brush_Coin : Brush_Gem);
+	}
+	I_CurrencySymbol->SetVisibility(NewVisibility);
 
 	// Set prices
 	const bool bIsRegularPriceFree = DataObject->GetRegularPrice() == 0;
@@ -44,12 +48,6 @@ void UStoreItemPriceListEntry::Setup(const UStoreItemPriceDataObject* DataObject
 		TEXT_PRICE_FREE :
 		FText::FromString(FString::Printf(TEXT("%lld"), DataObject->GetFinalPrice() * Multiplier));
 	Tb_FinalPrice->SetText(FinalPrice);
-
-	// hide symbol if both regular and final price is free
-	if (bIsFinalPriceFree)
-	{
-		I_CurrencySymbol->SetVisibility(ESlateVisibility::Collapsed);
-	}
 
 	// Hide regular price if not discounted
 	if (!DataObject->IsDiscounted())

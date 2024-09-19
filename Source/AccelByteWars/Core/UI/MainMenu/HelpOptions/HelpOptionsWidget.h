@@ -9,6 +9,7 @@
 #include "HelpOptionsWidget.generated.h"
 
 class UCommonButtonBase;
+class UVerticalBox;
 
 UCLASS()
 class ACCELBYTEWARS_API UHelpOptionsWidget : public UAccelByteWarsActivatableWidget
@@ -41,4 +42,7 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_Back;
+	
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UVerticalBox* Vb_GeneratedButtonMainMenuOnly;
 };

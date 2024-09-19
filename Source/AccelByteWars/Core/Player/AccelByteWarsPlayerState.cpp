@@ -21,6 +21,7 @@ void AAccelByteWarsPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimePrope
 	DOREPLIFETIME(AAccelByteWarsPlayerState, TeamId);
 	DOREPLIFETIME(AAccelByteWarsPlayerState, MissilesFired);
 	DOREPLIFETIME(AAccelByteWarsPlayerState, KillCount);
+	DOREPLIFETIME(AAccelByteWarsPlayerState, Deaths);
 	DOREPLIFETIME(AAccelByteWarsPlayerState, NumLivesLeft);
 	DOREPLIFETIME(AAccelByteWarsPlayerState, bPendingTeamAssignment);
 	DOREPLIFETIME(AAccelByteWarsPlayerState, NumKilledAttemptInSingleLifetime);

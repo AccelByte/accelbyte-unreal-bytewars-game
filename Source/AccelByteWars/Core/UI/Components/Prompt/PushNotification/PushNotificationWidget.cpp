@@ -2,7 +2,7 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-#include "Core/UI/Components/Prompt/PushNotification/PushNotificationWidget.h"
+#include "PushNotificationWidget.h"
 #include "Components/ListView.h"
 #include "CommonButtonBase.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
@@ -24,10 +24,17 @@ void UPushNotificationWidget::NativeOnDeactivated()
 	Super::NativeOnDeactivated();
 }
 
-void UPushNotificationWidget::PushNotification(UPushNotification* Notification)
+void UPushNotificationWidget::PushNotification(UObject* Notification)
 {
 	if (!Notification) 
 	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot push notification UI. The notification object is null."));
+		return;
+	}
+
+	if (!Lv_PushNotification) 
+	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot push notification UI. List view is null."));
 		return;
 	}
 
@@ -51,7 +58,7 @@ void UPushNotificationWidget::PushNotification(UPushNotification* Notification)
 	GetWorld()->GetTimerManager().SetTimer(TimerHandle, FTimerDelegate::CreateUObject(this, &ThisClass::OnNotificationLifeTimeEnds, Notification), NotificationLifeTime, false);
 }
 
-void UPushNotificationWidget::RemoveNotification(UPushNotification* Notification)
+void UPushNotificationWidget::RemoveNotification(UObject* Notification)
 {
 	if (!Notification)
 	{
@@ -73,7 +80,7 @@ void UPushNotificationWidget::RemoveNotification(UPushNotification* Notification
 	}
 
 	
-	if (IsActivated() && !IsUnreachable()) 
+	if ((!bRequireWidgetActivation || IsActivated()) && !IsUnreachable())
 	{
 		// Delete from notification list.
 		if (!Lv_PushNotification->IsUnreachable() &&
@@ -93,7 +100,7 @@ void UPushNotificationWidget::RemoveNotification(UPushNotification* Notification
 
 void UPushNotificationWidget::TryPushPendingNotifications()
 {
-	if (!IsActivated() || IsUnreachable())
+	if ((bRequireWidgetActivation && !IsActivated()) || IsUnreachable())
 	{
 		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot access the push notification UI as the widget begin to tear down."));
 		return;
@@ -113,7 +120,7 @@ void UPushNotificationWidget::TryPushPendingNotifications()
 	}
 }
 
-void UPushNotificationWidget::OnNotificationLifeTimeEnds(UPushNotification* Notification)
+void UPushNotificationWidget::OnNotificationLifeTimeEnds(UObject* Notification)
 {
 	RemoveNotification(Notification);
 	TryPushPendingNotifications();
@@ -125,7 +132,7 @@ void UPushNotificationWidget::DismissAllNotifications()
 	PendingNotifications.Empty();
 
 	// Clear dangling notification timers.
-	for (TTuple<UPushNotification*, FTimerHandle>& NotificationTimer : NotificationTimers)
+	for (TTuple<UObject*, FTimerHandle>& NotificationTimer : NotificationTimers)
 	{
 		if (NotificationTimer.Value.IsValid())
 		{

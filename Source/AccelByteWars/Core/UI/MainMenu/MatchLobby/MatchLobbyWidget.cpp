@@ -180,6 +180,8 @@ void UMatchLobbyWidget::GenerateMultiplayerTeamEntries()
 			PlayerEntry->SetAvatar(Member.AvatarURL);
 			PlayerEntry->SetAvatarTint(Member.AvatarURL.IsEmpty() ? TeamColor : FLinearColor::White);
 			PlayerEntry->SetTextColor(TeamColor);
+			PlayerEntry->SetNetId(Member.UniqueNetId.GetUniqueNetId());
+			PlayerEntry->ActivateWidget();
 		}
 	}
 }

@@ -69,6 +69,12 @@ void UAccelByteWarsTabListWidget::NativeDestruct()
 
 void UAccelByteWarsTabListWidget::HandleTabCreation_Implementation(FName TabNameID, UCommonButtonBase* TabButton)
 {
+	// Disable click sound for tab buttons.
+	if (UAccelByteWarsButtonBase* Button = Cast<UAccelByteWarsButtonBase>(TabButton))
+	{
+		Button->SetAllowClickSound(false);
+	}
+
 	Super::HandleTabCreation_Implementation(TabNameID, TabButton);
 
 	W_TabButtonContainer->AddChild(TabButton);
@@ -102,42 +108,58 @@ bool UAccelByteWarsTabListWidget::RegisterTabWithPresets(
 	const int32 TabIndex,
 	const bool bForce)
 {
-	if (bForce && GetRegisteredTabsByID().Contains(TabNameID))
-	{
-		RemoveTab(TabNameID);
-		TargetIndexMap.Remove(TabNameID);
-	}
+	bool bIsRegistered = false;
 
-	// figure out what index should be used
-	int32 CalculatedIndex = TabIndex;
-	for (const TTuple<FName, int>& TargetIndex : TargetIndexMap)
+	if (GetRegisteredTabsByID().Contains(TabNameID))
 	{
-		if (TargetIndex.Value == TabIndex + 1)
+		// If forced or tab button is invalid, remove the tab.
+		UCommonButtonBase* TabButton = GetTabButtonBaseByID(TabNameID);
+		if (bForce || !GetTabButtonBaseByID(TabNameID))
 		{
-			if (GetRegisteredTabsByID().Contains(TargetIndex.Key))
+			RemoveTab(TabNameID);
+			TargetIndexMap.Remove(TabNameID);
+		}
+		// If tab button is valid, re-add to the tab list.
+		else 
+		{
+			if (!W_TabButtonContainer->HasChild(TabButton)) 
+			{
+				HandleTabCreation_Implementation(TabNameID, TabButton);
+			}
+			bIsRegistered = true;
+		}
+	}
+	
+	if (!bIsRegistered) 
+	{
+		// Figure out what index should be used for the tab button.
+		int32 CalculatedIndex = TabIndex;
+		for (const TTuple<FName, int>& TargetIndex : TargetIndexMap)
+		{
+			if (TargetIndex.Value == TabIndex + 1 && GetRegisteredTabsByID().Contains(TargetIndex.Key))
 			{
 				CalculatedIndex = GetRegisteredTabsByID()[TargetIndex.Key].TabIndex;
 			}
 		}
-	}
 
-	const bool bResult = RegisterTab(TabNameID, PresetButtonClass, ContentWidget, CalculatedIndex);
+		bIsRegistered = RegisterTab(TabNameID, PresetButtonClass, ContentWidget, CalculatedIndex);
 
-	if (bResult)
-	{
-		TargetIndexMap.Add(TabNameID, TabIndex);
-
-		UAccelByteWarsButtonBase* Button = Cast<UAccelByteWarsButtonBase>(GetTabButtonBaseByID(TabNameID));
-		Button->SetButtonText(ButtonText);
-		Button->SetIsFocusable(false);
-		Button->SetPadding(PaddingBetweenButtons);
-		if (IsValid(PresetButtonStyle))
+		if (bIsRegistered)
 		{
-			Button->SetStyle(PresetButtonStyle);
+			TargetIndexMap.Add(TabNameID, TabIndex);
+
+			UAccelByteWarsButtonBase* Button = Cast<UAccelByteWarsButtonBase>(GetTabButtonBaseByID(TabNameID));
+			Button->SetButtonText(ButtonText);
+			Button->SetIsFocusable(false);
+			Button->SetPadding(PaddingBetweenButtons);
+			if (IsValid(PresetButtonStyle))
+			{
+				Button->SetStyle(PresetButtonStyle);
+			}
 		}
 	}
 
-	return bResult;
+	return bIsRegistered;
 }
 
 void UAccelByteWarsTabListWidget::HandleOnTabButtonCreation(FName TabId, UCommonButtonBase* TabButton)

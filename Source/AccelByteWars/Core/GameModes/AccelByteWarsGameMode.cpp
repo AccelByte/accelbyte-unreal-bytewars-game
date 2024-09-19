@@ -7,6 +7,7 @@
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/System/AccelByteWarsGameSession.h"
 #include "Core/System/AccelByteWarsGlobals.h"
+#include "Core/Utilities/AccelByteWarsUtility.h"
 #include "GameFramework/GameSession.h"
 #include "GameFramework/PlayerState.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -18,6 +19,8 @@ AAccelByteWarsGameMode::AAccelByteWarsGameMode()
 	PrimaryActorTick.bStartWithTickEnabled = true;
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.TickInterval = 0.05f;
+	bAllowTickBeforeBeginPlay = false;
+
 	bAllowTickBeforeBeginPlay = false;
 }
 
@@ -144,7 +147,7 @@ void AAccelByteWarsGameMode::PlayerTeamSetup(APlayerController* PlayerController
 
 	int32 TeamId = INDEX_NONE;
 	const FUniqueNetIdRepl PlayerUniqueId = AbPlayerState->GetUniqueId();
-	const int32 ControllerId = GetControllerId(AbPlayerState);
+	const int32 ControllerId = AccelByteWarsUtility::GetControllerId(AbPlayerState);
 	
 	// check for a match in GameState's Teams data
 	if (FGameplayPlayerData* PlayerData =
@@ -168,6 +171,7 @@ void AAccelByteWarsGameMode::PlayerTeamSetup(APlayerController* PlayerController
 		AbPlayerState->TeamId = TeamId;
 		AbPlayerState->NumLivesLeft = PlayerData->NumLivesLeft;
 		AbPlayerState->KillCount = PlayerData->KillCount;
+		AbPlayerState->Deaths = PlayerData->Deaths;
 		AbPlayerState->TeamColor = GameInstance->GetTeamColor(TeamId);
 
 #if UE_BUILD_DEVELOPMENT
@@ -224,6 +228,7 @@ void AAccelByteWarsGameMode::PlayerTeamSetup(APlayerController* PlayerController
 				AbPlayerState->SetScore(0.0f);
 				AbPlayerState->NumLivesLeft = INDEX_NONE;
 				AbPlayerState->KillCount = 0;
+				AbPlayerState->Deaths = 0;
 
 #if UE_BUILD_DEVELOPMENT
 				const bool bUniqueIdValid = PlayerUniqueId.GetUniqueNetId().IsValid();
@@ -246,7 +251,8 @@ void AAccelByteWarsGameMode::PlayerTeamSetup(APlayerController* PlayerController
 		AbPlayerState->NumLivesLeft,
 		ControllerId,
 		AbPlayerState->GetScore(),
-		AbPlayerState->KillCount);
+		AbPlayerState->KillCount,
+		AbPlayerState->Deaths);
 }
 
 void AAccelByteWarsGameMode::DelayedPlayerTeamSetupWithPredefinedData(APlayerController* PlayerController)
@@ -274,13 +280,14 @@ void AAccelByteWarsGameMode::DelayedPlayerTeamSetupWithPredefinedData(APlayerCon
 	}
 
 	const FUniqueNetIdRepl PlayerUniqueId = AbPlayerState->GetUniqueId();
-	const int32 ControllerId = GetControllerId(AbPlayerState);
+	const int32 ControllerId = AccelByteWarsUtility::GetControllerId(AbPlayerState);
 
 	// reset player's state data
 	AbPlayerState->TeamColor = GameInstance->GetTeamColor(AbPlayerState->TeamId);
 	AbPlayerState->SetScore(0.0f);
 	AbPlayerState->NumLivesLeft = INDEX_NONE;
 	AbPlayerState->KillCount = 0;
+	AbPlayerState->Deaths = 0;
 
 	ABGameState->AddPlayerToTeam(
 		AbPlayerState->TeamId,
@@ -289,6 +296,7 @@ void AAccelByteWarsGameMode::DelayedPlayerTeamSetupWithPredefinedData(APlayerCon
 		ControllerId,
 		AbPlayerState->GetScore(),
 		AbPlayerState->KillCount,
+		AbPlayerState->Deaths,
 		AbPlayerState->GetPlayerName(),
 		AbPlayerState->AvatarURL);
 }
@@ -418,7 +426,7 @@ void AAccelByteWarsGameMode::AddPlayerToTeam(APlayerController* PlayerController
 	}
 
 	const FUniqueNetIdRepl PlayerUniqueId = PlayerState->GetUniqueId();
-	const int32 ControllerId = GetControllerId(PlayerState);
+	const int32 ControllerId = AccelByteWarsUtility::GetControllerId(PlayerState);
 
 	// reset player's state data
 	PlayerState->TeamId = TeamId;
@@ -426,6 +434,7 @@ void AAccelByteWarsGameMode::AddPlayerToTeam(APlayerController* PlayerController
 	PlayerState->SetScore(0.0f);
 	PlayerState->NumLivesLeft = INDEX_NONE;
 	PlayerState->KillCount = 0;
+	PlayerState->Deaths = 0;
 
 	// add player to team
 	ABGameState->AddPlayerToTeam(
@@ -434,7 +443,8 @@ void AAccelByteWarsGameMode::AddPlayerToTeam(APlayerController* PlayerController
 		PlayerState->NumLivesLeft,
 		ControllerId,
 		PlayerState->GetScore(),
-		PlayerState->KillCount);
+		PlayerState->KillCount,
+		PlayerState->Deaths);
 }
 
 bool AAccelByteWarsGameMode::RemovePlayer(const APlayerController* PlayerController) const
@@ -454,22 +464,9 @@ bool AAccelByteWarsGameMode::RemovePlayer(const APlayerController* PlayerControl
 	}
 
 	const FUniqueNetIdRepl PlayerUniqueId = PlayerState->GetUniqueId();
-	const int32 ControllerId = GetControllerId(PlayerState);
+	const int32 ControllerId = AccelByteWarsUtility::GetControllerId(PlayerState);
 
 	return ABGameState->RemovePlayerFromTeam(PlayerUniqueId, ControllerId);
-}
-
-int32 AAccelByteWarsGameMode::GetControllerId(const APlayerState* PlayerState)
-{
-	int32 ControllerId = 0;
-	if (const APlayerController* PC = PlayerState->GetPlayerController())
-	{
-		if (const ULocalPlayer* LP = PC->GetLocalPlayer())
-		{
-			ControllerId = LP->GetLocalPlayerIndex();
-		}
-	}
-	return ControllerId;
 }
 
 bool AAccelByteWarsGameMode::IsServer() const

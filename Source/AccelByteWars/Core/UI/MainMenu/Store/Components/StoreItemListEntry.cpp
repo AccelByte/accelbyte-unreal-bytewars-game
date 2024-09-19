@@ -50,31 +50,7 @@ void UStoreItemListEntry::Setup(const UStoreItemDataObject* Object)
 	W_Image->LoadImage(ItemData->GetIconUrl());
 	if (ItemData->GetShouldShowPrices())
 	{
-		// Show only 1 price if one of them is free
-		bool bIsFree = false;
-		for (const UStoreItemPriceDataObject* Data : ItemData->GetPrices())
-		{
-			if (Data->GetRegularPrice() == 0)
-			{
-				bIsFree = true;
-			}
-		}
-
-		if (bIsFree)
-		{
-			TArray<UStoreItemPriceDataObject*> Prices;
-			if (ItemData->GetPrices().Num() < 1)
-			{
-				return;
-			}
-
-			Prices.Add(ItemData->GetPrices()[0]);
-			Lv_Prices->SetListItems(Prices);
-		}
-		else
-		{
-			Lv_Prices->SetListItems(ItemData->GetPrices());
-		}
+		Lv_Prices->SetListItems(Object->GetPrices());
 	}
 
 	// Only show end of branch category

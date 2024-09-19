@@ -5,8 +5,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Blueprint/IUserObjectListEntry.h"
-#include "Core/UI/AccelByteWarsActivatableWidget.h"
+#include "Core/UI/Components/AccelByteWarsWidgetEntry.h"
 #include "Core/UI/MainMenu/Store/StoreItemModel.h"
 #include "StoreItemListEntry.generated.h"
 
@@ -17,7 +16,7 @@ class UWidgetSwitcher;
 class UAccelByteWarsAsyncImageWidget;
 
 UCLASS(Abstract)
-class ACCELBYTEWARS_API UStoreItemListEntry final : public UAccelByteWarsActivatableWidget, public IUserObjectListEntry
+class ACCELBYTEWARS_API UStoreItemListEntry final : public UAccelByteWarsWidgetEntry
 {
 	GENERATED_BODY()
 

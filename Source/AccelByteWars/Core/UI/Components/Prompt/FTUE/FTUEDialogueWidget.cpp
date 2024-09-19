@@ -187,7 +187,8 @@ void UFTUEDialogueWidget::PrevDialogue()
 
 	const TFunction<void()> InitPrevDialogue = [this]
 	{
-		if (!InitializeDialogue(DialoguesInternal[--DialogueIndex]))
+		if ((DialogueIndex > 0) && (DialogueIndex < DialoguesInternal.Num())
+			&& !InitializeDialogue(DialoguesInternal[--DialogueIndex]))
 		{
 			PrevDialogue();
 		}
@@ -229,7 +230,8 @@ void UFTUEDialogueWidget::NextDialogue()
 
 	const TFunction<void()> InitNextDialogue = [this]
 	{
-		if (!InitializeDialogue(DialoguesInternal[++DialogueIndex]))
+		if ((DialogueIndex >= 0) && (DialogueIndex < (DialoguesInternal.Num() - 1))
+			&& !InitializeDialogue(DialoguesInternal[++DialogueIndex]))
 		{
 			NextDialogue();
 		}
@@ -274,7 +276,8 @@ void UFTUEDialogueWidget::JumpToDialogue(const uint_fast8_t TargetIndex)
 
 	const TFunction<void()> InitTargetDialogue = [=]
 	{
-		if (!InitializeDialogue(DialoguesInternal[TargetIndex]))
+		if (DialogueIndex >= 0 && TargetIndex < DialoguesInternal.Num()
+			&& !InitializeDialogue(DialoguesInternal[TargetIndex]))
 		{
 			DialogueIndex = CurrentIndex;
 		}

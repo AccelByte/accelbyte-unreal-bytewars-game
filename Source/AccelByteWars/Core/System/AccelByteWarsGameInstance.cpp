@@ -340,6 +340,24 @@ FGameModeData UAccelByteWarsGameInstance::GetGameModeDataByCodeName(const FStrin
 	return Data;
 }
 
+bool UAccelByteWarsGameInstance::GetGameStatsDataById(const FName& Id, FGameStatsData& OutGameStatsData) const
+{
+	if (ensure(GameStatsDataTable))
+	{
+		FGameStatsData* FoundData = GameStatsDataTable->FindRow<FGameStatsData>(Id, TEXT("GetGameStatsDataById"));
+		if (FoundData) 
+		{
+			OutGameStatsData = *FoundData;
+			return true;
+		}
+		else 
+		{
+			GAMEINSTANCE_LOG("Game stats data of id %s is not found.", *Id.ToString());
+		}
+	}
+	return false;
+}
+
 void UAccelByteWarsGameInstance::OpenSDKConfigMenu()
 {
 	// Abort if the SDK config menu is already opened.

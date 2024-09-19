@@ -8,7 +8,6 @@
 #include "CommonUserWidget.h"
 #include "Components/BackgroundBlur.h"
 #include "Components/Prompt/Loading/LoadingWidget.h"
-#include "Components/Prompt/Loading/ReconnectingWidget.h"
 #include "Core/UI/AccelByteWarsWidgetModels.h"
 #include "Core/UI/Components/Prompt/PushNotification/PushNotificationWidget.h"
 #include "Widgets/CommonActivatableWidgetContainer.h"
@@ -18,6 +17,7 @@ class UInfoWidget;
 class UPopUpWidget;
 class UFTUEDialogueWidget;
 class AccelByteWarsActivatableWidget;
+class UGUICheatWidget;
 
 UCLASS()
 class ACCELBYTEWARS_API UAccelByteWarsBaseUI : public UCommonUserWidget
@@ -41,6 +41,10 @@ public:
 	TArray<UCommonActivatableWidget*> GetAllWidgetsBelowStacks(const EBaseUIStackType CurrentStack);
 
 	EBaseUIStackType GetTopMostActiveStack();
+
+	void AddGUICheatEntry(UGUICheatWidgetEntry* Entry);
+	void RemoveGUICheatEntry(UGUICheatWidgetEntry* Entry);
+	void RemoveGUICheatEntries(UTutorialModuleDataAsset* TutorialModuleDataAsset);
 
 	/** Push widget to target stack. */
 	UFUNCTION(BlueprintCallable)
@@ -67,12 +71,30 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Prompt Settings")
 	TSubclassOf<UPushNotificationWidget> DefaultPushNotificationWidgetClass;
 
+	UPROPERTY(EditDefaultsOnly, Category = "GUI Cheat settings")
+	TSubclassOf<UGUICheatWidget> DefaultGUICheatWidgetClass;
+
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	FDataTableRowHandle OpenGUICheatInputActionData;
+
+	void ToggleGUICheat();
+
 private:
 	bool bStacksCleared = false;
 
 	void OnWidgetTransitionChanged(UCommonActivatableWidgetContainerBase* Widget, bool bIsTransitioning);
 
 	void OnDisplayedWidgetChanged(UCommonActivatableWidget* Widget, const EBaseUIStackType StackType);
+
+	void FocusOnTopMostStack();
+	void OverrideFocus(UWidget* Target);
+	void RemoveFocusOverride();
+
+	UPROPERTY()
+	UWidget* FocusOverride;
+
+	FUIActionBindingHandle OpenGUICheatHandle;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UBackgroundBlur* BackgroundBlur;
@@ -94,6 +116,9 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonActivatableWidgetStack* PushNotificationStack;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UGUICheatWidget* W_GUICheat;
 
 	UFTUEDialogueWidget* W_FTUEDialogue;
 

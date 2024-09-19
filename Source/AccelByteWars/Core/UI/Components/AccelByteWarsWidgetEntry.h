@@ -22,12 +22,17 @@ public:
 		return &OnListItemObjectSet;
 	}
 
+	UFUNCTION(BlueprintCallable)
+	void SetAllowClickSound(bool bAllow) { bAllowClickSound = bAllow; }
+
 protected:
 	virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;
 	virtual void NativeOnItemSelectionChanged(bool bIsSelected) override;
+	virtual void NativePreConstruct() override;
 	virtual void NativeConstruct() override;
 	virtual void NativeOnFocusLost(const FFocusEvent& InFocusEvent) override;
 	virtual FReply NativeOnFocusReceived(const FGeometry& InGeometry, const FFocusEvent& InFocusEvent) override;
+	virtual FReply NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 
 	UFUNCTION(BlueprintImplementableEvent)
 	TArray<UCommonButtonBase*> InputMethodDependantWidgets();
@@ -42,4 +47,10 @@ private:
 	UCommonInputSubsystem* InputSubsystem;
 
 	bool bIsItemSelected = false;
+
+	UPROPERTY(EditAnywhere)
+	bool bAllowClickSound = true;
+
+	UPROPERTY(EditAnywhere)
+	FSlateSound ClickSound;
 };

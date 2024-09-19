@@ -20,16 +20,21 @@ class ACCELBYTEWARS_API UOptionsWidget : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
 	
+// @@@SNIPSTART OptionsWidget.h-public
+// @@@MULTISNIP OptionMenuDelegate {"selectedLines": ["1-3"]}
 public:
 	inline static FOnOptionsMenuActivated OnOptionsWidgetActivated;
 	inline static FOnOptionsMenuDeactivated OnOptionsWidgetDeactivated;
+// @@@SNIPEND
 
 protected:
 	void NativeConstruct() override;
 	void NativeOnActivated() override;
 	void NativeOnDeactivated() override;
 	void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
-
+	
+// @@@SNIPSTART OptionsWidget.h-private
+// @@@MULTISNIP SoundOptionSliderUI {"selectedLines": ["1", "5-9"]}
 private:
 	void InitOptions();
 	void FinalizeOptions();
@@ -44,4 +49,5 @@ private:
 	UOptionListEntry_Toggler* W_OptionFTUEAlwaysOnToggler;
 
 	UAccelByteWarsGameInstance* GameInstance;
+// @@@SNIPEND
 };

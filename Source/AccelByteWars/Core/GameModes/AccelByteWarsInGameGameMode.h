@@ -12,8 +12,6 @@
 #include "Engine/SCS_Node.h"
 #include "AccelByteWarsInGameGameMode.generated.h"
 
-DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnPlayerDieDelegate, const APlayerController* /*Player*/, const AActor* /*PlayerActor*/, const APlayerController* /*Killer*/);
-
 USTRUCT(BlueprintType)
 struct FPlanetMetadata
 {
@@ -59,7 +57,6 @@ public:
 	AAccelByteWarsInGameGameMode();
 
 	static inline FSimpleMulticastDelegate OnGameEndsDelegate;
-	static inline FOnPlayerDieDelegate OnPlayerDieDelegate;
 
 #pragma region "Variables"
 private:
@@ -156,6 +153,14 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable)
 	void IncreasePlayerKilledAttempt(const APlayerController* TargetPlayer);
+
+#pragma region "Testing purposes"
+	/**
+	 * @brief Kill given players as suicide
+	 * @param PlayerStates Players to insta kill
+	 */
+	void InstaKillPlayers(const TArray<APlayerState*>& PlayerStates);
+#pragma endregion 
 
 private:
 	UFUNCTION()

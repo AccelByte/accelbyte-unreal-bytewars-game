@@ -251,6 +251,7 @@ public:
 	// **** RPC End **** //
 	// ***************** //
 
+	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
 	FLinearColor GetPawnColor() const { return PawnColor; }
 
 	/**
