@@ -11,6 +11,12 @@
 #include "Interfaces/OnlinePresenceInterface.h"
 #include "FriendsEssentialsModels.generated.h"
 
+#define ALREADY_FRIEND_REASON_MESSAGE NSLOCTEXT("AccelByteWars", "Already friend", "Already friend")
+#define BEEN_INVITED_REASON_MESSAGE NSLOCTEXT("AccelByteWars", "You've been invited", "You've been invited")
+#define ALREADY_INVITED_REASON_MESSAGE NSLOCTEXT("AccelByteWars", "Already invited", "Already invited")
+#define BLOCKED_REASON_MESSAGE NSLOCTEXT("AccelByteWars", "Blocked", "Blocked")
+
+// @@@SNIPSTART FriendsEssentialsModels.h-FriendStatusEnum
 UENUM()
 enum class EFriendStatus : uint8
 {
@@ -21,7 +27,17 @@ enum class EFriendStatus : uint8
 	Blocked,
 	Unknown
 };
+// @@@SNIPEND
 
+UENUM()
+enum class EDataSource : uint8
+{
+	User = 0,
+	RecentPlayer,
+	GameSessionPlayer
+};
+
+// @@@SNIPSTART FriendsEssentialsModels.h-FriendDataClass
 UCLASS()
 class ACCELBYTEWARS_API UFriendData : public UObject
 {
@@ -40,6 +56,8 @@ public:
 
 	bool bCannotBeInvited;
 	FString ReasonCannotBeInvited;
+
+	EDataSource DataSource = EDataSource::User;
 
     static UFriendData* ConvertToFriendData(TSharedRef<FOnlineUser> OnlineUser)
     {
@@ -63,22 +81,22 @@ public:
         case EInviteStatus::Accepted:
             FriendData->Status = EFriendStatus::Accepted;
             FriendData->bCannotBeInvited = true;
-            FriendData->ReasonCannotBeInvited = NSLOCTEXT("AccelByteWars", "Already friend", "Already friend").ToString();
+            FriendData->ReasonCannotBeInvited = ALREADY_FRIEND_REASON_MESSAGE.ToString();
             break;
         case EInviteStatus::PendingInbound:
             FriendData->Status = EFriendStatus::PendingInbound;
             FriendData->bCannotBeInvited = true;
-            FriendData->ReasonCannotBeInvited = NSLOCTEXT("AccelByteWars", "You've been invited", "You've been invited").ToString();
+            FriendData->ReasonCannotBeInvited = BEEN_INVITED_REASON_MESSAGE.ToString();
             break;
         case EInviteStatus::PendingOutbound:
             FriendData->Status = EFriendStatus::PendingOutbound;
             FriendData->bCannotBeInvited = true;
-            FriendData->ReasonCannotBeInvited = NSLOCTEXT("AccelByteWars", "Already invited", "Already invited").ToString();
+            FriendData->ReasonCannotBeInvited = ALREADY_INVITED_REASON_MESSAGE.ToString();
             break;
         case EInviteStatus::Blocked:
             FriendData->Status = EFriendStatus::Blocked;
             FriendData->bCannotBeInvited = true;
-            FriendData->ReasonCannotBeInvited = NSLOCTEXT("AccelByteWars", "Blocked", "Blocked").ToString();
+            FriendData->ReasonCannotBeInvited = BLOCKED_REASON_MESSAGE.ToString();
             break;
         default:
             FriendData->Status = EFriendStatus::Unknown;
@@ -94,11 +112,35 @@ public:
 
         FriendData->Status = EFriendStatus::Blocked;
         FriendData->bCannotBeInvited = true;
-        FriendData->ReasonCannotBeInvited = NSLOCTEXT("AccelByteWars", "Blocked", "Blocked").ToString();
+        FriendData->ReasonCannotBeInvited = BLOCKED_REASON_MESSAGE.ToString();
+
+        return FriendData;
+    }
+	
+    static UFriendData* ConvertToFriendData(TSharedRef<const FAccelByteUserInfo> OnlineUser)
+    {
+        UFriendData* FriendData = NewObject<UFriendData>();
+
+        FriendData->UserId = OnlineUser->Id;
+        FriendData->DisplayName = OnlineUser->DisplayName;
+        FriendData->AvatarURL = OnlineUser->GameAvatarUrl;
+        FriendData->Status = EFriendStatus::Unknown;
+        FriendData->bCannotBeInvited = false;
+        FriendData->DataSource = EDataSource::GameSessionPlayer;
+
+        return FriendData;
+    }
+	
+    static UFriendData* ConvertToFriendData(TSharedRef<FOnlineRecentPlayer> OnlineUser)
+    {
+        UFriendData* FriendData = ConvertToFriendData(StaticCast<TSharedRef<FOnlineUser>>(OnlineUser));
+
+        FriendData->DataSource = EDataSource::RecentPlayer;
 
         return FriendData;
     }
 };
+// @@@SNIPEND
 
 #define SEND_FRIEND_REQUEST_MESSAGE NSLOCTEXT("AccelByteWars", "Sending Friend Request", "Sending Friend Request")
 
@@ -121,16 +163,26 @@ public:
 #define SUCCESS_BLOCK_PLAYER NSLOCTEXT("AccelByteWars", "Player is blocked", "Player is blocked")
 #define SUCCESS_UNBLOCK_PLAYER NSLOCTEXT("AccelByteWars", "Player is unblocked", "Player is unblocked")
 
+// @@@SNIPSTART FriendsEssentialsModels.h-delegatemacro
+// @@@MULTISNIP FriendsCacheDelegate {"selectedLines": ["1-2"]}
+// @@@MULTISNIP FindFriendsDelegate {"selectedLines": ["1", "4-6"]}
+// @@@MULTISNIP GetFriendRequestsDelegate {"selectedLines": ["8-9"]}
+// @@@MULTISNIP FriendRequestActionsDelegate {"selectedLines": ["13-15"]}
+// @@@MULTISNIP GetFriendsDelegate {"selectedLines": ["10"]}
+// @@@MULTISNIP BlockedPlayersCacheDelegate {"selectedLines": ["17-18"]}
+// @@@MULTISNIP ManagingFriendActionsDelegate {"selectedLines": ["20-22"]}
 DECLARE_DELEGATE_ThreeParams(FOnGetCacheFriendListComplete, bool /*bWasSuccessful*/, TArray<TSharedRef<FOnlineFriend>>& /*CachedFriendList*/, const FString& /*ErrorMessage*/);
 DECLARE_DELEGATE(FOnCachedFriendsDataUpdated);
 
 DECLARE_DELEGATE_ThreeParams(FOnGetSelfFriendCodeComplete, bool /*bWasSuccessful*/, UFriendData* /*FriendData*/, const FString& /*FriendCode*/);
 DECLARE_DELEGATE_ThreeParams(FOnFindFriendComplete, bool /*bWasSuccessful*/, UFriendData* /*FriendData*/, const FString& /*ErrorMessage*/);
+DECLARE_DELEGATE_ThreeParams(FOnSendFriendRequestComplete, bool /*bWasSuccessful*/, UFriendData* /*FriendData*/, const FString& /*ErrorMessage*/);
+
 DECLARE_DELEGATE_ThreeParams(FOnGetInboundFriendRequestListComplete, bool /*bWasSuccessful*/, TArray<UFriendData*> /*FriendRequests*/, const FString& /*ErrorMessage*/);
 DECLARE_DELEGATE_ThreeParams(FOnGetOutboundFriendRequestListComplete, bool /*bWasSuccessful*/, TArray<UFriendData*> /*FriendRequests*/, const FString& /*ErrorMessage*/);
 DECLARE_DELEGATE_ThreeParams(FOnGetFriendListComplete, bool /*bWasSuccessful*/, TArray<UFriendData*> /*Friends*/, const FString& /*ErrorMessage*/);
+DECLARE_DELEGATE_TwoParams(FOnGetPlayersInviteStatusComplete, bool /*bWasSuccessful*/, const FString& /*ErrorMessage*/);
 
-DECLARE_DELEGATE_ThreeParams(FOnSendFriendRequestComplete, bool /*bWasSuccessful*/, UFriendData* /*FriendData*/, const FString& /*ErrorMessage*/);
 DECLARE_DELEGATE_TwoParams(FOnAcceptFriendRequestComplete, bool /*bWasSuccessful*/, const FString& /*ErrorMessage*/);
 DECLARE_DELEGATE_TwoParams(FOnRejectFriendRequestComplete, bool /*bWasSuccessful*/, const FString& /*ErrorMessage*/);
 DECLARE_DELEGATE_TwoParams(FOnCancelFriendRequestComplete, bool /*bWasSuccessful*/, const FString& /*ErrorMessage*/);
@@ -141,3 +193,5 @@ DECLARE_DELEGATE(FOnGetCacheBlockedPlayersDataUpdated);
 DECLARE_DELEGATE_TwoParams(FOnUnfriendComplete, bool /*bWasSuccessful*/, const FString& /*ErrorMessage*/);
 DECLARE_DELEGATE_TwoParams(FOnBlockPlayerComplete, bool /*bWasSuccessful*/, const FString& /*ErrorMessage*/);
 DECLARE_DELEGATE_TwoParams(FOnUnblockPlayerComplete, bool /*bWasSuccessful*/, const FString& /*ErrorMessage*/);
+DECLARE_DELEGATE_TwoParams(FOnInviteAsFriendPlayerComplete, bool /*bWasSuccessful*/, const FString& /*ErrorMessage*/);
+// @@@SNIPEND

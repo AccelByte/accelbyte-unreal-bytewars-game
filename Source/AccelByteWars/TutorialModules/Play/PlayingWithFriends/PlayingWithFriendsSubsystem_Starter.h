@@ -30,13 +30,18 @@ public:
 	bool IsInMatchSessionGameSession() const;
 
 private:
+	bool IsMatchSessionGameSessionReceivedServer() const;
+
 	FUniqueNetIdRef GetSessionOwnerUniqueNetId(const FName SessionName) const;
 	UPromptSubsystem* GetPromptSubsystem() const;
 
+	FOnlineSessionV2AccelBytePtr GetSessionInterface() const;
+	FOnlineIdentityAccelBytePtr GetIdentityInterface() const;
+
 	void JoinGameSessionConfirmation(const int32 LocalUserNum, const FOnlineSessionInviteAccelByte& Invite);
 	void OnQueryUserInfoOnGameSessionParticipantChange(
-		const bool bSucceeded,
-		const TArray<FUserOnlineAccountAccelByte*>& UsersInfo,
+		const FOnlineError& Error,
+		const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo,
 		FName SessionName,
 		const bool bJoined);
 #pragma endregion

@@ -4,21 +4,23 @@
 
 #pragma once
 
+// @@@SNIPSTART AuthEssentialsSubsystem.h-include
+// @@@MULTISNIP OnlineIdentityInterfaceAccelByte {"selectedLines": ["2"]}
 #include "CoreMinimal.h"
 #include "OnlineIdentityInterfaceAccelByte.h"
 #include "AuthEssentialsLog.h"
 #include "AuthEssentialsModels.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "AuthEssentialsSubsystem.generated.h"
-
-DECLARE_MULTICAST_DELEGATE_TwoParams(FAuthOnLoginComplete, bool /*bWasSuccessful*/, const FString& /*ErrorMessage*/);
-typedef FAuthOnLoginComplete::FDelegate FAuthOnLoginCompleteDelegate;
+// @@@SNIPEND
 
 UCLASS()
 class ACCELBYTEWARS_API UAuthEssentialsSubsystem : public UTutorialModuleSubsystem
 {
 	GENERATED_BODY()
 
+// @@@SNIPSTART AuthEssentialsSubsystem.h-public
+// @@@MULTISNIP Login {"selectedLines": ["1", "6"]}
 public:
 	void Initialize(FSubsystemCollectionBase& Collection) override;
 	void Deinitialize() override;
@@ -41,12 +43,18 @@ public:
 	TSharedPtr<FUserOnlineAccountAccelByte> GetLoggedInUserOnlineAccount(const int LocalUserIndex = 0) const;
 	
 	TSharedPtr<FUserOnlineAccountAccelByte> GetOrQueryLoggedInUserOnlineAccount();
-
+// @@@SNIPEND
+	
+// @@@SNIPSTART AuthEssentialsSubsystem.h-protected
+// @@@MULTISNIP IdentityInterface {"selectedLines": ["1", "4"]}
+// @@@MULTISNIP Credentials {"selectedLines": ["1", "5"]}
+// @@@MULTISNIP OnLoginComplete {"selectedLines": ["1", "2"]}
 protected:
 	void OnLoginComplete(int32 LocalUserNum, bool bLoginWasSuccessful, const FUniqueNetId& UserId, const FString& LoginError, const FAuthOnLoginCompleteDelegate OnLoginComplete);
 
 	FOnlineIdentityAccelBytePtr IdentityInterface;
 	FOnlineAccountCredentials Credentials;
+// @@@SNIPEND
 
 #pragma region "CLI Cheat"
 protected:

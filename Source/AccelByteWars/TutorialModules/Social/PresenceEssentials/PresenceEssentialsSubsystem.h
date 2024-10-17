@@ -25,7 +25,7 @@ public:
 	void Initialize(FSubsystemCollectionBase& Collection) override;
 	void Deinitialize();
 
-	void GetPresence(const FUniqueNetIdPtr UserId, const FOnPresenceTaskComplete& OnComplete = FOnPresenceTaskComplete());
+	void GetPresence(const FUniqueNetIdPtr UserId, bool bForceQuery, const FOnPresenceTaskComplete& OnComplete = FOnPresenceTaskComplete());
 	void BulkQueryPresence(const FUniqueNetIdPtr UserId, const TArray<FUniqueNetIdRef>& UserIds);
 
 	void SetPresenceStatus(const FUniqueNetIdPtr UserId, const FString& Status, const FOnPresenceTaskComplete& OnComplete = FOnPresenceTaskComplete());
@@ -53,6 +53,7 @@ protected:
 	FOnlinePresenceAccelBytePtr GetPresenceInterface() const;
 	TSharedPtr<FOnlineFriendsAccelByte, ESPMode::ThreadSafe> GetFriendsInterface() const;
 	TSharedPtr<FOnlineIdentityAccelByte, ESPMode::ThreadSafe> GetIdentityInterface() const;
+	TSharedPtr<FOnlineSessionV2AccelByte, ESPMode::ThreadSafe> GetSessionInterface() const;
 	UAccelByteWarsOnlineSessionBase* GetOnlineSession() const;
 
 	// Helper to store presence activity status.
@@ -63,6 +64,7 @@ private:
 	void OnLevelLoaded();
 	void OnFriendListChange();
 	void OnBlockedPlayerListChange(int32 LocalUserNum, const FString& ListName);
+	void OnSessionParticipantChange(FName SessionName, const FUniqueNetId& UserId, bool bJoined);
 
 	FUniqueNetIdPtr GetPrimaryPlayerUserId();
 

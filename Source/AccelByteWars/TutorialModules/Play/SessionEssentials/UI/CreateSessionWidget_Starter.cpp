@@ -66,7 +66,7 @@ void UCreateSessionWidget_Starter::NativeTick(const FGeometry& MyGeometry, float
 
 UWidget* UCreateSessionWidget_Starter::NativeGetDesiredFocusTarget() const
 {
-	return Btn_Back;
+	return DesiredFocusTargetButton;
 }
 
 void UCreateSessionWidget_Starter::SwitchContent(const EContentType Type)
@@ -100,6 +100,11 @@ void UCreateSessionWidget_Starter::SwitchContent(const EContentType Type)
 	default: ;
 	}
 
+	if (FocusTarget)
+	{
+		DesiredFocusTargetButton = FocusTarget;
+		FocusTarget->SetUserFocus(GetOwningPlayer());
+	}
 	Ws_ContentOuter->SetActiveWidget(ContentTarget);
 	if (ProcessingWidgetState != EAccelByteWarsWidgetSwitcherState::Empty)
 	{
@@ -108,11 +113,7 @@ void UCreateSessionWidget_Starter::SwitchContent(const EContentType Type)
 
 	Btn_Back->SetIsEnabled(bEnableBackButton);
 	bIsBackHandler = bEnableBackButton;
-
-	if (FocusTarget)
-	{
-		FocusTarget->SetUserFocus(GetOwningPlayer());
-	}
+	RequestRefreshFocus();
 
 	// Set FTUEs
 	if (Type == EContentType::SUCCESS)

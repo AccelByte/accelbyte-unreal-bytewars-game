@@ -23,6 +23,7 @@ void UBlockedPlayerWidgetEntry::NativeConstruct()
 	Btn_Unblock->OnClicked().AddUObject(this, &ThisClass::OnUnblockButtonClicked);
 }
 
+// @@@SNIPSTART BlockedPlayerWidgetEntry.cpp-NativeOnListItemObjectSet
 void UBlockedPlayerWidgetEntry::NativeOnListItemObjectSet(UObject* ListItemObject)
 {
 	Super::NativeOnListItemObjectSet(ListItemObject);
@@ -46,7 +47,10 @@ void UBlockedPlayerWidgetEntry::NativeOnListItemObjectSet(UObject* ListItemObjec
 
 	OnListItemObjectSet.Broadcast();
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART BlockedPlayerWidgetEntry.cpp-OnUnblockButtonClicked
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "7"]}
 void UBlockedPlayerWidgetEntry::OnUnblockButtonClicked()
 {
 	ensure(CachedBlockedPlayerData);
@@ -54,5 +58,6 @@ void UBlockedPlayerWidgetEntry::OnUnblockButtonClicked()
 
 	ManagingFriendsSubsystem->UnblockPlayer(GetOwningPlayer(), CachedBlockedPlayerData->UserId);
 }
+// @@@SNIPEND
 
 #undef LOCTEXT_NAMESPACE

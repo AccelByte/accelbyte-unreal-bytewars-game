@@ -5,10 +5,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Chaos/AABB.h"
-#include "Chaos/AABB.h"
-#include "Chaos/AABB.h"
-#include "Chaos/AABB.h"
 #include "Play/SessionEssentials/SessionEssentialsOnlineSession.h"
 #include "MatchSessionDSOnlineSession.generated.h"
 
@@ -20,8 +16,15 @@ class ACCELBYTEWARS_API UMatchSessionDSOnlineSession : public USessionEssentials
 	virtual void RegisterOnlineDelegates() override;
 	virtual void ClearOnlineDelegates() override;
 
-#pragma region "Game Session Essentials"
+// @@@SNIPSTART MatchSessionDSOnlineSession.h-public
+// @@@MULTISNIP QueryUserInfoDeclaration {"selectedLines": ["1", "3-5"]}
+// @@@MULTISNIP HelperDelegateDeclaration {"selectedLines": ["1", "9-12", "30-33"]}
+// @@@MULTISNIP MatchSessionTemplateNameMap {"selectedLines": ["1", "16-19"]}
+// @@@MULTISNIP TravelToSession {"selectedLines": ["1", "7"]}
+// @@@MULTISNIP CreateMatchSession {"selectedLines": ["1", "21-24"]}
+// @@@MULTISNIP FindSessions {"selectedLines": ["1", "25-28"]}
 public:
+#pragma region "Game Session Essentials"
 	virtual void DSQueryUserInfo(
 		const TArray<FUniqueNetIdRef>& UserIds,
 		const FOnDSQueryUsersInfoComplete& OnComplete) override;
@@ -32,27 +35,9 @@ public:
 	{
 		return &OnSessionServerUpdateReceivedDelegates;
 	}
-
-protected:
-	virtual void OnDSQueryUserInfoComplete(
-		const FListBulkUserInfo& UserInfoList,
-		const FOnDSQueryUsersInfoComplete& OnComplete) override;
-
-	virtual void OnSessionServerUpdateReceived(FName SessionName) override;
-	virtual void OnSessionServerErrorReceived(FName SessionName, const FString& Message) override;
-
-	virtual bool HandleDisconnectInternal(UWorld* World, UNetDriver* NetDriver) override;
-
-private:
-	bool bIsInSessionServer = false;
-
-	FDelegateHandle OnDSQueryUserInfoCompleteDelegateHandle;
-
-	FOnServerSessionUpdateReceived OnSessionServerUpdateReceivedDelegates;
 #pragma endregion
 
 #pragma region "Match Session Essentials"
-public:
 	const TMap<TPair<EGameModeNetworkType, EGameModeType>, FString> MatchSessionTemplateNameMap = {
 		{{EGameModeNetworkType::DS, EGameModeType::FFA}, "unreal-elimination-ds-ams"},
 		{{EGameModeNetworkType::DS, EGameModeType::TDM}, "unreal-teamdeathmatch-ds-ams"}
@@ -71,11 +56,45 @@ public:
 	{
 		return &OnFindSessionsCompleteDelegates;
 	}
+#pragma endregion
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchSessionDSOnlineSession.h-protected
+// @@@MULTISNIP QueryUserInfoDeclaration {"selectedLines": ["1", "3-5"]}
+// @@@MULTISNIP SessionServerCallbackDeclaration {"selectedLines": ["1", "7-8"]}
+// @@@MULTISNIP HandleDisconnectInternal {"selectedLines": ["1", "10"]}
+// @@@MULTISNIP OnFindSessionsComplete {"selectedLines": ["1", "14"]}
 protected:
-	virtual void OnFindSessionsComplete(bool bSucceeded) override;
+#pragma region "Game Session Essentials"
+	virtual void OnDSQueryUserInfoComplete(
+		const FListBulkUserInfo& UserInfoList,
+		const FOnDSQueryUsersInfoComplete& OnComplete) override;
 
+	virtual void OnSessionServerUpdateReceived(FName SessionName) override;
+	virtual void OnSessionServerErrorReceived(FName SessionName, const FString& Message) override;
+
+	virtual bool HandleDisconnectInternal(UWorld* World, UNetDriver* NetDriver) override;
+#pragma endregion
+
+#pragma region "Match Session Essentials"
+	virtual void OnFindSessionsComplete(bool bSucceeded) override;
+#pragma endregion
+// @@@SNIPEND
+
+// @@@SNIPSTART MatchSessionDSOnlineSession.h-private
+// @@@MULTISNIP QueryUserInfoDeclaration {"selectedLines": ["1", "5", "16-18"]}
+// @@@MULTISNIP HelperDelegateDeclaration {"selectedLines": ["1", "7", "14"]}
+// @@@MULTISNIP HelperVariable {"selectedLines": ["1", "3", "11-12"]}
 private:
+#pragma region "Game Session Essentials"
+	bool bIsInSessionServer = false;
+
+	FDelegateHandle OnDSQueryUserInfoCompleteDelegateHandle;
+
+	FOnServerSessionUpdateReceived OnSessionServerUpdateReceivedDelegates;
+#pragma endregion
+
+#pragma region "Match Session Essentials"
 	TSharedRef<FOnlineSessionSearch> SessionSearch = MakeShared<FOnlineSessionSearch>(FOnlineSessionSearch());
 	int32 LocalUserNumSearching;
 
@@ -84,5 +103,6 @@ private:
 	void OnQueryUserInfoForFindSessionComplete(
 		const ::FOnlineError& Error,
 		const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo);
-#pragma endregion 
+#pragma endregion
+// @@@SNIPEND
 };

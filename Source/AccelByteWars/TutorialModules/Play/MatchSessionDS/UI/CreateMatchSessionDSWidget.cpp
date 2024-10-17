@@ -11,6 +11,9 @@
 #include "Play/MatchSessionEssentials/UI/CreateMatchSessionWidget.h"
 #include "Play/OnlineSessionUtils/AccelByteWarsOnlineSessionBase.h"
 
+// @@@SNIPSTART CreateMatchSessionDSWidget.cpp-NativeOnActivated
+// @@@MULTISNIP HelperDefinition {"selectedLines": ["1-2", "5-18", "26"]}
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "25-26"]}
 void UCreateMatchSessionDSWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
@@ -37,7 +40,10 @@ void UCreateMatchSessionDSWidget::NativeOnActivated()
 
 	Btn_StartMatchSessionDS->OnClicked().AddUObject(this, &ThisClass::CreateSession);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CreateMatchSessionDSWidget.cpp-NativeOnDeactivated
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "9-12"]}
 void UCreateMatchSessionDSWidget::NativeOnDeactivated()
 {
 	Super::NativeOnDeactivated();
@@ -50,7 +56,10 @@ void UCreateMatchSessionDSWidget::NativeOnDeactivated()
 	W_Parent->GetProcessingWidgetComponent()->OnRetryClicked.RemoveAll(this);
 	W_Parent->GetProcessingWidgetComponent()->OnCancelClicked.RemoveAll(this);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CreateMatchSessionDSWidget.cpp-CreateSession
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-7", "15-16", "22"]}
 void UCreateMatchSessionDSWidget::CreateSession() const
 {
 	if (OnlineSession->ValidateToStartSession.IsBound() &&
@@ -73,7 +82,9 @@ void UCreateMatchSessionDSWidget::CreateSession() const
 		EGameModeNetworkType::DS,
 		W_Parent->GetSelectedGameModeType());
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CreateMatchSessionDSWidget.cpp-OnCreateSessionComplete
 void UCreateMatchSessionDSWidget::OnCreateSessionComplete(FName SessionName, bool bSucceeded) const
 {
 	// Abort if not a game session.
@@ -93,7 +104,10 @@ void UCreateMatchSessionDSWidget::OnCreateSessionComplete(FName SessionName, boo
 		W_Parent->SwitchContent(UCreateMatchSessionWidget::EContentType::ERROR);
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CreateMatchSessionDSWidget.cpp-CancelJoiningSession
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-4", "8"]}
 void UCreateMatchSessionDSWidget::CancelJoiningSession() const
 {
 	W_Parent->SetLoadingMessage(TEXT_LEAVING_SESSION, false);
@@ -102,7 +116,9 @@ void UCreateMatchSessionDSWidget::CancelJoiningSession() const
 	OnlineSession->LeaveSession(
 		OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession));
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CreateMatchSessionDSWidget.cpp-OnCancelJoiningSessionComplete
 void UCreateMatchSessionDSWidget::OnCancelJoiningSessionComplete(FName SessionName, bool bSucceeded) const
 {
 	// Abort if not a game session.
@@ -121,7 +137,9 @@ void UCreateMatchSessionDSWidget::OnCancelJoiningSessionComplete(FName SessionNa
 		W_Parent->SwitchContent(UCreateMatchSessionWidget::EContentType::ERROR);
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CreateMatchSessionDSWidget.cpp-OnSessionServerUpdateReceived
 void UCreateMatchSessionDSWidget::OnSessionServerUpdateReceived(
 	const FName SessionName,
 	const FOnlineError& Error,
@@ -145,3 +163,4 @@ void UCreateMatchSessionDSWidget::OnSessionServerUpdateReceived(
 		W_Parent->SwitchContent(UCreateMatchSessionWidget::EContentType::ERROR);
 	}
 }
+// @@@SNIPEND

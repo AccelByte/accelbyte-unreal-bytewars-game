@@ -97,6 +97,7 @@ void UMatchLobbyWidget::ShowLoading()
 	SetMatchLobbyState(EMatchLobbyState::GameStarted);
 }
 
+// @@@SNIPSTART MatchLobbyWidget.cpp-StartMatch
 void UMatchLobbyWidget::StartMatch() 
 {
 	if (AAccelByteWarsPlayerController* PC = Cast<AAccelByteWarsPlayerController>(GetOwningPlayer())) 
@@ -104,7 +105,9 @@ void UMatchLobbyWidget::StartMatch()
 		PC->TriggerLobbyStart();
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchLobbyWidget.cpp-LeaveMatch
 void UMatchLobbyWidget::LeaveMatch()
 {
 	if (OnQuitLobbyDelegate.IsBound()) 
@@ -114,6 +117,7 @@ void UMatchLobbyWidget::LeaveMatch()
 	
 	UGameplayStatics::OpenLevel(GetWorld(), TEXT("MainMenu"));
 }
+// @@@SNIPEND
 
 void UMatchLobbyWidget::SetMatchLobbyState(const EMatchLobbyState NewState)
 {
@@ -132,6 +136,7 @@ void UMatchLobbyWidget::ResetTeamEntries()
 	Panel_TeamList->ClearChildren();
 }
 
+// @@@SNIPSTART MatchLobbyWidget.cpp-GenerateMultiplayerTeamEntries
 void UMatchLobbyWidget::GenerateMultiplayerTeamEntries()
 {
 	// Generate team entries only on game clients.
@@ -185,6 +190,7 @@ void UMatchLobbyWidget::GenerateMultiplayerTeamEntries()
 		}
 	}
 }
+// @@@SNIPEND
 
 ECountdownState UMatchLobbyWidget::SetCountdownState()
 {

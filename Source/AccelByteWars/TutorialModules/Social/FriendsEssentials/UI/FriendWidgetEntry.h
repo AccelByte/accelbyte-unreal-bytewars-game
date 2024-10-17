@@ -22,6 +22,9 @@ class ACCELBYTEWARS_API UFriendWidgetEntry : public UAccelByteWarsWidgetEntry
 public:
 	UFriendData* GetCachedFriendData() const { return CachedFriendData; }
 
+// @@@SNIPSTART FriendWidgetEntry.h-protected
+// @@@MULTISNIP FindFriendEntryUI {"selectedLines": ["1", "18-28"]}
+// @@@MULTISNIP AddFriendEntryUI {"selectedLines": ["1", "33-40"]}
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;
@@ -30,6 +33,8 @@ protected:
 	void OnAcceptButtonClicked();
 	void OnRejectButtonClicked();
 	void OnCancelButtonClicked();
+
+	void OnSessionParticipantsChanged(FName SessionName, const FUniqueNetId& User, bool bJoined);
 
 	UPROPERTY()
 	UFriendsSubsystem* FriendsSubsystem;
@@ -60,4 +65,8 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_Cancel;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UTextBlock* Tb_GameSessionStatus;
+// @@@SNIPEND
 };

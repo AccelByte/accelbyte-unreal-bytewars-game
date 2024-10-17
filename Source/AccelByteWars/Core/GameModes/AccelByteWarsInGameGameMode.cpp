@@ -61,6 +61,11 @@ void AAccelByteWarsInGameGameMode::BeginPlay()
 	Super::BeginPlay();
 }
 
+// @@@SNIPSTART AccelByteWarsInGameGameMode.cpp-Tick
+// @@@MULTISNIP AwaitingPlayerState {"selectedLines": ["1-2", "8-27", "93"]}
+// @@@MULTISNIP AwaitingPlayerMidGameState {"selectedLines": ["1-2", "36-51", "93"]}
+// @@@MULTISNIP GameStartedState {"selectedLines": ["1-2", "52-70", "93"]}
+// @@@MULTISNIP GameEndsState {"selectedLines": ["1-2", "78-88", "93"]}
 void AAccelByteWarsInGameGameMode::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
@@ -154,6 +159,7 @@ void AAccelByteWarsInGameGameMode::Tick(float DeltaSeconds)
 	default: ;
 	}
 }
+// @@@SNIPEND
 
 void AAccelByteWarsInGameGameMode::PostLogin(APlayerController* NewPlayer)
 {
@@ -741,6 +747,7 @@ FVector AAccelByteWarsInGameGameMode::FindGoodPlayerPosition(APlayerState* Playe
 #pragma endregion 
 
 #pragma region "Countdown related"
+// @@@SNIPSTART AccelByteWarsInGameGameMode.cpp-ShouldStartNotEnoughPlayerCountdown
 bool AAccelByteWarsInGameGameMode::ShouldStartNotEnoughPlayerCountdown() const
 {
 	// check if the config is enabled in game setup
@@ -752,7 +759,9 @@ bool AAccelByteWarsInGameGameMode::ShouldStartNotEnoughPlayerCountdown() const
 
 	return GetLivingTeamCount() < ABInGameGameState->GameSetup.MinimumTeamCountToPreventAutoShutdown;
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART AccelByteWarsInGameGameMode.cpp-NotEnoughPlayerCountdownCounting
 void AAccelByteWarsInGameGameMode::NotEnoughPlayerCountdownCounting(const float& DeltaSeconds) const
 {
 	// start NotEnoughPlayerCountdown to trigger server shutdown
@@ -763,6 +772,7 @@ void AAccelByteWarsInGameGameMode::NotEnoughPlayerCountdownCounting(const float&
 		CloseGame("Not enough player");
 	}
 }
+// @@@SNIPEND
 
 void AAccelByteWarsInGameGameMode::SetupShutdownCountdownsValue() const
 {

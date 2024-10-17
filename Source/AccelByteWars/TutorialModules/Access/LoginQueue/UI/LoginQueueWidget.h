@@ -23,6 +23,10 @@ class ACCELBYTEWARS_API ULoginQueueWidget : public UAccelByteWarsActivatableWidg
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
 
+// @@@SNIPSTART LoginQueueWidget.h-protected
+// @@@MULTISNIP LoginQueueSubsystem {"selectedLines": ["1", "11-12"]}
+// @@@MULTISNIP CancelQueueDeclaration {"selectedLines": ["1-3"]}
+// @@@MULTISNIP LoginQueueDeclaration {"selectedLines": ["1", "5-9"]}
 protected:
 	void CancelQueue() const;
 	void OnCancelQueueCompleted(const APlayerController* PC, const FOnlineError& Error) const;
@@ -35,8 +39,12 @@ protected:
 
 	UPROPERTY()
 	ULoginQueueSubsystem* LoginQueueSubsystem;
+// @@@SNIPEND
 
-#pragma region "UI"
+// @@@SNIPSTART LoginQueueWidget.h-private
+// @@@MULTISNIP W_Parent {"selectedLines": ["1-3"]}
+// @@@MULTISNIP StateComponentUI {"selectedLines": ["1", "5-12"]}
+// @@@MULTISNIP QueueStateUI {"selectedLines": ["1", "14-24"]}
 private:
 	UPROPERTY()
 	ULoginWidget* W_Parent;
@@ -61,5 +69,5 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Tb_UpdatedAt;
-#pragma endregion 
+// @@@SNIPEND
 };

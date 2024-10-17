@@ -130,8 +130,7 @@ void UAccelbyteWarsServerSubsystem::OnServerSessionReceived(FName SessionName)
 	}
 
 	// Get game related info from session
-	FString RequestedGameModeCode;
-	FString SessionTemplateName;
+	FString RequestedGameModeCode = TEXT(""), SessionTemplateName = TEXT("");
 	Session->SessionSettings.Get(GAMESETUP_GameModeCode, RequestedGameModeCode);
 	Session->SessionSettings.Get(SETTING_SESSION_MATCHPOOL, SessionTemplateName);
 

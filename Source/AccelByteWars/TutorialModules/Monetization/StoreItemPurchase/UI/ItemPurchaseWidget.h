@@ -8,6 +8,7 @@
 #include "OnlineError.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
 #include "Core/UI/MainMenu/Store/StoreItemModel.h"
+#include "Monetization/NativePlatformPurchase/NativePlatformPurchaseSubsystem.h"
 #include "ItemPurchaseWidget.generated.h"
 
 class UAccelByteWarsWidgetSwitcher;
@@ -18,6 +19,8 @@ class UStoreItemDetailWidget;
 class UStoreItemDataObject;
 class UItemPurchaseButton;
 class UAccelByteWarsSequentialSelectionWidget;
+
+#define ITEM_TYPE_COINS TEXT("COINS")
 
 UCLASS(Abstract)
 class ACCELBYTEWARS_API UItemPurchaseWidget : public UAccelByteWarsActivatableWidget
@@ -37,8 +40,12 @@ private:
 	UPROPERTY()
 	UStoreItemDataObject* StoreItemDataObject;
 
+	UPROPERTY()
+	UNativePlatformPurchaseSubsystem* NativePlatformPurchaseSubsystem;
+
 	void OnClickPurchase(const int32 PriceIndex) const;
 	void OnPurchaseComplete(const FOnlineError& Error) const;
+	void OnSynchPurchaseComplete(bool bWasSuccessful,const FString& Error) const;
 
 #pragma region "FTUE"
 private:

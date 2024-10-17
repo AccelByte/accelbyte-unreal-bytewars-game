@@ -16,12 +16,31 @@ class ACCELBYTEWARS_API UPartyOnlineSession : public USessionEssentialsOnlineSes
 {
 	GENERATED_BODY()
 	
+// @@@SNIPSTART PartyOnlineSession.h-public
+// @@@MULTISNIP PartyUtility {"selectedLines": ["1", "6-9"]}
+// @@@MULTISNIP CreateParty {"selectedLines": ["1", "11"]}
+// @@@MULTISNIP LeaveParty {"selectedLines": ["1", "12"]}
+// @@@MULTISNIP SendPartyInvite {"selectedLines": ["1", "14"]}
+// @@@MULTISNIP JoinParty {"selectedLines": ["1", "15"]}
+// @@@MULTISNIP RejectPartyInvite {"selectedLines": ["1", "16"]}
+// @@@MULTISNIP KickPlayerFromParty {"selectedLines": ["1", "18"]}
+// @@@MULTISNIP PromotePartyLeader {"selectedLines": ["1", "20"]}
+// @@@MULTISNIP OnCreatePartyCompleteDelegate {"selectedLines": ["1", "22-25"]}
+// @@@MULTISNIP OnLeavePartyCompleteDelegate {"selectedLines": ["1", "26-29"]}
+// @@@MULTISNIP OnSendPartyInviteCompleteDelegate {"selectedLines": ["1", "31-34"]}
+// @@@MULTISNIP OnJoinPartyCompleteDelegate {"selectedLines": ["1", "35-38"]}
+// @@@MULTISNIP OnRejectPartyInviteCompleteDelegate {"selectedLines": ["1", "39-42"]}
+// @@@MULTISNIP OnPartyInviteRejectedDelegate {"selectedLines": ["1", "43-46"]}
+// @@@MULTISNIP OnPartyInviteReceivedDelegate {"selectedLines": ["1", "47-50"]}
+// @@@MULTISNIP OnKickPlayerFromPartyCompleteDelegate {"selectedLines": ["1", "52-55"]}
+// @@@MULTISNIP OnKickedFromPartyDelegate {"selectedLines": ["1", "56-59"]}
+// @@@MULTISNIP OnPromotePartyLeaderCompleteDelegate {"selectedLines": ["1", "61-64"]}
+// @@@MULTISNIP OnPartySessionUpdateDelegate {"selectedLines": ["1", "66-73"]}
 public:
 	virtual void RegisterOnlineDelegates() override;
 	virtual void ClearOnlineDelegates() override;
 
 #pragma region "Party Essentials Module Function Declarations"
-
 	virtual TArray<FUniqueNetIdRef> GetPartyMembers() override;
 	virtual FUniqueNetIdPtr GetPartyLeader() override;
 	virtual bool IsInParty(const FUniqueNetIdPtr UserId);
@@ -90,9 +109,25 @@ public:
 	{ 
 		return &OnPartySessionUpdateReceivedDelegates; 
 	}
-
 #pragma endregion
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyOnlineSession.h-protected
+// @@@MULTISNIP OnCreatePartyComplete {"selectedLines": ["1", "18"]}
+// @@@MULTISNIP OnCreatePartyToInviteMember {"selectedLines": ["1-2"]}
+// @@@MULTISNIP OnLeavePartyComplete {"selectedLines": ["1", "19"]}
+// @@@MULTISNIP OnSendPartyInviteComplete {"selectedLines": ["1", "21"]}
+// @@@MULTISNIP OnJoinPartyComplete {"selectedLines": ["1", "22"]}
+// @@@MULTISNIP OnRejectPartyInviteComplete {"selectedLines": ["1", "23"]}
+// @@@MULTISNIP OnPartyInviteRejected {"selectedLines": ["1", "24"]}
+// @@@MULTISNIP OnPartyInviteReceived {"selectedLines": ["1", "25"]}
+// @@@MULTISNIP DisplayJoinPartyConfirmation {"selectedLines": ["1", "26"]}
+// @@@MULTISNIP OnKickPlayerFromPartyComplete {"selectedLines": ["1", "28"]}
+// @@@MULTISNIP OnKickedFromParty {"selectedLines": ["1", "29"]}
+// @@@MULTISNIP OnPromotePartyLeaderComplete {"selectedLines": ["1", "31"]}
+// @@@MULTISNIP DisplayCurrentPartyLeader {"selectedLines": ["1", "32"]}
+// @@@MULTISNIP OnPartySessionUpdate {"selectedLines": ["1", "34-35"]}
+// @@@MULTISNIP OnConnectLobbyComplete {"selectedLines": ["1", "37"]}
 protected:
 	void OnCreatePartyToInviteMember(FName SessionName, bool bWasSuccessful, const int32 LocalUserNum, const FUniqueNetIdPtr SenderId, const FUniqueNetIdPtr InviteeId);
 
@@ -110,7 +145,6 @@ protected:
 	UPromptSubsystem* GetPromptSubystem();
 
 #pragma region "Party Essentials Module Function Declarations"
-
 	virtual void OnCreatePartyComplete(FName SessionName, bool bSucceeded) override;
 	virtual void OnLeavePartyComplete(FName SessionName, bool bSucceeded) override;
 
@@ -131,9 +165,25 @@ protected:
 	virtual void OnPartySessionUpdateReceived(FName SessionName) override;
 
 	void OnConnectLobbyComplete(int32 LocalUserNum, bool bSucceeded, const FUniqueNetId& UserId, const FString& Error);
-
 #pragma endregion
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyOnlineSession.h-private
+// @@@MULTISNIP OnCreatePartyCompleteDelegate {"selectedLines": ["1", "15"]}
+// @@@MULTISNIP OnCreatePartyToInviteMemberDelegate {"selectedLines": ["1-2"]}
+// @@@MULTISNIP OnLeavePartyCompleteDelegate {"selectedLines": ["1", "16"]}
+// @@@MULTISNIP OnSendPartyInviteCompleteDelegate {"selectedLines": ["1", "18"]}
+// @@@MULTISNIP OnJoinPartyCompleteDelegate {"selectedLines": ["1", "19"]}
+// @@@MULTISNIP OnRejectPartyInviteCompleteDelegate {"selectedLines": ["1", "20"]}
+// @@@MULTISNIP OnPartyInviteRejectedDelegate {"selectedLines": ["1", "21"]}
+// @@@MULTISNIP OnPartyInviteReceivedDelegate {"selectedLines": ["1", "22"]}
+// @@@MULTISNIP OnKickPlayerFromPartyCompleteDelegate {"selectedLines": ["1", "24"]}
+// @@@MULTISNIP OnKickedFromPartyDelegate {"selectedLines": ["1", "25"]}
+// @@@MULTISNIP OnPromotePartyLeaderCompleteDelegate {"selectedLines": ["1", "27"]}
+// @@@MULTISNIP OnPartySessionUpdateDelegate {"selectedLines": ["1", "29-30"]}
+// @@@MULTISNIP PartySessionTemplate {"selectedLines": ["1", "10"]}
+// @@@MULTISNIP LastPartyLeader {"selectedLines": ["1", "11"]}
+// @@@MULTISNIP PartyMemberStatus {"selectedLines": ["1", "13"]}
 private:
 	FDelegateHandle OnCreatePartyToInviteMemberDelegateHandle;
 	FDelegateHandle OnLeaveSessionForTriggerDelegateHandle;
@@ -165,4 +215,5 @@ private:
 	FOnSessionParticipantsChange OnPartyMembersChangeDelegates;
 	FOnSessionUpdateReceived OnPartySessionUpdateReceivedDelegates;
 #pragma endregion
+// @@@SNIPEND
 };

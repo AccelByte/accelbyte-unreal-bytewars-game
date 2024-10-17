@@ -7,6 +7,7 @@
 #include "UObject/NoExportTypes.h"
 #include "CoreMinimal.h"
 
+// @@@SNIPSTART PlayWithPartyModels.h-stringmacro
 #define PARTY_MEMBERS_GAME_SESSION_ID "PARTY_MEMBERS_GAME_SESSION_ID"
 
 #define ACCELBYTEWARS_LOCTEXT_NAMESPACE "AccelByteWars"
@@ -27,3 +28,4 @@
 
 #define PARTY_GAME_SESSION_LEADER_SAFEGUARD_MESSAGE NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "Party Game Session Leader Safeguard", "Cannot play online session since party members are on other session")
 #define PARTY_GAME_SESSION_MEMBER_SAFEGUARD_MESSAGE NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "Party Game Session Member Safeguard", "Only party leader can start online session")
+// @@@SNIPEND

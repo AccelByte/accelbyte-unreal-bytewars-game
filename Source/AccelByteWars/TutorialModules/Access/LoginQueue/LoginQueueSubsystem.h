@@ -4,11 +4,14 @@
 
 #pragma once
 
+// @@@SNIPSTART LoginQueueSubsystem.h-include
+// @@@MULTISNIP OnlineIdentityInterfaceAccelByte {"selectedLines": ["3"]}
 #include "CoreMinimal.h"
 #include "LoginQueueModel.h"
 #include "OnlineIdentityInterfaceAccelByte.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "LoginQueueSubsystem.generated.h"
+// @@@SNIPEND
 
 UCLASS()
 class ACCELBYTEWARS_API ULoginQueueSubsystem : public UTutorialModuleSubsystem
@@ -18,13 +21,21 @@ class ACCELBYTEWARS_API ULoginQueueSubsystem : public UTutorialModuleSubsystem
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 
+// @@@SNIPSTART LoginQueueSubsystem.h-public
+// @@@MULTISNIP LoginQueueDelegate {"selectedLines": ["1", "5-6"]}
+// @@@MULTISNIP CancelQueue {"selectedLines": ["1-4"]}
 public:
 	void CancelLoginQueue(const APlayerController* PlayerController) const;
 
 	FOnLoginQueueCancelCompleted OnLoginQueueCancelCompletedDelegates;
 	FOnLoginQueued OnLoginQueuedDelegates;
 	FOnLoginTicketStatusUpdated OnLoginTicketStatusUpdatedDelegates;
+// @@@SNIPEND
 
+// @@@SNIPSTART LoginQueueSubsystem.h-protected
+// @@@MULTISNIP IdentityInterface {"selectedLines": ["1-2"]}
+// @@@MULTISNIP LoginQueueCallback {"selectedLines": ["1", "5-10"]}
+// @@@MULTISNIP CancelQueueCallback {"selectedLines": ["1", "4"]}
 protected:
 	FOnlineIdentityAccelBytePtr IdentityInterface;
 
@@ -35,6 +46,7 @@ protected:
 		bool bWasSuccessful,
 		const FAccelByteModelsLoginQueueTicketInfo& TicketInfo,
 		const FOnlineErrorAccelByte& Error) const;
+// @@@SNIPEND
 
 #pragma region "Utilities"
 private:

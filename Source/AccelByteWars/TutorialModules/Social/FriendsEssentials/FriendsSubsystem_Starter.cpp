@@ -6,6 +6,7 @@
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "OnlineSubsystemUtils.h"
+#include "TutorialModuleUtilities/StartupSubsystem.h"
 
 #define LOCTEXT_NAMESPACE "AccelByteWars"
 

@@ -17,6 +17,8 @@
 #include "Play/OnlineSessionUtils/AccelByteWarsOnlineSessionBase.h"
 #include "TutorialModuleUtilities/StartupSubsystem.h"
 
+// @@@SNIPSTART AccelByteWarsServerSubsystemBase.cpp-Initialize
+// @@@MULTISNIP OnPreGameShutdown {"selectedLines": ["1-2", "14-20", "34"]}
 void UAccelByteWarsServerSubsystemBase::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
@@ -51,6 +53,7 @@ void UAccelByteWarsServerSubsystemBase::Initialize(FSubsystemCollectionBase& Col
 
 	GameSessionOnlineSession->GetOnLeaveSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnLeaveSessionComplete);
 }
+// @@@SNIPEND
 
 void UAccelByteWarsServerSubsystemBase::Deinitialize()
 {
@@ -66,6 +69,8 @@ void UAccelByteWarsServerSubsystemBase::Deinitialize()
 	GameSessionOnlineSession->GetOnLeaveSessionCompleteDelegates()->RemoveAll(this);
 }
 
+// @@@SNIPSTART AccelByteWarsServerSubsystemBase.cpp-OnServerSessionReceived
+// @@@MULTISNIP AutoShutdown {"selectedLines": ["1-2", "10-27", "29"]}
 void UAccelByteWarsServerSubsystemBase::OnServerSessionReceived(FName SessionName)
 {
 	bHasReceivedSession = true;
@@ -95,6 +100,7 @@ void UAccelByteWarsServerSubsystemBase::OnServerSessionReceived(FName SessionNam
 		MainMenuGameMode->SetImmediatelyShutdownWhenEmpty(bShutdownOnLastLogout);
 	}
 }
+// @@@SNIPEND
 
 IOnlineSessionPtr UAccelByteWarsServerSubsystemBase::GetSessionInt() const
 {

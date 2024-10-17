@@ -8,6 +8,7 @@
 #include "Access/AuthEssentials/AuthEssentialsSubsystem.h"
 #include "Access/AuthEssentials/UI/LoginWidget.h"
 
+// @@@SNIPSTART SinglePlatformAuthWidget.cpp-NativeConstruct
 void USinglePlatformAuthWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
@@ -22,7 +23,14 @@ void USinglePlatformAuthWidget::NativeConstruct()
 	LoginWidget = Cast<ULoginWidget>(ParentWidget);
 	ensure(LoginWidget);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SinglePlatformAuthWidget.cpp-NativeOnActivated
+// @@@MULTISNIP CheckAuthModule {"selectedLines": ["1-10", "29"]}
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-17", "27", "29"]}
+// @@@MULTISNIP AutoLogin {"selectedLines": ["1-23", "27", "29"]}
+// @@@MULTISNIP ShowDeviceIdLogin {"selectedLines": ["1-23", "27-29"]}
+// @@@MULTISNIP PutItAllTogether {"highlightedLines": "{19-28}"}
 void USinglePlatformAuthWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
@@ -52,6 +60,7 @@ void USinglePlatformAuthWidget::NativeOnActivated()
 	Btn_LoginWithSinglePlatformAuth->OnClicked().AddUObject(this, &ThisClass::OnLoginWithSinglePlatformAuthButtonClicked);
 	LoginWidget->SetButtonLoginVisibility(ShouldDisplayDeviceIdLogin() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 }
+// @@@SNIPEND
 
 void USinglePlatformAuthWidget::NativeOnDeactivated()
 {
@@ -60,6 +69,10 @@ void USinglePlatformAuthWidget::NativeOnDeactivated()
 	Btn_LoginWithSinglePlatformAuth->OnClicked().Clear();
 }
 
+// @@@SNIPSTART SinglePlatformAuthWidget.cpp-OnLoginWithSinglePlatformAuthButtonClicked
+// @@@MULTISNIP EmptyDefinition {"selectedLines": ["1-2", "14"]}
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "6-8", "14"]}
+// @@@MULTISNIP PutItAllTogether {"highlightedLines": "{3-4,12-13}"}
 void USinglePlatformAuthWidget::OnLoginWithSinglePlatformAuthButtonClicked()
 {
 	UAuthEssentialsSubsystem* AuthSubsystem = GetGameInstance()->GetSubsystem<UAuthEssentialsSubsystem>();
@@ -74,7 +87,9 @@ void USinglePlatformAuthWidget::OnLoginWithSinglePlatformAuthButtonClicked()
 	AuthSubsystem->SetAuthCredentials(EAccelByteLoginType::None, TEXT(""), TEXT(""));
 	AuthSubsystem->Login(GetOwningPlayer(), FAuthOnLoginCompleteDelegate::CreateUObject(LoginWidget, &ULoginWidget::OnLoginComplete));
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SinglePlatformAuthWidget.cpp-ShouldAutoLogin
 bool USinglePlatformAuthWidget::ShouldAutoLogin()
 {
 	bool bAutoLogin = false;
@@ -83,7 +98,9 @@ bool USinglePlatformAuthWidget::ShouldAutoLogin()
 	FParse::Bool(FCommandLine::Get(), *FString::Printf(TEXT("-%s="), *AutoLoginKey), bAutoLogin);
 	return bAutoLogin;
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SinglePlatformAuthWidget.cpp-ShouldDisplayDeviceIdLogin
 bool USinglePlatformAuthWidget::ShouldDisplayDeviceIdLogin()
 {
 	bool bAllowDeviceIdLogin = false;
@@ -92,7 +109,9 @@ bool USinglePlatformAuthWidget::ShouldDisplayDeviceIdLogin()
 	FParse::Bool(FCommandLine::Get(), *FString::Printf(TEXT("-%s="), *AllowDeviceIdLoginKey), bAllowDeviceIdLogin);
 	return bAllowDeviceIdLogin;
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SinglePlatformAuthWidget.cpp-GetDefaultNativePlatform
 FString USinglePlatformAuthWidget::GetDefaultNativePlatform()
 {
 	FString DefaultNativePlatform;
@@ -101,6 +120,7 @@ FString USinglePlatformAuthWidget::GetDefaultNativePlatform()
 	GConfig->GetString(*OnlineSubsystemSection, *NativePlatformKey, DefaultNativePlatform, GEngineIni);
 	return DefaultNativePlatform;
 }
+// @@@SNIPEND
 
 #undef TEXT_LOGIN_WITH
 #undef AUTH_ESSENTIALS_SECTION

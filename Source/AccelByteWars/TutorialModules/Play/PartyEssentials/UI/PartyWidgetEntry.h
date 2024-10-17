@@ -26,6 +26,8 @@ public:
 	void SetPartyMember(const FUserOnlineAccountAccelByte& PartyMember, const bool bIsLeader = false);
 	void ResetPartyMember();
 
+// @@@SNIPSTART PartyWidgetEntry.h-protected
+// @@@MULTISNIP PartyEntryUI {"selectedLines": ["1", "21-34"]}
 protected:
 	virtual void NativeConstruct() override;
 	
@@ -69,4 +71,5 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, meta = (EditCondition = "FriendsEssentialsModule!=nullptr", EditConditionHides))
 	TSubclassOf<UAccelByteWarsActivatableWidget> FriendDetailsWidgetClass;
+// @@@SNIPEND
 };

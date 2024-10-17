@@ -15,6 +15,7 @@ void UBlockedPlayersWidget::NativeConstruct()
 	ensure(ManagingFriendsSubsystem);
 }
 
+// @@@SNIPSTART BlockedPlayersWidget.cpp-NativeOnActivated
 void UBlockedPlayersWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
@@ -28,7 +29,9 @@ void UBlockedPlayersWidget::NativeOnActivated()
 	ManagingFriendsSubsystem->BindOnCachedBlockedPlayersDataUpdated(GetOwningPlayer(), FOnGetCacheBlockedPlayersDataUpdated::CreateUObject(this, &ThisClass::GetBlockedPlayerList));
 	GetBlockedPlayerList();
 }
-
+// @@@SNIPEND
+// 
+// @@@SNIPSTART BlockedPlayersWidget.cpp-NativeOnDeactivated
 void UBlockedPlayersWidget::NativeOnDeactivated()
 {
 	Btn_Back->OnClicked().Clear();
@@ -37,6 +40,7 @@ void UBlockedPlayersWidget::NativeOnDeactivated()
 
 	Super::NativeOnDeactivated();
 }
+// @@@SNIPEND
 
 UWidget* UBlockedPlayersWidget::NativeGetDesiredFocusTarget() const
 {
@@ -47,6 +51,8 @@ UWidget* UBlockedPlayersWidget::NativeGetDesiredFocusTarget() const
 	return Lv_BlockedPlayers;
 }
 
+// @@@SNIPSTART BlockedPlayersWidget.cpp-GetBlockedPlayerList
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "28"]}
 void UBlockedPlayersWidget::GetBlockedPlayerList()
 {
 	ensure(ManagingFriendsSubsystem);
@@ -55,6 +61,7 @@ void UBlockedPlayersWidget::GetBlockedPlayerList()
 
 	ManagingFriendsSubsystem->GetBlockedPlayerList(
 		GetOwningPlayer(),
+		true,
 		FOnGetBlockedPlayerListComplete::CreateWeakLambda(this, [this](bool bWasSuccessful, TArray<UFriendData*> BlockedPlayers, const FString& ErrorMessage)
 		{
 			Lv_BlockedPlayers->ClearListItems();
@@ -74,3 +81,4 @@ void UBlockedPlayersWidget::GetBlockedPlayerList()
 		}
 	));
 }
+// @@@SNIPEND

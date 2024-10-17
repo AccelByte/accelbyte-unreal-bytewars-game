@@ -37,6 +37,8 @@ protected:
 	void OnRetryLoginButtonClicked();
 	void OnQuitGameButtonClicked();
 
+	void OpenMainMenu();
+
 private:
 	UAccelByteWarsGameInstance* GameInstance;
 	UAuthEssentialsSubsystem_Starter* AuthSubsystem;
@@ -71,5 +73,8 @@ private:
 	
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UAccelByteWarsActivatableWidget> MainMenuWidgetClass;
+
+	UPROPERTY(EditDefaultsOnly)
+	FPrimaryAssetId RegisterUserInGameAssetId;
 #pragma endregion 
 };

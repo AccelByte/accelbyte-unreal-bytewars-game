@@ -17,6 +17,12 @@
 #include "Interfaces/OnlineUserInterface.h"
 #include "OnlineSettings/RegionPreferencesEssentials/RegionPreferencesSubsystem.h"
 
+// @@@SNIPSTART MatchmakingDSOnlineSession.cpp-RegisterOnlineDelegates
+// @@@MULTISNIP BindMatchmakingDelegate {"selectedLines": ["1-2", "19", "22"]}
+// @@@MULTISNIP BindCancelMatchmakingDelegate {"selectedLines": ["1-2", "20", "22"]}
+// @@@MULTISNIP BindSessionServerDelegate {"selectedLines": ["1-2", "6-7", "22"]}
+// @@@MULTISNIP BindBackfillDelegate {"selectedLines": ["1-2", "21", "22"]}
+// @@@MULTISNIP BindLeaveSessionDelegate {"selectedLines": ["1-2", "9-16", "22"]}
 void UMatchmakingDSOnlineSession::RegisterOnlineDelegates()
 {
 	Super::RegisterOnlineDelegates();
@@ -39,7 +45,14 @@ void UMatchmakingDSOnlineSession::RegisterOnlineDelegates()
 	GetSessionInt()->OnCancelMatchmakingCompleteDelegates.AddUObject(this, &ThisClass::OnCancelMatchmakingComplete);
 	GetABSessionInt()->OnBackfillProposalReceivedDelegates.AddUObject(this, &ThisClass::OnBackfillProposalReceived);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchmakingDSOnlineSession.cpp-ClearOnlineDelegates
+// @@@MULTISNIP UnbindMatchmakingDelegate {"selectedLines": ["1-2", "12", "15"]}
+// @@@MULTISNIP UnbindCancelMatchmakingDelegate {"selectedLines": ["1-2", "13", "15"]}
+// @@@MULTISNIP UnbindSessionServerDelegate {"selectedLines": ["1-2", "5-6", "15"]}
+// @@@MULTISNIP UnbindBackfillDelegate {"selectedLines": ["1-2", "14", "15"]}
+// @@@MULTISNIP UnbindLeaveSessionDelegate {"selectedLines": ["1-2", "8-10", "15"]}
 void UMatchmakingDSOnlineSession::ClearOnlineDelegates()
 {
 	Super::ClearOnlineDelegates();
@@ -55,8 +68,10 @@ void UMatchmakingDSOnlineSession::ClearOnlineDelegates()
 	GetSessionInt()->OnCancelMatchmakingCompleteDelegates.RemoveAll(this);
 	GetABSessionInt()->OnBackfillProposalReceivedDelegates.RemoveAll(this);
 }
+// @@@SNIPEND
 
 #pragma region "Game Session Essentials"
+// @@@SNIPSTART MatchmakingDSOnlineSession.cpp-DSQueryUserInfo
 void UMatchmakingDSOnlineSession::DSQueryUserInfo(
 	const TArray<FUniqueNetIdRef>& UserIds,
 	const FOnDSQueryUsersInfoComplete& OnComplete)
@@ -102,7 +117,9 @@ void UMatchmakingDSOnlineSession::DSQueryUserInfo(
 		);
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchmakingDSOnlineSession.cpp-TravelToSession
 bool UMatchmakingDSOnlineSession::TravelToSession(const FName SessionName)
 {
 	UE_LOG_MATCHMAKINGDS(Verbose, TEXT("called"))
@@ -180,6 +197,7 @@ bool UMatchmakingDSOnlineSession::TravelToSession(const FName SessionName)
 
 	return true;
 }
+// @@@SNIPEND
 
 void UMatchmakingDSOnlineSession::OnDSQueryUserInfoComplete(
 	const FListBulkUserInfo& UserInfoList,
@@ -205,6 +223,7 @@ void UMatchmakingDSOnlineSession::OnDSQueryUserInfoComplete(
 	OnComplete.ExecuteIfBound(true, OnlineUsers);
 }
 
+// @@@SNIPSTART MatchmakingDSOnlineSession.cpp-OnSessionServerUpdateReceived
 void UMatchmakingDSOnlineSession::OnSessionServerUpdateReceived(FName SessionName)
 {
 	UE_LOG_MATCHMAKINGDS(Verbose, TEXT("called"))
@@ -219,7 +238,9 @@ void UMatchmakingDSOnlineSession::OnSessionServerUpdateReceived(FName SessionNam
 	const bool bHasClientTravelTriggered = TravelToSession(SessionName);
 	OnSessionServerUpdateReceivedDelegates.Broadcast(SessionName, FOnlineError(true), bHasClientTravelTriggered);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchmakingDSOnlineSession.cpp-OnSessionServerErrorReceived
 void UMatchmakingDSOnlineSession::OnSessionServerErrorReceived(FName SessionName, const FString& Message)
 {
 	UE_LOG_MATCHMAKINGDS(Verbose, TEXT("called"))
@@ -230,6 +251,7 @@ void UMatchmakingDSOnlineSession::OnSessionServerErrorReceived(FName SessionName
 
 	OnSessionServerUpdateReceivedDelegates.Broadcast(SessionName, Error, false);
 }
+// @@@SNIPEND
 
 bool UMatchmakingDSOnlineSession::HandleDisconnectInternal(UWorld* World, UNetDriver* NetDriver)
 {
@@ -245,6 +267,7 @@ bool UMatchmakingDSOnlineSession::HandleDisconnectInternal(UWorld* World, UNetDr
 #pragma endregion
 
 #pragma region "Matchmaking Session Essentials"
+// @@@SNIPSTART MatchmakingDSOnlineSession.cpp-StartMatchmaking
 void UMatchmakingDSOnlineSession::StartMatchmaking(
 	const APlayerController* PC,
 	const FName& SessionName,
@@ -296,6 +319,7 @@ void UMatchmakingDSOnlineSession::StartMatchmaking(
 	
 	// Get match pool id based on game mode type
 	FString MatchPoolId = MatchPoolIds[GameModeType];
+	const FString GameModeCode = TargetGameModeMap[MatchPoolId];
 
 	// if not using AMS, remove suffix -ams (internal purpose)
 	if(!UTutorialModuleOnlineUtility::GetIsServerUseAMS())
@@ -303,10 +327,16 @@ void UMatchmakingDSOnlineSession::StartMatchmaking(
 		MatchPoolId = MatchPoolId.Replace(TEXT("-ams"), TEXT(""));
 	}
 	
+	// Override match pool id if applicable.
+	if (!UTutorialModuleOnlineUtility::GetMatchPoolDSOverride().IsEmpty())
+	{
+		MatchPoolId = UTutorialModuleOnlineUtility::GetMatchPoolDSOverride();
+	}
+
 	// Setup matchmaking search handle, it will be used to store session search results.
 	TSharedRef<FOnlineSessionSearch> MatchmakingSearchHandle = MakeShared<FOnlineSessionSearch>();
-	MatchmakingSearchHandle->QuerySettings.Set(
-		SETTING_SESSION_MATCHPOOL, MatchPoolId, EOnlineComparisonOp::Equals);
+	MatchmakingSearchHandle->QuerySettings.Set(SETTING_SESSION_MATCHPOOL, MatchPoolId, EOnlineComparisonOp::Equals);
+	MatchmakingSearchHandle->QuerySettings.Set(GAMESETUP_GameModeCode, GameModeCode, EOnlineComparisonOp::Equals);
 
 	// Check for DS version override.
 	const FString OverriddenDSVersion = UTutorialModuleOnlineUtility::GetDedicatedServerVersionOverride();
@@ -363,7 +393,9 @@ void UMatchmakingDSOnlineSession::StartMatchmaking(
 		}));
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchmakingDSOnlineSession.cpp-CancelMatchmaking
 void UMatchmakingDSOnlineSession::CancelMatchmaking(APlayerController* PC, const FName& SessionName)
 {
 	UE_LOG_MATCHMAKINGDS(Verbose, TEXT("called"))
@@ -402,7 +434,9 @@ void UMatchmakingDSOnlineSession::CancelMatchmaking(APlayerController* PC, const
 		}));
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchmakingDSOnlineSession.cpp-OnStartMatchmakingComplete
 void UMatchmakingDSOnlineSession::OnStartMatchmakingComplete(
 	FName SessionName,
 	const FOnlineError& ErrorDetails,
@@ -416,14 +450,18 @@ void UMatchmakingDSOnlineSession::OnStartMatchmakingComplete(
 
 	OnStartMatchmakingCompleteDelegates.Broadcast(SessionName, ErrorDetails.bSucceeded);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchmakingDSOnlineSession.cpp-OnCancelMatchmakingComplete
 void UMatchmakingDSOnlineSession::OnCancelMatchmakingComplete(FName SessionName, bool bSucceeded)
 {
 	UE_LOG_MATCHMAKINGDS(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
 
 	OnCancelMatchmakingCompleteDelegates.Broadcast(SessionName, bSucceeded);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchmakingDSOnlineSession.cpp-OnMatchmakingComplete
 void UMatchmakingDSOnlineSession::OnMatchmakingComplete(FName SessionName, bool bSucceeded)
 {
 	UE_LOG_MATCHMAKINGDS(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
@@ -440,18 +478,10 @@ void UMatchmakingDSOnlineSession::OnMatchmakingComplete(FName SessionName, bool 
 	}
 
 	OnMatchmakingCompleteDelegates.Broadcast(SessionName, bSucceeded);
-
-	// Get searching player
-	const int32 LocalUserNum =
-		GetLocalUserNumFromPlayerController(GetPlayerControllerByUniqueNetId(CurrentMatchmakingSearchHandle->GetSearchingPlayerId()));
-
-	// Join the first session from matchmaking result.
-	JoinSession(
-		LocalUserNum,
-		GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession),
-		CurrentMatchmakingSearchHandle->SearchResults[0]);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchmakingDSOnlineSession.cpp-OnBackfillProposalReceived
 void UMatchmakingDSOnlineSession::OnBackfillProposalReceived(
 	FAccelByteModelsV2MatchmakingBackfillProposalNotif Proposal)
 {
@@ -475,7 +505,9 @@ void UMatchmakingDSOnlineSession::OnBackfillProposalReceived(
 		OnAcceptBackfillProposalCompleteDelegates.Broadcast(bSucceeded);
 	}));
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchmakingDSOnlineSession.cpp-OnLeaveSessionForReMatchmakingComplete
 void UMatchmakingDSOnlineSession::OnLeaveSessionForReMatchmakingComplete(
 	FName SessionName,
 	bool bSucceeded,
@@ -505,4 +537,5 @@ void UMatchmakingDSOnlineSession::OnLeaveSessionForReMatchmakingComplete(
 		OnStartMatchmakingComplete(SessionName, FOnlineError(false), {});
 	}
 }
+// @@@SNIPEND
 #pragma endregion 

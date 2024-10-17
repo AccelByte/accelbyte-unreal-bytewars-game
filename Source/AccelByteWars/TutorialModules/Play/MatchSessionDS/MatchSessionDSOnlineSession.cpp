@@ -14,6 +14,8 @@
 #include "Interfaces/OnlineUserInterface.h"
 #include "TutorialModuleUtilities/StartupSubsystem.h"
 
+// @@@SNIPSTART MatchSessionDSOnlineSession.cpp-RegisterOnlineDelegates
+// @@@MULTISNIP BindFindSessionDelegate {"selectedLines": ["1-2", "19-23"]}
 void UMatchSessionDSOnlineSession::RegisterOnlineDelegates()
 {
 	Super::RegisterOnlineDelegates();
@@ -37,7 +39,10 @@ void UMatchSessionDSOnlineSession::RegisterOnlineDelegates()
 
 	SessionSearch->SearchState = EOnlineAsyncTaskState::NotStarted;
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchSessionDSOnlineSession.cpp-ClearOnlineDelegates
+// @@@MULTISNIP UnbindFindSessionDelegate {"selectedLines": ["1-2", "12-13"]}
 void UMatchSessionDSOnlineSession::ClearOnlineDelegates()
 {
 	Super::ClearOnlineDelegates();
@@ -51,6 +56,7 @@ void UMatchSessionDSOnlineSession::ClearOnlineDelegates()
 
 	GetSessionInt()->OnFindSessionsCompleteDelegates.RemoveAll(this);
 }
+// @@@SNIPEND
 
 #pragma region "Game Session Essentials"
 void UMatchSessionDSOnlineSession::DSQueryUserInfo(
@@ -99,6 +105,7 @@ void UMatchSessionDSOnlineSession::DSQueryUserInfo(
 	}
 }
 
+// @@@SNIPSTART MatchSessionDSOnlineSession.cpp-TravelToSession
 bool UMatchSessionDSOnlineSession::TravelToSession(const FName SessionName)
 {
 	UE_LOG_MATCHSESSIONDS(Verbose, TEXT("called"))
@@ -176,6 +183,7 @@ bool UMatchSessionDSOnlineSession::TravelToSession(const FName SessionName)
 
 	return true;
 }
+// @@@SNIPEND
 
 void UMatchSessionDSOnlineSession::OnDSQueryUserInfoComplete(
 	const FListBulkUserInfo& UserInfoList,
@@ -201,6 +209,7 @@ void UMatchSessionDSOnlineSession::OnDSQueryUserInfoComplete(
 	OnComplete.ExecuteIfBound(true, OnlineUsers);
 }
 
+// @@@SNIPSTART MatchSessionDSOnlineSession.cpp-OnSessionServerUpdateReceived
 void UMatchSessionDSOnlineSession::OnSessionServerUpdateReceived(FName SessionName)
 {
 	UE_LOG_MATCHSESSIONDS(Verbose, TEXT("called"))
@@ -215,7 +224,9 @@ void UMatchSessionDSOnlineSession::OnSessionServerUpdateReceived(FName SessionNa
 	const bool bHasClientTravelTriggered = TravelToSession(SessionName);
 	OnSessionServerUpdateReceivedDelegates.Broadcast(SessionName, FOnlineError(true), bHasClientTravelTriggered);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchSessionDSOnlineSession.cpp-OnSessionServerErrorReceived
 void UMatchSessionDSOnlineSession::OnSessionServerErrorReceived(FName SessionName, const FString& Message)
 {
 	UE_LOG_MATCHSESSIONDS(Verbose, TEXT("called"))
@@ -226,7 +237,9 @@ void UMatchSessionDSOnlineSession::OnSessionServerErrorReceived(FName SessionNam
 
 	OnSessionServerUpdateReceivedDelegates.Broadcast(SessionName, Error, false);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchSessionDSOnlineSession.cpp-HandleDisconnectInternal
 bool UMatchSessionDSOnlineSession::HandleDisconnectInternal(UWorld* World, UNetDriver* NetDriver)
 {
 	UE_LOG_MATCHSESSIONDS(Verbose, TEXT("called"))
@@ -238,9 +251,11 @@ bool UMatchSessionDSOnlineSession::HandleDisconnectInternal(UWorld* World, UNetD
 
 	return true;
 }
+// @@@SNIPEND
 #pragma endregion
 
 #pragma region "Match Session Essentials"
+// @@@SNIPSTART MatchSessionDSOnlineSession.cpp-CreateMatchSession
 void UMatchSessionDSOnlineSession::CreateMatchSession(
 	const int32 LocalUserNum,
 	const EGameModeNetworkType NetworkType,
@@ -255,7 +270,7 @@ void UMatchSessionDSOnlineSession::CreateMatchSession(
 		GAMESETUP_GameModeCode,
 		FString(GameModeType == EGameModeType::FFA ? "ELIMINATION-DS-USERCREATED" : "TEAMDEATHMATCH-DS-USERCREATED"));
 	
-	// Get match pool id based on game mode type
+	// Get match session template name based on game mode type
 	FString MatchTemplateName = MatchSessionTemplateNameMap[{EGameModeNetworkType::DS, GameModeType}];
 
 	// if not using AMS, remove suffix -ams (internal purpose)
@@ -264,6 +279,12 @@ void UMatchSessionDSOnlineSession::CreateMatchSession(
 		MatchTemplateName = MatchTemplateName.Replace(TEXT("-ams"), TEXT(""));
 	}
 	
+	// Override match session template name if applicable.
+	if (!UTutorialModuleOnlineUtility::GetMatchSessionTemplateDSOverride().IsEmpty())
+	{
+		MatchTemplateName = UTutorialModuleOnlineUtility::GetMatchSessionTemplateDSOverride();
+	}
+
 	CreateSession(
 		LocalUserNum,
 		GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession),
@@ -271,7 +292,9 @@ void UMatchSessionDSOnlineSession::CreateMatchSession(
 		EAccelByteV2SessionType::GameSession,
 		MatchTemplateName);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchSessionDSOnlineSession.cpp-FindSessions
 void UMatchSessionDSOnlineSession::FindSessions(
 	const int32 LocalUserNum,
 	const int32 MaxQueryNum,
@@ -318,7 +341,9 @@ void UMatchSessionDSOnlineSession::FindSessions(
 		}));
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchSessionDSOnlineSession.cpp-OnFindSessionsComplete
 void UMatchSessionDSOnlineSession::OnFindSessionsComplete(bool bSucceeded)
 {
 	UE_LOG_MATCHSESSIONDS(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? TEXT("TRUE") : TEXT("FALSE")))
@@ -355,6 +380,7 @@ void UMatchSessionDSOnlineSession::OnFindSessionsComplete(bool bSucceeded)
 
 	OnFindSessionsCompleteDelegates.Broadcast({}, false);
 }
+// @@@SNIPEND
 
 void UMatchSessionDSOnlineSession::OnQueryUserInfoForFindSessionComplete(
 	const FOnlineError& Error,

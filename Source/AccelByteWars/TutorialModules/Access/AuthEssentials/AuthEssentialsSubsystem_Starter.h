@@ -7,11 +7,9 @@
 #include "CoreMinimal.h"
 #include "OnlineIdentityInterfaceAccelByte.h"
 #include "AuthEssentialsLog.h"
+#include "AuthEssentialsModels.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "AuthEssentialsSubsystem_Starter.generated.h"
-
-DECLARE_MULTICAST_DELEGATE_TwoParams(FAuthOnLoginComplete_Starter, bool /*bWasSuccessful*/, const FString& /*ErrorMessage*/);
-typedef FAuthOnLoginComplete_Starter::FDelegate FAuthOnLoginCompleteDelegate_Starter;
 
 UCLASS()
 class ACCELBYTEWARS_API UAuthEssentialsSubsystem_Starter : public UTutorialModuleSubsystem
@@ -23,7 +21,7 @@ public:
 	void Deinitialize() override;
 
 	/** Login user using specified login method */
-	void Login(const APlayerController* PC, const FAuthOnLoginCompleteDelegate_Starter& OnLoginComplete);
+	void Login(const APlayerController* PC, const FAuthOnLoginCompleteDelegate& OnLoginComplete);
 
 	/** Set auth credentials, including login method, id/username, and token/password.
 	 * @param Login method (e.g. Device Id, AccelByte, etc). Set to EAccelByteLoginType::None if login with default native platform.

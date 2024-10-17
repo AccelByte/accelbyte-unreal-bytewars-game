@@ -31,8 +31,17 @@ UTutorialModuleOnlineUtility::UTutorialModuleOnlineUtility()
     // Try to override SDK config.
     OverrideSDKConfig(CheckForSDKConfigOverride(false), CheckForSDKConfigOverride(true));
 
+    // Try to override game version.
+    CheckForGameVersionOverride();
+
+    // Try to override client version attribute.
+    CheckForClientVersionOverride();
+
     // Try to override server version.
     CheckForDedicatedServerVersionOverride();
+
+    // Try to override Session Template and Match Pool.
+    CheckSessionTemplateAndMatchPoolOverride();
 
     // Initialize AGS Starter if valid.
     IntializeAGSStaterIfValid();
@@ -271,7 +280,7 @@ void UTutorialModuleOnlineUtility::CheckForDedicatedServerVersionOverride()
 
 FString UTutorialModuleOnlineUtility::GetDedicatedServerVersionOverride()
 {
-    return DedicatedServerVersionOverride;
+    return GetClientVersionOverride().IsEmpty() ? DedicatedServerVersionOverride : GetClientVersionOverride();
 }
 
 TMap<FString, FString> UTutorialModuleOnlineUtility::CheckForSDKConfigOverride(const bool bIsServer)
@@ -461,6 +470,78 @@ ESettingsEnvironment UTutorialModuleOnlineUtility::ConvertOSSEnvToAccelByteEnv(c
         case EOnlineEnvironment::Type::Unknown:
         default:
             return ESettingsEnvironment::Default;
+    }
+}
+
+void UTutorialModuleOnlineUtility::CheckForClientVersionOverride()
+{
+    ClientVersionOverride = TEXT("");
+
+    const FString CmdArgs = FCommandLine::Get();
+    const FString CmdStr = FString("-OverrideClientVersion=");
+    if (CmdArgs.Contains(CmdStr, ESearchCase::IgnoreCase))
+    {
+        FString CmdValue = TEXT("");
+        FParse::Value(*CmdArgs, *CmdStr, CmdValue);
+        if (!CmdValue.IsEmpty())
+        {
+            ClientVersionOverride = CmdValue;
+            UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Log, TEXT("Launch param sets the Client Version to %s."), *ClientVersionOverride);
+        }
+    }
+}
+
+void UTutorialModuleOnlineUtility::CheckForGameVersionOverride()
+{
+    GameVersionOverride = TEXT("");
+
+    const FString CmdArgs = FCommandLine::Get();
+    const FString CmdStr = FString("-OverrideGameVersion=");
+    if (CmdArgs.Contains(CmdStr, ESearchCase::IgnoreCase))
+    {
+        FString CmdValue = TEXT("");
+        FParse::Value(*CmdArgs, *CmdStr, CmdValue);
+        if (!CmdValue.IsEmpty())
+        {
+            GameVersionOverride = CmdValue;
+            AccelByteWarsUtility::SetGameVersion(GameVersionOverride);
+            UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Log, TEXT("Launch param sets the Game Version to %s."), *GameVersionOverride);
+        }
+    }
+}
+
+void UTutorialModuleOnlineUtility::CheckSessionTemplateAndMatchPoolOverride()
+{
+    const TMap<FString, FString*> TemplateToOverrides
+    {
+        {TEXT("Dummy Session Template"), &DummySessionTemplateOverride},
+        {TEXT("Party Session Template"), &PartySessionTemplateOverride},
+        {TEXT("Match Session Template DS"), &MatchSessionTemplateDSOverride},
+        {TEXT("Match Session Template P2P"), &MatchSessionTemplateP2POverride},
+        {TEXT("Match Pool DS"), &MatchPoolDSOverride},
+        {TEXT("Match Pool P2P"), &MatchPoolP2POverride},
+    };
+
+    // Check template value override.
+    const FString CmdArgs = FCommandLine::Get();
+    FString CmdStr = TEXT(""), CmdValue = TEXT("");
+    for (const TPair<FString, FString*>& Template : TemplateToOverrides)
+    {
+        CmdValue = TEXT("");
+        *Template.Value = TEXT("");
+
+        CmdStr = FString::Printf(TEXT("-Override%s="), *Template.Key.Replace(TEXT(" "), TEXT(""), ESearchCase::IgnoreCase));
+        if (CmdArgs.Contains(CmdStr, ESearchCase::IgnoreCase))
+        {
+            CmdValue = TEXT("");
+            FParse::Value(*CmdArgs, *CmdStr, CmdValue);
+
+            if (!CmdValue.IsEmpty())
+            {
+                *Template.Value = CmdValue;
+                UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Log, TEXT("Launch param set the override %s to %s."), *Template.Key, **Template.Value);
+            }
+        }
     }
 }
 

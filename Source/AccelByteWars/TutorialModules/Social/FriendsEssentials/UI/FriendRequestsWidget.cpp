@@ -19,6 +19,7 @@ void UFriendRequestsWidget::NativeConstruct()
 	ensure(FriendsSubsystem);
 }
 
+// @@@SNIPSTART FriendRequestsWidget.cpp-NativeOnActivated
 void UFriendRequestsWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
@@ -32,7 +33,9 @@ void UFriendRequestsWidget::NativeOnActivated()
 	FriendsSubsystem->BindOnCachedFriendsDataUpdated(GetOwningPlayer(), FOnCachedFriendsDataUpdated::CreateUObject(this, &ThisClass::GetFriendRequestList));
 	GetFriendRequestList();
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART FriendRequestsWidget.cpp-NativeOnDeactivated
 void UFriendRequestsWidget::NativeOnDeactivated()
 {
 	Btn_Back->OnClicked().Clear();
@@ -41,6 +44,7 @@ void UFriendRequestsWidget::NativeOnDeactivated()
 
 	Super::NativeOnDeactivated();
 }
+// @@@SNIPEND
 
 UWidget* UFriendRequestsWidget::NativeGetDesiredFocusTarget() const
 {
@@ -51,6 +55,8 @@ UWidget* UFriendRequestsWidget::NativeGetDesiredFocusTarget() const
 	return Lv_FriendRequests;
 }
 
+// @@@SNIPSTART FriendRequestsWidget.cpp-GetFriendRequestList
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "27"]}
 void UFriendRequestsWidget::GetFriendRequestList()
 {
 	ensure(FriendsSubsystem);
@@ -78,3 +84,4 @@ void UFriendRequestsWidget::GetFriendRequestList()
 		}
 	));
 }
+// @@@SNIPEND

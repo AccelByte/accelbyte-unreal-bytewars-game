@@ -6,14 +6,20 @@
 #include "MatchmakingDSWidget.h"
 
 #include "Core/System/AccelByteWarsGameInstance.h"
-#include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
 #include "CommonButtonBase.h"
+#include "Components/TextBlock.h"
+#include "Components/WidgetSwitcher.h"
+#include "Core/UI/AccelByteWarsBaseUI.h"
 
 #include "Play/MatchmakingEssentials/UI/QuickPlayWidget.h"
 #include "Play/MatchmakingEssentials/MatchmakingEssentialsModels.h"
 #include "Play/OnlineSessionUtils/AccelByteWarsOnlineSessionBase.h"
 
+// @@@SNIPSTART MatchmakingDSWidget.cpp-NativeOnActivated
+// @@@MULTISNIP OnlineSession {"selectedLines": ["1-2", "5-12", "40"]}
+// @@@MULTISNIP SelectedGameModeType {"selectedLines": ["1-2", "15-22", "40"]}
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "24-27", "40"]}
 void UMatchmakingDSWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
@@ -27,82 +33,185 @@ void UMatchmakingDSWidget::NativeOnActivated()
 	OnlineSession = Cast<UAccelByteWarsOnlineSessionBase>(BaseOnlineSession);
 	ensure(OnlineSession);
 
-	OnlineSession->GetOnStartMatchmakingCompleteDelegates()->AddUObject(this, &ThisClass::OnStartMatchmakingComplete);
-	OnlineSession->GetOnCancelMatchmakingCompleteDelegates()->AddUObject(this, &ThisClass::OnCancelMatchmakingComplete);
-	OnlineSession->GetOnMatchmakingCompleteDelegates()->AddUObject(this, &ThisClass::OnMatchmakingComplete);
-	OnlineSession->GetOnLeaveSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnCancelJoinSessionComplete);
-	OnlineSession->GetOnJoinSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnJoinSessionComplete);
-
-	Btn_StartMatchmakingDS->OnClicked().AddUObject(this, &ThisClass::StartMatchmaking);
-
-	W_Parent = GetFirstOccurenceOuter<UQuickPlayWidget>();
-	if (!ensure(W_Parent))
+	// Get selected game mode type from the previous widget
+	UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsGameInstance>(GetGameInstance())->GetBaseUIWidget();
+	for (const UCommonActivatableWidget* Widget : BaseUIWidget->Stacks[EBaseUIStackType::Menu]->GetWidgetList())
 	{
-		return;
+		if (const UQuickPlayWidget* QuickPlayWidget = Cast<UQuickPlayWidget>(Widget))
+		{
+			SelectedGameModeType = QuickPlayWidget->GetSelectedGameModeType();
+		}
 	}
-}
 
+	Btn_Join->OnClicked().AddUObject(this, &ThisClass::JoinSession);
+	Btn_Cancel->OnClicked().AddUObject(this, &ThisClass::CancelMatchmaking);
+	Btn_Reject->OnClicked().AddUObject(this, &ThisClass::RejectSessionInvite);
+	Btn_Retry->OnClicked().AddUObject(this, &ThisClass::StartMatchmaking);
+
+	OnlineSession->GetOnStartMatchmakingCompleteDelegates()->AddUObject(this, &ThisClass::OnStartMatchmakingComplete);
+	OnlineSession->GetOnMatchmakingCompleteDelegates()->AddUObject(this, &ThisClass::OnMatchmakingComplete);
+	OnlineSession->GetOnSessionInviteReceivedDelegates()->AddUObject(this, &ThisClass::OnSessionInviteReceived);
+	OnlineSession->GetOnJoinSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnJoinSessionComplete);
+	OnlineSession->GetOnSessionServerUpdateReceivedDelegates()->AddUObject(this, &ThisClass::OnSessionServerUpdateReceived);
+
+	OnlineSession->GetOnCancelMatchmakingCompleteDelegates()->AddUObject(this, &ThisClass::OnCancelMatchmakingComplete);
+	OnlineSession->GetOnRejectSessionInviteCompleteDelegate()->AddUObject(this, &ThisClass::OnRejectSessionInviteComplete);
+
+	// Start matchmaking immediately
+	StartMatchmaking();
+}
+// @@@SNIPEND
+
+// @@@SNIPSTART MatchmakingDSWidget.cpp-NativeOnDeactivated
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-6", "17-18"]}
 void UMatchmakingDSWidget::NativeOnDeactivated()
 {
-	Super::NativeOnDeactivated();
+	Btn_Join->OnClicked().RemoveAll(this);
+	Btn_Cancel->OnClicked().RemoveAll(this);
+	Btn_Reject->OnClicked().RemoveAll(this);
+	Btn_Retry->OnClicked().RemoveAll(this);
 
 	OnlineSession->GetOnStartMatchmakingCompleteDelegates()->RemoveAll(this);
-	OnlineSession->GetOnCancelMatchmakingCompleteDelegates()->RemoveAll(this);
 	OnlineSession->GetOnMatchmakingCompleteDelegates()->RemoveAll(this);
+	OnlineSession->GetOnSessionInviteReceivedDelegates()->RemoveAll(this);
 	OnlineSession->GetOnJoinSessionCompleteDelegates()->RemoveAll(this);
-	OnlineSession->GetOnLeaveSessionCompleteDelegates()->RemoveAll(this);
+	OnlineSession->GetOnSessionServerUpdateReceivedDelegates()->RemoveAll(this);
 
-	Btn_StartMatchmakingDS->OnClicked().RemoveAll(this);
+	OnlineSession->GetOnCancelMatchmakingCompleteDelegates()->RemoveAll(this);
+	OnlineSession->GetOnRejectSessionInviteCompleteDelegate()->RemoveAll(this);
 
-	W_Parent->GetProcessingWidget()->OnCancelClicked.RemoveAll(this);
-	W_Parent->GetProcessingWidget()->OnRetryClicked.RemoveAll(this);
+	Super::NativeOnDeactivated();
 }
+// @@@SNIPEND
 
-void UMatchmakingDSWidget::StartMatchmaking() const
+// @@@SNIPSTART MatchmakingDSWidget.cpp-NativeTick
+// @@@MULTISNIP WaitingForPlayerStateCountdown {"selectedLines": ["1-14", "16-17", "44"]}
+void UMatchmakingDSWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+{
+	Super::NativeTick(MyGeometry, InDeltaTime);
+
+	MoveCameraToTargetLocation(InDeltaTime, FVector(60.0f, 800.0f, 160.0f));
+
+	// Manual "Auto" Join
+	if (WidgetState == EWidgetState::WAITING_FOR_PLAYER && AutoJoinCurrentCountdown > 0)
+	{
+		AutoJoinCurrentCountdown -= InDeltaTime;
+		Tb_WaitingForPlayersCountdown->SetText(FText::FromString(FString::FromInt(AutoJoinCurrentCountdown)));
+
+		if (AutoJoinCurrentCountdown <= 0)
+		{
+			JoinSession();
+		}
+	}
+
+	// Match found delay
+	if (WidgetState == EWidgetState::MATCH_FOUND && MatchFoundCurrentCountdown > 0)
+	{
+		MatchFoundCurrentCountdown -= InDeltaTime;
+		if (MatchFoundCurrentCountdown <= 0 && SessionInvite)
+		{
+			// Check if auto join enabled or not
+			const TSharedPtr<FOnlineSessionInfoAccelByteV2> SessionInfo = StaticCastSharedPtr<FOnlineSessionInfoAccelByteV2>(
+				SessionInvite->Session.Session.SessionInfo);
+			check(SessionInfo.IsValid());
+			const bool bAutoJoin = SessionInfo->GetBackendSessionData()->Configuration.AutoJoin;
+
+			ChangeWidgetState(bAutoJoin ? EWidgetState::JOINING_MATCH : EWidgetState::WAITING_FOR_PLAYER);
+		}
+	}
+
+	// Session joined delay
+	if (WidgetState == EWidgetState::SESSION_JOINED && SessionJoinedCurrentCountdown > 0)
+	{
+		SessionJoinedCurrentCountdown -= InDeltaTime;
+		if (SessionJoinedCurrentCountdown <= 0)
+		{
+			ChangeWidgetState(EWidgetState::REQUESTING_SERVER);
+		}
+	}
+}
+// @@@SNIPEND
+
+// @@@SNIPSTART MatchmakingDSWidget.cpp-StartMatchmaking
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-18", "25"]}
+void UMatchmakingDSWidget::StartMatchmaking()
 {
 	if (OnlineSession->ValidateToStartMatchmaking.IsBound() && 
-		!OnlineSession->ValidateToStartMatchmaking.Execute(W_Parent->GetSelectedGameModeType()))
+		!OnlineSession->ValidateToStartMatchmaking.Execute(SelectedGameModeType))
 	{
 		return;
 	}
 
-	W_Parent->GetProcessingWidget()->OnCancelClicked.Clear();
-	W_Parent->GetProcessingWidget()->OnRetryClicked.Clear();
-	W_Parent->GetProcessingWidget()->OnCancelClicked.AddUObject(this, &ThisClass::CancelButtonClicked);
-	W_Parent->GetProcessingWidget()->OnRetryClicked.AddUObject(this, &ThisClass::StartMatchmaking);
+	// Reset stored invite
+	SessionInvite = nullptr;
 
-	// Otherwise, start matchmaking.
-	W_Parent->SetLoadingMessage(TEXT_FINDING_MATCH, false);
-	W_Parent->SwitchContent(UQuickPlayWidget::EContentType::LOADING);
+	// Reset game handled "auto" join
+	AutoJoinCurrentCountdown = AutoJoinDelay;
+	MatchFoundCurrentCountdown = MatchFoundDelay;
+	SessionJoinedCurrentCountdown = SessionJoinedDelay;
+	Tb_WaitingForPlayersCountdown->SetText(FText::FromString(FString::FromInt(AutoJoinCurrentCountdown)));
+
+	ChangeWidgetState(EWidgetState::REQUEST_SENT);
 
 	OnlineSession->StartMatchmaking(
 		GetOwningPlayer(),
 		OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession),
 		EGameModeNetworkType::DS,
-		W_Parent->GetSelectedGameModeType());
+		SelectedGameModeType);
 }
+// @@@SNIPEND
 
-void UMatchmakingDSWidget::CancelButtonClicked() const
+// @@@SNIPSTART MatchmakingDSWidget.cpp-JoinSession
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-9", "15"]}
+void UMatchmakingDSWidget::JoinSession()
 {
-	bool bIsJoiningMatch = W_Parent->GetProcessingWidget()->LoadingMessage.EqualTo(TEXT_JOINING_MATCH);
+	if (!SessionInvite)
+	{
+		ChangeWidgetState(EWidgetState::ERROR);
+		Tb_ErrorText->SetText(TEXT_FAILED_SESSION_INVITE_INVALID);
+	}
+
+	ChangeWidgetState(EWidgetState::JOINING_MATCH);
+
+	OnlineSession->JoinSession(
+		OnlineSession->GetLocalUserNumFromPlayerController(GetOwningPlayer()),
+		OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession),
+		SessionInvite->Session);
+}
+// @@@SNIPEND
+
+// @@@SNIPSTART MatchmakingDSWidget.cpp-CancelMatchmaking
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-3", "8"]}
+void UMatchmakingDSWidget::CancelMatchmaking()
+{
+	ChangeWidgetState(EWidgetState::CANCELING_MATCH);
+
+	OnlineSession->CancelMatchmaking(
+		GetOwningPlayer(),
+		OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession));
+}
+// @@@SNIPEND
+
+// @@@SNIPSTART MatchmakingDSWidget.cpp-RejectSessionInvite
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-9", "14"]}
+void UMatchmakingDSWidget::RejectSessionInvite()
+{
+	if (!SessionInvite)
+	{
+		ChangeWidgetState(EWidgetState::ERROR);
+		Tb_ErrorText->SetText(TEXT_FAILED_SESSION_INVITE_INVALID);
+	}
 	
-	W_Parent->SetLoadingMessage(TEXT_CANCEL_MATCHMAKING, false);
-	W_Parent->SwitchContent(UQuickPlayWidget::EContentType::LOADING);
-	
-	if(bIsJoiningMatch)
-	{
-		OnlineSession->LeaveSession(
-			OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession));
-	}
-	else
-	{
-		OnlineSession->CancelMatchmaking(
-			GetOwningPlayer(),
-			OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession));
-	}
-}
+	ChangeWidgetState(EWidgetState::REJECTING_MATCH);
 
-void UMatchmakingDSWidget::OnStartMatchmakingComplete(FName SessionName, bool bSucceeded) const
+	OnlineSession->RejectSessionInvite(
+		OnlineSession->GetLocalUserNumFromPlayerController(GetOwningPlayer()),
+		*SessionInvite.Get());
+}
+// @@@SNIPEND
+
+// @@@SNIPSTART MatchmakingDSWidget.cpp-OnStartMatchmakingComplete
+void UMatchmakingDSWidget::OnStartMatchmakingComplete(FName SessionName, bool bSucceeded)
 {
 	// Abort if not a game session.
 	if (!SessionName.IsEqual(OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession)))
@@ -112,17 +221,18 @@ void UMatchmakingDSWidget::OnStartMatchmakingComplete(FName SessionName, bool bS
 
 	if (bSucceeded)
 	{
-		W_Parent->SetLoadingMessage(TEXT_FINDING_MATCH, true);
-		W_Parent->SwitchContent(UQuickPlayWidget::EContentType::LOADING);
+		ChangeWidgetState(EWidgetState::FINDING_MATCH);
 	}
 	else
 	{
-		W_Parent->SetErrorMessage(TEXT_FAILED_FIND_MATCH, true);
-		W_Parent->SwitchContent(UQuickPlayWidget::EContentType::ERROR);
+		Tb_ErrorText->SetText(TEXT_FAILED_FIND_MATCH);
+		ChangeWidgetState(EWidgetState::ERROR);
 	}
 }
+// @@@SNIPEND
 
-void UMatchmakingDSWidget::OnCancelMatchmakingComplete(FName SessionName, bool bSucceeded) const
+// @@@SNIPSTART MatchmakingDSWidget.cpp-OnMatchmakingComplete
+void UMatchmakingDSWidget::OnMatchmakingComplete(FName SessionName, bool bSucceeded)
 {
 	// Abort if not a game session.
 	if (!SessionName.IsEqual(OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession)))
@@ -132,16 +242,50 @@ void UMatchmakingDSWidget::OnCancelMatchmakingComplete(FName SessionName, bool b
 
 	if (bSucceeded)
 	{
-		W_Parent->SwitchContent(UQuickPlayWidget::EContentType::SELECTSERVERTYPE);
+		ChangeWidgetState(EWidgetState::MATCH_FOUND);
 	}
 	else
 	{
-		W_Parent->SetErrorMessage(TEXT_FAILED_CANCEL_MATCH, false);
-		W_Parent->SwitchContent(UQuickPlayWidget::EContentType::ERROR);
+		Tb_ErrorText->SetText(TEXT_FAILED_FIND_MATCH);
+		ChangeWidgetState(EWidgetState::ERROR);
 	}
 }
+// @@@SNIPEND
 
-void UMatchmakingDSWidget::OnMatchmakingComplete(FName SessionName, bool bSucceeded) const
+// @@@SNIPSTART MatchmakingDSWidget.cpp-OnSessionInviteReceived
+void UMatchmakingDSWidget::OnSessionInviteReceived(
+	const FUniqueNetId& UserId,
+	const FUniqueNetId& FromId,
+	const FOnlineSessionInviteAccelByte& Invite)
+{
+	// Abort if not a game session.
+	if (Invite.SessionType != EAccelByteV2SessionType::GameSession)
+	{
+		return;
+	}
+
+	// Store session invite for later use
+	SessionInvite = MakeShared<FOnlineSessionInviteAccelByte>(Invite);
+
+	// Check if auto join enabled or not
+	const TSharedPtr<FOnlineSessionInfoAccelByteV2> SessionInfo =
+		StaticCastSharedPtr<FOnlineSessionInfoAccelByteV2>(Invite.Session.Session.SessionInfo);
+	check(SessionInfo.IsValid());
+	const bool bAutoJoin = SessionInfo->GetBackendSessionData()->Configuration.AutoJoin;
+
+	/**
+	 * If auto join, show joining match screen, else show waiting for players screen.
+	 * Only if the match found screen have been up for longer than MatchFoundDelay
+	 */
+	if (MatchFoundCurrentCountdown <= 0)
+	{
+		ChangeWidgetState(bAutoJoin ? EWidgetState::JOINING_MATCH : EWidgetState::WAITING_FOR_PLAYER);
+	}
+}
+// @@@SNIPEND
+
+// @@@SNIPSTART MatchmakingDSWidget.cpp-OnJoinSessionComplete
+void UMatchmakingDSWidget::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
 {
 	// Abort if not a game session.
 	if (!SessionName.IsEqual(OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession)))
@@ -149,47 +293,163 @@ void UMatchmakingDSWidget::OnMatchmakingComplete(FName SessionName, bool bSuccee
 		return;
 	}
 
-	if (bSucceeded)
-	{
-		W_Parent->SetLoadingMessage(TEXT_JOINING_MATCH, false);
-		W_Parent->SwitchContent(UQuickPlayWidget::EContentType::LOADING);
-	}
-	else
-	{
-		W_Parent->SetErrorMessage(TEXT_FAILED_FIND_MATCH, true);
-		W_Parent->SwitchContent(UQuickPlayWidget::EContentType::ERROR);
-	}
-}
-
-void UMatchmakingDSWidget::OnCancelJoinSessionComplete(FName SessionName, bool bSucceeded) const
-{
-	// Abort if not a game session.
-	if (!SessionName.IsEqual(OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession)))
-	{
-		return;
-	}
-
-	if (bSucceeded)
-	{
-		W_Parent->SwitchContent(UQuickPlayWidget::EContentType::SELECTGAMEMODE);
-	}
-	else
-	{
-		W_Parent->SetErrorMessage(TEXT_FAILED_CANCEL_MATCH, false);
-		W_Parent->SwitchContent(UQuickPlayWidget::EContentType::ERROR);
-	}
-}
-
-void UMatchmakingDSWidget::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result) const
-{
 	if(Result == EOnJoinSessionCompleteResult::Success)
 	{
-		W_Parent->SetLoadingMessage(TEXT_JOINING_MATCH, true);
-		W_Parent->SwitchContent(UQuickPlayWidget::EContentType::LOADING);
+		ChangeWidgetState(EWidgetState::SESSION_JOINED);
 	}
 	else
 	{
-		W_Parent->SetErrorMessage(TEXT_FAILED_JOIN_MATCH, true);
-		W_Parent->SwitchContent(UQuickPlayWidget::EContentType::ERROR);
+		Tb_ErrorText->SetText(TEXT_FAILED_JOIN_MATCH);
+		ChangeWidgetState(EWidgetState::ERROR);
 	}
+}
+// @@@SNIPEND
+
+// @@@SNIPSTART MatchmakingDSWidget.cpp-OnSessionServerUpdateReceived
+void UMatchmakingDSWidget::OnSessionServerUpdateReceived(
+	const FName SessionName,
+	const FOnlineError& Error,
+	const bool bHasClientTravelTriggered)
+{
+	if (Error.bSucceeded && SessionJoinedCurrentCountdown <= 0)
+	{
+		ChangeWidgetState(EWidgetState::REQUESTING_SERVER);
+	}
+	else if (!Error.bSucceeded)
+	{
+		Tb_ErrorText->SetText(TEXT_FAILED_FIND_SERVER);
+		ChangeWidgetState(EWidgetState::ERROR);
+	}
+}
+// @@@SNIPEND
+
+// @@@SNIPSTART MatchmakingDSWidget.cpp-OnCancelMatchmakingComplete
+void UMatchmakingDSWidget::OnCancelMatchmakingComplete(FName SessionName, bool bSucceeded)
+{
+	// Abort if not a game session.
+	if (!SessionName.IsEqual(OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession)))
+	{
+		return;
+	}
+
+	if (bSucceeded)
+	{
+		DeactivateWidget();
+	}
+	else
+	{
+		Tb_ErrorText->SetText(TEXT_FAILED_CANCEL_MATCH);
+		ChangeWidgetState(EWidgetState::ERROR);
+	}
+}
+// @@@SNIPEND
+
+// @@@SNIPSTART MatchmakingDSWidget.cpp-OnRejectSessionInviteComplete
+void UMatchmakingDSWidget::OnRejectSessionInviteComplete(bool bSucceeded)
+{
+	if (bSucceeded)
+	{
+		DeactivateWidget();
+	}
+	else
+	{
+		Tb_ErrorText->SetText(TEXT_FAILED_REJECT_MATCH);
+		ChangeWidgetState(EWidgetState::ERROR);
+	}
+}
+// @@@SNIPEND
+
+void UMatchmakingDSWidget::ChangeWidgetState(const EWidgetState State)
+{
+	UWidget* WidgetSwitcherTarget = nullptr;
+	UWidget* FocusTarget = nullptr;
+
+	switch (State)
+	{
+	case EWidgetState::REQUEST_SENT:
+		WidgetSwitcherTarget = W_Loading;
+		Tb_LoadingText->SetText(TEXT_FINDING_MATCH);
+		Tb_LoadingSubText->SetVisibility(ESlateVisibility::Hidden);
+		Btn_Cancel->SetIsEnabled(false);
+		break;
+	case EWidgetState::FINDING_MATCH:
+		WidgetSwitcherTarget = W_Loading;
+		Tb_LoadingText->SetText(TEXT_FINDING_MATCH);
+		Tb_LoadingSubText->SetVisibility(ESlateVisibility::Hidden);
+		Btn_Cancel->SetIsEnabled(true);
+		FocusTarget = Btn_Cancel;
+		break;
+	case EWidgetState::MATCH_FOUND:
+		WidgetSwitcherTarget = W_Loading;
+		Tb_LoadingText->SetText(TEXT_JOINING_MATCH);
+		Tb_LoadingSubText->SetVisibility(ESlateVisibility::Visible);
+		Tb_LoadingSubText->SetText(TEXT_MATCH_FOUND);
+		Btn_Cancel->SetIsEnabled(false);
+		MatchFoundCurrentCountdown = MatchFoundDelay;
+		break;
+	case EWidgetState::CANCELING_MATCH:
+		WidgetSwitcherTarget = W_Loading;
+		Tb_LoadingText->SetText(TEXT_CANCEL_MATCHMAKING);
+		Btn_Cancel->SetIsEnabled(false);
+		break;
+	case EWidgetState::WAITING_FOR_PLAYER:
+		WidgetSwitcherTarget = W_WaitingForPlayer;
+		Btn_Cancel->SetIsEnabled(false);
+		FocusTarget = Btn_Join;
+		break;
+	case EWidgetState::REJECTING_MATCH:
+		WidgetSwitcherTarget = W_Loading;
+		Tb_LoadingText->SetText(TEXT_REJECTING_MATCH);
+		Tb_LoadingSubText->SetVisibility(ESlateVisibility::Hidden);
+		Btn_Cancel->SetIsEnabled(false);
+		break;
+	case EWidgetState::JOINING_MATCH:
+		WidgetSwitcherTarget = W_Loading;
+		Tb_LoadingText->SetText(TEXT_JOINING_MATCH);
+		Tb_LoadingSubText->SetVisibility(ESlateVisibility::Hidden);
+		Btn_Cancel->SetIsEnabled(false);
+		break;
+	case EWidgetState::SESSION_JOINED:
+		WidgetSwitcherTarget = W_Loading;
+		Tb_LoadingText->SetText(TEXT_JOINING_MATCH);
+		Tb_LoadingSubText->SetVisibility(ESlateVisibility::Visible);
+		Tb_LoadingSubText->SetText(TEXT_MATCH_JOINED);
+		Btn_Cancel->SetIsEnabled(false);
+		SessionJoinedCurrentCountdown = SessionJoinedDelay;
+		break;
+	case EWidgetState::REQUESTING_SERVER:
+		WidgetSwitcherTarget = W_Loading;
+		Tb_LoadingSubText->SetVisibility(ESlateVisibility::Hidden);
+		Btn_Cancel->SetIsEnabled(false);
+		break;
+	case EWidgetState::ERROR:
+		WidgetSwitcherTarget = W_Error;
+		FocusTarget = Btn_Retry;
+		break;
+	}
+
+	// Requesting server loading state based on P2P or DS and Host or Client
+	if (State == EWidgetState::REQUESTING_SERVER)
+	{
+		const TSharedPtr<FOnlineSessionInfoAccelByteV2> SessionInfo =
+			StaticCastSharedPtr<FOnlineSessionInfoAccelByteV2>(SessionInvite->Session.Session.SessionInfo);
+		if (SessionInfo && SessionInfo->IsP2PMatchmaking())
+		{
+			Tb_LoadingText->SetText(
+				OnlineSession->GetLocalPlayerUniqueNetId(GetOwningPlayer()) == SessionInfo->GetLeaderId()?
+				TEXT_STARTING_AS_HOST:
+				TEXT_WAITING_HOST);
+		}
+		else
+		{
+			Tb_LoadingText->SetText(TEXT_REQUESTING_SERVER);
+		}
+	}
+
+	if (FocusTarget)
+	{
+		FocusTarget->SetUserFocus(GetOwningPlayer());
+	}
+	Ws_Root->SetActiveWidget(WidgetSwitcherTarget);
+	WidgetState = State;
 }

@@ -6,29 +6,18 @@
 
 #include "Play/OnlineSessionUtils/AccelByteWarsOnlineSessionBase.h"
 
-#include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
 
 #include "CommonButtonBase.h"
 #include "Components/WidgetSwitcher.h"
 
+// @@@SNIPSTART QuickPlayWidget.cpp-GetSelectedGameModeType
 EGameModeType UQuickPlayWidget::GetSelectedGameModeType() const
 {
 	return SelectedGameModeType;
 }
-
-void UQuickPlayWidget::SetLoadingMessage(const FText& Text, const bool bEnableCancelButton) const
-{
-	Ws_Processing->LoadingMessage = Text;
-	Ws_Processing->bEnableCancelButton = bEnableCancelButton;
-}
-
-void UQuickPlayWidget::SetErrorMessage(const FText& Text, const bool bShowRetryButton) const
-{
-	Ws_Processing->ErrorMessage = Text;
-	Ws_Processing->bShowRetryButtonOnError = bShowRetryButton;
-}
+// @@@SNIPEND
 
 void UQuickPlayWidget::SwitchContent(const EContentType State)
 {
@@ -36,7 +25,6 @@ void UQuickPlayWidget::SwitchContent(const EContentType State)
 	UWidget* FocusTarget = Btn_SelectGameMode_Back;
 	UWidget* WidgetTarget = W_SelectGameMode;
 	UWidget* BackButtonTarget = Btn_SelectGameMode_Back;
-	EAccelByteWarsWidgetSwitcherState ProcessingState = EAccelByteWarsWidgetSwitcherState::Loading;
 
 	switch (State)
 	{
@@ -55,38 +43,11 @@ void UQuickPlayWidget::SwitchContent(const EContentType State)
 		BackButtonTarget = Btn_SelectServerType_Back;
 		CameraTargetY = 750.0f;
 		break;
-	case EContentType::LOADING:
-		bShowBackButton = false;
-		FocusTarget = Ws_Processing;
-		WidgetTarget = W_ProcessingOuter;
-		BackButtonTarget = Btn_Processing_Back;
-		ProcessingState = EAccelByteWarsWidgetSwitcherState::Loading;
-		CameraTargetY = 800.0f;
-		DeinitializeFTUEDialogues();
-		break;
-	case EContentType::ERROR:
-		bShowBackButton = true;
-		FocusTarget = Ws_Processing;
-		WidgetTarget = W_ProcessingOuter;
-		BackButtonTarget = Btn_Processing_Back;
-		ProcessingState = EAccelByteWarsWidgetSwitcherState::Error;
-		CameraTargetY = 800.0f;
-		DeinitializeFTUEDialogues();
-		break;
-	case EContentType::SUCCESS:
-		bShowBackButton = false;
-		FocusTarget = Ws_Processing;
-		WidgetTarget = W_ProcessingOuter;
-		BackButtonTarget = Btn_Processing_Back;
-		ProcessingState = EAccelByteWarsWidgetSwitcherState::Not_Empty;
-		CameraTargetY = 800.0f;
-		break;
 	}
 
 	DesiredFocusTargetButton = BackButtonTarget;
 	FocusTarget->SetUserFocus(GetOwningPlayer());
 	Ws_ContentOuter->SetActiveWidget(WidgetTarget);
-	Ws_Processing->SetWidgetState(ProcessingState);
 
 	BackButtonTarget->SetVisibility(bShowBackButton ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	RequestRefreshFocus();
@@ -101,7 +62,6 @@ void UQuickPlayWidget::NativeOnActivated()
 
 	Btn_SelectGameMode_Back->OnClicked().AddUObject(this, &ThisClass::DeactivateWidget);
 	Btn_SelectServerType_Back->OnClicked().AddUObject(this, &ThisClass::SwitchContent, EContentType::SELECTGAMEMODE);
-	Btn_Processing_Back->OnClicked().AddUObject(this, &ThisClass::SwitchContent, EContentType::SELECTGAMEMODE);
 
 	SwitchContent(EContentType::SELECTGAMEMODE);
 }
@@ -115,9 +75,6 @@ void UQuickPlayWidget::NativeOnDeactivated()
 
 	Btn_SelectGameMode_Back->OnClicked().RemoveAll(this);
 	Btn_SelectServerType_Back->OnClicked().RemoveAll(this);
-	Btn_Processing_Back->OnClicked().RemoveAll(this);
-
-	SwitchContent(EContentType::SELECTGAMEMODE);
 }
 
 void UQuickPlayWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)

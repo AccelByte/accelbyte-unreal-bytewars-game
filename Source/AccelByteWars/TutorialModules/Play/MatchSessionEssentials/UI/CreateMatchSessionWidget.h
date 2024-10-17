@@ -18,6 +18,8 @@ class ACCELBYTEWARS_API UCreateMatchSessionWidget : public UAccelByteWarsActivat
 {
 	GENERATED_BODY()
 
+// @@@SNIPSTART CreateMatchSessionWidget.h-public
+// @@@MULTISNIP GetSelectedGameModeType {"selectedLines": ["1", "5"]}
 public:
 	virtual void NativeOnActivated() override;
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
@@ -36,7 +38,9 @@ public:
 	void SetLoadingMessage(const FText& Message, const bool bEnableCancelButton = true) const;
 	void SetErrorMessage(const FText& Message, const bool bShowRetryButton = true) const;
 	void SwitchContent(const EContentType ContentType);
+// @@@SNIPEND
 
+// @@@SNIPSTART CreateMatchSessionWidget.h-protected
 protected:
 	virtual void NativeOnDeactivated() override;
 
@@ -46,7 +50,11 @@ protected:
 	void SetSelectedGameMode(EGameModeType GameModeType);
 
 	float CameraTargetY = 600.f;
+// @@@SNIPEND
 
+// @@@SNIPSTART CreateMatchSessionWidget.h-private
+// @@@MULTISNIP CreateMatchSessionUISwitcher {"selectedLines": ["1", "6-7", "18-19"]}
+// @@@MULTISNIP SelectGameModeUI {"selectedLines": ["1", "33-37"]}
 private:
 	EGameModeType SelectedGameModeType = EGameModeType::FFA;
 
@@ -84,4 +92,5 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_TeamDeathMatch;
+// @@@SNIPEND
 };

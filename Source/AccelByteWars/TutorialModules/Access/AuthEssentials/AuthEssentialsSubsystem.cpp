@@ -7,6 +7,8 @@
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
 
+// @@@SNIPSTART AuthEssentialsSubsystem.cpp-Initialize
+// @@@MULTISNIP Interface {"selectedLines": ["1-2", "5-19", "22"]}
 void UAuthEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
@@ -29,6 +31,7 @@ void UAuthEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
     Subsystem->SetLanguage(UTutorialModuleOnlineUtility::GetPrimaryLanguageSubtag());
 }
+// @@@SNIPEND
 
 void UAuthEssentialsSubsystem::Deinitialize()
 {
@@ -37,6 +40,7 @@ void UAuthEssentialsSubsystem::Deinitialize()
     ClearAuthCredentials();
 }
 
+// @@@SNIPSTART AuthEssentialsSubsystem.cpp-Login
 void UAuthEssentialsSubsystem::Login(const APlayerController* PC, const FAuthOnLoginCompleteDelegate& OnLoginComplete)
 {
     if (!ensure(IdentityInterface.IsValid()))
@@ -68,20 +72,25 @@ void UAuthEssentialsSubsystem::Login(const APlayerController* PC, const FAuthOnL
         });
     }
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART AuthEssentialsSubsystem.cpp-SetAuthCredentials
 void UAuthEssentialsSubsystem::SetAuthCredentials(const EAccelByteLoginType& LoginMethod, const FString& Id, const FString& Token) 
 {
     Credentials.Type = (LoginMethod == EAccelByteLoginType::None) ? TEXT("") : FAccelByteUtilities::GetUEnumValueAsString(LoginMethod);
     Credentials.Id = Id;
     Credentials.Token = Token;
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART AuthEssentialsSubsystem.cpp-ClearAuthCredentials
 void UAuthEssentialsSubsystem::ClearAuthCredentials()
 {
     Credentials.Type = TEXT("");
     Credentials.Id = TEXT("");
     Credentials.Token = TEXT("");
 }
+// @@@SNIPEND
 
 TSharedPtr<FUserOnlineAccountAccelByte> UAuthEssentialsSubsystem::GetLoggedInUserOnlineAccount(const int LocalUserIndex) const
 {
@@ -121,6 +130,7 @@ TSharedPtr<FUserOnlineAccountAccelByte> UAuthEssentialsSubsystem::GetLoggedInUse
     return AbUserAccount;
 }
 
+// @@@SNIPSTART AuthEssentialsSubsystem.cpp-OnLoginComplete
 void UAuthEssentialsSubsystem::OnLoginComplete(int32 LocalUserNum, bool bLoginWasSuccessful, const FUniqueNetId& UserId, const FString& LoginError, const FAuthOnLoginCompleteDelegate OnLoginComplete)
 {
     if (bLoginWasSuccessful)
@@ -135,6 +145,7 @@ void UAuthEssentialsSubsystem::OnLoginComplete(int32 LocalUserNum, bool bLoginWa
     IdentityInterface->ClearOnLoginCompleteDelegates(LocalUserNum, this);
     OnLoginComplete.ExecuteIfBound(bLoginWasSuccessful, LoginError);
 }
+// @@@SNIPEND
 
 TArray<UTutorialModuleSubsystem::FCheatCommandEntry> UAuthEssentialsSubsystem::GetCheatCommandEntries()
 {

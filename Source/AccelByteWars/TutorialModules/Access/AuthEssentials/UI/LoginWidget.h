@@ -20,14 +20,21 @@ UCLASS(Abstract)
 class ACCELBYTEWARS_API ULoginWidget : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
-			
+
+// @@@SNIPSTART LoginWidget.h-public
+// @@@MULTISNIP Ws_LoginState {"selectedLines": ["1", "6-7"]}
 public:
 	void SetLoginState(const ELoginState NewState) const;
 	void OnLoginComplete(bool bWasSuccessful, const FString& ErrorMessage);
 	void SetButtonLoginVisibility(const ESlateVisibility InSlateVisibility) const;
 
-	FOnRetryLogin OnRetryLoginDelegate;
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UWidgetSwitcher* Ws_LoginState;
 
+	FOnRetryLogin OnRetryLoginDelegate;
+// @@@SNIPEND
+
+// @@@SNIPSTART LoginWidget.h-protected
 protected:
 	void NativeConstruct() override;
 	void NativeOnActivated() override;
@@ -37,18 +44,14 @@ protected:
 	void OnRetryLoginButtonClicked();
 	void OnQuitGameButtonClicked();
 	
+	void OpenMainMenu();
+
 	void AutoLoginCmd();
+// @@@SNIPEND
 
-private:
-	UAccelByteWarsGameInstance* GameInstance;
-	UAuthEssentialsSubsystem* AuthSubsystem;
-	UPromptSubsystem* PromptSubsystem;
-
-#pragma region "UI"
-public:
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UWidgetSwitcher* Ws_LoginState;
-
+// @@@SNIPSTART LoginWidget.h-private
+// @@@MULTISNIP DefaultStateUI {"selectedLines": ["1", "11-12"]}
+// @@@MULTISNIP FailedStateUI {"selectedLines": ["1", "14-21"]}
 private:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UWidget* Vb_LoginOptions;
@@ -73,5 +76,12 @@ private:
 	
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UAccelByteWarsActivatableWidget> MainMenuWidgetClass;
-#pragma endregion 
+
+	UPROPERTY(EditDefaultsOnly)
+	FPrimaryAssetId RegisterUserInGameAssetId;
+
+	UAccelByteWarsGameInstance* GameInstance;
+	UAuthEssentialsSubsystem* AuthSubsystem;
+	UPromptSubsystem* PromptSubsystem;
+// @@@SNIPEND
 };

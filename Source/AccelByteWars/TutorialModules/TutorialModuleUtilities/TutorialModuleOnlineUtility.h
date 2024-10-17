@@ -62,6 +62,9 @@ public:
 	/* @brief Get if the server use AccelByte Multiplayer Server. */
 	static bool GetIsServerUseAMS();
 
+	static FString GetClientVersionOverride() { return ClientVersionOverride; }
+	static FString GetGameVersionOverride() { return GameVersionOverride; }
+
 	static void OverrideSDKConfig(const TMap<FString, FString>& ClientConfigs, const TMap<FString, FString>& ServerConfigs);
 
 	static bool IsUseAGSStarter();
@@ -69,6 +72,13 @@ public:
 
 	static FString GetPrimaryLanguageSubtag();
 	static FAccelByteModelsV2GameSessionDSInformation GetDedicatedServer(const UObject* Context);
+
+	static FString GetDummySessionTemplateOverride() { return DummySessionTemplateOverride; }
+	static FString GetPartySessionTemplateOverride() { return PartySessionTemplateOverride; }
+	static FString GetMatchSessionTemplateDSOverride() { return MatchSessionTemplateDSOverride; }
+	static FString GetMatchSessionTemplateP2POverride() { return MatchSessionTemplateP2POverride; }
+	static FString GetMatchPoolDSOverride() { return MatchPoolDSOverride; }
+	static FString GetMatchPoolP2POverride() { return MatchPoolP2POverride; }
 
 private:
 	static void CheckForDedicatedServerVersionOverride();
@@ -79,6 +89,11 @@ private:
 	static ESettingsEnvironment ConvertStringEnvToAccelByteEnv(const FString& EnvironmentStr);
 	static FString ConvertAccelByteEnvToStringEnv(const ESettingsEnvironment& Environment);
 	static ESettingsEnvironment ConvertOSSEnvToAccelByteEnv(const EOnlineEnvironment::Type& Environment);
+
+	static void CheckForClientVersionOverride();
+	static void CheckForGameVersionOverride();
+
+	static void CheckSessionTemplateAndMatchPoolOverride();
 
 	void ExecutePredefinedServiceValidator(const EServicePredefinedValidator ValidatorType, const TDelegate<void(const bool /*bIsValid*/)>& OnComplete, const UObject* Context);
 	
@@ -98,6 +113,16 @@ private:
 	inline static FString CurrentPlayerDisplayName = TEXT("");
 	inline static FString CurrentPublishedStoreId = TEXT("");
 	inline static FString DedicatedServerVersionOverride = TEXT("");
+
+	inline static FString ClientVersionOverride = TEXT("");
+	inline static FString GameVersionOverride = TEXT("");
+
+	inline static FString DummySessionTemplateOverride = TEXT("");
+	inline static FString PartySessionTemplateOverride = TEXT("");
+	inline static FString MatchSessionTemplateDSOverride = TEXT("");
+	inline static FString MatchSessionTemplateP2POverride = TEXT("");
+	inline static FString MatchPoolDSOverride = TEXT("");
+	inline static FString MatchPoolP2POverride = TEXT("");
 
 	inline static bool bUseAGSStarter = false;
 	inline static bool bUseVersionChecker = true;

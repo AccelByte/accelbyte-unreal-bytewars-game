@@ -43,6 +43,8 @@ void UMatchSessionP2PServerSubsystem::OnAuthenticatePlayerComplete_PrePlayerSetu
 }
 #pragma endregion 
 
+// @@@SNIPSTART MatchSessionP2PServerSubsystem.cpp-Initialize
+// @@@MULTISNIP BindServerSessionReceivedDelegate {"selectedLines": ["1-2", "12-13"]}
 void UMatchSessionP2PServerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
@@ -56,14 +58,20 @@ void UMatchSessionP2PServerSubsystem::Initialize(FSubsystemCollectionBase& Colle
 
 	GetABSessionInt()->OnServerReceivedSessionDelegates.AddUObject(this, &ThisClass::OnServerSessionReceived);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchSessionP2PServerSubsystem.cpp-Deinitialize
+// @@@MULTISNIP UnbindServerSessionReceivedDelegate {"selectedLines": ["1-2", "5-6"]}
 void UMatchSessionP2PServerSubsystem::Deinitialize()
 {
 	Super::Deinitialize();
 
 	GetABSessionInt()->OnServerReceivedSessionDelegates.RemoveAll(this);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchSessionP2PServerSubsystem.cpp-OnServerSessionReceived
+// @@@MULTISNIP SessionSettings {"highlightedLines": "{43-57}"}
 void UMatchSessionP2PServerSubsystem::OnServerSessionReceived(FName SessionName)
 {
 	Super::OnServerSessionReceived(SessionName);
@@ -107,7 +115,7 @@ void UMatchSessionP2PServerSubsystem::OnServerSessionReceived(FName SessionName)
 	}
 
 	// Get game related info from session
-	FString RequestedGameModeCode;
+	FString RequestedGameModeCode = TEXT("");
 	Session->SessionSettings.Get(GAMESETUP_GameModeCode, RequestedGameModeCode);
 
 	// Try getting manually set game rules, if GAMESETUP_DisplayName empty, go to the next flow
@@ -126,3 +134,4 @@ void UMatchSessionP2PServerSubsystem::OnServerSessionReceived(FName SessionName)
 	// Query all currently registered user's info
 	AuthenticatePlayer_OnRefreshSessionComplete(true);
 }
+// @@@SNIPEND

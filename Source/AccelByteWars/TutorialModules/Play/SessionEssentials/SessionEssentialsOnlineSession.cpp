@@ -8,6 +8,13 @@
 #include "OnlineSubsystemAccelByteSessionSettings.h"
 #include "SessionEssentialsLog.h"
 
+// @@@SNIPSTART SessionEssentialsOnlineSession.cpp-RegisterOnlineDelegates
+// @@@MULTISNIP BindCreateSessionDelegate {"selectedLines": ["1-2", "5-6", "20"]}
+// @@@MULTISNIP BindJoinSessionDelegate {"selectedLines": ["1-2", "7-8", "20"]}
+// @@@MULTISNIP BindSessionInvitationDelegate {"selectedLines": ["1-2", "9-10", "16-17", "20"]}
+// @@@MULTISNIP BindLeaveSessionDelegate {"selectedLines": ["1-2", "11-12", "20"]}
+// @@@MULTISNIP BindUpdateSessionDelegate {"selectedLines": ["1-2", "13-14", "20"]}
+// @@@MULTISNIP BindSessionParticipantDelegate {"selectedLines": ["1-2", "18-20"]}
 void USessionEssentialsOnlineSession::RegisterOnlineDelegates()
 {
 	Super::RegisterOnlineDelegates();
@@ -28,7 +35,15 @@ void USessionEssentialsOnlineSession::RegisterOnlineDelegates()
 	GetABSessionInt()->AddOnSessionParticipantsChangeDelegate_Handle(
 		FOnSessionParticipantsChangeDelegate::CreateUObject(this, &ThisClass::OnSessionParticipantsChange));
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionEssentialsOnlineSession.cpp-ClearOnlineDelegates
+// @@@MULTISNIP UnbindCreateSessionDelegate {"selectedLines": ["1-2", "5", "13"]}
+// @@@MULTISNIP UnbindJoinSessionDelegate {"selectedLines": ["1-2", "6", "13"]}
+// @@@MULTISNIP UnbindSessionInvitationDelegate {"selectedLines": ["1-2", "7", "11", "13"]}
+// @@@MULTISNIP UnbindLeaveSessionDelegate {"selectedLines": ["1-2", "8", "13"]}
+// @@@MULTISNIP UnbindUpdateSessionDelegate {"selectedLines": ["1-2", "9", "13"]}
+// @@@MULTISNIP UnbindSessionParticipantDelegate {"selectedLines": ["1-2", "12-13"]}
 void USessionEssentialsOnlineSession::ClearOnlineDelegates()
 {
 	Super::ClearOnlineDelegates();
@@ -42,12 +57,16 @@ void USessionEssentialsOnlineSession::ClearOnlineDelegates()
 	GetABSessionInt()->ClearOnV2SessionInviteReceivedDelegates(this);
 	GetABSessionInt()->ClearOnSessionParticipantsChangeDelegates(this);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionEssentialsOnlineSession.cpp-GetSession
 FNamedOnlineSession* USessionEssentialsOnlineSession::GetSession(const FName SessionName)
 {
 	return GetSessionInt()->GetNamedSession(SessionName);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionEssentialsOnlineSession.cpp-GetSessionType
 EAccelByteV2SessionType USessionEssentialsOnlineSession::GetSessionType(const FName SessionName)
 {
 	const FNamedOnlineSession* OnlineSession = GetSession(SessionName);
@@ -60,7 +79,9 @@ EAccelByteV2SessionType USessionEssentialsOnlineSession::GetSessionType(const FN
 
 	return GetABSessionInt()->GetSessionTypeFromSettings(OnlineSessionSettings);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionEssentialsOnlineSession.cpp-GetPredefinedSessionNameFromType
 FName USessionEssentialsOnlineSession::GetPredefinedSessionNameFromType(const EAccelByteV2SessionType SessionType)
 {
 	FName SessionName = FName();
@@ -78,7 +99,9 @@ FName USessionEssentialsOnlineSession::GetPredefinedSessionNameFromType(const EA
 
 	return SessionName;
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionEssentialsOnlineSession.cpp-CreateSession
 void USessionEssentialsOnlineSession::CreateSession(
 	const int32 LocalUserNum,
 	FName SessionName,
@@ -166,7 +189,9 @@ void USessionEssentialsOnlineSession::CreateSession(
 		}
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionEssentialsOnlineSession.cpp-JoinSession
 void USessionEssentialsOnlineSession::JoinSession(
 	const int32 LocalUserNum,
 	FName SessionName,
@@ -210,7 +235,9 @@ void USessionEssentialsOnlineSession::JoinSession(
 		}
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionEssentialsOnlineSession.cpp-SendSessionInvite
 void USessionEssentialsOnlineSession::SendSessionInvite(
 	const int32 LocalUserNum,
 	FName SessionName,
@@ -226,7 +253,9 @@ void USessionEssentialsOnlineSession::SendSessionInvite(
 
 	GetABSessionInt()->SendSessionInviteToFriend(LocalUserNum, SessionName, *Invitee.Get());
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionEssentialsOnlineSession.cpp-RejectSessionInvite
 void USessionEssentialsOnlineSession::RejectSessionInvite(
 	const int32 LocalUserNum,
 	const FOnlineSessionInviteAccelByte& Invite)
@@ -245,7 +274,9 @@ void USessionEssentialsOnlineSession::RejectSessionInvite(
 		Invite,
 		FOnRejectSessionInviteComplete::CreateUObject(this, &ThisClass::OnRejectSessionInviteComplete));
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionEssentialsOnlineSession.cpp-LeaveSession
 void USessionEssentialsOnlineSession::LeaveSession(FName SessionName)
 {
 	UE_LOG_SESSIONESSENTIALS(Verbose, TEXT("called"))
@@ -285,7 +316,9 @@ void USessionEssentialsOnlineSession::LeaveSession(FName SessionName)
 		}));
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionEssentialsOnlineSession.cpp-UpdateSessionJoinability
 void USessionEssentialsOnlineSession::UpdateSessionJoinability(const FName SessionName, const EAccelByteV2SessionJoinability Joinability)
 {
 	UE_LOG_SESSIONESSENTIALS(Verbose, TEXT("called"));
@@ -307,21 +340,27 @@ void USessionEssentialsOnlineSession::UpdateSessionJoinability(const FName Sessi
 	Session->SessionSettings.Set(SETTING_SESSION_JOIN_TYPE, UEnum::GetValueAsString(Joinability));
 	ABSessionInt->UpdateSession(SessionName, Session->SessionSettings);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionEssentialsOnlineSession.cpp-OnCreateSessionComplete
 void USessionEssentialsOnlineSession::OnCreateSessionComplete(FName SessionName, bool bSucceeded)
 {
 	UE_LOG_SESSIONESSENTIALS(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
 
 	OnCreateSessionCompleteDelegates.Broadcast(SessionName, bSucceeded);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionEssentialsOnlineSession.cpp-OnJoinSessionComplete
 void USessionEssentialsOnlineSession::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
 {
 	UE_LOG_SESSIONESSENTIALS(Log, TEXT("succeeded: %s"), *FString(Result == EOnJoinSessionCompleteResult::Success ? "TRUE" : "FALSE"))
 
 	OnJoinSessionCompleteDelegates.Broadcast(SessionName, Result);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionEssentialsOnlineSession.cpp-OnSendSessionInviteComplete
 void USessionEssentialsOnlineSession::OnSendSessionInviteComplete(
 	const FUniqueNetId& LocalSenderId,
 	FName SessionName,
@@ -332,14 +371,18 @@ void USessionEssentialsOnlineSession::OnSendSessionInviteComplete(
 
 	OnSendSessionInviteCompleteDelegates.Broadcast(LocalSenderId, SessionName, bSucceeded, InviteeId);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionEssentialsOnlineSession.cpp-OnRejectSessionInviteComplete
 void USessionEssentialsOnlineSession::OnRejectSessionInviteComplete(bool bSucceeded)
 {
 	UE_LOG_SESSIONESSENTIALS(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? TEXT("TRUE") : TEXT("FALSE")))
 
 	OnRejectSessionInviteCompleteDelegates.Broadcast(bSucceeded);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionEssentialsOnlineSession.cpp-OnLeaveSessionComplete
 void USessionEssentialsOnlineSession::OnLeaveSessionComplete(FName SessionName, bool bSucceeded)
 {
 	UE_LOG_SESSIONESSENTIALS(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
@@ -347,14 +390,18 @@ void USessionEssentialsOnlineSession::OnLeaveSessionComplete(FName SessionName, 
 	bLeavingSession = false;
 	OnLeaveSessionCompleteDelegates.Broadcast(SessionName, bSucceeded);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionEssentialsOnlineSession.cpp-OnUpdateSessionComplete
 void USessionEssentialsOnlineSession::OnUpdateSessionComplete(FName SessionName, bool bSucceeded)
 {
 	UE_LOG_SESSIONESSENTIALS(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
 
 	OnUpdateSessionCompleteDelegates.Broadcast(SessionName, bSucceeded);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionEssentialsOnlineSession.cpp-OnSessionInviteReceived
 void USessionEssentialsOnlineSession::OnSessionInviteReceived(
 	const FUniqueNetId& UserId,
 	const FUniqueNetId& FromId,
@@ -364,7 +411,9 @@ void USessionEssentialsOnlineSession::OnSessionInviteReceived(
 
 	OnSessionInviteReceivedDelegates.Broadcast(UserId, FromId, Invite);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionEssentialsOnlineSession.cpp-OnSessionParticipantsChange
 void USessionEssentialsOnlineSession::OnSessionParticipantsChange(
 	FName SessionName,
 	const FUniqueNetId& Member,
@@ -379,7 +428,9 @@ void USessionEssentialsOnlineSession::OnSessionParticipantsChange(
 
 	OnSessionParticipantsChangeDelegates.Broadcast(SessionName, Member, bJoined);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionEssentialsOnlineSession.cpp-OnLeaveSessionForCreateSessionComplete
 void USessionEssentialsOnlineSession::OnLeaveSessionForCreateSessionComplete(
 	FName SessionName,
 	bool bSucceeded,
@@ -403,7 +454,9 @@ void USessionEssentialsOnlineSession::OnLeaveSessionForCreateSessionComplete(
 		OnCreateSessionComplete(SessionName, false);
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionEssentialsOnlineSession.cpp-OnLeaveSessionForJoinSessionComplete
 void USessionEssentialsOnlineSession::OnLeaveSessionForJoinSessionComplete(
 	FName SessionName,
 	bool bSucceeded,
@@ -427,3 +480,4 @@ void USessionEssentialsOnlineSession::OnLeaveSessionForJoinSessionComplete(
 		OnJoinSessionComplete(SessionName, EOnJoinSessionCompleteResult::UnknownError);
 	}
 }
+// @@@SNIPEND

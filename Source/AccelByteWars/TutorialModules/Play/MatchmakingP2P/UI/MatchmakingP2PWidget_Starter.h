@@ -5,12 +5,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "OnlineSessionInterfaceV2AccelByte.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
+#include "Interfaces/OnlineSessionInterface.h"
 #include "MatchmakingP2PWidget_Starter.generated.h"
 
 class UAccelByteWarsOnlineSessionBase;
 class UCommonButtonBase;
-class UQuickPlayWidget;
+class UWidgetSwitcher;
+class UTextBlock;
 
 UCLASS(Abstract)
 class ACCELBYTEWARS_API UMatchmakingP2PWidget_Starter : public UAccelByteWarsActivatableWidget
@@ -19,6 +22,7 @@ class ACCELBYTEWARS_API UMatchmakingP2PWidget_Starter : public UAccelByteWarsAct
 
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
+	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
 #pragma region "Matchmaking with P2P Function Declarations"
 protected:
@@ -29,15 +33,73 @@ private:
 	UPROPERTY()
 	UAccelByteWarsOnlineSessionBase* OnlineSession;
 
+	TSharedPtr<FOnlineSessionInviteAccelByte> SessionInvite;
+
+	EGameModeType SelectedGameModeType;
+
 #pragma region "UI related"
 protected:
-	virtual UWidget* NativeGetDesiredFocusTarget() const override;
+	enum class EWidgetState : uint8
+	{
+		REQUEST_SENT,
+		FINDING_MATCH,
+		MATCH_FOUND,
+		CANCELING_MATCH,
+		WAITING_FOR_PLAYER,
+		REJECTING_MATCH,
+		JOINING_MATCH,
+		SESSION_JOINED,
+		REQUESTING_SERVER,
+		ERROR
+	};
+
+	void ChangeWidgetState(const EWidgetState State);
 
 private:
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UCommonButtonBase* Btn_StartMatchmakingP2P;
+	EWidgetState WidgetState = EWidgetState::REQUEST_SENT;
 
-	UPROPERTY()
-	UQuickPlayWidget* W_Parent;
+	const float AutoJoinDelay = 10;
+	const float MatchFoundDelay = 1;
+	const float SessionJoinedDelay = 1;
+
+	float AutoJoinCurrentCountdown = 0;
+	float MatchFoundCurrentCountdown = 0;
+	float SessionJoinedCurrentCountdown = 0;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UWidgetSwitcher* Ws_Root;
+	
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UWidget* W_Loading;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UWidget* W_Error;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UWidget* W_WaitingForPlayer;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UCommonButtonBase* Btn_Cancel;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UCommonButtonBase* Btn_Reject;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UCommonButtonBase* Btn_Join;
+	
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UCommonButtonBase* Btn_Retry;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UTextBlock* Tb_LoadingText;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UTextBlock* Tb_LoadingSubText;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UTextBlock* Tb_ErrorText;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UTextBlock* Tb_WaitingForPlayersCountdown;
 #pragma endregion 
 };

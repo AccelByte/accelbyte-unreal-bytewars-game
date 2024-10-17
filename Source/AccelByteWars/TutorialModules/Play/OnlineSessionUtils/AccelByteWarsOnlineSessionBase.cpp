@@ -9,10 +9,12 @@
 #include "OnlineSubsystemUtils.h"
 
 #pragma region "Utilities"
+// @@@SNIPSTART AccelByteWarsOnlineSessionBase.cpp-GetABSessionInt
 FOnlineSessionV2AccelBytePtr UAccelByteWarsOnlineSessionBase::GetABSessionInt()
 {
 	return StaticCastSharedPtr<FOnlineSessionV2AccelByte>(GetSessionInt());
 }
+// @@@SNIPEND
 
 IOnlineIdentityPtr UAccelByteWarsOnlineSessionBase::GetIdentityInt() const
 {
@@ -36,6 +38,7 @@ FOnlineIdentityAccelBytePtr UAccelByteWarsOnlineSessionBase::GetABIdentityInt() 
 	return StaticCastSharedPtr<FOnlineIdentityAccelByte>(Online::GetIdentityInterface(World));
 }
 
+// @@@SNIPSTART AccelByteWarsOnlineSessionBase.cpp-GetUserInt
 IOnlineUserPtr UAccelByteWarsOnlineSessionBase::GetUserInt() const
 {
 	const UWorld* World = GetWorld();
@@ -46,6 +49,7 @@ IOnlineUserPtr UAccelByteWarsOnlineSessionBase::GetUserInt() const
 
 	return Online::GetUserInterface(World);
 }
+// @@@SNIPEND
 
 int32 UAccelByteWarsOnlineSessionBase::GetLocalUserNumFromPlayerController(const APlayerController* PlayerController)
 {

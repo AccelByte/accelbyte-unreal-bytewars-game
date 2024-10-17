@@ -14,12 +14,21 @@ class ACCELBYTEWARS_API UMatchmakingDSOnlineSession final : public USessionEssen
 {
 	GENERATED_BODY()
 
+// @@@SNIPSTART MatchmakingDSOnlineSession.h-public
+// @@@MULTISNIP TargetGameModeMap {"selectedLines": ["1", "19-22"]}
+// @@@MULTISNIP StartMatchmaking {"selectedLines": ["1", "24-28"]}
+// @@@MULTISNIP CancelMatchmaking {"selectedLines": ["1", "29"]}
+// @@@MULTISNIP TravelToSession {"selectedLines": ["1", "10"]}
+// @@@MULTISNIP OnStartMatchmakingCompleteDelegate {"selectedLines": ["1", "31-34"]}
+// @@@MULTISNIP OnMatchmakingCompleteDelegate {"selectedLines": ["1", "35-38"]}
+// @@@MULTISNIP OnCancelMatchmakingCompleteDelegate {"selectedLines": ["1", "39-42"]}
+// @@@MULTISNIP OnAcceptBackfillProposalCompleteDelegates {"selectedLines": ["1", "43-46"]}
+// @@@MULTISNIP OnSessionServerUpdateReceivedDelegate {"selectedLines": ["1", "12-15"]}
 public:
 	virtual void RegisterOnlineDelegates() override;
 	virtual void ClearOnlineDelegates() override;
 
 #pragma region "Game Session Essentials"
-public:
 	virtual void DSQueryUserInfo(
 		const TArray<FUniqueNetIdRef>& UserIds,
 		const FOnDSQueryUsersInfoComplete& OnComplete) override;
@@ -30,25 +39,9 @@ public:
 	{
 		return &OnSessionServerUpdateReceivedDelegates;
 	}
-
-protected:
-	virtual void OnDSQueryUserInfoComplete(const FListBulkUserInfo& UserInfoList, const FOnDSQueryUsersInfoComplete& OnComplete) override;
-
-	virtual void OnSessionServerUpdateReceived(FName SessionName) override;
-	virtual void OnSessionServerErrorReceived(FName SessionName, const FString& Message) override;
-
-	virtual bool HandleDisconnectInternal(UWorld* World, UNetDriver* NetDriver) override;
-
-private:
-	bool bIsInSessionServer = false;
-
-	FDelegateHandle OnDSQueryUserInfoCompleteDelegateHandle;
-
-	FOnServerSessionUpdateReceived OnSessionServerUpdateReceivedDelegates;
-#pragma endregion 
+#pragma endregion
 
 #pragma region "Matchmaking Session Essentials"
-public:
 	const TMap<FString, FString> TargetGameModeMap = {
 		{"unreal-elimination-ds-ams", "ELIMINATION-DS"},
 		{"unreal-teamdeathmatch-ds-ams", "TEAMDEATHMATCH-DS"}
@@ -77,8 +70,27 @@ public:
 	{
 		return &OnAcceptBackfillProposalCompleteDelegates;
 	}
+#pragma endregion
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchmakingDSOnlineSession.h-protected
+// @@@MULTISNIP OnStartMatchmakingComplete {"selectedLines": ["1", "12-15"]}
+// @@@MULTISNIP OnMatchmakingComplete {"selectedLines": ["1", "18"]}
+// @@@MULTISNIP OnCancelMatchmakingComplete {"selectedLines": ["1", "16"]}
+// @@@MULTISNIP OnSessionServerUpdateReceived {"selectedLines": ["1", "5"]}
+// @@@MULTISNIP OnSessionServerErrorReceived {"selectedLines": ["1", "6"]}
+// @@@MULTISNIP OnBackfillProposalReceived {"selectedLines": ["1", "19"]}
 protected:
+#pragma region "Game Session Essentials"
+	virtual void OnDSQueryUserInfoComplete(const FListBulkUserInfo& UserInfoList, const FOnDSQueryUsersInfoComplete& OnComplete) override;
+
+	virtual void OnSessionServerUpdateReceived(FName SessionName) override;
+	virtual void OnSessionServerErrorReceived(FName SessionName, const FString& Message) override;
+
+	virtual bool HandleDisconnectInternal(UWorld* World, UNetDriver* NetDriver) override;
+#pragma endregion 
+
+#pragma region "Matchmaking Session Essentials"
 	virtual void OnStartMatchmakingComplete(
 		FName SessionName,
 		const FOnlineError& ErrorDetails,
@@ -87,8 +99,27 @@ protected:
 
 	virtual void OnMatchmakingComplete(FName SessionName, bool bSucceeded) override;
 	virtual void OnBackfillProposalReceived(FAccelByteModelsV2MatchmakingBackfillProposalNotif Proposal) override;
+#pragma endregion
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchmakingDSOnlineSession.h-private
+// @@@MULTISNIP MatchPoolIdMap {"selectedLines": ["1", "11-14"]}
+// @@@MULTISNIP OnLeaveSessionForReMatchmakingComplete {"selectedLines": ["1", "21-26"]}
+// @@@MULTISNIP OnStartMatchmakingCompleteDelegate {"selectedLines": ["1", "16"]}
+// @@@MULTISNIP OnMatchmakingCompleteDelegate {"selectedLines": ["1", "17"]}
+// @@@MULTISNIP OnCancelMatchmakingCompleteDelegate {"selectedLines": ["1", "18"]}
+// @@@MULTISNIP OnAcceptBackfillProposalCompleteDelegates {"selectedLines": ["1", "19"]}
+// @@@MULTISNIP OnSessionServerUpdateReceivedDelegate {"selectedLines": ["1", "7"]}
 private:
+#pragma region "Game Session Essentials"
+	bool bIsInSessionServer = false;
+
+	FDelegateHandle OnDSQueryUserInfoCompleteDelegateHandle;
+
+	FOnServerSessionUpdateReceived OnSessionServerUpdateReceivedDelegates;
+#pragma endregion 
+
+#pragma region "Matchmaking Session Essentials"
 	const TMap<EGameModeType, FString> MatchPoolIds = {
 		{EGameModeType::FFA, "unreal-elimination-ds-ams"},
 		{EGameModeType::TDM, "unreal-teamdeathmatch-ds-ams"}
@@ -105,5 +136,6 @@ private:
 		const int32 LocalUserNum,
 		const EGameModeType GameModeType);
 	FDelegateHandle OnLeaveSessionForReMatchmakingCompleteDelegateHandle;
-#pragma endregion 
+#pragma endregion
+// @@@SNIPEND
 };

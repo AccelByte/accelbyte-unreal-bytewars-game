@@ -14,6 +14,12 @@
 #include "Core/UI/InGameMenu/GameOver/GameOverWidget.h"
 #include "Interfaces/OnlineUserInterface.h"
 
+// @@@SNIPSTART MatchmakingP2POnlineSession.cpp-RegisterOnlineDelegates
+// @@@MULTISNIP BindMatchmakingDelegate {"selectedLines": ["1-2", "19", "22"]}
+// @@@MULTISNIP BindCancelMatchmakingDelegate {"selectedLines": ["1-2", "20", "22"]}
+// @@@MULTISNIP BindSessionServerDelegate {"selectedLines": ["1-2", "6-7", "22"]}
+// @@@MULTISNIP BindBackfillDelegate {"selectedLines": ["1-2", "21", "22"]}
+// @@@MULTISNIP BindLeaveSessionDelegate {"selectedLines": ["1-2", "9-16", "22"]}
 void UMatchmakingP2POnlineSession::RegisterOnlineDelegates()
 {
 	Super::RegisterOnlineDelegates();
@@ -36,7 +42,14 @@ void UMatchmakingP2POnlineSession::RegisterOnlineDelegates()
 	GetSessionInt()->OnCancelMatchmakingCompleteDelegates.AddUObject(this, &ThisClass::OnCancelMatchmakingComplete);
 	GetABSessionInt()->OnBackfillProposalReceivedDelegates.AddUObject(this, &ThisClass::OnBackfillProposalReceived);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchmakingP2POnlineSession.cpp-ClearOnlineDelegates
+// @@@MULTISNIP UnbindMatchmakingDelegate {"selectedLines": ["1-2", "12", "15"]}
+// @@@MULTISNIP UnbindCancelMatchmakingDelegate {"selectedLines": ["1-2", "13", "15"]}
+// @@@MULTISNIP UnbindSessionServerDelegate {"selectedLines": ["1-2", "5-6", "15"]}
+// @@@MULTISNIP UnbindBackfillDelegate {"selectedLines": ["1-2", "14", "15"]}
+// @@@MULTISNIP UnbindLeaveSessionDelegate {"selectedLines": ["1-2", "8-10", "15"]}
 void UMatchmakingP2POnlineSession::ClearOnlineDelegates()
 {
 	Super::ClearOnlineDelegates();
@@ -52,7 +65,9 @@ void UMatchmakingP2POnlineSession::ClearOnlineDelegates()
 	GetSessionInt()->OnCancelMatchmakingCompleteDelegates.RemoveAll(this);
 	GetABSessionInt()->OnBackfillProposalReceivedDelegates.RemoveAll(this);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchmakingP2POnlineSession.cpp-OnJoinSessionComplete
 void UMatchmakingP2POnlineSession::OnJoinSessionComplete(
 	FName SessionName,
 	EOnJoinSessionCompleteResult::Type Result)
@@ -61,7 +76,9 @@ void UMatchmakingP2POnlineSession::OnJoinSessionComplete(
 
 	TravelToSession(SessionName);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchmakingP2POnlineSession.cpp-OnLeaveSessionComplete
 void UMatchmakingP2POnlineSession::OnLeaveSessionComplete(FName SessionName, bool bSucceeded)
 {
 	Super::OnLeaveSessionComplete(SessionName, bSucceeded);
@@ -71,8 +88,10 @@ void UMatchmakingP2POnlineSession::OnLeaveSessionComplete(FName SessionName, boo
 		bIsInSessionServer = false;
 	}
 }
+// @@@SNIPEND
 
 #pragma region "Game Session Essentials"
+// @@@SNIPSTART MatchmakingP2POnlineSession.cpp-TravelToSession
 bool UMatchmakingP2POnlineSession::TravelToSession(const FName SessionName)
 {
 	UE_LOG_MATCHMAKINGP2P(Verbose, TEXT("called"))
@@ -153,7 +172,9 @@ bool UMatchmakingP2POnlineSession::TravelToSession(const FName SessionName)
 
 	return true;
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchmakingP2POnlineSession.cpp-OnSessionServerUpdateReceived
 void UMatchmakingP2POnlineSession::OnSessionServerUpdateReceived(FName SessionName)
 {
 	UE_LOG_MATCHMAKINGP2P(Verbose, TEXT("called"))
@@ -168,7 +189,9 @@ void UMatchmakingP2POnlineSession::OnSessionServerUpdateReceived(FName SessionNa
 	const bool bHasClientTravelTriggered = TravelToSession(SessionName);
 	OnSessionServerUpdateReceivedDelegates.Broadcast(SessionName, FOnlineError(true), bHasClientTravelTriggered);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchmakingP2POnlineSession.cpp-OnSessionServerErrorReceived
 void UMatchmakingP2POnlineSession::OnSessionServerErrorReceived(FName SessionName, const FString& Message)
 {
 	UE_LOG_MATCHMAKINGP2P(Verbose, TEXT("called"))
@@ -179,6 +202,7 @@ void UMatchmakingP2POnlineSession::OnSessionServerErrorReceived(FName SessionNam
 
 	OnSessionServerUpdateReceivedDelegates.Broadcast(SessionName, Error, false);
 }
+// @@@SNIPEND
 
 bool UMatchmakingP2POnlineSession::HandleDisconnectInternal(UWorld* World, UNetDriver* NetDriver)
 {
@@ -194,6 +218,7 @@ bool UMatchmakingP2POnlineSession::HandleDisconnectInternal(UWorld* World, UNetD
 #pragma endregion
 
 #pragma region "Matchmaking Session Essentials"
+// @@@SNIPSTART MatchmakingP2POnlineSession.cpp-StartMatchmaking
 void UMatchmakingP2POnlineSession::StartMatchmaking(
 	const APlayerController* PC,
 	const FName& SessionName,
@@ -244,12 +269,19 @@ void UMatchmakingP2POnlineSession::StartMatchmaking(
 	}
 
 	// Get match pool id based on game mode type
-	const FString MatchPoolId = MatchPoolIds[GameModeType];
-	
+	FString MatchPoolId = MatchPoolIds[GameModeType];
+	const FString GameModeCode = TargetGameModeMap[MatchPoolId];
+
+	// Override match pool id if applicable.
+	if (!UTutorialModuleOnlineUtility::GetMatchPoolP2POverride().IsEmpty())
+	{
+		MatchPoolId = UTutorialModuleOnlineUtility::GetMatchPoolP2POverride();
+	}
+
 	// Setup matchmaking search handle, it will be used to store session search results.
 	TSharedRef<FOnlineSessionSearch> MatchmakingSearchHandle = MakeShared<FOnlineSessionSearch>();
-	MatchmakingSearchHandle->QuerySettings.Set(
-		SETTING_SESSION_MATCHPOOL, MatchPoolId, EOnlineComparisonOp::Equals);
+	MatchmakingSearchHandle->QuerySettings.Set(SETTING_SESSION_MATCHPOOL, MatchPoolId, EOnlineComparisonOp::Equals);
+	MatchmakingSearchHandle->QuerySettings.Set(GAMESETUP_GameModeCode, GameModeCode, EOnlineComparisonOp::Equals);
 
 	if (!GetSessionInt()->StartMatchmaking(
 		USER_ID_TO_MATCHMAKING_USER_ARRAY(PlayerNetId.ToSharedRef()),
@@ -266,7 +298,9 @@ void UMatchmakingP2POnlineSession::StartMatchmaking(
 		}));
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchmakingP2POnlineSession.cpp-CancelMatchmaking
 void UMatchmakingP2POnlineSession::CancelMatchmaking(APlayerController* PC, const FName& SessionName)
 {
 	UE_LOG_MATCHMAKINGP2P(Verbose, TEXT("called"))
@@ -305,7 +339,9 @@ void UMatchmakingP2POnlineSession::CancelMatchmaking(APlayerController* PC, cons
 		}));
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchmakingP2POnlineSession.cpp-OnStartMatchmakingComplete
 void UMatchmakingP2POnlineSession::OnStartMatchmakingComplete(
 	FName SessionName,
 	const FOnlineError& ErrorDetails,
@@ -319,14 +355,18 @@ void UMatchmakingP2POnlineSession::OnStartMatchmakingComplete(
 
 	OnStartMatchmakingCompleteDelegates.Broadcast(SessionName, ErrorDetails.bSucceeded);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchmakingP2POnlineSession.cpp-OnCancelMatchmakingComplete
 void UMatchmakingP2POnlineSession::OnCancelMatchmakingComplete(FName SessionName, bool bSucceeded)
 {
 	UE_LOG_MATCHMAKINGP2P(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
 
 	OnCancelMatchmakingCompleteDelegates.Broadcast(SessionName, bSucceeded);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchmakingP2POnlineSession.cpp-OnMatchmakingComplete
 void UMatchmakingP2POnlineSession::OnMatchmakingComplete(FName SessionName, bool bSucceeded)
 {
 	UE_LOG_MATCHMAKINGP2P(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
@@ -343,18 +383,10 @@ void UMatchmakingP2POnlineSession::OnMatchmakingComplete(FName SessionName, bool
 	}
 
 	OnMatchmakingCompleteDelegates.Broadcast(SessionName, bSucceeded);
-
-	// Get searching player
-	const int32 LocalUserNum =
-		GetLocalUserNumFromPlayerController(GetPlayerControllerByUniqueNetId(CurrentMatchmakingSearchHandle->GetSearchingPlayerId()));
-
-	// Join the first session from matchmaking result.
-	JoinSession(
-		LocalUserNum,
-		GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession),
-		CurrentMatchmakingSearchHandle->SearchResults[0]);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchmakingP2POnlineSession.cpp-OnBackfillProposalReceived
 void UMatchmakingP2POnlineSession::OnBackfillProposalReceived(
 	FAccelByteModelsV2MatchmakingBackfillProposalNotif Proposal)
 {
@@ -378,7 +410,9 @@ void UMatchmakingP2POnlineSession::OnBackfillProposalReceived(
 		OnAcceptBackfillProposalCompleteDelegates.Broadcast(bSucceeded);
 	}));
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchmakingP2POnlineSession.cpp-OnLeaveSessionForReMatchmakingComplete
 void UMatchmakingP2POnlineSession::OnLeaveSessionForReMatchmakingComplete(
 	FName SessionName,
 	bool bSucceeded,
@@ -408,4 +442,5 @@ void UMatchmakingP2POnlineSession::OnLeaveSessionForReMatchmakingComplete(
 		OnStartMatchmakingComplete(SessionName, FOnlineError(false), {});
 	}
 }
+// @@@SNIPEND
 #pragma endregion 

@@ -53,7 +53,7 @@ private:
 	FOnMatchSessionFindSessionsComplete OnFindSessionsCompleteDelegates;
 
 	void OnQueryUserInfoForFindSessionComplete(
-		const bool bSucceeded,
+		const ::FOnlineError& Error,
 		const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo);
 
 #pragma region "Match Session with DS declarations"

@@ -21,6 +21,7 @@ void UFriendsWidget::NativeConstruct()
 	ensure(FriendsSubsystem);
 }
 
+// @@@SNIPSTART FriendsWidget.cpp-NativeOnActivated
 void UFriendsWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
@@ -36,7 +37,9 @@ void UFriendsWidget::NativeOnActivated()
 	FriendsSubsystem->BindOnCachedFriendsDataUpdated(GetOwningPlayer(), FOnCachedFriendsDataUpdated::CreateUObject(this, &ThisClass::GetFriendList));
 	GetFriendList();
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART FriendsWidget.cpp-NativeOnDeactivated
 void UFriendsWidget::NativeOnDeactivated()
 {
 	Btn_Back->OnClicked().Clear();
@@ -47,6 +50,7 @@ void UFriendsWidget::NativeOnDeactivated()
 
 	Super::NativeOnDeactivated();
 }
+// @@@SNIPEND
 
 UWidget* UFriendsWidget::NativeGetDesiredFocusTarget() const
 {
@@ -57,6 +61,8 @@ UWidget* UFriendsWidget::NativeGetDesiredFocusTarget() const
 	return Tv_Friends;
 }
 
+// @@@SNIPSTART FriendsWidget.cpp-GetFriendList
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "27"]}
 void UFriendsWidget::GetFriendList()
 {
 	ensure(FriendsSubsystem);
@@ -84,7 +90,9 @@ void UFriendsWidget::GetFriendList()
 		}
 	));
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART FriendsWidget.cpp-OnFriendEntryClicked
 void UFriendsWidget::OnFriendEntryClicked(UObject* Item) 
 {
 	if (!Item)
@@ -116,3 +124,4 @@ void UFriendsWidget::OnFriendEntryClicked(UObject* Item)
 
 	DetailsWidget->InitData(FriendData);
 }
+// @@@SNIPEND

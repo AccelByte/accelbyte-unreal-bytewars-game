@@ -22,6 +22,12 @@ class ACCELBYTEWARS_API UBrowseMatchDSWidget : public UAccelByteWarsActivatableW
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
 
+// @@@SNIPSTART BrowseMatchDSWidget.h-protected
+// @@@MULTISNIP FindSessionDeclaration {"selectedLines": ["1-3"]}
+// @@@MULTISNIP CancelJoinSessionDeclaration {"selectedLines": ["1", "5-6"]}
+// @@@MULTISNIP JoinSessionDeclaration {"selectedLines": ["1", "8-9"]}
+// @@@MULTISNIP OnSessionServerUpdateReceived {"selectedLines": ["1", "11-14"]}
+// @@@MULTISNIP OnlineSession {"selectedLines": ["1", "16-17"]}
 protected:
 	void FindSessions(const bool bForce) const;
 	void OnFindSessionComplete(const TArray<FMatchSessionEssentialInfo> SessionEssentialsInfo, bool bSucceeded);
@@ -37,18 +43,21 @@ protected:
 		const FOnlineError& Error,
 		const bool bHasClientTravelTriggered) const;
 
-protected:
 	UPROPERTY()
 	UAccelByteWarsOnlineSessionBase* OnlineSession;
 
 	const int32 SessionsNumToQuery = 20;
+// @@@SNIPEND
 
 #pragma region "UI related"
+// @@@SNIPSTART BrowseMatchDSWidget.h-private
+// @@@MULTISNIP BrowseMatchUI {"selectedLines": ["1-6"]}
 private:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_Refresh;
 
 	UPROPERTY()
 	UBrowseMatchWidget* W_Parent;
+// @@@SNIPEND
 #pragma endregion 
 };

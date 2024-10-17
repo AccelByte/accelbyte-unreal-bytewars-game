@@ -7,6 +7,7 @@
 #include "OnlineSubsystemUtils.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "Social/FriendsEssentials/UI/FriendDetailsWidget.h"
+#include "TutorialModuleUtilities/StartupSubsystem.h"
 
 void UManagingFriendsSubsystem_Starter::Initialize(FSubsystemCollectionBase& Collection)
 {

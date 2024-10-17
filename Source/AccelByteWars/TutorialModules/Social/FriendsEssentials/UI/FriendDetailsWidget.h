@@ -18,6 +18,8 @@ class ACCELBYTEWARS_API UFriendDetailsWidget : public UAccelByteWarsActivatableW
 	GENERATED_BODY()
 	
 public:
+	virtual void NativeOnActivated() override;
+	virtual void NativeOnDeactivated() override;
 	void InitData(UFriendData* FriendData);
 
 	UFriendData* GetCachedFriendData() const
@@ -25,6 +27,8 @@ public:
 		return CachedFriendData; 
 	}
 
+// @@@SNIPSTART FriendDetailsWidget.h-protected
+// @@@MULTISNIP FriendDetailsUI {"selectedLines": ["1", "5-9"]}
 protected:
 	UPROPERTY()
 	UFriendData* CachedFriendData;
@@ -34,4 +38,5 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Tb_DisplayName;
+// @@@SNIPEND
 };

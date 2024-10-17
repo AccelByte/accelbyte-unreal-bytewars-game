@@ -18,8 +18,11 @@ public:
 	virtual void Deinitialize() override;
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
+// @@@SNIPSTART MatchmakingDSServerSubsystem.h-protected
+// @@@MULTISNIP OnServerSessionReceived {"selectedLines": ["1-2"]}
 protected:
 	virtual void OnServerSessionReceived(FName SessionName) override;
+// @@@SNIPEND
 
 private:
 	UPROPERTY()

@@ -11,6 +11,9 @@
 #include "Play/MatchSessionEssentials/MatchSessionEssentialsModels.h"
 #include "Play/OnlineSessionUtils/AccelByteWarsOnlineSessionBase.h"
 
+// @@@SNIPSTART BrowseMatchP2PWidget.cpp-NativeOnActivated
+// @@@MULTISNIP HelperDefinition {"selectedLines": ["1-2", "5-19", "30"]}
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "26-30"]}
 void UBrowseMatchP2PWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
@@ -31,7 +34,7 @@ void UBrowseMatchP2PWidget::NativeOnActivated()
 		return;
 	}
 
-	OnlineSession->GetOnLeaveSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnLeaveSessionComplete);
+	OnlineSession->GetOnLeaveSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnCancelJoiningComplete);
 	OnlineSession->GetOnFindSessionsCompleteDelegates()->AddUObject(this, &ThisClass::OnFindSessionComplete);
 	OnlineSession->GetOnJoinSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnJoinSessionComplete);
 	OnlineSession->GetOnSessionServerUpdateReceivedDelegates()->AddUObject(this, &ThisClass::OnSessionServerUpdateReceived);
@@ -41,7 +44,10 @@ void UBrowseMatchP2PWidget::NativeOnActivated()
 
 	FindSessions(false);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART BrowseMatchP2PWidget.cpp-NativeOnDeactivated
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "10-12"]}
 void UBrowseMatchP2PWidget::NativeOnDeactivated()
 {
 	Super::NativeOnDeactivated();
@@ -54,7 +60,10 @@ void UBrowseMatchP2PWidget::NativeOnDeactivated()
 	Btn_Refresh->OnClicked().RemoveAll(this);
 	W_Parent->GetJoiningWidgetComponent()->OnCancelClicked.RemoveAll(this);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART BrowseMatchP2PWidget.cpp-FindSessions
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-5", "11"]}
 void UBrowseMatchP2PWidget::FindSessions(const bool bForce) const
 {
 	W_Parent->SetLoadingMessage(TEXT_LOADING_DATA, true, false);
@@ -66,7 +75,9 @@ void UBrowseMatchP2PWidget::FindSessions(const bool bForce) const
 		SessionsNumToQuery,
 		bForce);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART BrowseMatchP2PWidget.cpp-OnFindSessionComplete
 void UBrowseMatchP2PWidget::OnFindSessionComplete(
 	const TArray<FMatchSessionEssentialInfo> SessionEssentialsInfo,
 	bool bSucceeded)
@@ -101,7 +112,10 @@ void UBrowseMatchP2PWidget::OnFindSessionComplete(
 		W_Parent->SwitchContent(UBrowseMatchWidget::EContentType::BROWSE_ERROR);
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART BrowseMatchP2PWidget.cpp-CancelJoining
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-4", "8"]}
 void UBrowseMatchP2PWidget::CancelJoining() const
 {
 	W_Parent->SetLoadingMessage(TEXT_LEAVING_SESSION, false, false);
@@ -110,8 +124,10 @@ void UBrowseMatchP2PWidget::CancelJoining() const
 	OnlineSession->LeaveSession(
 		OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession));
 }
+// @@@SNIPEND
 
-void UBrowseMatchP2PWidget::OnLeaveSessionComplete(FName SessionName, bool bSucceeded) const
+// @@@SNIPSTART BrowseMatchP2PWidget.cpp-OnCancelJoiningComplete
+void UBrowseMatchP2PWidget::OnCancelJoiningComplete(FName SessionName, bool bSucceeded) const
 {
 	// Abort if not a game session.
 	if (!SessionName.IsEqual(OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession)))
@@ -129,7 +145,10 @@ void UBrowseMatchP2PWidget::OnLeaveSessionComplete(FName SessionName, bool bSucc
 		W_Parent->SwitchContent(UBrowseMatchWidget::EContentType::JOIN_ERROR);
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART BrowseMatchP2PWidget.cpp-JoinSession
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-10", "16"]}
 void UBrowseMatchP2PWidget::JoinSession(const FOnlineSessionSearchResult& SessionSearchResult) const
 {
 	if (OnlineSession->ValidateToJoinSession.IsBound() &&
@@ -146,7 +165,9 @@ void UBrowseMatchP2PWidget::JoinSession(const FOnlineSessionSearchResult& Sessio
 		OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession),
 		SessionSearchResult);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART BrowseMatchP2PWidget.cpp-OnJoinSessionComplete
 void UBrowseMatchP2PWidget::OnJoinSessionComplete(
 	FName SessionName,
 	EOnJoinSessionCompleteResult::Type CompletionType) const
@@ -197,7 +218,9 @@ void UBrowseMatchP2PWidget::OnJoinSessionComplete(
 		UBrowseMatchWidget::EContentType::JOIN_LOADING :
 		UBrowseMatchWidget::EContentType::JOIN_ERROR);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART BrowseMatchP2PWidget.cpp-OnSessionServerUpdateReceived
 void UBrowseMatchP2PWidget::OnSessionServerUpdateReceived(
 	const FName SessionName,
 	const FOnlineError& Error,
@@ -221,3 +244,4 @@ void UBrowseMatchP2PWidget::OnSessionServerUpdateReceived(
 		W_Parent->SwitchContent(UBrowseMatchWidget::EContentType::JOIN_ERROR);
 	}
 }
+// @@@SNIPEND

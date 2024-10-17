@@ -14,6 +14,14 @@
 #define AUTH_PASSWORD_PARAM TEXT("AUTH_PASSWORD")
 #define PLATFORM_LOGIN_UI_NOT_IMPLEMENTED_CODE TEXT("NOT_IMPLEMENTED")
 
+// @@@SNIPSTART AuthEssentialsModels.h-delegatemacro
+// @@@MULTISNIP OnLoginCompleteDelegate {"selectedLines": ["1-2"]}
+DECLARE_MULTICAST_DELEGATE_TwoParams(FAuthOnLoginComplete, bool /*bWasSuccessful*/, const FString& /*ErrorMessage*/);
+typedef FAuthOnLoginComplete::FDelegate FAuthOnLoginCompleteDelegate;
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnLoginSuccess, const APlayerController* /*PlayerController*/);
+DECLARE_MULTICAST_DELEGATE(FOnRetryLogin);
+// @@@SNIPEND
+
 /** @brief login state enumeration. */
 enum class ELoginState 
 {
@@ -29,9 +37,6 @@ enum EAuthStatus
 	UsingLocalProfile,
 	LoggedIn
 };
-
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnLoginSuccess, const APlayerController* /*PlayerController*/);
-DECLARE_MULTICAST_DELEGATE(FOnRetryLogin);
 
 class UAuthEssentialsModels
 {

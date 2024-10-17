@@ -20,23 +20,27 @@ class ACCELBYTEWARS_API UInviteToGameSessionWidget : public UAccelByteWarsActiva
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
 
-#pragma region "Helper"
+// @@@SNIPSTART InviteToGameSessionWidget.h-private
+// @@@MULTISNIP InviteToGameSessionUI {"selectedLines": ["1", "12-13"]}
+// @@@MULTISNIP GetFriendDataFromParentWidget {"selectedLines": ["1", "3"]}
+// @@@MULTISNIP Timer {"selectedLines": ["1", "15"]}
+// @@@MULTISNIP Subsystem {"selectedLines": ["1", "8-9"]}
+// @@@MULTISNIP InviteToSession {"selectedLines": ["1", "6"]}
 private:
+#pragma region "Helper"
 	UFriendData* GetFriendDataFromParentWidget();
 #pragma endregion 
 
-private:
 	void InviteToSession();
 
-private:
 	UPROPERTY()
 	UPlayingWithFriendsSubsystem* Subsystem;
 
 #pragma region "UI Related"
-private:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_Invite;
 
 	FTimerHandle InviteDelayTimerHandle;
-#pragma endregion 
+#pragma endregion
+// @@@SNIPEND
 };

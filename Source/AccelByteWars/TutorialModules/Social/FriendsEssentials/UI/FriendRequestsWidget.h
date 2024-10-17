@@ -18,6 +18,8 @@ class ACCELBYTEWARS_API UFriendRequestsWidget : public UAccelByteWarsActivatable
 {
 	GENERATED_BODY()
 	
+// @@@SNIPSTART FriendRequestsWidget.h-protected
+// @@@MULTISNIP FriendRequestsUI {"selectedLines": ["1", "12-16"]}
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeOnActivated() override;
@@ -37,4 +39,5 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_Back;
+// @@@SNIPEND
 };

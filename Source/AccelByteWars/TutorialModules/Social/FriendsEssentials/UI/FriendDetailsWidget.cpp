@@ -8,10 +8,41 @@
 #include "Core/UI/Components/AccelByteWarsAsyncImageWidget.h"
 #include "Components/TextBlock.h"
 #include "Components/Image.h"
+#include "Social/ManagingFriends/ManagingFriendsSubsystem.h"
 #include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
 
 #define LOCTEXT_NAMESPACE "AccelByteWars"
 
+void UFriendDetailsWidget::NativeOnActivated()
+{
+	Super::NativeOnActivated();
+
+	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+	ensure(GameInstance);
+	
+	UManagingFriendsSubsystem* ManagingFriendsSubsystem = GameInstance->GetSubsystem<UManagingFriendsSubsystem>();
+	if(ManagingFriendsSubsystem != nullptr)
+	{
+		ManagingFriendsSubsystem->BindGeneratedWidgetButtonsAction(GetOwningPlayer(), CachedFriendData);
+		ManagingFriendsSubsystem->SetGeneratedWidgetButtonsVisibility(CachedFriendData);
+	}
+}
+
+void UFriendDetailsWidget::NativeOnDeactivated()
+{
+	Super::NativeOnDeactivated();
+	
+	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+	ensure(GameInstance);
+	
+	UManagingFriendsSubsystem* ManagingFriendsSubsystem = GameInstance->GetSubsystem<UManagingFriendsSubsystem>();
+	if(ManagingFriendsSubsystem != nullptr)
+	{
+		ManagingFriendsSubsystem->UnbindGeneratedWidgetButtonsAction();
+	}
+}
+
+// @@@SNIPSTART FriendDetailsWidget.cpp-InitData
 void UFriendDetailsWidget::InitData(UFriendData* FriendData)
 {
 	if (!FriendData) 
@@ -37,5 +68,6 @@ void UFriendDetailsWidget::InitData(UFriendData* FriendData)
 	const FString AvatarURL = CachedFriendData->AvatarURL;
 	Img_Avatar->LoadImage(AvatarURL);
 }
+// @@@SNIPEND
 
 #undef LOCTEXT_NAMESPACE

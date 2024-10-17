@@ -18,6 +18,8 @@ class ACCELBYTEWARS_API UBlockedPlayersWidget : public UAccelByteWarsActivatable
 {
 	GENERATED_BODY()
 	
+// @@@SNIPSTART BlockedPlayersWidget.h-protected
+// @@@MULTISNIP BlockedPlayersUI {"selectedLines": ["1", "12-16"]}
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeOnActivated() override;
@@ -37,4 +39,5 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_Back;
+// @@@SNIPEND
 };

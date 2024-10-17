@@ -20,6 +20,8 @@ class ACCELBYTEWARS_API UBrowseMatchWidget : public UAccelByteWarsActivatableWid
 {
 	GENERATED_BODY()
 
+// @@@SNIPSTART BrowseMatchWidget.h-public
+// @@@MULTISNIP GetListViewWidgetComponent {"selectedLines": ["1", "14"]}
 public:
 	virtual void NativeOnActivated() override;
 
@@ -39,6 +41,7 @@ public:
 	void SetLoadingMessage(const FText& Text, const bool bBrowse, const bool bEnableCancelButton = false) const;
 	void SetErrorMessage(const FText& Text, const bool bBrowse) const;
 	void SwitchContent(const EContentType Type);
+// @@@SNIPEND
 
 protected:
 	virtual void NativeOnDeactivated() override;
@@ -46,6 +49,9 @@ protected:
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 	virtual UWidget* NativeGetDesiredFocusTarget() const override;
 
+// @@@SNIPSTART BrowseMatchWidget.h-private
+// @@@MULTISNIP BrowseMatchUISwitcher {"selectedLines": ["1", "6-7", "15-19"]}
+// @@@MULTISNIP ActionButtonsOuter {"selectedLines": ["1", "30-31"]}
 private:
 	float CameraTargetY = 600.f;
 
@@ -77,4 +83,5 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UPanelWidget* W_ActionButtonsOuter;
+// @@@SNIPEND
 };

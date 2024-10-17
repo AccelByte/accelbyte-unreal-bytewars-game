@@ -21,6 +21,11 @@ class ACCELBYTEWARS_API UCreateMatchSessionP2PWidget : public UAccelByteWarsActi
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
 
+// @@@SNIPSTART CreateMatchSessionP2PWidget.h-protected
+// @@@MULTISNIP CreateSessionDeclaration {"selectedLines": ["1-5"]}
+// @@@MULTISNIP CancelJoinSessionDeclaration {"selectedLines": ["1", "7-10"]}
+// @@@MULTISNIP OnSessionServerUpdateReceived {"selectedLines": ["1", "12-15"]}
+// @@@MULTISNIP OnlineSession {"selectedLines": ["1", "17-18"]}
 protected:
 	UFUNCTION()
 	void CreateSession() const;
@@ -37,16 +42,19 @@ protected:
 		const FOnlineError& Error,
 		const bool bHasClientTravelTriggered) const;
 
-protected:
 	UPROPERTY()
 	UAccelByteWarsOnlineSessionBase* OnlineSession;
+// @@@SNIPEND
 
 #pragma region "UI related"
+// @@@SNIPSTART CreateMatchSessionP2PWidget.h-private
+// @@@MULTISNIP CreateMatchSessionUI {"selectedLines": ["1-6"]}
 private:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_StartMatchSessionP2P;
 
 	UPROPERTY()
 	UCreateMatchSessionWidget* W_Parent;
+// @@@SNIPEND
 #pragma endregion
 };

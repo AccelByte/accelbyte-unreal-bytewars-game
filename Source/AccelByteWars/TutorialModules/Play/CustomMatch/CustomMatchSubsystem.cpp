@@ -86,18 +86,32 @@ void UCustomMatchSubsystem::CreateCustomGameSession(
 	SessionSettings.Set(GAMESETUP_DisplayName, TEXT("Custom Game"));
 	SessionSettings.Set(GAMESETUP_GameModeType, UEnum::GetValueAsString(GameModeType));
 	SessionSettings.Set(GAMESETUP_NetworkType, UEnum::GetValueAsString(NetworkType));
-	SessionSettings.Set(GAMESETUP_MatchTime, Duration);
-	SessionSettings.Set(GAMESETUP_StartingLives, PlayerLives);
-	SessionSettings.Set(GAMESETUP_FiredMissilesLimit, MissileLimit);
-	SessionSettings.Set(GAMESETUP_MaxPlayers, MaxPlayerTotalNum);
-	SessionSettings.Set(GAMESETUP_MaxTeamNum, GameModeType == EGameModeType::TDM ? MaxTeamNum : MaxPlayerTotalNum);
+	SessionSettings.Set(GAMESETUP_MatchTime, static_cast<double>(Duration));
+	SessionSettings.Set(GAMESETUP_StartingLives, static_cast<double>(PlayerLives));
+	SessionSettings.Set(GAMESETUP_FiredMissilesLimit, static_cast<double>(MissileLimit));
+	SessionSettings.Set(GAMESETUP_MaxPlayers, static_cast<double>(MaxPlayerTotalNum));
+	SessionSettings.Set(GAMESETUP_MaxTeamNum, static_cast<double>(GameModeType == EGameModeType::TDM ? MaxTeamNum : MaxPlayerTotalNum));
 	SessionSettings.Set(GAMESETUP_IsTeamGame, GameModeType == EGameModeType::TDM);
-	SessionSettings.Set(GAMESETUP_StartGameCountdown, -1);
+	SessionSettings.Set(GAMESETUP_StartGameCountdown, static_cast<double>(INDEX_NONE));
 
 	// Set a flag so we can request a filtered session from backend.
 	// We're using the Match Session flag as we want the browse matches to work with this right away
 	SessionSettings.Set(GAME_SESSION_REQUEST_TYPE, GAME_SESSION_REQUEST_TYPE_MATCHSESSION);
 #pragma endregion
+
+	FString MatchTemplateName = FString::Printf(TEXT("unreal-%s-%s"),
+		GameModeType == EGameModeType::FFA ? TEXT("elimination") : TEXT("teamdeathmatch"),
+		NetworkType == EGameModeNetworkType::DS ? TEXT("ds-ams") : TEXT("p2p"));
+
+	// Override match session template name if applicable.
+	if (NetworkType == EGameModeNetworkType::DS && !UTutorialModuleOnlineUtility::GetMatchSessionTemplateDSOverride().IsEmpty())
+	{
+		MatchTemplateName = UTutorialModuleOnlineUtility::GetMatchSessionTemplateDSOverride();
+	}
+	else if (NetworkType == EGameModeNetworkType::P2P && !UTutorialModuleOnlineUtility::GetMatchSessionTemplateP2POverride().IsEmpty())
+	{
+		MatchTemplateName = UTutorialModuleOnlineUtility::GetMatchSessionTemplateP2POverride();
+	}
 
 	OnlineSession->GetOnCreateSessionCompleteDelegates()->AddUObject(this, &ThisClass::OnCreateSessionComplete);
 	OnlineSession->CreateSession(
@@ -105,7 +119,7 @@ void UCustomMatchSubsystem::CreateCustomGameSession(
 		OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession),
 		SessionSettings,
 		EAccelByteV2SessionType::GameSession,
-		FallbackSessionTemplate);
+		MatchTemplateName);
 }
 
 void UCustomMatchSubsystem::LeaveGameSession() const

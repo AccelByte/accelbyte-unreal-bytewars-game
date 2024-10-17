@@ -27,6 +27,9 @@ void UItemPurchaseWidget::NativeOnActivated()
 	PurchaseSubsystem = GetGameInstance()->GetSubsystem<UStoreItemPurchaseSubsystem>();
 	ensure(PurchaseSubsystem);
 
+	NativePlatformPurchaseSubsystem = GetGameInstance()->GetSubsystem<UNativePlatformPurchaseSubsystem>();
+	ensure(NativePlatformPurchaseSubsystem);
+
 	// setup UI
 	SetupPurchaseButtons(StoreItemDataObject->GetPrices());
 	Ws_Root->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Not_Empty);
@@ -40,6 +43,7 @@ void UItemPurchaseWidget::NativeOnActivated()
 
 	// setup delegate
 	PurchaseSubsystem->OnCheckoutCompleteDelegates.AddUObject(this, &ThisClass::OnPurchaseComplete);
+	NativePlatformPurchaseSubsystem->OnSynchPurchaseCompleteDelegates.BindUObject(this, &ThisClass::OnSynchPurchaseComplete);
 
 	// set focus
 	if (W_PurchaseButtonsOuter->HasAnyChildren())
@@ -56,11 +60,27 @@ void UItemPurchaseWidget::NativeOnDeactivated()
 
 	PurchaseSubsystem->OnCheckoutCompleteDelegates.RemoveAll(this);
 	Ss_Amount->OnSelectionChangedDelegate.RemoveAll(this);
+	NativePlatformPurchaseSubsystem->OnSynchPurchaseCompleteDelegates.Unbind();
 }
 
 void UItemPurchaseWidget::OnClickPurchase(const int32 PriceIndex) const
 {
 	Ws_Root->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Loading);
+
+	const bool bIsNativePlatformValid = IOnlineSubsystem::GetByPlatform() != nullptr;
+	
+	if (bIsNativePlatformValid &&
+		StoreItemDataObject->GetItemType() == ITEM_TYPE_COINS)
+	{
+		NativePlatformPurchaseSubsystem->OpenPlatformStore(
+			GetOwningPlayer(), 
+			StoreItemDataObject, 
+			PriceIndex, 
+			NativePlatformPurchaseSubsystem->GetItemMapping());
+
+		return;
+	}
+
 	PurchaseSubsystem->CreateNewOrder(
 		GetOwningPlayer(),
 		StoreItemDataObject,
@@ -91,6 +111,14 @@ void UItemPurchaseWidget::OnPurchaseComplete(const FOnlineError& Error) const
 		Tb_Success->SetVisibility(ESlateVisibility::Collapsed);
 		Tb_Error->SetVisibility(ESlateVisibility::Visible);
 	}
+}
+
+void UItemPurchaseWidget::OnSynchPurchaseComplete(bool bWasSuccessful, const FString& Error) const
+{
+	FOnlineError mError(bWasSuccessful);
+	mError.ErrorRaw = Error;
+
+	OnPurchaseComplete(mError);
 }
 
 #pragma region "FTUE"

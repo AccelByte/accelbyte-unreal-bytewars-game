@@ -26,6 +26,7 @@ public:
 	static int32 PositiveModulo(const int32 Dividend, const int32 Modulus);
 
 	static FString GetGameVersion();
+	static void SetGameVersion(const FString& NewGameVersion);
 
 	static TArray<UUserWidget*> FindWidgetsOnTheScreen(
 		const FString& WidgetName, 
@@ -46,6 +47,8 @@ public:
 	 * @return Whether the flag is set as true or false
 	 */
 	static bool GetFlagValueOrDefault(const FString& Keyword, const FString& ConfigSectionKeyword, const bool DefaultValue);
+
+	static bool IsValidEmailAddress(const FString& Email);
 
 private:
 	static const TMap<FString, EImageFormat> ImageFormatMap;

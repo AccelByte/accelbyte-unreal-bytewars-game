@@ -8,6 +8,7 @@
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
 #include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
 #include "Monetization/InGameStoreEssentials/InGameStoreEssentialsSubsystem.h"
+#include "Monetization/NativePlatformPurchase/NativePlatformPurchaseSubsystem.h"
 #include "ShopWidget.generated.h"
 
 class UCommonButtonBase;
@@ -44,6 +45,9 @@ private:
 
 	UPROPERTY()
 	UInGameStoreEssentialsSubsystem* StoreSubsystem;
+
+	UPROPERTY()
+	UNativePlatformPurchaseSubsystem* NativePlatformPurchaseSubsystem;
 
 #pragma region "UI"
 public:

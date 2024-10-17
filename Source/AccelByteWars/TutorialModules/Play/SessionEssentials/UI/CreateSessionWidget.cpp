@@ -12,6 +12,8 @@
 #include "Play/OnlineSessionUtils/AccelByteWarsOnlineSessionBase.h"
 #include "Play/SessionEssentials/SessionEssentialsModel.h"
 
+// @@@SNIPSTART CreateSessionWidget.cpp-NativeOnActivated
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-10", "31"]}
 void UCreateSessionWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
@@ -43,7 +45,10 @@ void UCreateSessionWidget::NativeOnActivated()
 		OnCreateSessionComplete(SessionName, true);
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CreateSessionWidget.cpp-NativeOnDeactivated
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-10", "17"]}
 void UCreateSessionWidget::NativeOnDeactivated()
 {
 	Super::NativeOnDeactivated();
@@ -61,7 +66,10 @@ void UCreateSessionWidget::NativeOnDeactivated()
 		SessionOnlineSession->GetOnLeaveSessionCompleteDelegates()->RemoveAll(this);
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CreateSessionWidget.cpp-CreateSession
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-16", "26"]}
 void UCreateSessionWidget::CreateSession()
 {
 	if (!SessionOnlineSession)
@@ -79,14 +87,18 @@ void UCreateSessionWidget::CreateSession()
 	Ws_Processing->LoadingMessage = TEXT_REQUESTING_SESSION_CREATION;
 	SwitchContent(EContentType::LOADING);
 
+	// Create dummy session. Override dummy session template name if applicable.
 	SessionOnlineSession->CreateSession(
 		SessionOnlineSession->GetLocalUserNumFromPlayerController(GetOwningPlayer()),
 		SessionOnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession),
 		FOnlineSessionSettings(),
 		EAccelByteV2SessionType::GameSession,
-		SessionTemplateName_Dummy);
+		UTutorialModuleOnlineUtility::GetDummySessionTemplateOverride().IsEmpty() ? 
+			SessionTemplateName_Dummy : UTutorialModuleOnlineUtility::GetDummySessionTemplateOverride());
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CreateSessionWidget.cpp-OnCreateSessionComplete
 void UCreateSessionWidget::OnCreateSessionComplete(FName SessionName, bool bSucceeded)
 {
 	// Abort if not a game session.
@@ -110,7 +122,10 @@ void UCreateSessionWidget::OnCreateSessionComplete(FName SessionName, bool bSucc
 		SwitchContent(EContentType::ERROR);
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CreateSessionWidget.cpp-LeaveSession
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-9", "13"]}
 void UCreateSessionWidget::LeaveSession()
 {
 	if (!SessionOnlineSession)
@@ -124,7 +139,9 @@ void UCreateSessionWidget::LeaveSession()
 	SessionOnlineSession->LeaveSession(
 		SessionOnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession));
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CreateSessionWidget.cpp-OnLeaveSessionComplete
 void UCreateSessionWidget::OnLeaveSessionComplete(FName SessionName, bool bSucceeded)
 {
 	// Abort if not a game session.
@@ -144,6 +161,7 @@ void UCreateSessionWidget::OnLeaveSessionComplete(FName SessionName, bool bSucce
 		SwitchContent(EContentType::ERROR);
 	}
 }
+// @@@SNIPEND
 
 #pragma region "UI related"
 void UCreateSessionWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
@@ -158,6 +176,7 @@ UWidget* UCreateSessionWidget::NativeGetDesiredFocusTarget() const
 	return DesiredFocusTargetButton;
 }
 
+// @@@SNIPSTART CreateSessionWidget.cpp-SwitchContent
 void UCreateSessionWidget::SwitchContent(const EContentType Type)
 {
 	UWidget* ContentTarget = nullptr;
@@ -214,4 +233,6 @@ void UCreateSessionWidget::SwitchContent(const EContentType Type)
 		DeinitializeFTUEDialogues();
 	}
 }
+// @@@SNIPEND
+
 #pragma endregion 

@@ -120,6 +120,24 @@ void ULoginWidget_Starter::OnLoginComplete(bool bWasSuccessful, const FString& E
 	UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("On login complete event is not yet implemented."));
 }
 
+void ULoginWidget_Starter::OpenMainMenu()
+{
+	UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->GetBaseUIWidget());
+	if (!BaseUIWidget)
+	{
+		UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("Failed to open Main Menu. Base UI widget is null."));
+		return;
+	}
+
+	// Proceed to show upgrade account if applicable, otherwise open Main Menu.
+	UTutorialModuleDataAsset* DataAsset = UTutorialModuleUtility::GetTutorialModuleDataAsset(RegisterUserInGameAssetId, this);
+	BaseUIWidget->PushWidgetToStack(
+		EBaseUIStackType::Menu,
+		DataAsset && DataAsset->IsActiveAndDependenciesChecked() ?
+		DataAsset->GetTutorialModuleUIClass() :
+		MainMenuWidgetClass);
+}
+
 void ULoginWidget_Starter::SetButtonLoginVisibility(const ESlateVisibility InSlateVisibility) const
 {
 	Btn_LoginWithDeviceId->SetVisibility(InSlateVisibility);

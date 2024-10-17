@@ -101,6 +101,7 @@ bool UStartupSubsystem::CompareAccelByteUniqueId(
     return FirstAbUserId.Equals(SecondAbUserId);
 }
 
+// @@@SNIPSTART StartupSubsystem.cpp-QueryUserInfo
 void UStartupSubsystem::QueryUserInfo(
     const int32 LocalUserNum,
     const TArray<FUniqueNetIdRef>& UserIds,
@@ -144,7 +145,9 @@ void UStartupSubsystem::QueryUserInfo(
         OnQueryUserInfoComplete(LocalUserNum, false, UserIds, "", OnComplete);
     }
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART StartupSubsystem.cpp-OnQueryUserInfoComplete
 void UStartupSubsystem::OnQueryUserInfoComplete(
     int32 LocalUserNum,
     bool bSucceeded,
@@ -183,6 +186,7 @@ void UStartupSubsystem::OnQueryUserInfoComplete(
             {});
     }
 }
+// @@@SNIPEND
 #pragma endregion 
 
 #pragma region Login with Platform Only

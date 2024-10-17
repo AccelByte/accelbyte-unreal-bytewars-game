@@ -25,18 +25,19 @@ public class AccelByteWars : ModuleRules
 			"ApplicationCore",
 			"CommonUI", 
 			"CommonInput",
-            "GameplayTags",
-            "AccelByteUe4Sdk", 
+			"GameplayTags",
+			"AccelByteUe4Sdk", 
 			"AccelByteNetworkUtilities", 
 			"OnlineSubsystemAccelByte",
 			"OnlineSubsystem",
 			"OnlineSubsystemUtils",
 			"Json",
-			"HTTP"
+			"HTTP",
+			"EngineSettings"
 		});
 
 
-	PrivateDependencyModuleNames.AddRange(new string[] 
+		PrivateDependencyModuleNames.AddRange(new string[] 
 		{
 			"InputCore",
 			"Slate",

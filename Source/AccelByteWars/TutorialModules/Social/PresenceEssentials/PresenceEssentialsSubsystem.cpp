@@ -93,6 +93,13 @@ void UPresenceEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collecti
                 UpdatePrimaryPlayerPresenceStatus();
             });
         }
+        if (FOnDestroySessionComplete* OnLeaveSessionComplete = OnlineSession->GetOnLeaveSessionCompleteDelegates())
+        {
+            OnLeaveSessionComplete->AddWeakLambda(this, [this](FName SessionName, bool bSucceeded)
+            {
+                UpdatePrimaryPlayerPresenceStatus();
+            });
+        }
     }
 
     // Update presence status once the player logged in and connected to lobby.
@@ -118,6 +125,11 @@ void UPresenceEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collecti
     {
         PresenceInterface->AddOnPresenceReceivedDelegate_Handle(FOnPresenceReceivedDelegate::CreateUObject(this, &ThisClass::OnPresenceReceived));
         PresenceInterface->AddOnBulkQueryPresenceCompleteDelegate_Handle(FOnBulkQueryPresenceCompleteDelegate::CreateUObject(this, &ThisClass::OnBulkQueryPresenceComplete));
+    }
+
+    if(FOnlineSessionV2AccelBytePtr SessionInterface = GetSessionInterface())
+    {
+        SessionInterface->AddOnSessionParticipantsChangeDelegate_Handle(FOnSessionParticipantsChangeDelegate::CreateUObject(this, &ThisClass::OnSessionParticipantChange));
     }
 }
 
@@ -174,6 +186,11 @@ void UPresenceEssentialsSubsystem::Deinitialize()
         {
             OnPartySessionUpdateReceived->RemoveAll(this);
         }
+
+        if (FOnDestroySessionComplete* OnLeaveSessionComplete = OnlineSession->GetOnLeaveSessionCompleteDelegates())
+        {
+            OnLeaveSessionComplete->RemoveAll(this);
+        }
     }
 
     if (FOnlineIdentityAccelBytePtr IdentityInterface = GetIdentityInterface())
@@ -191,6 +208,11 @@ void UPresenceEssentialsSubsystem::Deinitialize()
     {
         PresenceInterface->ClearOnPresenceReceivedDelegates(this);
         PresenceInterface->ClearOnBulkQueryPresenceCompleteDelegates(this);
+    }
+    
+    if(FOnlineSessionV2AccelBytePtr SessionInterface = GetSessionInterface())
+    {
+        SessionInterface->ClearOnSessionParticipantsChangeDelegates(this);
     }
 }
 
@@ -374,7 +396,16 @@ void UPresenceEssentialsSubsystem::OnBlockedPlayerListChange(int32 LocalUserNum,
     BulkQueryPresence(UserId, BlockedPlayerIds);
 }
 
-void UPresenceEssentialsSubsystem::GetPresence(const FUniqueNetIdPtr UserId, const FOnPresenceTaskComplete& OnComplete)
+void UPresenceEssentialsSubsystem::OnSessionParticipantChange(FName SessionName, const FUniqueNetId& UserId, bool bJoined)
+{
+    if(!bJoined)
+    {
+        UE_LOG_PRESENCEESSENTIALS(Log, TEXT("Update presence when session participant change"));
+        GetPresence(UserId.AsShared(),true);
+    }
+}
+
+void UPresenceEssentialsSubsystem::GetPresence(const FUniqueNetIdPtr UserId, bool bForceQuery, const FOnPresenceTaskComplete& OnComplete)
 {
     FOnlinePresenceAccelBytePtr PresenceInterface = GetPresenceInterface();
     if (!PresenceInterface)
@@ -392,14 +423,17 @@ void UPresenceEssentialsSubsystem::GetPresence(const FUniqueNetIdPtr UserId, con
         return;
     }
 
-    // Try get the presence from cache.
-    TSharedPtr<FOnlineUserPresence> OutPresence;
-    PresenceInterface->GetCachedPresence(UserABId.ToSharedRef().Get(), OutPresence);
-    if (TSharedPtr<FOnlineUserPresenceAccelByte> ABPresence = StaticCastSharedPtr<FOnlineUserPresenceAccelByte>(OutPresence))
+    if(!bForceQuery)
     {
-        UE_LOG_PRESENCEESSENTIALS(Log, TEXT("Success to get presence for user: %s"), *UserABId->GetAccelByteId());
-        OnComplete.ExecuteIfBound(true, ABPresence);
-        return;
+        // Try get the presence from cache.
+        TSharedPtr<FOnlineUserPresence> OutPresence = nullptr;
+        PresenceInterface->GetCachedPresence(UserABId.ToSharedRef().Get(), OutPresence);
+        if (TSharedPtr<FOnlineUserPresenceAccelByte> ABPresence = StaticCastSharedPtr<FOnlineUserPresenceAccelByte>(OutPresence))
+        {
+            UE_LOG_PRESENCEESSENTIALS(Log, TEXT("Success to get presence for user: %s"), *UserABId->GetAccelByteId());
+            OnComplete.ExecuteIfBound(true, ABPresence);
+            return;
+        }
     }
 
     // If the presence is not available on cache, then query it.
@@ -574,6 +608,7 @@ void UPresenceEssentialsSubsystem::OnPresenceReceived(const FUniqueNetId& UserId
     const FUniqueNetIdAccelByteUserRef UserABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(UserId.AsShared());
     if (!UserABId->IsValid()) 
     {
+        UE_LOG_PRESENCEESSENTIALS(Log, TEXT("Received presence update for but is null"));
         return;
     }
 
@@ -616,6 +651,18 @@ TSharedPtr<FOnlineIdentityAccelByte, ESPMode::ThreadSafe> UPresenceEssentialsSub
     }
 
     return StaticCastSharedPtr<FOnlineIdentityAccelByte>(Subsystem->GetIdentityInterface());
+}
+
+TSharedPtr<FOnlineSessionV2AccelByte, ESPMode::ThreadSafe> UPresenceEssentialsSubsystem::GetSessionInterface() const
+{
+    const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+    if (!ensure(Subsystem))
+    {
+        UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and DefaultPlatformService under [OnlineSubsystem] in the Engine.ini set to AccelByte."));
+        return nullptr;
+    }
+
+    return StaticCastSharedPtr<FOnlineSessionV2AccelByte>(Subsystem->GetSessionInterface());
 }
 
 UAccelByteWarsOnlineSessionBase* UPresenceEssentialsSubsystem::GetOnlineSession() const

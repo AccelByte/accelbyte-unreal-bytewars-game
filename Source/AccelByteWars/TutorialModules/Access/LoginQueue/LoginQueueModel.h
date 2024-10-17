@@ -7,6 +7,8 @@
 #include "OnlineError.h"
 #include "Models/AccelByteOauth2Models.h"
 
+// @@@SNIPSTART LoginQueueModel.h-delegatemacro
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnLoginQueueCancelCompleted, const APlayerController*, const FOnlineError&)
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnLoginQueued, const APlayerController*, const FAccelByteModelsLoginQueueTicketInfo& TicketInfo)
 DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnLoginTicketStatusUpdated, const APlayerController*, const FAccelByteModelsLoginQueueTicketInfo&, const FOnlineError&)
+// @@@SNIPEND

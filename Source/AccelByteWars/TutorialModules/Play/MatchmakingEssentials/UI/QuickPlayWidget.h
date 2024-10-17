@@ -8,9 +8,7 @@
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
 #include "QuickPlayWidget.generated.h"
 
-class UAccelByteWarsWidgetSwitcher;
 class UWidgetSwitcher;
-class UTextBlock;
 class UCommonButtonBase;
 
 UCLASS(Abstract)
@@ -22,22 +20,12 @@ public:
 	enum class EContentType : uint8
 	{
 		SELECTGAMEMODE = 0,
-		SELECTSERVERTYPE,
-		LOADING,
-		ERROR,
-		SUCCESS
+		SELECTSERVERTYPE
 	};
 
 	EGameModeType GetSelectedGameModeType() const;
 
-	void SetLoadingMessage(const FText& Text, const bool bEnableCancelButton) const;
-	void SetErrorMessage(const FText& Text, const bool bShowRetryButton = false) const;
 	void SwitchContent(EContentType State);
-
-	UAccelByteWarsWidgetSwitcher* GetProcessingWidget() const
-	{
-		return Ws_Processing;
-	}
 
 protected:
 	virtual void NativeOnActivated() override;
@@ -51,6 +39,7 @@ private:
 	EGameModeType SelectedGameModeType = EGameModeType::TDM;
 	float CameraTargetY = 600.f;
 
+	UPROPERTY()
 	UWidget* DesiredFocusTargetButton;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
@@ -63,12 +52,6 @@ private:
 	UWidget* W_SelectServerType;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UWidget* W_ProcessingOuter;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UAccelByteWarsWidgetSwitcher* Ws_Processing;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_Elimination;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
@@ -79,8 +62,4 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_SelectServerType_Back;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UCommonButtonBase* Btn_Processing_Back;
-#pragma endregion 
 };

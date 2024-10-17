@@ -47,6 +47,10 @@ public:
 	{
 		return &OnLeaveSessionCompleteDelegates;
 	}
+	virtual FOnUpdateSessionComplete* GetOnUpdateSessionCompleteDelegates() override
+	{
+		return &OnUpdateSessionCompleteDelegates;
+	}
 
 	virtual FOnV2SessionInviteReceived* GetOnSessionInviteReceivedDelegates() override
 	{
@@ -73,6 +77,7 @@ private:
 	FOnSendSessionInviteComplete OnSendSessionInviteCompleteDelegates;
 	FOnRejectSessionInviteCompleteMulticast OnRejectSessionInviteCompleteDelegates;
 	FOnDestroySessionComplete OnLeaveSessionCompleteDelegates;
+	FOnUpdateSessionComplete OnUpdateSessionCompleteDelegates;
 
 	FOnV2SessionInviteReceived OnSessionInviteReceivedDelegates;
 	FOnSessionParticipantsChange OnSessionParticipantsChangeDelegates;

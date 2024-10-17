@@ -12,6 +12,7 @@
 #include "Core/UI/InGameMenu/GameOver/GameOverWidget.h"
 #include "Interfaces/OnlineIdentityInterface.h"
 #include "Interfaces/OnlineUserInterface.h"
+#include "TutorialModuleUtilities/StartupSubsystem.h"
 
 void UMatchSessionDSOnlineSession_Starter::RegisterOnlineDelegates()
 {
@@ -112,12 +113,12 @@ void UMatchSessionDSOnlineSession_Starter::OnDSQueryUserInfoComplete(
 }
 
 void UMatchSessionDSOnlineSession_Starter::OnQueryUserInfoForFindSessionComplete(
-	const bool bSucceeded,
+	const FOnlineError& Error,
 	const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
 {
-	UE_LOG_MATCHSESSIONDS(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? TEXT("TRUE") : TEXT("FALSE")))
+	UE_LOG_MATCHSESSIONDS(Log, TEXT("succeeded: %s"), *FString(Error.bSucceeded ? TEXT("TRUE") : TEXT("FALSE")))
 
-	if (bSucceeded)
+	if (Error.bSucceeded)
 	{
 		const TArray<FMatchSessionEssentialInfo> MatchSessionSearchResult = SimplifySessionSearchResult(
 			SessionSearch->SearchResults,

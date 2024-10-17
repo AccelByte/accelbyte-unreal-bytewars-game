@@ -14,6 +14,8 @@
 #include "Interfaces/OnlineUserInterface.h"
 #include "TutorialModuleUtilities/StartupSubsystem.h"
 
+// @@@SNIPSTART MatchSessionP2POnlineSession.cpp-RegisterOnlineDelegates
+// @@@MULTISNIP BindFindSessionDelegate {"selectedLines": ["1-2", "19-23"]}
 void UMatchSessionP2POnlineSession::RegisterOnlineDelegates()
 {
 	Super::RegisterOnlineDelegates();
@@ -37,7 +39,10 @@ void UMatchSessionP2POnlineSession::RegisterOnlineDelegates()
 
 	SessionSearch->SearchState = EOnlineAsyncTaskState::NotStarted;
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchSessionP2POnlineSession.cpp-ClearOnlineDelegates
+// @@@MULTISNIP UnbindFindSessionDelegate {"selectedLines": ["1-2", "12-13"]}
 void UMatchSessionP2POnlineSession::ClearOnlineDelegates()
 {
 	Super::ClearOnlineDelegates();
@@ -51,8 +56,10 @@ void UMatchSessionP2POnlineSession::ClearOnlineDelegates()
 
 	GetSessionInt()->OnFindSessionsCompleteDelegates.RemoveAll(this);
 }
+// @@@SNIPEND
 
 #pragma region "Game Session Essentials"
+// @@@SNIPSTART MatchSessionP2POnlineSession.cpp-TravelToSession
 bool UMatchSessionP2POnlineSession::TravelToSession(const FName SessionName)
 {
 	UE_LOG_MATCHSESSIONP2P(Verbose, TEXT("called"))
@@ -133,7 +140,9 @@ bool UMatchSessionP2POnlineSession::TravelToSession(const FName SessionName)
 
 	return true;
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchSessionP2POnlineSession.cpp-OnSessionServerUpdateReceived
 void UMatchSessionP2POnlineSession::OnSessionServerUpdateReceived(FName SessionName)
 {
 	UE_LOG_MATCHSESSIONP2P(Verbose, TEXT("called"))
@@ -148,7 +157,9 @@ void UMatchSessionP2POnlineSession::OnSessionServerUpdateReceived(FName SessionN
 	const bool bHasClientTravelTriggered = TravelToSession(SessionName);
 	OnSessionServerUpdateReceivedDelegates.Broadcast(SessionName, FOnlineError(true), bHasClientTravelTriggered);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchSessionP2POnlineSession.cpp-OnSessionServerErrorReceived
 void UMatchSessionP2POnlineSession::OnSessionServerErrorReceived(FName SessionName, const FString& Message)
 {
 	UE_LOG_MATCHSESSIONP2P(Verbose, TEXT("called"))
@@ -159,7 +170,9 @@ void UMatchSessionP2POnlineSession::OnSessionServerErrorReceived(FName SessionNa
 
 	OnSessionServerUpdateReceivedDelegates.Broadcast(SessionName, Error, false);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchSessionP2POnlineSession.cpp-OnJoinSessionComplete
 void UMatchSessionP2POnlineSession::OnJoinSessionComplete(
 	FName SessionName,
 	EOnJoinSessionCompleteResult::Type Result)
@@ -168,7 +181,9 @@ void UMatchSessionP2POnlineSession::OnJoinSessionComplete(
 
 	TravelToSession(SessionName);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchSessionP2POnlineSession.cpp-OnLeaveSessionComplete
 void UMatchSessionP2POnlineSession::OnLeaveSessionComplete(FName SessionName, bool bSucceeded)
 {
 	Super::OnLeaveSessionComplete(SessionName, bSucceeded);
@@ -178,7 +193,9 @@ void UMatchSessionP2POnlineSession::OnLeaveSessionComplete(FName SessionName, bo
 		bIsInSessionServer = false;
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchSessionP2POnlineSession.cpp-OnCreateSessionComplete
 void UMatchSessionP2POnlineSession::OnCreateSessionComplete(FName SessionName, bool bSucceeded)
 {
 	Super::OnCreateSessionComplete(SessionName, bSucceeded);
@@ -189,7 +206,9 @@ void UMatchSessionP2POnlineSession::OnCreateSessionComplete(FName SessionName, b
 		TravelToSession(SessionName);
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchSessionP2POnlineSession.cpp-HandleDisconnectInternal
 bool UMatchSessionP2POnlineSession::HandleDisconnectInternal(UWorld* World, UNetDriver* NetDriver)
 {
 	UE_LOG_MATCHSESSIONP2P(Verbose, TEXT("called"))
@@ -201,9 +220,11 @@ bool UMatchSessionP2POnlineSession::HandleDisconnectInternal(UWorld* World, UNet
 
 	return true;
 }
+// @@@SNIPEND
 #pragma endregion 
 
 #pragma region "Match Session Essentials"
+// @@@SNIPSTART MatchSessionP2POnlineSession.cpp-CreateMatchSession
 void UMatchSessionP2POnlineSession::CreateMatchSession(
 	const int32 LocalUserNum,
 	const EGameModeNetworkType NetworkType,
@@ -218,14 +239,25 @@ void UMatchSessionP2POnlineSession::CreateMatchSession(
 		GAMESETUP_GameModeCode,
 		FString(GameModeType == EGameModeType::FFA ? "ELIMINATION-P2P-USERCREATED" : "TEAMDEATHMATCH-P2P-USERCREATED"));
 
+	// Get match session template name based on game mode type
+	FString MatchTemplateName = MatchSessionTemplateNameMap[{EGameModeNetworkType::P2P, GameModeType}];
+
+	// Override match session template name if applicable.
+	if (!UTutorialModuleOnlineUtility::GetMatchSessionTemplateP2POverride().IsEmpty())
+	{
+		MatchTemplateName = UTutorialModuleOnlineUtility::GetMatchSessionTemplateP2POverride();
+	}
+
 	CreateSession(
 		LocalUserNum,
 		GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession),
 		SessionSettings,
 		EAccelByteV2SessionType::GameSession,
-		MatchSessionTemplateNameMap[{EGameModeNetworkType::P2P, GameModeType}]);
+		MatchTemplateName);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchSessionP2POnlineSession.cpp-FindSessions
 void UMatchSessionP2POnlineSession::FindSessions(
 	const int32 LocalUserNum,
 	const int32 MaxQueryNum,
@@ -271,7 +303,9 @@ void UMatchSessionP2POnlineSession::FindSessions(
 		}));
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchSessionP2POnlineSession.cpp-OnFindSessionsComplete
 void UMatchSessionP2POnlineSession::OnFindSessionsComplete(bool bSucceeded)
 {
 	UE_LOG_MATCHSESSIONP2P(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
@@ -308,6 +342,7 @@ void UMatchSessionP2POnlineSession::OnFindSessionsComplete(bool bSucceeded)
 		OnFindSessionsCompleteDelegates.Broadcast({}, false);
 	}
 }
+// @@@SNIPEND
 
 void UMatchSessionP2POnlineSession::OnQueryUserInfoForFindSessionComplete(
 	const FOnlineError& Error,

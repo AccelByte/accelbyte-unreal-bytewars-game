@@ -14,37 +14,30 @@ class ACCELBYTEWARS_API UMatchmakingP2POnlineSession : public USessionEssentials
 {
 	GENERATED_BODY()
 
+// @@@SNIPSTART MatchmakingP2POnlineSession.h-public
+// @@@MULTISNIP TargetGameModeMap {"selectedLines": ["1", "15-18"]}
+// @@@MULTISNIP StartMatchmaking {"selectedLines": ["1", "20-24"]}
+// @@@MULTISNIP CancelMatchmaking {"selectedLines": ["1", "25"]}
+// @@@MULTISNIP TravelToSession {"selectedLines": ["1", "6"]}
+// @@@MULTISNIP OnStartMatchmakingCompleteDelegate {"selectedLines": ["1", "27-30"]}
+// @@@MULTISNIP OnMatchmakingCompleteDelegate {"selectedLines": ["1", "31-34"]}
+// @@@MULTISNIP OnCancelMatchmakingCompleteDelegate {"selectedLines": ["1", "35-38"]}
+// @@@MULTISNIP OnAcceptBackfillProposalCompleteDelegates {"selectedLines": ["1", "39-42"]}
+// @@@MULTISNIP OnSessionServerUpdateReceivedDelegate {"selectedLines": ["1", "8-11"]}
 public:
 	virtual void RegisterOnlineDelegates() override;
 	virtual void ClearOnlineDelegates() override;
 
-protected:
-	virtual void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result) override;
-	virtual void OnLeaveSessionComplete(FName SessionName, bool bSucceeded) override;
-
 #pragma region "Game Session Essentials"
-public:
 	virtual bool TravelToSession(const FName SessionName) override;
 
 	virtual FOnServerSessionUpdateReceived* GetOnSessionServerUpdateReceivedDelegates() override
 	{
 		return &OnSessionServerUpdateReceivedDelegates;
 	}
-
-protected:
-	virtual void OnSessionServerUpdateReceived(FName SessionName) override;
-	virtual void OnSessionServerErrorReceived(FName SessionName, const FString& Message) override;
-
-	virtual bool HandleDisconnectInternal(UWorld* World, UNetDriver* NetDriver) override;
-
-private:
-	bool bIsInSessionServer = false;
-
-	FOnServerSessionUpdateReceived OnSessionServerUpdateReceivedDelegates;
-#pragma endregion 
+#pragma endregion
 
 #pragma region "Matchmaking Session Essentials"
-public:
 	const TMap<FString, FString> TargetGameModeMap = {
 		{"unreal-elimination-p2p", "ELIMINATION-P2P"},
 		{"unreal-teamdeathmatch-p2p", "TEAMDEATHMATCH-P2P"}
@@ -73,8 +66,30 @@ public:
 	{
 		return &OnAcceptBackfillProposalCompleteDelegates;
 	}
+#pragma endregion
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchmakingP2POnlineSession.h-protected
+// @@@MULTISNIP OnStartMatchmakingComplete {"selectedLines": ["1", "13-16"]}
+// @@@MULTISNIP OnMatchmakingComplete {"selectedLines": ["1", "18"]}
+// @@@MULTISNIP OnCancelMatchmakingComplete {"selectedLines": ["1", "17"]}
+// @@@MULTISNIP OnSessionServerUpdateReceived {"selectedLines": ["1", "3"]}
+// @@@MULTISNIP OnSessionServerErrorReceived {"selectedLines": ["1", "4"]}
+// @@@MULTISNIP OnJoinSessionComplete {"selectedLines": ["1", "6"]}
+// @@@MULTISNIP OnLeaveSessionComplete {"selectedLines": ["1", "7"]}
+// @@@MULTISNIP OnBackfillProposalReceived {"selectedLines": ["1", "20"]}
 protected:
+#pragma region "Game Session Essentials"
+	virtual void OnSessionServerUpdateReceived(FName SessionName) override;
+	virtual void OnSessionServerErrorReceived(FName SessionName, const FString& Message) override;
+
+	virtual void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result) override;
+	virtual void OnLeaveSessionComplete(FName SessionName, bool bSucceeded) override;
+
+	virtual bool HandleDisconnectInternal(UWorld* World, UNetDriver* NetDriver) override;
+#pragma endregion 
+
+#pragma region "Matchmaking Session Essentials"
 	virtual void OnStartMatchmakingComplete(
 		FName SessionName,
 		const FOnlineError& ErrorDetails,
@@ -83,8 +98,25 @@ protected:
 	virtual void OnMatchmakingComplete(FName SessionName, bool bSucceeded) override;
 
 	virtual void OnBackfillProposalReceived(FAccelByteModelsV2MatchmakingBackfillProposalNotif Proposal) override;
+#pragma endregion 
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchmakingP2POnlineSession.h-private
+// @@@MULTISNIP MatchPoolIdMap {"selectedLines": ["1", "9-12"]}
+// @@@MULTISNIP OnLeaveSessionForReMatchmakingComplete {"selectedLines": ["1", "19-24"]}
+// @@@MULTISNIP OnStartMatchmakingCompleteDelegate {"selectedLines": ["1", "14"]}
+// @@@MULTISNIP OnMatchmakingCompleteDelegate {"selectedLines": ["1", "15"]}
+// @@@MULTISNIP OnCancelMatchmakingCompleteDelegate {"selectedLines": ["1", "16"]}
+// @@@MULTISNIP OnAcceptBackfillProposalCompleteDelegates {"selectedLines": ["1", "17"]}
+// @@@MULTISNIP OnSessionServerUpdateReceivedDelegate {"selectedLines": ["1", "5"]}
 private:
+#pragma region "Game Session Essentials"
+	bool bIsInSessionServer = false;
+
+	FOnServerSessionUpdateReceived OnSessionServerUpdateReceivedDelegates;
+#pragma endregion 
+
+#pragma region "Matchmaking Session Essentials"
 	const TMap<EGameModeType, FString> MatchPoolIds = {
 		{EGameModeType::FFA, "unreal-elimination-p2p"},
 		{EGameModeType::TDM, "unreal-teamdeathmatch-p2p"}
@@ -101,5 +133,6 @@ private:
 		const int32 LocalUserNum,
 		const EGameModeType GameModeType);
 	FDelegateHandle OnLeaveSessionForReMatchmakingCompleteDelegateHandle;
-#pragma endregion 
+#pragma endregion
+// @@@SNIPEND
 };

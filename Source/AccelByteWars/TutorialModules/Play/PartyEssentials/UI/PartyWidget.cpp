@@ -25,6 +25,7 @@ void UPartyWidget::NativeConstruct()
 	ensure(PartyOnlineSession);
 }
 
+// @@@SNIPSTART PartyWidget.cpp-NativeOnActivated
 void UPartyWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
@@ -52,7 +53,9 @@ void UPartyWidget::NativeOnActivated()
 
 	DisplayParty();
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyWidget.cpp-NativeOnDeactivated
 void UPartyWidget::NativeOnDeactivated()
 {
 	Btn_Leave->OnClicked().Clear();
@@ -65,7 +68,10 @@ void UPartyWidget::NativeOnDeactivated()
 
 	Super::NativeOnDeactivated();
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyWidget.cpp-DisplayParty
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-5", "90"]}
 void UPartyWidget::DisplayParty()
 {
 	// Show loading.
@@ -156,10 +162,14 @@ void UPartyWidget::DisplayParty()
 			}));
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyWidget.cpp-OnLeaveButtonClicked
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "5-6"]}
 void UPartyWidget::OnLeaveButtonClicked()
 {
 	// Leave current party.
 	PartyOnlineSession->LeaveParty(PartyOnlineSession->GetLocalUserNumFromPlayerController(GetOwningPlayer()));
 	DeactivateWidget();
 }
+// @@@SNIPEND

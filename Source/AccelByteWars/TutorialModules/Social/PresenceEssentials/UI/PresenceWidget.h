@@ -25,7 +25,7 @@ protected:
 	void SetupPresence();
 	void OnSetupPresenceComplete();
 
-	void RefreshPresence();
+	void RefreshPresence(bool bForceQueryPresence = false);
 	void OnPresenceUpdated(const FUniqueNetId& UserId, const TSharedRef<FOnlineUserPresence>& Presence);
 	void OnBulkQueryPresenceComplete(const bool bWasSuccessful, const FUserIDPresenceMap& Presences);
 

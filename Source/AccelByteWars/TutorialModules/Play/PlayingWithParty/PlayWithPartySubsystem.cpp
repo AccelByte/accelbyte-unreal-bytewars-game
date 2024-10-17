@@ -15,6 +15,11 @@
 
 #include "JsonObjectConverter.h"
 
+// @@@SNIPSTART PlayWithPartySubsystem.cpp-Initialize
+// @@@MULTISNIP BindPartyMatchmakingDelegate {"selectedLines": ["1-2", "5-11", "26", "46"]}
+// @@@MULTISNIP BindPartyGameSessionDelegate {"selectedLines": ["1-2", "5-6", "13-18", "26", "46"]}
+// @@@MULTISNIP BindPartyGameSessionFailureDelegate {"selectedLines": ["1-2", "5-6", "20-32", "46"]}
+// @@@MULTISNIP BindPartyGameSessionValidationDelegate {"selectedLines": ["1-2", "34-46"]}
 void UPlayWithPartySubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
@@ -61,7 +66,13 @@ void UPlayWithPartySubsystem::Initialize(FSubsystemCollectionBase& Collection)
         GetOnlineSession()->ValidateToJoinSession.BindUObject(this, &ThisClass::ValidateToJoinPartyGameSession);
     }
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayWithPartySubsystem.cpp-Deinitialize
+// @@@MULTISNIP UnbindPartyMatchmakingDelegate {"selectedLines": ["1-2", "5-11", "26", "52"]}
+// @@@MULTISNIP UnbindPartyGameSessionDelegate {"selectedLines": ["1-2", "5-6", "13-18", "26", "52"]}
+// @@@MULTISNIP UnbindPartyGameSessionFailureDelegate {"selectedLines": ["1-2", "5-6", "20-32", "52"]}
+// @@@MULTISNIP UnbindPartyGameSessionValidationDelegate {"selectedLines": ["1-2", "34-52"]}
 void UPlayWithPartySubsystem::Deinitialize()
 {
     Super::Deinitialize();
@@ -114,7 +125,9 @@ void UPlayWithPartySubsystem::Deinitialize()
         }
     }
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayWithPartySubsystem.cpp-GetOnlineSession
 UAccelByteWarsOnlineSessionBase* UPlayWithPartySubsystem::GetOnlineSession() const
 {
     if (!GetGameInstance())
@@ -124,7 +137,9 @@ UAccelByteWarsOnlineSessionBase* UPlayWithPartySubsystem::GetOnlineSession() con
 
     return Cast<UAccelByteWarsOnlineSessionBase>(GetGameInstance()->GetOnlineSession());
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayWithPartySubsystem.cpp-GetSessionInterface
 FOnlineSessionV2AccelBytePtr UPlayWithPartySubsystem::GetSessionInterface() const
 {
     const UWorld* World = GetWorld();
@@ -135,7 +150,9 @@ FOnlineSessionV2AccelBytePtr UPlayWithPartySubsystem::GetSessionInterface() cons
 
     return StaticCastSharedPtr<FOnlineSessionV2AccelByte>(Online::GetSessionInterface(World));
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayWithPartySubsystem.cpp-GetIdentityInterface
 FOnlineIdentityAccelBytePtr UPlayWithPartySubsystem::GetIdentityInterface() const
 {
     const UWorld* World = GetWorld();
@@ -146,7 +163,9 @@ FOnlineIdentityAccelBytePtr UPlayWithPartySubsystem::GetIdentityInterface() cons
 
     return StaticCastSharedPtr<FOnlineIdentityAccelByte>(Online::GetIdentityInterface(World));
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayWithPartySubsystem.cpp-GetPromptSubystem
 UPromptSubsystem* UPlayWithPartySubsystem::GetPromptSubystem()
 {
     if (UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance()))
@@ -156,7 +175,9 @@ UPromptSubsystem* UPlayWithPartySubsystem::GetPromptSubystem()
 
     return nullptr;
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayWithPartySubsystem.cpp-OnStartPartyMatchmakingComplete
 void UPlayWithPartySubsystem::OnStartPartyMatchmakingComplete()
 {
     if (!GetSessionInterface() || !GetOnlineSession()) 
@@ -192,7 +213,9 @@ void UPlayWithPartySubsystem::OnStartPartyMatchmakingComplete()
         GetPromptSubystem()->ShowLoading(PARTY_MATCHMAKING_STARTED_MESSAGE);
     }
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayWithPartySubsystem.cpp-OnPartyMatchmakingComplete
 void UPlayWithPartySubsystem::OnPartyMatchmakingComplete(FName SessionName, bool bSucceeded)
 {
     if (!GetSessionInterface() || !GetOnlineSession())
@@ -244,7 +267,9 @@ void UPlayWithPartySubsystem::OnPartyMatchmakingComplete(FName SessionName, bool
         }
     }
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayWithPartySubsystem.cpp-OnPartyMatchmakingCanceled
 void UPlayWithPartySubsystem::OnPartyMatchmakingCanceled()
 {
     if (!GetSessionInterface() || !GetOnlineSession())
@@ -280,7 +305,9 @@ void UPlayWithPartySubsystem::OnPartyMatchmakingCanceled()
         GetPromptSubystem()->PushNotification(PARTY_MATCHMAKING_CANCELED_MESSAGE, FString(""));
     }
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayWithPartySubsystem.cpp-OnPartyMatchmakingExpired
 void UPlayWithPartySubsystem::OnPartyMatchmakingExpired(TSharedPtr<FOnlineSessionSearchAccelByte> SearchHandler)
 {
     if (!GetSessionInterface() || !GetOnlineSession())
@@ -316,7 +343,9 @@ void UPlayWithPartySubsystem::OnPartyMatchmakingExpired(TSharedPtr<FOnlineSessio
         GetPromptSubystem()->PushNotification(PARTY_MATCHMAKING_EXPIRED_MESSAGE, FString(""));
     }
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayWithPartySubsystem.cpp-InvitePartyMembersToJoinPartyGameSession
 void UPlayWithPartySubsystem::InvitePartyMembersToJoinPartyGameSession(const FUniqueNetIdPtr LeaderUserId)
 {
     if (!LeaderUserId)
@@ -367,7 +396,9 @@ void UPlayWithPartySubsystem::InvitePartyMembersToJoinPartyGameSession(const FUn
         }
     }
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayWithPartySubsystem.cpp-OnPartyGameSessionInviteReceived
 void UPlayWithPartySubsystem::OnPartyGameSessionInviteReceived(const FUniqueNetId& UserId, const FUniqueNetId& FromId, const FOnlineSessionInviteAccelByte& Invite)
 {
     if (!GetSessionInterface() || !GetOnlineSession())
@@ -413,7 +444,9 @@ void UPlayWithPartySubsystem::OnPartyGameSessionInviteReceived(const FUniqueNetI
         GetOnlineSession()->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession),
         Invite.Session);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayWithPartySubsystem.cpp-UpdatePartyMemberGameSession
 void UPlayWithPartySubsystem::UpdatePartyMemberGameSession(const FUniqueNetIdPtr MemberUserId, const bool bResetGameSessionId)
 {
     if (!MemberUserId)
@@ -535,7 +568,9 @@ void UPlayWithPartySubsystem::UpdatePartyMemberGameSession(const FUniqueNetIdPtr
         }
     ));
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayWithPartySubsystem.cpp-IsGameSessionDifferFromParty
 bool UPlayWithPartySubsystem::IsGameSessionDifferFromParty(const FUniqueNetIdPtr MemberUserId)
 {
     if (!MemberUserId)
@@ -612,7 +647,9 @@ bool UPlayWithPartySubsystem::IsGameSessionDifferFromParty(const FUniqueNetIdPtr
 
     return bResult;
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayWithPartySubsystem.cpp-OnCreatePartyGameSessionComplete
 void UPlayWithPartySubsystem::OnCreatePartyGameSessionComplete(FName SessionName, bool bSucceeded)
 {
     if (!GetSessionInterface() || !GetOnlineSession())
@@ -652,7 +689,9 @@ void UPlayWithPartySubsystem::OnCreatePartyGameSessionComplete(FName SessionName
         InvitePartyMembersToJoinPartyGameSession(UserId);
     }
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayWithPartySubsystem.cpp-OnJoinPartyGameSessionComplete
 void UPlayWithPartySubsystem::OnJoinPartyGameSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
 {
     if (!GetSessionInterface() || !GetOnlineSession())
@@ -710,7 +749,9 @@ void UPlayWithPartySubsystem::OnJoinPartyGameSessionComplete(FName SessionName, 
         }
     }
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayWithPartySubsystem.cpp-OnLeavePartyGameSessionComplete
 void UPlayWithPartySubsystem::OnLeavePartyGameSessionComplete(FName SessionName, bool bSucceeded)
 {
     if (!GetSessionInterface() || !GetOnlineSession())
@@ -744,7 +785,9 @@ void UPlayWithPartySubsystem::OnLeavePartyGameSessionComplete(FName SessionName,
         UpdatePartyMemberGameSession(UserId);
     }
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayWithPartySubsystem.cpp-OnPartyGameSessionUpdateReceived
 void UPlayWithPartySubsystem::OnPartyGameSessionUpdateReceived(FName SessionName)
 {
     if (!GetSessionInterface() || !GetOnlineSession())
@@ -769,7 +812,9 @@ void UPlayWithPartySubsystem::OnPartyGameSessionUpdateReceived(FName SessionName
         UpdatePartyMemberGameSession(UserId);
     }
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayWithPartySubsystem.cpp-OnPartyGameSessionFailure
 void UPlayWithPartySubsystem::OnPartyGameSessionFailure(const FUniqueNetId& UserId, ESessionFailure::Type FailureType)
 {
     if (!GetSessionInterface() || !GetOnlineSession())
@@ -790,7 +835,9 @@ void UPlayWithPartySubsystem::OnPartyGameSessionFailure(const FUniqueNetId& User
         UpdatePartyMemberGameSession(UserId.AsShared());
     }
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayWithPartySubsystem.cpp-OnPartyGameSessionUpdateConflictError
 void UPlayWithPartySubsystem::OnPartyGameSessionUpdateConflictError(FName SessionName, FOnlineSessionSettings FailedSessionSettings)
 {
     if (!GetSessionInterface() || !GetOnlineSession())
@@ -815,7 +862,9 @@ void UPlayWithPartySubsystem::OnPartyGameSessionUpdateConflictError(FName Sessio
         UpdatePartyMemberGameSession(UserId);
     }
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayWithPartySubsystem.cpp-OnPartyGameSessionServerUpdate
 void UPlayWithPartySubsystem::OnPartyGameSessionServerUpdate(FName SessionName)
 {
     if (!GetSessionInterface() || !GetOnlineSession())
@@ -839,7 +888,9 @@ void UPlayWithPartySubsystem::OnPartyGameSessionServerUpdate(FName SessionName)
         UpdatePartyMemberGameSession(UserId);
     }
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayWithPartySubsystem.cpp-OnPartyGameSessionServerError
 void UPlayWithPartySubsystem::OnPartyGameSessionServerError(FName SessionName, const FString& ErrorMessage)
 {
     if (!GetSessionInterface() || !GetOnlineSession())
@@ -870,7 +921,9 @@ void UPlayWithPartySubsystem::OnPartyGameSessionServerError(FName SessionName, c
         GetPromptSubystem()->PushNotification(JOIN_PARTY_GAME_SESSION_SERVER_ERROR_MESSAGE, FString(""));
     }
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayWithPartySubsystem.cpp-OnPartyGameSessionParticipantRemoved
 void UPlayWithPartySubsystem::OnPartyGameSessionParticipantRemoved(FName SessionName, const FUniqueNetId& UserId)
 {
     if (!GetSessionInterface() || !GetOnlineSession())
@@ -909,7 +962,9 @@ void UPlayWithPartySubsystem::OnPartyGameSessionParticipantRemoved(FName Session
         GetOnlineSession()->LeaveSession(SessionName);
     }
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayWithPartySubsystem.cpp-OnNetworkFailure
 void UPlayWithPartySubsystem::OnNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType, const FString& Message)
 {
     if (!GetSessionInterface() || !GetOnlineSession())
@@ -932,7 +987,9 @@ void UPlayWithPartySubsystem::OnNetworkFailure(UWorld* World, UNetDriver* NetDri
         UpdatePartyMemberGameSession(UserId, true);
     }
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayWithPartySubsystem.cpp-ValidateToStartPartyGameSession
 bool UPlayWithPartySubsystem::ValidateToStartPartyGameSession()
 {
     // Safety.
@@ -986,7 +1043,9 @@ bool UPlayWithPartySubsystem::ValidateToStartPartyGameSession()
 
     return bResult;
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayWithPartySubsystem.cpp-ValidateToJoinPartyGameSession
 bool UPlayWithPartySubsystem::ValidateToJoinPartyGameSession(const FOnlineSessionSearchResult& SessionSearchResult)
 {
     if (!ValidateToStartPartyGameSession())
@@ -1048,7 +1107,9 @@ bool UPlayWithPartySubsystem::ValidateToJoinPartyGameSession(const FOnlineSessio
 
     return bResult;
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayWithPartySubsystem.cpp-ValidateToStartPartyMatchmaking
 bool UPlayWithPartySubsystem::ValidateToStartPartyMatchmaking(const EGameModeType GameModeType)
 {
     if (!ValidateToStartPartyGameSession())
@@ -1094,3 +1155,4 @@ bool UPlayWithPartySubsystem::ValidateToStartPartyMatchmaking(const EGameModeTyp
 
     return bResult;
 }
+// @@@SNIPEND

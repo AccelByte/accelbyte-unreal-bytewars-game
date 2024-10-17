@@ -774,7 +774,7 @@ bool UAccelByteWarsOnlineSession::HandleDisconnectInternal(UWorld* World, UNetDr
 
 #pragma region "Matchmaking Session Essentials"
 // @@@SNIPSTART AccelByteWarsOnlineSession.cpp-StartMatchmaking
-// @@@MULTISNIP SetClientVersionAttribute {"selectedLines": ["1-6", "60-70", "119"]}
+// @@@MULTISNIP SetClientVersionAttribute {"selectedLines": ["1-6", "71-81", "130"]}
 void UAccelByteWarsOnlineSession::StartMatchmaking(
 	const APlayerController* PC,
 	const FName& SessionName,
@@ -827,6 +827,7 @@ void UAccelByteWarsOnlineSession::StartMatchmaking(
 
 	// Get match pool id based on game mode type
 	FString MatchPoolId = MatchmakingPoolIdMap[{NetworkType, GameModeType}];
+	const FString GameModeCode = MatchmakingTargetGameModeMap[MatchPoolId];
 
 	// if not using AMS, remove suffix -ams (internal purpose)
 	if(!UTutorialModuleOnlineUtility::GetIsServerUseAMS())
@@ -834,10 +835,20 @@ void UAccelByteWarsOnlineSession::StartMatchmaking(
 		MatchPoolId = MatchPoolId.Replace(TEXT("-ams"), TEXT(""));
 	}
 	
+	// Override match pool id if applicable.
+	if (NetworkType == EGameModeNetworkType::DS && !UTutorialModuleOnlineUtility::GetMatchPoolDSOverride().IsEmpty())
+	{
+		MatchPoolId = UTutorialModuleOnlineUtility::GetMatchPoolDSOverride();
+	}
+	else if (NetworkType == EGameModeNetworkType::P2P && !UTutorialModuleOnlineUtility::GetMatchPoolP2POverride().IsEmpty()) 
+	{
+		MatchPoolId = UTutorialModuleOnlineUtility::GetMatchPoolP2POverride();
+	}
+	
 	// Setup matchmaking search handle, it will be used to store session search results.
 	TSharedRef<FOnlineSessionSearch> MatchmakingSearchHandle = MakeShared<FOnlineSessionSearch>();
-	MatchmakingSearchHandle->QuerySettings.Set(
-		SETTING_SESSION_MATCHPOOL, MatchPoolId, EOnlineComparisonOp::Equals);
+	MatchmakingSearchHandle->QuerySettings.Set(SETTING_SESSION_MATCHPOOL, MatchPoolId, EOnlineComparisonOp::Equals);
+	MatchmakingSearchHandle->QuerySettings.Set(GAMESETUP_GameModeCode, GameModeCode, EOnlineComparisonOp::Equals);
 
 	// Check for DS version override.
 	const FString OverriddenDSVersion = UTutorialModuleOnlineUtility::GetDedicatedServerVersionOverride();
@@ -972,16 +983,6 @@ void UAccelByteWarsOnlineSession::OnMatchmakingComplete(FName SessionName, bool 
 	}
 
 	OnMatchmakingCompleteDelegates.Broadcast(SessionName, bSucceeded);
-
-	// Get searching player
-	const int32 LocalUserNum =
-		GetLocalUserNumFromPlayerController(GetPlayerControllerByUniqueNetId(CurrentMatchmakingSearchHandle->GetSearchingPlayerId()));
-
-	// Join the first session from matchmaking result.
-	JoinSession(
-		LocalUserNum,
-		GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession),
-		CurrentMatchmakingSearchHandle->SearchResults[0]);
 }
 
 void UAccelByteWarsOnlineSession::OnBackfillProposalReceived(
@@ -1055,13 +1056,23 @@ void UAccelByteWarsOnlineSession::CreateMatchSession(
 		GAMESETUP_GameModeCode,
 		MatchSessionTargetGameModeMap[{NetworkType, GameModeType}]);
 	
-	// Get match pool id based on game mode type
+	// Get match session template based on game mode type
 	FString MatchTemplateName = MatchSessionTemplateNameMap[{NetworkType, GameModeType}];
 	
 	// if not using AMS, remove suffix -ams (internal purpose)
 	if(NetworkType == EGameModeNetworkType::DS && !UTutorialModuleOnlineUtility::GetIsServerUseAMS())
 	{
 		MatchTemplateName = MatchTemplateName.Replace(TEXT("-ams"), TEXT(""));
+	}
+
+	// Override match session template name if applicable.
+	if (NetworkType == EGameModeNetworkType::DS && !UTutorialModuleOnlineUtility::GetMatchSessionTemplateDSOverride().IsEmpty())
+	{
+		MatchTemplateName = UTutorialModuleOnlineUtility::GetMatchSessionTemplateDSOverride();
+	}
+	else if (NetworkType == EGameModeNetworkType::P2P && !UTutorialModuleOnlineUtility::GetMatchSessionTemplateP2POverride().IsEmpty())
+	{
+		MatchTemplateName = UTutorialModuleOnlineUtility::GetMatchSessionTemplateP2POverride();
 	}
 
 	// include region preferences into session setting
@@ -1643,14 +1654,15 @@ void UAccelByteWarsOnlineSession::CreateParty(const int32 LocalUserNum)
 		return;
 	}
 
-	// Create a new party session.
+	// Create a new party session. Override party session template name if applicable.
 	UE_LOG_ONLINESESSION(Log, TEXT("Create a new party."));
 	CreateSession(
 		LocalUserNum,
 		SessionName,
 		FOnlineSessionSettings(),
 		EAccelByteV2SessionType::PartySession,
-		PartySessionTemplate);
+		UTutorialModuleOnlineUtility::GetPartySessionTemplateOverride().IsEmpty() ?
+			PartySessionTemplate : UTutorialModuleOnlineUtility::GetPartySessionTemplateOverride());
 }
 
 void UAccelByteWarsOnlineSession::LeaveParty(const int32 LocalUserNum)

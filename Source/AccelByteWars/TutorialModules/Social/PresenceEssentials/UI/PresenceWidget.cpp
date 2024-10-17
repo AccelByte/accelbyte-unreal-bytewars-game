@@ -8,6 +8,7 @@
 #include "CommonTextBlock.h"
 #include "Components/Throbber.h"
 #include "Components/ListViewBase.h"
+#include "Core/GameStates/AccelByteWarsInGameGameState.h"
 
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
@@ -15,6 +16,8 @@
 #include "Social/FriendsEssentials/UI/FriendDetailsWidget.h"
 #include "Social/FriendsEssentials/UI/FriendWidgetEntry.h"
 #include "Social/FriendsEssentials/UI/FriendWidgetEntry_Starter.h"
+#include "Social/NativeFriendsEssentials/UI/NativeFriendWidgetEntry.h"
+#include "Social/NativeFriendsEssentials/UI/NativeFriendWidgetEntry_Starter.h"
 #include "Social/ManagingFriends/UI/BlockedPlayerWidgetEntry.h"
 #include "Social/ManagingFriends/UI/BlockedPlayerWidgetEntry_Starter.h"
 
@@ -146,7 +149,47 @@ void UPresenceWidget::SetupPresence()
                 }
             });
         }
-
+        // Native Friend List
+        else if (UNativeFriendWidgetEntry* NativeFriendWidgetEntry = Cast<UNativeFriendWidgetEntry>(WidgetEntry))
+        {
+            NativeFriendWidgetEntry->GetOnListItemObjectSet()->RemoveAll(this);
+            NativeFriendWidgetEntry->GetOnListItemObjectSet()->AddWeakLambda(this, [this, NativeFriendWidgetEntry]()
+            {
+                const UNativeFriendData* CachedFriendData = Cast<UNativeFriendData>(NativeFriendWidgetEntry->GetListItem());
+                if (CachedFriendData &&
+                    CachedFriendData->UserId &&
+                    CachedFriendData->UserId.IsValid())
+                {
+                    PresenceUserId = CachedFriendData->UserId;
+                    ParentListView = NativeFriendWidgetEntry->GetOwningListView();
+                    OnSetupPresenceComplete();
+                }
+                else
+                {
+                    UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Unable to setup presence widget. User Id is not valid."));
+                }
+            });
+        }
+        else if (UNativeFriendWidgetEntry_Starter* NativeFriendWidgetEntry_Starter = Cast<UNativeFriendWidgetEntry_Starter>(WidgetEntry))
+        {
+            NativeFriendWidgetEntry_Starter->GetOnListItemObjectSet()->RemoveAll(this);
+            NativeFriendWidgetEntry_Starter->GetOnListItemObjectSet()->AddWeakLambda(this, [this, NativeFriendWidgetEntry_Starter]()
+            {
+                const UNativeFriendData* CachedFriendData = Cast<UNativeFriendData>(NativeFriendWidgetEntry_Starter->GetListItem());
+                if (CachedFriendData &&
+                    CachedFriendData->UserId &&
+                    CachedFriendData->UserId.IsValid())
+                {
+                    PresenceUserId = CachedFriendData->UserId;
+                    ParentListView = NativeFriendWidgetEntry_Starter->GetOwningListView();
+                    OnSetupPresenceComplete();
+                }
+                else
+                {
+                    UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Unable to setup presence widget. User Id is not valid."));
+                }
+            });
+        }
         return;
     }
 
@@ -158,7 +201,10 @@ void UPresenceWidget::SetupPresence()
         return;
     }
 
-    UCommonActivatableWidget* ParentWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
+    const AAccelByteWarsInGameGameState* GameState = Cast<AAccelByteWarsInGameGameState>(GetWorld()->GetGameState());
+    const EBaseUIStackType StackType = (GameState == nullptr) ? EBaseUIStackType::Menu : EBaseUIStackType::InGameMenu;
+    
+    UCommonActivatableWidget* ParentWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(StackType, this);
     if (!ParentWidget)
     {
         UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Unable to setup presence widget. Widget doesn't have valid parent widget."));
@@ -193,10 +239,14 @@ void UPresenceWidget::OnSetupPresenceComplete()
     }
 
     // Get and display presence.
-    RefreshPresence();
+    const AAccelByteWarsGameState* GameState = Cast<AAccelByteWarsGameState>(GetWorld()->GetGameState());
+    const AAccelByteWarsInGameGameState* InGameGameState = Cast<AAccelByteWarsInGameGameState>(GameState);
+    bool bForceQueryPresence = InGameGameState != nullptr;
+    
+    RefreshPresence(bForceQueryPresence);
 }
 
-void UPresenceWidget::RefreshPresence()
+void UPresenceWidget::RefreshPresence(bool bForceQueryPresence)
 {
     if (!PresenceUserId) 
     {
@@ -206,9 +256,10 @@ void UPresenceWidget::RefreshPresence()
 
     Tb_Presence->SetVisibility(ESlateVisibility::Collapsed);
     Th_Loader->SetVisibility(ESlateVisibility::Visible);
-
+    
     PresenceEssentialsSubsystem->GetPresence(
         PresenceUserId,
+        bForceQueryPresence,
         FOnPresenceTaskComplete::CreateWeakLambda(this, [this](const bool bWasSuccessful, const TSharedPtr<FOnlineUserPresenceAccelByte> Presence)
         {
             // Abort if the widget is being destroyed.

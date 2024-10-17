@@ -5,8 +5,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Chaos/AABB.h"
-#include "Chaos/AABB.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "Play/OnlineSessionUtils/AccelByteWarsOnlineSessionBase.h"
 #include "PlayingWithFriendsSubsystem.generated.h"
@@ -27,27 +25,12 @@ class ACCELBYTEWARS_API UPlayingWithFriendsSubsystem : public UTutorialModuleSub
 		return IsRunningDedicatedServer() ? false : Super::ShouldCreateSubsystem(Outer);
 	}
 
-#pragma region "Helper"
-public:
-	bool IsInMatchSessionGameSession() const;
-
-private:
-	bool IsMatchSessionGameSessionReceivedServer() const;
-	
-	FUniqueNetIdRef GetSessionOwnerUniqueNetId(const FName SessionName) const;
-	UPromptSubsystem* GetPromptSubsystem() const;
-
-	FOnlineSessionV2AccelBytePtr GetSessionInterface() const;
-	FOnlineIdentityAccelBytePtr GetIdentityInterface() const;
-
-	void JoinGameSessionConfirmation(const int32 LocalUserNum, const FOnlineSessionInviteAccelByte& Invite);
-	void OnQueryUserInfoOnGameSessionParticipantChange(
-		const FOnlineError& Error,
-		const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo,
-		FName SessionName,
-		const bool bJoined);
-#pragma endregion 
-
+// @@@SNIPSTART PlayingWithFriendsSubsystem.h-public
+// @@@MULTISNIP SendGameSessionInvite {"selectedLines": ["1-2"]}
+// @@@MULTISNIP SendGameSessionInviteDelegate {"selectedLines": ["1", "3"]}
+// @@@MULTISNIP RejectGameSessionInvite {"selectedLines": ["1", "5"]}
+// @@@MULTISNIP RejectGameSessionInviteDelegate {"selectedLines": ["1", "6"]}
+// @@@MULTISNIP HelperFunction {"selectedLines": ["1", "9"]}
 public:
 	void SendGameSessionInvite(const APlayerController* Owner, const FUniqueNetIdPtr Invitee) const;
 	FOnSendSessionInviteComplete OnSendGameSessionInviteCompleteDelegates;
@@ -55,6 +38,21 @@ public:
 	void RejectGameSessionInvite(const APlayerController* Owner, const FOnlineSessionInviteAccelByte& Invite) const;
 	FOnRejectSessionInviteCompleteMulticast OnRejectGameSessionInviteCompleteDelegates;
 
+#pragma region "Helper"
+	bool IsInMatchSessionGameSession() const;
+#pragma endregion 
+// @@@SNIPEND
+
+// @@@SNIPSTART PlayingWithFriendsSubsystem.h-private
+// @@@MULTISNIP OnSendGameSessionInviteComplete {"selectedLines": ["1-6"]}
+// @@@MULTISNIP OnRejectGameSessionInviteComplete {"selectedLines": ["1", "7"]}
+// @@@MULTISNIP JoinGameSession {"selectedLines": ["1", "9"]}
+// @@@MULTISNIP OnJoinSessionComplete {"selectedLines": ["1", "10"]}
+// @@@MULTISNIP OnGameSessionInviteReceived {"selectedLines": ["1", "12-15"]}
+// @@@MULTISNIP ShowInviteReceivedPopup {"selectedLines": ["1", "16-18"]}
+// @@@MULTISNIP OnGameSessionParticipantsChange {"selectedLines": ["1", "20"]}
+// @@@MULTISNIP HelperFunction {"selectedLines": ["1", "23-36"]}
+// @@@MULTISNIP HelperVariable {"selectedLines": ["1", "39-43"]}
 private:
 	void OnSendGameSessionInviteComplete(
 		const FUniqueNetId& LocalSenderId,
@@ -76,10 +74,27 @@ private:
 
 	void OnGameSessionParticipantsChange(FName SessionName, const FUniqueNetId& Member, bool bJoined);
 
-private:
+#pragma region "Helper"
+	bool IsMatchSessionGameSessionReceivedServer() const;
+	
+	FUniqueNetIdRef GetSessionOwnerUniqueNetId(const FName SessionName) const;
+	UPromptSubsystem* GetPromptSubsystem() const;
+
+	FOnlineSessionV2AccelBytePtr GetSessionInterface() const;
+	FOnlineIdentityAccelBytePtr GetIdentityInterface() const;
+
+	void JoinGameSessionConfirmation(const int32 LocalUserNum, const FOnlineSessionInviteAccelByte& Invite);
+	void OnQueryUserInfoOnGameSessionParticipantChange(
+		const FOnlineError& Error,
+		const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo,
+		FName SessionName,
+		const bool bJoined);
+#pragma endregion 
+
 	UPROPERTY()
 	UAccelByteWarsOnlineSessionBase* OnlineSession;
 
 	FUniqueNetIdPtr LeaderId;
 	bool bLeaderChanged = false;
+// @@@SNIPEND
 };

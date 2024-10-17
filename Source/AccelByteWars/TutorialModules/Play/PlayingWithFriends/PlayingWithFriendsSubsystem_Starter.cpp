@@ -9,7 +9,9 @@
 #include "PlayingWithFriendsModels.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
+#include "OnlineSubsystemUtils.h"
 #include "Interfaces/OnlineUserInterface.h"
+#include "TutorialModuleUtilities/StartupSubsystem.h"
 #include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
 
 void UPlayingWithFriendsSubsystem_Starter::Initialize(FSubsystemCollectionBase& Collection)
@@ -53,6 +55,33 @@ bool UPlayingWithFriendsSubsystem_Starter::IsInMatchSessionGameSession() const
 	return false;
 }
 
+bool UPlayingWithFriendsSubsystem_Starter::IsMatchSessionGameSessionReceivedServer() const
+{
+	if (!GetSessionInterface() || !GetIdentityInterface())
+	{
+		return false;
+	}
+
+	FUniqueNetIdPtr UserId = nullptr;
+	if (GetIdentityInterface())
+	{
+		UserId = GetIdentityInterface()->GetUniquePlayerId(0);
+	}
+
+	if (!UserId)
+	{
+		return false;
+	}
+
+	const FName SessionName = OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession);
+
+	FString ServerAddress = TEXT("");
+	GetSessionInterface()->GetResolvedConnectString(SessionName, ServerAddress);
+	const bool bIsP2PHost = GetSessionInterface()->IsPlayerP2PHost(UserId.ToSharedRef().Get(), SessionName);
+
+	return !ServerAddress.IsEmpty() || bIsP2PHost;
+}
+
 FUniqueNetIdRef UPlayingWithFriendsSubsystem_Starter::GetSessionOwnerUniqueNetId(const FName SessionName) const
 {
 	const FNamedOnlineSession* Session = OnlineSession->GetSession(SessionName);
@@ -68,6 +97,28 @@ UPromptSubsystem* UPlayingWithFriendsSubsystem_Starter::GetPromptSubsystem() con
 	}
 
 	return GameInstance->GetSubsystem<UPromptSubsystem>();
+}
+
+FOnlineSessionV2AccelBytePtr UPlayingWithFriendsSubsystem_Starter::GetSessionInterface() const
+{
+	const UWorld* World = GetWorld();
+	if (!ensure(World))
+	{
+		return nullptr;
+	}
+
+	return StaticCastSharedPtr<FOnlineSessionV2AccelByte>(Online::GetSessionInterface(World));
+}
+
+FOnlineIdentityAccelBytePtr UPlayingWithFriendsSubsystem_Starter::GetIdentityInterface() const
+{
+	const UWorld* World = GetWorld();
+	if (!ensure(World))
+	{
+		return nullptr;
+	}
+
+	return StaticCastSharedPtr<FOnlineIdentityAccelByte>(Online::GetIdentityInterface(World));
 }
 
 void UPlayingWithFriendsSubsystem_Starter::JoinGameSessionConfirmation(
@@ -113,8 +164,8 @@ void UPlayingWithFriendsSubsystem_Starter::JoinGameSessionConfirmation(
 }
 
 void UPlayingWithFriendsSubsystem_Starter::OnQueryUserInfoOnGameSessionParticipantChange(
-	const bool bSucceeded,
-	const TArray<FUserOnlineAccountAccelByte*>& UsersInfo,
+	const FOnlineError& Error,
+	const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo,
 	FName SessionName,
 	const bool bJoined)
 {
@@ -130,15 +181,21 @@ void UPlayingWithFriendsSubsystem_Starter::OnQueryUserInfoOnGameSessionParticipa
 		return;
 	}
 
-	UE_LOG_PLAYINGWITHFRIENDS(Verbose, TEXT("Called"));
-
-	UPromptSubsystem* PromptSubsystem = GetPromptSubsystem();
-	if (!bSucceeded || UsersInfo.IsEmpty() || !PromptSubsystem)
+	// Only handle the event if the game session is in the game server.
+	if (!IsMatchSessionGameSessionReceivedServer())
 	{
 		return;
 	}
 
-	for (const FUserOnlineAccountAccelByte* User : UsersInfo)
+	UE_LOG_PLAYINGWITHFRIENDS(Verbose, TEXT("Called"));
+
+	UPromptSubsystem* PromptSubsystem = GetPromptSubsystem();
+	if (!Error.bSucceeded || UsersInfo.IsEmpty() || !PromptSubsystem)
+	{
+		return;
+	}
+
+	for (const TSharedPtr<FUserOnlineAccountAccelByte>& User : UsersInfo)
 	{
 		const bool bIsLeaderInfo = OnlineSession->CompareAccelByteUniqueId(
 			FUniqueNetIdRepl(User->GetUserId()),

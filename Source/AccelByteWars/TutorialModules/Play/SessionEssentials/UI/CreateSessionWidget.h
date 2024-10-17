@@ -23,8 +23,24 @@ class ACCELBYTEWARS_API UCreateSessionWidget : public UAccelByteWarsActivatableW
 public:
 	virtual void NativeOnActivated() override;
 
+// @@@SNIPSTART CreateSessionWidget.h-protected
+// @@@MULTISNIP CreateSessionDeclaration {"selectedLines": ["1", "16-20"]}
+// @@@MULTISNIP LeaveSessionDeclaration {"selectedLines": ["1", "22-26"]}
+// @@@MULTISNIP SessionTemplateName {"selectedLines": ["1", "28"]}
 protected:
+	enum class EContentType : uint8
+	{
+		CREATE = 0,
+		LOADING,
+		SUCCESS,
+		ERROR
+	};
+
 	virtual void NativeOnDeactivated() override;
+	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
+	virtual UWidget* NativeGetDesiredFocusTarget() const override;
+
+	void SwitchContent(const EContentType Type);
 
 	UFUNCTION()
 	void CreateSession();
@@ -39,29 +55,19 @@ protected:
 	void OnLeaveSessionComplete(FName SessionName, bool bSucceeded);
 
 	const FString SessionTemplateName_Dummy = "unreal-elimination-none";
-
+// @@@SNIPEND
+	
+// @@@SNIPSTART CreateSessionWidget.h-private
+// @@@MULTISNIP CreateSessionUISwitcher {"selectedLines": ["1", "10-17"]}
+// @@@MULTISNIP DefaultStateUI {"selectedLines": ["1", "19-20"]}
+// @@@MULTISNIP SuccessStateUI {"selectedLines": ["1", "22-23", "28-29"]}
 private:
 	UPROPERTY()
 	UAccelByteWarsOnlineSessionBase* SessionOnlineSession;
 
-#pragma region "UI related"
-protected:
-	enum class EContentType : uint8
-	{
-		CREATE = 0,
-		LOADING,
-		SUCCESS,
-		ERROR
-	};
-
-	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
-	virtual UWidget* NativeGetDesiredFocusTarget() const override;
-
-	void SwitchContent(const EContentType Type);
-
-private:
 	float CameraTargetY = 600.f;
 
+	UPROPERTY()
 	UWidget* DesiredFocusTargetButton;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
@@ -84,5 +90,5 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Tb_SessionId;
-#pragma endregion 
+// @@@SNIPEND
 };

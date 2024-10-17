@@ -21,6 +21,8 @@ class ACCELBYTEWARS_API UBlockedPlayerWidgetEntry : public UAccelByteWarsWidgetE
 public:
 	UFriendData* GetCachedBlockedFriendData() const { return CachedBlockedPlayerData; }
 
+// @@@SNIPSTART BlockedPlayerWidgetEntry.h-protected
+// @@@MULTISNIP BlockedPlayerEntryUI {"selectedLines": ["1", "13-20"]}
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;
@@ -41,4 +43,5 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_Unblock;
+// @@@SNIPEND
 };

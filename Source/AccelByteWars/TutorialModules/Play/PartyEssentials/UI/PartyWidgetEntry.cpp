@@ -29,6 +29,8 @@ void UPartyWidgetEntry::NativeConstruct()
 	PartyOnlineSession = Cast<UAccelByteWarsOnlineSessionBase>(GetGameInstance()->GetOnlineSession());
 }
 
+// @@@SNIPSTART PartyWidgetEntry.cpp-SetPartyMember
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-6", "41"]}
 void UPartyWidgetEntry::SetPartyMember(const FUserOnlineAccountAccelByte& PartyMember, const bool bIsLeader)
 {
 	W_PartyMember->SetNetId(PartyMember.GetUserId());
@@ -70,13 +72,16 @@ void UPartyWidgetEntry::SetPartyMember(const FUserOnlineAccountAccelByte& PartyM
 
 	W_PartyMember->ActivateWidget();
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyWidgetEntry.cpp-ResetPartyMember
 void UPartyWidgetEntry::ResetPartyMember()
 {
 	// Display add party member button.
 	SetPartyMemberColor(FLinearColor::White);
 	Ws_PartyMemberState->SetActiveWidget(Btn_AddPartyMember);
 }
+// @@@SNIPEND
 
 void UPartyWidgetEntry::AddPartyMember()
 {

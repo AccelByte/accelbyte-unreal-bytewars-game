@@ -12,6 +12,7 @@
 #include "Core/UI/InGameMenu/GameOver/GameOverWidget.h"
 #include "Interfaces/OnlineIdentityInterface.h"
 #include "Interfaces/OnlineUserInterface.h"
+#include "TutorialModuleUtilities/StartupSubsystem.h"
 
 void UMatchSessionP2POnlineSession_Starter::RegisterOnlineDelegates()
 {

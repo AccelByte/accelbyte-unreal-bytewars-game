@@ -11,6 +11,9 @@
 #include "Play/MatchSessionEssentials/MatchSessionEssentialsModels.h"
 #include "Play/OnlineSessionUtils/AccelByteWarsOnlineSessionBase.h"
 
+// @@@SNIPSTART BrowseMatchDSWidget.cpp-NativeOnActivated
+// @@@MULTISNIP HelperDefinition {"selectedLines": ["1-2", "5-19", "30"]}
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "26-30"]}
 void UBrowseMatchDSWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
@@ -41,7 +44,10 @@ void UBrowseMatchDSWidget::NativeOnActivated()
 
 	FindSessions(false);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART BrowseMatchDSWidget.cpp-NativeOnDeactivated
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "10-12"]}
 void UBrowseMatchDSWidget::NativeOnDeactivated()
 {
 	Super::NativeOnDeactivated();
@@ -54,7 +60,10 @@ void UBrowseMatchDSWidget::NativeOnDeactivated()
 	Btn_Refresh->OnClicked().RemoveAll(this);
 	W_Parent->GetJoiningWidgetComponent()->OnCancelClicked.RemoveAll(this);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART BrowseMatchDSWidget.cpp-FindSessions
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-5", "11"]}
 void UBrowseMatchDSWidget::FindSessions(const bool bForce) const
 {
 	W_Parent->SetLoadingMessage(TEXT_LOADING_DATA, true, false);
@@ -66,7 +75,9 @@ void UBrowseMatchDSWidget::FindSessions(const bool bForce) const
 		SessionsNumToQuery,
 		bForce);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART BrowseMatchDSWidget.cpp-OnFindSessionComplete
 void UBrowseMatchDSWidget::OnFindSessionComplete(const TArray<FMatchSessionEssentialInfo> SessionEssentialsInfo, bool bSucceeded)
 {
 	Btn_Refresh->SetIsEnabled(true);
@@ -99,7 +110,10 @@ void UBrowseMatchDSWidget::OnFindSessionComplete(const TArray<FMatchSessionEssen
 		W_Parent->SwitchContent(UBrowseMatchWidget::EContentType::BROWSE_ERROR);
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART BrowseMatchDSWidget.cpp-CancelJoining
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-4", "8"]}
 void UBrowseMatchDSWidget::CancelJoining() const
 {
 	W_Parent->SetLoadingMessage(TEXT_LEAVING_SESSION, false, false);
@@ -108,7 +122,9 @@ void UBrowseMatchDSWidget::CancelJoining() const
 	OnlineSession->LeaveSession(
 		OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession));
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART BrowseMatchDSWidget.cpp-OnCancelJoiningComplete
 void UBrowseMatchDSWidget::OnCancelJoiningComplete(FName SessionName, bool bSucceeded) const
 {
 	// Abort if not a game session.
@@ -127,7 +143,10 @@ void UBrowseMatchDSWidget::OnCancelJoiningComplete(FName SessionName, bool bSucc
 		W_Parent->SwitchContent(UBrowseMatchWidget::EContentType::JOIN_ERROR);
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART BrowseMatchDSWidget.cpp-JoinSession
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-10", "16"]}
 void UBrowseMatchDSWidget::JoinSession(const FOnlineSessionSearchResult& SessionSearchResult) const
 {
 	if (OnlineSession->ValidateToJoinSession.IsBound() &&
@@ -144,7 +163,9 @@ void UBrowseMatchDSWidget::JoinSession(const FOnlineSessionSearchResult& Session
 		OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession),
 		SessionSearchResult);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART BrowseMatchDSWidget.cpp-OnJoinSessionComplete
 void UBrowseMatchDSWidget::OnJoinSessionComplete(
 	FName SessionName,
 	EOnJoinSessionCompleteResult::Type CompletionType) const
@@ -195,7 +216,9 @@ void UBrowseMatchDSWidget::OnJoinSessionComplete(
 		UBrowseMatchWidget::EContentType::JOIN_LOADING :
 		UBrowseMatchWidget::EContentType::JOIN_ERROR);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART BrowseMatchDSWidget.cpp-OnSessionServerUpdateReceived
 void UBrowseMatchDSWidget::OnSessionServerUpdateReceived(
 	const FName SessionName,
 	const FOnlineError& Error,
@@ -219,3 +242,4 @@ void UBrowseMatchDSWidget::OnSessionServerUpdateReceived(
 		W_Parent->SwitchContent(UBrowseMatchWidget::EContentType::JOIN_ERROR);
 	}
 }
+// @@@SNIPEND

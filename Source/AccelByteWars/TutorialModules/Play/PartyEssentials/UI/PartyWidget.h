@@ -20,6 +20,8 @@ class ACCELBYTEWARS_API UPartyWidget : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
 	
+// @@@SNIPSTART PartyWidget.h-protected
+// @@@MULTISNIP PartyUI {"selectedLines": ["1", "14-21"]}
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeOnActivated() override;
@@ -44,4 +46,5 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UPartyWidgetEntry> PartyWidgetEntryClass;
+// @@@SNIPEND
 };

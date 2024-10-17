@@ -38,6 +38,7 @@ UWidget* UBrowseMatchWidget::NativeGetDesiredFocusTarget() const
 	return DesiredFocusTargetButton;
 }
 
+// @@@SNIPSTART BrowseMatchWidget.cpp-SetLoadingMessage
 void UBrowseMatchWidget::SetLoadingMessage(const FText& Text, const bool bBrowse, const bool bEnableCancelButton) const
 {
 	if (bBrowse)
@@ -50,7 +51,9 @@ void UBrowseMatchWidget::SetLoadingMessage(const FText& Text, const bool bBrowse
 		Ws_Joining->bEnableCancelButton = bEnableCancelButton;
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART BrowseMatchWidget.cpp-SetErrorMessage
 void UBrowseMatchWidget::SetErrorMessage(const FText& Text, const bool bBrowse) const
 {
 	if (bBrowse)
@@ -62,7 +65,9 @@ void UBrowseMatchWidget::SetErrorMessage(const FText& Text, const bool bBrowse) 
 		Ws_Joining->ErrorMessage = Text;
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART BrowseMatchWidget.cpp-SwitchContent
 void UBrowseMatchWidget::SwitchContent(const EContentType Type)
 {
 	bool bBrowseMenu = false;
@@ -138,3 +143,4 @@ void UBrowseMatchWidget::SwitchContent(const EContentType Type)
 		DeinitializeFTUEDialogues();
 	}
 }
+// @@@SNIPEND

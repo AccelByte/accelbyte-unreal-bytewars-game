@@ -106,13 +106,28 @@ int32 AccelByteWarsUtility::PositiveModulo(const int32 Dividend, const int32 Mod
 
 FString AccelByteWarsUtility::GetGameVersion()
 {
-	const FString ProjectVerSectionPath = FString("/Script/EngineSettings.GeneralProjectSettings");
-	const FString ProjectVerConfig = FString("ProjectVersion");
+	const FString ProjectVerSectionPath = TEXT("/Script/EngineSettings.GeneralProjectSettings");
+	const FString ProjectVerConfig = TEXT("ProjectVersion");
 
-	FString ProjectVersionStr = FString();
+	FString ProjectVersionStr = TEXT("");
 	GConfig->GetString(*ProjectVerSectionPath, *ProjectVerConfig, ProjectVersionStr, GGameIni);
-
 	return ProjectVersionStr;
+}
+
+void AccelByteWarsUtility::SetGameVersion(const FString& NewGameVersion)
+{
+	const FString ProjectVerSectionPath = TEXT("/Script/EngineSettings.GeneralProjectSettings");
+	const FString ProjectVerConfig = TEXT("ProjectVersion");
+
+	GConfig->SetString(*ProjectVerSectionPath, *ProjectVerConfig, *NewGameVersion, GGameIni);
+	GConfig->Flush(false, GGameIni);
+
+	// Reload the config to reflect the changes.
+	UGeneralProjectSettings* ProjectSettings = GetMutableDefault<UGeneralProjectSettings>();
+	if (ProjectSettings)
+	{
+		ProjectSettings->LoadConfig();
+	}
 }
 
 TArray<UUserWidget*> AccelByteWarsUtility::FindWidgetsOnTheScreen(
@@ -233,4 +248,11 @@ bool AccelByteWarsUtility::GetFlagValueOrDefault(
 	}
 
 	return bIsActive;
+}
+
+bool AccelByteWarsUtility::IsValidEmailAddress(const FString& Email)
+{
+	FRegexPattern EmailPattern(TEXT(R"((^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$))"));
+	FRegexMatcher EmailMatcher(EmailPattern, Email);
+	return EmailMatcher.FindNext();
 }

@@ -15,6 +15,14 @@ class ACCELBYTEWARS_API USessionEssentialsOnlineSession : public UAccelByteWarsO
 {
 	GENERATED_BODY()
 
+// @@@SNIPSTART SessionEssentialsOnlineSession.h-public
+// @@@MULTISNIP CreateSession {"selectedLines": ["1", "9-14"]}
+// @@@MULTISNIP JoinSession {"selectedLines": ["1", "15-18"]}
+// @@@MULTISNIP SendSessionInvite {"selectedLines": ["1", "19"]}
+// @@@MULTISNIP RejectSessionInvite {"selectedLines": ["1", "20"]}
+// @@@MULTISNIP LeaveSession {"selectedLines": ["1", "21"]}
+// @@@MULTISNIP UpdateSessionJoinability {"selectedLines": ["1", "22"]}
+// @@@MULTISNIP SessionDelegates {"selectedLines": ["1", "24-56"]}
 public:
 	virtual void RegisterOnlineDelegates() override;
 	virtual void ClearOnlineDelegates() override;
@@ -71,7 +79,18 @@ public:
 	{
 		return &OnSessionParticipantsChangeDelegates;
 	}
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionEssentialsOnlineSession.h-protected
+// @@@MULTISNIP LeaveSessionHelperVariable {"selectedLines": ["1-2"]}
+// @@@MULTISNIP OnCreateSessionComplete {"selectedLines": ["1", "4"]}
+// @@@MULTISNIP OnJoinSessionComplete {"selectedLines": ["1", "6"]}
+// @@@MULTISNIP OnSendSessionInviteComplete {"selectedLines": ["1", "7-11"]}
+// @@@MULTISNIP OnRejectSessionInviteComplete {"selectedLines": ["1", "12"]}
+// @@@MULTISNIP OnLeaveSessionComplete {"selectedLines": ["1", "13"]}
+// @@@MULTISNIP OnUpdateSessionComplete {"selectedLines": ["1", "14"]}
+// @@@MULTISNIP OnSessionInviteReceived {"selectedLines": ["1", "16-19"]}
+// @@@MULTISNIP OnSessionParticipantsChange {"selectedLines": ["1", "20"]}
 protected:
 	bool bLeavingSession = false;
 
@@ -92,7 +111,12 @@ protected:
 		const FUniqueNetId& FromId,
 		const FOnlineSessionInviteAccelByte& Invite) override;
 	virtual void OnSessionParticipantsChange(FName SessionName, const FUniqueNetId& Member, bool bJoined) override;
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionEssentialsOnlineSession.h-private
+// @@@MULTISNIP OnLeaveSessionForCreateSessionComplete {"selectedLines": ["1", "15-20"]}
+// @@@MULTISNIP OnLeaveSessionForJoinSessionComplete {"selectedLines": ["1", "22-27"]}
+// @@@MULTISNIP SessionDelegates {"selectedLines": ["1", "5-13"]}
 private:
 	const FName GameSessionName = NAME_GameSession;
 	const FName PartySessionName = NAME_PartySession;
@@ -120,4 +144,5 @@ private:
 		const int32 LocalUserNum,
 		const FOnlineSessionSearchResult SearchResult);
 	FDelegateHandle OnLeaveSessionForJoinSessionCompleteDelegateHandle;
+// @@@SNIPEND
 };

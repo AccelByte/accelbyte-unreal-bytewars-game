@@ -57,18 +57,23 @@ void UCreateMatchSessionWidget::SetSelectedGameMode(EGameModeType GameModeType)
 	SwitchContent(EContentType::SELECT_NETWORKTYPE);
 }
 
+// @@@SNIPSTART CreateMatchSessionWidget.cpp-SetLoadingMessage
 void UCreateMatchSessionWidget::SetLoadingMessage(const FText& Message, const bool bEnableCancelButton) const
 {
 	Ws_Processing->LoadingMessage = Message;
 	Ws_Processing->bEnableCancelButton = bEnableCancelButton;
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CreateMatchSessionWidget.cpp-SetErrorMessage
 void UCreateMatchSessionWidget::SetErrorMessage(const FText& Message, const bool bShowRetryButton) const
 {
 	Ws_Processing->ErrorMessage = Message;
 	Ws_Processing->bShowRetryButtonOnError = bShowRetryButton;
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CreateMatchSessionWidget.cpp-SwitchContent
 void UCreateMatchSessionWidget::SwitchContent(const EContentType ContentType)
 {
 	UWidget* Target = nullptr;
@@ -112,3 +117,4 @@ void UCreateMatchSessionWidget::SwitchContent(const EContentType ContentType)
 	Btn_GameModeType_BackToCreateSession->SetVisibility(bShowBackButton ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	RequestRefreshFocus();
 }
+// @@@SNIPEND

@@ -24,6 +24,7 @@ void UFindFriendsWidget::NativeConstruct()
 	ensure(FriendsSubsystem);
 }
 
+// @@@SNIPSTART FindFriendsWidget.cpp-NativeOnActivated
 void UFindFriendsWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
@@ -44,6 +45,7 @@ void UFindFriendsWidget::NativeOnActivated()
 
 	DisplaySelfFriendCode();
 }
+// @@@SNIPEND
 
 void UFindFriendsWidget::NativeOnDeactivated()
 {
@@ -61,6 +63,8 @@ UWidget* UFindFriendsWidget::NativeGetDesiredFocusTarget() const
 	return Edt_SearchBar;
 }
 
+// @@@SNIPSTART FindFriendsWidget.cpp-OnSearchBarCommitted
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "9"]}
 void UFindFriendsWidget::OnSearchBarCommitted(const FText& Text, ETextCommit::Type CommitMethod)
 {
 	if (CommitMethod != ETextCommit::Type::OnEnter || Text.IsEmpty())
@@ -70,12 +74,14 @@ void UFindFriendsWidget::OnSearchBarCommitted(const FText& Text, ETextCommit::Ty
 
 	SendFriendRequestByFriendCode(Text.ToString());
 }
+// @@@SNIPEND
 
 void UFindFriendsWidget::CopyFriendCodeToClipboard()
 {
 	FPlatformApplicationMisc::ClipboardCopy(*Tb_FriendCode->GetText().ToString());
 }
 
+// @@@SNIPSTART FindFriendsWidget.cpp-DisplaySelfFriendCode
 void UFindFriendsWidget::DisplaySelfFriendCode()
 {
 	Tb_FriendCode->SetText(FText::GetEmpty());
@@ -97,7 +103,10 @@ void UFindFriendsWidget::DisplaySelfFriendCode()
 		}
 	));
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART FindFriendsWidget.cpp-FindFriendByDisplayName
+// @@@MULTISNIP SetWidgetStateExample {"selectedLines": ["5"]}
 void UFindFriendsWidget::FindFriendByDisplayName(const FString& DisplayName)
 {
 	ensure(FriendsSubsystem);
@@ -129,7 +138,9 @@ void UFindFriendsWidget::FindFriendByDisplayName(const FString& DisplayName)
 		}
 	));
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART FindFriendsWidget.cpp-SendFriendRequestByFriendCode
 void UFindFriendsWidget::SendFriendRequestByFriendCode(const FString& FriendCode)
 {
 	// Abort if trying to friend with themself.
@@ -170,3 +181,4 @@ void UFindFriendsWidget::SendFriendRequestByFriendCode(const FString& FriendCode
 		}
 	));
 }
+// @@@SNIPEND

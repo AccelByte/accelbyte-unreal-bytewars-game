@@ -25,6 +25,9 @@ void UShopWidget::NativeOnActivated()
 	StoreSubsystem = GetGameInstance()->GetSubsystem<UInGameStoreEssentialsSubsystem>();
 	ensure(StoreSubsystem);
 
+	NativePlatformPurchaseSubsystem = GetGameInstance()->GetSubsystem<UNativePlatformPurchaseSubsystem>();
+	ensure(NativePlatformPurchaseSubsystem);
+
 	// event binding
 	Btn_Back->OnClicked().AddUObject(this, &ThisClass::DeactivateWidget);
 	Btn_Refresh->OnClicked().AddUObject(this, &ThisClass::OnRefreshButtonClicked);
@@ -38,6 +41,8 @@ void UShopWidget::NativeOnActivated()
 		GetOwningPlayer(),
 		RootPath,
 		FOnGetOrQueryCategories::CreateUObject(this, &ThisClass::OnGetOrQueryCategoriesComplete));
+
+	NativePlatformPurchaseSubsystem->QueryItemMapping(GetOwningPlayer());
 
 	OnActivatedMulticastDelegate.Broadcast(GetOwningPlayer());
 }

@@ -14,6 +14,12 @@
 #include "TutorialModuleUtilities/StartupSubsystem.h"
 #include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
 
+// @@@SNIPSTART PlayingWithFriendsSubsystem.cpp-Initialize
+// @@@MULTISNIP BindSendSessionInviteDelegate {"selectedLines": ["1-2", "12-13", "22"]}
+// @@@MULTISNIP BindJoinSessionDelegate {"selectedLines": ["1-2", "14-15", "22"]}
+// @@@MULTISNIP BindRejectSessionInviteDelegate {"selectedLines": ["1-2", "16-17", "22"]}
+// @@@MULTISNIP BindSessionInviteReceivedDelegate {"selectedLines": ["1-2", "18-19", "22"]}
+// @@@MULTISNIP BindSessionParticipantsChangeDelegate {"selectedLines": ["1-2", "20-22"]}
 void UPlayingWithFriendsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
@@ -36,7 +42,14 @@ void UPlayingWithFriendsSubsystem::Initialize(FSubsystemCollectionBase& Collecti
 	OnlineSession->GetOnSessionParticipantsChange()->AddUObject(
 		this, &ThisClass::OnGameSessionParticipantsChange);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayingWithFriendsSubsystem.cpp-Deinitialize
+// @@@MULTISNIP UnbindSendSessionInviteDelegate {"selectedLines": ["1-2", "5", "10"]}
+// @@@MULTISNIP UnbindJoinSessionDelegate {"selectedLines": ["1-2", "6", "10"]}
+// @@@MULTISNIP UnbindRejectSessionInviteDelegate {"selectedLines": ["1-2", "7", "10"]}
+// @@@MULTISNIP UnbindSessionInviteReceivedDelegate {"selectedLines": ["1-2", "8", "10"]}
+// @@@MULTISNIP UnbindSessionParticipantsChangeDelegate {"selectedLines": ["1-2", "9", "10"]}
 void UPlayingWithFriendsSubsystem::Deinitialize()
 {
 	Super::Deinitialize();
@@ -47,6 +60,7 @@ void UPlayingWithFriendsSubsystem::Deinitialize()
 	OnlineSession->GetOnSessionInviteReceivedDelegates()->RemoveAll(this);
 	OnlineSession->GetOnSessionParticipantsChange()->RemoveAll(this);
 }
+// @@@SNIPEND
 
 #pragma region "Helper"
 bool UPlayingWithFriendsSubsystem::IsInMatchSessionGameSession() const
@@ -140,6 +154,8 @@ FOnlineIdentityAccelBytePtr UPlayingWithFriendsSubsystem::GetIdentityInterface()
 	return StaticCastSharedPtr<FOnlineIdentityAccelByte>(Online::GetIdentityInterface(World));
 }
 
+// @@@SNIPSTART PlayingWithFriendsSubsystem.cpp-JoinGameSessionConfirmation
+// @@@MULTISNIP PopUpConfirmation {"highlightedLines": "{19-27,32-39}"}
 void UPlayingWithFriendsSubsystem::JoinGameSessionConfirmation(
 	const int32 LocalUserNum,
 	const FOnlineSessionInviteAccelByte& Invite)
@@ -181,6 +197,7 @@ void UPlayingWithFriendsSubsystem::JoinGameSessionConfirmation(
 		JoinGameSession(LocalUserNum, Invite.Session);
 	}
 }
+// @@@SNIPEND
 
 void UPlayingWithFriendsSubsystem::OnQueryUserInfoOnGameSessionParticipantChange(
 	const FOnlineError& Error,
@@ -265,6 +282,7 @@ void UPlayingWithFriendsSubsystem::OnQueryUserInfoOnGameSessionParticipantChange
 }
 #pragma endregion 
 
+// @@@SNIPSTART PlayingWithFriendsSubsystem.cpp-SendGameSessionInvite
 void UPlayingWithFriendsSubsystem::SendGameSessionInvite(const APlayerController* Owner, const FUniqueNetIdPtr Invitee) const
 {
 	UE_LOG_PLAYINGWITHFRIENDS(Verbose, TEXT("Called"));
@@ -274,7 +292,9 @@ void UPlayingWithFriendsSubsystem::SendGameSessionInvite(const APlayerController
 		OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession),
 		Invitee);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayingWithFriendsSubsystem.cpp-RejectGameSessionInvite
 void UPlayingWithFriendsSubsystem::RejectGameSessionInvite(
 	const APlayerController* Owner,
 	const FOnlineSessionInviteAccelByte& Invite) const
@@ -285,7 +305,9 @@ void UPlayingWithFriendsSubsystem::RejectGameSessionInvite(
 		OnlineSession->GetLocalUserNumFromPlayerController(Owner),
 		Invite);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayingWithFriendsSubsystem.cpp-OnSendGameSessionInviteComplete
 void UPlayingWithFriendsSubsystem::OnSendGameSessionInviteComplete(
 	const FUniqueNetId& LocalSenderId,
 	FName SessionName,
@@ -319,14 +341,18 @@ void UPlayingWithFriendsSubsystem::OnSendGameSessionInviteComplete(
 
 	OnSendGameSessionInviteCompleteDelegates.Broadcast(LocalSenderId, SessionName, bSucceeded, InviteeId);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayingWithFriendsSubsystem.cpp-OnRejectGameSessionInviteComplete
 void UPlayingWithFriendsSubsystem::OnRejectGameSessionInviteComplete(bool bSucceeded) const
 {
 	UE_LOG_PLAYINGWITHFRIENDS(Verbose, TEXT("Succeedded: %s"), *FString(bSucceeded ? TEXT("TRUE") : TEXT("FALSE")));
 
 	OnRejectGameSessionInviteCompleteDelegates.Broadcast(bSucceeded);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayingWithFriendsSubsystem.cpp-JoinGameSession
 void UPlayingWithFriendsSubsystem::JoinGameSession(const int32 LocalUserNum, const FOnlineSessionSearchResult& Session) const
 {
 	UE_LOG_PLAYINGWITHFRIENDS(Verbose, TEXT("Called"));
@@ -336,7 +362,9 @@ void UPlayingWithFriendsSubsystem::JoinGameSession(const int32 LocalUserNum, con
 		OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession),
 		Session);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayingWithFriendsSubsystem.cpp-OnJoinSessionComplete
 void UPlayingWithFriendsSubsystem::OnJoinSessionComplete(
 	FName SessionName,
 	EOnJoinSessionCompleteResult::Type CompletionType) const
@@ -387,7 +415,9 @@ void UPlayingWithFriendsSubsystem::OnJoinSessionComplete(
 		PromptSubsystem->PushNotification(ErrorMessage);
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayingWithFriendsSubsystem.cpp-OnGameSessionInviteReceived
 void UPlayingWithFriendsSubsystem::OnGameSessionInviteReceived(
 	const FUniqueNetId& UserId,
 	const FUniqueNetId& FromId,
@@ -438,7 +468,10 @@ void UPlayingWithFriendsSubsystem::OnGameSessionInviteReceived(
 			}));
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayingWithFriendsSubsystem.cpp-ShowInviteReceivedPopup
+// @@@MULTISNIP PopUpConfirmation {"highlightedLines": "{29-43}"}
 void UPlayingWithFriendsSubsystem::ShowInviteReceivedPopup(
 	const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo,
 	const int32 LocalUserNum,
@@ -483,7 +516,9 @@ void UPlayingWithFriendsSubsystem::ShowInviteReceivedPopup(
 				}
 			}));
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PlayingWithFriendsSubsystem.cpp-OnGameSessionParticipantsChange
 void UPlayingWithFriendsSubsystem::OnGameSessionParticipantsChange(
 	FName SessionName,
 	const FUniqueNetId& Member,
@@ -547,3 +582,4 @@ void UPlayingWithFriendsSubsystem::OnGameSessionParticipantsChange(
 				bJoined));
 	}
 }
+// @@@SNIPEND

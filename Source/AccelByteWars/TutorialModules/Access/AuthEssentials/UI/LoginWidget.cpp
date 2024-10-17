@@ -15,6 +15,8 @@
 
 #define LOCTEXT_NAMESPACE "AccelByteWars"
 
+// @@@SNIPSTART LoginWidget.cpp-NativeConstruct
+// @@@MULTISNIP PutItAllTogether {"highlightedLines": "{8-9}"}
 void ULoginWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
@@ -31,6 +33,7 @@ void ULoginWidget::NativeConstruct()
 	SetLoginState(ELoginState::Default);
 	OnRetryLoginDelegate.Clear();
 }
+// @@@SNIPEND
 
 void ULoginWidget::NativeOnActivated()
 {
@@ -52,6 +55,7 @@ void ULoginWidget::NativeOnDeactivated()
 	Btn_QuitGame->OnClicked().Clear();
 }
 
+// @@@SNIPSTART LoginWidget.cpp-SetLoginState
 void ULoginWidget::SetLoginState(const ELoginState NewState) const
 {
 	UWidget* WidgetToActivate;
@@ -82,7 +86,10 @@ void ULoginWidget::SetLoginState(const ELoginState NewState) const
 
 	Ws_LoginState->SetActiveWidget(WidgetToActivate);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART LoginWidget.cpp-OnLoginWithDeviceIdButtonClicked
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-4", "12"]}
 void ULoginWidget::OnLoginWithDeviceIdButtonClicked()
 {
 	SetLoginState(ELoginState::LoggingIn);
@@ -95,6 +102,7 @@ void ULoginWidget::OnLoginWithDeviceIdButtonClicked()
 	AuthSubsystem->SetAuthCredentials(EAccelByteLoginType::DeviceId, TEXT(""), TEXT(""));
 	AuthSubsystem->Login(PC, FAuthOnLoginCompleteDelegate::CreateUObject(this, &ThisClass::OnLoginComplete));
 }
+// @@@SNIPEND
 
 void ULoginWidget::OnRetryLoginButtonClicked()
 {
@@ -122,6 +130,7 @@ void ULoginWidget::OnQuitGameButtonClicked()
 	);
 }
 
+// @@@SNIPSTART LoginWidget.cpp-OnLoginComplete
 void ULoginWidget::OnLoginComplete(bool bWasSuccessful, const FString& ErrorMessage)
 {
 	if (bWasSuccessful) 
@@ -133,9 +142,7 @@ void ULoginWidget::OnLoginComplete(bool bWasSuccessful, const FString& ErrorMess
 		}
 
 		// When login success, open Main Menu widget.
-		UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->GetBaseUIWidget());
-		ensure(BaseUIWidget);
-		BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, MainMenuWidgetClass);
+		OpenMainMenu();
 	}
 	else 
 	{
@@ -143,6 +150,25 @@ void ULoginWidget::OnLoginComplete(bool bWasSuccessful, const FString& ErrorMess
 		Tb_FailedMessage->SetText(FText::FromString(ErrorMessage));
 		SetLoginState(ELoginState::Failed);
 	}
+}
+// @@@SNIPEND
+
+void ULoginWidget::OpenMainMenu()
+{
+	UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->GetBaseUIWidget());
+	if (!BaseUIWidget)
+	{
+		UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("Failed to open Main Menu. Base UI widget is null."));
+		return;
+	}
+
+	// Proceed to show upgrade account if applicable, otherwise open Main Menu.
+	UTutorialModuleDataAsset* DataAsset = UTutorialModuleUtility::GetTutorialModuleDataAsset(RegisterUserInGameAssetId, this);
+	BaseUIWidget->PushWidgetToStack(
+		EBaseUIStackType::Menu, 
+		DataAsset && DataAsset->IsActiveAndDependenciesChecked() ? 
+		DataAsset->GetTutorialModuleUIClass() :
+		MainMenuWidgetClass);
 }
 
 void ULoginWidget::AutoLoginCmd()

@@ -14,6 +14,17 @@
 #include "Social/FriendsEssentials/UI/FriendDetailsWidget.h"
 #include "TutorialModuleUtilities/StartupSubsystem.h"
 
+// @@@SNIPSTART PartyOnlineSession.cpp-RegisterOnlineDelegates
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-5", "27"]}
+// @@@MULTISNIP BindCreatePartyDelegate {"selectedLines": ["1-2", "7-8", "9", "21", "27"]}
+// @@@MULTISNIP BindLeavePartyDelegate {"selectedLines": ["1-2", "7-8", "10", "21", "27"]}
+// @@@MULTISNIP BindSendPartyInviteDelegate {"selectedLines": ["1-2", "7-8", "12", "21", "27"]}
+// @@@MULTISNIP BindJoinPartyDelegate {"selectedLines": ["1-2", "7-8", "13", "21", "27"]}
+// @@@MULTISNIP BindPartyInviteRejectedDelegate {"selectedLines": ["1-2", "7-8", "14", "21", "27"]}
+// @@@MULTISNIP BindPartyInviteReceivedDelegate {"selectedLines": ["1-2", "7-8", "15", "21", "27"]}
+// @@@MULTISNIP BindKickedFromPartyDelegate {"selectedLines": ["1-2", "7-8", "17", "21", "27"]}
+// @@@MULTISNIP BindPartySessionUpdateDelegate {"selectedLines": ["1-2", "7-8", "19-21", "27"]}
+// @@@MULTISNIP BindRestorePartyDelegate {"selectedLines": ["1-2", "23-27"]}
 void UPartyOnlineSession::RegisterOnlineDelegates()
 {
     Super::RegisterOnlineDelegates();
@@ -41,7 +52,19 @@ void UPartyOnlineSession::RegisterOnlineDelegates()
         GetABIdentityInt()->OnConnectLobbyCompleteDelegates->AddUObject(this, &ThisClass::OnConnectLobbyComplete);
     }
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyOnlineSession.cpp-ClearOnlineDelegates
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-5", "27"]}
+// @@@MULTISNIP UnbindCreatePartyDelegate {"selectedLines": ["1-2", "7-8", "9", "21", "27"]}
+// @@@MULTISNIP UnbindLeavePartyDelegate {"selectedLines": ["1-2", "7-8", "10", "21", "27"]}
+// @@@MULTISNIP UnbindSendPartyInviteDelegate {"selectedLines": ["1-2", "7-8", "12", "21", "27"]}
+// @@@MULTISNIP UnbindJoinPartyDelegate {"selectedLines": ["1-2", "7-8", "13", "21", "27"]}
+// @@@MULTISNIP UnbindPartyInviteRejectedDelegate {"selectedLines": ["1-2", "7-8", "14", "21", "27"]}
+// @@@MULTISNIP UnbindPartyInviteReceivedDelegate {"selectedLines": ["1-2", "7-8", "15", "21", "27"]}
+// @@@MULTISNIP UnbindKickedFromPartyDelegate {"selectedLines": ["1-2", "7-8", "17", "21", "27"]}
+// @@@MULTISNIP UnbindPartySessionUpdateDelegate {"selectedLines": ["1-2", "7-8", "19-21", "27"]}
+// @@@MULTISNIP UnbindRestorePartyDelegate {"selectedLines": ["1-2", "23-27"]}
 void UPartyOnlineSession::ClearOnlineDelegates()
 {
     Super::ClearOnlineDelegates();
@@ -69,7 +92,9 @@ void UPartyOnlineSession::ClearOnlineDelegates()
         GetABIdentityInt()->OnConnectLobbyCompleteDelegates->RemoveAll(this);
     }
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyOnlineSession.cpp-GetPromptSubystem
 UPromptSubsystem* UPartyOnlineSession::GetPromptSubystem()
 {
     UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
@@ -80,7 +105,9 @@ UPromptSubsystem* UPartyOnlineSession::GetPromptSubystem()
 
     return GameInstance->GetSubsystem<UPromptSubsystem>();
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyOnlineSession.cpp-OnCreatePartyToInviteMember
 void UPartyOnlineSession::OnCreatePartyToInviteMember(FName SessionName, bool bWasSuccessful, const int32 LocalUserNum, const FUniqueNetIdPtr SenderId, const FUniqueNetIdPtr InviteeId)
 {
     // Abort if not a party session.
@@ -102,7 +129,9 @@ void UPartyOnlineSession::OnCreatePartyToInviteMember(FName SessionName, bool bW
         SendPartyInvite(LocalUserNum, InviteeId);
     }
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyOnlineSession.cpp-OnLeavePartyToTriggerEvent
 void UPartyOnlineSession::OnLeavePartyToTriggerEvent(FName SessionName, bool bSucceeded, const TDelegate<void(bool bWasSuccessful)> OnComplete)
 {
     // Abort if not a party session.
@@ -114,6 +143,7 @@ void UPartyOnlineSession::OnLeavePartyToTriggerEvent(FName SessionName, bool bSu
 
     OnComplete.ExecuteIfBound(bSucceeded);
 }
+// @@@SNIPEND
 
 void UPartyOnlineSession::InitializePartyGeneratedWidgets()
 {
@@ -328,6 +358,8 @@ FUniqueNetIdPtr UPartyOnlineSession::GetCurrentDisplayedFriendId()
     return FriendUserId.GetUniqueNetId();
 }
 
+// @@@SNIPSTART PartyOnlineSession.cpp-OnInviteToPartyButtonClicked
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-11", "14"]}
 void UPartyOnlineSession::OnInviteToPartyButtonClicked(const int32 LocalUserNum, const FUniqueNetIdPtr& Invitee)
 {
     // Disable the button to avoid spamming.
@@ -342,7 +374,10 @@ void UPartyOnlineSession::OnInviteToPartyButtonClicked(const int32 LocalUserNum,
 
     SendPartyInvite(LocalUserNum, Invitee);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyOnlineSession.cpp-OnKickPlayerFromPartyButtonClicked
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-11", "14"]}
 void UPartyOnlineSession::OnKickPlayerFromPartyButtonClicked(const int32 LocalUserNum, const FUniqueNetIdPtr& KickedPlayer)
 {
     // Disable the button to avoid spamming.
@@ -357,7 +392,10 @@ void UPartyOnlineSession::OnKickPlayerFromPartyButtonClicked(const int32 LocalUs
 
     KickPlayerFromParty(LocalUserNum, KickedPlayer);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyOnlineSession.cpp-OnPromotePartyLeaderButtonClicked
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-11", "14"]}
 void UPartyOnlineSession::OnPromotePartyLeaderButtonClicked(const int32 LocalUserNum, const FUniqueNetIdPtr& NewLeader)
 {
     // Disable the button to avoid spamming.
@@ -372,9 +410,11 @@ void UPartyOnlineSession::OnPromotePartyLeaderButtonClicked(const int32 LocalUse
 
     PromotePartyLeader(LocalUserNum, NewLeader);
 }
+// @@@SNIPEND
 
 #pragma region "Party Essentials Module Function Definitions"
 
+// @@@SNIPSTART PartyOnlineSession.cpp-GetPartyMembers
 TArray<FUniqueNetIdRef> UPartyOnlineSession::GetPartyMembers()
 {
     if (GetABSessionInt())
@@ -388,7 +428,9 @@ TArray<FUniqueNetIdRef> UPartyOnlineSession::GetPartyMembers()
 
     return TArray<FUniqueNetIdRef>();
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyOnlineSession.cpp-GetPartyLeader
 FUniqueNetIdPtr UPartyOnlineSession::GetPartyLeader()
 {
     if (GetABSessionInt())
@@ -408,7 +450,9 @@ FUniqueNetIdPtr UPartyOnlineSession::GetPartyLeader()
 
     return nullptr;
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyOnlineSession.cpp-IsInParty
 bool UPartyOnlineSession::IsInParty(const FUniqueNetIdPtr UserId)
 {
     if (!UserId)
@@ -432,12 +476,16 @@ bool UPartyOnlineSession::IsInParty(const FUniqueNetIdPtr UserId)
 
     return false;
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyOnlineSession.cpp-IsPartyLeader
 bool UPartyOnlineSession::IsPartyLeader(const FUniqueNetIdPtr UserId)
 {
     return GetPartyLeader() && UserId && UserId.ToSharedRef().Get() == GetPartyLeader().ToSharedRef().Get();
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyOnlineSession.cpp-CreateParty
 void UPartyOnlineSession::CreateParty(const int32 LocalUserNum)
 {
     const FName SessionName = GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession);
@@ -490,17 +538,20 @@ void UPartyOnlineSession::CreateParty(const int32 LocalUserNum)
         LeaveSession(SessionName);
         return;
     }
-
-    // Create a new party session.
+    
+    // Create a new party session. Override party session template name if applicable.
     UE_LOG_PARTYESSENTIALS(Log, TEXT("Create a new party."));
     CreateSession(
         LocalUserNum,
         SessionName,
         FOnlineSessionSettings(),
         EAccelByteV2SessionType::PartySession,
-        PartySessionTemplate);
+        UTutorialModuleOnlineUtility::GetPartySessionTemplateOverride().IsEmpty() ?
+            PartySessionTemplate : UTutorialModuleOnlineUtility::GetPartySessionTemplateOverride());
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyOnlineSession.cpp-LeaveParty
 void UPartyOnlineSession::LeaveParty(const int32 LocalUserNum)
 {
     const FName SessionName = GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession);
@@ -529,7 +580,9 @@ void UPartyOnlineSession::LeaveParty(const int32 LocalUserNum)
     UE_LOG_PARTYESSENTIALS(Log, TEXT("Leave party."));
     LeaveSession(SessionName);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyOnlineSession.cpp-SendPartyInvite
 void UPartyOnlineSession::SendPartyInvite(const int32 LocalUserNum, const FUniqueNetIdPtr& Invitee)
 {
     if (!GetABSessionInt())
@@ -587,7 +640,9 @@ void UPartyOnlineSession::SendPartyInvite(const int32 LocalUserNum, const FUniqu
         SessionName,
         Invitee.ToSharedRef().Get());
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyOnlineSession.cpp-JoinParty
 void UPartyOnlineSession::JoinParty(const int32 LocalUserNum, const FOnlineSessionSearchResult& PartySessionResult)
 {
     const FName SessionName = GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession);
@@ -646,7 +701,9 @@ void UPartyOnlineSession::JoinParty(const int32 LocalUserNum, const FOnlineSessi
     UE_LOG_PARTYESSENTIALS(Log, TEXT("Join a new party."));
     JoinSession(LocalUserNum, SessionName, PartySessionResult);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyOnlineSession.cpp-RejectPartyInvite
 void UPartyOnlineSession::RejectPartyInvite(const int32 LocalUserNum, const FOnlineSessionInviteAccelByte& PartyInvite)
 {
     if (!GetABSessionInt())
@@ -687,7 +744,9 @@ void UPartyOnlineSession::RejectPartyInvite(const int32 LocalUserNum, const FOnl
         PartyInvite,
         FOnRejectSessionInviteComplete::CreateUObject(this, &ThisClass::OnRejectPartyInviteComplete));
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyOnlineSession.cpp-KickPlayerFromParty
 void UPartyOnlineSession::KickPlayerFromParty(const int32 LocalUserNum, const FUniqueNetIdPtr& KickedPlayer)
 {
     if (!GetABSessionInt())
@@ -731,7 +790,9 @@ void UPartyOnlineSession::KickPlayerFromParty(const int32 LocalUserNum, const FU
         KickedPlayer.ToSharedRef().Get(),
         FOnKickPlayerComplete::CreateUObject(this, &ThisClass::OnKickPlayerFromPartyComplete));
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyOnlineSession.cpp-PromotePartyLeader
 void UPartyOnlineSession::PromotePartyLeader(const int32 LocalUserNum, const FUniqueNetIdPtr& NewLeader)
 {
     if (!GetABSessionInt())
@@ -775,7 +836,11 @@ void UPartyOnlineSession::PromotePartyLeader(const int32 LocalUserNum, const FUn
         NewLeader.ToSharedRef().Get(),
         FOnPromotePartySessionLeaderComplete::CreateUObject(this, &ThisClass::OnPromotePartyLeaderComplete));
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyOnlineSession.cpp-OnCreatePartyComplete
+// @@@MULTISNIP CachePartyLeader {"highlightedLines": "{17-18}"}
+// @@@MULTISNIP ResetMemberStatus {"highlightedLines": "{20-21}"}
 void UPartyOnlineSession::OnCreatePartyComplete(FName SessionName, bool bSucceeded)
 {
     if (SessionName != GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession))
@@ -800,7 +865,9 @@ void UPartyOnlineSession::OnCreatePartyComplete(FName SessionName, bool bSucceed
 
     OnCreatePartyCompleteDelegates.Broadcast(SessionName, bSucceeded);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyOnlineSession.cpp-OnLeavePartyComplete
 void UPartyOnlineSession::OnLeavePartyComplete(FName SessionName, bool bSucceeded)
 {
     if (SessionName != GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession))
@@ -819,7 +886,9 @@ void UPartyOnlineSession::OnLeavePartyComplete(FName SessionName, bool bSucceede
 
     OnLeavePartyCompleteDelegates.Broadcast(SessionName, bSucceeded);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyOnlineSession.cpp-OnSendPartyInviteComplete
 void UPartyOnlineSession::OnSendPartyInviteComplete(const FUniqueNetId& Sender, FName SessionName, bool bWasSuccessful, const FUniqueNetId& Invitee)
 {
     // Abort if not a party session.
@@ -850,7 +919,11 @@ void UPartyOnlineSession::OnSendPartyInviteComplete(const FUniqueNetId& Sender, 
 
     OnSendPartyInviteCompleteDelegates.Broadcast(Sender, SessionName, bWasSuccessful, Invitee);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyOnlineSession.cpp-OnJoinPartyComplete
+// @@@MULTISNIP CachePartyLeader {"highlightedLines": "{17-18}"}
+// @@@MULTISNIP ResetMemberStatus {"highlightedLines": "{20-21}"}
 void UPartyOnlineSession::OnJoinPartyComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
 {
     if (SessionName != GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession))
@@ -875,7 +948,9 @@ void UPartyOnlineSession::OnJoinPartyComplete(FName SessionName, EOnJoinSessionC
 
     OnJoinPartyCompleteDelegates.Broadcast(SessionName, Result);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyOnlineSession.cpp-OnRejectPartyInviteComplete
 void UPartyOnlineSession::OnRejectPartyInviteComplete(bool bWasSuccessful)
 {
     if (bWasSuccessful)
@@ -890,7 +965,9 @@ void UPartyOnlineSession::OnRejectPartyInviteComplete(bool bWasSuccessful)
     OnRejectPartyInviteCompleteDelegate.ExecuteIfBound(bWasSuccessful);
     OnRejectPartyInviteCompleteDelegate.Unbind();
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyOnlineSession.cpp-OnPartyInviteRejected
 void UPartyOnlineSession::OnPartyInviteRejected(FName SessionName, const FUniqueNetId& RejecterId)
 {
     // Abort if not a party session.
@@ -934,7 +1011,9 @@ void UPartyOnlineSession::OnPartyInviteRejected(FName SessionName, const FUnique
 
     OnPartyInviteRejectedDelegates.Broadcast(SessionName, RejecterId);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyOnlineSession.cpp-OnPartyInviteReceived
 void UPartyOnlineSession::OnPartyInviteReceived(const FUniqueNetId& UserId, const FUniqueNetId& FromId, const FOnlineSessionInviteAccelByte& PartyInvite)
 {
     // Abort if not a party session.
@@ -1008,7 +1087,9 @@ void UPartyOnlineSession::OnPartyInviteReceived(const FUniqueNetId& UserId, cons
     OnPartyInviteReceivedDelegate.ExecuteIfBound(UserId, FromId, PartyInvite);
     OnPartyInviteReceivedDelegate.Unbind();
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyOnlineSession.cpp-DisplayJoinPartyConfirmation
 void UPartyOnlineSession::DisplayJoinPartyConfirmation(const int32 LocalUserNum, const FOnlineSessionInviteAccelByte& PartyInvite)
 {
     // Join the party if not in any party yet.
@@ -1039,7 +1120,9 @@ void UPartyOnlineSession::DisplayJoinPartyConfirmation(const int32 LocalUserNum,
         }
     ));
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyOnlineSession.cpp-OnKickPlayerFromPartyComplete
 void UPartyOnlineSession::OnKickPlayerFromPartyComplete(bool bWasSuccessful, const FUniqueNetId& KickedPlayer)
 {
     const FUniqueNetIdAccelByteUserRef KickedPlayerABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(KickedPlayer.AsShared());
@@ -1057,7 +1140,9 @@ void UPartyOnlineSession::OnKickPlayerFromPartyComplete(bool bWasSuccessful, con
     OnKickPlayerFromPartyCompleteDelegate.ExecuteIfBound(bWasSuccessful, KickedPlayer);
     OnKickPlayerFromPartyCompleteDelegate.Unbind();
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyOnlineSession.cpp-OnKickedFromParty
 void UPartyOnlineSession::OnKickedFromParty(FName SessionName)
 {
     // Abort if not a party session.
@@ -1076,7 +1161,9 @@ void UPartyOnlineSession::OnKickedFromParty(FName SessionName)
 
     OnKickedFromPartyDelegates.Broadcast(SessionName);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyOnlineSession.cpp-OnPromotePartyLeaderComplete
 void UPartyOnlineSession::OnPromotePartyLeaderComplete(const FUniqueNetId& NewLeader, const FOnlineError& Result)
 {
     const FUniqueNetIdAccelByteUserRef NewLeaderABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(NewLeader.AsShared());
@@ -1094,7 +1181,9 @@ void UPartyOnlineSession::OnPromotePartyLeaderComplete(const FUniqueNetId& NewLe
     OnPromotePartyLeaderCompleteDelegate.ExecuteIfBound(NewLeader, Result);
     OnPromotePartyLeaderCompleteDelegate.Unbind();
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyOnlineSession.cpp-DisplayCurrentPartyLeader
 void UPartyOnlineSession::DisplayCurrentPartyLeader()
 {
     // Abort if the party leader is the same.
@@ -1135,7 +1224,9 @@ void UPartyOnlineSession::DisplayCurrentPartyLeader()
             }));
     }
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyOnlineSession.cpp-OnPartyMembersChange
 void UPartyOnlineSession::OnPartyMembersChange(FName SessionName, const FUniqueNetId& Member, bool bJoined)
 {
     // Abort if not a party session.
@@ -1215,7 +1306,9 @@ void UPartyOnlineSession::OnPartyMembersChange(FName SessionName, const FUniqueN
 
     OnPartyMembersChangeDelegates.Broadcast(SessionName, Member, bJoined);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyOnlineSession.cpp-OnPartySessionUpdateReceived
 void UPartyOnlineSession::OnPartySessionUpdateReceived(FName SessionName)
 {
     // Abort if not a party session.
@@ -1231,7 +1324,9 @@ void UPartyOnlineSession::OnPartySessionUpdateReceived(FName SessionName)
 
     OnPartySessionUpdateReceivedDelegates.Broadcast(SessionName);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PartyOnlineSession.cpp-OnConnectLobbyComplete
 void UPartyOnlineSession::OnConnectLobbyComplete(int32 LocalUserNum, bool bSucceeded, const FUniqueNetId& UserId, const FString& Error)
 {
     if (!bSucceeded)
@@ -1288,5 +1383,6 @@ void UPartyOnlineSession::OnConnectLobbyComplete(int32 LocalUserNum, bool bSucce
         })
     );
 }
+// @@@SNIPEND
 
 #pragma endregion

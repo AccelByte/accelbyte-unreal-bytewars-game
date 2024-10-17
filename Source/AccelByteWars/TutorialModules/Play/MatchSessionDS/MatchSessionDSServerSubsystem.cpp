@@ -44,6 +44,8 @@ void UMatchSessionDSServerSubsystem::OnAuthenticatePlayerComplete_PrePlayerSetup
 }
 #pragma endregion 
 
+// @@@SNIPSTART MatchSessionDSServerSubsystem.cpp-Initialize
+// @@@MULTISNIP BindServerSessionReceivedDelegate {"selectedLines": ["1-2", "12-13"]}
 void UMatchSessionDSServerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
@@ -57,14 +59,20 @@ void UMatchSessionDSServerSubsystem::Initialize(FSubsystemCollectionBase& Collec
 
 	GetABSessionInt()->OnServerReceivedSessionDelegates.AddUObject(this, &ThisClass::OnServerSessionReceived);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchSessionDSServerSubsystem.cpp-Deinitialize
+// @@@MULTISNIP UnbindServerSessionReceivedDelegate {"selectedLines": ["1-2", "5-6"]}
 void UMatchSessionDSServerSubsystem::Deinitialize()
 {
 	Super::Deinitialize();
 
 	GetABSessionInt()->OnServerReceivedSessionDelegates.RemoveAll(this);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchSessionDSServerSubsystem.cpp-OnServerSessionReceived
+// @@@MULTISNIP SessionSettings {"highlightedLines": "{43-57}"}
 void UMatchSessionDSServerSubsystem::OnServerSessionReceived(FName SessionName)
 {
 	Super::OnServerSessionReceived(SessionName);
@@ -108,7 +116,7 @@ void UMatchSessionDSServerSubsystem::OnServerSessionReceived(FName SessionName)
 	}
 
 	// Get game related info from session
-	FString RequestedGameModeCode;
+	FString RequestedGameModeCode = TEXT("");
 	Session->SessionSettings.Get(GAMESETUP_GameModeCode, RequestedGameModeCode);
 
 	// Try getting manually set game rules, if GAMESETUP_DisplayName empty, go to the next flow
@@ -127,3 +135,4 @@ void UMatchSessionDSServerSubsystem::OnServerSessionReceived(FName SessionName)
 	// Query all currently registered user's info
 	AuthenticatePlayer_OnRefreshSessionComplete(true);
 }
+// @@@SNIPEND

@@ -12,6 +12,7 @@
 #include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
 #include "Components/HorizontalBox.h"
 #include "CommonButtonBase.h"
+#include "TutorialModuleUtilities/StartupSubsystem.h"
 
 void UPartyWidget_Starter::NativeConstruct()
 {

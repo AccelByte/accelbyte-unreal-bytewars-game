@@ -25,6 +25,8 @@ protected:
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
 
+// @@@SNIPSTART SinglePlatformAuthWidget.h-private
+// @@@MULTISNIP OnLoginWithSinglePlatformAuthButtonClicked {"selectedLines": ["1-2"]}
 private:
 	void OnLoginWithSinglePlatformAuthButtonClicked();
 
@@ -43,4 +45,5 @@ private:
 
 	UPROPERTY()
 	ULoginWidget* LoginWidget;
+// @@@SNIPEND
 };

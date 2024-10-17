@@ -22,6 +22,9 @@ class ACCELBYTEWARS_API UFindFriendsWidget : public UAccelByteWarsActivatableWid
 {
 	GENERATED_BODY()
 	
+// @@@SNIPSTART FindFriendsWidget.h-protected
+// @@@MULTISNIP FindFriendsUI {"selectedLines": ["1", "19-44"]}
+// @@@MULTISNIP FindFriendsDeclaration {"selectedLines": ["1", "11-14"]}
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeOnActivated() override;
@@ -69,4 +72,5 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_Back;
+// @@@SNIPEND
 };

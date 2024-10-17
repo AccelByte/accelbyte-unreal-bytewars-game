@@ -11,6 +11,9 @@
 #include "Play/MatchSessionEssentials/UI/CreateMatchSessionWidget.h"
 #include "Play/OnlineSessionUtils/AccelByteWarsOnlineSessionBase.h"
 
+// @@@SNIPSTART CreateMatchSessionP2PWidget.cpp-NativeOnActivated
+// @@@MULTISNIP HelperDefinition {"selectedLines": ["1-2", "5-19", "26"]}
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "25-26"]}
 void UCreateMatchSessionP2PWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
@@ -37,7 +40,10 @@ void UCreateMatchSessionP2PWidget::NativeOnActivated()
 
 	Btn_StartMatchSessionP2P->OnClicked().AddUObject(this, &ThisClass::CreateSession);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CreateMatchSessionP2PWidget.cpp-NativeOnDeactivated
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "9-12"]}
 void UCreateMatchSessionP2PWidget::NativeOnDeactivated()
 {
 	Super::NativeOnDeactivated();
@@ -50,7 +56,10 @@ void UCreateMatchSessionP2PWidget::NativeOnDeactivated()
 	W_Parent->GetProcessingWidgetComponent()->OnRetryClicked.RemoveAll(this);
 	W_Parent->GetProcessingWidgetComponent()->OnCancelClicked.RemoveAll(this);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CreateMatchSessionP2PWidget.cpp-CreateSession
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-7", "15-16", "22"]}
 void UCreateMatchSessionP2PWidget::CreateSession() const
 {
 	if (OnlineSession->ValidateToStartSession.IsBound() &&
@@ -73,7 +82,9 @@ void UCreateMatchSessionP2PWidget::CreateSession() const
 		EGameModeNetworkType::P2P,
 		W_Parent->GetSelectedGameModeType());
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CreateMatchSessionP2PWidget.cpp-OnCreateSessionComplete
 void UCreateMatchSessionP2PWidget::OnCreateSessionComplete(FName SessionName, bool bSucceeded) const
 {
 	// Abort if not a game session.
@@ -93,7 +104,10 @@ void UCreateMatchSessionP2PWidget::OnCreateSessionComplete(FName SessionName, bo
 		W_Parent->SwitchContent(UCreateMatchSessionWidget::EContentType::ERROR);
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CreateMatchSessionP2PWidget.cpp-CancelJoiningSession
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-4", "8"]}
 void UCreateMatchSessionP2PWidget::CancelJoiningSession() const
 {
 	W_Parent->SetLoadingMessage(TEXT_LEAVING_SESSION, false);
@@ -102,7 +116,9 @@ void UCreateMatchSessionP2PWidget::CancelJoiningSession() const
 	OnlineSession->LeaveSession(
 		OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession));
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CreateMatchSessionP2PWidget.cpp-OnCancelJoiningSessionComplete
 void UCreateMatchSessionP2PWidget::OnCancelJoiningSessionComplete(FName SessionName, bool bSucceeded) const
 {
 	// Abort if not a game session.
@@ -121,7 +137,9 @@ void UCreateMatchSessionP2PWidget::OnCancelJoiningSessionComplete(FName SessionN
 		W_Parent->SwitchContent(UCreateMatchSessionWidget::EContentType::ERROR);
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CreateMatchSessionP2PWidget.cpp-OnSessionServerUpdateReceived
 void UCreateMatchSessionP2PWidget::OnSessionServerUpdateReceived(
 	const FName SessionName,
 	const FOnlineError& Error,
@@ -145,3 +163,4 @@ void UCreateMatchSessionP2PWidget::OnSessionServerUpdateReceived(
 		W_Parent->SwitchContent(UCreateMatchSessionWidget::EContentType::ERROR);
 	}
 }
+// @@@SNIPEND

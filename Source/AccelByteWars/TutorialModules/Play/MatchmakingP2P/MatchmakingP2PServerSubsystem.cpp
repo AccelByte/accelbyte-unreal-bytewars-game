@@ -9,6 +9,7 @@
 #include "OnlineSubsystemAccelByteSessionSettings.h"
 #include "Core/GameStates/AccelByteWarsGameState.h"
 
+// @@@SNIPSTART MatchmakingP2PServerSubsystem.cpp-Initialize
 void UMatchmakingP2PServerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
@@ -22,14 +23,19 @@ void UMatchmakingP2PServerSubsystem::Initialize(FSubsystemCollectionBase& Collec
 
 	GetABSessionInt()->OnServerReceivedSessionDelegates.AddUObject(this, &ThisClass::OnServerSessionReceived);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchmakingP2PServerSubsystem.cpp-Deinitialize
 void UMatchmakingP2PServerSubsystem::Deinitialize()
 {
 	Super::Deinitialize();
 
 	GetABSessionInt()->OnServerReceivedSessionDelegates.RemoveAll(this);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART MatchmakingP2PServerSubsystem.cpp-OnServerSessionReceived
+// @@@MULTISNIP SessionSettings {"highlightedLines": "{36-53}"}
 void UMatchmakingP2PServerSubsystem::OnServerSessionReceived(FName SessionName)
 {
 	Super::OnServerSessionReceived(SessionName);
@@ -72,9 +78,14 @@ void UMatchmakingP2PServerSubsystem::OnServerSessionReceived(FName SessionName)
 		return;
 	}
 
-	FString SessionTemplateName;
+	FString RequestedGameModeCode = TEXT(""), SessionTemplateName = TEXT("");
+	Session->SessionSettings.Get(GAMESETUP_GameModeCode, RequestedGameModeCode);
 	Session->SessionSettings.Get(SETTING_SESSION_MATCHPOOL, SessionTemplateName);
-	if (!SessionTemplateName.IsEmpty())
+	if (!RequestedGameModeCode.IsEmpty())
+	{
+		AbGameState->AssignGameMode(RequestedGameModeCode);
+	}
+	else if (!SessionTemplateName.IsEmpty())
 	{
 		AbGameState->AssignGameMode(MatchmakingOnlineSession->TargetGameModeMap[SessionTemplateName]);
 	}
@@ -83,3 +94,4 @@ void UMatchmakingP2PServerSubsystem::OnServerSessionReceived(FName SessionName)
 	// Query all currently registered user's info
 	AuthenticatePlayer_OnRefreshSessionComplete(true);
 }
+// @@@SNIPEND

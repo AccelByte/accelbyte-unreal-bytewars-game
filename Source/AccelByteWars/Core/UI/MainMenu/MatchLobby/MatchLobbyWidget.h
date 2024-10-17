@@ -49,6 +49,8 @@ protected:
 	void NativeOnDeactivated() override;
 	void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
+// @@@SNIPSTART MatchLobbyWidget.h-private
+// @@@MULTISNIP MatchActionUI {"selectedLines": ["1", "17-21"]}
 private:
 	UFUNCTION()
 	void ShowLoading();
@@ -88,4 +90,5 @@ private:
 
 	UAccelByteWarsGameInstance* GameInstance;
 	AAccelByteWarsMainMenuGameState* GameState;
+// @@@SNIPEND
 };
