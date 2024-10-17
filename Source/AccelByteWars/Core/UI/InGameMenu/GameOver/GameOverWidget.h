@@ -44,6 +44,8 @@ protected:
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
 	void OnExitLevel();
 
+// @@@SNIPSTART GameOverWidget.h-private
+// @@@MULTISNIP GameOverActionUI {"selectedLines": ["1", "9-13"]}
 private:
 	void SetupLeaderboard();
 	void PlayGameAgain();
@@ -79,4 +81,5 @@ private:
 	UPROPERTY()
 	UAccelByteWarsGameInstance* GameInstance;
 	AAccelByteWarsInGameGameState* GameState;
+// @@@SNIPEND
 };

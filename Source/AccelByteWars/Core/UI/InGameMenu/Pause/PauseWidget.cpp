@@ -7,8 +7,10 @@
 
 #include "Kismet/GameplayStatics.h"
 #include "CommonButtonBase.h"
+#include "Components/VerticalBox.h"
 #include "Core/GameModes/AccelByteWarsGameMode.h"
 #include "Core/GameStates/AccelByteWarsGameState.h"
+#include "Core/GameStates/AccelByteWarsInGameGameState.h"
 
 void UPauseWidget::NativeOnActivated()
 {
@@ -22,6 +24,13 @@ void UPauseWidget::NativeOnActivated()
 	Btn_Restart->OnClicked().AddUObject(this, &UPauseWidget::RestartGame);
 	Btn_HelpOptions->OnClicked().AddUObject(this, &UPauseWidget::OpenHelpOptions);
 	Btn_Quit->OnClicked().AddUObject(this, &UPauseWidget::QuitGame);
+
+	const AAccelByteWarsInGameGameState* GameState = Cast<AAccelByteWarsInGameGameState>(GetWorld()->GetGameState());
+	if(GameState)
+	{
+		// hide generated buttons that meant for playing with online session
+		Vb_OnlinePlayButtons->SetVisibility(GameState->GameSetup.NetworkType == EGameModeNetworkType::LOCAL ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
+	}
 
 	SetInputModeToUIOnly();
 }
@@ -39,11 +48,14 @@ void UPauseWidget::NativeOnDeactivated()
 	SetInputModeToGameOnly();
 }
 
+// @@@SNIPSTART PauseWidget.cpp-ResumeGame
 void UPauseWidget::ResumeGame()
 {
 	DeactivateWidget();
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PauseWidget.cpp-RestartGame
 void UPauseWidget::RestartGame()
 {
 	if (const AAccelByteWarsGameMode* GameMode = Cast<AAccelByteWarsGameMode>(GetWorld()->GetAuthGameMode()))
@@ -51,6 +63,7 @@ void UPauseWidget::RestartGame()
 		GameMode->DelayedServerTravel("/Game/ByteWars/Maps/GalaxyWorld/GalaxyWorld");
 	}
 }
+// @@@SNIPEND
 
 void UPauseWidget::OpenHelpOptions()
 {
@@ -69,6 +82,7 @@ void UPauseWidget::OpenHelpOptions()
 	BaseUIWidget->PushWidgetToStack(GetWidgetStackType(), HelpOptionsWidgetClass);
 }
 
+// @@@SNIPSTART PauseWidget.cpp-QuitGame
 void UPauseWidget::QuitGame()
 {
 	if (OnQuitGameDelegate.IsBound()) 
@@ -80,3 +94,4 @@ void UPauseWidget::QuitGame()
 
 	UGameplayStatics::OpenLevel(GetWorld(), TEXT("MainMenu"));
 }
+// @@@SNIPEND

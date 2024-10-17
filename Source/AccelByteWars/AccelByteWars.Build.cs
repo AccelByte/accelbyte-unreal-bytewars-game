@@ -27,11 +27,12 @@ public class AccelByteWars : ModuleRules
             "OnlineSubsystem",
 			"OnlineSubsystemUtils",
 			"Json",
-			"HTTP"
+			"HTTP",
+			"EngineSettings"
         });
 
 
-	PrivateDependencyModuleNames.AddRange(new string[] 
+		PrivateDependencyModuleNames.AddRange(new string[] 
 		{
 			"InputCore",
 			"Slate",

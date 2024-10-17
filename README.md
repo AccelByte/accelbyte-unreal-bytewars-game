@@ -11,7 +11,7 @@ Byte Wars is the official tutorial game for AccelByte Gaming Services (AGS). It 
 ## Branches
 
 Byte Wars published the source code in two branches:
-* **main branch** is the vanila version game source code without any submodule and will in use for [Tutorial Module 1: Initial Setup](https://docs-preview.accelbyte.io/gaming-services/tutorials/unreal-engine/module-1/).
+* **main branch** is the vanila version game source code without any submodule and will in use for [Tutorial Module: Initial Setup](https://docs.accelbyte.io/gaming-services/tutorials/byte-wars/unreal-engine/learning-modules/general/module-initial-setup/).
 * **tutorialmodules branch** is the branch that has the AccelByte's Plugins and all the Byte Wars tutorial modules with feature flag. 
 
 ## Clone Byte Wars

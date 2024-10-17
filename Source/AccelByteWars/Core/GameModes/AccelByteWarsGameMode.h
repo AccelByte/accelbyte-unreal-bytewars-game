@@ -29,6 +29,9 @@ class ACCELBYTEWARS_API AAccelByteWarsGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
 
+// @@@SNIPSTART AccelByteWarsGameMode.h-public
+// @@@MULTISNIP CloseGame {"selectedLines": ["1", "34"]}
+// @@@MULTISNIP OnPreGameShutdownDelegate {"selectedLines": ["1", "42"]}
 public:
 	AAccelByteWarsGameMode();
 
@@ -71,6 +74,7 @@ public:
 	inline static FOnInitializeListenServer OnInitializeListenServerDelegates;
 	inline static TMulticastDelegate<void(bool /*bSucceeded*/)> OnRegisterServerCompleteDelegates;
 	static inline TMulticastDelegate<void(TDelegate<void()>)> OnPreGameShutdown;
+// @@@SNIPEND
 
 protected:
 	/**

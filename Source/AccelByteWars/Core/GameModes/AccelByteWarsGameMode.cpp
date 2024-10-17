@@ -89,6 +89,7 @@ void AAccelByteWarsGameMode::PostLogin(APlayerController* NewPlayer)
 	}
 }
 
+// @@@SNIPSTART AccelByteWarsGameMode.cpp-Logout
 void AAccelByteWarsGameMode::Logout(AController* Exiting)
 {
 	Super::Logout(Exiting);
@@ -110,6 +111,7 @@ void AAccelByteWarsGameMode::Logout(AController* Exiting)
 		CloseGame(TEXT("Last player logs out and bImmediatelyShutdownWhenEmpty was set to true"));
 	}
 }
+// @@@SNIPEND
 
 APawn* AAccelByteWarsGameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, AActor* StartSpot)
 {
@@ -382,6 +384,7 @@ void AAccelByteWarsGameMode::DelayedServerTravel(const FString& URL) const
 	}, 1.0f, false);
 }
 
+// @@@SNIPSTART AccelByteWarsGameMode.cpp-CloseGame
 void AAccelByteWarsGameMode::CloseGame(const FString& Reason) const
 {
 	GAMEMODE_LOG(Warning, TEXT("Unregistering or shutting down server with reason: %s."), *Reason);
@@ -401,6 +404,7 @@ void AAccelByteWarsGameMode::CloseGame(const FString& Reason) const
 		CloseGameInternal();
 	}
 }
+// @@@SNIPEND
 
 void AAccelByteWarsGameMode::SetImmediatelyShutdownWhenEmpty(const bool bAllow) const
 {
@@ -537,6 +541,7 @@ void AAccelByteWarsGameMode::SimulateServerCrashCountdownCounting(const float& D
 	ABGameState->SimulateServerCrashCountdown -= DeltaSeconds;
 }
 
+// @@@SNIPSTART AccelByteWarsGameMode.cpp-CloseGameInternal
 void AAccelByteWarsGameMode::CloseGameInternal() const
 {
 	AAccelByteWarsGameSession* Session = Cast<AAccelByteWarsGameSession>(GameSession);
@@ -550,3 +555,5 @@ void AAccelByteWarsGameMode::CloseGameInternal() const
 	// Unregister the server.
 	Session->UnregisterServer();
 }
+// @@@SNIPEND
+

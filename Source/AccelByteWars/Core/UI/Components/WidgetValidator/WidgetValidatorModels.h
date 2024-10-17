@@ -141,6 +141,11 @@ public:
 
     static FWidgetValidator* GetMetadataById(const FString& WidgetValidatorId);
 
+    IAccelByteWarsWidgetInterface* GetCachedWidget() const
+    {
+        return CachedWidget;
+    }
+
 private:
     IAccelByteWarsWidgetInterface* CachedWidget = nullptr;
 

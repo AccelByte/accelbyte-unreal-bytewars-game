@@ -9,6 +9,7 @@
 #include "PauseWidget.generated.h"
 
 class UCommonButtonBase;
+class UVerticalBox;
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnQuitGame, APlayerController* /*PlayerController*/);
 
@@ -30,6 +31,8 @@ protected:
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
 	void OnExitLevel();
 
+// @@@SNIPSTART PauseWidget.h-private
+// @@@MULTISNIP PauseActionUI {"selectedLines": ["1", "7-17"]}
 private:
 	void ResumeGame();
 	void RestartGame();
@@ -50,4 +53,8 @@ private:
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UAccelByteWarsActivatableWidget> HelpOptionsWidgetClass;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UVerticalBox* Vb_OnlinePlayButtons;
+// @@@SNIPEND
 };
