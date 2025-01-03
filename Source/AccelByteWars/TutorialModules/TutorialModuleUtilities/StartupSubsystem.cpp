@@ -107,7 +107,7 @@ void UStartupSubsystem::QueryUserInfo(
     const TArray<FUniqueNetIdRef>& UserIds,
     const FOnQueryUsersInfoCompleteDelegate& OnComplete)
 {
-    // safety
+    // Abort if the user interface is invalid.
     if (!UserInterface)
     {
         UE_LOG_STARTUP(Warning, TEXT("User interface is invalid"))
@@ -200,14 +200,6 @@ void UStartupSubsystem::InitializePlatformLogin()
         return;
     }
 
-    // Abort if no platform is activated.
-    PlatformSubsystem = IOnlineSubsystem::GetByPlatform();
-    if (!PlatformSubsystem) 
-    {
-        UE_LOG_STARTUP(Log, TEXT("Abort to initialize platform login. No platform subsystem found."));
-        return;
-    }
-
     FOnlineSubsystemAccelByte* Subsystem = static_cast<FOnlineSubsystemAccelByte*>(Online::GetSubsystem(GetWorld()));
     if (!ensure(Subsystem))
     {
@@ -222,14 +214,22 @@ void UStartupSubsystem::InitializePlatformLogin()
     AccelByteIdentityInterface = StaticCastSharedPtr<FOnlineIdentityAccelByte>(Subsystem->GetIdentityInterface());
     if (!ensure(AccelByteIdentityInterface.IsValid()))
     {
-        UE_LOG_STARTUP(Warning, TEXT("Failed to initialize platform login. The Accelbyte identiy interface is not valid."));
+        UE_LOG_STARTUP(Warning, TEXT("Failed to initialize platform login. The Accelbyte Identity interface is not valid."));
+        return;
+    }
+
+    // Abort if no platform is activated.
+    PlatformSubsystem = IOnlineSubsystem::GetByPlatform();
+    if (!PlatformSubsystem) 
+    {
+        UE_LOG_STARTUP(Log, TEXT("Abort to initialize platform login. No platform subsystem found."));
         return;
     }
 
     PlatformIdentityInterface = PlatformSubsystem->GetIdentityInterface();
     if (!ensure(PlatformIdentityInterface.IsValid()))
     {
-        UE_LOG_STARTUP(Warning, TEXT("Failed to initialize platform login. The platform identiy interface is not valid."));
+        UE_LOG_STARTUP(Warning, TEXT("Failed to initialize platform login. The platform Identity interface is not valid."));
         return;
     }
 
@@ -337,8 +337,8 @@ void UStartupSubsystem::OnLoginWithSinglePlatformAuthButtonClicked()
         return;
     }
 
-    ULoginWidget* LoginWidget = Cast<ULoginWidget>(ParentWidget);
-    ULoginWidget_Starter* LoginWidgetStarter = Cast<ULoginWidget_Starter>(ParentWidget);
+    ULoginWidget* LoginWidget = StaticCast<ULoginWidget*>(ParentWidget);
+    ULoginWidget_Starter* LoginWidgetStarter = StaticCast<ULoginWidget_Starter*>(ParentWidget);
 
     if (!ensure(LoginWidget) || !ensure(LoginWidgetStarter))
     {
@@ -349,6 +349,7 @@ void UStartupSubsystem::OnLoginWithSinglePlatformAuthButtonClicked()
     if (LoginWidget)
     {
         LoginWidget->SetLoginState(ELoginState::LoggingIn);
+        LoginWidget->OnRetryLoginDelegate.RemoveAll(this);
         LoginWidget->OnRetryLoginDelegate.AddUObject(this, &ThisClass::OnLoginWithSinglePlatformAuthButtonClicked);
         LoginPlatformCredsToAccelByte(
             LoginWidget->GetOwningPlayer(), 
@@ -357,6 +358,7 @@ void UStartupSubsystem::OnLoginWithSinglePlatformAuthButtonClicked()
     else if (LoginWidgetStarter)
     {
         LoginWidgetStarter->SetLoginState(ELoginState::LoggingIn);
+        LoginWidgetStarter->OnRetryLoginDelegate.RemoveAll(this);
         LoginWidgetStarter->OnRetryLoginDelegate.AddUObject(this, &ThisClass::OnLoginWithSinglePlatformAuthButtonClicked);
         LoginPlatformCredsToAccelByte(
             LoginWidgetStarter->GetOwningPlayer(), 
@@ -610,8 +612,18 @@ TArray<UTutorialModuleSubsystem::FCheatCommandEntry> UStartupSubsystem::GetCheat
     // Retrieve and display user info given AB's ID
     OutArray.Add(FCheatCommandEntry(
         *CommandUserInfo,
-        TEXT("Query user info by user id. Requires user id as the first param"),
+        TEXT("Query user info by user ID. Requires user ID as the first param"),
         FConsoleCommandWithArgsDelegate::CreateUObject(this, &ThisClass::DisplayUserInfo)));
+
+    // Lobby connect disconnect
+    OutArray.Add(FCheatCommandEntry(
+        *CommandLobbyConnect,
+        TEXT("Connect to Lobby websocket"),
+        FConsoleCommandWithArgsDelegate::CreateUObject(this, &ThisClass::LobbyConnect)));
+    OutArray.Add(FCheatCommandEntry(
+        *CommandLobbyDisconnect,
+        TEXT("Disconnect from Lobby websocket"),
+        FConsoleCommandWithArgsDelegate::CreateUObject(this, &ThisClass::LobbyDisconnect)));
 
     return OutArray;
 }
@@ -681,6 +693,40 @@ void UStartupSubsystem::DisplayUserInfo(const TArray<FString>& Args)
 
             GetWorld()->GetGameViewport()->ViewportConsole->OutputText(OutString);
         }));
+}
+
+void UStartupSubsystem::LobbyConnect(const TArray<FString>& Args)
+{
+    if (!AccelByteIdentityInterface)
+    {
+        InitializePlatformLogin();
+    }
+
+    int LoginUserNum = 0;
+    if (Args.Num() >= 1)
+    {
+        LoginUserNum = FCString::Atoi(*Args[0]);
+    }
+
+    const AccelByte::FApiClientPtr ApiClient = AccelByteIdentityInterface->GetApiClient(LoginUserNum);
+    ApiClient->Lobby.Connect();
+}
+
+void UStartupSubsystem::LobbyDisconnect(const TArray<FString>& Args)
+{
+    if (!AccelByteIdentityInterface)
+    {
+        InitializePlatformLogin();
+    }
+
+    int LoginUserNum = 0;
+    if (Args.Num() >= 1)
+    {
+        LoginUserNum = FCString::Atoi(*Args[0]);
+    }
+
+    const AccelByte::FApiClientPtr ApiClient = AccelByteIdentityInterface->GetApiClient(LoginUserNum);
+    ApiClient->Lobby.Disconnect(true);
 }
 
 void UStartupSubsystem::KillSelf(const TArray<FString>& Args)

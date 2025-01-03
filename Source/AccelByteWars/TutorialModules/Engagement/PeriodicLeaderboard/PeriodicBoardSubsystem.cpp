@@ -16,7 +16,7 @@ void UPeriodicBoardSubsystem::Initialize(FSubsystemCollectionBase& Collection)
     const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
     if (!ensure(Subsystem))
     {
-        UE_LOG_PERIODIC_LEADERBOARD(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and DefaultPlatformService under [OnlineSubsystem] in the Engine.ini set to AccelByte."));
+        UE_LOG_PERIODIC_LEADERBOARD(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and the DefaultPlatformService under [OnlineSubsystem] in the Engine.ini file is set to AccelByte."));
         return;
     }
 
@@ -153,18 +153,18 @@ void UPeriodicBoardSubsystem::GetLeaderboardCycleIdByName(const FString& InCycle
 
                 if (!FoundCycleId.IsEmpty())
                 {
-                    UE_LOG_PERIODIC_LEADERBOARD(Log, TEXT("Cycle Id of cycle with name %s is %s."), *InCycleName, *FoundCycleId);
+                    UE_LOG_PERIODIC_LEADERBOARD(Log, TEXT("Cycle ID of cycle with name %s is %s."), *InCycleName, *FoundCycleId);
                     OnComplete.ExecuteIfBound(true, FoundCycleId);
                 }
                 else
                 {
-                    UE_LOG_PERIODIC_LEADERBOARD(Warning, TEXT("Cycle Id of cycle with name %s is not found."), *InCycleName);
+                    UE_LOG_PERIODIC_LEADERBOARD(Warning, TEXT("Cycle ID of cycle with name %s is not found."), *InCycleName);
                     OnComplete.ExecuteIfBound(false, FoundCycleId);
                 }
             }),
         FErrorHandler::CreateWeakLambda(this, [InCycleName, OnComplete](int32 ErrorCode, const FString& ErrorMessage)
             {
-                UE_LOG_PERIODIC_LEADERBOARD(Warning, TEXT("Failed to get Cycle Id of cycle with name %s. Error %d: %s"), *InCycleName, ErrorCode, *ErrorMessage);
+                UE_LOG_PERIODIC_LEADERBOARD(Warning, TEXT("Failed to get Cycle ID of cycle with name %s. Error %d: %s"), *InCycleName, ErrorCode, *ErrorMessage);
                 OnComplete.ExecuteIfBound(false, FString());
             })
         );
@@ -242,7 +242,7 @@ void UPeriodicBoardSubsystem::OnQueryUserInfoComplete(
 
     UE_LOG_PERIODIC_LEADERBOARD(
         Warning,
-        TEXT("Success to get periodic leaderboard rankings with code: %s"),
+        TEXT("Success in getting the periodic leaderboard rankings with code: %s"),
         *LeaderboardObj->LeaderboardName.ToString());
 
     // Return periodic leaderboard information along with its members' user info.

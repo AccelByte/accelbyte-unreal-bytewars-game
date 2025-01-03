@@ -8,6 +8,7 @@
 #include "OnlineSubsystemAccelByte.h"
 #include "OnlineChatInterfaceAccelByte.h"
 #include "OnlineSessionInterfaceV2AccelByte.h"
+#include "OnlineIdentityInterfaceAccelByte.h"
 #include "SessionChatLog.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "SessionChatSubsystem.generated.h"
@@ -50,12 +51,18 @@ protected:
 
 	void PushChatRoomMessageReceivedNotification(const FUniqueNetId& Sender, const FChatRoomId& RoomId, const TSharedRef<FChatMessage>& Message);
 
+	void ReconnectChat(FString Message);
+
 	FOnlineChatAccelBytePtr GetChatInterface() const;
 	FOnlineSessionV2AccelBytePtr GetSessionInterface() const;
+	FOnlineIdentityAccelBytePtr GetIdentityInterface() const;
 
 	UPromptSubsystem* GetPromptSubsystem() const;
 
 private:
 	FOnSendChatComplete OnSendChatCompleteDelegates;
 	FOnChatRoomMessageReceived OnChatRoomMessageReceivedDelegates;
+
+	int32 ReconnectChatNumTries = 0;
+	const int32 ReconnectChatMaxTries = 3;
 };

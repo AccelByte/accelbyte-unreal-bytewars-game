@@ -23,6 +23,7 @@
 
 #include "Social/FriendsEssentials/UI/FriendDetailsWidget.h"
 #include "TutorialModuleUtilities/StartupSubsystem.h"
+#include "Social/SessionChat/SessionChatSubsystem.h"
 
 class UStartupSubsystem;
 
@@ -50,8 +51,17 @@ void UAccelByteWarsOnlineSession::RegisterOnlineDelegates()
 
 	ABSessionInt->AddOnV2SessionInviteReceivedDelegate_Handle(
 		FOnV2SessionInviteReceivedDelegate::CreateUObject(this, &ThisClass::OnSessionInviteReceived));
+
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 	ABSessionInt->AddOnSessionParticipantsChangeDelegate_Handle(
 		FOnSessionParticipantsChangeDelegate::CreateUObject(this, &ThisClass::OnSessionParticipantsChange));
+#else
+	ABSessionInt->AddOnSessionParticipantJoinedDelegate_Handle(
+		FOnSessionParticipantJoinedDelegate::CreateUObject(this, &ThisClass::OnSessionParticipantJoined));
+	ABSessionInt->AddOnSessionParticipantLeftDelegate_Handle(
+		FOnSessionParticipantLeftDelegate::CreateUObject(this, &ThisClass::OnSessionParticipantLeft));
+
+#endif
 
 	// Game Session Essentials
 	ABSessionInt->OnSessionServerUpdateDelegates.AddUObject(this, &ThisClass::OnSessionServerUpdateReceived);
@@ -83,7 +93,14 @@ void UAccelByteWarsOnlineSession::RegisterOnlineDelegates()
 	ABSessionInt->OnSessionInviteRejectedDelegates.AddUObject(this, &ThisClass::OnPartyInviteRejected);
 	ABSessionInt->OnV2SessionInviteReceivedDelegates.AddUObject(this, &ThisClass::OnPartyInviteReceived);
 	ABSessionInt->OnKickedFromSessionDelegates.AddUObject(this, &ThisClass::OnKickedFromParty);
+
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 	ABSessionInt->OnSessionParticipantsChangeDelegates.AddUObject(this, &ThisClass::OnPartyMembersChange);
+#else
+	ABSessionInt->OnSessionParticipantJoinedDelegates.AddUObject(this, &ThisClass::OnPartyMemberJoined);
+	ABSessionInt->OnSessionParticipantLeftDelegates.AddUObject(this, &ThisClass::OnPartyMemberLeft);
+#endif
+
 	ABSessionInt->OnSessionUpdateReceivedDelegates.AddUObject(this, &ThisClass::OnPartySessionUpdateReceived);
 
 	// Lobby Connection
@@ -110,7 +127,13 @@ void UAccelByteWarsOnlineSession::ClearOnlineDelegates()
 	SessionInt->ClearOnUpdateSessionCompleteDelegates(this);
 
 	ABSessionInt->ClearOnV2SessionInviteReceivedDelegates(this);
+
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 	ABSessionInt->ClearOnSessionParticipantsChangeDelegates(this);
+#else
+	ABSessionInt->ClearOnSessionParticipantJoinedDelegates(this);
+	ABSessionInt->ClearOnSessionParticipantLeftDelegates(this);
+#endif
 
 	// Game Session Essentials
 	ABSessionInt->OnSessionServerUpdateDelegates.RemoveAll(this);
@@ -136,7 +159,14 @@ void UAccelByteWarsOnlineSession::ClearOnlineDelegates()
 	ABSessionInt->OnSessionInviteRejectedDelegates.RemoveAll(this);
 	ABSessionInt->OnV2SessionInviteReceivedDelegates.RemoveAll(this);
 	ABSessionInt->OnKickedFromSessionDelegates.RemoveAll(this);
+
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 	ABSessionInt->OnSessionParticipantsChangeDelegates.RemoveAll(this);
+#else
+	ABSessionInt->OnSessionParticipantJoinedDelegates.RemoveAll(this);
+	ABSessionInt->OnSessionParticipantLeftDelegates.RemoveAll(this);
+#endif
+
 	ABSessionInt->OnSessionUpdateReceivedDelegates.RemoveAll(this);
 
 	// Lobby Connection
@@ -193,7 +223,7 @@ void UAccelByteWarsOnlineSession::CreateSession(
 {
 	UE_LOG_ONLINESESSION(Verbose, TEXT("Called"))
 
-	// safety
+	// Abort if the session interface is invalid.
 	if (!GetSessionInt())
 	{
 		UE_LOG_ONLINESESSION(Warning, TEXT("Session interface is null"))
@@ -244,12 +274,12 @@ void UAccelByteWarsOnlineSession::CreateSession(
 	}
 #pragma endregion
 
-	// if session exist locally -> destroy session first
+	// If session exists locally, then destroy the session first.
 	if (GetSession(SessionName))
 	{
-		UE_LOG_ONLINESESSION(Log, TEXT("Session exist locally, leaving session first"))
+		UE_LOG_ONLINESESSION(Log, TEXT("The session exists locally. Leaving session first."))
 
-		// remove from delegate if exist
+		// Remove from delegate if exists.
 		if (OnLeaveSessionForCreateSessionCompleteDelegateHandle.IsValid())
 		{
 			OnLeaveSessionCompleteDelegates.Remove(OnLeaveSessionForCreateSessionCompleteDelegateHandle);
@@ -280,10 +310,10 @@ void UAccelByteWarsOnlineSession::JoinSession(
 {
 	UE_LOG_ONLINESESSION(Verbose, TEXT("Called"))
 
-	// safety
+	// Abort if the session interface is invalid.
 	if (!GetSessionInt())
 	{
-		UE_LOG_ONLINESESSION(Warning, TEXT("Session interface null"))
+		UE_LOG_ONLINESESSION(Warning, TEXT("Session interface is null"))
 		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnJoinSessionComplete(SessionName, EOnJoinSessionCompleteResult::UnknownError);
@@ -326,7 +356,7 @@ void UAccelByteWarsOnlineSession::SendSessionInvite(
 
 	if (!Invitee.IsValid())
 	{
-		UE_LOG_ONLINESESSION(Log, TEXT("Invitee net id is invalid. Cancelling operation"));
+		UE_LOG_ONLINESESSION(Log, TEXT("Invitee net id is invalid. Canceling operation"));
 		return;
 	}
 
@@ -342,7 +372,7 @@ void UAccelByteWarsOnlineSession::RejectSessionInvite(
 	const FUniqueNetIdPtr LocalUserNetId = GetLocalPlayerUniqueNetId(GetPlayerControllerByLocalUserNum(LocalUserNum));
 	if (!LocalUserNetId.IsValid())
 	{
-		UE_LOG_ONLINESESSION(Log, TEXT("Local User net id is invalid. Cancelling operation"));
+		UE_LOG_ONLINESESSION(Log, TEXT("Local User net id is invalid. Canceling operation"));
 		return;
 	}
 
@@ -356,10 +386,10 @@ void UAccelByteWarsOnlineSession::LeaveSession(FName SessionName)
 {
 	UE_LOG_ONLINESESSION(Verbose, TEXT("Called"))
 
-	// safety
+	// Abort if the session interface is invalid.
 	if (!GetSessionInt())
 	{
-		UE_LOG_ONLINESESSION(Warning, TEXT("Session interface null"))
+		UE_LOG_ONLINESESSION(Warning, TEXT("Session interface is null"))
 		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnLeaveSessionComplete(SessionName, false);
@@ -406,7 +436,7 @@ void UAccelByteWarsOnlineSession::UpdateSessionJoinability(const FName SessionNa
 	FNamedOnlineSession* Session = ABSessionInt->GetNamedSession(SessionName);
 	if (!Session) 
 	{
-		UE_LOG_ONLINESESSION(Warning, TEXT("Session is invalid"));
+		UE_LOG_ONLINESESSION(Warning, TEXT("The session is invalid"));
 		return;
 	}
 	
@@ -500,6 +530,7 @@ void UAccelByteWarsOnlineSession::OnSessionInviteReceived(
 	OnSessionInviteReceivedDelegates.Broadcast(UserId, FromId, Invite);
 }
 
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 void UAccelByteWarsOnlineSession::OnSessionParticipantsChange(FName SessionName, const FUniqueNetId& Member,
 	bool bJoined)
 {
@@ -510,8 +541,32 @@ void UAccelByteWarsOnlineSession::OnSessionParticipantsChange(FName SessionName,
 		*Member.ToDebugString(),
 		*FString(bJoined ? "Joined" : "Left"))
 
-	OnSessionParticipantsChangeDelegates.Broadcast(SessionName, Member, bJoined);
+		OnSessionParticipantsChangeDelegates.Broadcast(SessionName, Member, bJoined);
 }
+#else
+void UAccelByteWarsOnlineSession::OnSessionParticipantJoined(FName SessionName, const FUniqueNetId& Member)
+{
+	UE_LOG_ONLINESESSION(
+		Log,
+		TEXT("Session name: %s | Member: %s [Joined]"),
+		*SessionName.ToString(),
+		*Member.ToDebugString())
+
+	OnSessionParticipantJoinedDelegates.Broadcast(SessionName, Member);
+}
+
+void UAccelByteWarsOnlineSession::OnSessionParticipantLeft(FName SessionName, const FUniqueNetId& Member, EOnSessionParticipantLeftReason Reason)
+{
+	UE_LOG_ONLINESESSION(
+		Log,
+		TEXT("Session name: %s | Member: %s [Left] | Reason: %s"),
+		*SessionName.ToString(),
+		*Member.ToDebugString(),
+		ToLogString(Reason))
+
+	OnSessionParticipantLeftDelegates.Broadcast(SessionName, Member, Reason);
+}
+#endif
 
 void UAccelByteWarsOnlineSession::OnLeaveSessionForCreateSessionComplete(
 	FName SessionName,
@@ -535,7 +590,7 @@ void UAccelByteWarsOnlineSession::OnLeaveSessionForCreateSessionComplete(
 	}
 	else
 	{
-		// Leave Session failed, execute complete delegate as failed
+		// Leave session failed, execute complete delegate as failed.
 		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnCreateSessionComplete(SessionName, false);
@@ -565,7 +620,7 @@ void UAccelByteWarsOnlineSession::OnLeaveSessionForJoinSessionComplete(
 	}
 	else
 	{
-		// Leave Session failed, execute complete delegate as failed
+		// Leave session failed, execute complete delegate as failed.
 		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnJoinSessionComplete(SessionName, EOnJoinSessionCompleteResult::UnknownError);
@@ -592,7 +647,7 @@ void UAccelByteWarsOnlineSession::DSQueryUserInfo(
 	}
 	else
 	{
-		// gather user ids
+		// Gather user IDs.
 		TArray<FString> AbUserIds;
 		for (const FUniqueNetIdRef& UserId : UserIds)
 		{
@@ -631,25 +686,25 @@ bool UAccelByteWarsOnlineSession::TravelToSession(const FName SessionName)
 		return false;
 	}
 
-	// Get Session Info
+	// Get session info
 	const FNamedOnlineSession* Session = GetSession(SessionName);
 	if (!Session)
 	{
-		UE_LOG_ONLINESESSION(Warning, TEXT("Session is invalid"));
+		UE_LOG_ONLINESESSION(Warning, TEXT("The session is invalid"));
 		return false;
 	}
 
 	const TSharedPtr<FOnlineSessionInfo> SessionInfo = Session->SessionInfo;
 	if (!SessionInfo.IsValid())
 	{
-		UE_LOG_ONLINESESSION(Warning, TEXT("Session Info is invalid"));
+		UE_LOG_ONLINESESSION(Warning, TEXT("The session info is invalid"));
 		return false;
 	}
 
 	const TSharedPtr<FOnlineSessionInfoAccelByteV2> AbSessionInfo = StaticCastSharedPtr<FOnlineSessionInfoAccelByteV2>(SessionInfo);
 	if (!AbSessionInfo.IsValid())
 	{
-		UE_LOG_ONLINESESSION(Warning, TEXT("Session Info is not FOnlineSessionInfoAccelByteV2"));
+		UE_LOG_ONLINESESSION(Warning, TEXT("The session info is not FOnlineSessionInfoAccelByteV2"));
 		return false;
 	}
 
@@ -659,7 +714,7 @@ bool UAccelByteWarsOnlineSession::TravelToSession(const FName SessionName)
 	// if nullptr, treat as failed
 	if (!PlayerController)
 	{
-		UE_LOG_ONLINESESSION(Warning, TEXT("Can't find player controller with the session's local owner's Unique Id"));
+		UE_LOG_ONLINESESSION(Warning, TEXT("Can't find player controller with the session's local owner's unique ID"));
 		return false;
 	}
 
@@ -739,7 +794,7 @@ void UAccelByteWarsOnlineSession::OnSessionServerUpdateReceived(FName SessionNam
 
 	if (bLeaveSessionRunning)
 	{
-		UE_LOG_ONLINESESSION(Warning, TEXT("Called but leave session is currently running. Cancelling attempt to travel to server"))
+		UE_LOG_ONLINESESSION(Warning, TEXT("Called but leave session is currently running. Canceling attempt to travel to server"))
 		OnSessionServerUpdateReceivedDelegates.Broadcast(SessionName, FOnlineError(true), false);
 		return;
 	}
@@ -783,7 +838,7 @@ void UAccelByteWarsOnlineSession::StartMatchmaking(
 {
 	UE_LOG_ONLINESESSION(Verbose, TEXT("Called"))
 
-	// safety
+	// Abort if the session interface is invalid.
 	if (!ensure(GetSessionInt()))
 	{
 		UE_LOG_ONLINESESSION(Warning, TEXT("Session Interface is not valid."));
@@ -825,17 +880,17 @@ void UAccelByteWarsOnlineSession::StartMatchmaking(
 		return;
 	}
 
-	// Get match pool id based on game mode type
+	// Get match pool ID based on game mode type
 	FString MatchPoolId = MatchmakingPoolIdMap[{NetworkType, GameModeType}];
 	const FString GameModeCode = MatchmakingTargetGameModeMap[MatchPoolId];
 
-	// if not using AMS, remove suffix -ams (internal purpose)
+	// AMS is the default multiplayer server on AGS. If the game runs on legacy AGS Armada, remove the -ams suffix.
 	if(!UTutorialModuleOnlineUtility::GetIsServerUseAMS())
 	{
 		MatchPoolId = MatchPoolId.Replace(TEXT("-ams"), TEXT(""));
 	}
 	
-	// Override match pool id if applicable.
+	// Override match pool ID if applicable.
 	if (NetworkType == EGameModeNetworkType::DS && !UTutorialModuleOnlineUtility::GetMatchPoolDSOverride().IsEmpty())
 	{
 		MatchPoolId = UTutorialModuleOnlineUtility::GetMatchPoolDSOverride();
@@ -845,7 +900,7 @@ void UAccelByteWarsOnlineSession::StartMatchmaking(
 		MatchPoolId = UTutorialModuleOnlineUtility::GetMatchPoolP2POverride();
 	}
 	
-	// Setup matchmaking search handle, it will be used to store session search results.
+	// Set up matchmaking search handle, it will be used to store session search results.
 	TSharedRef<FOnlineSessionSearch> MatchmakingSearchHandle = MakeShared<FOnlineSessionSearch>();
 	MatchmakingSearchHandle->QuerySettings.Set(SETTING_SESSION_MATCHPOOL, MatchPoolId, EOnlineComparisonOp::Equals);
 	MatchmakingSearchHandle->QuerySettings.Set(GAMESETUP_GameModeCode, GameModeCode, EOnlineComparisonOp::Equals);
@@ -867,7 +922,7 @@ void UAccelByteWarsOnlineSession::StartMatchmaking(
 		MatchmakingSearchHandle->QuerySettings.Set(SETTING_GAMESESSION_SERVERNAME, ServerName, EOnlineComparisonOp::Equals);
 	}
 
-	// include region preferences into matchmaking setting
+	// Include region preferences into matchmaking setting.
 	if (const UTutorialModuleDataAsset* ModuleDataAsset = UTutorialModuleUtility::GetTutorialModuleDataAsset(
 		FPrimaryAssetId{ "TutorialModule:REGIONPREFERENCES" },
 		this,
@@ -911,7 +966,7 @@ void UAccelByteWarsOnlineSession::CancelMatchmaking(APlayerController* PC, const
 {
 	UE_LOG_ONLINESESSION(Verbose, TEXT("Called"))
 
-	// safety
+	// Abort if the session interface is invalid.
 	if (!ensure(GetSessionInt()))
 	{
 		UE_LOG_ONLINESESSION(Warning, TEXT("Session Interface is not valid."));
@@ -973,7 +1028,7 @@ void UAccelByteWarsOnlineSession::OnMatchmakingComplete(FName SessionName, bool 
 
 	const TSharedPtr<FOnlineSessionSearchAccelByte> CurrentMatchmakingSearchHandle = GetABSessionInt()->GetCurrentMatchmakingSearchHandle();
 	if (!bSucceeded ||
-		!ensure(CurrentMatchmakingSearchHandle.IsValid()) /*This might happen when the MM finished just as we are about to cancel it*/ ||
+		!ensure(CurrentMatchmakingSearchHandle.IsValid()) /*This might happen when matchmaking finishes right as it’s about to be canceled.*/ ||
 		!ensure(CurrentMatchmakingSearchHandle->SearchResults.IsValidIndex(0)) ||
 		!ensure(CurrentMatchmakingSearchHandle->GetSearchingPlayerId().IsValid()))
 	{
@@ -990,7 +1045,7 @@ void UAccelByteWarsOnlineSession::OnBackfillProposalReceived(
 {
 	UE_LOG_ONLINESESSION(Verbose, TEXT("Called"))
 
-	// Safety
+	// Abort if the session interface is invalid.
 	if (!ensure(GetABSessionInt().IsValid()))
 	{
 		UE_LOG_ONLINESESSION(Warning, TEXT("Session Interface is not valid."));
@@ -1059,7 +1114,7 @@ void UAccelByteWarsOnlineSession::CreateMatchSession(
 	// Get match session template based on game mode type
 	FString MatchTemplateName = MatchSessionTemplateNameMap[{NetworkType, GameModeType}];
 	
-	// if not using AMS, remove suffix -ams (internal purpose)
+	// AMS is the default multiplayer server on AGS. If the game runs on legacy AGS Armada, remove the -ams suffix.
 	if(NetworkType == EGameModeNetworkType::DS && !UTutorialModuleOnlineUtility::GetIsServerUseAMS())
 	{
 		MatchTemplateName = MatchTemplateName.Replace(TEXT("-ams"), TEXT(""));
@@ -1161,7 +1216,7 @@ void UAccelByteWarsOnlineSession::OnFindSessionsComplete(bool bSucceeded)
 
 	if (bSucceeded)
 	{
-		// remove owned session from result if exist
+		// Remove owned session from result if exists
 		const FUniqueNetIdPtr LocalUserNetId = GetIdentityInt()->GetUniquePlayerId(LocalUserNumSearching);
 		SessionSearch->SearchResults.RemoveAll([this, LocalUserNetId](const FOnlineSessionSearchResult& Element)
 		{
@@ -1189,14 +1244,14 @@ void UAccelByteWarsOnlineSession::OnFindSessionsComplete(bool bSucceeded)
 			}
 		}
 
-		// get owners user info for query user info
+		// Get owner’s user info for queried user info.
 		TArray<FUniqueNetIdRef> UserIds;
 		for (const FOnlineSessionSearchResult& SearchResult : SessionSearch->SearchResults)
 		{
 			UserIds.AddUnique(SearchResult.Session.OwningUserId->AsShared());
 		}
 
-		// trigger Query User info
+		// Trigger to query user info
 		if (UStartupSubsystem* StartupSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UStartupSubsystem>())
 		{
 			StartupSubsystem->QueryUserInfo(
@@ -1360,13 +1415,32 @@ void UAccelByteWarsOnlineSession::InitializePartyGeneratedWidgets()
 			UpdatePartyGeneratedWidgets();
 		});
 	}
+
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 	if (GetOnPartyMembersChangeDelegates())
 	{
 		GetOnPartyMembersChangeDelegates()->AddWeakLambda(this, [this](FName SessionName, const FUniqueNetId& Member, bool bJoined)
+			{
+				UpdatePartyGeneratedWidgets();
+			});
+	}
+#else
+	if (GetOnPartyMemberJoinedDelegates())
+	{
+		GetOnPartyMemberJoinedDelegates()->AddWeakLambda(this, [this](FName SessionName, const FUniqueNetId& Member)
 		{
 			UpdatePartyGeneratedWidgets();
 		});
 	}
+	if (GetOnPartyMemberLeftDelegates())
+	{
+		GetOnPartyMemberLeftDelegates()->AddWeakLambda(this, [this](FName SessionName, const FUniqueNetId& Member, EOnSessionParticipantLeftReason Reason)
+		{
+			UpdatePartyGeneratedWidgets();
+		});
+	}
+#endif
+
 	if (GetOnPartySessionUpdateReceivedDelegates())
 	{
 		GetOnPartySessionUpdateReceivedDelegates()->AddWeakLambda(this, [this](FName SessionName)
@@ -1378,14 +1452,14 @@ void UAccelByteWarsOnlineSession::InitializePartyGeneratedWidgets()
 
 void UAccelByteWarsOnlineSession::UpdatePartyGeneratedWidgets()
 {
-	// Take local user id reference from active widget.
+	// Take local user ID reference from active widget.
 	FUniqueNetIdPtr LocalUserABId = nullptr;
 	if (UCommonActivatableWidget* ActiveWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this))
 	{
 		LocalUserABId = GetLocalPlayerUniqueNetId(ActiveWidget->GetOwningPlayer());
 	}
 
-	// Take current displayed friend id.
+	// Take current displayed friend ID.
 	const FUniqueNetIdPtr FriendUserId = GetCurrentDisplayedFriendId();
 
 	// Check party information.
@@ -1456,10 +1530,22 @@ void UAccelByteWarsOnlineSession::DeinitializePartyGeneratedWidgets()
 	}
 
 	// Unbind party event delegates.
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 	if (GetOnPartyMembersChangeDelegates())
 	{
 		GetOnPartyMembersChangeDelegates()->RemoveAll(this);
 	}
+#else
+	if (GetOnPartyMemberJoinedDelegates())
+	{
+		GetOnPartyMemberJoinedDelegates()->RemoveAll(this);
+	}
+	if (GetOnPartyMemberLeftDelegates())
+	{
+		GetOnPartyMemberLeftDelegates()->RemoveAll(this);
+	}
+#endif
+
 	if (GetOnPartySessionUpdateReceivedDelegates())
 	{
 		GetOnPartySessionUpdateReceivedDelegates()->RemoveAll(this);
@@ -1605,7 +1691,7 @@ void UAccelByteWarsOnlineSession::CreateParty(const int32 LocalUserNum)
 {
 	const FName SessionName = GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession);
 
-	// Safety.
+	// Abort if the session interface is invalid.
 	if (!GetABSessionInt())
 	{
 		UE_LOG_ONLINESESSION(Warning, TEXT("Cannot create a party. Session Interface is not valid."));
@@ -2090,7 +2176,7 @@ void UAccelByteWarsOnlineSession::OnPartyInviteRejected(FName SessionName, const
 					MemberInfo.GetDisplayName()
 				));
 
-				FString AvatarURL;
+				FString AvatarURL = TEXT("");
 				MemberInfo.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
 
 				GetPromptSubystem()->PushNotification(NotifMessage, AvatarURL, true);
@@ -2143,7 +2229,7 @@ void UAccelByteWarsOnlineSession::OnPartyInviteReceived(const FUniqueNetId& User
 					MemberInfo.GetDisplayName()
 				));
 
-				FString AvatarURL;
+				FString AvatarURL = TEXT("");
 				MemberInfo.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
 
 				GetPromptSubystem()->PushNotification(
@@ -2295,7 +2381,7 @@ void UAccelByteWarsOnlineSession::DisplayCurrentPartyLeader()
 					MemberInfo.GetDisplayName()
 				));
 
-				FString AvatarURL;
+				FString AvatarURL = TEXT("");
 				MemberInfo.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
 
 				GetPromptSubystem()->PushNotification(NotifMessage, AvatarURL, true);
@@ -2303,6 +2389,7 @@ void UAccelByteWarsOnlineSession::DisplayCurrentPartyLeader()
 	}
 }
 
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 void UAccelByteWarsOnlineSession::OnPartyMembersChange(FName SessionName, const FUniqueNetId& Member, bool bJoined)
 {
 	// Abort if not a party session.
@@ -2353,6 +2440,85 @@ void UAccelByteWarsOnlineSession::OnPartyMembersChange(FName SessionName, const 
 				FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [this, MemberABId, bJoined](
 					const FOnlineError& Error,
 					const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
+					{
+						if (UsersInfo.IsEmpty() || !UsersInfo[0] || !GetPromptSubystem())
+						{
+							return;
+						}
+
+						FUserOnlineAccountAccelByte MemberInfo = *UsersInfo[0];
+
+						const FString MemberDisplayName = MemberInfo.GetDisplayName().IsEmpty() ?
+							UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(MemberABId.Get()) :
+							MemberInfo.GetDisplayName();
+
+						const FText NotifMessage = bJoined ?
+							FText::Format(PARTY_MEMBER_JOINED_MESSAGE, FText::FromString(MemberDisplayName)) :
+							FText::Format(PARTY_MEMBER_LEFT_MESSAGE, FText::FromString(MemberDisplayName));
+
+						FString AvatarURL = TEXT("");
+						MemberInfo.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
+
+						GetPromptSubystem()->PushNotification(NotifMessage, AvatarURL, true);
+					}));
+		}
+	}
+
+	// Show notification if a new party leader is set.
+	DisplayCurrentPartyLeader();
+
+	OnPartyMembersChangeDelegates.Broadcast(SessionName, Member, bJoined);
+}
+#else
+void UAccelByteWarsOnlineSession::OnPartyMemberJoined(FName SessionName, const FUniqueNetId& Member)
+{
+	// Abort if not a party session.
+	if (SessionName != GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession))
+	{
+		return;
+	}
+
+	// Store status whether the member is the current logged-in player.
+	FUniqueNetIdPtr UserId = nullptr;
+	if (GetIdentityInt())
+	{
+		UserId = GetIdentityInt()->GetUniquePlayerId(0);
+	}
+	const bool bIsMemberTheLoggedInPlayer = UserId && UserId.ToSharedRef().Get() == Member;
+
+	const FUniqueNetIdAccelByteUserRef MemberABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(Member.AsShared());
+	const FString MemberABIdStr = MemberABId->GetAccelByteId();
+
+	/* Since this event could be called multiple times, we cache the party member status.
+	 * This cache is used to execute the following functionalities only when the party member status is changed (not the same status).*/
+	if (PartyMemberStatus.Contains(MemberABIdStr))
+	{
+		if (PartyMemberStatus[MemberABIdStr])
+		{
+			// Abort if the status is the same.
+			return;
+		}
+		PartyMemberStatus[MemberABIdStr] = true;
+	}
+	if (!PartyMemberStatus.Contains(MemberABIdStr))
+	{
+		PartyMemberStatus.Add(MemberABIdStr, true);
+	}
+
+	UE_LOG_ONLINESESSION(Log, TEXT("Party participant %s joined to the party"),
+		MemberABId->IsValid() ? *MemberABId->GetAccelByteId() : TEXT("Unknown"));
+
+	// Query member information then display a push notification to show who joined the party.
+	if (!bIsMemberTheLoggedInPlayer)
+	{
+		if (UStartupSubsystem* StartupSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UStartupSubsystem>())
+		{
+			StartupSubsystem->QueryUserInfo(
+				0,
+				TPartyMemberArray{ MemberABId },
+				FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [this, MemberABId](
+					const FOnlineError& Error,
+					const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
 				{
 					if (UsersInfo.IsEmpty() || !UsersInfo[0] || !GetPromptSubystem())
 					{
@@ -2365,11 +2531,9 @@ void UAccelByteWarsOnlineSession::OnPartyMembersChange(FName SessionName, const 
 						UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(MemberABId.Get()) :
 						MemberInfo.GetDisplayName();
 
-					const FText NotifMessage = bJoined ?
-						FText::Format(PARTY_MEMBER_JOINED_MESSAGE, FText::FromString(MemberDisplayName)) :
-						FText::Format(PARTY_MEMBER_LEFT_MESSAGE, FText::FromString(MemberDisplayName));
+					const FText NotifMessage = FText::Format(PARTY_MEMBER_JOINED_MESSAGE, FText::FromString(MemberDisplayName));
 
-					FString AvatarURL;
+					FString AvatarURL = TEXT("");
 					MemberInfo.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
 
 					GetPromptSubystem()->PushNotification(NotifMessage, AvatarURL, true);
@@ -2380,8 +2544,87 @@ void UAccelByteWarsOnlineSession::OnPartyMembersChange(FName SessionName, const 
 	// Show notification if a new party leader is set.
 	DisplayCurrentPartyLeader();
 
-	OnPartyMembersChangeDelegates.Broadcast(SessionName, Member, bJoined);
+	OnPartyMemberJoinedDelegates.Broadcast(SessionName, Member);
 }
+
+void UAccelByteWarsOnlineSession::OnPartyMemberLeft(FName SessionName, const FUniqueNetId& Member, EOnSessionParticipantLeftReason Reason)
+{
+	// Abort if not a party session.
+	if (SessionName != GetPredefinedSessionNameFromType(EAccelByteV2SessionType::PartySession))
+	{
+		return;
+	}
+
+	// Store status whether the member is the current logged-in player.
+	FUniqueNetIdPtr UserId = nullptr;
+	if (GetIdentityInt())
+	{
+		UserId = GetIdentityInt()->GetUniquePlayerId(0);
+	}
+	const bool bIsMemberTheLoggedInPlayer = UserId && UserId.ToSharedRef().Get() == Member;
+
+	const FUniqueNetIdAccelByteUserRef MemberABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(Member.AsShared());
+	const FString MemberABIdStr = MemberABId->GetAccelByteId();
+
+	/* Since this event could be called multiple times, we cache the party member status.
+	 * This cache is used to execute the following functionalities only when the party member status is changed (not the same status).*/
+	if (PartyMemberStatus.Contains(MemberABIdStr))
+	{
+		if (!PartyMemberStatus[MemberABIdStr])
+		{
+			// Abort if the status is the same.
+			return;
+		}
+		PartyMemberStatus[MemberABIdStr] = false;
+	}
+	if (!PartyMemberStatus.Contains(MemberABIdStr))
+	{
+		PartyMemberStatus.Add(MemberABIdStr, false);
+	}
+
+	UE_LOG_ONLINESESSION(Log, TEXT("Party participant %s left from the party. Reason: %s"),
+		MemberABId->IsValid() ? *MemberABId->GetAccelByteId() : TEXT("Unknown"),
+		ToLogString(Reason));
+
+	// Query member information then display a push notification to show who left the party.
+	if (!bIsMemberTheLoggedInPlayer)
+	{
+		if (UStartupSubsystem* StartupSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UStartupSubsystem>())
+		{
+			StartupSubsystem->QueryUserInfo(
+				0,
+				TPartyMemberArray{ MemberABId },
+				FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [this, MemberABId](
+					const FOnlineError& Error,
+					const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
+				{
+					if (UsersInfo.IsEmpty() || !UsersInfo[0] || !GetPromptSubystem())
+					{
+						return;
+					}
+
+					FUserOnlineAccountAccelByte MemberInfo = *UsersInfo[0];
+
+					const FString MemberDisplayName = MemberInfo.GetDisplayName().IsEmpty() ?
+						UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(MemberABId.Get()) :
+						MemberInfo.GetDisplayName();
+
+					const FText NotifMessage = FText::Format(PARTY_MEMBER_LEFT_MESSAGE, FText::FromString(MemberDisplayName));
+
+					FString AvatarURL = TEXT("");
+					MemberInfo.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AvatarURL);
+
+					GetPromptSubystem()->PushNotification(NotifMessage, AvatarURL, true);
+				}));
+		}
+	}
+
+	// Show notification if a new party leader is set.
+	DisplayCurrentPartyLeader();
+
+	OnPartyMemberLeftDelegates.Broadcast(SessionName, Member, Reason);
+}
+#endif
 
 void UAccelByteWarsOnlineSession::OnPartySessionUpdateReceived(FName SessionName)
 {
@@ -2401,8 +2644,58 @@ void UAccelByteWarsOnlineSession::OnPartySessionUpdateReceived(FName SessionName
 
 #pragma endregion
 
+void UAccelByteWarsOnlineSession::LobbyConnect(int32 LocalUserNum)
+{
+	FOnlineIdentityAccelBytePtr ABIdentityInt = GetABIdentityInt();
+	if (!ensureMsgf(ABIdentityInt, TEXT("AB OnlineIdentity interface is nullptr.")))
+	{
+		UE_LOG_SESSIONCHAT(Warning, TEXT("The AccelByte Identity Interface is invalid. Cancel Lobby connect ."));
+		return;
+	}
+
+	ABIdentityInt->ConnectAccelByteLobby(LocalUserNum);
+	return;
+}
+
+void UAccelByteWarsOnlineSession::ChatConnect(int32 LocalUserNum)
+{
+	// Connect Chat service if its not connected
+	const TSharedPtr<FUserOnlineAccountAccelByte> UserAccountAccelByte = StaticCastSharedPtr<FUserOnlineAccountAccelByte>(GetABIdentityInt()->GetUserAccount(LocalUserNum));
+	if (!ensure(UserAccountAccelByte))
+	{
+		UE_LOG_SESSIONCHAT(Warning, TEXT("The User Online Account is invalid. Cancel chat connect."));
+		return;
+	}
+
+	if (UserAccountAccelByte->IsConnectedToChat())
+	{
+		UE_LOG_SESSIONCHAT(Warning, TEXT("The User Online Account is invalid. Cancel chat connect."));
+		return;
+	}
+
+	const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+	if (!ensure(Subsystem))
+	{
+		UE_LOG_SESSIONCHAT(Warning, TEXT("The online subsystem is invalid. Cancel chat connect."));
+		return;
+	}
+
+	FOnlineChatAccelBytePtr OnlineChatAccelByte = StaticCastSharedPtr<FOnlineChatAccelByte>(Subsystem->GetChatInterface());
+
+	if (!ensure(OnlineChatAccelByte)) {
+		UE_LOG_SESSIONCHAT(Warning, TEXT("The chat subsystem is invalid. Cancel chat connect."));
+		return;
+	}
+
+	OnlineChatAccelByte->Connect(LocalUserNum);
+
+	return;
+}
+
 void UAccelByteWarsOnlineSession::OnConnectLobbyComplete(int32 LocalUserNum, bool bSucceeded, const FUniqueNetId& UserId, const FString& Error)
 {
+	GetPromptSubystem()->HideLoading();
+
 	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
 	if (!ensureMsgf(GameInstance, TEXT("Game Instance is null")))
 	{
@@ -2423,17 +2716,58 @@ void UAccelByteWarsOnlineSession::OnConnectLobbyComplete(int32 LocalUserNum, boo
 
 	if (!bSucceeded)
 	{
-		// Show failed to reconnect to AGS pop-up message.
-		if (Error.Equals(LOBBY_CONNECT_ERROR_CODE) && GameInstance->bIsReconnecting)
-		{
-			GetPromptSubystem()->ShowMessagePopUp(ERROR_PROMPT_TEXT, LOBBY_FAILED_RECONNECT_MESSAGE);
-		}
+		// Lobby Connect and Reconnect failed
+		FText message = GameInstance->bIsReconnecting ? LOBBY_FAILED_RECONNECT_MESSAGE : LOBBY_FAILED_CONNECT_MESSAGE;
+		GetPromptSubystem()->ShowDialoguePopUp(ERROR_PROMPT_TEXT, message, EPopUpType::ConfirmationYesNo,
+			FPopUpResultDelegate::CreateWeakLambda(this, [this, LocalUserNum](EPopUpResult Result)
+				{
+					switch (Result)
+					{
+					// Accept manual reconnect attempt
+					case Confirmed:
+						{
+							GetPromptSubystem()->ShowLoading(LOBBY_RECONNECTING_MESSAGE);
+							LobbyConnect(LocalUserNum);
+
+							UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+							GameInstance->bIsReconnecting = true;
+						}
+						break;
+					// Deny reconnect and logout
+					case Declined:
+						{
+							UGameplayStatics::OpenLevel(GetWorld(), TEXT("MainMenu"));
+
+							// Pending Perform Logout after Main Menu level opened
+							GetWorld()->GetTimerManager().SetTimerForNextTick(FVoidHandler::CreateLambda([this, LocalUserNum]()
+								{
+									// Open Login Menu
+									UTutorialModuleDataAsset* AuthEssentialsDataAsset =
+										UTutorialModuleUtility::GetTutorialModuleDataAsset(FPrimaryAssetId("TutorialModule:AUTHESSENTIALS"), this);
+									TSubclassOf<UAccelByteWarsActivatableWidget> LoginWidgetClass = AuthEssentialsDataAsset->GetTutorialModuleUIClass();
+
+									UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+									GameInstance->GetBaseUIWidget()->PushWidgetToStack(EBaseUIStackType::Menu, LoginWidgetClass.Get());
+
+									GetPromptSubystem()->ShowLoading();
+									GetABIdentityInt()->Logout(LocalUserNum);
+
+									GameInstance->bIsReconnecting = false;
+								}));
+						}
+						break;
+					}
+				}));
+
 		GameInstance->bIsReconnecting = false;
 		return;
 	}
 
 	if (GameInstance->bIsReconnecting)
 	{
+		// Trigger chat reconnect 
+		ChatConnect(LocalUserNum);
+
 		// Show success to reconnect to AGS pop-up message.
 		GameInstance->bIsReconnecting = false;
 		GetPromptSubystem()->ShowMessagePopUp(MESSAGE_PROMPT_TEXT, LOBBY_SUCCESS_RECONNECT_MESSAGE);
@@ -2451,7 +2785,7 @@ void UAccelByteWarsOnlineSession::OnConnectLobbyComplete(int32 LocalUserNum, boo
 				return;
 			}
 
-			// Safety.
+			// Abort if the session interface is invalid.
 			if (!GetABSessionInt())
 			{
 				UE_LOG_ONLINESESSION(Warning, TEXT("Failed to restore party session. Session Interface is not valid."));
@@ -2515,7 +2849,11 @@ void UAccelByteWarsOnlineSession::OnLobbyReconnected()
 	{
 		return;
 	}
-
+	
+	// Trigger chat connect
+	int32 LocalUserNum = GameInstance->GetFirstLocalPlayerController()->GetLocalPlayer()->GetControllerId();
+	ChatConnect(LocalUserNum);
+	
 	GameInstance->bIsReconnecting = false;
 	GetPromptSubystem()->HideLoading();
 }
@@ -2534,13 +2872,7 @@ void UAccelByteWarsOnlineSession::OnLobbyConnectionClosed(int32 LocalUserNum, co
 	if (StatusCode == static_cast<int32>(AccelByte::EWebsocketErrorTypes::DisconnectFromExternalReconnect))
 	{
 		// Do some manual handle to reconnect lobby
-		FOnlineIdentityAccelBytePtr ABIdentityInt = GetABIdentityInt();
-		if (!ensureMsgf(ABIdentityInt, TEXT("AB OnlineIdentity interface is nullptr."))) 
-		{
-			return;
-		}
-
-		ABIdentityInt->ConnectAccelByteLobby(LocalUserNum);
+		LobbyConnect(LocalUserNum);
 		
 		GameInstance->bIsReconnecting = true;
 		GetPromptSubystem()->ShowLoading(LOBBY_RECONNECTING_MESSAGE);

@@ -20,44 +20,44 @@
 UENUM()
 enum class EFriendStatus : uint8
 {
-	Accepted = 0,
-	PendingInbound,
-	PendingOutbound,
+    Accepted = 0,
+    PendingInbound,
+    PendingOutbound,
     Searched,
-	Blocked,
-	Unknown
+    Blocked,
+    Unknown
 };
 // @@@SNIPEND
 
 UENUM()
 enum class EDataSource : uint8
 {
-	User = 0,
-	RecentPlayer,
-	GameSessionPlayer
+    User = 0,
+    RecentPlayer,
+    GameSessionPlayer
 };
 
 // @@@SNIPSTART FriendsEssentialsModels.h-FriendDataClass
 UCLASS()
 class ACCELBYTEWARS_API UFriendData : public UObject
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
-	UFriendData() : bIsOnline(false), bCannotBeInvited(false) {}
+    UFriendData() : bIsOnline(false), bCannotBeInvited(false) {}
 
-	FUniqueNetIdPtr UserId;
-	FString DisplayName;
-	FString AvatarURL;
-	EFriendStatus Status = EFriendStatus::Unknown;
+    FUniqueNetIdPtr UserId;
+    FString DisplayName{};
+    FString AvatarURL{};
+    EFriendStatus Status = EFriendStatus::Unknown;
 
-    bool bIsOnline;
-    FDateTime LastOnline;
+    bool bIsOnline = false;
+    FDateTime LastOnline{};
 
-	bool bCannotBeInvited;
-	FString ReasonCannotBeInvited;
+    bool bCannotBeInvited = false;
+    FString ReasonCannotBeInvited{};
 
-	EDataSource DataSource = EDataSource::User;
+    EDataSource DataSource = EDataSource::User;
 
     static UFriendData* ConvertToFriendData(TSharedRef<FOnlineUser> OnlineUser)
     {

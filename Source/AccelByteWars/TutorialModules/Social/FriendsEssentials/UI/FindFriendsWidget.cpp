@@ -124,7 +124,7 @@ void UFindFriendsWidget::FindFriendByDisplayName(const FString& DisplayName)
 
 			if (bWasSuccessful)
 			{
-				// Reset the status to be "searched", because the data is retrieved from find friend result.
+				// Reset the status to be "searched", because the data is retrieved from the result of find friend.
 				FriendData->Status = EFriendStatus::Searched;
 				Lv_FindFriends->AddItem(FriendData);
 				Lv_FindFriends->RequestRefresh();
@@ -172,7 +172,7 @@ void UFindFriendsWidget::SendFriendRequestByFriendCode(const FString& FriendCode
 			}
 			else 
 			{
-				// Reset the status to be "searched", because the data is retrieved from find friend result.
+				// Reset the status to be "searched", because the data is retrieved from the result of find friend.
 				FriendData->Status = EFriendStatus::Searched;
 				Lv_FindFriends->AddItem(FriendData);
 				Lv_FindFriends->RequestRefresh();

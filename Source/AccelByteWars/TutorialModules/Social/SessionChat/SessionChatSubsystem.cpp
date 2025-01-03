@@ -9,7 +9,9 @@
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "Core/UI/Components/AccelByteWarsButtonBase.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
+
 #include "Social/SessionChat/UI/SessionChatWidget.h"
+#include "Social/ChatEssentials/ChatEssentialsModels.h"
 
 #include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
 
@@ -60,6 +62,20 @@ void USessionChatSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
         // Push a notification when received chat messages.
         GetChatInterface()->OnChatRoomMessageReceivedDelegates.AddUObject(this, &ThisClass::PushChatRoomMessageReceivedNotification);
+    
+        // Try reconnect chat on disconnected from chat.
+        GetChatInterface()->OnConnectChatCompleteDelegates->AddWeakLambda(this, [this](int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& UserId, const FString& ErrorMessage)
+        {
+            if (bWasSuccessful)
+            {
+                UE_LOG_SESSIONCHAT(Log, TEXT("Success to connect to chat service."));
+                ReconnectChatNumTries = 0;
+                return;
+            }
+
+            ReconnectChat(ErrorMessage);
+        });
+        GetChatInterface()->OnChatDisconnectedDelegates.AddUObject(this, &ThisClass::ReconnectChat);
     }
 }
 
@@ -71,6 +87,9 @@ void USessionChatSubsystem::Deinitialize()
     {
         GetChatInterface()->OnSendChatCompleteDelegates.RemoveAll(this);
         GetChatInterface()->OnChatRoomMessageReceivedDelegates.RemoveAll(this);
+
+        GetChatInterface()->OnConnectChatCompleteDelegates->RemoveAll(this);
+        GetChatInterface()->OnChatDisconnectedDelegates.RemoveAll(this);
     }
 }
 
@@ -304,12 +323,44 @@ void USessionChatSubsystem::PushChatRoomMessageReceivedNotification(const FUniqu
     }
 }
 
+void USessionChatSubsystem::ReconnectChat(FString Message)
+{
+    if (!GetWorld() || GetWorld()->bIsTearingDown)
+    {
+        UE_LOG_SESSIONCHAT(Warning, TEXT("Failed to reconnect to chat service. The level world is tearing down."));
+        return;
+    }
+
+    if (!GetChatInterface())
+    {
+        UE_LOG_SESSIONCHAT(Warning, TEXT("Failed to reconnect to chat service. The chat interface is tearing down."));
+        return;
+    }
+
+    if (!GetIdentityInterface() || GetIdentityInterface()->GetLoginStatus(0) == ELoginStatus::Type::LoggedIn)
+    {
+        UE_LOG_SESSIONCHAT(Warning, TEXT("Failed to reconnect to chat service. The player is not logged in yet."));
+        return;
+    }
+
+    if (ReconnectChatNumTries >= ReconnectChatMaxTries)
+    {
+        UE_LOG_SESSIONCHAT(Warning, TEXT("Failed to reconnect to chat service. Number tries to reconnect chat reached %d times limit."), ReconnectChatMaxTries);
+        return;
+    }
+
+    UE_LOG_SESSIONCHAT(Log, TEXT("Try to reconnect chat due to: %s"), *Message);
+
+    GetChatInterface()->Connect(0);
+    ReconnectChatNumTries++;
+}
+
 FOnlineChatAccelBytePtr USessionChatSubsystem::GetChatInterface() const
 {
     const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
     if (!ensure(Subsystem))
     {
-        UE_LOG_SESSIONCHAT(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and DefaultPlatformService under [OnlineSubsystem] in the Engine.ini set to AccelByte."));
+        UE_LOG_SESSIONCHAT(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and the DefaultPlatformService under [OnlineSubsystem] in the Engine.ini file is set to AccelByte."));
         return nullptr;
     }
 
@@ -321,11 +372,23 @@ FOnlineSessionV2AccelBytePtr USessionChatSubsystem::GetSessionInterface() const
     const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
     if (!ensure(Subsystem))
     {
-        UE_LOG_SESSIONCHAT(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and DefaultPlatformService under [OnlineSubsystem] in the Engine.ini set to AccelByte."));
+        UE_LOG_SESSIONCHAT(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and the DefaultPlatformService under [OnlineSubsystem] in the Engine.ini file is set to AccelByte."));
         return nullptr;
     }
 
     return StaticCastSharedPtr<FOnlineSessionV2AccelByte>(Subsystem->GetSessionInterface());
+}
+
+FOnlineIdentityAccelBytePtr USessionChatSubsystem::GetIdentityInterface() const
+{
+    const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+    if (!ensure(Subsystem))
+    {
+        UE_LOG_SESSIONCHAT(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and DefaultPlatformService under [OnlineSubsystem] in the Engine.ini set to AccelByte."));
+        return nullptr;
+    }
+
+    return StaticCastSharedPtr<FOnlineIdentityAccelByte>(Subsystem->GetIdentityInterface());
 }
 
 UPromptSubsystem* USessionChatSubsystem::GetPromptSubsystem() const

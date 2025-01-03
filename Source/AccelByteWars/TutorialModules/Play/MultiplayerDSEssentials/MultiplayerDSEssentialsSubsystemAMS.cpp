@@ -56,23 +56,23 @@ void UMultiplayerDSEssentialsSubsystemAMS::RegisterServer(const FName SessionNam
 {
 	UE_LOG_MultiplayerDSEssentials(Verbose, TEXT("called"))
 
-	// safety
+	// Abort if the session interface is invalid.
 	if (!ABSessionInt)
 	{
-		UE_LOG_MultiplayerDSEssentials(Warning, TEXT("Session interface null"))
+		UE_LOG_MultiplayerDSEssentials(Warning, TEXT("Session interface is null"))
 		OnRegisterServerComplete(false);
 		return;
 	}
 	if (!IsRunningDedicatedServer())
 	{
-		UE_LOG_MultiplayerDSEssentials(Warning, TEXT("Is not DS"));
+		UE_LOG_MultiplayerDSEssentials(Warning, TEXT("The game instance is not a dedicated server"));
 		OnRegisterServerComplete(false);
 		return;
 	}
 
 	if (bServerAlreadyRegister)
 	{
-		UE_LOG_MultiplayerDSEssentials(Warning, TEXT("Already registered"));
+		UE_LOG_MultiplayerDSEssentials(Warning, TEXT("The server is already registered"));
 		OnRegisterServerComplete(false);
 		return;
 	}
@@ -101,16 +101,16 @@ void UMultiplayerDSEssentialsSubsystemAMS::UnregisterServer(const FName SessionN
 {
 	UE_LOG_MultiplayerDSEssentials(Verbose, TEXT("called"))
 
-	// safety
+	// Abort if the session interface is invalid.
 	if (!ABSessionInt)
 	{
-		UE_LOG_MultiplayerDSEssentials(Warning, TEXT("Session interface null"))
+		UE_LOG_MultiplayerDSEssentials(Warning, TEXT("Session interface is null"))
 		OnUnregisterServerComplete(false);
 		return;
 	}
 	if (!IsRunningDedicatedServer())
 	{
-		UE_LOG_MultiplayerDSEssentials(Warning, TEXT("Is not DS"));
+		UE_LOG_MultiplayerDSEssentials(Warning, TEXT("The game instance is not a dedicated server"));
 		OnUnregisterServerComplete(false);
 		return;
 	}
@@ -137,21 +137,21 @@ void UMultiplayerDSEssentialsSubsystemAMS::SendServerReady(const FName SessionNa
 {
 	if (!ABSessionInt)
 	{
-		UE_LOG_MultiplayerDSEssentials(Warning, TEXT("Session interface null"));
+		UE_LOG_MultiplayerDSEssentials(Warning, TEXT("Session interface is null"));
 		OnSendServerReadyComplete(false);
 		return;
 	}
 
 	if (!IsRunningDedicatedServer())
 	{
-		UE_LOG_MultiplayerDSEssentials(Warning, TEXT("Is not DS"));
+		UE_LOG_MultiplayerDSEssentials(Warning, TEXT("The game instance is not a dedicated server"));
 		OnSendServerReadyComplete(false);
 		return;
 	}
 
 	if (bServerAlreadyRegister)
 	{
-		UE_LOG_MultiplayerDSEssentials(Warning, TEXT("Already registered and ready"));
+		UE_LOG_MultiplayerDSEssentials(Warning, TEXT("The server is already registered and is in the ready state"));
 		OnSendServerReadyComplete(false);
 		return;
 	}

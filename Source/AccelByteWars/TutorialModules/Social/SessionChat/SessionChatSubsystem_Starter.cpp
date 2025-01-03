@@ -9,7 +9,9 @@
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "Core/UI/Components/AccelByteWarsButtonBase.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
+
 #include "Social/SessionChat/UI/SessionChatWidget_Starter.h"
+#include "Social/ChatEssentials/ChatEssentialsModels.h"
 
 #include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
 
@@ -133,7 +135,7 @@ FOnlineChatAccelBytePtr USessionChatSubsystem_Starter::GetChatInterface() const
     const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
     if (!ensure(Subsystem))
     {
-        UE_LOG_SESSIONCHAT(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and DefaultPlatformService under [OnlineSubsystem] in the Engine.ini set to AccelByte."));
+        UE_LOG_SESSIONCHAT(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and the DefaultPlatformService under [OnlineSubsystem] in the Engine.ini file is set to AccelByte."));
         return nullptr;
     }
 
@@ -145,7 +147,7 @@ FOnlineSessionV2AccelBytePtr USessionChatSubsystem_Starter::GetSessionInterface(
     const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
     if (!ensure(Subsystem))
     {
-        UE_LOG_SESSIONCHAT(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and DefaultPlatformService under [OnlineSubsystem] in the Engine.ini set to AccelByte."));
+        UE_LOG_SESSIONCHAT(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and the DefaultPlatformService under [OnlineSubsystem] in the Engine.ini file is set to AccelByte."));
         return nullptr;
     }
 

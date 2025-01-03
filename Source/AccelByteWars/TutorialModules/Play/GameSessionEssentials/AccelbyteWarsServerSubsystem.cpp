@@ -24,7 +24,7 @@ void UAccelbyteWarsServerSubsystem::OnAuthenticatePlayerComplete_PrePlayerSetup(
 		OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession));
 	if (!Session)
 	{
-		UE_LOG_GAMESESSION(Log, TEXT("Session is invalid, do nothing"));
+		UE_LOG_GAMESESSION(Log, TEXT("The session is invalid, do nothing"));
 		return;
 	}
 
@@ -115,7 +115,7 @@ void UAccelbyteWarsServerSubsystem::OnServerSessionReceived(FName SessionName)
 		return;
 	}
 
-	// Get Game Session
+	// Get game session
 	if (OnlineSession->GetSessionType(SessionName) != EAccelByteV2SessionType::GameSession)
 	{
 		UE_LOG_GAMESESSION(Warning, TEXT("Is not a game session"));
@@ -125,7 +125,7 @@ void UAccelbyteWarsServerSubsystem::OnServerSessionReceived(FName SessionName)
 	const FNamedOnlineSession* Session = OnlineSession->GetSession(SessionName);
 	if (!Session)
 	{
-		UE_LOG_GAMESESSION(Warning, TEXT("Session is invalid"));
+		UE_LOG_GAMESESSION(Warning, TEXT("The session is invalid"));
 		return;
 	}
 
@@ -152,6 +152,6 @@ void UAccelbyteWarsServerSubsystem::OnServerSessionReceived(FName SessionName)
 	}
 #pragma endregion
 
-	// Query all currently registered user's info
+	// Query all currently registered users' info
 	AuthenticatePlayer_OnRefreshSessionComplete(true);
 }

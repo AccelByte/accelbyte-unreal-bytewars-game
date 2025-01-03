@@ -100,7 +100,7 @@ void UMatchSessionP2PServerSubsystem::OnServerSessionReceived(FName SessionName)
 		return;
 	}
 
-	// Get Game Session
+	// Get game session
 	if (OnlineSession->GetSessionType(SessionName) != EAccelByteV2SessionType::GameSession)
 	{
 		UE_LOG_MATCHSESSIONP2P(Warning, TEXT("Is not a game session"));
@@ -110,7 +110,7 @@ void UMatchSessionP2PServerSubsystem::OnServerSessionReceived(FName SessionName)
 	const FNamedOnlineSession* Session = OnlineSession->GetSession(SessionName);
 	if (!Session)
 	{
-		UE_LOG_MATCHSESSIONP2P(Warning, TEXT("Session is invalid"));
+		UE_LOG_MATCHSESSIONP2P(Warning, TEXT("The session is invalid"));
 		return;
 	}
 
@@ -131,7 +131,7 @@ void UMatchSessionP2PServerSubsystem::OnServerSessionReceived(FName SessionName)
 	}
 #pragma endregion
 
-	// Query all currently registered user's info
+	// Query all currently registered users' info
 	AuthenticatePlayer_OnRefreshSessionComplete(true);
 }
 // @@@SNIPEND

@@ -77,7 +77,7 @@ void UCreateSessionWidget::CreateSession()
 		return;
 	}
 
-	// An event to validate to start the session, will be used on playing with party module
+	// An event to validate to start the session will be used in the Play with Party module.
 	if (SessionOnlineSession->ValidateToStartSession.IsBound() &&
 		!SessionOnlineSession->ValidateToStartSession.Execute())
 	{
@@ -109,7 +109,7 @@ void UCreateSessionWidget::OnCreateSessionComplete(FName SessionName, bool bSucc
 
 	if (bSucceeded)
 	{
-		// Get session id
+		// Get session ID
 		const FNamedOnlineSession* OnlineSession = SessionOnlineSession->GetSession(SessionName);
 		Tb_SessionId->SetText(FText::FromString(OnlineSession->GetSessionIdStr()));
 

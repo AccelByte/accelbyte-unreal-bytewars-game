@@ -110,7 +110,7 @@ void UMatchmakingDSWidget::NativeTick(const FGeometry& MyGeometry, float InDelta
 		MatchFoundCurrentCountdown -= InDeltaTime;
 		if (MatchFoundCurrentCountdown <= 0 && SessionInvite)
 		{
-			// Check if auto join enabled or not
+			// Check if auto join is enabled or not
 			const TSharedPtr<FOnlineSessionInfoAccelByteV2> SessionInfo = StaticCastSharedPtr<FOnlineSessionInfoAccelByteV2>(
 				SessionInvite->Session.Session.SessionInfo);
 			check(SessionInfo.IsValid());
@@ -145,7 +145,7 @@ void UMatchmakingDSWidget::StartMatchmaking()
 	// Reset stored invite
 	SessionInvite = nullptr;
 
-	// Reset game handled "auto" join
+	// Reset auto join session countdown.
 	AutoJoinCurrentCountdown = AutoJoinDelay;
 	MatchFoundCurrentCountdown = MatchFoundDelay;
 	SessionJoinedCurrentCountdown = SessionJoinedDelay;
@@ -267,7 +267,7 @@ void UMatchmakingDSWidget::OnSessionInviteReceived(
 	// Store session invite for later use
 	SessionInvite = MakeShared<FOnlineSessionInviteAccelByte>(Invite);
 
-	// Check if auto join enabled or not
+	// Check if auto join is enabled or not
 	const TSharedPtr<FOnlineSessionInfoAccelByteV2> SessionInfo =
 		StaticCastSharedPtr<FOnlineSessionInfoAccelByteV2>(Invite.Session.Session.SessionInfo);
 	check(SessionInfo.IsValid());
@@ -275,7 +275,7 @@ void UMatchmakingDSWidget::OnSessionInviteReceived(
 
 	/**
 	 * If auto join, show joining match screen, else show waiting for players screen.
-	 * Only if the match found screen have been up for longer than MatchFoundDelay
+	 * Only if the match found screen has been up for longer than MatchFoundDelay
 	 */
 	if (MatchFoundCurrentCountdown <= 0)
 	{
@@ -381,7 +381,7 @@ void UMatchmakingDSWidget::ChangeWidgetState(const EWidgetState State)
 		break;
 	case EWidgetState::MATCH_FOUND:
 		WidgetSwitcherTarget = W_Loading;
-		Tb_LoadingText->SetText(TEXT_JOINING_MATCH);
+		Tb_LoadingText->SetText(TEXT_FINDING_MATCH);
 		Tb_LoadingSubText->SetVisibility(ESlateVisibility::Visible);
 		Tb_LoadingSubText->SetText(TEXT_MATCH_FOUND);
 		Btn_Cancel->SetIsEnabled(false);

@@ -16,6 +16,12 @@
 #include "Core/UI/Components/Prompt/FTUE/FTUEDialogueWidget.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
 
+#pragma region "Lobby Connect/Disconnect using PS Controller"
+#ifdef AGS_LOBBY_CHEAT_ENABLED
+#include "TutorialModuleUtilities/StartupSubsystem.h"
+#endif // AGS_LOBBY_CHEAT_ENABLED
+#pragma endregion 
+
 #define GAMEINSTANCE_LOG(FormatString, ...) UE_LOG(LogAccelByteWarsGameInstance, Log, TEXT(FormatString), __VA_ARGS__);
 
 void UAccelByteWarsGameInstance::Init()
@@ -386,7 +392,27 @@ void UAccelByteWarsGameInstance::OpenFTUEMenu()
 	{
 		GetBaseUIWidget()->SetFTUEDialogueWidget(nullptr);
 		UCommonActivatableWidget* HUDWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::InGameHUD, this);
-		UAccelByteWarsActivatableWidget* HUDWidgetAB = Cast<UAccelByteWarsActivatableWidget>(HUDWidget);
+		UAccelByteWarsActivatableWidget* HUDWidgetAB = static_cast<UAccelByteWarsActivatableWidget*>(HUDWidget);
 		HUDWidgetAB->OpenFTUEWidget();
 	}
 }
+
+#pragma region "Lobby Connect/Disconnect using PS Controller"
+#ifdef AGS_LOBBY_CHEAT_ENABLED
+void UAccelByteWarsGameInstance::LobbyConnect()
+{
+	UStartupSubsystem* StartupSubsystem = GetSubsystem<UStartupSubsystem>();
+	StartupSubsystem->LobbyConnect({});
+
+	GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Yellow, TEXT("Lobby Connect executed"));
+}
+
+void UAccelByteWarsGameInstance::LobbyDisconnect()
+{
+	UStartupSubsystem* StartupSubsystem = GetSubsystem<UStartupSubsystem>();
+	StartupSubsystem->LobbyDisconnect({});
+
+	GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Yellow, TEXT("Lobby Disconnect executed"));
+}
+#endif // AGS_LOBBY_CHEAT_ENABLED
+#pragma endregion

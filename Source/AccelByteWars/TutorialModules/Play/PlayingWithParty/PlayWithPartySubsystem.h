@@ -28,7 +28,7 @@ public:
 // @@@MULTISNIP PartyMatchmakingDeclaration {"selectedLines": ["1-5"]}
 // @@@MULTISNIP InvitePartyGameSessionDeclaration {"selectedLines": ["1", "7-8"]}
 // @@@MULTISNIP PartyGameSessionDeclaration {"selectedLines": ["1", "15-22"]}
-// @@@MULTISNIP PartyGameSessionFailureDeclaration {"selectedLines": ["1", "24-31"]}
+// @@@MULTISNIP PartyGameSessionFailureDeclaration {"selectedLines": ["1", "24-35"]}
 // @@@MULTISNIP PartyGameSessionValidation {"selectedLines": ["1", "33-35"]}
 protected:
 	void OnStartPartyMatchmakingComplete();
@@ -58,7 +58,11 @@ protected:
 	void OnPartyGameSessionServerUpdate(FName SessionName);
 	void OnPartyGameSessionServerError(FName SessionName, const FString& ErrorMessage);
 
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 	void OnPartyGameSessionParticipantRemoved(FName SessionName, const FUniqueNetId& UserId);
+#else
+	void OnPartyGameSessionParticipantLeft(FName SessionName, const FUniqueNetId& UserId, EOnSessionParticipantLeftReason Reason);
+#endif
 
 	void OnNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType, const FString& Message);
 

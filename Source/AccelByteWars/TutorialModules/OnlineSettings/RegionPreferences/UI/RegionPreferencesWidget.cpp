@@ -20,23 +20,31 @@ void URegionPreferencesWidget::NativeConstruct()
 	ensure(GameInstance);
 	
 	RegionPreferencesSubsystem = GameInstance->GetSubsystem<URegionPreferencesSubsystem>();
-	Btn_Refresh->OnClicked().AddUObject(this, &ThisClass::OnRefreshButtonClicked);
 }
 
 void URegionPreferencesWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
+	
+	Btn_Refresh->OnClicked().AddUObject(this, &ThisClass::OnRefreshButtonClicked);
 	Lv_Regions->ClearListItems();
+	
 	RegionPreferencesSubsystem->OnWarningMinimumRegionCount.AddUObject(this, &ThisClass::ShowWarningText);
 	RegionPreferencesSubsystem->OnRefreshRegionComplete.AddUObject(this, &ThisClass::OnRefreshRegionComplete);
+	
 	SetupUI();
 }
 
 void URegionPreferencesWidget::NativeOnDeactivated()
 {
 	Super::NativeOnDeactivated();
+
+	Btn_Refresh->OnClicked().Clear();
+	Lv_Regions->ClearListItems();
+
 	RegionPreferencesSubsystem->OnWarningMinimumRegionCount.RemoveAll(this);
 	RegionPreferencesSubsystem->OnRefreshRegionComplete.RemoveAll(this);
+	
 	WarningTextRemainingTime = 0;
 }
 
@@ -55,7 +63,7 @@ void URegionPreferencesWidget::ShowWarningText()
 
 void URegionPreferencesWidget::UpdateWarningText(float DeltaTime)
 {
-	// warning text will be blinking for 5 seconds
+	// Warning text will be blinking for 5 seconds
 	if(WarningTextRemainingTime > 0)
 	{
 		const float Fractional = FMath::Frac(WarningTextRemainingTime);
@@ -88,13 +96,18 @@ void URegionPreferencesWidget::SetupUI()
 
 void URegionPreferencesWidget::OnRefreshButtonClicked()
 {
+	Btn_Refresh->SetIsEnabled(false);
+	
 	Lv_Regions->ClearListItems();
 	Ws_Regions->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Loading);
+	
 	RegionPreferencesSubsystem->RefreshRegionLatency();
 }
 
 void URegionPreferencesWidget::OnRefreshRegionComplete(bool bWasSucceed)
 {
+	Btn_Refresh->SetIsEnabled(true);
+
 	if(bWasSucceed)
 	{
 		if(RegionPreferencesSubsystem->GetRegionInfos().Num() > 0)

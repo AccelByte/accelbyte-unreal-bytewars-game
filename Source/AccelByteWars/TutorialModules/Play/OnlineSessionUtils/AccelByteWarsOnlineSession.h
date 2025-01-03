@@ -76,10 +76,22 @@ public:
 	{
 		return &OnSessionInviteReceivedDelegates;
 	}
+
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 	virtual FOnSessionParticipantsChange* GetOnSessionParticipantsChange() override
 	{
 		return &OnSessionParticipantsChangeDelegates;
 	}
+#else
+	virtual FOnSessionParticipantJoined* GetOnSessionParticipantJoined() override
+	{
+		return &OnSessionParticipantJoinedDelegates;
+	}
+	virtual FOnSessionParticipantLeft* GetOnSessionParticipantLeft() override
+	{
+		return &OnSessionParticipantLeftDelegates;
+	}
+#endif
 
 protected:
 	bool bLeaveSessionRunning = false;
@@ -100,7 +112,13 @@ protected:
 		const FUniqueNetId& UserId,
 		const FUniqueNetId& FromId,
 		const FOnlineSessionInviteAccelByte& Invite) override;
+
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 	virtual void OnSessionParticipantsChange(FName SessionName, const FUniqueNetId& Member, bool bJoined) override;
+#else
+	virtual void OnSessionParticipantJoined(FName SessionName, const FUniqueNetId& Member) override;
+	virtual void OnSessionParticipantLeft(FName SessionName, const FUniqueNetId& UserId, EOnSessionParticipantLeftReason Reason) override;
+#endif
 
 private:
 	const FName GameSessionName = NAME_GameSession;
@@ -114,7 +132,13 @@ private:
 	FOnUpdateSessionComplete OnUpdateSessionCompleteDelegates;
 
 	FOnV2SessionInviteReceived OnSessionInviteReceivedDelegates;
+
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 	FOnSessionParticipantsChange OnSessionParticipantsChangeDelegates;
+#else
+	FOnSessionParticipantJoined OnSessionParticipantJoinedDelegates;
+	FOnSessionParticipantLeft OnSessionParticipantLeftDelegates;
+#endif
 
 	void OnLeaveSessionForCreateSessionComplete(
 		FName SessionName,
@@ -336,10 +360,22 @@ public:
 		return &OnPromotePartyLeaderCompleteDelegate;
 	}
 
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 	virtual FOnSessionParticipantsChange* GetOnPartyMembersChangeDelegates() override
 	{
 		return &OnPartyMembersChangeDelegates;
 	}
+#else
+	virtual FOnSessionParticipantJoined* GetOnPartyMemberJoinedDelegates() override
+	{
+		return &OnPartyMemberJoinedDelegates;
+	}
+	virtual FOnSessionParticipantLeft* GetOnPartyMemberLeftDelegates() override
+	{
+		return &OnPartyMemberLeftDelegates;
+	}
+#endif
+
 	virtual FOnSessionUpdateReceived* GetOnPartySessionUpdateReceivedDelegates() override
 	{
 		return &OnPartySessionUpdateReceivedDelegates;
@@ -376,7 +412,13 @@ protected:
 	virtual void OnPromotePartyLeaderComplete(const FUniqueNetId& NewLeader, const FOnlineError& Result) override;
 	void DisplayCurrentPartyLeader();
 
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 	virtual void OnPartyMembersChange(FName SessionName, const FUniqueNetId& Member, bool bJoined) override;
+#else
+	virtual void OnPartyMemberJoined(FName SessionName, const FUniqueNetId& Member) override;
+	virtual void OnPartyMemberLeft(FName SessionName, const FUniqueNetId& Member, EOnSessionParticipantLeftReason Reason) override;
+#endif
+
 	virtual void OnPartySessionUpdateReceived(FName SessionName) override;
 
 private:
@@ -406,12 +448,20 @@ private:
 
 	FOnPromotePartySessionLeaderComplete OnPromotePartyLeaderCompleteDelegate;
 
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 	FOnSessionParticipantsChange OnPartyMembersChangeDelegates;
+#else
+	FOnSessionParticipantJoined OnPartyMemberJoinedDelegates;
+	FOnSessionParticipantLeft OnPartyMemberLeftDelegates;
+#endif
+
 	FOnSessionUpdateReceived OnPartySessionUpdateReceivedDelegates;
 #pragma endregion
 
 #pragma region "Lobby Essentials"
 protected:
+	void LobbyConnect(int32 LocalUserNum);
+	void ChatConnect(int32 LocalUserNum);
 	void OnConnectLobbyComplete(int32 LocalUserNum, bool bSucceeded, const FUniqueNetId& UserId, const FString& Error);
 	void OnLobbyReconnecting(int32 LocalUserNum, const FUniqueNetId& UserId, int32 StatusCode, const FString& Reason, bool bWasClean);
 	void OnLobbyReconnected();

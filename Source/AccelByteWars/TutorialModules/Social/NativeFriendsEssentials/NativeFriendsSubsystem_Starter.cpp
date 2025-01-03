@@ -6,7 +6,6 @@
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "OnlineSubsystemUtils.h"
-#include "Social/FriendsEssentials/FriendsSubsystem_Starter.h"
 #include "TutorialModuleUtilities/StartupSubsystem.h"
 
 void UNativeFriendsSubsystem_Starter::Initialize(FSubsystemCollectionBase& Collection)
@@ -17,7 +16,7 @@ void UNativeFriendsSubsystem_Starter::Initialize(FSubsystemCollectionBase& Colle
     IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
     if (!ensure(Subsystem))
     {
-        UE_LOG_NATIVE_FRIENDS_ESSENTIALS(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and DefaultPlatformService under [OnlineSubsystem] in the Engine.ini set to AccelByte."));
+        UE_LOG_NATIVE_FRIENDS_ESSENTIALS(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and the DefaultPlatformService under [OnlineSubsystem] in the Engine.ini file is set to AccelByte."));
         return;
     }
 
@@ -56,9 +55,6 @@ void UNativeFriendsSubsystem_Starter::Initialize(FSubsystemCollectionBase& Colle
     // Grab prompt subsystem.
     UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
     ensure(GameInstance);
-
-    FriendsSubsystem = GameInstance->GetSubsystem<UFriendsSubsystem_Starter>();
-    ensure(FriendsSubsystem);
 
     PromptSubsystem = GameInstance->GetSubsystem<UPromptSubsystem>();
     ensure(PromptSubsystem);

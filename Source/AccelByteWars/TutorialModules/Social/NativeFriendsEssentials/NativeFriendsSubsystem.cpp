@@ -6,7 +6,6 @@
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "OnlineSubsystemUtils.h"
-#include "Social/FriendsEssentials/FriendsSubsystem.h"
 #include "TutorialModuleUtilities/StartupSubsystem.h"
 
 void UNativeFriendsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -17,7 +16,7 @@ void UNativeFriendsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
     IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
     if (!ensure(Subsystem))
     {
-        UE_LOG_NATIVE_FRIENDS_ESSENTIALS(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and DefaultPlatformService under [OnlineSubsystem] in the Engine.ini set to AccelByte."));
+        UE_LOG_NATIVE_FRIENDS_ESSENTIALS(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and the DefaultPlatformService under [OnlineSubsystem] in the Engine.ini file is set to AccelByte."));
         return;
     }
 
@@ -56,9 +55,6 @@ void UNativeFriendsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
     // Grab prompt subsystem.
     UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
     ensure(GameInstance);
-
-    FriendsSubsystem = GameInstance->GetSubsystem<UFriendsSubsystem>();
-    ensure(FriendsSubsystem);
 
     PromptSubsystem = GameInstance->GetSubsystem<UPromptSubsystem>();
     ensure(PromptSubsystem);
@@ -161,7 +157,7 @@ void UNativeFriendsSubsystem::GetNativeFriendList(const APlayerController* PC, c
                 else
                 {
                     const FString ErrorMessage = TEXT("Failed to get native friend list");
-                    UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("%s"), *ErrorMessage);
+                    UE_LOG_NATIVE_FRIENDS_ESSENTIALS(Warning, TEXT("%s"), *ErrorMessage);
                     OnComplete.ExecuteIfBound(false, TArray<UNativeFriendData*>(), ErrorMessage);
                 }
             })
@@ -243,7 +239,7 @@ void UNativeFriendsSubsystem::OnQueryUsersComplete(bool bIsSuccessful, TArray<FA
     else
     {
         const FString ErrorMessage = TEXT("Failed to query users by PlatformIds.");
-        UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("%s"), *ErrorMessage);
+        UE_LOG_NATIVE_FRIENDS_ESSENTIALS(Warning, TEXT("%s"), *ErrorMessage);
         OnComplete.ExecuteIfBound(false, FriendList, ErrorMessage);
     }
 }

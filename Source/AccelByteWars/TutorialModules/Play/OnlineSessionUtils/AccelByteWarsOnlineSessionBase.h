@@ -10,6 +10,7 @@
 #include "OnlineSessionInterfaceV2AccelByte.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleOnlineSession.h"
 #include "Core/Settings/GameModeDataAssets.h"
+#include "Core/Utilities/AccelByteWarsUtility.h"
 #include "Models/AccelByteSessionModels.h"
 #include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
 #include "AccelByteWarsOnlineSessionBase.generated.h"
@@ -68,7 +69,13 @@ public:
 	virtual FOnUpdateSessionComplete* GetOnUpdateSessionCompleteDelegates(){ return nullptr; }
 
 	virtual FOnV2SessionInviteReceived* GetOnSessionInviteReceivedDelegates(){ return nullptr; }
+
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 	virtual FOnSessionParticipantsChange* GetOnSessionParticipantsChange() { return nullptr; }
+#else
+	virtual FOnSessionParticipantJoined* GetOnSessionParticipantJoined() { return nullptr; }
+	virtual FOnSessionParticipantLeft* GetOnSessionParticipantLeft() { return nullptr; }
+#endif
 
 protected:
 	virtual void OnCreateSessionComplete(FName SessionName, bool bSucceeded){}
@@ -87,7 +94,14 @@ protected:
 		const FUniqueNetId& UserId,
 		const FUniqueNetId& FromId,
 		const FOnlineSessionInviteAccelByte& Invite){}
-	virtual void OnSessionParticipantsChange(FName SessionName, const FUniqueNetId& Member, bool bJoined){}
+
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
+	virtual void OnSessionParticipantsChange(FName SessionName, const FUniqueNetId& Member, bool bJoined) {}
+#else
+	virtual void OnSessionParticipantJoined(FName SessionName, const FUniqueNetId& Member){}
+	virtual void OnSessionParticipantLeft(FName SessionName, const FUniqueNetId& Member, EOnSessionParticipantLeftReason Reason){}
+#endif
+
 #pragma endregion
 
 #pragma region "Game Session Essentials"
@@ -205,7 +219,13 @@ public:
 
 	virtual FOnPromotePartySessionLeaderComplete* GetOnPromotePartyLeaderCompleteDelegate() { return nullptr; }
 
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 	virtual FOnSessionParticipantsChange* GetOnPartyMembersChangeDelegates() { return nullptr; }
+#else
+	virtual FOnSessionParticipantJoined* GetOnPartyMemberJoinedDelegates() { return nullptr; }
+	virtual FOnSessionParticipantLeft* GetOnPartyMemberLeftDelegates() { return nullptr; }
+#endif
+
 	virtual FOnSessionUpdateReceived* GetOnPartySessionUpdateReceivedDelegates() { return nullptr; }
 
 protected:
@@ -224,7 +244,13 @@ protected:
 
 	virtual void OnPromotePartyLeaderComplete(const FUniqueNetId& NewLeader, const FOnlineError& Result) {}
 
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 	virtual void OnPartyMembersChange(FName SessionName, const FUniqueNetId& Member, bool bJoined) {}
+#else
+	virtual void OnPartyMemberJoined(FName SessionName, const FUniqueNetId& Member) {}
+	virtual void OnPartyMemberLeft(FName SessionName, const FUniqueNetId& Member, EOnSessionParticipantLeftReason Reason) {}
+#endif
+
 	virtual void OnPartySessionUpdateReceived(FName SessionName) {}
 #pragma endregion
 

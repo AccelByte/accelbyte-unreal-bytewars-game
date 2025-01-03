@@ -37,13 +37,23 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Tutorial Module Online Utility", meta = (WorldContext = "WorldContextObject"))
 	static bool IsAccelByteSDKInitialized(const UObject* Target);
 
+	static const FUniqueNetIdAccelByteUserPtr GetAccelByteUserId(const FUniqueNetIdPtr UserId)
+	{
+		if (!UserId || !UserId.IsValid()) 
+		{
+			return nullptr;
+		}
+
+		return StaticCastSharedPtr<const FUniqueNetIdAccelByteUser>(UserId);
+	}
+
 	/* Get user default display name. 
 	 * Return first 5 character of the AccelByte Id with "Player" prefix. Example: Player-a523f
 	 * When fails to get the AccelByte Id, returns "Unknown" instead. */
 	static const FString GetUserDefaultDisplayName(const FUniqueNetId& UserId)
 	{
-		const FUniqueNetIdAccelByteUserRef UserABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(UserId.AsShared());
-		if (!UserABId->IsValid())
+		const FUniqueNetIdAccelByteUserPtr UserABId = GetAccelByteUserId(UserId.AsShared());
+		if (!UserABId || !UserABId->IsValid())
 		{
 			return UNKNOWN_USER_DISPLAYNAME.ToString();
 		}

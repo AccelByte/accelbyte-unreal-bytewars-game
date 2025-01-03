@@ -8,7 +8,7 @@
 #define TEXT_WAITING_FOR_PLAYERS NSLOCTEXT("AccelByteWars", "waiting_for_players", "Waiting For Players")
 #define TEXT_JOINING_MATCH NSLOCTEXT("AccelByteWars", "joining_match", "Joining Match")
 #define TEXT_REJECTING_MATCH NSLOCTEXT("AccelByteWars", "rejecting_match", "Rejecting Match")
-#define TEXT_CANCEL_MATCHMAKING NSLOCTEXT("AccelByteWars", "cancelling_matchmake", "Cancelling Matchmake")
+#define TEXT_CANCEL_MATCHMAKING NSLOCTEXT("AccelByteWars", "cancelling_matchmake", "Canceling Matchmake")
 #define TEXT_MATCH_FOUND NSLOCTEXT("AccelByteWars", "match_found", "Match Found")
 #define TEXT_MATCH_JOINED NSLOCTEXT("AccelByteWars", "match_joined", "Match Joined")
 

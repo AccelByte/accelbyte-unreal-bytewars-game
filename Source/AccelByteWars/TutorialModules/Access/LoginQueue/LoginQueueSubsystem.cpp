@@ -20,7 +20,7 @@ void ULoginQueueSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	FOnlineSubsystemAccelByte* Subsystem = static_cast<FOnlineSubsystemAccelByte*>(Online::GetSubsystem(GetWorld()));
 	if (!ensure(Subsystem)) 
 	{
-		UE_LOG_LOGIN_QUEUE(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and DefaultPlatformService under [OnlineSubsystem] in the Engine.ini set to AccelByte."));
+		UE_LOG_LOGIN_QUEUE(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and the DefaultPlatformService under [OnlineSubsystem] in the Engine.ini file is set to AccelByte."));
 		return;
 	}
 
@@ -28,7 +28,7 @@ void ULoginQueueSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	IdentityInterface = StaticCastSharedPtr<FOnlineIdentityAccelByte>(Subsystem->GetIdentityInterface());
 	if (!ensure(IdentityInterface.IsValid()))
 	{
-		UE_LOG_LOGIN_QUEUE(Warning, TEXT("Identiy interface is not valid."));
+		UE_LOG_LOGIN_QUEUE(Warning, TEXT("Identity interface is not valid."));
 		return;
 	}
 
@@ -87,7 +87,7 @@ void ULoginQueueSubsystem::OnLoginTicketStatusUpdated(
 	const FAccelByteModelsLoginQueueTicketInfo& TicketInfo,
 	const FOnlineErrorAccelByte& Error) const
 {
-	// bWasSuccessful false means the player still in queue, not the request has failed
+	// bWasSuccessful false means the player still in the queue, not that the request has failed.
 	OnLoginTicketStatusUpdatedDelegates.Broadcast(GetPlayerControllerByLocalUserNum(PlayerNum), TicketInfo, Error);
 }
 // @@@SNIPEND

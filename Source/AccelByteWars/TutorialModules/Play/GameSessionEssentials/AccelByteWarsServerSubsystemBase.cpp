@@ -80,7 +80,7 @@ void UAccelByteWarsServerSubsystemBase::OnServerSessionReceived(FName SessionNam
 	}
 	else
 	{
-		// On DS, allow the lobby to shutdown if there's no player present on certain amount of time
+		// On DS, allow the lobby to shutdown if there's no player present in a certain amount of time.
 		const AGameModeBase* GameMode = GetWorld()->GetAuthGameMode();
 		if (!GameMode)
 		{
@@ -94,7 +94,7 @@ void UAccelByteWarsServerSubsystemBase::OnServerSessionReceived(FName SessionNam
 
 		MainMenuGameMode->SetAllowAutoShutdown(true);
 
-		// Should enable shutdown on last logout or not
+		// Should shutdown be enabled on last logout or not.
 		const FString CmdArgs = FCommandLine::Get();
 		const bool bShutdownOnLastLogout = !CmdArgs.Contains(TEXT("-NoImmediateShutdown"));
 		MainMenuGameMode->SetImmediatelyShutdownWhenEmpty(bShutdownOnLastLogout);
@@ -131,11 +131,12 @@ void UAccelByteWarsServerSubsystemBase::OnLeaveSessionComplete(FName SessionName
 	}
 }
 
+// @@@SNIPSTART AccelByteWarsServerSubsystemBase.cpp-UpdateUserCache
+// @@@MULTISNIP TeamAssignment {"selectedLines": ["3-21"]}
 void UAccelByteWarsServerSubsystemBase::UpdateUserCache()
 {
-	const FNamedOnlineSession* NamedOnlineSession =
-			GameSessionOnlineSession->GetSession(
-				GameSessionOnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession));
+	const FNamedOnlineSession* NamedOnlineSession = GameSessionOnlineSession->GetSession(
+		GameSessionOnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession));
 	if (!NamedOnlineSession)
 	{
 		return;
@@ -167,6 +168,7 @@ void UAccelByteWarsServerSubsystemBase::UpdateUserCache()
 		}
 	}	
 }
+// @@@SNIPEND
 
 void UAccelByteWarsServerSubsystemBase::CloseGameSession(const FOnUpdateSessionCompleteDelegate& OnComplete)
 {
@@ -453,9 +455,8 @@ void UAccelByteWarsServerSubsystemBase::AuthenticatePlayer_OnDSQueryUserInfoComp
 		}
 
 		// update cache with team id
-		const FNamedOnlineSession* NamedOnlineSession =
-			GameSessionOnlineSession->GetSession(
-				GameSessionOnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession));
+		const FNamedOnlineSession* NamedOnlineSession = GameSessionOnlineSession->GetSession(
+			GameSessionOnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession));
 		if (!NamedOnlineSession)
 		{
 			UE_LOG_GAMESESSION(Warning, TEXT("Session is null"))
@@ -465,14 +466,14 @@ void UAccelByteWarsServerSubsystemBase::AuthenticatePlayer_OnDSQueryUserInfoComp
 		const TSharedPtr<FOnlineSessionInfo> SessionInfo = NamedOnlineSession->SessionInfo;
 		if (!SessionInfo.IsValid())
 		{
-			UE_LOG_GAMESESSION(Warning, TEXT("Session Info is null"))
+			UE_LOG_GAMESESSION(Warning, TEXT("The session info is null"))
 			return;
 		}
 
 		const TSharedPtr<FOnlineSessionInfoAccelByteV2> AbSessionInfo = StaticCastSharedPtr<FOnlineSessionInfoAccelByteV2>(SessionInfo);
 		if (!AbSessionInfo.IsValid())
 		{
-			UE_LOG_GAMESESSION(Warning, TEXT("AB Session Info is null"))
+			UE_LOG_GAMESESSION(Warning, TEXT("The AccelByte session info is null"))
 			return;
 		}
 
@@ -531,7 +532,7 @@ void UAccelByteWarsServerSubsystemBase::AuthenticatePlayer_CompleteTask(const bo
 			continue;
 		}
 
-		// Update user's info
+		// Update users' info
 		bool bFound = false;
 		if (IsRunningDedicatedServer())
 		{
@@ -628,7 +629,7 @@ void UAccelByteWarsServerSubsystemBase::OnAuthenticatePlayerComplete(
 	// kick if bSucceeded == false or assigned team id == INDEX_NONE
 	if (!bPlayerIsInSession || AbPlayerState->TeamId == INDEX_NONE)
 	{
-		UE_LOG_GAMESESSION(Warning, TEXT("Info does not exist in session info, kicking player"));
+		UE_LOG_GAMESESSION(Warning, TEXT("Info does not exist in the session info, kicking player"));
 
 		// treat as not a part of the session
 		GameMode->GameSession->KickPlayer(PlayerController, FText::FromString("Invalid PlayerState class"));

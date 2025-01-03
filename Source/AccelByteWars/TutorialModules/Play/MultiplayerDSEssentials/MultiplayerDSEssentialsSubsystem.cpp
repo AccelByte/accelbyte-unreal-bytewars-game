@@ -33,23 +33,23 @@ void UMultiplayerDSEssentialsSubsystem::RegisterServer(const FName SessionName)
 {
 	UE_LOG_MultiplayerDSEssentials(Verbose, TEXT("called"))
 
-	// safety
+	// Abort if the session interface is invalid.
 	if (!ABSessionInt)
 	{
-		UE_LOG_MultiplayerDSEssentials(Warning, TEXT("Session interface null"))
+		UE_LOG_MultiplayerDSEssentials(Warning, TEXT("Session interface is null"))
 		OnRegisterServerComplete(false);
 		return;
 	}
 	if (!IsRunningDedicatedServer())
 	{
-		UE_LOG_MultiplayerDSEssentials(Warning, TEXT("Is not DS"));
+		UE_LOG_MultiplayerDSEssentials(Warning, TEXT("The game instance is not a dedicated server"));
 		OnRegisterServerComplete(false);
 		return;
 	}
 
 	if (bServerAlreadyRegister)
 	{
-		UE_LOG_MultiplayerDSEssentials(Warning, TEXT("Already registered"));
+		UE_LOG_MultiplayerDSEssentials(Warning, TEXT("The server is already registered"));
 		OnRegisterServerComplete(false);
 		return;
 	}
@@ -74,16 +74,16 @@ void UMultiplayerDSEssentialsSubsystem::UnregisterServer(const FName SessionName
 {
 	UE_LOG_MultiplayerDSEssentials(Verbose, TEXT("called"))
 
-	// safety
+	// Abort if the session interface is invalid.
 	if (!ABSessionInt)
 	{
-		UE_LOG_MultiplayerDSEssentials(Warning, TEXT("Session interface null"))
+		UE_LOG_MultiplayerDSEssentials(Warning, TEXT("Session interface is null"))
 		OnUnregisterServerComplete(false);
 		return;
 	}
 	if (!IsRunningDedicatedServer())
 	{
-		UE_LOG_MultiplayerDSEssentials(Warning, TEXT("Is not DS"));
+		UE_LOG_MultiplayerDSEssentials(Warning, TEXT("The game instance is not a dedicated server"));
 		OnUnregisterServerComplete(false);
 		return;
 	}

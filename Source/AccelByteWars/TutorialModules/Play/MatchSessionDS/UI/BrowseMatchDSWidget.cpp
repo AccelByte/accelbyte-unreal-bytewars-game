@@ -18,7 +18,7 @@ void UBrowseMatchDSWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
-	// Get Online Session
+	// Get online session
 	UOnlineSession* BaseOnlineSession = GetWorld()->GetGameInstance()->GetOnlineSession();
 	if (!ensure(BaseOnlineSession))
 	{
@@ -232,7 +232,7 @@ void UBrowseMatchDSWidget::OnSessionServerUpdateReceived(
 
 	if (Error.bSucceeded && !bHasClientTravelTriggered)
 	{
-		// waiting for further update
+		// Keep showing the loading state until the client travels to the server.
 		W_Parent->SetLoadingMessage(TEXT_JOINING_SESSION, false, false);
 		W_Parent->SwitchContent(UBrowseMatchWidget::EContentType::JOIN_LOADING);
 	}

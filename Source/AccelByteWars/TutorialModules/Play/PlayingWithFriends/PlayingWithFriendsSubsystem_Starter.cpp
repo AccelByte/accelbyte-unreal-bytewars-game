@@ -18,7 +18,7 @@ void UPlayingWithFriendsSubsystem_Starter::Initialize(FSubsystemCollectionBase& 
 {
 	Super::Initialize(Collection);
 
-	// Get Online Session
+	// Get online session
 	OnlineSession = Cast<UAccelByteWarsOnlineSessionBase>(GetGameInstance()->GetOnlineSession());
 	if (!ensure(OnlineSession))
 	{

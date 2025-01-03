@@ -89,7 +89,7 @@ void UMatchmakingDSOnlineSession::DSQueryUserInfo(
 	}
 	else
 	{
-		// gather user ids
+		// Gather user IDs.
 		TArray<FString> AbUserIds;
 		for (const FUniqueNetIdRef& UserId : UserIds)
 		{
@@ -130,25 +130,25 @@ bool UMatchmakingDSOnlineSession::TravelToSession(const FName SessionName)
 		return false;
 	}
 
-	// Get Session Info
+	// Get session info
 	const FNamedOnlineSession* Session = GetSession(SessionName);
 	if (!Session)
 	{
-		UE_LOG_MATCHMAKINGDS(Warning, TEXT("Session is invalid"));
+		UE_LOG_MATCHMAKINGDS(Warning, TEXT("The session is invalid"));
 		return false;
 	}
 
 	const TSharedPtr<FOnlineSessionInfo> SessionInfo = Session->SessionInfo;
 	if (!SessionInfo.IsValid())
 	{
-		UE_LOG_MATCHMAKINGDS(Warning, TEXT("Session Info is invalid"));
+		UE_LOG_MATCHMAKINGDS(Warning, TEXT("The session info is invalid"));
 		return false;
 	}
 
 	const TSharedPtr<FOnlineSessionInfoAccelByteV2> AbSessionInfo = StaticCastSharedPtr<FOnlineSessionInfoAccelByteV2>(SessionInfo);
 	if (!AbSessionInfo.IsValid())
 	{
-		UE_LOG_MATCHMAKINGDS(Warning, TEXT("Session Info is not FOnlineSessionInfoAccelByteV2"));
+		UE_LOG_MATCHMAKINGDS(Warning, TEXT("The session info is not FOnlineSessionInfoAccelByteV2"));
 		return false;
 	}
 
@@ -158,7 +158,7 @@ bool UMatchmakingDSOnlineSession::TravelToSession(const FName SessionName)
 	// if nullptr, treat as failed
 	if (!PlayerController)
 	{
-		UE_LOG_MATCHMAKINGDS(Warning, TEXT("Can't find player controller with the session's local owner's Unique Id"));
+		UE_LOG_MATCHMAKINGDS(Warning, TEXT("Can't find player controller with the session's local owner's unique ID"));
 		return false;
 	}
 
@@ -172,7 +172,7 @@ bool UMatchmakingDSOnlineSession::TravelToSession(const FName SessionName)
 	// Make sure this is not a P2P session
 	if (GetABSessionInt()->IsPlayerP2PHost(GetLocalPlayerUniqueNetId(PlayerController).ToSharedRef().Get(), SessionName)) 
 	{
-		UE_LOG_MATCHMAKINGDS(Warning, TEXT("Session is a P2P session"));
+		UE_LOG_MATCHMAKINGDS(Warning, TEXT("The session is a P2P session"));
 		return false;
 	}
 	
@@ -230,7 +230,7 @@ void UMatchmakingDSOnlineSession::OnSessionServerUpdateReceived(FName SessionNam
 
 	if (bLeavingSession)
 	{
-		UE_LOG_MATCHMAKINGDS(Warning, TEXT("called but leave session is currently running. Cancelling attempt to travel to server"))
+		UE_LOG_MATCHMAKINGDS(Warning, TEXT("called but leave session is currently running. Canceling attempt to travel to server"))
 		OnSessionServerUpdateReceivedDelegates.Broadcast(SessionName, FOnlineError(true), false);
 		return;
 	}
@@ -276,7 +276,7 @@ void UMatchmakingDSOnlineSession::StartMatchmaking(
 {
 	UE_LOG_MATCHMAKINGDS(Verbose, TEXT("called"))
 
-	// safety
+	// Abort if the session interface is invalid.
 	if (!ensure(GetSessionInt()))
 	{
 		UE_LOG_MATCHMAKINGDS(Warning, TEXT("Session Interface is not valid."));
@@ -317,23 +317,23 @@ void UMatchmakingDSOnlineSession::StartMatchmaking(
 		return;
 	}
 	
-	// Get match pool id based on game mode type
+	// Get match pool ID based on game mode type
 	FString MatchPoolId = MatchPoolIds[GameModeType];
 	const FString GameModeCode = TargetGameModeMap[MatchPoolId];
 
-	// if not using AMS, remove suffix -ams (internal purpose)
+	// AMS is the default multiplayer server on AGS. If the game runs on legacy AGS Armada, remove the -ams suffix.
 	if(!UTutorialModuleOnlineUtility::GetIsServerUseAMS())
 	{
 		MatchPoolId = MatchPoolId.Replace(TEXT("-ams"), TEXT(""));
 	}
 	
-	// Override match pool id if applicable.
+	// Override match pool ID if applicable.
 	if (!UTutorialModuleOnlineUtility::GetMatchPoolDSOverride().IsEmpty())
 	{
 		MatchPoolId = UTutorialModuleOnlineUtility::GetMatchPoolDSOverride();
 	}
 
-	// Setup matchmaking search handle, it will be used to store session search results.
+	// Set up matchmaking search handle, it will be used to store session search results.
 	TSharedRef<FOnlineSessionSearch> MatchmakingSearchHandle = MakeShared<FOnlineSessionSearch>();
 	MatchmakingSearchHandle->QuerySettings.Set(SETTING_SESSION_MATCHPOOL, MatchPoolId, EOnlineComparisonOp::Equals);
 	MatchmakingSearchHandle->QuerySettings.Set(GAMESETUP_GameModeCode, GameModeCode, EOnlineComparisonOp::Equals);
@@ -355,7 +355,7 @@ void UMatchmakingDSOnlineSession::StartMatchmaking(
 		MatchmakingSearchHandle->QuerySettings.Set(SETTING_GAMESESSION_SERVERNAME, ServerName, EOnlineComparisonOp::Equals);
 	}
 
-	// include region preferences into matchmaking setting
+	// Include region preferences into matchmaking setting.
 	if (const UTutorialModuleDataAsset* ModuleDataAsset = UTutorialModuleUtility::GetTutorialModuleDataAsset(
 		FPrimaryAssetId{ "TutorialModule:REGIONPREFERENCES" },
 		this,
@@ -400,7 +400,7 @@ void UMatchmakingDSOnlineSession::CancelMatchmaking(APlayerController* PC, const
 {
 	UE_LOG_MATCHMAKINGDS(Verbose, TEXT("called"))
 
-	// safety
+	// Abort if the session interface is invalid.
 	if (!ensure(GetSessionInt()))
 	{
 		UE_LOG_MATCHMAKINGDS(Warning, TEXT("Session Interface is not valid."));
@@ -468,7 +468,7 @@ void UMatchmakingDSOnlineSession::OnMatchmakingComplete(FName SessionName, bool 
 
 	const TSharedPtr<FOnlineSessionSearchAccelByte> CurrentMatchmakingSearchHandle = GetABSessionInt()->GetCurrentMatchmakingSearchHandle();
 	if (!bSucceeded ||
-		!ensure(CurrentMatchmakingSearchHandle.IsValid()) /*This might happen when the MM finished just as we are about to cancel it*/ ||
+		!ensure(CurrentMatchmakingSearchHandle.IsValid()) /*This might happen when matchmaking finishes right as it’s about to be canceled.*/ ||
 		!ensure(CurrentMatchmakingSearchHandle->SearchResults.IsValidIndex(0)) ||
 		!ensure(CurrentMatchmakingSearchHandle->GetSearchingPlayerId().IsValid()))
 	{
@@ -487,7 +487,7 @@ void UMatchmakingDSOnlineSession::OnBackfillProposalReceived(
 {
 	UE_LOG_MATCHMAKINGDS(Verbose, TEXT("called"))
 
-	// Safety
+	// Abort if the session interface is invalid.
 	if (!ensure(GetABSessionInt().IsValid()))
 	{
 		UE_LOG_MATCHMAKINGDS(Warning, TEXT("Session Interface is not valid."));

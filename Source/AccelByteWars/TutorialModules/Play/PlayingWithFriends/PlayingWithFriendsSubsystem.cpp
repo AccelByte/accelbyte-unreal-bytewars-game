@@ -15,16 +15,16 @@
 #include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
 
 // @@@SNIPSTART PlayingWithFriendsSubsystem.cpp-Initialize
-// @@@MULTISNIP BindSendSessionInviteDelegate {"selectedLines": ["1-2", "12-13", "22"]}
-// @@@MULTISNIP BindJoinSessionDelegate {"selectedLines": ["1-2", "14-15", "22"]}
-// @@@MULTISNIP BindRejectSessionInviteDelegate {"selectedLines": ["1-2", "16-17", "22"]}
-// @@@MULTISNIP BindSessionInviteReceivedDelegate {"selectedLines": ["1-2", "18-19", "22"]}
-// @@@MULTISNIP BindSessionParticipantsChangeDelegate {"selectedLines": ["1-2", "20-22"]}
+// @@@MULTISNIP BindSendSessionInviteDelegate {"selectedLines": ["1-2", "12-13", "30"]}
+// @@@MULTISNIP BindJoinSessionDelegate {"selectedLines": ["1-2", "14-15", "30"]}
+// @@@MULTISNIP BindRejectSessionInviteDelegate {"selectedLines": ["1-2", "16-17", "30"]}
+// @@@MULTISNIP BindSessionInviteReceivedDelegate {"selectedLines": ["1-2", "18-19", "30"]}
+// @@@MULTISNIP BindSessionParticipantsChangeDelegate {"selectedLines": ["1-2", "21-30"]}
 void UPlayingWithFriendsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
-	// Get Online Session
+	// Get online session
 	OnlineSession = Cast<UAccelByteWarsOnlineSessionBase>(GetGameInstance()->GetOnlineSession());
 	if (!ensure(OnlineSession))
 	{
@@ -39,17 +39,25 @@ void UPlayingWithFriendsSubsystem::Initialize(FSubsystemCollectionBase& Collecti
 		this, &ThisClass::OnRejectGameSessionInviteComplete);
 	OnlineSession->GetOnSessionInviteReceivedDelegates()->AddUObject(
 		this, &ThisClass::OnGameSessionInviteReceived);
+
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 	OnlineSession->GetOnSessionParticipantsChange()->AddUObject(
 		this, &ThisClass::OnGameSessionParticipantsChange);
+#else
+	OnlineSession->GetOnSessionParticipantJoined()->AddUObject(
+		this, &ThisClass::OnGameSessionParticipantJoined);
+	OnlineSession->GetOnSessionParticipantLeft()->AddUObject(
+		this, &ThisClass::OnGameSessionParticipantLeft);
+#endif
 }
 // @@@SNIPEND
 
 // @@@SNIPSTART PlayingWithFriendsSubsystem.cpp-Deinitialize
-// @@@MULTISNIP UnbindSendSessionInviteDelegate {"selectedLines": ["1-2", "5", "10"]}
-// @@@MULTISNIP UnbindJoinSessionDelegate {"selectedLines": ["1-2", "6", "10"]}
-// @@@MULTISNIP UnbindRejectSessionInviteDelegate {"selectedLines": ["1-2", "7", "10"]}
-// @@@MULTISNIP UnbindSessionInviteReceivedDelegate {"selectedLines": ["1-2", "8", "10"]}
-// @@@MULTISNIP UnbindSessionParticipantsChangeDelegate {"selectedLines": ["1-2", "9", "10"]}
+// @@@MULTISNIP UnbindSendSessionInviteDelegate {"selectedLines": ["1-2", "5", "16"]}
+// @@@MULTISNIP UnbindJoinSessionDelegate {"selectedLines": ["1-2", "6", "16"]}
+// @@@MULTISNIP UnbindRejectSessionInviteDelegate {"selectedLines": ["1-2", "7", "16"]}
+// @@@MULTISNIP UnbindSessionInviteReceivedDelegate {"selectedLines": ["1-2", "8", "16"]}
+// @@@MULTISNIP UnbindSessionParticipantsChangeDelegate {"selectedLines": ["1-2", "10-16"]}
 void UPlayingWithFriendsSubsystem::Deinitialize()
 {
 	Super::Deinitialize();
@@ -58,7 +66,13 @@ void UPlayingWithFriendsSubsystem::Deinitialize()
 	OnlineSession->GetOnJoinSessionCompleteDelegates()->RemoveAll(this);
 	OnlineSession->GetOnRejectSessionInviteCompleteDelegate()->RemoveAll(this);
 	OnlineSession->GetOnSessionInviteReceivedDelegates()->RemoveAll(this);
+
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 	OnlineSession->GetOnSessionParticipantsChange()->RemoveAll(this);
+#else
+	OnlineSession->GetOnSessionParticipantJoined()->RemoveAll(this);
+	OnlineSession->GetOnSessionParticipantLeft()->RemoveAll(this);
+#endif
 }
 // @@@SNIPEND
 
@@ -424,8 +438,8 @@ void UPlayingWithFriendsSubsystem::OnGameSessionInviteReceived(
 	const FOnlineSessionInviteAccelByte& Invite)
 {
 	/* Make sure it is a game session.
-	 * Also check if the inviter is not from party leader.
-	 * Since the party members will automatically join, thus no need to show game session invitation notif.*/
+	 * Also check if the invite is not from party leader.
+	 * Since the party members will automatically join, there is no need to show game session invitation notification.*/
 	if (UserId == FromId || 
 		Invite.SessionType != EAccelByteV2SessionType::GameSession ||
 		OnlineSession->IsPartyLeader(FromId.AsShared()))
@@ -518,6 +532,7 @@ void UPlayingWithFriendsSubsystem::ShowInviteReceivedPopup(
 }
 // @@@SNIPEND
 
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 // @@@SNIPSTART PlayingWithFriendsSubsystem.cpp-OnGameSessionParticipantsChange
 void UPlayingWithFriendsSubsystem::OnGameSessionParticipantsChange(
 	FName SessionName,
@@ -537,6 +552,71 @@ void UPlayingWithFriendsSubsystem::OnGameSessionParticipantsChange(
 	}
 
 	UE_LOG_PLAYINGWITHFRIENDS(Verbose, TEXT("Member %s: %s"), *FString(bJoined ? "JOINED" : "LEFT"), *Member.ToDebugString());
+
+	const int32 LocalUserNum = OnlineSession->GetLocalUserNumFromPlayerController(
+		OnlineSession->GetPlayerControllerByUniqueNetId(GetSessionOwnerUniqueNetId(SessionName)));
+	if (LocalUserNum == INDEX_NONE)
+	{
+		return;
+	}
+
+	TArray<FUniqueNetIdRef> UsersToQuery = { Member.AsShared() };
+
+	// check if leader changed
+	if (const FNamedOnlineSession* Session = OnlineSession->GetSession(SessionName))
+	{
+		if (const TSharedPtr<FOnlineSessionInfoAccelByteV2> AbSessionInfo =
+			StaticCastSharedPtr<FOnlineSessionInfoAccelByteV2>(Session->SessionInfo))
+		{
+			const FUniqueNetIdPtr NewLeaderId = AbSessionInfo->GetLeaderId();
+			if (LeaderId.IsValid())
+			{
+				if (!OnlineSession->CompareAccelByteUniqueId(
+					FUniqueNetIdRepl(LeaderId),
+					FUniqueNetIdRepl(NewLeaderId)))
+				{
+					UE_LOG_PLAYINGWITHFRIENDS(VeryVerbose, TEXT("Leader changed to: %s"), *LeaderId->ToDebugString());
+
+					UsersToQuery.Add(NewLeaderId->AsShared());
+					bLeaderChanged = true;
+				}
+			}
+			LeaderId = NewLeaderId;
+		}
+	}
+
+	if (UStartupSubsystem* StartupSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UStartupSubsystem>())
+	{
+		StartupSubsystem->QueryUserInfo(
+			0,
+			UsersToQuery,
+			FOnQueryUsersInfoCompleteDelegate::CreateUObject(
+				this,
+				&ThisClass::OnQueryUserInfoOnGameSessionParticipantChange,
+				SessionName,
+				bJoined));
+	}
+}
+// @@@SNIPEND
+#else
+// @@@SNIPSTART PlayingWithFriendsSubsystem.cpp-OnGameSessionParticipantJoined
+void UPlayingWithFriendsSubsystem::OnGameSessionParticipantJoined(
+	FName SessionName,
+	const FUniqueNetId& Member)
+{
+	// Abort if not a game session.
+	if (!OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession).IsEqual(SessionName))
+	{
+		return;
+	}
+
+	// Only handle the event if the game session is in the game server.
+	if (!IsMatchSessionGameSessionReceivedServer())
+	{
+		return;
+	}
+
+	UE_LOG_PLAYINGWITHFRIENDS(Verbose, TEXT("Member JOINED: %s"), *Member.ToDebugString());
 
 	const int32 LocalUserNum = OnlineSession->GetLocalUserNumFromPlayerController(
 		OnlineSession->GetPlayerControllerByUniqueNetId(GetSessionOwnerUniqueNetId(SessionName)));
@@ -579,7 +659,74 @@ void UPlayingWithFriendsSubsystem::OnGameSessionParticipantsChange(
 				this,
 				&ThisClass::OnQueryUserInfoOnGameSessionParticipantChange,
 				SessionName,
-				bJoined));
+				true));
 	}
 }
 // @@@SNIPEND
+
+// @@@SNIPSTART PlayingWithFriendsSubsystem.cpp-OnGameSessionParticipantLeft
+void UPlayingWithFriendsSubsystem::OnGameSessionParticipantLeft(
+	FName SessionName,
+	const FUniqueNetId& Member,
+	EOnSessionParticipantLeftReason Reason)
+{
+	// Abort if not a game session.
+	if (!OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession).IsEqual(SessionName))
+	{
+		return;
+	}
+
+	// Only handle the event if the game session is in the game server.
+	if (!IsMatchSessionGameSessionReceivedServer())
+	{
+		return;
+	}
+
+	UE_LOG_PLAYINGWITHFRIENDS(Verbose, TEXT("Member LEFT: %s. Reason: %s"), *Member.ToDebugString(), ToLogString(Reason));
+
+	const int32 LocalUserNum = OnlineSession->GetLocalUserNumFromPlayerController(
+		OnlineSession->GetPlayerControllerByUniqueNetId(GetSessionOwnerUniqueNetId(SessionName)));
+	if (LocalUserNum == INDEX_NONE)
+	{
+		return;
+	}
+
+	TArray<FUniqueNetIdRef> UsersToQuery = {Member.AsShared()};
+
+	// check if leader changed
+	if (const FNamedOnlineSession* Session = OnlineSession->GetSession(SessionName))
+	{
+		if (const TSharedPtr<FOnlineSessionInfoAccelByteV2> AbSessionInfo =
+			StaticCastSharedPtr<FOnlineSessionInfoAccelByteV2>(Session->SessionInfo))
+		{
+			const FUniqueNetIdPtr NewLeaderId = AbSessionInfo->GetLeaderId();
+			if (LeaderId.IsValid())
+			{
+				if (!OnlineSession->CompareAccelByteUniqueId(
+					FUniqueNetIdRepl(LeaderId),
+					FUniqueNetIdRepl(NewLeaderId)))
+				{
+					UE_LOG_PLAYINGWITHFRIENDS(VeryVerbose, TEXT("Leader changed to: %s"), *LeaderId->ToDebugString());
+
+					UsersToQuery.Add(NewLeaderId->AsShared());
+					bLeaderChanged = true;
+				}
+			}
+			LeaderId = NewLeaderId;
+		}
+	}
+
+	if (UStartupSubsystem* StartupSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UStartupSubsystem>())
+	{
+		StartupSubsystem->QueryUserInfo(
+			0,
+			UsersToQuery,
+			FOnQueryUsersInfoCompleteDelegate::CreateUObject(
+				this,
+				&ThisClass::OnQueryUserInfoOnGameSessionParticipantChange,
+				SessionName,
+				false));
+	}
+}
+// @@@SNIPEND
+#endif

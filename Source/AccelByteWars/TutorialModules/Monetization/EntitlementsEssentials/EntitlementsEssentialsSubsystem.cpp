@@ -6,10 +6,8 @@
 #include "EntitlementsEssentialsSubsystem.h"
 
 #include "OnlineSubsystemUtils.h"
-#include "Access/AuthEssentials/AuthEssentialsModels.h"
 #include "Core/AssetManager/InGameItems/InGameItemDataAsset.h"
 #include "TutorialModules/Monetization/InGameStoreEssentials/UI/ShopWidget.h"
-#include "TutorialModules/Monetization/StoreItemPurchase/UI/ItemPurchaseWidget.h"
 #include "Core/Player/AccelByteWarsPlayerPawn.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Monetization/InGameStoreEssentials/InGameStoreEssentialsSubsystem.h"
@@ -38,10 +36,6 @@ void UEntitlementsEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Coll
 	{
 		QueryUserEntitlement(PC);
 	});
-	UItemPurchaseWidget::OnPurchaseCompleteMulticastDelegate.AddWeakLambda(this, [this](const APlayerController* PC)
-	{
-		QueryUserEntitlement(PC);
-	});
 	AAccelByteWarsPlayerPawn::OnPowerUpActivatedDelegates.AddUObject(this, &ThisClass::OnPowerUpActivated);
 
 	if (const UTutorialModuleDataAsset* ModuleDataAsset = UTutorialModuleUtility::GetTutorialModuleDataAsset(
@@ -64,7 +58,6 @@ void UEntitlementsEssentialsSubsystem::Deinitialize()
 	EntitlementsInterface->OnQueryEntitlementsCompleteDelegates.RemoveAll(this);
 
 	UShopWidget::OnActivatedMulticastDelegate.RemoveAll(this);
-	UItemPurchaseWidget::OnPurchaseCompleteMulticastDelegate.RemoveAll(this);
 	AAccelByteWarsPlayerPawn::OnPowerUpActivatedDelegates.RemoveAll(this);
 }
 

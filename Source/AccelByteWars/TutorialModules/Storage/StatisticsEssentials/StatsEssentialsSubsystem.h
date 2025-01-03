@@ -36,9 +36,9 @@ public:
 		const FOnUpdateMultipleUserStatItemsComplete& OnCompleteServer = {});
 
 	/**
-	 * @brief Query local user's stats
+	 * @brief Query local users' stats
 	 * @param LocalUserNum LocalUserNum to determine who's credential is going to be used for the API call and who's stats to be retrieved
-	 * @param StatNames Stats code to be retrieved. Set empty array to retrieve all of the user's stats
+	 * @param StatNames Stats code to be retrieved. Set empty array to retrieve all of the users' stats
 	 * @param OnComplete Call upon completion
 	 * @return True if Async Task started successfully, false if task already running
 	 */
@@ -51,7 +51,7 @@ public:
 	 * @brief Query users's stats
 	 * @param LocalUserNum LocalUserNum to determine who's credential is going to be used for the API call
 	 * @param StatsUsers Users who's stats to be retrieved
-	 * @param StatNames Stats code to be retrieved. Set empty array to retrieve all of the user's stats
+	 * @param StatNames Stats code to be retrieved. Set empty array to retrieve all of the users' stats
 	 * @param OnComplete Call upon completion
 	 * @return True if Async Task started successfully, false if task already running
 	 */

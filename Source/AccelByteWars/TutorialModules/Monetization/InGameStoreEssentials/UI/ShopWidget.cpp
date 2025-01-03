@@ -56,8 +56,6 @@ void UShopWidget::NativeOnDeactivated()
 	Tv_ContentOuter->OnItemClicked().RemoveAll(this);
 	Tl_ItemCategory->OnTabSelected.RemoveAll(this);
 	Tv_ContentOuter->ClearListItems();
-
-	SwitchContent(EAccelByteWarsWidgetSwitcherState::Loading);
 }
 
 void UShopWidget::OnGetOrQueryCategoriesComplete(TArray<FOnlineStoreCategory> Categories)

@@ -30,10 +30,13 @@ protected:
 
 	void CheckCoreComponents();
 	void CheckAutoUseTokenForABLogin();
-	void OnLoginPlatformOnlyComplete(const bool bSucceeded, const FString& ErrorMessage);
-
+	
 	void StartupGame();
 	void QuitGame();
+
+	bool IsLoggedIn();
+
+	void OnLoginPlatformOnlyComplete(const bool bSucceeded, const FString& ErrorMessage);
 	void OnLogoutComplete(int32 LocalUserNum, bool bWasSuccessful, const FOnlineErrorAccelByte& Error);
 
 	UAccelByteWarsBaseUI* BaseUIWidget;

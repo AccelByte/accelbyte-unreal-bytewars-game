@@ -16,7 +16,7 @@ void ULoginQueueSubsystem_Starter::Initialize(FSubsystemCollectionBase& Collecti
 	FOnlineSubsystemAccelByte* Subsystem = static_cast<FOnlineSubsystemAccelByte*>(Online::GetSubsystem(GetWorld()));
 	if (!ensure(Subsystem)) 
 	{
-		UE_LOG_LOGIN_QUEUE(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and DefaultPlatformService under [OnlineSubsystem] in the Engine.ini set to AccelByte."));
+		UE_LOG_LOGIN_QUEUE(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and the DefaultPlatformService under [OnlineSubsystem] in the Engine.ini file is set to AccelByte."));
 		return;
 	}
 
@@ -24,7 +24,7 @@ void ULoginQueueSubsystem_Starter::Initialize(FSubsystemCollectionBase& Collecti
 	IdentityInterface = StaticCastSharedPtr<FOnlineIdentityAccelByte>(Subsystem->GetIdentityInterface());
 	if (!ensure(IdentityInterface.IsValid()))
 	{
-		UE_LOG_LOGIN_QUEUE(Warning, TEXT("Identiy interface is not valid."));
+		UE_LOG_LOGIN_QUEUE(Warning, TEXT("Identity interface is not valid."));
 		return;
 	}
 

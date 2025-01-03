@@ -37,7 +37,7 @@ void USinglePlatformAuthWidget::NativeOnActivated()
 
 	if (AuthEssentialsModule->IsStarterModeActive())
 	{
-		UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("AuthEssentials is in starter mode and SinglePlatformAuth is dependent to it, please also enable the starter mode for the SinglePlatformAuth module."))
+		UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("AuthEssentials is in starter mode and SinglePlatformAuth is dependent upon it. Please also enable the starter mode for the SinglePlatformAuth module."))
 		Btn_LoginWithSinglePlatformAuth->SetVisibility(ESlateVisibility::Collapsed);
 		return;
 	}

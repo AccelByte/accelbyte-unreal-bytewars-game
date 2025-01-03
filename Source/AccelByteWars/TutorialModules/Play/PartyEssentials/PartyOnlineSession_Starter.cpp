@@ -124,13 +124,32 @@ void UPartyOnlineSession_Starter::InitializePartyGeneratedWidgets()
             UpdatePartyGeneratedWidgets();
         });
     }
+
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
     if (GetOnPartyMembersChangeDelegates())
     {
         GetOnPartyMembersChangeDelegates()->AddWeakLambda(this, [this](FName SessionName, const FUniqueNetId& Member, bool bJoined)
+            {
+                UpdatePartyGeneratedWidgets();
+            });
+    }
+#else
+    if (GetOnPartyMemberJoinedDelegates())
+    {
+        GetOnPartyMemberJoinedDelegates()->AddWeakLambda(this, [this](FName SessionName, const FUniqueNetId& Member)
         {
             UpdatePartyGeneratedWidgets();
         });
     }
+    if (GetOnPartyMemberLeftDelegates())
+    {
+        GetOnPartyMemberLeftDelegates()->AddWeakLambda(this, [this](FName SessionName, const FUniqueNetId& Member, EOnSessionParticipantLeftReason Reason)
+        {
+            UpdatePartyGeneratedWidgets();
+        });
+    }
+#endif
+
     if (GetOnPartySessionUpdateReceivedDelegates())
     {
         GetOnPartySessionUpdateReceivedDelegates()->AddWeakLambda(this, [this](FName SessionName)
@@ -148,14 +167,14 @@ void UPartyOnlineSession_Starter::UpdatePartyGeneratedWidgets()
         return;
     }
 
-    // Take local user id reference from active widget.
+    // Take local user ID reference from active widget.
     FUniqueNetIdPtr LocalUserABId = nullptr;
     if (UCommonActivatableWidget* ActiveWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this))
     {
         LocalUserABId = GetLocalPlayerUniqueNetId(ActiveWidget->GetOwningPlayer());
     }
 
-    // Take current displayed friend id.
+    // Take current displayed friend ID.
     const FUniqueNetIdPtr FriendUserId = GetCurrentDisplayedFriendId();
 
     // Check party information.
@@ -226,10 +245,22 @@ void UPartyOnlineSession_Starter::DeinitializePartyGeneratedWidgets()
     }
 
     // Unbind party event delegates.
-    if (GetOnPartyMembersChangeDelegates()) 
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
+    if (GetOnPartyMembersChangeDelegates())
     {
         GetOnPartyMembersChangeDelegates()->RemoveAll(this);
     }
+#else
+    if (GetOnPartyMemberJoinedDelegates())
+    {
+        GetOnPartyMemberJoinedDelegates()->RemoveAll(this);
+    }
+    if (GetOnPartyMemberLeftDelegates())
+    {
+        GetOnPartyMemberLeftDelegates()->RemoveAll(this);
+    }
+#endif
+
     if (GetOnPartySessionUpdateReceivedDelegates()) 
     {
         GetOnPartySessionUpdateReceivedDelegates()->RemoveAll(this);

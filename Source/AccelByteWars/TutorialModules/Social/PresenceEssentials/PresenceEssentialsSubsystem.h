@@ -21,6 +21,12 @@ class ACCELBYTEWARS_API UPresenceEssentialsSubsystem : public UTutorialModuleSub
 {
 	GENERATED_BODY()
 	
+// @@@SNIPSTART PresenceEssentialsSubsystem.h-public
+// @@@MULTISNIP GetPresence {"selectedLines": ["1", "5"]}
+// @@@MULTISNIP BulkQueryPresence {"selectedLines": ["1", "6"]}
+// @@@MULTISNIP SetPresenceStatus {"selectedLines": ["1", "8"]}
+// @@@MULTISNIP GetOnPresenceReceivedDelegates {"selectedLines": ["1", "10-13"]}
+// @@@MULTISNIP GetOnBulkQueryPresenceCompleteDelegates {"selectedLines": ["1", "15-18"]}
 public:
 	void Initialize(FSubsystemCollectionBase& Collection) override;
 	void Deinitialize();
@@ -39,7 +45,16 @@ public:
 	{
 		return &OnBulkQueryPresenceCompleteDelegates;
 	}
+// @@@SNIPEND
 
+// @@@SNIPSTART PresenceEssentialsSubsystem.h-protected
+// @@@MULTISNIP Interface {"selectedLines": ["1", "11-15"]}
+// @@@MULTISNIP OnGetPresenceComplete {"selectedLines": ["1-2"]}
+// @@@MULTISNIP OnBulkQueryPresenceComplete {"selectedLines": ["1", "3"]}
+// @@@MULTISNIP OnSetPresenceStatusComplete {"selectedLines": ["1", "5"]}
+// @@@MULTISNIP OnPresenceReceived {"selectedLines": ["1", "7"]}
+// @@@MULTISNIP UpdatePrimaryPlayerPresenceStatus {"selectedLines": ["1", "9"]}
+// @@@MULTISNIP PresenceActivityHelper {"selectedLines": ["1", "18-19"]}
 protected:
 	void OnGetPresenceComplete(const class FUniqueNetId& UserId, const bool bWasSuccessful, const FOnPresenceTaskComplete OnComplete);
 	void OnBulkQueryPresenceComplete(const bool bWasSuccessful, const FUserIDPresenceMap& Presences);
@@ -59,7 +74,14 @@ protected:
 	// Helper to store presence activity status.
 	FString LevelStatus;
 	FString ActivityStatus;
+// @@@SNIPEND
 
+// @@@SNIPSTART PresenceEssentialsSubsystem.h-private
+// @@@MULTISNIP OnLevelLoaded {"selectedLines": ["1-2"]}
+// @@@MULTISNIP OnPlayerListChange {"selectedLines": ["1", "3-5"]}
+// @@@MULTISNIP GetPrimaryPlayerUserId {"selectedLines": ["1", "7"]}
+// @@@MULTISNIP OnPresenceReceivedDelegates {"selectedLines": ["1", "9"]}
+// @@@MULTISNIP OnBulkQueryPresenceCompleteDelegates {"selectedLines": ["1", "10"]}
 private:
 	void OnLevelLoaded();
 	void OnFriendListChange();
@@ -70,4 +92,5 @@ private:
 
 	FOnPresenceReceived OnPresenceReceivedDelegates;
 	FOnBulkQueryPresenceComplete OnBulkQueryPresenceCompleteDelegates;
+// @@@SNIPEND
 };

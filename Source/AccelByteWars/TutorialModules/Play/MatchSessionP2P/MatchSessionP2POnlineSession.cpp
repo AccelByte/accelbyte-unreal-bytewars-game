@@ -34,7 +34,7 @@ void UMatchSessionP2POnlineSession::RegisterOnlineDelegates()
 	GetABSessionInt()->OnSessionServerUpdateDelegates.AddUObject(this, &ThisClass::OnSessionServerUpdateReceived);
 	GetABSessionInt()->OnSessionServerErrorDelegates.AddUObject(this, &ThisClass::OnSessionServerErrorReceived);
 
-	// Match Session delegates
+	// Match session delegates
 	GetSessionInt()->OnFindSessionsCompleteDelegates.AddUObject(this, &ThisClass::OnFindSessionsComplete);
 
 	SessionSearch->SearchState = EOnlineAsyncTaskState::NotStarted;
@@ -70,25 +70,25 @@ bool UMatchSessionP2POnlineSession::TravelToSession(const FName SessionName)
 		return false;
 	}
 
-	// Get Session Info
+	// Get session info
 	const FNamedOnlineSession* Session = GetSession(SessionName);
 	if (!Session)
 	{
-		UE_LOG_MATCHSESSIONP2P(Warning, TEXT("Session is invalid"));
+		UE_LOG_MATCHSESSIONP2P(Warning, TEXT("The session is invalid"));
 		return false;
 	}
 
 	const TSharedPtr<FOnlineSessionInfo> SessionInfo = Session->SessionInfo;
 	if (!SessionInfo.IsValid())
 	{
-		UE_LOG_MATCHSESSIONP2P(Warning, TEXT("Session Info is invalid"));
+		UE_LOG_MATCHSESSIONP2P(Warning, TEXT("The session info is invalid"));
 		return false;
 	}
 
 	const TSharedPtr<FOnlineSessionInfoAccelByteV2> AbSessionInfo = StaticCastSharedPtr<FOnlineSessionInfoAccelByteV2>(SessionInfo);
 	if (!AbSessionInfo.IsValid())
 	{
-		UE_LOG_MATCHSESSIONP2P(Warning, TEXT("Session Info is not FOnlineSessionInfoAccelByteV2"));
+		UE_LOG_MATCHSESSIONP2P(Warning, TEXT("The session info is not FOnlineSessionInfoAccelByteV2"));
 		return false;
 	}
 
@@ -98,7 +98,7 @@ bool UMatchSessionP2POnlineSession::TravelToSession(const FName SessionName)
 	// if nullptr, treat as failed
 	if (!PlayerController)
 	{
-		UE_LOG_MATCHSESSIONP2P(Warning, TEXT("Can't find player controller with the session's local owner's Unique Id"));
+		UE_LOG_MATCHSESSIONP2P(Warning, TEXT("Can't find player controller with the session's local owner's unique ID"));
 		return false;
 	}
 
@@ -114,7 +114,7 @@ bool UMatchSessionP2POnlineSession::TravelToSession(const FName SessionName)
 	// If local user is not the P2P host -> connect to host
 	if (!(AbSessionInfo->GetServerType() == EAccelByteV2SessionConfigurationServerType::P2P && Session->bHosting)) 
 	{
-		UE_LOG_MATCHSESSIONP2P(Log, TEXT("Is not P2P host, travelling to host"));
+		UE_LOG_MATCHSESSIONP2P(Log, TEXT("Host is not a P2P host, traveling to host"));
 		GetABSessionInt()->GetResolvedConnectString(SessionName, ServerAddress);
 		if (ServerAddress.IsEmpty())
 		{
@@ -124,7 +124,7 @@ bool UMatchSessionP2POnlineSession::TravelToSession(const FName SessionName)
 	}
 	else
 	{
-		UE_LOG_MATCHSESSIONP2P(Log, TEXT("Is P2P host, travelling as listen server"));
+		UE_LOG_MATCHSESSIONP2P(Log, TEXT("Host is a P2P host, traveling as listen server"));
 		ServerAddress = "MainMenu?listen";
 	}
 
@@ -149,7 +149,7 @@ void UMatchSessionP2POnlineSession::OnSessionServerUpdateReceived(FName SessionN
 
 	if (bLeavingSession)
 	{
-		UE_LOG_MATCHSESSIONP2P(Warning, TEXT("called but leave session is currently running. Cancelling attempt to travel to server"))
+		UE_LOG_MATCHSESSIONP2P(Warning, TEXT("called but leave session is currently running. Canceling attempt to travel to server"))
 		OnSessionServerUpdateReceivedDelegates.Broadcast(SessionName, FOnlineError(true), false);
 		return;
 	}
@@ -312,7 +312,7 @@ void UMatchSessionP2POnlineSession::OnFindSessionsComplete(bool bSucceeded)
 
 	if (bSucceeded)
 	{
-		// remove owned session from result if exist
+		// Remove owned session from result if exists
 		const FUniqueNetIdPtr LocalUserNetId = GetIdentityInt()->GetUniquePlayerId(LocalUserNumSearching);
 		SessionSearch->SearchResults.RemoveAll([this, LocalUserNetId](const FOnlineSessionSearchResult& Element)
 		{
@@ -321,14 +321,14 @@ void UMatchSessionP2POnlineSession::OnFindSessionsComplete(bool bSucceeded)
 				FUniqueNetIdRepl(Element.Session.OwningUserId));
 		});
 
-		// get owners user info for query user info
+		// Get owner’s user info for queried user info.
 		TArray<FUniqueNetIdRef> UserIds;
 		for (const FOnlineSessionSearchResult& SearchResult : SessionSearch->SearchResults)
 		{
 			UserIds.AddUnique(SearchResult.Session.OwningUserId->AsShared());
 		}
 
-		// trigger Query User info
+		// Trigger to query user info
 		if (UStartupSubsystem* StartupSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UStartupSubsystem>())
 		{
 			StartupSubsystem->QueryUserInfo(

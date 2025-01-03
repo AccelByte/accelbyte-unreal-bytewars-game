@@ -17,7 +17,7 @@ void UAuthEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
     FOnlineSubsystemAccelByte* Subsystem = static_cast<FOnlineSubsystemAccelByte*>(Online::GetSubsystem(GetWorld()));
     if (!ensure(Subsystem)) 
     {
-        UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and DefaultPlatformService under [OnlineSubsystem] in the Engine.ini set to AccelByte."));
+        UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and the DefaultPlatformService under [OnlineSubsystem] in the Engine.ini file is set to AccelByte."));
         return;
     }
 
@@ -25,7 +25,7 @@ void UAuthEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
     IdentityInterface = StaticCastSharedPtr<FOnlineIdentityAccelByte>(Subsystem->GetIdentityInterface());
     if (!ensure(IdentityInterface.IsValid()))
     {
-        UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("Identiy interface is not valid."));
+        UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("Identity interface is not valid."));
         return;
     }
 
@@ -45,7 +45,7 @@ void UAuthEssentialsSubsystem::Login(const APlayerController* PC, const FAuthOnL
 {
     if (!ensure(IdentityInterface.IsValid()))
     {
-        FString Message = TEXT("Cannot login. Identiy interface is not valid.");
+        FString Message = TEXT("Cannot login. Identity interface is not valid.");
         UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("%s"), *Message);
         OnLoginComplete.ExecuteIfBound(false, *Message);
         return;
@@ -60,7 +60,7 @@ void UAuthEssentialsSubsystem::Login(const APlayerController* PC, const FAuthOnL
 
     /*
      * Logout On Game Exit
-     * Workaround for the lobby not properly disconnect upon closing PIE game.
+     * Workaround for the lobby not properly disconnecting when closing the PIE game.
      */
     if (UAccelByteWarsGameInstance* ByteWarsGameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance()); ensure(ByteWarsGameInstance))
     {

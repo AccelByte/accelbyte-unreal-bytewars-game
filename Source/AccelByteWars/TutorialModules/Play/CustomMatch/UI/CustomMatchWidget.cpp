@@ -126,9 +126,10 @@ void UCustomMatchWidget::OnSessionServerUpdateReceived(
 	const FOnlineError& Error,
 	const bool bHasClientTravelTriggered)
 {
+	/* Keep showing the loading state with the cancel button until the client travels to the server.
+	 * This is to allow the player to cancel the custom match session. */
 	if (Error.bSucceeded && !bHasClientTravelTriggered)
 	{
-		// waiting for further update
 		Ws_Root->LoadingMessage = TEXT_JOINING_SESSION;
 		Ws_Root->bEnableCancelButton = true;
 		SwitchContent(EContentType::LOADING);

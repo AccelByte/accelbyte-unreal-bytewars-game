@@ -71,7 +71,7 @@ void UMatchmakingP2PWidget_Starter::NativeTick(const FGeometry& MyGeometry, floa
 		MatchFoundCurrentCountdown -= InDeltaTime;
 		if (MatchFoundCurrentCountdown <= 0 && SessionInvite)
 		{
-			// Check if auto join enabled or not
+			// Check if auto join is enabled or not
 			const TSharedPtr<FOnlineSessionInfoAccelByteV2> SessionInfo = StaticCastSharedPtr<FOnlineSessionInfoAccelByteV2>(
 				SessionInvite->Session.Session.SessionInfo);
 			check(SessionInfo.IsValid());
@@ -120,7 +120,7 @@ void UMatchmakingP2PWidget_Starter::ChangeWidgetState(const EWidgetState State)
 		break;
 	case EWidgetState::MATCH_FOUND:
 		WidgetSwitcherTarget = W_Loading;
-		Tb_LoadingText->SetText(TEXT_JOINING_MATCH);
+		Tb_LoadingText->SetText(TEXT_FINDING_MATCH);
 		Tb_LoadingSubText->SetVisibility(ESlateVisibility::Visible);
 		Tb_LoadingSubText->SetText(TEXT_MATCH_FOUND);
 		Btn_Cancel->SetIsEnabled(false);

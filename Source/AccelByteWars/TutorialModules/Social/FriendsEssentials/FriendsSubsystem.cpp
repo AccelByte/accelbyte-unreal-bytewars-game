@@ -18,7 +18,7 @@ void UFriendsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
     const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
     if (!ensure(Subsystem))
     {
-        UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and DefaultPlatformService under [OnlineSubsystem] in the Engine.ini set to AccelByte."));
+        UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and the DefaultPlatformService under [OnlineSubsystem] in the Engine.ini file is set to AccelByte."));
         return;
     }
 
@@ -193,7 +193,7 @@ void UFriendsSubsystem::GetSelfFriendCode(const APlayerController* PC, const FOn
         if (const TSharedPtr<FUserOnlineAccountAccelByte> UserAccount = StaticCastSharedPtr<FUserOnlineAccountAccelByte>(UserInfo))
         {
             const FString FriendCode = UserAccount->GetPublicCode();
-            UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Success to get self friend code: %s"), *FriendCode);
+            UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Successfully obtained self friend code: %s"), *FriendCode);
             OnComplete.ExecuteIfBound(true, UFriendData::ConvertToFriendData(UserInfo.ToSharedRef()), FriendCode);
             return;
         }
@@ -212,13 +212,13 @@ void UFriendsSubsystem::GetSelfFriendCode(const APlayerController* PC, const FOn
                 if (!Error.bSucceeded || UsersInfo.IsEmpty())
                 {
                     UE_LOG_FRIENDS_ESSENTIALS(
-                        Warning, TEXT("Failed to get self friend code. Query user info is failed."));
+                        Warning, TEXT("Failed to get self friend code: User info query has failed."));
                     OnComplete.ExecuteIfBound(false, nullptr, TEXT(""));
                     return;
                 }
 
                 const FString FriendCode = UsersInfo[0]->GetPublicCode();
-                UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Success to get self friend code: %s"), *FriendCode);
+                UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Successfully obtained self friend code: %s"), *FriendCode);
                 OnComplete.ExecuteIfBound(true, UFriendData::ConvertToFriendData(UsersInfo[0].ToSharedRef()), FriendCode);
             }));
     }
@@ -321,7 +321,7 @@ void UFriendsSubsystem::SendFriendRequest(const APlayerController* PC, const FUn
 
     const int32 LocalUserNum = GetLocalUserNumFromPlayerController(PC);
 
-    // Send friend requests by friend's user id. We leave the ListName argument empty since the AccelByte OSS does not require it.
+    // Send friend requests by friend's user ID. We leave the ListName argument empty since the AccelByte OSS does not require it.
     FriendsInterface->SendInvite(LocalUserNum, *FriendUserId.GetUniqueNetId().Get(), TEXT(""), FOnSendInviteComplete::CreateUObject(this, &ThisClass::OnSendFriendRequestComplete, OnComplete));
 }
 // @@@SNIPEND

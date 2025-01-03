@@ -9,12 +9,12 @@
 #include "SessionEssentialsLog.h"
 
 // @@@SNIPSTART SessionEssentialsOnlineSession.cpp-RegisterOnlineDelegates
-// @@@MULTISNIP BindCreateSessionDelegate {"selectedLines": ["1-2", "5-6", "20"]}
-// @@@MULTISNIP BindJoinSessionDelegate {"selectedLines": ["1-2", "7-8", "20"]}
-// @@@MULTISNIP BindSessionInvitationDelegate {"selectedLines": ["1-2", "9-10", "16-17", "20"]}
-// @@@MULTISNIP BindLeaveSessionDelegate {"selectedLines": ["1-2", "11-12", "20"]}
-// @@@MULTISNIP BindUpdateSessionDelegate {"selectedLines": ["1-2", "13-14", "20"]}
-// @@@MULTISNIP BindSessionParticipantDelegate {"selectedLines": ["1-2", "18-20"]}
+// @@@MULTISNIP BindCreateSessionDelegate {"selectedLines": ["1-2", "5-6", "27"]}
+// @@@MULTISNIP BindJoinSessionDelegate {"selectedLines": ["1-2", "7-8", "27"]}
+// @@@MULTISNIP BindSessionInvitationDelegate {"selectedLines": ["1-2", "9-10", "16-17", "27"]}
+// @@@MULTISNIP BindLeaveSessionDelegate {"selectedLines": ["1-2", "11-12", "27"]}
+// @@@MULTISNIP BindUpdateSessionDelegate {"selectedLines": ["1-2", "13-14", "27"]}
+// @@@MULTISNIP BindSessionParticipantDelegate {"selectedLines": ["1-2", "18-27"]}
 void USessionEssentialsOnlineSession::RegisterOnlineDelegates()
 {
 	Super::RegisterOnlineDelegates();
@@ -32,18 +32,25 @@ void USessionEssentialsOnlineSession::RegisterOnlineDelegates()
 
 	GetABSessionInt()->AddOnV2SessionInviteReceivedDelegate_Handle(
 		FOnV2SessionInviteReceivedDelegate::CreateUObject(this, &ThisClass::OnSessionInviteReceived));
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 	GetABSessionInt()->AddOnSessionParticipantsChangeDelegate_Handle(
 		FOnSessionParticipantsChangeDelegate::CreateUObject(this, &ThisClass::OnSessionParticipantsChange));
+#else
+	GetABSessionInt()->AddOnSessionParticipantJoinedDelegate_Handle(
+		FOnSessionParticipantJoinedDelegate::CreateUObject(this, &ThisClass::OnSessionParticipantJoined));
+	GetABSessionInt()->AddOnSessionParticipantLeftDelegate_Handle(
+		FOnSessionParticipantLeftDelegate::CreateUObject(this, &ThisClass::OnSessionParticipantLeft));
+#endif
 }
 // @@@SNIPEND
 
 // @@@SNIPSTART SessionEssentialsOnlineSession.cpp-ClearOnlineDelegates
-// @@@MULTISNIP UnbindCreateSessionDelegate {"selectedLines": ["1-2", "5", "13"]}
-// @@@MULTISNIP UnbindJoinSessionDelegate {"selectedLines": ["1-2", "6", "13"]}
-// @@@MULTISNIP UnbindSessionInvitationDelegate {"selectedLines": ["1-2", "7", "11", "13"]}
-// @@@MULTISNIP UnbindLeaveSessionDelegate {"selectedLines": ["1-2", "8", "13"]}
-// @@@MULTISNIP UnbindUpdateSessionDelegate {"selectedLines": ["1-2", "9", "13"]}
-// @@@MULTISNIP UnbindSessionParticipantDelegate {"selectedLines": ["1-2", "12-13"]}
+// @@@MULTISNIP UnbindCreateSessionDelegate {"selectedLines": ["1-2", "5", "19"]}
+// @@@MULTISNIP UnbindJoinSessionDelegate {"selectedLines": ["1-2", "6", "19"]}
+// @@@MULTISNIP UnbindSessionInvitationDelegate {"selectedLines": ["1-2", "7", "11", "19"]}
+// @@@MULTISNIP UnbindLeaveSessionDelegate {"selectedLines": ["1-2", "8", "19"]}
+// @@@MULTISNIP UnbindUpdateSessionDelegate {"selectedLines": ["1-2", "9", "19"]}
+// @@@MULTISNIP UnbindSessionParticipantDelegate {"selectedLines": ["1-2", "13-19"]}
 void USessionEssentialsOnlineSession::ClearOnlineDelegates()
 {
 	Super::ClearOnlineDelegates();
@@ -55,7 +62,13 @@ void USessionEssentialsOnlineSession::ClearOnlineDelegates()
 	GetSessionInt()->ClearOnUpdateSessionCompleteDelegates(this);
 
 	GetABSessionInt()->ClearOnV2SessionInviteReceivedDelegates(this);
+
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 	GetABSessionInt()->ClearOnSessionParticipantsChangeDelegates(this);
+#else
+	GetABSessionInt()->ClearOnSessionParticipantJoinedDelegates(this);
+	GetABSessionInt()->ClearOnSessionParticipantLeftDelegates(this);
+#endif
 }
 // @@@SNIPEND
 
@@ -111,7 +124,7 @@ void USessionEssentialsOnlineSession::CreateSession(
 {
 	UE_LOG_SESSIONESSENTIALS(Verbose, TEXT("called"))
 
-	// safety
+	// Abort if the session interface is invalid.
 	if (!GetSessionInt())
 	{
 		UE_LOG_SESSIONESSENTIALS(Warning, TEXT("Session interface is null"))
@@ -162,12 +175,12 @@ void USessionEssentialsOnlineSession::CreateSession(
 	}
 #pragma endregion
 
-	// if session exist locally -> destroy session first
+	// If the session exists locally, then destroy the session first.
 	if (GetSession(SessionName))
 	{
-		UE_LOG_SESSIONESSENTIALS(Log, TEXT("Session exist locally, leaving session first"))
+		UE_LOG_SESSIONESSENTIALS(Log, TEXT("The session exists locally. Leaving session first."))
 
-		// remove from delegate if exist
+		// Reset the delegate.
 		if (OnLeaveSessionForCreateSessionCompleteDelegateHandle.IsValid())
 		{
 			OnLeaveSessionCompleteDelegates.Remove(OnLeaveSessionForCreateSessionCompleteDelegateHandle);
@@ -199,10 +212,10 @@ void USessionEssentialsOnlineSession::JoinSession(
 {
 	UE_LOG_SESSIONESSENTIALS(Verbose, TEXT("called"))
 
-	// safety
+	// Abort if the session interface is invalid.
 	if (!GetSessionInt())
 	{
-		UE_LOG_SESSIONESSENTIALS(Warning, TEXT("Session interface null"))
+		UE_LOG_SESSIONESSENTIALS(Warning, TEXT("Session interface is null"))
 		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnJoinSessionComplete(SessionName, EOnJoinSessionCompleteResult::UnknownError);
@@ -210,10 +223,10 @@ void USessionEssentialsOnlineSession::JoinSession(
 		return;
 	}
 
-	// If session exist -> destroy first then join
+	// If the session exist, then destroy it first and then join the new one.
 	if (GetSession(SessionName))
 	{
-		// remove from delegate if exist
+		// Reset the delegate.
 		if (OnLeaveSessionForJoinSessionCompleteDelegateHandle.IsValid())
 		{
 			OnLeaveSessionCompleteDelegates.Remove(OnLeaveSessionForJoinSessionCompleteDelegateHandle);
@@ -247,7 +260,7 @@ void USessionEssentialsOnlineSession::SendSessionInvite(
 
 	if (!Invitee.IsValid())
 	{
-		UE_LOG_SESSIONESSENTIALS(Log, TEXT("Invitee net id is invalid. Cancelling operation"));
+		UE_LOG_SESSIONESSENTIALS(Log, TEXT("Invitee net id is invalid. Canceling operation"));
 		return;
 	}
 
@@ -265,7 +278,7 @@ void USessionEssentialsOnlineSession::RejectSessionInvite(
 	const FUniqueNetIdPtr LocalUserNetId = GetLocalPlayerUniqueNetId(GetPlayerControllerByLocalUserNum(LocalUserNum));
 	if (!LocalUserNetId.IsValid())
 	{
-		UE_LOG_SESSIONESSENTIALS(Log, TEXT("Local User net id is invalid. Cancelling operation"));
+		UE_LOG_SESSIONESSENTIALS(Log, TEXT("Local User net id is invalid. Canceling operation"));
 		return;
 	}
 
@@ -281,10 +294,10 @@ void USessionEssentialsOnlineSession::LeaveSession(FName SessionName)
 {
 	UE_LOG_SESSIONESSENTIALS(Verbose, TEXT("called"))
 
-	// safety
+	// Abort if the session interface is invalid.
 	if (!GetSessionInt())
 	{
-		UE_LOG_SESSIONESSENTIALS(Warning, TEXT("Session interface null"))
+		UE_LOG_SESSIONESSENTIALS(Warning, TEXT("Session interface is null"))
 		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
 			OnLeaveSessionComplete(SessionName, false);
@@ -333,7 +346,7 @@ void USessionEssentialsOnlineSession::UpdateSessionJoinability(const FName Sessi
 	FNamedOnlineSession* Session = ABSessionInt->GetNamedSession(SessionName);
 	if (!Session)
 	{
-		UE_LOG_SESSIONESSENTIALS(Warning, TEXT("Session is invalid"));
+		UE_LOG_SESSIONESSENTIALS(Warning, TEXT("The session is invalid"));
 		return;
 	}
 
@@ -413,6 +426,7 @@ void USessionEssentialsOnlineSession::OnSessionInviteReceived(
 }
 // @@@SNIPEND
 
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 // @@@SNIPSTART SessionEssentialsOnlineSession.cpp-OnSessionParticipantsChange
 void USessionEssentialsOnlineSession::OnSessionParticipantsChange(
 	FName SessionName,
@@ -421,14 +435,47 @@ void USessionEssentialsOnlineSession::OnSessionParticipantsChange(
 {
 	UE_LOG_SESSIONESSENTIALS(
 		Log,
-		TEXT("session name: %s | Member: %s [%s]"),
+		TEXT("The session name: %s | Member: %s [%s]"),
 		*SessionName.ToString(),
 		*Member.ToDebugString(),
 		*FString(bJoined ? "Joined" : "Left"))
 
-	OnSessionParticipantsChangeDelegates.Broadcast(SessionName, Member, bJoined);
+		OnSessionParticipantsChangeDelegates.Broadcast(SessionName, Member, bJoined);
 }
 // @@@SNIPEND
+#else
+// @@@SNIPSTART SessionEssentialsOnlineSession.cpp-OnSessionParticipantJoined
+void USessionEssentialsOnlineSession::OnSessionParticipantJoined(
+	FName SessionName,
+	const FUniqueNetId& Member)
+{
+	UE_LOG_SESSIONESSENTIALS(
+		Log,
+		TEXT("Session name: %s | Member: %s [Joined]"),
+		*SessionName.ToString(),
+		*Member.ToDebugString())
+
+	OnSessionParticipantJoinedDelegates.Broadcast(SessionName, Member);
+}
+// @@@SNIPEND
+
+// @@@SNIPSTART SessionEssentialsOnlineSession.cpp-OnSessionParticipantLeft
+void USessionEssentialsOnlineSession::OnSessionParticipantLeft(
+	FName SessionName,
+	const FUniqueNetId& Member,
+	EOnSessionParticipantLeftReason Reason)
+{
+	UE_LOG_SESSIONESSENTIALS(
+		Log,
+		TEXT("Session name: %s | Member: %s [Left] | Reason: %s"),
+		*SessionName.ToString(),
+		*Member.ToDebugString(),
+		ToLogString(Reason))
+
+		OnSessionParticipantLeftDelegates.Broadcast(SessionName, Member, Reason);
+}
+// @@@SNIPEND
+#endif
 
 // @@@SNIPSTART SessionEssentialsOnlineSession.cpp-OnLeaveSessionForCreateSessionComplete
 void USessionEssentialsOnlineSession::OnLeaveSessionForCreateSessionComplete(
@@ -450,7 +497,7 @@ void USessionEssentialsOnlineSession::OnLeaveSessionForCreateSessionComplete(
 	}
 	else
 	{
-		// Leave Session failed, execute complete delegate as failed
+		// Leave session failed, execute complete delegate as failed.
 		OnCreateSessionComplete(SessionName, false);
 	}
 }
@@ -476,7 +523,7 @@ void USessionEssentialsOnlineSession::OnLeaveSessionForJoinSessionComplete(
 	}
 	else
 	{
-		// Leave Session failed, execute complete delegate as failed
+		// Leave session failed, execute complete delegate as failed.
 		OnJoinSessionComplete(SessionName, EOnJoinSessionCompleteResult::UnknownError);
 	}
 }

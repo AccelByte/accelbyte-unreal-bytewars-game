@@ -6,7 +6,7 @@ Byte Wars is the official tutorial game for AccelByte Gaming Services (AGS). It 
 
 ## Prerequisites
 
-* Use **Unreal Engine** version 5.1.0 source build from [Unreal Engine on Github](https://www.unrealengine.com/en-US/ue-on-github).
+* Use **Unreal Engine** version 5.2.1 source build from [Unreal Engine on Github](https://www.unrealengine.com/en-US/ue-on-github).
 
 ## Branches
 
@@ -37,7 +37,7 @@ To clone the repository and checkout the submodule at the same time, run the fol
 
 ## Compile Byte Wars
 
-1. Right click on AccelByteWars.uproject, select unreal engine version..  then choose unreal engine version 5.1.0 that you already installed.
+1. Right click on AccelByteWars.uproject, select unreal engine version..  then choose unreal engine version 5.2.1 that you already installed.
 2. Open AccelByteWars.sln generated from step number 1, using your prefered IDE.
 3. Compile the game project using Development Editor - Win64.
 

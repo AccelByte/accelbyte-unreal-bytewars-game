@@ -19,6 +19,8 @@ public:
 	bool bIsSenderLocal;
 };
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FChatOnSubmit, const FText&);
+
 #define ACCELBYTEWARS_LOCTEXT_NAMESPACE "AccelByteWars"
 
 #define CHAT_LOCAL_SENDER_DEFAULT_USERNAME NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "Chat Local Sender Default Username", "You")

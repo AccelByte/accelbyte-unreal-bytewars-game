@@ -1,4 +1,6 @@
-
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
 
 #pragma once
 
@@ -14,14 +16,15 @@ ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogAccelByteWarsWidgetSwitcher, Lo
 
 class UNamedSlot;
 class UWidget;
-class UWidgetSwitcher;
+class UCommonActivatableWidgetSwitcher;
 class UTextBlock;
 class UCommonButtonBase;
 
 UENUM()
 enum class EAccelByteWarsWidgetSwitcherState : uint8
 {
-	Loading = 0,
+	None = 0,
+	Loading,
 	Empty,
 	Not_Empty,
 	Error
@@ -34,12 +37,15 @@ class ACCELBYTEWARS_API UAccelByteWarsWidgetSwitcher final : public UCommonUserW
 
 public:
 	UFUNCTION(BlueprintCallable)
-	void SetWidgetState(const EAccelByteWarsWidgetSwitcherState State, const bool bForce = false);
+	void SetWidgetState(const EAccelByteWarsWidgetSwitcherState State);
+
+	UFUNCTION(BlueprintCallable)
+	void ForceRefresh();
 
 	UPROPERTY(EditAnywhere)
-	EAccelByteWarsWidgetSwitcherState DefaultState = EAccelByteWarsWidgetSwitcherState::Loading;
+	EAccelByteWarsWidgetSwitcherState DefaultState = EAccelByteWarsWidgetSwitcherState::Not_Empty;
 
-	EAccelByteWarsWidgetSwitcherState CurrentState = EAccelByteWarsWidgetSwitcherState::Loading;
+	EAccelByteWarsWidgetSwitcherState CurrentState = EAccelByteWarsWidgetSwitcherState::None;
 
 	UPROPERTY(EditAnywhere)
 	FText ErrorMessage;
@@ -87,13 +93,20 @@ protected:
 
 	UFUNCTION(BlueprintCallable)
 	UWidget* GetFocusTargetBasedOnCurrentState() const;
-	
+
 	void HandleWidgetValidators();
 	void HandleFTUE();
-	
+
+	void OnActiveWidgetIndexChanged(UWidget* Widget, int32 Index);
+
+	UWidget* GetTargetWidget(const EAccelByteWarsWidgetSwitcherState State) const;
+	int32 GetStateWidgetIndex(const EAccelByteWarsWidgetSwitcherState State) const;
+
 private:
+	void ExecuteNextTick(const FTimerDelegate& Delegate) const;
+
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UWidgetSwitcher* Ws_Root;
+	UCommonActivatableWidgetSwitcher* Ws_Root;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UNamedSlot* Ns_NotEmpty;
@@ -121,4 +134,6 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_Cancel;
+
+	TArray<EAccelByteWarsWidgetSwitcherState> PendingStates{};
 };

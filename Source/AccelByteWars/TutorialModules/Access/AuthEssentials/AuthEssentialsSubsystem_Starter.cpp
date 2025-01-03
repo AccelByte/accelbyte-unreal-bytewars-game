@@ -15,7 +15,7 @@ void UAuthEssentialsSubsystem_Starter::Initialize(FSubsystemCollectionBase& Coll
     FOnlineSubsystemAccelByte* Subsystem = static_cast<FOnlineSubsystemAccelByte*>(Online::GetSubsystem(GetWorld()));
     if (!ensure(Subsystem)) 
     {
-        UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and DefaultPlatformService under [OnlineSubsystem] in the Engine.ini set to AccelByte."));
+        UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and the DefaultPlatformService under [OnlineSubsystem] in the Engine.ini file is set to AccelByte."));
         return;
     }
 
@@ -23,7 +23,7 @@ void UAuthEssentialsSubsystem_Starter::Initialize(FSubsystemCollectionBase& Coll
     IdentityInterface = StaticCastSharedPtr<FOnlineIdentityAccelByte>(Subsystem->GetIdentityInterface());
     if (!ensure(IdentityInterface.IsValid()))
     {
-        UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("Identiy interface is not valid."));
+        UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("Identity interface is not valid."));
         return;
     }
     Subsystem->SetLanguage(UTutorialModuleOnlineUtility::GetPrimaryLanguageSubtag());

@@ -64,7 +64,7 @@ void ULoginQueueWidget::CancelQueue() const
 // @@@SNIPSTART LoginQueueWidget.cpp-OnCancelQueueCompleted
 void ULoginQueueWidget::OnCancelQueueCompleted(const APlayerController* PC, const FOnlineError& Error) const
 {
-	// safety
+	// Abort if Player Controller is not the current player.
 	if (PC != GetOwningPlayer())
 	{
 		return;
@@ -86,7 +86,7 @@ void ULoginQueueWidget::OnLoginQueued(
 	const APlayerController* PC,
 	const FAccelByteModelsLoginQueueTicketInfo& TicketInfo)
 {
-	// safety
+	// Abort if Player Controller is not the current player.
 	if (PC != GetOwningPlayer())
 	{
 		return;
@@ -108,7 +108,7 @@ void ULoginQueueWidget::OnLoginStatusUpdated(
 	const FAccelByteModelsLoginQueueTicketInfo& TicketInfo,
 	const FOnlineError& Error) const
 {
-	// safety
+	// Abort if Player Controller is not the current player.
 	if (PC != GetOwningPlayer())
 	{
 		return;

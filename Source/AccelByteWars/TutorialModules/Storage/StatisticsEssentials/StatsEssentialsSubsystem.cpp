@@ -171,7 +171,7 @@ bool UStatsEssentialsSubsystem::UpdateConnectedPlayersStats(
 		const FUniqueNetIdRepl& PlayerUniqueId = PlayerState->GetUniqueId();
 		if (!PlayerUniqueId.IsValid())
 		{
-			UE_LOG_STATSESSENTIALS(Warning, TEXT("Failed to update player's statistics. User id is invalid."));
+			UE_LOG_STATSESSENTIALS(Warning, TEXT("Failed to update player's statistics. User ID is invalid."));
 			continue;
 		}
 
@@ -185,14 +185,14 @@ bool UStatsEssentialsSubsystem::UpdateConnectedPlayersStats(
 		{
 			GameState->GetHighestTeamData(TeamScore, TeamTotalLives, TeamTotalKillCount, TeamTotalDeaths);
 		}
-		// Each connected players in online gameplay are valid account, thus set the stats based on their respective teams.
+		// Each connected player account in online gameplay is valid, so set the stats based on their respective teams.
 		else 
 		{
 			GameState->GetTeamDataByTeamId(ABPlayerState->TeamId, TeamData, TeamScore, TeamTotalLives, TeamTotalKillCount, TeamTotalDeaths);
 		}
 
-		/* If local gameplay, set the winner status based on whether the game draw or not.
-		 * If online gameplay, set the winner status based on whether the team id matches with the winner team id.*/
+		/* If the gameplay is local, set the winner status based on if the game ends in a draw or not.
+		 * If the gameplay is online, set the winner status based on whether the team ID matches with the winning team ID.*/
 		const bool bIsWinner = bIsLocalGame ? WinnerTeamId != INDEX_NONE : TeamData.TeamId == WinnerTeamId;
 
 		FOnlineStatsUserUpdatedStats UpdatedUserStats(PlayerUniqueId->AsShared());

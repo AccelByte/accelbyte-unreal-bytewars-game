@@ -41,6 +41,7 @@ enum class EUpgradeAccountErrorTypes : int32
     Default = 0,
     EmailAlreadyUsed = 10133,
     UsernameAlreadyUsed = 10177,
+    UniqueDisplayNameAlreadyUsed = 10222,
     UsernameInputViolation = 20001,
     PasswordInputViolation = 20002
 };
@@ -118,6 +119,7 @@ inline const FText GetUpgradeAccountErrorMessage(const EUpgradeAccountErrorTypes
         return EMAIL_ALREADY_USED_ERROR;
         break;
     case EUpgradeAccountErrorTypes::UsernameAlreadyUsed:
+    case EUpgradeAccountErrorTypes::UniqueDisplayNameAlreadyUsed:
         return USERNAME_ALREADY_USED_ERROR;
         break;
     case EUpgradeAccountErrorTypes::UsernameInputViolation:

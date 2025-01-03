@@ -13,6 +13,7 @@ DECLARE_DELEGATE_TwoParams(FOnPresenceTaskComplete, const bool /*bWasSuccessful*
 
 #define ACCELBYTEWARS_LOCTEXT_NAMESPACE "AccelByteWars"
 
+// @@@SNIPSTART PresenceEssentialsModels.h-stringmacro
 #define TEXT_PRESENCE_ONLINE NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "presence_online", "Online")
 #define TEXT_PRESENCE_OFFLINE NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "presence_offline", "Offline")
 
@@ -30,7 +31,9 @@ DECLARE_DELEGATE_TwoParams(FOnPresenceTaskComplete, const bool /*bWasSuccessful*
 #define TEXT_PRESENCE_ACTIVITY_LOBBY NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "presence_activity_lobby", "Lobby")
 #define TEXT_PRESENCE_ACTIVITY_GAMEPLAY NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "presence_activity_gameplay", "Game Mode: {0}")
 #define TEXT_PRESENCE_ACTIVITY_UNKNOWN NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "presence_activity_unknown", "Unknown Activity")
+// @@@SNIPEND
 
+// @@@SNIPSTART PresenceEssentialsModels.h-GetLastOnline
 inline static FString GetLastOnline(const FDateTime LastOnline) 
 {
     // Only check last online within a year.
@@ -70,3 +73,4 @@ inline static FString GetLastOnline(const FDateTime LastOnline)
 
     return TEXT_PRESENCE_LAST_ONLINE_AWHILE.ToString();
 }
+// @@@SNIPEND

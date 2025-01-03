@@ -102,25 +102,25 @@ bool UMatchmakingP2POnlineSession::TravelToSession(const FName SessionName)
 		return false;
 	}
 
-	// Get Session Info
+	// Get session info
 	const FNamedOnlineSession* Session = GetSession(SessionName);
 	if (!Session)
 	{
-		UE_LOG_MATCHMAKINGP2P(Warning, TEXT("Session is invalid"));
+		UE_LOG_MATCHMAKINGP2P(Warning, TEXT("The session is invalid"));
 		return false;
 	}
 
 	const TSharedPtr<FOnlineSessionInfo> SessionInfo = Session->SessionInfo;
 	if (!SessionInfo.IsValid())
 	{
-		UE_LOG_MATCHMAKINGP2P(Warning, TEXT("Session Info is invalid"));
+		UE_LOG_MATCHMAKINGP2P(Warning, TEXT("The session info is invalid"));
 		return false;
 	}
 
 	const TSharedPtr<FOnlineSessionInfoAccelByteV2> AbSessionInfo = StaticCastSharedPtr<FOnlineSessionInfoAccelByteV2>(SessionInfo);
 	if (!AbSessionInfo.IsValid())
 	{
-		UE_LOG_MATCHMAKINGP2P(Warning, TEXT("Session Info is not FOnlineSessionInfoAccelByteV2"));
+		UE_LOG_MATCHMAKINGP2P(Warning, TEXT("The session info is not FOnlineSessionInfoAccelByteV2"));
 		return false;
 	}
 
@@ -130,7 +130,7 @@ bool UMatchmakingP2POnlineSession::TravelToSession(const FName SessionName)
 	// if nullptr, treat as failed
 	if (!PlayerController)
 	{
-		UE_LOG_MATCHMAKINGP2P(Warning, TEXT("Can't find player controller with the session's local owner's Unique Id"));
+		UE_LOG_MATCHMAKINGP2P(Warning, TEXT("Can't find player controller with the session's local owner's unique ID"));
 		return false;
 	}
 
@@ -146,7 +146,7 @@ bool UMatchmakingP2POnlineSession::TravelToSession(const FName SessionName)
 	// If local user is not the P2P host -> connect to host
 	if (!GetABSessionInt()->IsPlayerP2PHost(GetLocalPlayerUniqueNetId(PlayerController).ToSharedRef().Get(), SessionName)) 
 	{
-		UE_LOG_MATCHMAKINGP2P(Log, TEXT("Is not P2P host, travelling to host"));
+		UE_LOG_MATCHMAKINGP2P(Log, TEXT("Host is not a P2P host, traveling to host"));
 		GetABSessionInt()->GetResolvedConnectString(SessionName, ServerAddress);
 		if (ServerAddress.IsEmpty())
 		{
@@ -156,7 +156,7 @@ bool UMatchmakingP2POnlineSession::TravelToSession(const FName SessionName)
 	}
 	else
 	{
-		UE_LOG_MATCHMAKINGP2P(Log, TEXT("Is P2P host, travelling as listen server"));
+		UE_LOG_MATCHMAKINGP2P(Log, TEXT("Host is a P2P host, traveling as listen server"));
 		ServerAddress = "MainMenu?listen";
 	}
 
@@ -181,7 +181,7 @@ void UMatchmakingP2POnlineSession::OnSessionServerUpdateReceived(FName SessionNa
 
 	if (bLeavingSession)
 	{
-		UE_LOG_MATCHMAKINGP2P(Warning, TEXT("called but leave session is currently running. Cancelling attempt to travel to server"))
+		UE_LOG_MATCHMAKINGP2P(Warning, TEXT("called but leave session is currently running. Canceling attempt to travel to server"))
 		OnSessionServerUpdateReceivedDelegates.Broadcast(SessionName, FOnlineError(true), false);
 		return;
 	}
@@ -227,7 +227,7 @@ void UMatchmakingP2POnlineSession::StartMatchmaking(
 {
 	UE_LOG_MATCHMAKINGP2P(Verbose, TEXT("called"))
 
-	// safety
+	// Abort if the session interface is invalid.
 	if (!ensure(GetSessionInt()))
 	{
 		UE_LOG_MATCHMAKINGP2P(Warning, TEXT("Session Interface is not valid."));
@@ -268,17 +268,17 @@ void UMatchmakingP2POnlineSession::StartMatchmaking(
 		return;
 	}
 
-	// Get match pool id based on game mode type
+	// Get match pool ID based on game mode type
 	FString MatchPoolId = MatchPoolIds[GameModeType];
 	const FString GameModeCode = TargetGameModeMap[MatchPoolId];
 
-	// Override match pool id if applicable.
+	// Override match pool ID if applicable.
 	if (!UTutorialModuleOnlineUtility::GetMatchPoolP2POverride().IsEmpty())
 	{
 		MatchPoolId = UTutorialModuleOnlineUtility::GetMatchPoolP2POverride();
 	}
 
-	// Setup matchmaking search handle, it will be used to store session search results.
+	// Set up matchmaking search handle, it will be used to store session search results.
 	TSharedRef<FOnlineSessionSearch> MatchmakingSearchHandle = MakeShared<FOnlineSessionSearch>();
 	MatchmakingSearchHandle->QuerySettings.Set(SETTING_SESSION_MATCHPOOL, MatchPoolId, EOnlineComparisonOp::Equals);
 	MatchmakingSearchHandle->QuerySettings.Set(GAMESETUP_GameModeCode, GameModeCode, EOnlineComparisonOp::Equals);
@@ -305,7 +305,7 @@ void UMatchmakingP2POnlineSession::CancelMatchmaking(APlayerController* PC, cons
 {
 	UE_LOG_MATCHMAKINGP2P(Verbose, TEXT("called"))
 
-	// safety
+	// Abort if the session interface is invalid.
 	if (!ensure(GetSessionInt()))
 	{
 		UE_LOG_MATCHMAKINGP2P(Warning, TEXT("Session Interface is not valid."));
@@ -373,7 +373,7 @@ void UMatchmakingP2POnlineSession::OnMatchmakingComplete(FName SessionName, bool
 
 	const TSharedPtr<FOnlineSessionSearchAccelByte> CurrentMatchmakingSearchHandle = GetABSessionInt()->GetCurrentMatchmakingSearchHandle();
 	if (!bSucceeded ||
-		!ensure(CurrentMatchmakingSearchHandle.IsValid()) /*This might happen when the MM finished just as we are about to cancel it*/ ||
+		!ensure(CurrentMatchmakingSearchHandle.IsValid()) /*This might happen when matchmaking finishes right as it’s about to be canceled.*/ ||
 		!ensure(CurrentMatchmakingSearchHandle->SearchResults.IsValidIndex(0)) ||
 		!ensure(CurrentMatchmakingSearchHandle->GetSearchingPlayerId().IsValid()))
 	{
@@ -392,7 +392,7 @@ void UMatchmakingP2POnlineSession::OnBackfillProposalReceived(
 {
 	UE_LOG_MATCHMAKINGP2P(Verbose, TEXT("called"))
 
-	// Safety
+	// Abort if the session interface is invalid.
 	if (!ensure(GetABSessionInt().IsValid()))
 	{
 		UE_LOG_MATCHMAKINGP2P(Warning, TEXT("Session Interface is not valid."));

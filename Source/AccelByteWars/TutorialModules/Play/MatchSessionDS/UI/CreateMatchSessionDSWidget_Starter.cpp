@@ -15,7 +15,7 @@ void UCreateMatchSessionDSWidget_Starter::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
-	// Get Online Session
+	// Get online session
 	UOnlineSession* BaseOnlineSession = GetWorld()->GetGameInstance()->GetOnlineSession();
 	if (!ensure(BaseOnlineSession))
 	{

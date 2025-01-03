@@ -96,7 +96,7 @@ void UStartupWidget::CheckAutoUseTokenForABLogin()
 	}
 	
 	// If auto consume platform token, startup the game immediately.
-	if (StartupSubsystem->IsAutoUseTokenForABLogin())
+	if (IsLoggedIn() || StartupSubsystem->IsAutoUseTokenForABLogin())
 	{
 		StartupGame();
 		return;
@@ -106,70 +106,6 @@ void UStartupWidget::CheckAutoUseTokenForABLogin()
 
 	// Login using platform only.
 	StartupSubsystem->LoginPlatformOnly(GetOwningPlayer(), FOnLoginPlatformCompleteDelegate::CreateUObject(this, &ThisClass::OnLoginPlatformOnlyComplete));
-}
-
-void UStartupWidget::OnLoginPlatformOnlyComplete(const bool bSucceeded, const FString& ErrorMessage)
-{
-	if (!ensure(PromptSubsystem) || !ensure(StartupSubsystem))
-	{
-		UE_LOG_STARTUP(Warning, TEXT("Failed to handle on login platform only. Invalid subsystems"));
-		return;
-	}
-
-	PromptSubsystem->HideLoading();
-
-	// If failed, show error message and button to quit the game.
-	if (!bSucceeded)
-	{
-		FFormatOrderedArguments Args;
-		Args.Add(FFormatArgumentValue(FText::FromString(ErrorMessage)));
-
-		const FText FailedMessage = FText::Format(
-			LOCTEXT(
-				"Login platform only failed message", 
-				"Failed to login with platform only. Click Ok to quit the game. Error: {0}"), 
-			Args);
-
-		PromptSubsystem->ShowDialoguePopUp(
-			ERROR_PROMPT_TEXT,
-			FailedMessage,
-			EPopUpType::MessageOk,
-			FPopUpResultDelegate::CreateWeakLambda(this, [](EPopUpResult Result)
-			{
-				FPlatformMisc::RequestExit(false);
-			}
-		));
-		return;
-	}
-
-	FOnlineAccountCredentials PlatformCredentials = StartupSubsystem->GetPlatformCredentials();
-	
-	// For display purpose, construct truncated token if necessary.
-	const int32 TokenLengthLimit = 20;
-	const FString TokenStr = FString::Printf(TEXT("%s%s"), 
-		*PlatformCredentials.Token.Left(TokenLengthLimit), 
-		PlatformCredentials.Token.Len() > TokenLengthLimit ? TEXT("...") : TEXT(""));
-
-	FFormatOrderedArguments Args;
-	Args.Add(FFormatArgumentValue(FText::FromString(PlatformCredentials.Type)));
-	Args.Add(FFormatArgumentValue(FText::FromString(TokenStr)));
-
-	const FText SuccessMessage = FText::Format(
-		LOCTEXT(
-			"Login platform only success message",
-			"Success to login with platform only. Platform name: {0}. Platform token: {1}"),
-		Args);
-
-	// Show success message and startup game on message closed.
-	PromptSubsystem->ShowDialoguePopUp(
-		MESSAGE_PROMPT_TEXT,
-		SuccessMessage,
-		EPopUpType::MessageOk,
-		FPopUpResultDelegate::CreateWeakLambda(this, [this](EPopUpResult Result)
-		{
-			StartupGame();
-		}
-	));
 }
 
 void UStartupWidget::StartupGame()
@@ -199,7 +135,7 @@ void UStartupWidget::StartupGame()
 	}
 
 	// If already login, immediately open the Main Menu.
-	if (IdentityInterface->GetLoginStatus(0) == ELoginStatus::Type::LoggedIn && BaseUIWidget)
+	if (IsLoggedIn() && BaseUIWidget)
 	{
 		DeactivateWidget();
 		BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, MainMenuWidgetClass.Get());
@@ -243,8 +179,98 @@ void UStartupWidget::QuitGame()
 	);
 }
 
+bool UStartupWidget::IsLoggedIn()
+{
+	const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+	if (!ensure(Subsystem))
+	{
+		return false;
+	}
+
+	const FOnlineIdentityAccelBytePtr IdentityInterface = StaticCastSharedPtr<FOnlineIdentityAccelByte>(Subsystem->GetIdentityInterface());
+	if (!ensure(IdentityInterface))
+	{
+		return false;
+	}
+
+	return IdentityInterface->GetLoginStatus(0) == ELoginStatus::Type::LoggedIn;
+}
+
+void UStartupWidget::OnLoginPlatformOnlyComplete(const bool bSucceeded, const FString& ErrorMessage)
+{
+	if (!ensure(PromptSubsystem) || !ensure(StartupSubsystem))
+	{
+		UE_LOG_STARTUP(Warning, TEXT("Failed to handle on login platform only. Invalid subsystems"));
+		return;
+	}
+
+	PromptSubsystem->HideLoading();
+
+	// If failed, show error message and button to quit the game.
+	if (!bSucceeded)
+	{
+		FFormatOrderedArguments Args;
+		Args.Add(FFormatArgumentValue(FText::FromString(ErrorMessage)));
+
+		const FText FailedMessage = FText::Format(
+			LOCTEXT(
+				"Login platform only failed message",
+				"Failed to login with platform only. Click Ok to quit the game. Error: {0}"), 
+				Args);
+
+		PromptSubsystem->ShowDialoguePopUp(
+			ERROR_PROMPT_TEXT,
+			FailedMessage,
+			EPopUpType::MessageOk,
+			FPopUpResultDelegate::CreateWeakLambda(this, [](EPopUpResult Result)
+			{
+				FPlatformMisc::RequestExit(false);
+			}
+		));
+		return;
+	}
+
+	FOnlineAccountCredentials PlatformCredentials = StartupSubsystem->GetPlatformCredentials();
+
+	// For display purpose, construct truncated token if necessary.
+	const int32 TokenLengthLimit = 20;
+	const FString TokenStr = FString::Printf(TEXT("%s%s"),
+		*PlatformCredentials.Token.Left(TokenLengthLimit),
+		PlatformCredentials.Token.Len() > TokenLengthLimit ? TEXT("...") : TEXT(""));
+
+	FFormatOrderedArguments Args;
+	Args.Add(FFormatArgumentValue(FText::FromString(PlatformCredentials.Type)));
+	Args.Add(FFormatArgumentValue(FText::FromString(TokenStr)));
+
+	const FText SuccessMessage = FText::Format(
+		LOCTEXT(
+			"Login platform only success message",
+			"Success to login with platform only. Platform name: {0}. Platform token: {1}"),
+			Args);
+
+	// Show success message and startup game on message closed.
+	PromptSubsystem->ShowDialoguePopUp(
+		MESSAGE_PROMPT_TEXT,
+		SuccessMessage,
+		EPopUpType::MessageOk,
+		FPopUpResultDelegate::CreateWeakLambda(this, [this](EPopUpResult Result)
+		{
+			StartupGame();
+		}
+	));
+}
+
 void UStartupWidget::OnLogoutComplete(int32 LocalUserNum, bool bWasSuccessful, const FOnlineErrorAccelByte& Error)
 {
+	if (GetGameInstance())
+	{
+		UPromptSubsystem* PrompSubsytem = GetGameInstance()->GetSubsystem<UPromptSubsystem>();
+		if (PrompSubsytem) 
+		{
+			PrompSubsytem->HideLoading();
+		}
+	}
+
 	if (BaseUIWidget)
 	{
 		if (TSubclassOf<UAccelByteWarsActivatableWidget> LoginWidgetClass = AuthEssentialsDataAsset->GetTutorialModuleUIClass())

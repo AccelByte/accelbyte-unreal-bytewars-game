@@ -35,7 +35,10 @@ void UInGameStoreEssentialsSubsystem::GetOrQueryOffersByCategory(
 		const FUniqueNetIdPtr LocalUserNetId = GetUniqueNetIdFromPlayerController(PlayerController);
 		if (!LocalUserNetId.IsValid())
 		{
-			OnComplete.Execute(TArray<UStoreItemDataObject*>());
+			ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [OnComplete]()
+			{
+				OnComplete.Execute(TArray<UStoreItemDataObject*>());
+			}));
 			return;
 		}
 
@@ -45,7 +48,11 @@ void UInGameStoreEssentialsSubsystem::GetOrQueryOffersByCategory(
 	// else, call get
 	else
 	{
-		OnComplete.Execute(GetOffersByCategory(Category));
+		const TArray<UStoreItemDataObject*> StoreItemDataObjects = GetOffersByCategory(Category);
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [OnComplete, StoreItemDataObjects]()
+		{
+			OnComplete.Execute(StoreItemDataObjects);
+		}));
 	}
 }
 
@@ -64,7 +71,10 @@ void UInGameStoreEssentialsSubsystem::GetOrQueryOfferById(
 		const FUniqueNetIdPtr LocalUserNetId = GetUniqueNetIdFromPlayerController(PlayerController);
 		if (!LocalUserNetId.IsValid())
 		{
-			OnComplete.Execute(nullptr);
+			ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [OnComplete]()
+			{
+				OnComplete.Execute(nullptr);
+			}));
 			return;
 		}
 
@@ -74,7 +84,11 @@ void UInGameStoreEssentialsSubsystem::GetOrQueryOfferById(
 	// else, call get
 	else
 	{
-		OnComplete.Execute(GetOfferById(OfferId));
+		UStoreItemDataObject* StoreItemDataObject = GetOfferById(OfferId);
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [OnComplete, StoreItemDataObject]()
+		{
+			OnComplete.Execute(StoreItemDataObject);
+		}));
 	}
 }
 
@@ -94,7 +108,10 @@ void UInGameStoreEssentialsSubsystem::GetOrQueryCategoriesByRootPath(
 		const FUniqueNetIdPtr LocalUserNetId = GetUniqueNetIdFromPlayerController(PlayerController);
 		if (!LocalUserNetId.IsValid())
 		{
-			OnComplete.Execute(TArray<FOnlineStoreCategory>());
+			ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [OnComplete]()
+			{
+				OnComplete.Execute(TArray<FOnlineStoreCategory>());
+			}));
 			return;
 		}
 
@@ -104,7 +121,11 @@ void UInGameStoreEssentialsSubsystem::GetOrQueryCategoriesByRootPath(
 	// else, execute immediately
 	else
 	{
-		OnComplete.Execute(GetCategories(RootPath));
+		const TArray<FOnlineStoreCategory> StoreCategories = GetCategories(RootPath);
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [OnComplete, StoreCategories]()
+		{
+			OnComplete.Execute(StoreCategories);
+		}));
 	}
 }
 
@@ -143,7 +164,7 @@ UStoreItemDataObject* UInGameStoreEssentialsSubsystem::GetOfferById(const FUniqu
 
 void UInGameStoreEssentialsSubsystem::QueryOffers(const FUniqueNetIdPtr UserId)
 {
-	// safety
+	// Abort if the query process is already running.
 	if (bIsQueryOfferRunning)
 	{
 		return;
@@ -213,7 +234,7 @@ TArray<FOnlineStoreCategory> UInGameStoreEssentialsSubsystem::GetCategories(cons
 
 void UInGameStoreEssentialsSubsystem::QueryCategories(const FUniqueNetIdPtr UserId)
 {
-	// safety
+	// Abort if the query process is already running.
 	if (bIsQueryCategoriesRunning)
 	{
 		return;

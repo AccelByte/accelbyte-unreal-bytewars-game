@@ -56,10 +56,23 @@ public:
 	{
 		return &OnSessionInviteReceivedDelegates;
 	}
+
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 	virtual FOnSessionParticipantsChange* GetOnSessionParticipantsChange() override
 	{
 		return &OnSessionParticipantsChangeDelegates;
 	}
+#else
+	virtual FOnSessionParticipantJoined* GetOnSessionParticipantJoined() override
+	{
+		return &OnSessionParticipantJoinedDelegates;
+	}
+
+	virtual FOnSessionParticipantLeft* GetOnSessionParticipantLeft() override
+	{
+		return &OnSessionParticipantLeftDelegates;
+	}
+#endif
 
 protected:
 	bool bLeavingSession = false;
@@ -80,7 +93,13 @@ private:
 	FOnUpdateSessionComplete OnUpdateSessionCompleteDelegates;
 
 	FOnV2SessionInviteReceived OnSessionInviteReceivedDelegates;
+
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 	FOnSessionParticipantsChange OnSessionParticipantsChangeDelegates;
+#else
+	FOnSessionParticipantJoined OnSessionParticipantJoinedDelegates;
+	FOnSessionParticipantLeft OnSessionParticipantLeftDelegates;
+#endif
 
 #pragma region "Funtions Declarations"
 	// TODO: declare your private functions here

@@ -22,7 +22,7 @@ void ULeaderboardWeeklyWidget::NativeConstruct()
 
 // @@@SNIPSTART LeaderboardWeeklyWidget.cpp-NativeOnActivated
 // @@@MULTISNIP SetWidgetStateExample {"selectedLines": ["9"]}
-// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "6-9", "43"]}
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "6-9", "38"]}
 void ULeaderboardWeeklyWidget::NativeOnActivated()
 {
 	// Set leaderboard code based on board-unreal-highestscore-{gamemode} format. 
@@ -35,35 +35,30 @@ void ULeaderboardWeeklyWidget::NativeOnActivated()
 
 	PeriodicLeaderboardSubsystem->GetLeaderboardCycleIdByName(FString("unreal-weekly"), EAccelByteCycle::WEEKLY,
 		FOnGetLeaderboardsCycleIdComplete::CreateWeakLambda(this, [this] (bool IsSuccessful, const FString& ResultCycleId)
+		{
+			if (IsSuccessful && !ResultCycleId.IsEmpty())
 			{
-				if (IsSuccessful && !ResultCycleId.IsEmpty())
+				// Set cycle id to the weekly leaderboard's cycle id.
+				CycleId = ResultCycleId;
+
+				if (FFTUEDialogueModel* FTUELeaderboard = FFTUEDialogueModel::GetMetadataById("ftue_weekly_leaderboard", FTUEDialogues))
 				{
-					// Set cycle id to the weekly leaderboard's cycle id.
-					CycleId = ResultCycleId;
-
-					if (FFTUEDialogueModel* FTUELeaderboard = FFTUEDialogueModel::GetMetadataById("ftue_weekly_leaderboard", FTUEDialogues))
-					{
-						FTUELeaderboard->Button1.URLArguments[1].Argument = LeaderboardCode;
-						FTUELeaderboard->Button1.URLArguments[2].Argument = CycleId;
-					}
-
-					Super::NativeOnActivated();
-
-					// Reset widgets.
-					PlayerRankPanel->SetVisibility(ESlateVisibility::Collapsed);
-					Ws_Leaderboard->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Empty);
-					Lv_Leaderboard->ClearListItems();
-
-					// Get leaderboard weekly rankings.
-					GetWeeklyRankings();
-				} 
-				else
-				{
-					// Error if cycle ID is not found
-					Ws_Leaderboard->ErrorMessage = FText(CYCLE_ID_NOT_FOUND_TEXT);
-					Ws_Leaderboard->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Error);
+					FTUELeaderboard->Button1.URLArguments[1].Argument = LeaderboardCode;
+					FTUELeaderboard->Button1.URLArguments[2].Argument = CycleId;
 				}
-			})
+
+				Super::NativeOnActivated();
+
+				// Get leaderboard weekly rankings.
+				GetWeeklyRankings();
+			}
+			else
+			{
+				// Error if cycle ID is not found
+				Ws_Leaderboard->ErrorMessage = FText(CYCLE_ID_NOT_FOUND_TEXT);
+				Ws_Leaderboard->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Error);
+			}
+		})
 	);
 }
 // @@@SNIPEND

@@ -8,11 +8,14 @@
 #include "Play/SessionEssentials/SessionEssentialsModel.h"
 
 #include "Core/System/AccelByteWarsGameInstance.h"
-#include "PartyWidgetEntry.h"
 #include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
+
+#include "TutorialModuleUtilities/StartupSubsystem.h"
+#include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
+
+#include "PartyWidgetEntry.h"
 #include "Components/HorizontalBox.h"
 #include "CommonButtonBase.h"
-#include "TutorialModuleUtilities/StartupSubsystem.h"
 
 void UPartyWidget::NativeConstruct()
 {
@@ -42,10 +45,23 @@ void UPartyWidget::NativeOnActivated()
 	{
 		DisplayParty();
 	});
+
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 	PartyOnlineSession->GetOnPartyMembersChangeDelegates()->AddWeakLambda(this, [this](FName SessionName, const FUniqueNetId& Participant, bool bJoined)
 	{
 		DisplayParty();
 	});
+#else
+	PartyOnlineSession->GetOnPartyMemberJoinedDelegates()->AddWeakLambda(this, [this](FName SessionName, const FUniqueNetId& Participant)
+	{
+		DisplayParty();
+	});
+	PartyOnlineSession->GetOnPartyMemberLeftDelegates()->AddWeakLambda(this, [this](FName SessionName, const FUniqueNetId& Participant, EOnSessionParticipantLeftReason Reason)
+	{
+		DisplayParty();
+	});
+#endif
+
 	PartyOnlineSession->GetOnPartySessionUpdateReceivedDelegates()->AddWeakLambda(this, [this](FName SessionName)
 	{
 		DisplayParty();
@@ -63,7 +79,14 @@ void UPartyWidget::NativeOnDeactivated()
 	// Clear online delegates.
 	PartyOnlineSession->GetOnCreatePartyCompleteDelegates()->RemoveAll(this);
 	PartyOnlineSession->GetOnLeavePartyCompleteDelegates()->RemoveAll(this);
+
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 	PartyOnlineSession->GetOnPartyMembersChangeDelegates()->RemoveAll(this);
+#else
+	PartyOnlineSession->GetOnPartyMemberJoinedDelegates()->RemoveAll(this);
+	PartyOnlineSession->GetOnPartyMemberLeftDelegates()->RemoveAll(this);
+#endif
+
 	PartyOnlineSession->GetOnPartySessionUpdateReceivedDelegates()->RemoveAll(this);
 
 	Super::NativeOnDeactivated();
@@ -71,18 +94,18 @@ void UPartyWidget::NativeOnDeactivated()
 // @@@SNIPEND
 
 // @@@SNIPSTART PartyWidget.cpp-DisplayParty
-// @@@MULTISNIP ReadyUI {"selectedLines": ["1-5", "90"]}
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-5", "98"]}
 void UPartyWidget::DisplayParty()
 {
 	// Show loading.
 	Btn_Leave->SetVisibility(ESlateVisibility::Collapsed);
 	Ws_Party->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Loading);
 
-	// Collect party member user ids.
+	// Collect party member user IDs.
 	const FUniqueNetIdPtr UserId = PartyOnlineSession->GetLocalPlayerUniqueNetId(GetOwningPlayer());
 	TArray<FUniqueNetIdRef> PartyMemberUserIds = PartyOnlineSession->GetPartyMembers();
 
-	// If not in any party, then only include player user id to query its information.
+	// If not in any party, then only include player user ID to query its information.
 	if (PartyMemberUserIds.IsEmpty())
 	{
 		PartyMemberUserIds.Add(UserId.ToSharedRef());
@@ -98,20 +121,28 @@ void UPartyWidget::DisplayParty()
 				const FOnlineError& Error,
 				const TArray<TSharedPtr<FUserOnlineAccountAccelByte>> UsersInfo)
 			{
-				// If party members are changed during query, then requery the party members information.
+				// If party members are changed during query, then re-query the party members' information.
 				const bool bIsInParty = !PartyOnlineSession->GetPartyMembers().IsEmpty();
 				if (bIsInParty)
 				{
-					if (UsersInfo.Num() != PartyOnlineSession->GetPartyMembers().Num())
+					TArray<FString> QueriedUserIds{};
+					for (const TSharedPtr<FUserOnlineAccountAccelByte>& UserInfo : UsersInfo)
 					{
-						DisplayParty();
-						return;
+						if (const FUniqueNetIdAccelByteUserPtr ABUserId = UTutorialModuleOnlineUtility::GetAccelByteUserId(UserInfo->GetUserId()))
+						{
+							QueriedUserIds.Add(ABUserId->GetAccelByteId());
+						}
 					}
-					for (int32 i = 0; i < UsersInfo.Num(); i++)
+
+					for (const FUniqueNetIdPtr PartyMember : PartyOnlineSession->GetPartyMembers()) 
 					{
-						if (!UsersInfo[i]->GetUserId()->IsValid() ||
-							!PartyOnlineSession->GetPartyMembers()[i]->IsValid() ||
-							PartyOnlineSession->GetPartyMembers()[i].Get() != UsersInfo[i]->GetUserId().Get())
+						const FUniqueNetIdAccelByteUserPtr ABUserId = UTutorialModuleOnlineUtility::GetAccelByteUserId(PartyMember);
+						if (ABUserId->IsValid())
+						{
+							continue;
+						}
+
+						if (!QueriedUserIds.Contains(ABUserId->GetAccelByteId()))
 						{
 							DisplayParty();
 							return;
@@ -153,7 +184,7 @@ void UPartyWidget::DisplayParty()
 						                                 PartyOnlineSession->IsPartyLeader(UsersInfo[i]->GetUserId()) ||
 						                                 !bIsInParty);
 					}
-					// Display button to add more party member.
+					// Display button to add more party members.
 					else
 					{
 						PartyMemberEntry->ResetPartyMember();

@@ -44,7 +44,7 @@ void UMatchmakingDSOnlineSession_Starter::DSQueryUserInfo(
 	}
 	else
 	{
-		// gather user ids
+		// Gather user IDs.
 		TArray<FString> AbUserIds;
 		for (const FUniqueNetIdRef& UserId : UserIds)
 		{

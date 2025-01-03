@@ -8,11 +8,16 @@
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
+
 #include "Social/FriendsEssentials/UI/FriendDetailsWidget.h"
 #include "Social/PrivateChat/UI/PrivateChatWidget.h"
+#include "Social/ChatEssentials/ChatEssentialsModels.h"
 
 #include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
 
+// @@@SNIPSTART PrivateChatSubsystem.cpp-Initialize
+// @@@MULTISNIP OnSendChatCompleteDelegates {"selectedLines": ["1-2", "66-68", "87-88"]}
+// @@@MULTISNIP OnChatPrivateMessageReceivedDelegates {"selectedLines": ["1-2", "66-67", "69-72", "87-88"]}
 void UPrivateChatSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
@@ -33,7 +38,7 @@ void UPrivateChatSubsystem::Initialize(FSubsystemCollectionBase& Collection)
             return;
         }
 
-        // Open private chat widget and inject the friend user id to it.
+        // Open private chat widget and inject the friend user ID to it.
         PrivateChatButtonMetadata->ButtonAction.Clear();
         PrivateChatButtonMetadata->ButtonAction.AddWeakLambda(this, [this, WidgetClass]()
         {
@@ -85,9 +90,27 @@ void UPrivateChatSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
         // Push a notification when received chat messages.
         GetChatInterface()->OnChatPrivateMessageReceivedDelegates.AddUObject(this, &ThisClass::PushPrivateChatMessageReceivedNotification);
+    
+        // Try reconnect chat on disconnected from chat.
+        GetChatInterface()->OnConnectChatCompleteDelegates->AddWeakLambda(this, [this](int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& UserId, const FString& ErrorMessage)
+        {
+            if (bWasSuccessful)
+            {
+                UE_LOG_PRIVATECHAT(Log, TEXT("Success to connect to chat service."));
+                ReconnectChatNumTries = 0;
+                return;
+            }
+
+            ReconnectChat(ErrorMessage);
+        });
+        GetChatInterface()->OnChatDisconnectedDelegates.AddUObject(this, &ThisClass::ReconnectChat);
     }
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PrivateChatSubsystem.cpp-Deinitialize
+// @@@MULTISNIP OnSendChatCompleteDelegates {"selectedLines": ["1-2", "5-7", "12-13"]}
+// @@@MULTISNIP OnChatPrivateMessageReceivedDelegates {"selectedLines": ["1-2", "5-6", "8-9", "12-13"]}
 void UPrivateChatSubsystem::Deinitialize()
 {
     Super::Deinitialize();
@@ -96,9 +119,14 @@ void UPrivateChatSubsystem::Deinitialize()
     {
         GetChatInterface()->OnSendChatCompleteDelegates.RemoveAll(this);
         GetChatInterface()->OnChatPrivateMessageReceivedDelegates.RemoveAll(this);
+
+        GetChatInterface()->OnConnectChatCompleteDelegates->RemoveAll(this);
+        GetChatInterface()->OnChatDisconnectedDelegates.RemoveAll(this);
     }
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PrivateChatSubsystem.cpp-GetPrivateChatRoomId
 FString UPrivateChatSubsystem::GetPrivateChatRoomId(const FUniqueNetIdPtr SenderUserId, const FUniqueNetIdPtr RecipientUserId)
 {
     if (!GetChatInterface())
@@ -120,7 +148,28 @@ FString UPrivateChatSubsystem::GetPrivateChatRoomId(const FUniqueNetIdPtr Sender
 
     return GetChatInterface()->PersonalChatTopicId(SenderABId->GetAccelByteId(), RecipientABId->GetAccelByteId());
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PrivateChatSubsystem.cpp-IsMessageFromLocalUser
+bool UPrivateChatSubsystem::IsMessageFromLocalUser(const FUniqueNetIdPtr UserId, const FChatMessage& Message)
+{
+    if (!GetChatInterface())
+    {
+        UE_LOG_PRIVATECHAT(Warning, TEXT("Cannot check whether chat message is from local user or not. Chat Interface is not valid."));
+        return false;
+    }
+
+    if (!UserId)
+    {
+        UE_LOG_PRIVATECHAT(Warning, TEXT("Cannot check whether chat message is from local user or not. User NetId is not valid."));
+        return false;
+    }
+
+    return GetChatInterface()->IsMessageFromLocalUser(UserId.ToSharedRef().Get(), Message, true);
+}
+// @@@SNIPEND
+
+// @@@SNIPSTART PrivateChatSubsystem.cpp-SendPrivateChatMessage
 void UPrivateChatSubsystem::SendPrivateChatMessage(const FUniqueNetIdPtr UserId, const FUniqueNetIdPtr RecipientUserId, const FString& Message)
 {
     if (!GetChatInterface())
@@ -146,7 +195,9 @@ void UPrivateChatSubsystem::SendPrivateChatMessage(const FUniqueNetIdPtr UserId,
 
     GetChatInterface()->SendPrivateChat(UserId.ToSharedRef().Get(), RecipientUserId.ToSharedRef().Get(), Message);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PrivateChatSubsystem.cpp-GetLastPrivateChatMessages
 bool UPrivateChatSubsystem::GetLastPrivateChatMessages(const FUniqueNetIdPtr UserId, const FChatRoomId& RoomId, const int32 NumMessages, TArray<TSharedRef<FChatMessage>>& OutMessages)
 {
     if (!GetChatInterface())
@@ -173,24 +224,9 @@ bool UPrivateChatSubsystem::GetLastPrivateChatMessages(const FUniqueNetIdPtr Use
 
     return true;
 }
+// @@@SNIPEND
 
-bool UPrivateChatSubsystem::IsMessageFromLocalUser(const FUniqueNetIdPtr UserId, const FChatMessage& Message)
-{
-    if (!GetChatInterface())
-    {
-        UE_LOG_PRIVATECHAT(Warning, TEXT("Cannot check whether chat message is from local user or not. Chat Interface is not valid."));
-        return false;
-    }
-
-    if (!UserId)
-    {
-        UE_LOG_PRIVATECHAT(Warning, TEXT("Cannot check whether chat message is from local user or not. User NetId is not valid."));
-        return false;
-    }
-
-    return GetChatInterface()->IsMessageFromLocalUser(UserId.ToSharedRef().Get(), Message, true);
-}
-
+// @@@SNIPSTART PrivateChatSubsystem.cpp-OnSendPrivateChatComplete
 void UPrivateChatSubsystem::OnSendPrivateChatComplete(FString UserId, FString MsgBody, FString RoomId, bool bWasSuccessful)
 {
     // Abort if the room id is not a private chat room.
@@ -210,7 +246,9 @@ void UPrivateChatSubsystem::OnSendPrivateChatComplete(FString UserId, FString Ms
 
     OnSendPrivateChatCompleteDelegates.Broadcast(UserId, MsgBody, RoomId, bWasSuccessful);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PrivateChatSubsystem.cpp-OnPrivateChatMessageReceived
 void UPrivateChatSubsystem::OnPrivateChatMessageReceived(const FUniqueNetId& UserId, const TSharedRef<FChatMessage>& Message)
 {
     UE_LOG_PRIVATECHAT(Log,
@@ -220,7 +258,9 @@ void UPrivateChatSubsystem::OnPrivateChatMessageReceived(const FUniqueNetId& Use
 
     OnPrivateChatMessageReceivedDelegates.Broadcast(UserId, Message);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PrivateChatSubsystem.cpp-PushPrivateChatMessageReceivedNotification
 void UPrivateChatSubsystem::PushPrivateChatMessageReceivedNotification(const FUniqueNetId& UserId, const TSharedRef<FChatMessage>& Message)
 {
     if (!GetPromptSubsystem())
@@ -257,8 +297,55 @@ void UPrivateChatSubsystem::PushPrivateChatMessageReceivedNotification(const FUn
 
     GetPromptSubsystem()->PushNotification(FText::Format(PRIVATE_CHAT_RECEIVED_MESSAGE, FText::FromString(SenderStr)));
 }
+// @@@SNIPEND
 
+void UPrivateChatSubsystem::ReconnectChat(FString Message)
+{
+    if (!GetWorld() || GetWorld()->bIsTearingDown)
+    {
+        UE_LOG_PRIVATECHAT(Warning, TEXT("Failed to reconnect to chat service. The level world is tearing down."));
+        return;
+    }
+
+    if (!GetChatInterface())
+    {
+        UE_LOG_PRIVATECHAT(Warning, TEXT("Failed to reconnect to chat service. The chat interface is tearing down."));
+        return;
+    }
+
+    if (!GetIdentityInterface() || GetIdentityInterface()->GetLoginStatus(0) == ELoginStatus::Type::LoggedIn)
+    {
+        UE_LOG_PRIVATECHAT(Warning, TEXT("Failed to reconnect to chat service. The player is not logged in yet."));
+        return;
+    }
+
+    if (ReconnectChatNumTries >= ReconnectChatMaxTries)
+    {
+        UE_LOG_PRIVATECHAT(Warning, TEXT("Failed to reconnect to chat service. Number tries to reconnect chat reached %d times limit."), ReconnectChatMaxTries);
+        return;
+    }
+
+    UE_LOG_PRIVATECHAT(Log, TEXT("Try to reconnect chat due to: %s"), *Message);
+
+    GetChatInterface()->Connect(0);
+    ReconnectChatNumTries++;
+}
+
+// @@@SNIPSTART PrivateChatSubsystem.cpp-GetChatInterface
 FOnlineChatAccelBytePtr UPrivateChatSubsystem::GetChatInterface() const
+{
+    const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+    if (!ensure(Subsystem))
+    {
+        UE_LOG_PRIVATECHAT(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and the DefaultPlatformService under [OnlineSubsystem] in the Engine.ini file is set to AccelByte."));
+        return nullptr;
+    }
+
+    return StaticCastSharedPtr<FOnlineChatAccelByte>(Subsystem->GetChatInterface());
+}
+// @@@SNIPEND
+
+FOnlineIdentityAccelBytePtr UPrivateChatSubsystem::GetIdentityInterface() const
 {
     const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
     if (!ensure(Subsystem))
@@ -267,9 +354,10 @@ FOnlineChatAccelBytePtr UPrivateChatSubsystem::GetChatInterface() const
         return nullptr;
     }
 
-    return StaticCastSharedPtr<FOnlineChatAccelByte>(Subsystem->GetChatInterface());
+    return StaticCastSharedPtr<FOnlineIdentityAccelByte>(Subsystem->GetIdentityInterface());
 }
 
+// @@@SNIPSTART PrivateChatSubsystem.cpp-GetPromptSubsystem
 UPromptSubsystem* UPrivateChatSubsystem::GetPromptSubsystem() const
 {
     const UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
@@ -280,3 +368,4 @@ UPromptSubsystem* UPrivateChatSubsystem::GetPromptSubsystem() const
 
     return GameInstance->GetSubsystem<UPromptSubsystem>();
 }
+// @@@SNIPEND

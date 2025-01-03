@@ -5,16 +5,11 @@
 #include "SessionChatWidget_Starter.h"
 
 #include "Core/System/AccelByteWarsGameInstance.h"
-#include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
-
 #include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
-
-#include "Components/VerticalBox.h"
 #include "Components/WidgetSwitcher.h"
-#include "Components/ListView.h"
-#include "Components/EditableText.h"
 #include "CommonButtonBase.h"
+#include "Social/ChatEssentials/UI/ChatWidget.h"
 
 void USessionChatWidget_Starter::NativeConstruct()
 {
@@ -34,21 +29,16 @@ void USessionChatWidget_Starter::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
-	// Reset cache.
-	Lv_ChatMessage = nullptr;
-	Ws_ChatMessage = nullptr;
-
-	// Reset chat messages.
-	Lv_GameSessionChatMessage->ClearListItems();
-	Lv_PartyChatMessage->ClearListItems();
-
-	// Reset chat box.
-	Edt_ChatMessage->SetText(FText::GetEmpty());
-	Edt_ChatMessage->OnTextChanged.AddUniqueDynamic(this, &ThisClass::OnChatMessageChanged);
+	// Reset chat widget
+	W_GameSessionChat->ClearChatMessages();
+	W_GameSessionChat->ClearInput();
+	W_PartyChat->ClearChatMessages();
 	
 	// Bind event to switch between chat message type.
 	Btn_SessionChat->OnClicked().AddUObject(this, &ThisClass::SwitchChatMessageType, EAccelByteChatRoomType::SESSION_V2);
 	Btn_PartyChat->OnClicked().AddUObject(this, &ThisClass::SwitchChatMessageType, EAccelByteChatRoomType::PARTY_V2);
+
+	Btn_Back->OnClicked().AddUObject(this, &ThisClass::DeactivateWidget);
 	
 	// TODO: Bind session chat events here.
 
@@ -58,17 +48,31 @@ void USessionChatWidget_Starter::NativeOnActivated()
 void USessionChatWidget_Starter::NativeOnDeactivated()
 {
 	CurrentChatRoomType = EAccelByteChatRoomType::SESSION_V2;
-
-	Edt_ChatMessage->OnTextCommitted.Clear();
-	Edt_ChatMessage->OnTextChanged.Clear();
-	Btn_Send->OnClicked().Clear();
 	
 	Btn_SessionChat->OnClicked().Clear();
 	Btn_PartyChat->OnClicked().Clear();
+	Btn_Back->OnClicked().RemoveAll(this);
 
 	// TODO: Unbind session chat events here.
 
 	Super::NativeOnDeactivated();
+}
+
+UWidget* USessionChatWidget_Starter::NativeGetDesiredFocusTarget() const
+{
+	UWidget* TargetWidget = nullptr;
+
+	switch(CurrentChatRoomType)
+	{
+	case EAccelByteChatRoomType::SESSION_V2:
+		TargetWidget = W_GameSessionChat;
+		break;
+	case EAccelByteChatRoomType::PARTY_V2:
+		TargetWidget = W_PartyChat;
+		break;
+	}
+
+	return TargetWidget;
 }
 
 void USessionChatWidget_Starter::SetDefaultChatType(const EAccelByteChatRoomType ChatRoomType)
@@ -82,33 +86,18 @@ void USessionChatWidget_Starter::SwitchChatMessageType(const EAccelByteChatRoomT
 	switch(ChatRoomType) 
 	{
 	case EAccelByteChatRoomType::SESSION_V2:
-		Ws_ChatMessageType->SetActiveWidget(Vb_GameSessionChat);
-		Ws_ChatMessageTypeButton->SetActiveWidget(Btn_PartyChat);
-
-		Lv_ChatMessage = Lv_GameSessionChatMessage;
-		Ws_ChatMessage = Ws_GameSessionChatMessage;
+		Ws_ChatMessageType->SetActiveWidget(W_GameSessionChatOuter);
+		W_ActiveChat = W_GameSessionChat;
 		break;
 	case EAccelByteChatRoomType::PARTY_V2:
-		Ws_ChatMessageType->SetActiveWidget(Vb_PartyChat);
-		Ws_ChatMessageTypeButton->SetActiveWidget(Btn_SessionChat);
-
-		Lv_ChatMessage = Lv_PartyChatMessage;
-		Ws_ChatMessage = Ws_PartyChatMessage;
+		Ws_ChatMessageType->SetActiveWidget(W_PartyChatOuter);
+		W_ActiveChat = W_PartyChat;
 		break;
 	}
 
 	CurrentChatRoomType = ChatRoomType;
 
 	// TODO: Show last chat message based on session chat type.
-}
-
-void USessionChatWidget_Starter::OnChatMessageChanged(const FText& Text)
-{
-	// Disable the send button if it is empty.
-	Btn_Send->SetIsEnabled(!Text.IsEmpty());
-
-	// Limit the chat message length.
-	Edt_ChatMessage->SetText(FText::FromString(Edt_ChatMessage->GetText().ToString().Left(MaxMessageLength)));
 }
 
 #pragma region Module Session Chat Function Definitions

@@ -53,7 +53,8 @@ void UFriendDetailsWidget::InitData(UFriendData* FriendData)
 	
 	CachedFriendData = FriendData;
 
-	// Display display name.
+	// Show display name or the generated display name instead if the actual display name is empty.
+	Tb_GeneratedDisplayNameNotice->SetVisibility(CachedFriendData->DisplayName.IsEmpty() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	if (!CachedFriendData->DisplayName.IsEmpty())
 	{
 		Tb_DisplayName->SetText(FText::FromString(CachedFriendData->DisplayName));

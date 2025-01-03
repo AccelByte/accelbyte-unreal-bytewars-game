@@ -38,14 +38,33 @@ void UAccelByteWarsActivatableWidget::NativePreConstruct()
 {
 	Super::NativePreConstruct();
 
-	// Assign triggerer to open AccelByte SDK config menu.
 	if (UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetWorld()->GetGameInstance()))
 	{
+		// Assign triggerer to open AccelByte SDK config menu.
 		OpenSdkConfigHandle.Unregister();
 		OpenSdkConfigHandle = RegisterUIActionBinding(FBindUIActionArgs(
 			GameInstance->GetOpenSDKConfigMenuInputAction(),
 			false,
 			FSimpleDelegate::CreateUObject(GameInstance, &UAccelByteWarsGameInstance::OpenSDKConfigMenu)));
+
+#pragma region "Lobby Connect/Disconnect using PS Controller"
+#ifdef AGS_LOBBY_CHEAT_ENABLED
+		if (AccelByteWarsUtility::GetFlagValueOrDefault(FLAG_CHEAT_LOBBY, SECTION_CHEAT_LOBBY, false))
+		{
+			LobbyConnectHandle.Unregister();
+			LobbyConnectHandle = RegisterUIActionBinding(FBindUIActionArgs(
+				GameInstance->LobbyConnectInputActionData,
+				false,
+				FSimpleDelegate::CreateUObject(GameInstance, &UAccelByteWarsGameInstance::LobbyConnect)));
+
+			LobbyDisconnectHandle.Unregister();
+			LobbyDisconnectHandle = RegisterUIActionBinding(FBindUIActionArgs(
+				GameInstance->LobbyDisconnectInputActionData,
+				false,
+				FSimpleDelegate::CreateUObject(GameInstance, &UAccelByteWarsGameInstance::LobbyDisconnect)));
+		}
+#endif // AGS_LOBBY_CHEAT_ENABLED
+#pragma endregion 
 	}
 
 	// Refresh Tutorial Module metadatas based on the default object.

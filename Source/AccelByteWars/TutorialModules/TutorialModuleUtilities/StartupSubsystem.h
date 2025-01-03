@@ -55,9 +55,18 @@ protected:
 
 private:
 	const FString CommandUserInfo = TEXT("ab.user.UserInfo");
+	const FString CommandLobbyConnect = TEXT("ab.lobby.connect");
+	const FString CommandLobbyDisconnect = TEXT("ab.lobby.disconnect");
 
 	UFUNCTION()
 	void DisplayUserInfo(const TArray<FString>& Args);
+
+public:
+	UFUNCTION()
+	void LobbyConnect(const TArray<FString>& Args);
+
+	UFUNCTION()
+	void LobbyDisconnect(const TArray<FString>& Args);
 #pragma endregion 
 
 #pragma region Login with Platform Only

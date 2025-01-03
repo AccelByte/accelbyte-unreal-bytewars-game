@@ -8,11 +8,14 @@
 #include "Play/SessionEssentials/SessionEssentialsModel.h"
 
 #include "Core/System/AccelByteWarsGameInstance.h"
-#include "PartyWidgetEntry_Starter.h"
 #include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
+
+#include "TutorialModuleUtilities/StartupSubsystem.h"
+#include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
+
+#include "PartyWidgetEntry_Starter.h"
 #include "Components/HorizontalBox.h"
 #include "CommonButtonBase.h"
-#include "TutorialModuleUtilities/StartupSubsystem.h"
 
 void UPartyWidget_Starter::NativeConstruct()
 {

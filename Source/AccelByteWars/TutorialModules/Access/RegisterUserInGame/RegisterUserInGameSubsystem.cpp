@@ -36,7 +36,7 @@ void URegisterUserInGameSubsystem::UpgradeAndVerifyAccount(
 {
     if (!UserId.IsValid()) 
     {
-        UE_LOG_REGISTERUSERINGAME(Warning, TEXT("Failed to upgrade headless account to full account. User id is null."));
+        UE_LOG_REGISTERUSERINGAME(Warning, TEXT("Failed to upgrade headless account to full account. User ID is null."));
         OnComplete.ExecuteIfBound(false, UPGRADE_ACCOUNT_UNKNOWN_ERROR.ToString(), FAccountUserData());
         return;
     }
@@ -44,6 +44,7 @@ void URegisterUserInGameSubsystem::UpgradeAndVerifyAccount(
     FUpgradeAndVerifyRequest Request;
     Request.Username = Username;
     Request.DisplayName = Username;
+    Request.UniqueDisplayName = Username;
     Request.EmailAddress = EmailAddress;
     Request.Password = Password;
     Request.Code = VerificationCode;

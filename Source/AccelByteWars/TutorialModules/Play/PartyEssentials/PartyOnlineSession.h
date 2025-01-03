@@ -35,7 +35,7 @@ class ACCELBYTEWARS_API UPartyOnlineSession : public USessionEssentialsOnlineSes
 // @@@MULTISNIP OnKickPlayerFromPartyCompleteDelegate {"selectedLines": ["1", "52-55"]}
 // @@@MULTISNIP OnKickedFromPartyDelegate {"selectedLines": ["1", "56-59"]}
 // @@@MULTISNIP OnPromotePartyLeaderCompleteDelegate {"selectedLines": ["1", "61-64"]}
-// @@@MULTISNIP OnPartySessionUpdateDelegate {"selectedLines": ["1", "66-73"]}
+// @@@MULTISNIP OnPartySessionUpdateDelegate {"selectedLines": ["1", "66-85"]}
 public:
 	virtual void RegisterOnlineDelegates() override;
 	virtual void ClearOnlineDelegates() override;
@@ -101,10 +101,22 @@ public:
 		return &OnPromotePartyLeaderCompleteDelegate;
 	}
 
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 	virtual FOnSessionParticipantsChange* GetOnPartyMembersChangeDelegates() override
 	{
 		return &OnPartyMembersChangeDelegates;
 	}
+#else
+	virtual FOnSessionParticipantJoined* GetOnPartyMemberJoinedDelegates() override
+	{
+		return &OnPartyMemberJoinedDelegates;
+	}
+	virtual FOnSessionParticipantLeft* GetOnPartyMemberLeftDelegates() override
+	{
+		return &OnPartyMemberLeftDelegates;
+	}
+#endif
+
 	virtual FOnSessionUpdateReceived* GetOnPartySessionUpdateReceivedDelegates() override
 	{ 
 		return &OnPartySessionUpdateReceivedDelegates; 
@@ -126,8 +138,8 @@ public:
 // @@@MULTISNIP OnKickedFromParty {"selectedLines": ["1", "29"]}
 // @@@MULTISNIP OnPromotePartyLeaderComplete {"selectedLines": ["1", "31"]}
 // @@@MULTISNIP DisplayCurrentPartyLeader {"selectedLines": ["1", "32"]}
-// @@@MULTISNIP OnPartySessionUpdate {"selectedLines": ["1", "34-35"]}
-// @@@MULTISNIP OnConnectLobbyComplete {"selectedLines": ["1", "37"]}
+// @@@MULTISNIP OnPartySessionUpdate {"selectedLines": ["1", "34-41"]}
+// @@@MULTISNIP OnConnectLobbyComplete {"selectedLines": ["1", "43"]}
 protected:
 	void OnCreatePartyToInviteMember(FName SessionName, bool bWasSuccessful, const int32 LocalUserNum, const FUniqueNetIdPtr SenderId, const FUniqueNetIdPtr InviteeId);
 
@@ -161,7 +173,13 @@ protected:
 	virtual void OnPromotePartyLeaderComplete(const FUniqueNetId& NewLeader, const FOnlineError& Result) override;
 	void DisplayCurrentPartyLeader();
 
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 	virtual void OnPartyMembersChange(FName SessionName, const FUniqueNetId& Member, bool bJoined) override;
+#else
+	virtual void OnPartyMemberJoined(FName SessionName, const FUniqueNetId& Member) override;
+	virtual void OnPartyMemberLeft(FName SessionName, const FUniqueNetId& Member, EOnSessionParticipantLeftReason Reason) override;
+#endif
+
 	virtual void OnPartySessionUpdateReceived(FName SessionName) override;
 
 	void OnConnectLobbyComplete(int32 LocalUserNum, bool bSucceeded, const FUniqueNetId& UserId, const FString& Error);
@@ -180,7 +198,7 @@ protected:
 // @@@MULTISNIP OnKickPlayerFromPartyCompleteDelegate {"selectedLines": ["1", "24"]}
 // @@@MULTISNIP OnKickedFromPartyDelegate {"selectedLines": ["1", "25"]}
 // @@@MULTISNIP OnPromotePartyLeaderCompleteDelegate {"selectedLines": ["1", "27"]}
-// @@@MULTISNIP OnPartySessionUpdateDelegate {"selectedLines": ["1", "29-30"]}
+// @@@MULTISNIP OnPartySessionUpdateDelegate {"selectedLines": ["1", "29-36"]}
 // @@@MULTISNIP PartySessionTemplate {"selectedLines": ["1", "10"]}
 // @@@MULTISNIP LastPartyLeader {"selectedLines": ["1", "11"]}
 // @@@MULTISNIP PartyMemberStatus {"selectedLines": ["1", "13"]}
@@ -212,7 +230,13 @@ private:
 
 	FOnPromotePartySessionLeaderComplete OnPromotePartyLeaderCompleteDelegate;
 
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 	FOnSessionParticipantsChange OnPartyMembersChangeDelegates;
+#else
+	FOnSessionParticipantJoined OnPartyMemberJoinedDelegates;
+	FOnSessionParticipantLeft OnPartyMemberLeftDelegates;
+#endif
+
 	FOnSessionUpdateReceived OnPartySessionUpdateReceivedDelegates;
 #pragma endregion
 // @@@SNIPEND

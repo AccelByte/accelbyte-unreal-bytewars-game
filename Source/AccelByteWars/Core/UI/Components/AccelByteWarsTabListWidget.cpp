@@ -6,9 +6,11 @@
 #include "AccelByteWarsTabListWidget.h"
 
 #include "AccelByteWarsButtonBase.h"
+#include "AccelByteWarsWidgetSwitcher.h"
 #include "CommonActionWidget.h"
 #include "CommonInputSubsystem.h"
 #include "Groups/CommonButtonGroupBase.h"
+#include "Blueprint/WidgetTree.h"
 
 void UAccelByteWarsTabListWidget::NativePreConstruct()
 {
@@ -57,6 +59,7 @@ void UAccelByteWarsTabListWidget::NativeConstruct()
 	}
 
 	OnTabButtonCreation.AddDynamic(this, &ThisClass::HandleOnTabButtonCreation);
+	OnTabSelected.AddDynamic(this, &ThisClass::HandleOnTabSelected);
 }
 
 void UAccelByteWarsTabListWidget::NativeDestruct()
@@ -65,6 +68,7 @@ void UAccelByteWarsTabListWidget::NativeDestruct()
 
 	PreviouslySelectedTabId = FName();
 	OnTabButtonCreation.RemoveAll(this);
+	OnTabSelected.RemoveAll(this);
 }
 
 void UAccelByteWarsTabListWidget::HandleTabCreation_Implementation(FName TabNameID, UCommonButtonBase* TabButton)
@@ -171,6 +175,35 @@ void UAccelByteWarsTabListWidget::HandleOnTabButtonCreation(FName TabId, UCommon
 		{
 			// widget does not exist in switcher, add it
 			LinkedSwitcher->AddChild(TabInfo->ContentInstance);
+		}
+	}
+}
+
+void UAccelByteWarsTabListWidget::HandleOnTabSelected(FName TabId)
+{
+	const FCommonRegisteredTabInfo* TabInfo = GetRegisteredTabsByID().Find(TabId);
+	if (!TabInfo) 
+	{
+		return;
+	}
+
+	/* Request to refresh content's widget switcher if any. 
+	 * This is required to make sure the widget switcher state is in the correct state. */
+	if (UUserWidget* ContentWidget = Cast<UUserWidget>(TabInfo->ContentInstance))
+	{
+		if (UAccelByteWarsWidgetSwitcher* Switcher = Cast<UAccelByteWarsWidgetSwitcher>(ContentWidget))
+		{
+			Switcher->ForceRefresh();
+		}
+
+		TArray<UWidget*> Children{};
+		ContentWidget->WidgetTree->GetAllWidgets(Children);
+		for (UWidget* Widget : Children)
+		{
+			if (UAccelByteWarsWidgetSwitcher* Switcher = Cast<UAccelByteWarsWidgetSwitcher>(Widget))
+			{
+				Switcher->ForceRefresh();
+			}
 		}
 	}
 }

@@ -19,6 +19,8 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
 	void SetChatSenderType(const bool bIsLocalSender);
 
+// @@@SNIPSTART ChatWidgetEntry.h-protected
+// @@@MULTISNIP Overview {"selectedLines": ["1", "4-8"]}
 protected:
 	virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;
 
@@ -27,4 +29,5 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Tb_Message;
+// @@@SNIPEND
 };

@@ -118,7 +118,7 @@ void UStatsProfileWidget::OnQueryLocalUserStatsComplete(
 	FUniqueNetIdPtr UserId = AccelByteWarsUtility::GetUserId(GetOwningPlayer());
 	if (!UserId.IsValid())
 	{
-		UE_LOG_STATSESSENTIALS(Warning, TEXT("Failed to handle on-complete query local user stats. User id is invalid."));
+		UE_LOG_STATSESSENTIALS(Warning, TEXT("Failed to handle on-complete query local user stats. User ID is invalid."));
 		Ws_Loader->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Error);
 		return;
 	}
@@ -135,7 +135,7 @@ void UStatsProfileWidget::OnQueryLocalUserStatsComplete(
 	}
 	if (!TargetUserStats) 
 	{
-		UE_LOG_STATSESSENTIALS(Warning, TEXT("Failed to handle on-complete query local user stats. Local user's statistics is not found."));
+		UE_LOG_STATSESSENTIALS(Warning, TEXT("Failed to handle on-complete query local user stats. Local users' statistics are not found."));
 		Ws_Loader->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Empty);
 		return;
 	}

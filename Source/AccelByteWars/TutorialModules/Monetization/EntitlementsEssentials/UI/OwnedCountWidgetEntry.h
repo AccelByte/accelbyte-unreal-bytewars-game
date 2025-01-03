@@ -27,6 +27,7 @@ private:
 	UPROPERTY()
 	UEntitlementsEssentialsSubsystem* EntitlementsSubsystem;
 
+	void RetrieveEntitlementWithForceRequest(const bool bForceRequest);
 	void ShowOwnedCount(const FOnlineError& Error, const UStoreItemDataObject* Entitlement);
 
 	UFUNCTION()

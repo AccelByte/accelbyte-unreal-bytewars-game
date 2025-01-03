@@ -28,6 +28,7 @@ void UPresenceWidget::NativeConstruct()
     SetupPresence();
 }
 
+// @@@SNIPSTART PresenceWidget.cpp-NativeDestruct
 void UPresenceWidget::NativeDestruct()
 {
     // Clear cache.
@@ -40,6 +41,7 @@ void UPresenceWidget::NativeDestruct()
 
     Super::NativeDestruct();
 }
+// @@@SNIPEND
 
 void UPresenceWidget::SetupPresence()
 {
@@ -64,9 +66,9 @@ void UPresenceWidget::SetupPresence()
 
     /* The presence widget is a modular widget, it can be spawned to the friend entry and the friend details widget. 
      * This is a part of requirement to separate between presence module with other tutorial modules. 
-     * But since the presence module depends on the friend essentials module, this widget needs to get the user id from friend essentials widgets. */
+     * But since the presence module depends on the friend essentials module, this widget needs to get the user ID from friend essentials widgets. */
 
-    // If the presence is spawned in the an entry widget, then get the user id from the it.
+    // If the presence is spawned in the an entry widget, then get the user ID from the it.
     if (UAccelByteWarsWidgetEntry* WidgetEntry = Cast<UAccelByteWarsWidgetEntry>(UCommonUILibrary::FindParentWidgetOfType(this, UAccelByteWarsWidgetEntry::StaticClass())))
     {
         if (UFriendWidgetEntry* FriendWidgetEntry = Cast<UFriendWidgetEntry>(WidgetEntry)) 
@@ -193,7 +195,7 @@ void UPresenceWidget::SetupPresence()
         return;
     }
 
-    // If the presence is spawned in the friend details widget, then get the user id from the it.
+    // If the presence is spawned in the friend details widget, then get the user ID from the it.
     UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget();
     if (!BaseUIWidget)
     {
@@ -229,6 +231,8 @@ void UPresenceWidget::SetupPresence()
     }
 }
 
+// @@@SNIPSTART PresenceWidget.cpp-OnSetupPresenceComplete
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "10-16"]}
 void UPresenceWidget::OnSetupPresenceComplete()
 {
     // Bind presence events.
@@ -245,7 +249,10 @@ void UPresenceWidget::OnSetupPresenceComplete()
     
     RefreshPresence(bForceQueryPresence);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PresenceWidget.cpp-RefreshPresence
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "74"]}
 void UPresenceWidget::RefreshPresence(bool bForceQueryPresence)
 {
     if (!PresenceUserId) 
@@ -320,7 +327,9 @@ void UPresenceWidget::RefreshPresence(bool bForceQueryPresence)
         }
     ));
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PresenceWidget.cpp-OnPresenceUpdated
 void UPresenceWidget::OnPresenceUpdated(const FUniqueNetId& UserId, const TSharedRef<FOnlineUserPresence>& Presence)
 {
     const FUniqueNetIdAccelByteUserPtr PresenceUserABId = StaticCastSharedPtr<const FUniqueNetIdAccelByteUser>(PresenceUserId);
@@ -335,7 +344,9 @@ void UPresenceWidget::OnPresenceUpdated(const FUniqueNetId& UserId, const TShare
         RefreshPresence();
     }
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART PresenceWidget.cpp-OnBulkQueryPresenceComplete
 void UPresenceWidget::OnBulkQueryPresenceComplete(const bool bWasSuccessful, const FUserIDPresenceMap& Presences)
 {
     const FUniqueNetIdAccelByteUserPtr PresenceUserABId = StaticCastSharedPtr<const FUniqueNetIdAccelByteUser>(PresenceUserId);
@@ -350,3 +361,4 @@ void UPresenceWidget::OnBulkQueryPresenceComplete(const bool bWasSuccessful, con
         RefreshPresence();
     }
 }
+// @@@SNIPEND

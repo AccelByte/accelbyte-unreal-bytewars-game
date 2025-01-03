@@ -5,15 +5,10 @@
 #include "PrivateChatWidget_Starter.h"
 
 #include "Core/System/AccelByteWarsGameInstance.h"
-#include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
-
 #include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
-
-#include "Components/WidgetSwitcher.h"
-#include "Components/ListView.h"
-#include "Components/EditableText.h"
 #include "CommonButtonBase.h"
+#include "Social/ChatEssentials/UI/ChatWidget.h"
 
 void UPrivateChatWidget_Starter::NativeConstruct()
 {
@@ -33,12 +28,11 @@ void UPrivateChatWidget_Starter::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
-	// Reset private chat messages.
-	Lv_ChatMessage->ClearListItems();
-
-	// Reset chat box.
-	Edt_ChatMessage->SetText(FText::GetEmpty());
-	Edt_ChatMessage->OnTextChanged.AddUniqueDynamic(this, &ThisClass::OnChatMessageChanged);
+	// Reset chat widget
+	W_Chat->ClearChatMessages();
+	W_Chat->ClearInput();
+	
+	Btn_Back->OnClicked().AddUObject(this, &ThisClass::DeactivateWidget);
 	
 	// TODO: Bind private chat events here.
 
@@ -49,27 +43,21 @@ void UPrivateChatWidget_Starter::NativeOnDeactivated()
 {
 	PrivateChatRecipientUserId = nullptr;
 
-	Edt_ChatMessage->OnTextCommitted.Clear();
-	Edt_ChatMessage->OnTextChanged.Clear();
-	Btn_Send->OnClicked().Clear();
+	Btn_Back->OnClicked().RemoveAll(this);
 
 	// TODO: Unbind private chat events here.
 
 	Super::NativeOnDeactivated();
 }
 
+UWidget* UPrivateChatWidget_Starter::NativeGetDesiredFocusTarget() const
+{
+	return W_Chat;
+}
+
 void UPrivateChatWidget_Starter::SetPrivateChatRecipient(FUniqueNetIdPtr RecipientUserId)
 {
 	PrivateChatRecipientUserId = RecipientUserId;
-}
-
-void UPrivateChatWidget_Starter::OnChatMessageChanged(const FText& Text)
-{
-	// Disable the send button if it is empty.
-	Btn_Send->SetIsEnabled(!Text.IsEmpty());
-
-	// Limit the chat message length.
-	Edt_ChatMessage->SetText(FText::FromString(Edt_ChatMessage->GetText().ToString().Left(MaxMessageLength)));
 }
 
 #pragma region Module Private Chat Function Definitions

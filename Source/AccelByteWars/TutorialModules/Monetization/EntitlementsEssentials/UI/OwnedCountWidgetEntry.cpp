@@ -12,6 +12,7 @@
 #include "Monetization/EntitlementsEssentials/UI/InventoryWidget.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
+#include "Monetization/StoreItemPurchase/UI/ItemPurchaseWidget.h"
 
 void UOwnedCountWidgetEntry::NativeOnActivated()
 {
@@ -20,6 +21,29 @@ void UOwnedCountWidgetEntry::NativeOnActivated()
 	EntitlementsSubsystem = GetGameInstance()->GetSubsystem<UEntitlementsEssentialsSubsystem>();
 	ensure(EntitlementsSubsystem);
 
+	RetrieveEntitlementWithForceRequest(false);
+
+	UItemPurchaseWidget::OnPurchaseCompleteMulticastDelegate.AddWeakLambda(this, [this](const APlayerController* PC)
+	{
+		RetrieveEntitlementWithForceRequest(true);
+	});
+}
+
+void UOwnedCountWidgetEntry::NativeOnDeactivated()
+{
+	Super::NativeOnDeactivated();
+
+	UItemPurchaseWidget::OnPurchaseCompleteMulticastDelegate.RemoveAll(this);
+
+	if (UInventoryWidget* ParentWidget = GetFirstOccurenceOuter<UInventoryWidget>())
+	{
+		ParentWidget->OnEquipped.RemoveAll(this);
+		ParentWidget->OnUnequipped.RemoveAll(this);
+	}
+}
+
+void UOwnedCountWidgetEntry::RetrieveEntitlementWithForceRequest(const bool bForceRequest)
+{
 	SetVisibility(ESlateVisibility::Collapsed);
 
 	W_Parent = GetFirstOccurenceOuter<UStoreItemListEntry>();
@@ -35,18 +59,8 @@ void UOwnedCountWidgetEntry::NativeOnActivated()
 		EntitlementsSubsystem->GetOrQueryUserItemEntitlement(
 			GetOwningPlayer(),
 			ItemData->GetStoreItemId(),
-			FOnGetOrQueryUserItemEntitlementComplete::CreateUObject(this, &ThisClass::ShowOwnedCount));
-	}
-}
-
-void UOwnedCountWidgetEntry::NativeOnDeactivated()
-{
-	Super::NativeOnDeactivated();
-
-	if (UInventoryWidget* ParentWidget = GetFirstOccurenceOuter<UInventoryWidget>())
-	{
-		ParentWidget->OnEquipped.RemoveAll(this);
-		ParentWidget->OnUnequipped.RemoveAll(this);
+			FOnGetOrQueryUserItemEntitlementComplete::CreateUObject(this, &ThisClass::ShowOwnedCount),
+			bForceRequest);
 	}
 }
 
@@ -59,22 +73,15 @@ void UOwnedCountWidgetEntry::ShowOwnedCount(const FOnlineError& Error, const USt
 
 	// Set owned count.
 	FText Text;
-	if (Entitlement->GetIsConsumable() && Entitlement->GetCount() > 0)
+	if (Entitlement->GetCount() > 0)
 	{
-		const FString TextString = FString::Printf(TEXT("%d x"), Entitlement->GetCount());
-		Text = FText::FromString(TextString);
-	}
-	else if (!Entitlement->GetIsConsumable())
-	{
-		Text = TEXT_OWNED;
+		Text = Entitlement->GetIsConsumable() ?
+			FText::FromString(FString::Printf(TEXT("%d x"), Entitlement->GetCount())) : TEXT_OWNED;
 	}
 	Tb_OwnedCount->SetText(Text);
 
 	// Show the owned count if not empty.
-	SetVisibility(Tb_OwnedCount->GetText().IsEmpty() || 
-		!Entitlement->GetIsConsumable() ? 
-		ESlateVisibility::Collapsed : 
-		ESlateVisibility::Visible);
+	SetVisibility(Tb_OwnedCount->GetText().IsEmpty() ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
 
 	if (UInventoryWidget* ParentWidget = GetFirstOccurenceOuter<UInventoryWidget>())
 	{

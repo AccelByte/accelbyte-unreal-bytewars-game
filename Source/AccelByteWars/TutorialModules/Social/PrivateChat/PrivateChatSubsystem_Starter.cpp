@@ -8,8 +8,11 @@
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
+
 #include "Social/FriendsEssentials/UI/FriendDetailsWidget.h"
+#include "Social/ChatEssentials/ChatEssentialsModels.h"
 #include "Social/PrivateChat/UI/PrivateChatWidget_Starter.h"
+#include "Social/ChatEssentials/ChatEssentialsModels.h"
 
 #include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
 
@@ -33,7 +36,7 @@ void UPrivateChatSubsystem_Starter::Initialize(FSubsystemCollectionBase& Collect
             return;
         }
 
-        // Open private chat widget and inject the friend user id to it.
+        // Open private chat widget and inject the friend user ID to it.
         PrivateChatButtonMetadata->ButtonAction.Clear();
         PrivateChatButtonMetadata->ButtonAction.AddWeakLambda(this, [this, WidgetClass]()
         {
@@ -130,7 +133,7 @@ FOnlineChatAccelBytePtr UPrivateChatSubsystem_Starter::GetChatInterface() const
     const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
     if (!ensure(Subsystem))
     {
-        UE_LOG_PRIVATECHAT(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and DefaultPlatformService under [OnlineSubsystem] in the Engine.ini set to AccelByte."));
+        UE_LOG_PRIVATECHAT(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and the DefaultPlatformService under [OnlineSubsystem] in the Engine.ini file is set to AccelByte."));
         return nullptr;
     }
 

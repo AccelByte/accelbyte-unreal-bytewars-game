@@ -18,6 +18,12 @@ class ACCELBYTEWARS_API UPresenceWidget : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
 	
+// @@@SNIPSTART PresenceWidget.h-protected
+// @@@MULTISNIP PresenceUI {"selectedLines": ["1", "20-24"]}
+// @@@MULTISNIP PresenceUserId {"selectedLines": ["1", "15"]}
+// @@@MULTISNIP RefreshPresence {"selectedLines": ["1", "8"]}
+// @@@MULTISNIP OnPresenceUpdated {"selectedLines": ["1", "9"]}
+// @@@MULTISNIP OnBulkQueryPresenceComplete {"selectedLines": ["1", "10"]}
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
@@ -29,9 +35,12 @@ protected:
 	void OnPresenceUpdated(const FUniqueNetId& UserId, const TSharedRef<FOnlineUserPresence>& Presence);
 	void OnBulkQueryPresenceComplete(const bool bWasSuccessful, const FUserIDPresenceMap& Presences);
 
+	UPROPERTY()
 	UPresenceEssentialsSubsystem* PresenceEssentialsSubsystem;
 
 	FUniqueNetIdPtr PresenceUserId;
+
+	UPROPERTY()
 	UListViewBase* ParentListView;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
@@ -39,4 +48,5 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UThrobber* Th_Loader;
+// @@@SNIPEND
 };

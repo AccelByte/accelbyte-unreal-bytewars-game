@@ -62,16 +62,17 @@ void UProfileWidget::ShowPlayerProfile()
 	}
 
 	NetId = UserId;
-
-	// Show display name.
+	
+	// Show display name or the generated display name instead if the actual display name is empty.
 	FString DisplayName = UserAccount->GetDisplayName();
+	Tb_GeneratedDisplayNameNotice->SetVisibility(DisplayName.IsEmpty() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	if (DisplayName.IsEmpty())
 	{
 		DisplayName = UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(UserABId.ToSharedRef().Get());
 	}
 	Tb_DisplayName->SetText(FText::FromString(DisplayName));
 
-	// Show user id.
+	// Show user ID.
 	Tb_UserId->SetText(FText::FromString(FString::Printf(TEXT("User Id: %s"), *UserABId->GetAccelByteId())));
 
 	// Show avatar image.
@@ -85,21 +86,21 @@ void UProfileWidget::CopyPlayerUserIdToClipboard()
 	const ULocalPlayer* LocalPlayer = GetOwningPlayer()->GetLocalPlayer();
 	if (!ensure(LocalPlayer))
 	{
-		UE_LOG_STATSESSENTIALS(Warning, TEXT("Failed to copy player user id. LocalPlayer is not valid."));
+		UE_LOG_STATSESSENTIALS(Warning, TEXT("Failed to copy player user ID. LocalPlayer is not valid."));
 		return;
 	}
 
 	const FUniqueNetIdPtr UserId = LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId();
 	if (!(ensure(UserId)))
 	{
-		UE_LOG_STATSESSENTIALS(Warning, TEXT("Failed to copy player user id. User Id is not valid."));
+		UE_LOG_STATSESSENTIALS(Warning, TEXT("Failed to copy player user ID. User Id is not valid."));
 		return;
 	}
 
 	const FUniqueNetIdAccelByteUserPtr UserABId = StaticCastSharedPtr<const FUniqueNetIdAccelByteUser>(UserId);
 	if (!(ensure(UserABId)))
 	{
-		UE_LOG_STATSESSENTIALS(Warning, TEXT("Failed to copy player user id. User Id is not valid."));
+		UE_LOG_STATSESSENTIALS(Warning, TEXT("Failed to copy player user ID. User Id is not valid."));
 		return;
 	}
 

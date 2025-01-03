@@ -5,16 +5,11 @@
 #include "SessionChatWidget.h"
 
 #include "Core/System/AccelByteWarsGameInstance.h"
-#include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
-
 #include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
-
-#include "Components/VerticalBox.h"
 #include "Components/WidgetSwitcher.h"
-#include "Components/ListView.h"
-#include "Components/EditableText.h"
 #include "CommonButtonBase.h"
+#include "Social/ChatEssentials/UI/ChatWidget.h"
 
 void USessionChatWidget::NativeConstruct()
 {
@@ -33,26 +28,21 @@ void USessionChatWidget::NativeConstruct()
 void USessionChatWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
-
-	// Reset cache.
-	Lv_ChatMessage = nullptr;
-	Ws_ChatMessage = nullptr;
-
-	// Reset chat messages.
-	Lv_GameSessionChatMessage->ClearListItems();
-	Lv_PartyChatMessage->ClearListItems();
-
-	// Reset chat box.
-	Edt_ChatMessage->SetText(FText::GetEmpty());
-
-	// Bind event to send chat message.
-	Edt_ChatMessage->OnTextCommitted.AddUniqueDynamic(this, &ThisClass::OnSendChatMessageCommited);
-	Edt_ChatMessage->OnTextChanged.AddUniqueDynamic(this, &ThisClass::OnChatMessageChanged);
-	Btn_Send->OnClicked().AddUObject(this, &ThisClass::SendChatMessage);
+	
+	// Reset chat widget
+	W_GameSessionChat->ClearChatMessages();
+	W_GameSessionChat->ClearInput();
+	W_PartyChat->ClearChatMessages();
+	W_PartyChat->ClearInput();
 
 	// Bind event to switch between chat message type.
 	Btn_SessionChat->OnClicked().AddUObject(this, &ThisClass::SwitchChatMessageType, EAccelByteChatRoomType::SESSION_V2);
 	Btn_PartyChat->OnClicked().AddUObject(this, &ThisClass::SwitchChatMessageType, EAccelByteChatRoomType::PARTY_V2);
+
+	// Setup widget
+	W_GameSessionChat->OnSubmitDelegates.AddUObject(this, &ThisClass::SendChatMessage);
+	W_PartyChat->OnSubmitDelegates.AddUObject(this, &ThisClass::SendChatMessage);
+	Btn_Back->OnClicked().AddUObject(this, &ThisClass::DeactivateWidget);
 
 	// Bind chat events.
 	if (SessionChatSubsystem) 
@@ -68,13 +58,6 @@ void USessionChatWidget::NativeOnDeactivated()
 {
 	CurrentChatRoomType = EAccelByteChatRoomType::SESSION_V2;
 
-	Edt_ChatMessage->OnTextCommitted.Clear();
-	Edt_ChatMessage->OnTextChanged.Clear();
-	Btn_Send->OnClicked().Clear();
-	
-	Btn_SessionChat->OnClicked().Clear();
-	Btn_PartyChat->OnClicked().Clear();
-
 	// Unbind chat events.
 	if (SessionChatSubsystem)
 	{
@@ -82,7 +65,31 @@ void USessionChatWidget::NativeOnDeactivated()
 		SessionChatSubsystem->GetOnChatRoomMessageReceivedDelegates()->RemoveAll(this);
 	}
 
+	// Cleanup widget
+	Btn_SessionChat->OnClicked().Clear();
+	Btn_PartyChat->OnClicked().Clear();
+	W_GameSessionChat->OnSubmitDelegates.RemoveAll(this);
+	W_PartyChat->OnSubmitDelegates.RemoveAll(this);
+	Btn_Back->OnClicked().RemoveAll(this);
+
 	Super::NativeOnDeactivated();
+}
+
+UWidget* USessionChatWidget::NativeGetDesiredFocusTarget() const
+{
+	UWidget* TargetWidget = nullptr;
+
+	switch(CurrentChatRoomType)
+	{
+	case EAccelByteChatRoomType::SESSION_V2:
+		TargetWidget = W_GameSessionChat;
+		break;
+	case EAccelByteChatRoomType::PARTY_V2:
+		TargetWidget = W_PartyChat;
+		break;
+	}
+
+	return TargetWidget;
 }
 
 void USessionChatWidget::SetDefaultChatType(const EAccelByteChatRoomType ChatRoomType)
@@ -96,39 +103,23 @@ void USessionChatWidget::SwitchChatMessageType(const EAccelByteChatRoomType Chat
 	switch(ChatRoomType) 
 	{
 	case EAccelByteChatRoomType::SESSION_V2:
-		Ws_ChatMessageType->SetActiveWidget(Vb_GameSessionChat);
-		Ws_ChatMessageTypeButton->SetActiveWidget(Btn_PartyChat);
-
-		Lv_ChatMessage = Lv_GameSessionChatMessage;
-		Ws_ChatMessage = Ws_GameSessionChatMessage;
+		Ws_ChatMessageType->SetActiveWidget(W_GameSessionChatOuter);
+		W_ActiveChat = W_GameSessionChat;
 		break;
 	case EAccelByteChatRoomType::PARTY_V2:
-		Ws_ChatMessageType->SetActiveWidget(Vb_PartyChat);
-		Ws_ChatMessageTypeButton->SetActiveWidget(Btn_SessionChat);
-
-		Lv_ChatMessage = Lv_PartyChatMessage;
-		Ws_ChatMessage = Ws_PartyChatMessage;
+		Ws_ChatMessageType->SetActiveWidget(W_PartyChatOuter);
+		W_ActiveChat = W_PartyChat;
 		break;
 	}
 
 	CurrentChatRoomType = ChatRoomType;
 
 	// Try to display last chat messages if the current one is empty.
-	if (Lv_ChatMessage && Lv_ChatMessage->GetListItems().IsEmpty())
+	if (W_ActiveChat)
 	{
+		W_ActiveChat->ClearChatMessages();
+		W_ActiveChat->ClearInput();
 		GetLastChatMessages();
-	}
-}
-
-void USessionChatWidget::AppendChatMessage(UChatData* ChatData)
-{
-	// Display chat message.
-	if (Lv_ChatMessage && ChatData)
-	{
-		Ws_ChatMessage->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Not_Empty);
-
-		Lv_ChatMessage->AddItem(ChatData);
-		Lv_ChatMessage->ScrollToBottom();
 	}
 }
 
@@ -173,20 +164,11 @@ void USessionChatWidget::AppendChatMessage(const FChatMessage& Message)
 	}
 
 	// Display chat message.
-	AppendChatMessage(ChatData);
+	W_ActiveChat->AppendChatMessage(ChatData);
 }
 
-void USessionChatWidget::SendChatMessage()
+void USessionChatWidget::SendChatMessage(const FText& MessageText)
 {
-	// Refresh text pointer.
-	Edt_ChatMessage->SetText(Edt_ChatMessage->GetText());
-
-	// Don't send empty message.
-	if (Edt_ChatMessage->GetText().IsEmpty())
-	{
-		return;
-	}
-
 	if (!SessionChatSubsystem)
 	{
 		UE_LOG_SESSIONCHAT(Warning, TEXT("Cannot send chat message. Session Chat subsystem is not valid."));
@@ -210,43 +192,7 @@ void USessionChatWidget::SendChatMessage()
 	SessionChatSubsystem->SendChatMessage(
 		LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId(),
 		SessionChatSubsystem->GetChatRoomIdBasedOnType(CurrentChatRoomType),
-		Edt_ChatMessage->GetText().ToString());
-
-	// Clear text after sending chat.
-	Edt_ChatMessage->SetText(FText::GetEmpty());
-	Edt_ChatMessage->SetUserFocus(GetOwningPlayer());
-
-	// Cooldown to prevent spamming.
-	Edt_ChatMessage->SetIsEnabled(false);
-	Btn_Send->SetIsEnabled(false);
-	GetGameInstance()->GetTimerManager().SetTimer(
-		SendChatDelayTimerHandle,
-		FTimerDelegate::CreateWeakLambda(this, [this]()
-		{
-			Edt_ChatMessage->SetIsEnabled(true);
-			Btn_Send->SetIsEnabled(true);
-		}),
-		SendChatCooldown, false, SendChatCooldown);
-}
-
-void USessionChatWidget::OnSendChatMessageCommited(const FText& Text, ETextCommit::Type CommitMethod)
-{
-	// Check if commit method is valid.
-	if (CommitMethod != ETextCommit::Type::OnEnter || Text.IsEmpty())
-	{
-		return;
-	}
-
-	SendChatMessage();
-}
-
-void USessionChatWidget::OnChatMessageChanged(const FText& Text)
-{
-	// Disable the send button if it is empty.
-	Btn_Send->SetIsEnabled(!Text.IsEmpty());
-
-	// Limit the chat message length.
-	Edt_ChatMessage->SetText(FText::FromString(Edt_ChatMessage->GetText().ToString().Left(MaxMessageLength)));
+		MessageText.ToString());
 }
 
 void USessionChatWidget::GetLastChatMessages()
@@ -270,13 +216,11 @@ void USessionChatWidget::GetLastChatMessages()
 		return;
 	}
 
-	// Show loading message.
-	if (!ensure(Ws_ChatMessage))
+	if (!ensure(W_ActiveChat))
 	{
-		UE_LOG_SESSIONCHAT(Warning, TEXT("Cannot get last chat messages. Chat message container is not valid."));
+		UE_LOG_SESSIONCHAT(Warning, TEXT("Cannot get last chat messages. Chat widget component is not valid."));
 		return;
 	}
-	Ws_ChatMessage->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Loading);
 
 	// Get chat room id.
 	FString ChatRoomId = SessionChatSubsystem->GetChatRoomIdBasedOnType(CurrentChatRoomType);
@@ -284,7 +228,7 @@ void USessionChatWidget::GetLastChatMessages()
 	// Abort if room id was not found.
 	if (ChatRoomId.IsEmpty())
 	{
-		Ws_ChatMessage->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Error);
+		W_ActiveChat->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Error);
 		return;
 	}
 
@@ -293,13 +237,13 @@ void USessionChatWidget::GetLastChatMessages()
 	if (SessionChatSubsystem->GetLastChatMessages(
 		LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId(),
 		ChatRoomId,
-		MaxChatHistory,
+		W_ActiveChat->GetMaxChatHistory(),
 		OutMessages)) 
 	{
 		// Abort if last messages is empty.
 		if (OutMessages.IsEmpty())
 		{
-			Ws_ChatMessage->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Empty);
+			W_ActiveChat->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Empty);
 			return;
 		}
 
@@ -313,7 +257,7 @@ void USessionChatWidget::GetLastChatMessages()
 	// Show error message if failed.
 	else
 	{
-		Ws_ChatMessage->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Error);
+		W_ActiveChat->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Error);
 	}
 }
 
@@ -346,7 +290,7 @@ void USessionChatWidget::OnSendChatComplete(FString UserId, FString MsgBody, FSt
 	UChatData* ChatData = NewObject<UChatData>();
 	ChatData->Message = MsgBody;
 	ChatData->bIsSenderLocal = true;
-	AppendChatMessage(ChatData);
+	W_ActiveChat->AppendChatMessage(ChatData);
 }
 
 void USessionChatWidget::OnChatRoomMessageReceived(const FUniqueNetId& UserId, const FChatRoomId& RoomId, const TSharedRef<FChatMessage>& Message)

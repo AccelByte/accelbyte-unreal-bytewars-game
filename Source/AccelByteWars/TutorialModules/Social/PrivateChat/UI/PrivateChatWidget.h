@@ -6,15 +6,12 @@
 
 #include "CoreMinimal.h"
 #include "Social/PrivateChat/PrivateChatSubsystem.h"
-#include "Social/ChatEssentials/ChatEssentialsModels.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
 #include "PrivateChatWidget.generated.h"
 
-class UAccelByteWarsWidgetSwitcher;
-class UListView;
-class UEditableText;
 class UCommonButtonBase;
 class UPromptSubsystem;
+class UChatWidget;
 
 UCLASS(Abstract)
 class ACCELBYTEWARS_API UPrivateChatWidget : public UAccelByteWarsActivatableWidget
@@ -25,52 +22,37 @@ public:
 	void SetPrivateChatRecipient(FUniqueNetIdPtr RecipientUserId);
 	FUniqueNetIdPtr GetPrivateChatRecipient() const { return PrivateChatRecipientUserId; }
 
+// @@@SNIPSTART PrivateChatWidget.h-protected
+// @@@MULTISNIP Overview {"selectedLines": ["1", "25-26"]}
+// @@@MULTISNIP AddingUI {"selectedLines": ["1", "7-15"]}
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
+	virtual UWidget* NativeGetDesiredFocusTarget() const override;
 
-	void AppendChatMessage(UChatData* ChatData);
-	void AppendChatMessage(const FChatMessage& Message);
-
-	void SendPrivateChatMessage();
+	void AppendChatMessage(const FChatMessage& Message) const;
 
 	UFUNCTION()
-	void OnSendPrivateChatMessageCommited(const FText& Text, ETextCommit::Type CommitMethod);
-
-	UFUNCTION()
-	void OnChatMessageChanged(const FText& Text);
-
-	void GetLastPrivateChatMessages();
-
+	void SendPrivateChatMessage(const FText& MessageText);
 	void OnSendPrivateChatComplete(FString UserId, FString MsgBody, FString RoomId, bool bWasSuccessful);
+
 	void OnPrivateChatMessageReceived(const FUniqueNetId& UserId, const TSharedRef<FChatMessage>& Message);
 
+	void GetLastPrivateChatMessages() const;
+
+	UPROPERTY()
 	UPrivateChatSubsystem* PrivateChatSubsystem;
+
+	UPROPERTY()
 	UPromptSubsystem* PromptSubsystem;
 
 	FUniqueNetIdPtr PrivateChatRecipientUserId = nullptr;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	float SendChatCooldown = 1.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	int32 MaxMessageLength = 100;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	int32 MaxChatHistory = 10000;
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
+	UChatWidget* W_Chat;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
-	UAccelByteWarsWidgetSwitcher* Ws_ChatMessage;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
-	UEditableText* Edt_ChatMessage;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
-	UListView* Lv_ChatMessage;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
-	UCommonButtonBase* Btn_Send;
-
-	FTimerHandle SendChatDelayTimerHandle;
+	UCommonButtonBase* Btn_Back;
+// @@@SNIPEND
 };

@@ -59,13 +59,13 @@ public:
 	static FString GetCodeNameFromAssetId(const FPrimaryAssetId& AssetId);
 
 	UFUNCTION(BlueprintPure)
-	TSubclassOf<UAccelByteWarsActivatableWidget> GetTutorialModuleUIClass();
+	TSubclassOf<UAccelByteWarsActivatableWidget> GetTutorialModuleUIClass() const;
 	
 	UFUNCTION(BlueprintPure)
-	TSubclassOf<UTutorialModuleSubsystem> GetTutorialModuleSubsystemClass();
+	TSubclassOf<UTutorialModuleSubsystem> GetTutorialModuleSubsystemClass() const;
 
 	UFUNCTION(BlueprintPure)
-	TArray<TSubclassOf<UTutorialModuleSubsystem>> GetAdditionalTutorialModuleSubsystemClasses();
+	TArray<TSubclassOf<UTutorialModuleSubsystem>> GetAdditionalTutorialModuleSubsystemClasses() const;
 	
 	bool IsActiveAndDependenciesChecked() const;
 	bool IsStarterModeActive() const { return bIsStarterModeActive; }

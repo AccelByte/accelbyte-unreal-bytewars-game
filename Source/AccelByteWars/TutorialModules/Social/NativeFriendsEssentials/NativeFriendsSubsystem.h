@@ -39,7 +39,6 @@ protected:
 
 	FOnlineSubsystemAccelByte* ABSubsystem;
 
-	UFriendsSubsystem* FriendsSubsystem;
 	UPromptSubsystem* PromptSubsystem;
 
 	FOnlineUserAccelBytePtr UserInterface;

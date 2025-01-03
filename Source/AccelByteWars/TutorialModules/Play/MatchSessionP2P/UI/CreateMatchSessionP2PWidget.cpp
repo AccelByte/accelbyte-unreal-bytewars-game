@@ -18,7 +18,7 @@ void UCreateMatchSessionP2PWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
-	// Get Online Session
+	// Get online session
 	UOnlineSession* BaseOnlineSession = GetWorld()->GetGameInstance()->GetOnlineSession();
 	if (!ensure(BaseOnlineSession))
 	{
@@ -153,7 +153,7 @@ void UCreateMatchSessionP2PWidget::OnSessionServerUpdateReceived(
 
 	if (Error.bSucceeded && !bHasClientTravelTriggered)
 	{
-		// waiting for further update
+		// Keep showing the loading state until the client travels to the P2P host.
 		W_Parent->SetLoadingMessage(TEXT_JOINING_SESSION, true);
 		W_Parent->SwitchContent(UCreateMatchSessionWidget::EContentType::LOADING);
 	}

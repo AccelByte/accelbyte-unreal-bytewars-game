@@ -17,8 +17,8 @@ struct FEquippedItem
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditAnywhere) EItemType ItemType;
-	UPROPERTY(EditAnywhere) FString ItemId;
+	UPROPERTY(EditAnywhere) EItemType ItemType = EItemType::None;
+	UPROPERTY(EditAnywhere) FString ItemId{};
 	UPROPERTY(EditAnywhere) int32 Count = 0;
 
 	bool operator== (const FEquippedItem& Other) const

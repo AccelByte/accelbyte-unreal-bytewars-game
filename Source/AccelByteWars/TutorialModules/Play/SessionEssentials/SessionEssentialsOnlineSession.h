@@ -22,7 +22,7 @@ class ACCELBYTEWARS_API USessionEssentialsOnlineSession : public UAccelByteWarsO
 // @@@MULTISNIP RejectSessionInvite {"selectedLines": ["1", "20"]}
 // @@@MULTISNIP LeaveSession {"selectedLines": ["1", "21"]}
 // @@@MULTISNIP UpdateSessionJoinability {"selectedLines": ["1", "22"]}
-// @@@MULTISNIP SessionDelegates {"selectedLines": ["1", "24-56"]}
+// @@@MULTISNIP SessionDelegates {"selectedLines": ["1", "24-67"]}
 public:
 	virtual void RegisterOnlineDelegates() override;
 	virtual void ClearOnlineDelegates() override;
@@ -75,11 +75,23 @@ public:
 	{
 		return &OnSessionInviteReceivedDelegates;
 	}
+
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 	virtual FOnSessionParticipantsChange* GetOnSessionParticipantsChange() override
 	{
 		return &OnSessionParticipantsChangeDelegates;
 	}
+#else
+	virtual FOnSessionParticipantJoined* GetOnSessionParticipantJoined() override
+	{
+		return &OnSessionParticipantJoinedDelegates;
+	}
+	virtual FOnSessionParticipantLeft* GetOnSessionParticipantLeft() override
+	{
+		return &OnSessionParticipantLeftDelegates;
+	}
 // @@@SNIPEND
+#endif
 
 // @@@SNIPSTART SessionEssentialsOnlineSession.h-protected
 // @@@MULTISNIP LeaveSessionHelperVariable {"selectedLines": ["1-2"]}
@@ -90,7 +102,7 @@ public:
 // @@@MULTISNIP OnLeaveSessionComplete {"selectedLines": ["1", "13"]}
 // @@@MULTISNIP OnUpdateSessionComplete {"selectedLines": ["1", "14"]}
 // @@@MULTISNIP OnSessionInviteReceived {"selectedLines": ["1", "16-19"]}
-// @@@MULTISNIP OnSessionParticipantsChange {"selectedLines": ["1", "20"]}
+// @@@MULTISNIP OnSessionParticipantsChange {"selectedLines": ["1", "21-26"]}
 protected:
 	bool bLeavingSession = false;
 
@@ -110,13 +122,19 @@ protected:
 		const FUniqueNetId& UserId,
 		const FUniqueNetId& FromId,
 		const FOnlineSessionInviteAccelByte& Invite) override;
+
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 	virtual void OnSessionParticipantsChange(FName SessionName, const FUniqueNetId& Member, bool bJoined) override;
+#else
+	virtual void OnSessionParticipantJoined(FName SessionName, const FUniqueNetId& Member) override;
+	virtual void OnSessionParticipantLeft(FName SessionName, const FUniqueNetId& Member, EOnSessionParticipantLeftReason Reason) override;
+#endif
 // @@@SNIPEND
 
 // @@@SNIPSTART SessionEssentialsOnlineSession.h-private
-// @@@MULTISNIP OnLeaveSessionForCreateSessionComplete {"selectedLines": ["1", "15-20"]}
-// @@@MULTISNIP OnLeaveSessionForJoinSessionComplete {"selectedLines": ["1", "22-27"]}
-// @@@MULTISNIP SessionDelegates {"selectedLines": ["1", "5-13"]}
+// @@@MULTISNIP OnLeaveSessionForCreateSessionComplete {"selectedLines": ["1", "21-26"]}
+// @@@MULTISNIP OnLeaveSessionForJoinSessionComplete {"selectedLines": ["1", "28-33"]}
+// @@@MULTISNIP SessionDelegates {"selectedLines": ["1", "5-19"]}
 private:
 	const FName GameSessionName = NAME_GameSession;
 	const FName PartySessionName = NAME_PartySession;
@@ -129,7 +147,13 @@ private:
 	FOnUpdateSessionComplete OnUpdateSessionCompleteDelegates;
 
 	FOnV2SessionInviteReceived OnSessionInviteReceivedDelegates;
+
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 	FOnSessionParticipantsChange OnSessionParticipantsChangeDelegates;
+#else
+	FOnSessionParticipantJoined OnSessionParticipantJoinedDelegates;
+	FOnSessionParticipantLeft OnSessionParticipantLeftDelegates;
+#endif
 
 	void OnLeaveSessionForCreateSessionComplete(
 		FName SessionName,

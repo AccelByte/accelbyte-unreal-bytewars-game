@@ -34,7 +34,7 @@ void UMatchSessionDSOnlineSession::RegisterOnlineDelegates()
 	GetABSessionInt()->OnSessionServerUpdateDelegates.AddUObject(this, &ThisClass::OnSessionServerUpdateReceived);
 	GetABSessionInt()->OnSessionServerErrorDelegates.AddUObject(this, &ThisClass::OnSessionServerErrorReceived);
 
-	// Match Session delegates
+	// Match session delegates
 	GetSessionInt()->OnFindSessionsCompleteDelegates.AddUObject(this, &ThisClass::OnFindSessionsComplete);
 
 	SessionSearch->SearchState = EOnlineAsyncTaskState::NotStarted;
@@ -76,7 +76,7 @@ void UMatchSessionDSOnlineSession::DSQueryUserInfo(
 	}
 	else
 	{
-		// gather user ids
+		// Gather user IDs.
 		TArray<FString> AbUserIds;
 		for (const FUniqueNetIdRef& UserId : UserIds)
 		{
@@ -116,25 +116,25 @@ bool UMatchSessionDSOnlineSession::TravelToSession(const FName SessionName)
 		return false;
 	}
 
-	// Get Session Info
+	// Get session info
 	const FNamedOnlineSession* Session = GetSession(SessionName);
 	if (!Session)
 	{
-		UE_LOG_MATCHSESSIONDS(Warning, TEXT("Session is invalid"));
+		UE_LOG_MATCHSESSIONDS(Warning, TEXT("The session is invalid"));
 		return false;
 	}
 
 	const TSharedPtr<FOnlineSessionInfo> SessionInfo = Session->SessionInfo;
 	if (!SessionInfo.IsValid())
 	{
-		UE_LOG_MATCHSESSIONDS(Warning, TEXT("Session Info is invalid"));
+		UE_LOG_MATCHSESSIONDS(Warning, TEXT("The session info is invalid"));
 		return false;
 	}
 
 	const TSharedPtr<FOnlineSessionInfoAccelByteV2> AbSessionInfo = StaticCastSharedPtr<FOnlineSessionInfoAccelByteV2>(SessionInfo);
 	if (!AbSessionInfo.IsValid())
 	{
-		UE_LOG_MATCHSESSIONDS(Warning, TEXT("Session Info is not FOnlineSessionInfoAccelByteV2"));
+		UE_LOG_MATCHSESSIONDS(Warning, TEXT("The session info is not FOnlineSessionInfoAccelByteV2"));
 		return false;
 	}
 
@@ -144,7 +144,7 @@ bool UMatchSessionDSOnlineSession::TravelToSession(const FName SessionName)
 	// if nullptr, treat as failed
 	if (!PlayerController)
 	{
-		UE_LOG_MATCHSESSIONDS(Warning, TEXT("Can't find player controller with the session's local owner's Unique Id"));
+		UE_LOG_MATCHSESSIONDS(Warning, TEXT("Can't find player controller with the session's local owner's unique ID"));
 		return false;
 	}
 
@@ -158,7 +158,7 @@ bool UMatchSessionDSOnlineSession::TravelToSession(const FName SessionName)
 	// Make sure this is not a P2P session
 	if (GetABSessionInt()->IsPlayerP2PHost(GetLocalPlayerUniqueNetId(PlayerController).ToSharedRef().Get(), SessionName)) 
 	{
-		UE_LOG_MATCHSESSIONDS(Warning, TEXT("Session is a P2P session"));
+		UE_LOG_MATCHSESSIONDS(Warning, TEXT("The session is a P2P session"));
 		return false;
 	}
 	
@@ -216,7 +216,7 @@ void UMatchSessionDSOnlineSession::OnSessionServerUpdateReceived(FName SessionNa
 
 	if (bLeavingSession)
 	{
-		UE_LOG_MATCHSESSIONDS(Warning, TEXT("called but leave session is currently running. Cancelling attempt to travel to server"))
+		UE_LOG_MATCHSESSIONDS(Warning, TEXT("called but leave session is currently running. Canceling attempt to travel to server"))
 		OnSessionServerUpdateReceivedDelegates.Broadcast(SessionName, FOnlineError(true), false);
 		return;
 	}
@@ -273,7 +273,7 @@ void UMatchSessionDSOnlineSession::CreateMatchSession(
 	// Get match session template name based on game mode type
 	FString MatchTemplateName = MatchSessionTemplateNameMap[{EGameModeNetworkType::DS, GameModeType}];
 
-	// if not using AMS, remove suffix -ams (internal purpose)
+	// AMS is the default multiplayer server on AGS. If the game runs on legacy AGS Armada, remove the -ams suffix.
 	if(!UTutorialModuleOnlineUtility::GetIsServerUseAMS())
 	{
 		MatchTemplateName = MatchTemplateName.Replace(TEXT("-ams"), TEXT(""));
@@ -350,7 +350,7 @@ void UMatchSessionDSOnlineSession::OnFindSessionsComplete(bool bSucceeded)
 
 	if (bSucceeded)
 	{
-		// remove owned session from result if exist
+		// Remove owned session from result if exists
 		const FUniqueNetIdPtr LocalUserNetId = GetIdentityInt()->GetUniquePlayerId(LocalUserNumSearching);
 		SessionSearch->SearchResults.RemoveAll([this, LocalUserNetId](const FOnlineSessionSearchResult& Element)
 		{
@@ -359,14 +359,14 @@ void UMatchSessionDSOnlineSession::OnFindSessionsComplete(bool bSucceeded)
 				FUniqueNetIdRepl(Element.Session.OwningUserId));
 		});
 
-		// get owners user info for query user info
+		// Get owner’s user info for queried user info.
 		TArray<FUniqueNetIdRef> UserIds;
 		for (const FOnlineSessionSearchResult& SearchResult : SessionSearch->SearchResults)
 		{
 			UserIds.AddUnique(SearchResult.Session.OwningUserId->AsShared());
 		}
 
-		// trigger Query User info
+		// Trigger to query user info
 		if (UStartupSubsystem* StartupSubsystem = GetWorld()->GetGameInstance<UStartupSubsystem>())
 		{
 			StartupSubsystem->QueryUserInfo(

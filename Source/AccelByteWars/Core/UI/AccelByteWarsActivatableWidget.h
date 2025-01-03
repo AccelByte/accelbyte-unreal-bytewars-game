@@ -21,6 +21,13 @@ ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogAccelByteWarsActivatableWidget,
 	UE_LOG_FUNC(LogAccelByteWarsActivatableWidget, Verbosity, Format, ##__VA_ARGS__) \
 }
 
+#pragma region "Lobby Connect/Disconnect using PS Controller"
+#ifdef AGS_LOBBY_CHEAT_ENABLED
+#define FLAG_CHEAT_LOBBY TEXT("LobbyCheat")
+#define SECTION_CHEAT_LOBBY TEXT("ByteWars")
+#endif // AGS_LOBBY_CHEAT_ENABLED
+#pragma endregion 
+
 class UTutorialModuleDataAsset;
 class UAccelByteWarsButtonBase;
 class UPanelWidget;
@@ -212,5 +219,11 @@ public:
 protected:
 	void InitializeGUICheatWidgetEntries();
 	void DeInitializeGUICheatWidgetEntries() const;
+#pragma endregion
+
+#pragma region "Lobby Connect/Disconnect using PS Controller"
+protected:
+	FUIActionBindingHandle LobbyConnectHandle;
+	FUIActionBindingHandle LobbyDisconnectHandle;
 #pragma endregion 
 };

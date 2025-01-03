@@ -7,6 +7,7 @@
 #include "Runtime/ImageWrapper/Public/IImageWrapperModule.h"
 #include "Runtime/Online/HTTP/Public/Http.h"
 #include "Engine/Classes/GameFramework/PlayerState.h"
+#include "EngineSettings/Classes/GeneralProjectSettings.h"
 
 const TMap<FString, EImageFormat> AccelByteWarsUtility::ImageFormatMap =
 {
@@ -66,7 +67,7 @@ void AccelByteWarsUtility::GetImageFromURL(const FString& Url, const FString& Im
 
 FCacheBrush AccelByteWarsUtility::GetImageFromCache(const FString& ImageId)
 {
-	FCacheBrush ImageBrush;
+	FCacheBrush ImageBrush = nullptr;
 	if (ImageId.IsEmpty()) 
 	{
 		return ImageBrush;

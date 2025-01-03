@@ -982,11 +982,11 @@ void UTutorialModuleOnlineUtility::CacheGeneralInformation(const APlayerControll
         StaticCastSharedPtr<const FUniqueNetIdAccelByteUser>(LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId());
     if (!UserABId)
     {
-        UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Cannot cache general information. Current logged-in player's AccelByte user id is not valid."));
+        UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Cannot cache general information. Current logged-in player's AccelByte user ID is not valid."));
         return;
     }
 
-    // Cache current logged-in player's AccelByte user id.
+    // Cache current logged-in player's AccelByte user ID.
     CurrentPlayerUserIdStr = UserABId->GetAccelByteId();
 
     // Cache current logged-in player's display name.

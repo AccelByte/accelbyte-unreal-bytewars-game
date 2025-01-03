@@ -8,8 +8,15 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleUtility.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleDataAsset.h"
+#include "Core/Utilities/AccelByteWarsUtility.h"
 #include "Engine/Console.h"
 #include "TutorialModuleSubsystem.generated.h"
+
+ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogTutorialModuleSubsystem, Log, All);
+#define UE_LOG_TUTORIALMODULESUBSYSTEM(Verbosity, Format, ...) \
+{ \
+	UE_LOG_FUNC(LogTutorialModuleSubsystem, Verbosity, Format, ##__VA_ARGS__) \
+}
 
 class UTutorialModuleDataAsset;
 
@@ -59,4 +66,7 @@ public:
 
 	// The Tutorial Module Data Asset associated with this subsystem.
 	UTutorialModuleDataAsset* AssociateTutorialModule;
+
+protected:
+	void ExecuteNextTick(const FTimerDelegate & Delegate) const;
 };

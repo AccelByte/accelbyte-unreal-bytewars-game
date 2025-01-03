@@ -16,10 +16,10 @@
 #include "JsonObjectConverter.h"
 
 // @@@SNIPSTART PlayWithPartySubsystem.cpp-Initialize
-// @@@MULTISNIP BindPartyMatchmakingDelegate {"selectedLines": ["1-2", "5-11", "26", "46"]}
-// @@@MULTISNIP BindPartyGameSessionDelegate {"selectedLines": ["1-2", "5-6", "13-18", "26", "46"]}
-// @@@MULTISNIP BindPartyGameSessionFailureDelegate {"selectedLines": ["1-2", "5-6", "20-32", "46"]}
-// @@@MULTISNIP BindPartyGameSessionValidationDelegate {"selectedLines": ["1-2", "34-46"]}
+// @@@MULTISNIP BindPartyMatchmakingDelegate {"selectedLines": ["1-2", "5-11", "30", "50"]}
+// @@@MULTISNIP BindPartyGameSessionDelegate {"selectedLines": ["1-2", "5-6", "13-18", "30", "50"]}
+// @@@MULTISNIP BindPartyGameSessionFailureDelegate {"selectedLines": ["1-2", "5-6", "20-36", "50"]}
+// @@@MULTISNIP BindPartyGameSessionValidationDelegate {"selectedLines": ["1-2", "38-50"]}
 void UPlayWithPartySubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
@@ -44,7 +44,11 @@ void UPlayWithPartySubsystem::Initialize(FSubsystemCollectionBase& Collection)
         GetSessionInterface()->OnSessionServerUpdateDelegates.AddUObject(this, &ThisClass::OnPartyGameSessionServerUpdate);
         GetSessionInterface()->OnSessionServerErrorDelegates.AddUObject(this, &ThisClass::OnPartyGameSessionServerError);
 
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
         GetSessionInterface()->OnSessionParticipantRemovedDelegates.AddUObject(this, &ThisClass::OnPartyGameSessionParticipantRemoved);
+#else
+        GetSessionInterface()->OnSessionParticipantLeftDelegates.AddUObject(this, &ThisClass::OnPartyGameSessionParticipantLeft);
+#endif
     }
 
     // Handle network failure.
@@ -69,10 +73,10 @@ void UPlayWithPartySubsystem::Initialize(FSubsystemCollectionBase& Collection)
 // @@@SNIPEND
 
 // @@@SNIPSTART PlayWithPartySubsystem.cpp-Deinitialize
-// @@@MULTISNIP UnbindPartyMatchmakingDelegate {"selectedLines": ["1-2", "5-11", "26", "52"]}
-// @@@MULTISNIP UnbindPartyGameSessionDelegate {"selectedLines": ["1-2", "5-6", "13-18", "26", "52"]}
-// @@@MULTISNIP UnbindPartyGameSessionFailureDelegate {"selectedLines": ["1-2", "5-6", "20-32", "52"]}
-// @@@MULTISNIP UnbindPartyGameSessionValidationDelegate {"selectedLines": ["1-2", "34-52"]}
+// @@@MULTISNIP UnbindPartyMatchmakingDelegate {"selectedLines": ["1-2", "5-11", "30", "56"]}
+// @@@MULTISNIP UnbindPartyGameSessionDelegate {"selectedLines": ["1-2", "5-6", "13-18", "30", "56"]}
+// @@@MULTISNIP UnbindPartyGameSessionFailureDelegate {"selectedLines": ["1-2", "5-6", "20-36", "56"]}
+// @@@MULTISNIP UnbindPartyGameSessionValidationDelegate {"selectedLines": ["1-2", "38-56"]}
 void UPlayWithPartySubsystem::Deinitialize()
 {
     Super::Deinitialize();
@@ -97,7 +101,11 @@ void UPlayWithPartySubsystem::Deinitialize()
         GetSessionInterface()->OnSessionServerUpdateDelegates.RemoveAll(this);
         GetSessionInterface()->OnSessionServerErrorDelegates.RemoveAll(this);
 
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
         GetSessionInterface()->OnSessionParticipantRemovedDelegates.RemoveAll(this);
+#else
+        GetSessionInterface()->OnSessionParticipantLeftDelegates.RemoveAll(this);
+#endif
     }
 
     // Remove network failure handler
@@ -196,7 +204,7 @@ void UPlayWithPartySubsystem::OnStartPartyMatchmakingComplete()
     UE_LOG_PLAYINGWITHPARTY(Log, TEXT("Party matchmaking started."));
 
     /* Show notification that the party matchmaking is started.
-     * Only show the notification if a party member.*/
+     * Only show the notification if the player is a party member.*/
     FUniqueNetIdPtr UserId = nullptr;
     if (GetIdentityInterface())
     {
@@ -242,7 +250,7 @@ void UPlayWithPartySubsystem::OnPartyMatchmakingComplete(FName SessionName, bool
     }
 
     /* Show notification that the party matchmaking is completed.
-     * Only show the notification if a party member.*/
+     * Only show the notification if the player is a party member.*/
     FUniqueNetIdPtr UserId = nullptr;
     if (GetIdentityInterface())
     {
@@ -288,7 +296,7 @@ void UPlayWithPartySubsystem::OnPartyMatchmakingCanceled()
     UE_LOG_PLAYINGWITHPARTY(Log, TEXT("Party Matchmaking is canceled."));
 
     /* Show notification that the party matchmaking is canceled.
-     * Only show the notification if a party member.*/
+     * Only show the notification if the player is a party member.*/
     FUniqueNetIdPtr UserId = nullptr;
     if (GetIdentityInterface())
     {
@@ -326,7 +334,7 @@ void UPlayWithPartySubsystem::OnPartyMatchmakingExpired(TSharedPtr<FOnlineSessio
     UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Party matchmaking expired."));
 
     /* Show notification that the party matchmaking is expired.
-     * Only show the notification if a party member.*/
+     * Only show the notification if the player is a party member.*/
     FUniqueNetIdPtr UserId = nullptr;
     if (GetIdentityInterface())
     {
@@ -924,7 +932,11 @@ void UPlayWithPartySubsystem::OnPartyGameSessionServerError(FName SessionName, c
 // @@@SNIPEND
 
 // @@@SNIPSTART PlayWithPartySubsystem.cpp-OnPartyGameSessionParticipantRemoved
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 void UPlayWithPartySubsystem::OnPartyGameSessionParticipantRemoved(FName SessionName, const FUniqueNetId& UserId)
+#else
+void UPlayWithPartySubsystem::OnPartyGameSessionParticipantLeft(FName SessionName, const FUniqueNetId& UserId, EOnSessionParticipantLeftReason Reason)
+#endif
 {
     if (!GetSessionInterface() || !GetOnlineSession())
     {
@@ -946,12 +958,12 @@ void UPlayWithPartySubsystem::OnPartyGameSessionParticipantRemoved(FName Session
     const bool bIsLeaverThePartyLeader = PartyLeaderUserId && UserId == PartyLeaderUserId.ToSharedRef().Get();
     const bool bIsGameSessionReceivedServer = !ServerAddress.IsEmpty();
 
-    /* If the party leader left the game session while it has not received the game server.
-     * Then, the party member must leave the game session too. 
-     * This to sync the game session creation between party leader and party members. */
+    /* If the party leader leaves the game session before it has received the server,
+     * the party member must leave the game session, too. 
+     * This is to sync game session creation between the party leader and party members. */
     if (bIsLeaverThePartyLeader && !bIsGameSessionReceivedServer)
     {
-        // Push notification to that the party game session is canceled.
+        // Push notification to the party that the game session is canceled.
         if (GetPromptSubystem()) 
         {
             GetPromptSubystem()->HideLoading();
@@ -992,7 +1004,7 @@ void UPlayWithPartySubsystem::OnNetworkFailure(UWorld* World, UNetDriver* NetDri
 // @@@SNIPSTART PlayWithPartySubsystem.cpp-ValidateToStartPartyGameSession
 bool UPlayWithPartySubsystem::ValidateToStartPartyGameSession()
 {
-    // Safety.
+    // Abort if the interfaces are invalid.
     if (!GetSessionInterface() || !GetOnlineSession())
     {
         UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot validate to start party game session. Interfaces or online session are not valid."));
@@ -1053,7 +1065,7 @@ bool UPlayWithPartySubsystem::ValidateToJoinPartyGameSession(const FOnlineSessio
         return false;
     }
 
-    // Safety.
+    // Abort if the interfaces are invalid.
     if (!GetSessionInterface() || !GetOnlineSession())
     {
         UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot validate to join party game session. Interfaces or online session are not valid."));
@@ -1117,7 +1129,7 @@ bool UPlayWithPartySubsystem::ValidateToStartPartyMatchmaking(const EGameModeTyp
         return false;
     }
 
-    // Safety.
+    // Abort if the interfaces are invalid.
     if (!GetSessionInterface() || !GetOnlineSession())
     {
         UE_LOG_PLAYINGWITHPARTY(Warning, TEXT("Cannot validate to start party matchmaking. Interfaces or online session are not valid."));

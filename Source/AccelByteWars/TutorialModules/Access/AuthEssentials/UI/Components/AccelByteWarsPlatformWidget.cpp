@@ -142,7 +142,7 @@ void UAccelByteWarsPlatformWidget::Setup(const FUniqueNetIdPtr NetIdPtr)
 			}
 		}
 
-		// If current user id's platform type is none and there's no Linked Platform info, destroy widget
+		// If current user ID's platform type is none and there's no Linked Platform info, destroy widget
 		if (PlatformWidgetDatas.IsEmpty())
 		{
 			RemoveFromParent();

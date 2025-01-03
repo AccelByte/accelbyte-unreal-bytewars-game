@@ -265,7 +265,7 @@ TSubclassOf<UOnlineSession> UAccelByteWarsAssetManager::GetPreferredOnlineSessio
 			PreferredOnlineSessionClass = GetCompleteOnlineSessionClassFromDataAsset();
 		}
 
-		UE_LOG_ASSET_MANAGER(Log, TEXT("OnlineSession used: %s"), *PreferredOnlineSessionClass->GetPathName());
+		UE_LOG_ASSET_MANAGER(Log, TEXT("OnlineSession used: %s"), PreferredOnlineSessionClass != nullptr ? *PreferredOnlineSessionClass->GetPathName() : TEXT("NONE"));
 	}
 
 	return PreferredOnlineSessionClass;

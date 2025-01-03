@@ -50,9 +50,9 @@ public:
 // @@@MULTISNIP OnJoinSessionComplete {"selectedLines": ["1", "10"]}
 // @@@MULTISNIP OnGameSessionInviteReceived {"selectedLines": ["1", "12-15"]}
 // @@@MULTISNIP ShowInviteReceivedPopup {"selectedLines": ["1", "16-18"]}
-// @@@MULTISNIP OnGameSessionParticipantsChange {"selectedLines": ["1", "20"]}
-// @@@MULTISNIP HelperFunction {"selectedLines": ["1", "23-36"]}
-// @@@MULTISNIP HelperVariable {"selectedLines": ["1", "39-43"]}
+// @@@MULTISNIP OnGameSessionParticipantsChange {"selectedLines": ["1", "20-25"]}
+// @@@MULTISNIP HelperFunction {"selectedLines": ["1", "28-41"]}
+// @@@MULTISNIP HelperVariable {"selectedLines": ["1", "44-48"]}
 private:
 	void OnSendGameSessionInviteComplete(
 		const FUniqueNetId& LocalSenderId,
@@ -72,7 +72,12 @@ private:
 		const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo,
 		const int32 LocalUserNum, const FOnlineSessionInviteAccelByte Invite);
 
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 	void OnGameSessionParticipantsChange(FName SessionName, const FUniqueNetId& Member, bool bJoined);
+#else
+	void OnGameSessionParticipantJoined(FName SessionName, const FUniqueNetId& Member);
+	void OnGameSessionParticipantLeft(FName SessionName, const FUniqueNetId& Member, EOnSessionParticipantLeftReason Reason);
+#endif
 
 #pragma region "Helper"
 	bool IsMatchSessionGameSessionReceivedServer() const;
