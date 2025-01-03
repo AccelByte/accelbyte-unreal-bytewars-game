@@ -112,7 +112,7 @@ void AAccelByteWarsGameState::AssignCustomGameMode(const FOnlineSessionSettings*
 {
 	if (!Setting)
 	{
-		GAMESTATE_LOG(Log, TEXT("Setting is not valid. Cancelling operation. Current Game mode: %s"), *GameSetup.CodeName);
+		GAMESTATE_LOG(Log, TEXT("Setting is not valid. Canceling operation. Current Game mode: %s"), *GameSetup.CodeName);
 		return;
 	}
 
@@ -395,14 +395,14 @@ bool AAccelByteWarsGameState::AddPlayerToTeam(
 {
 	if (TeamId <= INDEX_NONE) 
 	{
-		GAMESTATE_LOG(Warning, TEXT("AddPlayerToTeam: Team ID (%d) is invalid. Cancelling operation"), TeamId);
+		GAMESTATE_LOG(Warning, TEXT("AddPlayerToTeam: Team ID (%d) is invalid. Canceling operation"), TeamId);
 		return false;
 	}
 
 	// check if player have been added to any team
 	if (FGameplayPlayerData PlayerDataTemp; !bForce && GetPlayerDataById(UniqueNetId, PlayerDataTemp, ControllerId))
 	{
-		GAMESTATE_LOG(Warning, TEXT("AddPlayerToTeam: Player data found. Cancelling operation"));
+		GAMESTATE_LOG(Warning, TEXT("AddPlayerToTeam: Player data found. Canceling operation"));
 		return false;
 	}
 

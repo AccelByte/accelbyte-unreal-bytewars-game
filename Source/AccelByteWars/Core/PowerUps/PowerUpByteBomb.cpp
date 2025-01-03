@@ -25,9 +25,9 @@ APowerUpByteBomb::APowerUpByteBomb()
 
 	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
-	SetReplicateMovement(false);
+	AActor::SetReplicateMovement(false);
 
-	if (!IsRunningGame() && (GIsEditor && (GetWorld() && GetWorld()->WorldType != EWorldType::PIE)))
+	if (!IsRunningGame() || !GetWorld() || (GIsEditor && GetWorld()->WorldType != EWorldType::PIE))
 	{
 		return;
 	}

@@ -7,18 +7,21 @@
 
 #include "Components/Border.h"
 #include "Components/ScaleBox.h"
-#include "Components/WidgetSwitcher.h"
+#include "CommonActivatableWidgetSwitcher.h"
 #include "Core/Utilities/AccelByteWarsUtility.h"
 
 void UAccelByteWarsAsyncImageWidget::LoadImage(const FString& ImageUrl)
 {
-	const FString ImageId = FBase64::Encode(ImageUrl);
+	if (Ws_Root->IsTransitionPlaying()) 
+	{
+		return;
+	}
 
-	Ws_Root->SetActiveWidget(W_Loading);
+	const FString ImageId = FBase64::Encode(ImageUrl);
 
 	// Try to set avatar image from cache.
 	const FCacheBrush CacheAvatarBrush = AccelByteWarsUtility::GetImageFromCache(ImageId);
-	if (CacheAvatarBrush.IsValid())
+	if (CacheAvatarBrush && CacheAvatarBrush.IsValid())
 	{
 		B_Loaded->SetBrush(*CacheAvatarBrush.Get());
 		SetImageTint(FLinearColor::White);
@@ -27,6 +30,7 @@ void UAccelByteWarsAsyncImageWidget::LoadImage(const FString& ImageUrl)
 	// Set avatar image from URL if it is not exists in cache.
 	else if (!ImageUrl.IsEmpty())
 	{
+		Ws_Root->SetActiveWidget(W_Loading);
 		AccelByteWarsUtility::GetImageFromURL(
 			ImageUrl,
 			ImageId,

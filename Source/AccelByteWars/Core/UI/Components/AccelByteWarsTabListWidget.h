@@ -98,6 +98,9 @@ private:
 	UFUNCTION()
 	void HandleOnTabButtonCreation(FName TabId, UCommonButtonBase* TabButton);
 
+	UFUNCTION()
+	void HandleOnTabSelected(FName TabId);
+
 	FName PreviouslySelectedTabId;
 
 	TMap<FName, int32> TargetIndexMap;

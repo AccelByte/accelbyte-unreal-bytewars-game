@@ -211,7 +211,11 @@ bool UHUDWidget::SetColorChecked(const int32 Index, const FLinearColor Color)
 	}
 
 	// Change the color if not the same.
+#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 	if (!TargetWidget->ColorAndOpacity.Equals(Color))
+#else
+	if (!TargetWidget->GetColorAndOpacity().Equals(Color))
+#endif
 	{
 		TargetWidget->SetColorAndOpacity(Color);
 	}

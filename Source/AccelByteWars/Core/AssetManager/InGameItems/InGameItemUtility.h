@@ -18,6 +18,7 @@ enum class EItemSkuPlatform : uint8
 UENUM(BlueprintType)
 enum class EItemType : uint8
 {
+	None,
 	Skin,
 	PowerUp
 };

@@ -79,17 +79,17 @@ FString UTutorialModuleDataAsset::GetCodeNameFromAssetId(const FPrimaryAssetId& 
 	return AssetId.PrimaryAssetName.ToString();
 }
 
-TSubclassOf<UAccelByteWarsActivatableWidget> UTutorialModuleDataAsset::GetTutorialModuleUIClass()
+TSubclassOf<UAccelByteWarsActivatableWidget> UTutorialModuleDataAsset::GetTutorialModuleUIClass() const
 {
 	return IsStarterModeActive() ? StarterUIClass : DefaultUIClass;
 }
 
-TSubclassOf<UTutorialModuleSubsystem> UTutorialModuleDataAsset::GetTutorialModuleSubsystemClass()
+TSubclassOf<UTutorialModuleSubsystem> UTutorialModuleDataAsset::GetTutorialModuleSubsystemClass() const
 {
 	return IsStarterModeActive() ? StarterSubsystemClass : DefaultSubsystemClass;
 }
 
-TArray<TSubclassOf<UTutorialModuleSubsystem>> UTutorialModuleDataAsset::GetAdditionalTutorialModuleSubsystemClasses()
+TArray<TSubclassOf<UTutorialModuleSubsystem>> UTutorialModuleDataAsset::GetAdditionalTutorialModuleSubsystemClasses() const
 {
 	return IsStarterModeActive() ? AdditionalStarterSubsystemClasses : AdditionalDefaultSubsystemClasses;
 }

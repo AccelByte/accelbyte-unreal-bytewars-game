@@ -58,7 +58,7 @@ void AAccelByteWarsPlayerController::DelayedClientTravel(const FString& Url, con
 {
 	if (bDelayedClientTravelStarted)
 	{
-		UE_LOG(LogPlayerController, Warning, TEXT("DelayedClientTravel already called. Cancelling travel to %s"), *Url);
+		UE_LOG(LogPlayerController, Warning, TEXT("DelayedClientTravel already called. Canceling travel to %s"), *Url);
 		return;
 	}
 
@@ -66,7 +66,7 @@ void AAccelByteWarsPlayerController::DelayedClientTravel(const FString& Url, con
 	if (UPromptSubsystem* PromptSubsystem = GetGameInstance()->GetSubsystem<UPromptSubsystem>())
 	{
 		PromptSubsystem->HideLoading();
-		PromptSubsystem->ShowLoading(NSLOCTEXT("AccelByteWars", "travelling", "Travelling"));
+		PromptSubsystem->ShowLoading(NSLOCTEXT("AccelByteWars", "Traveling", "Travelling"));
 	}
 	else
 	{

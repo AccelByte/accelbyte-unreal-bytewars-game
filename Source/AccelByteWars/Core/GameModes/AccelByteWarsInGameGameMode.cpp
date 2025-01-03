@@ -74,7 +74,7 @@ void AAccelByteWarsInGameGameMode::Tick(float DeltaSeconds)
 	{
 	case EGameStatus::IDLE:
 	case EGameStatus::AWAITING_PLAYERS:
-		// check if all registered players have re-enter the server
+		// Check if all registered players have re-entered the server
 		if (ABInGameGameState->PlayerArray.Num() == ABInGameGameState->GetRegisteredPlayersNum())
 		{
 			ABInGameGameState->GameStatus = EGameStatus::PRE_GAME_COUNTDOWN_STARTED;
@@ -86,7 +86,7 @@ void AAccelByteWarsInGameGameMode::Tick(float DeltaSeconds)
 		}
 		else
 		{
-			// use NotEnoughPlayerCountdown as a countdown to wait all registered player to reconnect to the DS
+			// Use NotEnoughPlayerCountdown as a countdown to wait for all registered players to reconnect to the DS.
 			if (IsRunningDedicatedServer())
 			{
 				NotEnoughPlayerCountdownCounting(DeltaSeconds);

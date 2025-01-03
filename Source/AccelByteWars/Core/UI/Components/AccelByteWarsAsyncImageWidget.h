@@ -9,7 +9,7 @@
 #include "Widgets/Layout/SScaleBox.h"
 #include "AccelByteWarsAsyncImageWidget.generated.h"
 
-class UWidgetSwitcher;
+class UCommonActivatableWidgetSwitcher;
 class UBorder;
 class UScaleBox;
 
@@ -51,7 +51,7 @@ private:
 	UScaleBox* Sb_RootOuter;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UWidgetSwitcher* Ws_Root;
+	UCommonActivatableWidgetSwitcher* Ws_Root;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UBorder* B_Default;

@@ -35,7 +35,6 @@ void UStoreItemListEntry::Setup(const UStoreItemDataObject* Object)
 
 	// Reset UI
 	Tb_Name->SetText(FText());
-	W_Image->LoadImage("");
 	Lv_Prices->ClearListItems();
 
 	// Set UI

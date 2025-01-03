@@ -129,21 +129,21 @@ void AAccelByteWarsGameMode::PlayerTeamSetup(APlayerController* PlayerController
 	// failsafe
 	if (!PlayerController)
 	{
-		GAMEMODE_LOG(Warning, TEXT("PlayerTeamSetup: PlayerController null. Cancelling operation"));
+		GAMEMODE_LOG(Warning, TEXT("PlayerTeamSetup: PlayerController null. Canceling operation"));
 		return;
 	}
 
 	APlayerState* PlayerState = PlayerController->PlayerState;
 	if (!PlayerState)
 	{
-		GAMEMODE_LOG(Warning, TEXT("PlayerTeamSetup: PlayerState is invalid. Cancelling operation"));
+		GAMEMODE_LOG(Warning, TEXT("PlayerTeamSetup: PlayerState is invalid. Canceling operation"));
 		return;
 	}
 
 	AAccelByteWarsPlayerState* AbPlayerState = static_cast<AAccelByteWarsPlayerState*>(PlayerState);
 	if (!AbPlayerState)
 	{
-		GAMEMODE_LOG(Warning, TEXT("PlayerTeamSetup: PlayerState is not (derived from) AAccelByteWarsPlayerState. Cancelling operation"));
+		GAMEMODE_LOG(Warning, TEXT("PlayerTeamSetup: PlayerState is not (derived from) AAccelByteWarsPlayerState. Canceling operation"));
 		return;
 	}
 
@@ -262,14 +262,14 @@ void AAccelByteWarsGameMode::DelayedPlayerTeamSetupWithPredefinedData(APlayerCon
 	APlayerState* PlayerState = PlayerController->PlayerState;
 	if (!PlayerState)
 	{
-		GAMEMODE_LOG(Warning, TEXT("PlayerTeamSetup: PlayerState is invalid. Cancelling operation"));
+		GAMEMODE_LOG(Warning, TEXT("PlayerTeamSetup: PlayerState is invalid. Canceling operation"));
 		return;
 	}
 
 	AAccelByteWarsPlayerState* AbPlayerState = static_cast<AAccelByteWarsPlayerState*>(PlayerState);
 	if (!AbPlayerState)
 	{
-		GAMEMODE_LOG(Warning, TEXT("PlayerTeamSetup: PlayerState is not (derived from) AAccelByteWarsPlayerState. Cancelling operation"));
+		GAMEMODE_LOG(Warning, TEXT("PlayerTeamSetup: PlayerState is not (derived from) AAccelByteWarsPlayerState. Canceling operation"));
 		return;
 	}
 
@@ -366,7 +366,7 @@ void AAccelByteWarsGameMode::DelayedServerTravel(const FString& URL) const
 {
 	if (ABGameState->bIsServerTravelling)
 	{
-		// if true, server already travelling, cancel operation
+		// if true, server already traveling, cancel operation
 		return;
 	}
 
@@ -391,7 +391,7 @@ void AAccelByteWarsGameMode::CloseGame(const FString& Reason) const
 
 	if (!IsRunningDedicatedServer())
 	{
-		GAMEMODE_LOG(Warning, TEXT("Not a Dedicated Server, shut down canceled"));
+		GAMEMODE_LOG(Warning, TEXT("Not a Dedicated Server, shutdown canceled"));
 		return;
 	}
 
@@ -418,14 +418,14 @@ void AAccelByteWarsGameMode::AddPlayerToTeam(APlayerController* PlayerController
 	// failsafe
 	if (!PlayerController)
 	{
-		GAMEMODE_LOG(Warning, TEXT("AddPlayerToTeam: PlayerController null. Cancelling operation"));
+		GAMEMODE_LOG(Warning, TEXT("AddPlayerToTeam: PlayerController null. Canceling operation"));
 		return;
 	}
 
 	AAccelByteWarsPlayerState* PlayerState = static_cast<AAccelByteWarsPlayerState*>(PlayerController->PlayerState);
 	if (!PlayerState)
 	{
-		GAMEMODE_LOG(Warning, TEXT("AddPlayerToTeam: PlayerState is not (derived from) AAccelByteWarsPlayerState. Cancelling operation"));
+		GAMEMODE_LOG(Warning, TEXT("AddPlayerToTeam: PlayerState is not (derived from) AAccelByteWarsPlayerState. Canceling operation"));
 		return;
 	}
 
@@ -456,14 +456,14 @@ bool AAccelByteWarsGameMode::RemovePlayer(const APlayerController* PlayerControl
 	// failsafe
 	if (!PlayerController)
 	{
-		GAMEMODE_LOG(Warning, TEXT("RemovePlayer: PlayerController null. Cancelling operation"));
+		GAMEMODE_LOG(Warning, TEXT("RemovePlayer: PlayerController null. Canceling operation"));
 		return false;
 	}
 
 	const AAccelByteWarsPlayerState* PlayerState = static_cast<AAccelByteWarsPlayerState*>(PlayerController->PlayerState);
 	if (!PlayerState)
 	{
-		GAMEMODE_LOG(Warning, TEXT("RemovePlayer: PlayerState is not (derived from) AAccelByteWarsPlayerState. Cancelling operation"));
+		GAMEMODE_LOG(Warning, TEXT("RemovePlayer: PlayerState is not (derived from) AAccelByteWarsPlayerState. Canceling operation"));
 		return false;
 	}
 
