@@ -33,6 +33,10 @@
 		{
 			"Name": "Metasound",
 			"Enabled": true
+		},
+		{
+			"Name": "AccelByteUe4Sdk",
+			"Enabled": true
 		}
 	]
 }

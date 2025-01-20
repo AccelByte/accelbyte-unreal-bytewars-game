@@ -23,14 +23,18 @@ public class AccelByteWars : ModuleRules
 			"InputCore", 
 			"CommonUI", 
 			"CommonInput",
-            "GameplayTags",
-            "OnlineSubsystem",
+			"GameplayTags",
+			"OnlineSubsystem",
 			"OnlineSubsystemUtils",
 			"Json",
 			"HTTP",
 			"EngineSettings"
-        });
+		});
 
+		if (Target.Type == TargetType.Editor || Target.Type == TargetType.Server)
+		{
+			PublicDependencyModuleNames.Add("AccelByteUe4Sdk");
+		}
 
 		PrivateDependencyModuleNames.AddRange(new string[] 
 		{
@@ -53,6 +57,7 @@ public class AccelByteWars : ModuleRules
 			"Niagara",
 			"ProceduralMeshComponent",
 			"MediaAssets",
+			"WebSockets"
 		});
 
 		// Uncomment if you are using Slate UI
