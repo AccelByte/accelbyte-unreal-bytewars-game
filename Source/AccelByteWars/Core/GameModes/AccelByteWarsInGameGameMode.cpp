@@ -513,6 +513,9 @@ void AAccelByteWarsInGameGameMode::SpawnAndPossesPawn(APlayerState* PlayerState)
 	SetupGameplayObject(Pawn);
 	PlayerController->Possess(Pawn);
 	Pawn->SetColor(ABPlayerState->TeamColor);
+
+	// In case issue "missile go through object" happened again
+	GAMEMODE_LOG(VeryVerbose, TEXT("Object spawned: %s | %f"), *Pawn->GetName(), Pawn->GetTransform().GetLocation().Z)
 }
 
 AAccelByteWarsPlayerPawn* AAccelByteWarsInGameGameMode::CreatePlayerPawn(
@@ -605,6 +608,9 @@ void AAccelByteWarsInGameGameMode::SpawnPlanets()
 		const TSubclassOf<AActor>& ObjectToSpawn = ObjectsToSpawn[PlanetData.PlanetID];
 		AActor* SpawnedObject = GetWorld()->SpawnActor(ObjectToSpawn, &Location, &FRotator::ZeroRotator);
 		SetupGameplayObject(SpawnedObject);
+
+		// In case issue "missile go through object" happened again
+		GAMEMODE_LOG(VeryVerbose, TEXT("Object spawned: %s | %f"), *SpawnedObject->GetName(), SpawnedObject->GetTransform().GetLocation().Z)
 	}
 }
 
@@ -659,6 +665,9 @@ bool AAccelByteWarsInGameGameMode::FindGoodPlanetPosition(FVector& Position) con
 
 	Position.X = Position2D.X;
 	Position.Y = Position2D.Y;
+
+	// Assign a constant Z coord in case the game assign a random number
+	Position.Z = CommonZCoord;
 	
 	return true;
 }
@@ -721,6 +730,9 @@ FVector AAccelByteWarsInGameGameMode::FindGoodPlayerPosition(APlayerState* Playe
 	}
 	Position.X = Position2.X;
 	Position.Y = Position2.Y;
+
+	// Assign a constant Z coord in case the game assign a random number
+	Position.Z = CommonZCoord;
 
 	// Draw the spawn area box for debugging
 	if (bDrawBoundingBox)
