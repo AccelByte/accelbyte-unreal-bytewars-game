@@ -24,9 +24,7 @@ DECLARE_DELEGATE_RetVal(int, FUpdateCountdownValue);
 DECLARE_MULTICAST_DELEGATE(FOnCountdownFinished);
 
 class AAccelByteWarsGameState;
-/**
- * 
- */
+
 UCLASS()
 class ACCELBYTEWARS_API UCountdownWidget : public UAccelByteWarsActivatableWidget
 {

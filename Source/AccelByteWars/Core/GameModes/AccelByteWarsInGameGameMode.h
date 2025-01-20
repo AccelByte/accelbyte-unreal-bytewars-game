@@ -181,6 +181,7 @@ private:
 	void SpawnAndPossesPawn(APlayerState* PlayerState);
 
 	TArray<FVector> GetActiveGameObjectsPosition() const;
+	const float CommonZCoord = 0.0f;
 public:
 	/**
 	 * @brief Find randomize spawn location that is not occupied with other object and within the gameplay 
