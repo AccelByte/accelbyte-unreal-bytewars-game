@@ -5,6 +5,7 @@
 #include "CustomMatchmakingSubsystem.h"
 
 #include "CustomMatchmakingLog.h"
+#include "JsonObjectConverter.h"
 #include "WebSocketsModule.h"
 #include "Core/Player/AccelByteWarsPlayerController.h"
 
@@ -85,8 +86,8 @@ void UCustomMatchmakingSubsystem::OnConnected() const
 
 void UCustomMatchmakingSubsystem::OnClosed(int32 StatusCode, const FString& Reason, bool WasClean) const
 {
-	UE_LOG_CUSTOMMATCHMAKING(Verbose, TEXT("Websocket closed: "), *Reason)
-	OnMatchmakingStoppedDelegates.Broadcast();
+	UE_LOG_CUSTOMMATCHMAKING(Verbose, TEXT("Websocket closed: (%d) %s"), StatusCode, *Reason)
+	OnMatchmakingStoppedDelegates.Broadcast(Reason);
 
 	CleanupWebSocket();
 }
@@ -100,10 +101,16 @@ void UCustomMatchmakingSubsystem::OnMessage(const FString& Message) const
 		return;
 	}
 
-	if (IsIpv4(Message))
-	{
-		OnMatchmakingServerInfoReceivedDelegates.Broadcast(Message);
+	// Parse message
+	FMatchmakerPayload Payload;
+	FJsonObjectConverter::JsonObjectStringToUStruct(Message, &Payload);
 
+	// Notify
+	OnMatchmakingMessageReceivedDelegates.Broadcast(Payload);
+
+	// Travel if server is ready
+	if (Payload.GetType() == EMatchmakerPayloadType::OnServerReady)
+	{
 		// Trigger travel
 		AAccelByteWarsPlayerController* PC = Cast<AAccelByteWarsPlayerController>(GetWorld()->GetFirstPlayerController());
 		if (!PC)
@@ -112,11 +119,7 @@ void UCustomMatchmakingSubsystem::OnMessage(const FString& Message) const
 			return;
 		}
 
-		PC->DelayedClientTravel(Message, ETravelType::TRAVEL_Absolute);
-	}
-	else
-	{
-		OnMatchmakingMessageReceivedDelegates.Broadcast(Message);
+		PC->DelayedClientTravel(Payload.Message, ETravelType::TRAVEL_Absolute);
 	}
 }
 

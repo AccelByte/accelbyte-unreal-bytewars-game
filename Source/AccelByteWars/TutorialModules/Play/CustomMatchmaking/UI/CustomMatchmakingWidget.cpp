@@ -13,6 +13,22 @@ void UCustomMatchmakingWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
+#pragma region "FTUE"
+	if (FFTUEDialogueModel* FTUEModel = FFTUEDialogueModel::GetMetadataById("ftue_set_address", FTUEDialogues))
+	{
+		const FString LaunchArgument = FString::Printf(TEXT("-%s=\"<ip>:<port>\""), *CUSTOM_MATCHMAKING_CONFIG_KEY_URL);
+
+		FServiceArgumentModel ArgumentModel;
+		ArgumentModel.Argument = LaunchArgument;
+		FTUEModel->MessageArguments.Add(ArgumentModel);
+
+		FTUEModel->Button1.ButtonActionDelegate.AddWeakLambda(this, [LaunchArgument]()
+		{
+			FPlatformMisc::ClipboardCopy(*LaunchArgument);
+		});
+	}
+#pragma endregion 
+
 	SwitchWidget(EAccelByteWarsWidgetSwitcherState::Not_Empty);
 
 	Subsystem = GetGameInstance()->GetSubsystem<UCustomMatchmakingSubsystem>();
@@ -31,7 +47,7 @@ void UCustomMatchmakingWidget::NativeOnActivated()
 	Subsystem->OnMatchmakingStartedDelegates.AddUObject(this, &ThisClass::OnMatchmakingStarted);
 	Subsystem->OnMatchmakingErrorDelegates.AddUObject(this, &ThisClass::OnMatchmakingFailed);
 	Subsystem->OnMatchmakingMessageReceivedDelegates.AddUObject(this, &ThisClass::OnMessageReceived);
-	Subsystem->OnMatchmakingStoppedDelegates.AddWeakLambda(this, [this]()
+	Subsystem->OnMatchmakingStoppedDelegates.AddWeakLambda(this, [this](const FString& Reason)
 	{
 		OnMatchmakingFailed(TEXT_ERROR_CANCELED);
 	});
@@ -64,6 +80,7 @@ void UCustomMatchmakingWidget::NativeTick(const FGeometry& MyGeometry, float InD
 void UCustomMatchmakingWidget::StartMatchmaking()
 {
 	W_Root->LoadingMessage = FText::FromString(TEXT_LOADING_REQUEST);
+	W_Root->bEnableCancelButton = false;
 	SwitchWidget(EAccelByteWarsWidgetSwitcherState::Loading);
 
 	Subsystem->StartMatchmaking();
@@ -80,6 +97,7 @@ void UCustomMatchmakingWidget::StopMatchmaking()
 void UCustomMatchmakingWidget::OnMatchmakingStarted()
 {
 	W_Root->LoadingMessage = FText::FromString(TEXT_LOADING_FINDING_MATCH);
+	W_Root->bEnableCancelButton = true;
 	SwitchWidget(EAccelByteWarsWidgetSwitcherState::Loading);
 }
 
@@ -89,15 +107,23 @@ void UCustomMatchmakingWidget::OnServerInfoReceived()
 	SwitchWidget(EAccelByteWarsWidgetSwitcherState::Loading);
 }
 
-void UCustomMatchmakingWidget::OnMessageReceived(const FString& Message)
+void UCustomMatchmakingWidget::OnMessageReceived(const FMatchmakerPayload& Payload)
 {
-	W_Root->LoadingMessage = FText::FromString(Message);
+	W_Root->LoadingMessage = FText::FromString(Payload.Message);
 	SwitchWidget(EAccelByteWarsWidgetSwitcherState::Loading);
 }
 
 void UCustomMatchmakingWidget::OnMatchmakingFailed(const FString& ErrorMessage)
 {
-	W_Root->ErrorMessage = FText::FromString(ErrorMessage);
+	FString ModifiableMessage = ErrorMessage;
+
+	// Modify error message telling the player what to check
+	if (ModifiableMessage.Contains(WEBSOCKET_FAILED_GENERIC_MESSAGE, ESearchCase::IgnoreCase) || ModifiableMessage.IsEmpty())
+	{
+		ModifiableMessage = TEXT_WEBSOCKET_ERROR_GENERIC;
+	}
+
+	W_Root->ErrorMessage = FText::FromString(ModifiableMessage);
 	SwitchWidget(EAccelByteWarsWidgetSwitcherState::Error);
 }
 

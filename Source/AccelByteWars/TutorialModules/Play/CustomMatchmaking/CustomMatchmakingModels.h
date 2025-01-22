@@ -4,11 +4,9 @@
 
 #pragma once
 
-DECLARE_MULTICAST_DELEGATE(FOnMatchmakingStarted)
-DECLARE_MULTICAST_DELEGATE(FOnMatchmakingStopped)
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnMatchmakingMessageReceived, const FString& /*Message*/)
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnMatchmakingError, const FString& /*ErrorMessage*/)
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnMatchmakingServerInfoReceived, const FString& /*Address*/)
+#include "CustomMatchmakingModels.generated.h"
+
+#define WEBSOCKET_FAILED_GENERIC_MESSAGE FString(TEXT("connect failed"))
 
 #define CUSTOM_MATCHMAKING_CONFIG_SECTION_URL FString(TEXT("CustomMatchmaking"))
 #define CUSTOM_MATCHMAKING_CONFIG_KEY_URL FString(TEXT("CustomMatchmakingUrl"))
@@ -19,3 +17,40 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnMatchmakingServerInfoReceived, const FStr
 #define TEXT_LOADING_REQUEST FString(TEXT("Requesting"))
 #define TEXT_LOADING_CANCEL FString(TEXT("Canceling"))
 #define TEXT_ERROR_CANCELED FString(TEXT("Canceled"))
+#define TEXT_WEBSOCKET_ERROR_GENERIC FString(TEXT("Connect failed.\nMake sure the Matchmaking server is running, reachable, and the address and port is set properly"))
+
+enum class EMatchmakerPayloadType : uint8
+{
+	OnFindingMatch,
+	OnMatchFound,
+	OnMatchError,
+	OnServerReady
+};
+
+USTRUCT()
+struct FMatchmakerPayload
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY()
+	FString Type;
+
+	UPROPERTY()
+	FString Message;
+
+	EMatchmakerPayloadType GetType() const { return TypeMap[Type]; }
+
+private:
+	inline static TMap<FString, EMatchmakerPayloadType> TypeMap = {
+		{"OnFindingMatch", EMatchmakerPayloadType::OnFindingMatch},
+		{"OnMatchError", EMatchmakerPayloadType::OnMatchError},
+		{"OnMatchFound", EMatchmakerPayloadType::OnMatchFound},
+		{"OnServerReady", EMatchmakerPayloadType::OnServerReady}
+	};
+};
+
+DECLARE_MULTICAST_DELEGATE(FOnMatchmakingStarted)
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnMatchmakingStopped, const FString& /*Reason*/)
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnMatchmakingMessageReceived, const FMatchmakerPayload& /*Payload*/)
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnMatchmakingError, const FString& /*ErrorMessage*/)

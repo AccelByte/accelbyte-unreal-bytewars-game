@@ -37,6 +37,10 @@
 		{
 			"Name": "AccelByteUe4Sdk",
 			"Enabled": true
+		},
+		{
+			"Name": "BlackBoxSDK",
+			"Enabled": true
 		}
 	]
 }

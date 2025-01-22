@@ -28,7 +28,8 @@ public class AccelByteWars : ModuleRules
 			"OnlineSubsystemUtils",
 			"Json",
 			"HTTP",
-			"EngineSettings"
+			"EngineSettings",
+			"BlackBoxSDK"
 		});
 
 		if (Target.Type == TargetType.Editor || Target.Type == TargetType.Server)
@@ -57,7 +58,8 @@ public class AccelByteWars : ModuleRules
 			"Niagara",
 			"ProceduralMeshComponent",
 			"MediaAssets",
-			"WebSockets"
+			"WebSockets",
+			"JsonUtilities"
 		});
 
 		// Uncomment if you are using Slate UI

@@ -20,7 +20,6 @@ public:
 	FOnMatchmakingStopped OnMatchmakingStoppedDelegates;
 	FOnMatchmakingError OnMatchmakingErrorDelegates;
 	FOnMatchmakingMessageReceived OnMatchmakingMessageReceivedDelegates;
-	FOnMatchmakingServerInfoReceived OnMatchmakingServerInfoReceivedDelegates;
 
 	void StartMatchmaking();
 	void StopMatchmaking() const;

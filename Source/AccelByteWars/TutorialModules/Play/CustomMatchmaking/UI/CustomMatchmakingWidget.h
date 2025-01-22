@@ -7,6 +7,7 @@
 #include "CoreMinimal.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
 #include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
+#include "TutorialModules/Play/CustomMatchmaking/CustomMatchmakingModels.h"
 #include "CustomMatchmakingWidget.generated.h"
 
 class UCustomMatchmakingSubsystem;
@@ -30,7 +31,7 @@ protected:
 
 	void OnMatchmakingStarted();
 	void OnServerInfoReceived();
-	void OnMessageReceived(const FString& Message);
+	void OnMessageReceived(const FMatchmakerPayload& Payload);
 	void OnMatchmakingFailed(const FString& ErrorMessage);
 
 private:
