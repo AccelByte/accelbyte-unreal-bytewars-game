@@ -16,7 +16,7 @@ void UCustomMatchmakingSubsystem::StartMatchmaking()
 	WebSocket->Connect();
 }
 
-void UCustomMatchmakingSubsystem::StopMatchmaking() const
+void UCustomMatchmakingSubsystem::StopMatchmaking()
 {
 	// Cancel the matchmaking by disconnecting from the websocket
 	if (!WebSocket)
@@ -25,11 +25,14 @@ void UCustomMatchmakingSubsystem::StopMatchmaking() const
 		return;
 	}
 
+	PendingDisconnectReason = TEXT_ERROR_CANCELED;
 	WebSocket->Close();
 }
 
-void UCustomMatchmakingSubsystem::CleanupWebSocket() const
+void UCustomMatchmakingSubsystem::CleanupWebSocket()
 {
+	PendingDisconnectReason = TEXT("");
+
 	// Unbind events
 	WebSocket->OnConnected().RemoveAll(this);
 	WebSocket->OnConnectionError().RemoveAll(this);
@@ -58,6 +61,9 @@ void UCustomMatchmakingSubsystem::SetupWebSocket()
 		GConfig->GetString(*CUSTOM_MATCHMAKING_CONFIG_SECTION_URL, *CUSTOM_MATCHMAKING_CONFIG_KEY_URL, ServerUrl, GEngineIni);
 	}
 
+	// Reset stored disconnect reason
+	PendingDisconnectReason = TEXT("");
+
 	// WebSocket setup
 	UE_LOG_CUSTOMMATCHMAKING(Verbose, TEXT("WebSocket target URL: %s"), *ServerUrl)
 	WebSocket = FWebSocketsModule::Get().CreateWebSocket(ServerUrl, WEBSOCKET_PROTOCOL);
@@ -69,30 +75,29 @@ void UCustomMatchmakingSubsystem::SetupWebSocket()
 	WebSocket->OnMessage().AddUObject(this, &ThisClass::OnMessage);
 }
 
-bool UCustomMatchmakingSubsystem::IsIpv4(const FString& Message) const
-{
-	const FString Pattern = TEXT(R"(^((25[0-5]|2[0-4][0-9]|[0-1]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[0-1]?[0-9][0-9]?)(:\d{1,5})?$)");
-	const FRegexPattern RegexPattern(Pattern);
-	FRegexMatcher Matcher(RegexPattern, Message);
-
-	return Matcher.FindNext();
-}
-
 void UCustomMatchmakingSubsystem::OnConnected() const
 {
 	UE_LOG_CUSTOMMATCHMAKING(Verbose, TEXT("Websocket connected"))
 	OnMatchmakingStartedDelegates.Broadcast();
 }
 
-void UCustomMatchmakingSubsystem::OnClosed(int32 StatusCode, const FString& Reason, bool WasClean) const
+void UCustomMatchmakingSubsystem::OnClosed(int32 StatusCode, const FString& Reason, bool WasClean)
 {
 	UE_LOG_CUSTOMMATCHMAKING(Verbose, TEXT("Websocket closed: (%d) %s"), StatusCode, *Reason)
-	OnMatchmakingStoppedDelegates.Broadcast(Reason);
+
+	// Modify the error message to make it more user-friendly
+	FString ModifiedReason = Reason;
+	if (!PendingDisconnectReason.IsEmpty())
+	{
+		ModifiedReason = PendingDisconnectReason;
+	}
+
+	OnMatchmakingStoppedDelegates.Broadcast(ModifiedReason);
 
 	CleanupWebSocket();
 }
 
-void UCustomMatchmakingSubsystem::OnMessage(const FString& Message) const
+void UCustomMatchmakingSubsystem::OnMessage(const FString& Message)
 {
 	UE_LOG_CUSTOMMATCHMAKING(Verbose, TEXT("Websocket message received: %s"), *Message)
 	if (Message.IsEmpty())
@@ -104,6 +109,15 @@ void UCustomMatchmakingSubsystem::OnMessage(const FString& Message) const
 	// Parse message
 	FMatchmakerPayload Payload;
 	FJsonObjectConverter::JsonObjectStringToUStruct(Message, &Payload);
+
+	// Safety in case the received message is different than expected
+	if (!Payload.IsValid())
+	{
+		UE_LOG_CUSTOMMATCHMAKING(Warning, TEXT("Unexpected message format was received from the Matchmaking service, closing websocket"), *Message)
+		PendingDisconnectReason = TEXT_WEBSOCKET_PARSE_ERROR;
+		WebSocket->Close(WEBSOCKET_ERROR_CODE_UNEXPECTED_MESSAGE, TEXT_WEBSOCKET_PARSE_ERROR);
+		return;
+	}
 
 	// Notify
 	OnMatchmakingMessageReceivedDelegates.Broadcast(Payload);
@@ -126,5 +140,13 @@ void UCustomMatchmakingSubsystem::OnMessage(const FString& Message) const
 void UCustomMatchmakingSubsystem::OnError(const FString& Error) const
 {
 	UE_LOG_CUSTOMMATCHMAKING(Verbose, TEXT("Websocket error: %s"), *Error)
-	OnMatchmakingErrorDelegates.Broadcast(Error);
+
+	// Modify the error message to make it more user-friendly
+	FString ModifiedReason = Error;
+	if (ModifiedReason.Contains(WEBSOCKET_FAILED_GENERIC_MESSAGE, ESearchCase::IgnoreCase) || ModifiedReason.IsEmpty())
+	{
+		ModifiedReason = TEXT_WEBSOCKET_ERROR_GENERIC;
+	}
+
+	OnMatchmakingErrorDelegates.Broadcast(ModifiedReason);
 }

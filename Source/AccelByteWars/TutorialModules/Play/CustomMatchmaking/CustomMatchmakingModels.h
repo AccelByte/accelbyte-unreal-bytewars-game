@@ -6,6 +6,8 @@
 
 #include "CustomMatchmakingModels.generated.h"
 
+#define WEBSOCKET_ERROR_CODE_UNEXPECTED_MESSAGE (int) 4001
+
 #define WEBSOCKET_FAILED_GENERIC_MESSAGE FString(TEXT("connect failed"))
 
 #define CUSTOM_MATCHMAKING_CONFIG_SECTION_URL FString(TEXT("CustomMatchmaking"))
@@ -18,6 +20,7 @@
 #define TEXT_LOADING_CANCEL FString(TEXT("Canceling"))
 #define TEXT_ERROR_CANCELED FString(TEXT("Canceled"))
 #define TEXT_WEBSOCKET_ERROR_GENERIC FString(TEXT("Connect failed.\nMake sure the Matchmaking server is running, reachable, and the address and port is set properly"))
+#define TEXT_WEBSOCKET_PARSE_ERROR FString(TEXT("Received invalid payload format from Matchmaking server. Make sure you are running a compatible version."))
 
 enum class EMatchmakerPayloadType : uint8
 {
@@ -40,6 +43,11 @@ public:
 	FString Message;
 
 	EMatchmakerPayloadType GetType() const { return TypeMap[Type]; }
+
+	bool IsValid() const
+	{
+		return !Type.IsEmpty();
+	}
 
 private:
 	inline static TMap<FString, EMatchmakerPayloadType> TypeMap = {

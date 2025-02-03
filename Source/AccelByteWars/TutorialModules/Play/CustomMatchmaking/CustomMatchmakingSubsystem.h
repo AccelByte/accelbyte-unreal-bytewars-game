@@ -22,23 +22,24 @@ public:
 	FOnMatchmakingMessageReceived OnMatchmakingMessageReceivedDelegates;
 
 	void StartMatchmaking();
-	void StopMatchmaking() const;
+	void StopMatchmaking();
 
 private:
 	TSharedPtr<IWebSocket> WebSocket;
 
-	void CleanupWebSocket() const;
+	FString PendingDisconnectReason = TEXT("");
+
+	void CleanupWebSocket();
 	void SetupWebSocket();
-	bool IsIpv4(const FString& Message) const;
 
 	UFUNCTION()
 	void OnConnected() const;
 
 	UFUNCTION()
-	void OnClosed(int32 StatusCode, const FString& Reason, bool WasClean) const;
+	void OnClosed(int32 StatusCode, const FString& Reason, bool WasClean);
 
 	UFUNCTION()
-	void OnMessage(const FString& Message) const;
+	void OnMessage(const FString& Message);
 
 	UFUNCTION()
 	void OnError(const FString& Error) const;

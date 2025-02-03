@@ -47,10 +47,7 @@ void UCustomMatchmakingWidget::NativeOnActivated()
 	Subsystem->OnMatchmakingStartedDelegates.AddUObject(this, &ThisClass::OnMatchmakingStarted);
 	Subsystem->OnMatchmakingErrorDelegates.AddUObject(this, &ThisClass::OnMatchmakingFailed);
 	Subsystem->OnMatchmakingMessageReceivedDelegates.AddUObject(this, &ThisClass::OnMessageReceived);
-	Subsystem->OnMatchmakingStoppedDelegates.AddWeakLambda(this, [this](const FString& Reason)
-	{
-		OnMatchmakingFailed(TEXT_ERROR_CANCELED);
-	});
+	Subsystem->OnMatchmakingStoppedDelegates.AddUObject(this, &ThisClass::OnMatchmakingFailed);
 }
 
 void UCustomMatchmakingWidget::NativeOnDeactivated()
@@ -115,15 +112,7 @@ void UCustomMatchmakingWidget::OnMessageReceived(const FMatchmakerPayload& Paylo
 
 void UCustomMatchmakingWidget::OnMatchmakingFailed(const FString& ErrorMessage)
 {
-	FString ModifiableMessage = ErrorMessage;
-
-	// Modify error message telling the player what to check
-	if (ModifiableMessage.Contains(WEBSOCKET_FAILED_GENERIC_MESSAGE, ESearchCase::IgnoreCase) || ModifiableMessage.IsEmpty())
-	{
-		ModifiableMessage = TEXT_WEBSOCKET_ERROR_GENERIC;
-	}
-
-	W_Root->ErrorMessage = FText::FromString(ModifiableMessage);
+	W_Root->ErrorMessage = FText::FromString(ErrorMessage);
 	SwitchWidget(EAccelByteWarsWidgetSwitcherState::Error);
 }
 
