@@ -1,33 +1,29 @@
-# Byte Wars - Unreal Engine
+# Byte Wars AMS - Unreal Engine
 
 ## Overview
 
-Byte Wars is the official tutorial game for AccelByte Gaming Services (AGS). It is intended to act as a sample project that can be used as a reference on the best practices to integrate our services into your game. We created Byte Wars from scratch as a fully functional offline game. This offline game was then brought online with the power of AccelByte’s platform by adding different services from each of our service areas like access, play and engagement. Every tutorial module walks you through a step by step guide to add a specific feature to Byte Wars which you can then translate into your own game.
+Byte Wars AMS is the official tutorial game for AccelByte Multiplayer Servers (AMS). It is intended to act as a sample project that can be used as a reference on the best practices to integrate our services into your game. We created Byte Wars from scratch as a fully functional offline game. This offline game was then brought online with the power of AccelByte’s platform by adding different services from each of our service areas like access, play and engagement. Every tutorial module walks you through a step by step guide to add a specific feature to Byte Wars which you can then translate into your own game.
+
+This version of Byte Wars, act as a sample project for AccelByte Multiplayer Servers (AMS) without AccelByte Gaming Services (AGS). This is intended for developer who want to use AMS with other services. In this sample, we are using a sample matchmaking service that can be run locally alongside Byte Wars.
 
 ## Prerequisites
 
-* Use **Unreal Engine** version 5.2.1 source build from [Unreal Engine on Github](https://www.unrealengine.com/en-US/ue-on-github).
-
-## Branches
-
-Byte Wars published the source code in two branches:
-* **main branch** is the vanila version game source code without any submodule and will in use for [Tutorial Module: Initial Setup](https://docs.accelbyte.io/gaming-services/tutorials/byte-wars/unreal-engine/learning-modules/general/module-initial-setup/).
-* **tutorialmodules branch** is the branch that has the AccelByte's Plugins and all the Byte Wars tutorial modules with feature flag. 
+- Use **Unreal Engine** version 5.2.1 source build from [Unreal Engine on Github](https://www.unrealengine.com/en-US/ue-on-github).
+- Sample matchmaking service from [AMS Samples](https://github.com/AccelByte/ams-samples)
 
 ## Clone Byte Wars
 
-### Main Branch
+### AMS Branch
 
-Run the following git command to clone the `main` branch.
+Run the following git command to clone the `tutorialmodules-ams` branch:
+
 ```batch
-git clone git@github.com:AccelByte/accelbyte-unreal-bytewars-game.git
+git clone --branch tutorialmodules-ams --recursive git@github.com:AccelByte/accelbyte-unreal-bytewars-game.git
 ```
-### Tutorial Modules Branch
 
-The `tutorialmodules` branch has several plugins set as submodules:
-* [AccelByte Unreal Online Subsystem](https://github.com/AccelByte/accelbyte-unreal-oss) under `Plugins/AccelByte/OnlineSubsystemAccelByte`.
-* [AccelByte Unreal SDK](https://github.com/AccelByte/accelbyte-unreal-sdk-plugin) under `Plugins/AccelByte/AccelByteUe4Sdk`.
-* [AccelByte Network Utilities](https://github.com/AccelByte/accelbyte-unreal-network-utilities) under `Plugins/AccelByte/AccelByteNetworkUtilities`.
+The `tutorialmodules-ams` branch has one plugin set as submodule:
+
+- [AccelByte Unreal SDK](https://github.com/AccelByte/accelbyte-unreal-sdk-plugin) under `Plugins/AccelByte/AccelByteUe4Sdk`.
 
 To clone the repository and checkout the submodule at the same time, run the following command:
 
@@ -37,13 +33,21 @@ To clone the repository and checkout the submodule at the same time, run the fol
 
 ## Compile Byte Wars
 
-1. Right click on AccelByteWars.uproject, select unreal engine version..  then choose unreal engine version 5.2.1 that you already installed.
+1. Right click on AccelByteWars.uproject, select unreal engine version, then choose unreal engine version 5.2.1 source build that you have already installed.
 2. Open AccelByteWars.sln generated from step number 1, using your prefered IDE.
 3. Compile the game project using Development Editor - Win64.
 
-## Run Byte Wars Offline (Main Branch)
+## Run Byte Wars AMS
 
 ### Game Client
+
+#### Run via Editor with Command Line
+
+1. Open terminal.
+2. Enter the following command:
+    ```batch
+    "<path_to_ue>/Engine/Binaries/Win64/UnrealEditor.exe" "<path_to_project>/AccelByteWars.uproject" -game
+    ```
 
 #### Run via PIE
 
@@ -59,23 +63,38 @@ To clone the repository and checkout the submodule at the same time, run the fol
 
 ### Game Server
 
+#### Run via Editor with Command Line
+
+1. Open terminal.
+2. Enter the following command:
+    ```batch
+    "<path_to_ue>/Engine/Binaries/Win64/UnrealEditor.exe" "<path_to_project>/AccelByteWars.uproject" -server
+    ```
+
 #### Run via Packaged Game Server
 
 1. Open unreal editor.
 2. Package game sever platform Windows, Development config, AccelByteWarsServer as the target.
-3. On build complete, then run the package game server using the following command.
+3. On build complete, run the package game server using the following command:
    ```batch
     AccelByteWarsServer.exe -server -log
    ```
-### Connect Game Client to Game Server Locally
 
-1. Run both game client and game server.
-2. On game client, make sure it's in main menu, open command prompt using ` (tilde key on keyboard)
-3. Then run the following command to connect to game server.
-   ```batch
-   open 127.0.0.1:7777/Game/ByteWars/Maps/MainMenu/MainMenu
-   ```
+## How to connect the game to the Sample Matchmaking
 
-## Run Byte Wars Online (Tutorial Modules Branch)
+1. Run the sample matchmaking project.
+2. Open terminal and run the game by using the following command:
+    - With editor:
+        ```batch
+        "<path_to_ue>/Engine/Binaries/Win64/UnrealEditor.exe" "<path_to_project>/AccelByteWars.uproject" -game -CustomMatchmakingUrl="<ip>:<port>"
+        ```
+    - With packaged game server:
+        ```batch
+        AccelByteWars.exe -CustomMatchmakingUrl="<ip>:<port>"
+        ```
+    Set the <ip>:<port> to `127.0.0.1:8080` if you are running the sample matchmaking in the same machine.
+3. Once the game opened and currently in the main menu, go to **Custom Matchmaking** and click **Start Matchmaking**. The game will connect to the sample matchmaking service and you should see a loading screen.
 
-Follow along Byte Wars [Learning Paths](https://docs.accelbyte.io/gaming-services/tutorials/byte-wars/unreal-engine/learning-paths/). We suggest you to start with the [Login with Device ID and Steam path](https://docs.accelbyte.io/gaming-services/tutorials/byte-wars/unreal-engine/learning-paths/authentication/unreal-path-login-device-id-and-steam/) if you're unsure where to start.
+## AMS Integration Tutorial
+
+Follow along [Byte Wars AMS](https://docs.accelbyte.io/gaming-services/tutorials/byte-wars-ams/unreal-engine/) to learn more about the integration.
