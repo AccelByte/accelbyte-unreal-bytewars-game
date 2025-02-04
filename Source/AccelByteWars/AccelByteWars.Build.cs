@@ -59,7 +59,8 @@ public class AccelByteWars : ModuleRules
 			"ProceduralMeshComponent",
 			"MediaAssets",
 			"WebSockets",
-			"JsonUtilities"
+			"JsonUtilities",
+			"Sockets"
 		});
 
 		// Uncomment if you are using Slate UI

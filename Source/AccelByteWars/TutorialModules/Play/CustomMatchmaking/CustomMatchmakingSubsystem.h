@@ -43,4 +43,6 @@ private:
 
 	UFUNCTION()
 	void OnError(const FString& Error) const;
+
+	void ThrowInvalidPayloadError();
 };

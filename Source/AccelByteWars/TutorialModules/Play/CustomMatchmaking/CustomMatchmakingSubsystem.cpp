@@ -6,6 +6,7 @@
 
 #include "CustomMatchmakingLog.h"
 #include "JsonObjectConverter.h"
+#include "SocketSubsystem.h"
 #include "WebSocketsModule.h"
 #include "Core/Player/AccelByteWarsPlayerController.h"
 
@@ -108,14 +109,10 @@ void UCustomMatchmakingSubsystem::OnMessage(const FString& Message)
 
 	// Parse message
 	FMatchmakerPayload Payload;
-	FJsonObjectConverter::JsonObjectStringToUStruct(Message, &Payload);
-
 	// Safety in case the received message is different than expected
-	if (!Payload.IsValid())
+	if (!FJsonObjectConverter::JsonObjectStringToUStruct<FMatchmakerPayload>(Message, &Payload))
 	{
-		UE_LOG_CUSTOMMATCHMAKING(Warning, TEXT("Unexpected message format was received from the Matchmaking service, closing websocket"), *Message)
-		PendingDisconnectReason = TEXT_WEBSOCKET_PARSE_ERROR;
-		WebSocket->Close(WEBSOCKET_ERROR_CODE_UNEXPECTED_MESSAGE, TEXT_WEBSOCKET_PARSE_ERROR);
+		ThrowInvalidPayloadError();
 		return;
 	}
 
@@ -123,8 +120,19 @@ void UCustomMatchmakingSubsystem::OnMessage(const FString& Message)
 	OnMatchmakingMessageReceivedDelegates.Broadcast(Payload);
 
 	// Travel if server is ready
-	if (Payload.GetType() == EMatchmakerPayloadType::OnServerReady)
+	if (Payload.Type == EMatchmakerPayloadType::OnServerReady)
 	{
+		// Use FInternetAddr to check whether this is a valid IPv4 or IPv6
+		const TSharedPtr<FInternetAddr> ServerAddress = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateInternetAddr();
+		bool bIsValid = false;
+
+		ServerAddress->SetIp(*Payload.Message, bIsValid);
+		if (!bIsValid)
+		{
+			ThrowInvalidPayloadError();
+			return;
+		}
+
 		// Trigger travel
 		AAccelByteWarsPlayerController* PC = Cast<AAccelByteWarsPlayerController>(GetWorld()->GetFirstPlayerController());
 		if (!PC)
@@ -133,7 +141,8 @@ void UCustomMatchmakingSubsystem::OnMessage(const FString& Message)
 			return;
 		}
 
-		PC->DelayedClientTravel(Payload.Message, ETravelType::TRAVEL_Absolute);
+		const FString Address = ServerAddress->ToString(true);
+		PC->DelayedClientTravel(Address, ETravelType::TRAVEL_Absolute);
 	}
 }
 
@@ -149,4 +158,11 @@ void UCustomMatchmakingSubsystem::OnError(const FString& Error) const
 	}
 
 	OnMatchmakingErrorDelegates.Broadcast(ModifiedReason);
+}
+
+void UCustomMatchmakingSubsystem::ThrowInvalidPayloadError()
+{
+	UE_LOG_CUSTOMMATCHMAKING(Warning, TEXT("Unexpected message format was received from the Matchmaking service, closing websocket"))
+	PendingDisconnectReason = TEXT_WEBSOCKET_PARSE_ERROR;
+	WebSocket->Close(WEBSOCKET_ERROR_CODE_UNEXPECTED_MESSAGE, TEXT_WEBSOCKET_PARSE_ERROR);
 }

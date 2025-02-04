@@ -22,6 +22,7 @@
 #define TEXT_WEBSOCKET_ERROR_GENERIC FString(TEXT("Connect failed.\nMake sure the Matchmaking server is running, reachable, and the address and port is set properly"))
 #define TEXT_WEBSOCKET_PARSE_ERROR FString(TEXT("Received invalid payload format from Matchmaking server. Make sure you are running a compatible version."))
 
+UENUM(BlueprintType)
 enum class EMatchmakerPayloadType : uint8
 {
 	OnFindingMatch,
@@ -37,25 +38,10 @@ struct FMatchmakerPayload
 
 public:
 	UPROPERTY()
-	FString Type;
+	EMatchmakerPayloadType Type;
 
 	UPROPERTY()
 	FString Message;
-
-	EMatchmakerPayloadType GetType() const { return TypeMap[Type]; }
-
-	bool IsValid() const
-	{
-		return !Type.IsEmpty();
-	}
-
-private:
-	inline static TMap<FString, EMatchmakerPayloadType> TypeMap = {
-		{"OnFindingMatch", EMatchmakerPayloadType::OnFindingMatch},
-		{"OnServerClaimFailed", EMatchmakerPayloadType::OnServerClaimFailed},
-		{"OnMatchFound", EMatchmakerPayloadType::OnMatchFound},
-		{"OnServerReady", EMatchmakerPayloadType::OnServerReady}
-	};
 };
 
 DECLARE_MULTICAST_DELEGATE(FOnMatchmakingStarted)
