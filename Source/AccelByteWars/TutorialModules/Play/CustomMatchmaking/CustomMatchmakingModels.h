@@ -26,7 +26,7 @@ enum class EMatchmakerPayloadType : uint8
 {
 	OnFindingMatch,
 	OnMatchFound,
-	OnMatchError,
+	OnServerClaimFailed,
 	OnServerReady
 };
 
@@ -52,7 +52,7 @@ public:
 private:
 	inline static TMap<FString, EMatchmakerPayloadType> TypeMap = {
 		{"OnFindingMatch", EMatchmakerPayloadType::OnFindingMatch},
-		{"OnMatchError", EMatchmakerPayloadType::OnMatchError},
+		{"OnServerClaimFailed", EMatchmakerPayloadType::OnServerClaimFailed},
 		{"OnMatchFound", EMatchmakerPayloadType::OnMatchFound},
 		{"OnServerReady", EMatchmakerPayloadType::OnServerReady}
 	};
