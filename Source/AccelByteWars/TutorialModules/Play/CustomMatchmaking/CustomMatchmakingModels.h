@@ -6,6 +6,7 @@
 
 #include "CustomMatchmakingModels.generated.h"
 
+// @@@SNIPSTART CustomMatchmakingModels.h-constants
 #define WEBSOCKET_ERROR_CODE_UNEXPECTED_MESSAGE (int) 4001
 
 #define WEBSOCKET_FAILED_GENERIC_MESSAGE FString(TEXT("connect failed"))
@@ -21,7 +22,9 @@
 #define TEXT_ERROR_CANCELED FString(TEXT("Canceled"))
 #define TEXT_WEBSOCKET_ERROR_GENERIC FString(TEXT("Connect failed.\nMake sure the Matchmaking server is running, reachable, and the address and port is set properly"))
 #define TEXT_WEBSOCKET_PARSE_ERROR FString(TEXT("Received invalid payload format from Matchmaking server. Make sure you are running a compatible version."))
+// @@@SNIPEND
 
+// @@@SNIPSTART CustomMatchmakingModels.h-payload
 UENUM(BlueprintType)
 enum class EMatchmakerPayloadType : uint8
 {
@@ -43,8 +46,11 @@ public:
 	UPROPERTY()
 	FString Message;
 };
+// @@@SNIPEND
 
+// @@@SNIPSTART CustomMatchmakingModels.h-delegates
 DECLARE_MULTICAST_DELEGATE(FOnMatchmakingStarted)
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnMatchmakingStopped, const FString& /*Reason*/)
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnMatchmakingMessageReceived, const FMatchmakerPayload& /*Payload*/)
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnMatchmakingError, const FString& /*ErrorMessage*/)
+// @@@SNIPEND

@@ -9,6 +9,11 @@
 #include "TutorialModules/Play/CustomMatchmaking/CustomMatchmakingLog.h"
 #include "TutorialModules/Play/CustomMatchmaking/CustomMatchmakingSubsystem.h"
 
+// @@@SNIPSTART CustomMatchmakingWidget.cpp-NativeOnActivated
+// @@@MULTISNIP Back {"selectedLines": ["1-2", "30", "40"]}
+// @@@MULTISNIP Subsystem {"selectedLines": ["1-2", "23-27", "40"]}
+// @@@MULTISNIP Buttons {"selectedLines": ["1-2", "31-33", "40"]}
+// @@@MULTISNIP PutItAllTogether {"selectedLines": ["1-2", "35-40"]}
 void UCustomMatchmakingWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
@@ -49,7 +54,11 @@ void UCustomMatchmakingWidget::NativeOnActivated()
 	Subsystem->OnMatchmakingMessageReceivedDelegates.AddUObject(this, &ThisClass::OnMessageReceived);
 	Subsystem->OnMatchmakingStoppedDelegates.AddUObject(this, &ThisClass::OnMatchmakingFailed);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CustomMatchmakingWidget.cpp-NativeOnDeactivated
+// @@@MULTISNIP Buttons {"selectedLines": ["1-2", "7-9", "16"]}
+// @@@MULTISNIP PutItAllTogether {"selectedLines": ["1-2", "11-16"]}
 void UCustomMatchmakingWidget::NativeOnDeactivated()
 {
 	Super::NativeOnDeactivated();
@@ -66,6 +75,7 @@ void UCustomMatchmakingWidget::NativeOnDeactivated()
 	Subsystem->OnMatchmakingMessageReceivedDelegates.RemoveAll(this);
 	Subsystem->OnMatchmakingStoppedDelegates.RemoveAll(this);
 }
+// @@@SNIPEND
 
 void UCustomMatchmakingWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
@@ -74,6 +84,9 @@ void UCustomMatchmakingWidget::NativeTick(const FGeometry& MyGeometry, float InD
 	MoveCameraToTargetLocation(InDeltaTime, FVector(60.0f, 600.0f, 160.0f));
 }
 
+// @@@SNIPSTART CustomMatchmakingWidget.cpp-StartMatchmaking
+// @@@MULTISNIP Init {"selectedLines": ["1-5", "8"]}
+// @@@MULTISNIP PutItAllTogether {"selectedLines": ["1-2", "7-8"]}
 void UCustomMatchmakingWidget::StartMatchmaking()
 {
 	W_Root->LoadingMessage = FText::FromString(TEXT_LOADING_REQUEST);
@@ -82,7 +95,11 @@ void UCustomMatchmakingWidget::StartMatchmaking()
 
 	Subsystem->StartMatchmaking();
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CustomMatchmakingWidget.cpp-StopMatchmaking
+// @@@MULTISNIP Init {"selectedLines": ["1-4", "7"]}
+// @@@MULTISNIP PutItAllTogether {"selectedLines": ["1-2", "6-7"]}
 void UCustomMatchmakingWidget::StopMatchmaking()
 {
 	W_Root->LoadingMessage = FText::FromString(TEXT_LOADING_CANCEL);
@@ -90,32 +107,34 @@ void UCustomMatchmakingWidget::StopMatchmaking()
 
 	Subsystem->StopMatchmaking();
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CustomMatchmakingWidget.cpp-OnMatchmakingStarted
 void UCustomMatchmakingWidget::OnMatchmakingStarted()
 {
 	W_Root->LoadingMessage = FText::FromString(TEXT_LOADING_FINDING_MATCH);
 	W_Root->bEnableCancelButton = true;
 	SwitchWidget(EAccelByteWarsWidgetSwitcherState::Loading);
 }
+// @@@SNIPEND
 
-void UCustomMatchmakingWidget::OnServerInfoReceived()
-{
-	W_Root->LoadingMessage = FText::FromString(TEXT_LOADING_TRAVELLING);
-	SwitchWidget(EAccelByteWarsWidgetSwitcherState::Loading);
-}
-
+// @@@SNIPSTART CustomMatchmakingWidget.cpp-OnMessageReceived
 void UCustomMatchmakingWidget::OnMessageReceived(const FMatchmakerPayload& Payload)
 {
 	W_Root->LoadingMessage = FText::FromString(Payload.Message);
 	SwitchWidget(EAccelByteWarsWidgetSwitcherState::Loading);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CustomMatchmakingWidget.cpp-OnMatchmakingFailed
 void UCustomMatchmakingWidget::OnMatchmakingFailed(const FString& ErrorMessage)
 {
 	W_Root->ErrorMessage = FText::FromString(ErrorMessage);
 	SwitchWidget(EAccelByteWarsWidgetSwitcherState::Error);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CustomMatchmakingWidget.cpp-SwitchWidget
 void UCustomMatchmakingWidget::SwitchWidget(const EAccelByteWarsWidgetSwitcherState State)
 {
 	UWidget* FocusTarget = W_Root;
@@ -140,3 +159,4 @@ void UCustomMatchmakingWidget::SwitchWidget(const EAccelByteWarsWidgetSwitcherSt
 
 	W_Root->ForceRefresh();
 }
+// @@@SNIPEND

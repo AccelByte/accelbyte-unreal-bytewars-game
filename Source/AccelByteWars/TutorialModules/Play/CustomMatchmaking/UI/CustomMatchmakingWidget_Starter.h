@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
+﻿// Copyright (c) 2025 AccelByte Inc. All Rights Reserved.
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
@@ -8,13 +8,13 @@
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
 #include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
 #include "TutorialModules/Play/CustomMatchmaking/CustomMatchmakingModels.h"
-#include "CustomMatchmakingWidget.generated.h"
+#include "CustomMatchmakingWidget_Starter.generated.h"
 
-class UCustomMatchmakingSubsystem;
+class UCustomMatchmakingSubsystem_Starter;
 class UCommonButtonBase;
 
 UCLASS(Abstract)
-class ACCELBYTEWARS_API UCustomMatchmakingWidget : public UAccelByteWarsActivatableWidget
+class ACCELBYTEWARS_API UCustomMatchmakingWidget_Starter : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
 
@@ -22,28 +22,14 @@ class ACCELBYTEWARS_API UCustomMatchmakingWidget : public UAccelByteWarsActivata
 	virtual void NativeOnDeactivated() override;
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
-// @@@SNIPSTART CustomMatchmakingWidget.h-protected
-// @@@MULTISNIP Send {"selectedLines": ["1-6"]}
-// @@@MULTISNIP Receive {"selectedLines": ["1", "8-10"]}
 protected:
-	UFUNCTION()
-	void StartMatchmaking();
+#pragma region "Tutorial"
+	// Declare your functions here
+#pragma endregion 
 
-	UFUNCTION()
-	void StopMatchmaking();
-
-	void OnMatchmakingStarted();
-	void OnMessageReceived(const FMatchmakerPayload& Payload);
-	void OnMatchmakingFailed(const FString& ErrorMessage);
-// @@@SNIPEND
-
-// @@@SNIPSTART CustomMatchmakingWidget.h-private
-// @@@MULTISNIP Subsystem {"selectedLines": ["1-3"]}
-// @@@MULTISNIP Overview {"selectedLines": ["1", "5-6"]}
-// @@@MULTISNIP DefaultState {"selectedLines": ["1", "8-12"]}
 private:
 	UPROPERTY()
-	UCustomMatchmakingSubsystem* Subsystem;
+	UCustomMatchmakingSubsystem_Starter* Subsystem;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UAccelByteWarsWidgetSwitcher* W_Root;
@@ -55,5 +41,4 @@ private:
 	UCommonButtonBase* Btn_Back;
 
 	void SwitchWidget(EAccelByteWarsWidgetSwitcherState State);
-// @@@SNIPEND
 };

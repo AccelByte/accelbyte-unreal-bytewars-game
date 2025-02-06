@@ -15,6 +15,9 @@ class ACCELBYTEWARS_API UCustomMatchmakingSubsystem : public UTutorialModuleSubs
 {
 	GENERATED_BODY()
 
+// @@@SNIPSTART CustomMatchmakingSubsystem.h-public
+// @@@MULTISNIP Delegates {"selectedLines": ["1-5"]}
+// @@@MULTISNIP Functions {"selectedLines": ["1", "7-8"]}
 public:
 	FOnMatchmakingStarted OnMatchmakingStartedDelegates;
 	FOnMatchmakingStopped OnMatchmakingStoppedDelegates;
@@ -23,7 +26,15 @@ public:
 
 	void StartMatchmaking();
 	void StopMatchmaking();
+// @@@SNIPEND
 
+// @@@SNIPSTART CustomMatchmakingSubsystem.h-private
+// @@@MULTISNIP Websocket {"selectedLines": ["1-2"]}
+// @@@MULTISNIP Setup {"selectedLines": ["1", "7"]}
+// @@@MULTISNIP PendingDisconnectReason {"selectedLines": ["1", "4"]}
+// @@@MULTISNIP Cleanup {"selectedLines": ["1", "6"]}
+// @@@MULTISNIP Functions {"selectedLines": ["1", "9-19"]}
+// @@@MULTISNIP ThrowInvalidPayloadError {"selectedLines": ["1", "21"]}
 private:
 	TSharedPtr<IWebSocket> WebSocket;
 
@@ -45,4 +56,5 @@ private:
 	void OnError(const FString& Error) const;
 
 	void ThrowInvalidPayloadError();
+// @@@SNIPEND
 };

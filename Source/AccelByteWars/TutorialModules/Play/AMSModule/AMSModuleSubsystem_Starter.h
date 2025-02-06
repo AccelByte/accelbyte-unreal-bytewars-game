@@ -1,4 +1,4 @@
-// Copyright (c) 2024 AccelByte Inc. All Rights Reserved.
+﻿// Copyright (c) 2025 AccelByte Inc. All Rights Reserved.
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
@@ -9,50 +9,25 @@
 #if UE_EDITOR || UE_SERVER
 #include "GameServerApi/AccelByteServerAMSApi.h"
 #endif
-#include "AMSModuleSubsystem.generated.h"
+#include "AMSModuleSubsystem_Starter.generated.h"
 
 UCLASS()
-class ACCELBYTEWARS_API UAMSModuleSubsystem : public UTutorialModuleSubsystem
+class ACCELBYTEWARS_API UAMSModuleSubsystem_Starter : public UTutorialModuleSubsystem
 {
 	GENERATED_BODY()
 
 #if UE_EDITOR || UE_SERVER
-
-// @@@SNIPSTART AMSModuleSubsystem.h-public
-// @@@MULTISNIP BindUnbind {"selectedLines": ["1", "2-3"]}
-// @@@MULTISNIP Functions {"selectedLines": ["1", "5-6"]}
 public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 
 	void RegisterServer(const FName SessionName);
 	void UnregisterServer(const FName SessionNam);
-// @@@SNIPEND
 
-// @@@SNIPSTART AMSModuleSubsystem.h-private
-// @@@MULTISNIP ClearDelegates {"selectedLines": ["1", "17-18"]}
-// @@@MULTISNIP Variables {"selectedLines": ["1", "25-35"]}
-// @@@MULTISNIP Timer {"selectedLines": ["1", "37-38"]}
-// @@@MULTISNIP Caller {"selectedLines": ["1-4"]}
-// @@@MULTISNIP Response {"selectedLines": ["1", "6-8"]}
-// @@@MULTISNIP OnDisconnected {"selectedLines": ["1", "10"]}
-// @@@MULTISNIP Drain {"selectedLines": ["1", "12"]}
-// @@@MULTISNIP Timeout {"selectedLines": ["1", "14-15"]}
 private:
-	void Connect();
-	void Disconnect();
-	void SendServerReady();
-
-	void OnConnectSuccess();
-	void OnConnectError(const FString& ErrorMessage);
-	void OnConnectClosed(int32 StatusCode, FString const& Reason, bool bWasClean);
-	
-	void OnDisconnected(bool bIsSucceeded, const FString& ErrorMessage);
-
-	void OnDrainReceived();
-
-	void CheckConnection();
-	void CheckDisconnection();
+#pragma region "Tutorial"
+	// Declare your functions here
+#pragma endregion 
 
 	void UnbindConnectDelegates();
 	void UnbindAllDelegates();
@@ -77,5 +52,4 @@ private:
 	FTimerHandle ConnectionTimerHandle;
 	FTimerHandle DisconnectionTimerHandle;
 #endif
-// @@@SNIPEND
 };

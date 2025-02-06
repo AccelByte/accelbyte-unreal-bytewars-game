@@ -10,13 +10,16 @@
 #include "WebSocketsModule.h"
 #include "Core/Player/AccelByteWarsPlayerController.h"
 
+// @@@SNIPSTART CustomMatchmakingSubsystem.cpp-StartMatchmaking
 void UCustomMatchmakingSubsystem::StartMatchmaking()
 {
 	// In this sample, connecting to the websocket will immediately start the matchmaking
 	SetupWebSocket();
 	WebSocket->Connect();
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CustomMatchmakingSubsystem.cpp-StopMatchmaking
 void UCustomMatchmakingSubsystem::StopMatchmaking()
 {
 	// Cancel the matchmaking by disconnecting from the websocket
@@ -29,7 +32,9 @@ void UCustomMatchmakingSubsystem::StopMatchmaking()
 	PendingDisconnectReason = TEXT_ERROR_CANCELED;
 	WebSocket->Close();
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CustomMatchmakingSubsystem.cpp-CleanupWebSocket
 void UCustomMatchmakingSubsystem::CleanupWebSocket()
 {
 	PendingDisconnectReason = TEXT("");
@@ -39,8 +44,13 @@ void UCustomMatchmakingSubsystem::CleanupWebSocket()
 	WebSocket->OnConnectionError().RemoveAll(this);
 	WebSocket->OnClosed().RemoveAll(this);
 	WebSocket->OnMessage().RemoveAll(this);
-}
 
+	WebSocket = nullptr;
+}
+// @@@SNIPEND
+
+// @@@SNIPSTART CustomMatchmakingSubsystem.cpp-SetupWebSocket
+// @@@MULTISNIP Setup {"selectedLines": ["1-2", "25-34"]}
 void UCustomMatchmakingSubsystem::SetupWebSocket()
 {
 	// Get URL from Launch param / config file
@@ -75,29 +85,30 @@ void UCustomMatchmakingSubsystem::SetupWebSocket()
 	WebSocket->OnClosed().AddUObject(this, &ThisClass::OnClosed);
 	WebSocket->OnMessage().AddUObject(this, &ThisClass::OnMessage);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CustomMatchmakingSubsystem.cpp-OnConnected
 void UCustomMatchmakingSubsystem::OnConnected() const
 {
 	UE_LOG_CUSTOMMATCHMAKING(Verbose, TEXT("Websocket connected"))
 	OnMatchmakingStartedDelegates.Broadcast();
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CustomMatchmakingSubsystem.cpp-OnClosed
 void UCustomMatchmakingSubsystem::OnClosed(int32 StatusCode, const FString& Reason, bool WasClean)
 {
 	UE_LOG_CUSTOMMATCHMAKING(Verbose, TEXT("Websocket closed: (%d) %s"), StatusCode, *Reason)
 
 	// Modify the error message to make it more user-friendly
-	FString ModifiedReason = Reason;
-	if (!PendingDisconnectReason.IsEmpty())
-	{
-		ModifiedReason = PendingDisconnectReason;
-	}
+	const FString ModifiedReason = PendingDisconnectReason.IsEmpty() ? TEXT_WEBSOCKET_ERROR_GENERIC : PendingDisconnectReason;
 
 	OnMatchmakingStoppedDelegates.Broadcast(ModifiedReason);
-
 	CleanupWebSocket();
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CustomMatchmakingSubsystem.cpp-OnMessage
 void UCustomMatchmakingSubsystem::OnMessage(const FString& Message)
 {
 	UE_LOG_CUSTOMMATCHMAKING(Verbose, TEXT("Websocket message received: %s"), *Message)
@@ -145,24 +156,23 @@ void UCustomMatchmakingSubsystem::OnMessage(const FString& Message)
 		PC->DelayedClientTravel(Address, ETravelType::TRAVEL_Absolute);
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CustomMatchmakingSubsystem.cpp-OnError
 void UCustomMatchmakingSubsystem::OnError(const FString& Error) const
 {
 	UE_LOG_CUSTOMMATCHMAKING(Verbose, TEXT("Websocket error: %s"), *Error)
 
-	// Modify the error message to make it more user-friendly
-	FString ModifiedReason = Error;
-	if (ModifiedReason.Contains(WEBSOCKET_FAILED_GENERIC_MESSAGE, ESearchCase::IgnoreCase) || ModifiedReason.IsEmpty())
-	{
-		ModifiedReason = TEXT_WEBSOCKET_ERROR_GENERIC;
-	}
-
-	OnMatchmakingErrorDelegates.Broadcast(ModifiedReason);
+	// Use a generic message since UE's built in error message are not clear enough
+	OnMatchmakingErrorDelegates.Broadcast(TEXT_WEBSOCKET_ERROR_GENERIC);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART CustomMatchmakingSubsystem.cpp-ThrowInvalidPayloadError
 void UCustomMatchmakingSubsystem::ThrowInvalidPayloadError()
 {
 	UE_LOG_CUSTOMMATCHMAKING(Warning, TEXT("Unexpected message format was received from the Matchmaking service, closing websocket"))
 	PendingDisconnectReason = TEXT_WEBSOCKET_PARSE_ERROR;
 	WebSocket->Close(WEBSOCKET_ERROR_CODE_UNEXPECTED_MESSAGE, TEXT_WEBSOCKET_PARSE_ERROR);
 }
+// @@@SNIPEND

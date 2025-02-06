@@ -11,6 +11,8 @@
 #include "Core/GameStates/AccelByteWarsMainMenuGameState.h"
 #include "AMSModuleLog.h"
 
+// @@@SNIPSTART AMSModuleSubsystem.cpp-Initialize
+// @@@MULTISNIP Bind {"selectedLines": ["1-2", "7-9"]}
 void UAMSModuleSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
@@ -20,7 +22,10 @@ void UAMSModuleSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	AAccelByteWarsGameSession::OnRegisterServerDelegates.AddUObject(this, &ThisClass::RegisterServer);
 	AAccelByteWarsGameSession::OnUnregisterServerDelegates.AddUObject(this, &ThisClass::UnregisterServer);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART AMSModuleSubsystem.cpp-Deinitialize
+// @@@MULTISNIP Unbind {"selectedLines": ["1-2", "7-9"]}
 void UAMSModuleSubsystem::Deinitialize()
 {
 	Super::Deinitialize();
@@ -30,7 +35,10 @@ void UAMSModuleSubsystem::Deinitialize()
 	AAccelByteWarsGameSession::OnRegisterServerDelegates.RemoveAll(this);
 	AAccelByteWarsGameSession::OnUnregisterServerDelegates.RemoveAll(this);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART AMSModuleSubsystem.cpp-RegisterServer
+// @@@MULTISNIP Default {"selectedLines": ["1-2", "24"]}
 void UAMSModuleSubsystem::RegisterServer(const FName SessionName)
 {
 	if (bIsRegistering)
@@ -55,7 +63,10 @@ void UAMSModuleSubsystem::RegisterServer(const FName SessionName)
 
 	Connect();
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART AMSModuleSubsystem.cpp-UnregisterServer
+// @@@MULTISNIP Default {"selectedLines": ["1-2", "7"]}
 void UAMSModuleSubsystem::UnregisterServer(const FName SessionNam)
 {
 	UE_LOG_AMS_MODULE(Log, TEXT("Unregister server from AMS."));
@@ -63,7 +74,9 @@ void UAMSModuleSubsystem::UnregisterServer(const FName SessionNam)
 	CurrentSessionName = FName(FString());
 	Disconnect();
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART AMSModuleSubsystem.cpp-Connect
 void UAMSModuleSubsystem::Connect()
 {
 	if (AccelByte::FRegistry::ServerAMS.IsConnected())
@@ -91,7 +104,9 @@ void UAMSModuleSubsystem::Connect()
 		AccelByte::FRegistry::ServerAMS.Connect();
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART AMSModuleSubsystem.cpp-Disconnect
 void UAMSModuleSubsystem::Disconnect()
 {
 	if (!AccelByte::FRegistry::ServerAMS.IsConnected())
@@ -106,7 +121,9 @@ void UAMSModuleSubsystem::Disconnect()
 	GetWorld()->GetTimerManager().SetTimer(DisconnectionTimerHandle, this, &ThisClass::CheckDisconnection, TimerRate, true);
 	AccelByte::FRegistry::ServerAMS.Disconnect();
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART AMSModuleSubsystem.cpp-SendServerReady
 void UAMSModuleSubsystem::SendServerReady()
 {
 	if (!AccelByte::FRegistry::ServerAMS.IsConnected())
@@ -118,7 +135,9 @@ void UAMSModuleSubsystem::SendServerReady()
 	UE_LOG_AMS_MODULE(Log, TEXT("Send server ready message to AMS."));
 	AccelByte::FRegistry::ServerAMS.SendReadyMessage();
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART AMSModuleSubsystem.cpp-OnConnectSuccess
 void UAMSModuleSubsystem::OnConnectSuccess()
 {
 	UE_LOG_AMS_MODULE(Log, TEXT("Success to connect to AMS websocket."));
@@ -129,27 +148,35 @@ void UAMSModuleSubsystem::OnConnectSuccess()
 	 * Since Byte Wars does not require such setup, the server ready message is sent immediately here. */
 	SendServerReady();
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART AMSModuleSubsystem.cpp-OnConnectError
 void UAMSModuleSubsystem::OnConnectError(const FString& ErrorMessage)
 {
 	UE_LOG_AMS_MODULE(Warning, TEXT("Failed to connect to AMS websocket. Error: %s"), *ErrorMessage);
 	CurrentSessionName = FName(FString());
 	UnbindConnectDelegates();
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART AMSModuleSubsystem.cpp-OnConnectClosed
 void UAMSModuleSubsystem::OnConnectClosed(int32 StatusCode, FString const& Reason, bool bWasClean)
 {
 	UE_LOG_AMS_MODULE(Warning, TEXT("Failed to connect to AMS websocket. Connection is closed. Reason: %s"), *Reason);
 	CurrentSessionName = FName(FString());
 	UnbindConnectDelegates();
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART AMSModuleSubsystem.cpp-OnDisconnected
 void UAMSModuleSubsystem::OnDisconnected(bool bIsSucceeded, const FString& ErrorMessage)
 {
 	UE_LOG_AMS_MODULE(Log, TEXT("Disconnected from AMS websocket. Success: %s. Error: %s"), bIsSucceeded ? TEXT("TRUE") : TEXT("FALSE"), *ErrorMessage);
 	FPlatformMisc::RequestExit(false);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART AMSModuleSubsystem.cpp-OnDrainReceived
 void UAMSModuleSubsystem::OnDrainReceived()
 {
 	UE_LOG_AMS_MODULE(Log, TEXT("Drain event received."));
@@ -172,7 +199,9 @@ void UAMSModuleSubsystem::OnDrainReceived()
 
 	UE_LOG_AMS_MODULE(Log, TEXT("Game is currently in progress, drain event ignored."));
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART AMSModuleSubsystem.cpp-CheckConnection
 void UAMSModuleSubsystem::CheckConnection()
 {
 	if (AccelByte::FRegistry::ServerAMS.IsConnected()) 
@@ -203,7 +232,9 @@ void UAMSModuleSubsystem::CheckConnection()
 
 	ConnectionTimeOutTimer--;
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART AMSModuleSubsystem.cpp-CheckDisconnection
 void UAMSModuleSubsystem::CheckDisconnection()
 {
 	if (!AccelByte::FRegistry::ServerAMS.IsConnected())
@@ -225,7 +256,9 @@ void UAMSModuleSubsystem::CheckDisconnection()
 
 	DisconnectionTimeOutTimer--;
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART AMSModuleSubsystem.cpp-UnbindConnectDelegates
 void UAMSModuleSubsystem::UnbindConnectDelegates()
 {
 	bIsRegistering = false;
@@ -234,11 +267,13 @@ void UAMSModuleSubsystem::UnbindConnectDelegates()
 	OnConnectErrorDelegate.Unbind();
 	OnConnectClosedDelegate.Unbind();
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART AMSModuleSubsystem.cpp-UnbindAllDelegates
 void UAMSModuleSubsystem::UnbindAllDelegates()
 {
 	UnbindConnectDelegates();
 	OnDrainReceivedDelegate.Unbind();
 }
-
+// @@@SNIPEND
 #endif
