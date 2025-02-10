@@ -28,8 +28,7 @@ public class AccelByteWars : ModuleRules
 			"OnlineSubsystemUtils",
 			"Json",
 			"HTTP",
-			"EngineSettings",
-			"BlackBoxSDK"
+			"EngineSettings" 
 		});
 
 		if (Target.Type == TargetType.Editor || Target.Type == TargetType.Server)
