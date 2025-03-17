@@ -7,6 +7,7 @@
 #include "Net/UnrealNetwork.h"
 #include "CoreMinimal.h"
 #include "Core/AssetManager/InGameItems/InGameItemUtility.h"
+#include "Core/Utilities/AccelByteWarsUtility.h"
 #include "GameFramework/Pawn.h"
 #include "AccelByteWarsPlayerPawn.generated.h"
 
@@ -37,6 +38,9 @@ public:
 	//~UObject overridden functions
 	virtual void Tick(float DeltaTime) override;
 	virtual void PossessedBy(AController* NewController) override;	//~End of UObject overridden functions
+
+	// Notify other object that a power up has been used
+	static inline FOnPowerUpUsed OnPowerUpUsedServerDelegates;
 
 	/**
 	 * @brief A do nothing root component of player ship

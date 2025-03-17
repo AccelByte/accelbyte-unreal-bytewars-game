@@ -53,4 +53,6 @@ public:
 
 protected:
 	int32 GetTeamIdFromPawn(const AActor* Actor) const;
+
+	void NotifyMissileDestroyed(const AActor* MissileToBeDestroyed);
 };

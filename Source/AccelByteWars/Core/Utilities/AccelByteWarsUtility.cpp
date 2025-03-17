@@ -16,6 +16,21 @@ const TMap<FString, EImageFormat> AccelByteWarsUtility::ImageFormatMap =
 	{"image/bmp", EImageFormat::BMP}
 };
 
+FString AccelByteWarsUtility::GenerateActorEntityId(const AActor* Actor)
+{
+	if (!Actor) 
+	{
+		return FString::Printf(TEXT("%s_%d"), *ENTITY_TYPE_UNKNOWN, INDEX_NONE);
+	}
+
+	return FString::Printf(TEXT("%s_%d"), *Actor->GetName(), Actor->GetUniqueID());
+}
+
+FString AccelByteWarsUtility::FormatEntityDeathSource(const FString& SourceType, const FString& SourceEntityId)
+{
+	return FString::Printf(TEXT("%s:%s"), *SourceType, *SourceEntityId);
+}
+
 void AccelByteWarsUtility::GetImageFromURL(const FString& Url, const FString& ImageId, const FOnImageReceived& OnReceived)
 {
 	const FHttpRequestPtr ImageRequest = FHttpModule::Get().CreateRequest();
@@ -156,7 +171,7 @@ bool AccelByteWarsUtility::IsUseVersionChecker()
 {
 	// Check for launch parameter first.
 	const FString CmdArgs = FCommandLine::Get();
-	const FString CmdStr = FString("-UseVersionChecker=");
+	const FString CmdStr = TEXT("-UseVersionChecker=");
 	bool bValidCmdValue = false;
 	bool bUseVersionChecker = false;
 	if (CmdArgs.Contains(CmdStr, ESearchCase::IgnoreCase))

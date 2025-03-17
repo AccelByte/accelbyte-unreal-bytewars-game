@@ -6,6 +6,13 @@
 
 #include "InGameItemUtility.generated.h"
 
+ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogInGameItem, Log, All);
+
+#define UE_LOG_IN_GAME_ITEM(Verbosity, Format, ...) \
+{ \
+UE_LOG_FUNC(LogInGameItem, Verbosity, TEXT("%s"), *FString::Printf(TEXT(Format), ##__VA_ARGS__)); \
+}
+
 class UInGameItemDataAsset;
 UENUM(BlueprintType)
 enum class EItemSkuPlatform : uint8

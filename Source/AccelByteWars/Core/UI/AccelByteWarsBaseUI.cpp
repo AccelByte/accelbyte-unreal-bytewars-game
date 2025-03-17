@@ -5,6 +5,7 @@
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Components/Prompt/GUICheat/GUICheatWidget.h"
+#include "Core/GameStates/AccelByteWarsGameState.h"
 #include "Core/UI/Components/Info/InfoWidget.h"
 #include "Core/Utilities/AccelByteWarsUtility.h"
 #include "Input/CommonUIInputTypes.h"
@@ -196,12 +197,29 @@ UAccelByteWarsActivatableWidget* UAccelByteWarsBaseUI::PushWidgetToStack(EBaseUI
 	UCommonActivatableWidgetStack* Stack = Stacks[TargetStack];
 	ensure(Stack);
 
-	// safeguard to not add a widget when the world is tearing down
-	if (GetWorld()->bIsTearingDown)
+	// Abort if the world is tearing down.
+	if (!GetWorld() || GetWorld()->bIsTearingDown)
 	{
 		return nullptr;
 	}
 
+	// Abort if the server currently traveling, which mean the client is about to travel.
+	AGameStateBase* GameStateBase = GetWorld()->GetGameState();
+	if (!ensure(GameStateBase))
+	{
+		return nullptr;
+	}
+	const AAccelByteWarsGameState* ByteWarsGameState = Cast<AAccelByteWarsGameState>(GameStateBase);
+	if (!ensure(ByteWarsGameState))
+	{
+		return nullptr;
+	}
+	if (ByteWarsGameState->bIsServerTravelling)
+	{
+		return nullptr;
+	}
+
+	// Push widget
 	TWeakObjectPtr<UAccelByteWarsActivatableWidget> NewWidget = MakeWeakObjectPtr<UAccelByteWarsActivatableWidget>(Cast<UAccelByteWarsActivatableWidget>(Stack->AddWidget(WidgetClass, InitFunc)));
 	if (NewWidget.IsValid())
 	{

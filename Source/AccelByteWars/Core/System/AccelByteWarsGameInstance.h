@@ -373,7 +373,6 @@ protected:
 	FDataTableRowHandle DevHelpInputActionData;
 #pragma endregion 
 
-
 #pragma region "Lobby Connect/Disconnect using PS Controller"
 public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
@@ -385,6 +384,6 @@ public:
 #ifdef AGS_LOBBY_CHEAT_ENABLED
 	void LobbyConnect();
 	void LobbyDisconnect();
-#pragma endregion
 #endif // AGS_LOBBY_CHEAT_ENABLED
+#pragma endregion
 };

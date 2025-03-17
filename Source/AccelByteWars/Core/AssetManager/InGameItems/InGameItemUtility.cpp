@@ -3,6 +3,8 @@
 #include "InGameItemDataAsset.h"
 #include "Kismet/KismetSystemLibrary.h"
 
+DEFINE_LOG_CATEGORY(LogInGameItem);
+
 UInGameItemInterface::UInGameItemInterface(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 }
