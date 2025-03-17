@@ -6,6 +6,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
+#include "OnlineUserCacheAccelByte.h"
 #include "OnlineSubsystemTypes.h"
 #include "OnlineSubsystemAccelByteTypes.h"
 #include "Interfaces/OnlinePresenceInterface.h"

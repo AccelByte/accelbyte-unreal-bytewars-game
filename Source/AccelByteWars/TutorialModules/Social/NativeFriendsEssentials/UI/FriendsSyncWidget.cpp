@@ -20,15 +20,23 @@ void UFriendsSyncWidget::NativeConstruct()
 
 	GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
 	ensure(GameInstance);
-
-	FriendsSubsystem = GameInstance->GetSubsystem<UFriendsSubsystem>();
-	ensure(FriendsSubsystem);
-
+	
 	NativeFriendsSubsystem = GameInstance->GetSubsystem<UNativeFriendsSubsystem>();
 	ensure(NativeFriendsSubsystem);
 
+	FriendsSubsystem = GameInstance->GetSubsystem<UFriendsSubsystem>();
+	if (!ensure(FriendsSubsystem))
+	{
+		UE_LOG_NATIVE_FRIENDS_ESSENTIALS(Warning, TEXT("FriendsSubsystem_Starter is invalid. Make sure Friend Essentials module is active and its starter mode is not active."))
+		return;
+	}
+
 	ManagingFriendsSubsystem = GetGameInstance()->GetSubsystem<UManagingFriendsSubsystem>();
-	ensure(ManagingFriendsSubsystem);
+	if (!ensure(ManagingFriendsSubsystem))
+	{
+		UE_LOG_NATIVE_FRIENDS_ESSENTIALS(Warning, TEXT("FriendsSubsystem_Starter is invalid. Make sure Managing Friends module is active and its starter mode is not active."))
+		return;
+	}
 
 	PromptSubsystem = GameInstance->GetSubsystem<UPromptSubsystem>();
 	ensure(PromptSubsystem);

@@ -171,7 +171,6 @@ void URecentPlayersSubsystem::GetGameSessionPlayerList(const APlayerController* 
 		return;
 	}
 
-
 	const FUniqueNetIdAccelByteUserPtr TargetUserABId = StaticCastSharedPtr<const FUniqueNetIdAccelByteUser>(GetUniqueNetIdFromPlayerController(PlayerController));
 
 	if(!TargetUserABId.IsValid())

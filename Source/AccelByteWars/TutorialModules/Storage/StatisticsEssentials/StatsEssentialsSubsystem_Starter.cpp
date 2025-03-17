@@ -35,6 +35,6 @@ void UStatsEssentialsSubsystem_Starter::Initialize(FSubsystemCollectionBase& Col
 	}
 }
 
-void UStatsEssentialsSubsystem_Starter::UpdateConnectedPlayersStatsOnGameEnds()
+void UStatsEssentialsSubsystem_Starter::UpdateConnectedPlayersStatsOnGameEnds(const FString& Reason)
 {
 }

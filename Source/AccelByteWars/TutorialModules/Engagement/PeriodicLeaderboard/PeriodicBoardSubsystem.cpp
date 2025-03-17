@@ -3,17 +3,18 @@
 // and restrictions contact your company contract manager.
 
 #include "Engagement/PeriodicLeaderboard/PeriodicBoardSubsystem.h"
-#include "OnlineSubsystemUtils.h"
-
-#include "Core/AccelByteRegistry.h"
+#include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
 #include "TutorialModuleUtilities/StartupSubsystem.h"
+
+#include "OnlineSubsystemUtils.h"
+#include "Api/AccelByteStatisticApi.h"
 
 void UPeriodicBoardSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
 
     // Get Online Subsystem and make sure it's valid.
-    const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+    FOnlineSubsystemAccelByte* Subsystem = static_cast<FOnlineSubsystemAccelByte*>(Online::GetSubsystem(GetWorld()));
     if (!ensure(Subsystem))
     {
         UE_LOG_PERIODIC_LEADERBOARD(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and the DefaultPlatformService under [OnlineSubsystem] in the Engine.ini file is set to AccelByte."));
@@ -137,37 +138,45 @@ void UPeriodicBoardSubsystem::GetPlayerPeriodicRanking(const APlayerController* 
 // @@@SNIPSTART PeriodicBoardSubsystem.cpp-GetLeaderboardCycleIdByName
 void UPeriodicBoardSubsystem::GetLeaderboardCycleIdByName(const FString& InCycleName, const EAccelByteCycle& InCycleType, const FOnGetLeaderboardsCycleIdComplete& OnComplete)
 {
-    AccelByte::FRegistry::Statistic.GetListStatCycleConfigs(
+    AccelByte::FApiClientPtr ApiClient = UTutorialModuleOnlineUtility::GetApiClient(this);
+    if (!ApiClient) 
+    {
+        UE_LOG_PERIODIC_LEADERBOARD(Warning, TEXT("Failed to get Cycle ID of cycle with name %s. AccelByte API Client is invalid."), *InCycleName);
+        OnComplete.ExecuteIfBound(false, FString());
+        return;
+    }
+
+    ApiClient->Statistic.GetListStatCycleConfigs(
         InCycleType,
         THandler<FAccelByteModelsStatCycleConfigPagingResult>::CreateWeakLambda(this, [InCycleName, OnComplete](const FAccelByteModelsStatCycleConfigPagingResult& Result)
+        {
+            FString FoundCycleId;
+            for (auto& Cycle : Result.Data)
             {
-                FString FoundCycleId;
-                for (auto& Cycle : Result.Data)
+                if (Cycle.Name.Equals(InCycleName))
                 {
-                    if (Cycle.Name.Equals(InCycleName))
-                    {
-                        FoundCycleId = Cycle.Id;
-                        break;
-                    }
+                    FoundCycleId = Cycle.Id;
+                    break;
                 }
+            }
 
-                if (!FoundCycleId.IsEmpty())
-                {
-                    UE_LOG_PERIODIC_LEADERBOARD(Log, TEXT("Cycle ID of cycle with name %s is %s."), *InCycleName, *FoundCycleId);
-                    OnComplete.ExecuteIfBound(true, FoundCycleId);
-                }
-                else
-                {
-                    UE_LOG_PERIODIC_LEADERBOARD(Warning, TEXT("Cycle ID of cycle with name %s is not found."), *InCycleName);
-                    OnComplete.ExecuteIfBound(false, FoundCycleId);
-                }
-            }),
-        FErrorHandler::CreateWeakLambda(this, [InCycleName, OnComplete](int32 ErrorCode, const FString& ErrorMessage)
+            if (!FoundCycleId.IsEmpty())
             {
-                UE_LOG_PERIODIC_LEADERBOARD(Warning, TEXT("Failed to get Cycle ID of cycle with name %s. Error %d: %s"), *InCycleName, ErrorCode, *ErrorMessage);
-                OnComplete.ExecuteIfBound(false, FString());
-            })
-        );
+                UE_LOG_PERIODIC_LEADERBOARD(Log, TEXT("Cycle ID of cycle with name %s is %s."), *InCycleName, *FoundCycleId);
+                OnComplete.ExecuteIfBound(true, FoundCycleId);
+            }
+            else
+            {
+                UE_LOG_PERIODIC_LEADERBOARD(Warning, TEXT("Cycle ID of cycle with name %s is not found."), *InCycleName);
+                OnComplete.ExecuteIfBound(false, FoundCycleId);
+            }
+        }),
+        FErrorHandler::CreateWeakLambda(this, [InCycleName, OnComplete](int32 ErrorCode, const FString& ErrorMessage)
+        {
+            UE_LOG_PERIODIC_LEADERBOARD(Warning, TEXT("Failed to get Cycle ID of cycle with name %s. Error %d: %s"), *InCycleName, ErrorCode, *ErrorMessage);
+            OnComplete.ExecuteIfBound(false, FString());
+        })
+    );
 }
 // @@@SNIPEND
 

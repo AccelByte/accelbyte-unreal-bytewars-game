@@ -8,7 +8,6 @@
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "RegisterUserInGameModels.h"
 #include "RegisterUserInGameLog.h"
-#include "OnlineUserInterfaceAccelByte.h"
 #include "RegisterUserInGameSubsystem_Starter.generated.h"
 
 UCLASS()
@@ -30,8 +29,6 @@ protected:
 #pragma region Module Register User In-Game Function Declarations
 	// TODO: Add your protected function declarations here.
 #pragma endregion
-
-	FOnlineUserAccelBytePtr GetUserInterface() const;
 
 private:
 	void GetUpgradeAccountConfig();

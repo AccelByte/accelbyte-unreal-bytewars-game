@@ -25,7 +25,7 @@ void ULoginQueueWidget::NativeOnActivated()
 	ensure(LoginQueueSubsystem);
 
 	W_Parent = GetFirstOccurenceOuter<ULoginWidget>();
-	if (!ensure(W_Parent))
+	if (!W_Parent)
 	{
 		UE_LOG_LOGIN_QUEUE(Warning, TEXT("Deactivate Auth Essentials's starter mode or activate this module's starter mode to make this widget work properly."))
 		return;

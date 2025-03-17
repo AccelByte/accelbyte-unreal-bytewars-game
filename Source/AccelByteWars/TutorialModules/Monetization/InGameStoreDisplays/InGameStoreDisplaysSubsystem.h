@@ -6,6 +6,7 @@
 
 #include "CoreMinimal.h"
 #include "InGameStoreDisplaysModel.h"
+#include "OnlineStoreInterfaceV2AccelByte.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "Play/MatchSessionDS/MatchSessionDSOnlineSession_Starter.h"
 #include "OnlineSubsystemAccelByte.h"

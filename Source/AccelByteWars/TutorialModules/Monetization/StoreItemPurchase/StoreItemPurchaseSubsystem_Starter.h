@@ -5,11 +5,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "OnlineErrorAccelByte.h"
 #include "OnlineSubsystemAccelByte.h"
 #include "OnlineSubsystemUtils.h"
 #include "StoreItemPurchaseModel.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "Core/UI/MainMenu/Store/StoreItemModel.h"
+#include "Monetization/EntitlementsEssentials/EntitlementsEssentialsModel.h"
 
 #include "StoreItemPurchaseSubsystem_Starter.generated.h"
 
@@ -25,6 +27,8 @@ public:
 #pragma region "Tutorial"
 	// put your code here
 #pragma endregion
+
+	static inline FOnItemPurchased OnItemPurchasedDelegates;
 
 private:
 	FOnlinePurchaseAccelBytePtr PurchaseInterface;

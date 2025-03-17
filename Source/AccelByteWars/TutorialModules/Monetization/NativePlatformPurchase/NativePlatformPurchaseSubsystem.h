@@ -6,6 +6,7 @@
 
 #include "CoreMinimal.h"
 #include "OnlineSubsystemAccelByte.h"
+#include "OnlineSubsystemAccelByteUtils.h"
 #include "OnlineSubsystemUtils.h"
 #include "Models/AccelByteEcommerceModels.h"
 #include "Core/UI/MainMenu/Store/StoreItemModel.h"

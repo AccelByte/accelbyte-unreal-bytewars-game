@@ -22,7 +22,7 @@ class ACCELBYTEWARS_API USessionEssentialsOnlineSession : public UAccelByteWarsO
 // @@@MULTISNIP RejectSessionInvite {"selectedLines": ["1", "20"]}
 // @@@MULTISNIP LeaveSession {"selectedLines": ["1", "21"]}
 // @@@MULTISNIP UpdateSessionJoinability {"selectedLines": ["1", "22"]}
-// @@@MULTISNIP SessionDelegates {"selectedLines": ["1", "24-67"]}
+// @@@MULTISNIP SessionDelegates {"selectedLines": ["1", "24-53", "60-67"]}
 public:
 	virtual void RegisterOnlineDelegates() override;
 	virtual void ClearOnlineDelegates() override;
@@ -90,8 +90,8 @@ public:
 	{
 		return &OnSessionParticipantLeftDelegates;
 	}
-// @@@SNIPEND
 #endif
+// @@@SNIPEND
 
 // @@@SNIPSTART SessionEssentialsOnlineSession.h-protected
 // @@@MULTISNIP LeaveSessionHelperVariable {"selectedLines": ["1-2"]}
@@ -102,7 +102,7 @@ public:
 // @@@MULTISNIP OnLeaveSessionComplete {"selectedLines": ["1", "13"]}
 // @@@MULTISNIP OnUpdateSessionComplete {"selectedLines": ["1", "14"]}
 // @@@MULTISNIP OnSessionInviteReceived {"selectedLines": ["1", "16-19"]}
-// @@@MULTISNIP OnSessionParticipantsChange {"selectedLines": ["1", "21-26"]}
+// @@@MULTISNIP OnSessionParticipantsChange {"selectedLines": ["1", "24-25"]}
 protected:
 	bool bLeavingSession = false;
 
@@ -134,7 +134,7 @@ protected:
 // @@@SNIPSTART SessionEssentialsOnlineSession.h-private
 // @@@MULTISNIP OnLeaveSessionForCreateSessionComplete {"selectedLines": ["1", "21-26"]}
 // @@@MULTISNIP OnLeaveSessionForJoinSessionComplete {"selectedLines": ["1", "28-33"]}
-// @@@MULTISNIP SessionDelegates {"selectedLines": ["1", "5-19"]}
+// @@@MULTISNIP SessionDelegates {"selectedLines": ["1", "5-13", "17-18"]}
 private:
 	const FName GameSessionName = NAME_GameSession;
 	const FName PartySessionName = NAME_PartySession;

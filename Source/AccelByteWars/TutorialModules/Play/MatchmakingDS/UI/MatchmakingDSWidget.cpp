@@ -11,6 +11,7 @@
 #include "Components/TextBlock.h"
 #include "Components/WidgetSwitcher.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
+#include "Play/MatchmakingDS/MatchmakingDSLog.h"
 
 #include "Play/MatchmakingEssentials/UI/QuickPlayWidget.h"
 #include "Play/MatchmakingEssentials/MatchmakingEssentialsModels.h"
@@ -19,7 +20,7 @@
 // @@@SNIPSTART MatchmakingDSWidget.cpp-NativeOnActivated
 // @@@MULTISNIP OnlineSession {"selectedLines": ["1-2", "5-12", "40"]}
 // @@@MULTISNIP SelectedGameModeType {"selectedLines": ["1-2", "15-22", "40"]}
-// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "24-27", "40"]}
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "24-27", "40"], "highlightedLines": "{4-7}"}
 void UMatchmakingDSWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
@@ -43,6 +44,7 @@ void UMatchmakingDSWidget::NativeOnActivated()
 		}
 	}
 
+	Btn_Back->OnClicked().AddUObject(this, &ThisClass::DeactivateWidget);
 	Btn_Join->OnClicked().AddUObject(this, &ThisClass::JoinSession);
 	Btn_Cancel->OnClicked().AddUObject(this, &ThisClass::CancelMatchmaking);
 	Btn_Reject->OnClicked().AddUObject(this, &ThisClass::RejectSessionInvite);
@@ -63,9 +65,10 @@ void UMatchmakingDSWidget::NativeOnActivated()
 // @@@SNIPEND
 
 // @@@SNIPSTART MatchmakingDSWidget.cpp-NativeOnDeactivated
-// @@@MULTISNIP ReadyUI {"selectedLines": ["1-6", "17-18"]}
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-6", "17-18"], "highlightedLines": "{3-6}"}
 void UMatchmakingDSWidget::NativeOnDeactivated()
 {
+	Btn_Back->OnClicked().RemoveAll(this);
 	Btn_Join->OnClicked().RemoveAll(this);
 	Btn_Cancel->OnClicked().RemoveAll(this);
 	Btn_Reject->OnClicked().RemoveAll(this);
@@ -329,6 +332,13 @@ void UMatchmakingDSWidget::OnCancelMatchmakingComplete(FName SessionName, bool b
 	// Abort if not a game session.
 	if (!SessionName.IsEqual(OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession)))
 	{
+		return;
+	}
+
+	// Abort if match already found.
+	if (WidgetState == EWidgetState::MATCH_FOUND || WidgetState == EWidgetState::WAITING_FOR_PLAYER)
+	{
+		UE_LOG_MATCHMAKINGDS(Log, TEXT("Match already found, cancel matchmaking canceled."))
 		return;
 	}
 

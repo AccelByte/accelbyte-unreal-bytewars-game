@@ -78,11 +78,28 @@ void AAccelByteWarsGameMode::BeginPlay()
 	Super::BeginPlay();
 }
 
+void AAccelByteWarsGameMode::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (IsRunningDedicatedServer() && bIsServerClosing)
+	{
+		ServerCloseCountdownCounting(DeltaSeconds);
+	}
+}
+
 void AAccelByteWarsGameMode::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
 
-	// setup player if in GameplayLevel and game started
+	// Immediately kick the player if the server is already closing.
+	if (IsRunningDedicatedServer() && bIsServerClosing) 
+	{
+		GameSession->KickPlayer(NewPlayer, FText::FromString("Game closed"));
+		return;
+	}
+
+	// Setup player if in the gameplay level and game started
 	if (bIsGameplayLevel || IsServer())
 	{
 		PlayerTeamSetup(NewPlayer);
@@ -356,6 +373,26 @@ void AAccelByteWarsGameMode::AssignTeamManually(int32& InOutTeamId) const
 	}
 }
 
+void AAccelByteWarsGameMode::KickAllPlayers() const
+{
+	for (TObjectPtr<APlayerState> PlayerState : ABGameState->PlayerArray)
+	{
+		if (!PlayerState)
+		{
+			continue;
+		}
+
+		APlayerController* PlayerController = PlayerState->GetPlayerController();
+		if (!PlayerController)
+		{
+			continue;
+		}
+
+		RemovePlayer(PlayerController);
+		GameSession->KickPlayer(PlayerController, FText::FromString("Game closed"));
+	}
+}
+
 void AAccelByteWarsGameMode::ServerTravel(TSoftObjectPtr<UWorld> Level)
 {
 	const FString Url = Level.GetLongPackageName();
@@ -385,23 +422,25 @@ void AAccelByteWarsGameMode::DelayedServerTravel(const FString& URL) const
 }
 
 // @@@SNIPSTART AccelByteWarsGameMode.cpp-CloseGame
-void AAccelByteWarsGameMode::CloseGame(const FString& Reason) const
+void AAccelByteWarsGameMode::CloseGame(const FString& Reason)
 {
-	GAMEMODE_LOG(Warning, TEXT("Unregistering or shutting down server with reason: %s."), *Reason);
-
-	if (!IsRunningDedicatedServer())
+	// Abort if the instance is not a server or if it already closing.
+	if (!IsRunningDedicatedServer() || bIsServerClosing)
 	{
-		GAMEMODE_LOG(Warning, TEXT("Not a Dedicated Server, shutdown canceled"));
 		return;
 	}
 
+	GAMEMODE_LOG(Log, TEXT("Closing the game with reason: %s."), *Reason);
+
+	KickAllPlayers();
+
 	if (OnPreGameShutdown.IsBound())
 	{
-		OnPreGameShutdown.Broadcast(TDelegate<void()>::CreateUObject(this, &ThisClass::CloseGameInternal));
+		OnPreGameShutdown.Broadcast(TDelegate<void()>::CreateUObject(this, &ThisClass::SetupServerCloseCountdownValue));
 	}
 	else
 	{
-		CloseGameInternal();
+		SetupServerCloseCountdownValue();
 	}
 }
 // @@@SNIPEND
@@ -481,6 +520,48 @@ bool AAccelByteWarsGameMode::IsServer() const
 	 */
 	const ENetMode NetMode = GetWorld()->GetNetMode();
 	return NetMode == ENetMode::NM_DedicatedServer || NetMode == ENetMode::NM_ListenServer;
+}
+
+void AAccelByteWarsGameMode::SetupServerCloseCountdownValue()
+{
+	// Abort if the instance is not a server.
+	if (!IsRunningDedicatedServer())
+	{
+		return;
+	}
+
+	// Set the default server close countdown value (1 minute).
+	int32 CloseCountdown = 60;
+	
+	// Use server close countdown value from the launch param if any.
+	const FString CmdStr = TEXT("-ServerCloseCountdownInMinute");
+	FString ParamValueStr = TEXT("");
+	FParse::Value(FCommandLine::Get(), *FString::Printf(TEXT("%s="), *CmdStr), ParamValueStr);
+	if (!ParamValueStr.IsEmpty() && ParamValueStr.IsNumeric())
+	{
+		CloseCountdown = FCString::Atoi(*ParamValueStr) * 60; // Set value in minutes.
+	}
+
+	// Initial server close countdown.
+	ABGameState->ServerCloseCountdown = CloseCountdown;
+	bIsServerClosing = true;
+}
+
+void AAccelByteWarsGameMode::ServerCloseCountdownCounting(const float& DeltaSeconds)
+{
+	// Close the game when the countdown is finished.
+	float Countdown = ABGameState->ServerCloseCountdown;
+	if (Countdown <= 0)
+	{
+		GAMEMODE_LOG(Log, TEXT("The server is closed."));
+		bIsServerClosing = false;
+		CloseGameInternal();
+		return;
+	}
+
+	// Update the countdown.
+	GAMEMODE_LOG(Log, TEXT("Closing the server in: %ds"), (int32)Countdown);
+	ABGameState->ServerCloseCountdown -= DeltaSeconds;
 }
 
 void AAccelByteWarsGameMode::SetupSimulateServerCrashCountdownValue(const FString& SimulateServerCrashArg)

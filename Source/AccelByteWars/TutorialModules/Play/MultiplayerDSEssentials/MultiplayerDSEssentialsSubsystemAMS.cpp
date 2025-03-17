@@ -12,11 +12,11 @@
 
 // @@@SNIPSTART MultiplayerDSEssentialsSubsystemAMS.cpp-Initialize
 // @@@MULTISNIP Interface {"selectedLines": ["1-2", "9-10", "14"]}
-// @@@MULTISNIP BindRegisterServerDelegate {"selectedLines": ["1-2", "5", "14"]}
-// @@@MULTISNIP BindSendServerReadyDelegate {"selectedLines": ["1-2", "6", "14"]}
-// @@@MULTISNIP BindUnregisterServerDelegate {"selectedLines": ["1-2", "7", "14"]}
-// @@@MULTISNIP BindAMSDrainDelegate {"selectedLines": ["1-2", "12", "14"]}
-// @@@MULTISNIP BindSessionEndDelegate {"selectedLines": ["1-2", "13", "14"]}
+// @@@MULTISNIP BindRegisterServerDelegate {"selectedLines": ["1-2", "5", "14"], "highlightedLines": "{4}"}
+// @@@MULTISNIP BindSendServerReadyDelegate {"selectedLines": ["1-2", "6", "14"], "highlightedLines": "{4}"}
+// @@@MULTISNIP BindUnregisterServerDelegate {"selectedLines": ["1-2", "7", "14"], "highlightedLines": "{4}"}
+// @@@MULTISNIP BindAMSDrainDelegate {"selectedLines": ["1-2", "12", "14"], "highlightedLines": "{4}"}
+// @@@MULTISNIP BindSessionEndDelegate {"selectedLines": ["1-2", "13", "14"], "highlightedLines": "{4}"}
 void UMultiplayerDSEssentialsSubsystemAMS::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
@@ -25,7 +25,7 @@ void UMultiplayerDSEssentialsSubsystemAMS::Initialize(FSubsystemCollectionBase& 
 	AAccelByteWarsGameSession::OnRegisterServerDelegates.AddUObject(this, &ThisClass::SendServerReady);
 	AAccelByteWarsGameSession::OnUnregisterServerDelegates.AddUObject(this, &ThisClass::UnregisterServer);
 
-	ABSessionInt = StaticCastSharedPtr<FOnlineSessionV2AccelByte>(Online::GetSessionInterface());
+	ABSessionInt = StaticCastSharedPtr<FOnlineSessionV2AccelByte>(Online::GetSessionInterface(GetWorld()));
 	ensure(ABSessionInt);
 	
 	ABSessionInt->OnAMSDrainReceivedDelegates.AddUObject(this, &ThisClass::OnAMSDrainReceived);
@@ -34,11 +34,11 @@ void UMultiplayerDSEssentialsSubsystemAMS::Initialize(FSubsystemCollectionBase& 
 // @@@SNIPEND
 
 // @@@SNIPSTART MultiplayerDSEssentialsSubsystemAMS.cpp-Deinitialize
-// @@@MULTISNIP UnbindRegisterServerDelegate {"selectedLines": ["1-2", "5", "10"]}
-// @@@MULTISNIP UnbindSendServerReadyDelegate {"selectedLines": ["1-2", "5", "10"]}
-// @@@MULTISNIP UnbindUnregisterServerDelegate {"selectedLines": ["1-2", "6", "10"]}
-// @@@MULTISNIP UnbindAMSDrainDelegate {"selectedLines": ["1-2", "8", "10"]}
-// @@@MULTISNIP UnbindSessionEndDelegate {"selectedLines": ["1-2", "9-10"]}
+// @@@MULTISNIP UnbindRegisterServerDelegate {"selectedLines": ["1-2", "5", "10"], "highlightedLines": "{4}"}
+// @@@MULTISNIP UnbindSendServerReadyDelegate {"selectedLines": ["1-2", "5", "10"], "highlightedLines": "{4}"}
+// @@@MULTISNIP UnbindUnregisterServerDelegate {"selectedLines": ["1-2", "6", "10"], "highlightedLines": "{4}"}
+// @@@MULTISNIP UnbindAMSDrainDelegate {"selectedLines": ["1-2", "8", "10"], "highlightedLines": "{4}"}
+// @@@MULTISNIP UnbindSessionEndDelegate {"selectedLines": ["1-2", "9-10"], "highlightedLines": "{4}"}
 void UMultiplayerDSEssentialsSubsystemAMS::Deinitialize()
 {
 	Super::Deinitialize();
@@ -176,9 +176,15 @@ void UMultiplayerDSEssentialsSubsystemAMS::OnSendServerReadyComplete(const bool 
 // @@@SNIPSTART MultiplayerDSEssentialsSubsystemAMS.cpp-OnAMSDrainReceived
 void UMultiplayerDSEssentialsSubsystemAMS::OnAMSDrainReceived()
 {
-	UE_LOG_MultiplayerDSEssentials(Log, TEXT("Received AMS drain message; Shutting down the server now!"));
+	TSharedPtr<FAccelByteModelsV2GameSession> SessionInfo = GetSessionInfo(NAME_GameSession);
+	if (SessionInfo && SessionInfo->IsActive)
+	{
+		UE_LOG_MultiplayerDSEssentials(Log, TEXT("Received AMS drain message when there is still in active session; Ignoring the AMS drain message!"));
+		return;
+	}
 
-	OnUnregisterServerComplete(true);
+	UE_LOG_MultiplayerDSEssentials(Log, TEXT("Received AMS drain message; Shutting down the server now!"));
+	UnregisterServer(NAME_GameSession);
 }
 // @@@SNIPEND
 
@@ -187,6 +193,26 @@ void UMultiplayerDSEssentialsSubsystemAMS::OnV2SessionEnded(const FName SessionN
 {
 	UE_LOG_MultiplayerDSEssentials(Log, TEXT("Received AMS session ended notification; Shutting down the server now!"));
 
-	UnregisterServer(SessionName);
+	if (GetWorld(); AAccelByteWarsGameMode* GameMode = Cast<AAccelByteWarsGameMode>(GetWorld()->GetAuthGameMode()))
+	{
+		GameMode->CloseGame(TEXT("Receive AMS session ended notification"));
+	}
 }
 // @@@SNIPEND
+
+TSharedPtr<FAccelByteModelsV2GameSession> UMultiplayerDSEssentialsSubsystemAMS::GetSessionInfo(const FName SessionName) const
+{
+	const FNamedOnlineSession* Session = ABSessionInt->GetNamedSession(SessionName);
+	if (!Session)
+	{
+		return nullptr;
+	}
+
+	const TSharedPtr<FOnlineSessionInfoAccelByteV2> SessionInfo = StaticCastSharedPtr<FOnlineSessionInfoAccelByteV2>(Session->SessionInfo);
+	if (!SessionInfo)
+	{
+		return nullptr;
+	}
+
+	return SessionInfo->GetBackendSessionDataAsGameSession();
+}

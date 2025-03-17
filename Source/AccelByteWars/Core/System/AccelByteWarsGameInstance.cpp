@@ -250,19 +250,22 @@ void UAccelByteWarsGameInstance::OnNetworkFailure(
 	ENetworkFailure::Type FailureType,
 	const FString& Message)
 {
-	// Only change the FailureType if the Message is different
-	if (!LastFailureMessage.Equals(Message))
+	// Abort if the network error message is the same.
+	if (LastFailureMessage.Equals(Message)) 
 	{
-		const AAccelByteWarsInGameGameState* GameState = Cast<AAccelByteWarsInGameGameState>(GetWorld()->GetGameState());
-		if(GameState && GameState->GameStatus == EGameStatus::GAME_ENDS)
-		{
-			// ignore network error if already at GAME_ENDS state, as it only wait to back to main menu
-			return;
-		}
-		LastFailureMessage = Message;
-		bPendingFailureNotification = true;
-		LastFailureType = FailureType;
+		return;
 	}
+
+	// Ignore network error message if the game is over (GAME_ENDS) or server is shutdown gracefully (INVALID)
+	const AAccelByteWarsInGameGameState* GameState = Cast<AAccelByteWarsInGameGameState>(GetWorld()->GetGameState());
+	if (GameState && (GameState->GameStatus == EGameStatus::GAME_ENDS || GameState->GameStatus == EGameStatus::INVALID)) 
+	{
+		return;
+	}
+
+	LastFailureMessage = Message;
+	bPendingFailureNotification = true;
+	LastFailureType = FailureType;
 }
 
 int32 UAccelByteWarsGameInstance::AddLocalPlayer(ULocalPlayer* NewLocalPlayer, FPlatformUserId UserId)

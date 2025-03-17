@@ -3,15 +3,18 @@
 // and restrictions contact your company contract manager.
 
 #include "Engagement/PeriodicLeaderboard/PeriodicBoardSubsystem_Starter.h"
-#include "OnlineSubsystemUtils.h"
+#include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
 #include "TutorialModuleUtilities/StartupSubsystem.h"
+
+#include "OnlineSubsystemUtils.h"
+#include "Api/AccelByteStatisticApi.h"
 
 void UPeriodicBoardSubsystem_Starter::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
 
     // Get Online Subsystem and make sure it's valid.
-    const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+    FOnlineSubsystemAccelByte* Subsystem = static_cast<FOnlineSubsystemAccelByte*>(Online::GetSubsystem(GetWorld()));
     if (!ensure(Subsystem))
     {
         UE_LOG_PERIODIC_LEADERBOARD(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and the DefaultPlatformService under [OnlineSubsystem] in the Engine.ini file is set to AccelByte."));

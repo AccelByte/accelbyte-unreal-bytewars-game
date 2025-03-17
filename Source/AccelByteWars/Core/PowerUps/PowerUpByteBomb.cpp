@@ -7,6 +7,7 @@
 #include "AccelByteWars/Core/Actor/AccelByteWarsMissile.h"
 #include "AccelByteWars/Core/Player/AccelByteWarsPlayerPawn.h"
 #include "Components/SphereComponent.h"
+#include "Core/GameModes/AccelByteWarsInGameGameMode.h"
 #include "Core/Player/AccelByteWarsPlayerController.h"
 #include "Core/Player/AccelByteWarsPlayerState.h"
 #include "Kismet/GameplayStatics.h"
@@ -117,6 +118,9 @@ void APowerUpByteBomb::DestroyAllEnemyMissiles(int32 TeamId)
 		if (AAccelByteWarsMissile* Missile = Cast<AAccelByteWarsMissile>(Actor);
 			Missile && GetTeamIdFromPawn(Missile->Owner) != TeamId)
 		{
+			// Broadcast entity destroyed event
+			NotifyMissileDestroyed(Missile);
+
 			Missile->DestroyByPowerUp();
 		}
 	}
@@ -148,4 +152,50 @@ int32 APowerUpByteBomb::GetTeamIdFromPawn(const AActor* Actor) const
 	}
 
 	return ABPlayerState->TeamId;
+}
+
+void APowerUpByteBomb::NotifyMissileDestroyed(const AActor* MissileToBeDestroyed)
+{
+	if (!MissileToBeDestroyed)
+	{
+		UE_LOG_IN_GAME_ITEM(Warning, "MissileToBeDestroyed is invalid. Operation canceled.")
+		return;
+	}
+
+	if (!GetOwner())
+	{
+		UE_LOG_IN_GAME_ITEM(Warning, "MissileToBeDestroyed's Owner is invalid. Operation canceled.")
+		return;
+	}
+
+	const UPlayer* Player = GetNetOwningPlayer();
+	if (!Player)
+	{
+		UE_LOG_IN_GAME_ITEM(Warning, "OwningPlayer is invalid. Operation canceled.")
+		return;
+	}
+
+	const APlayerController* PlayerController = Player->GetPlayerController(GetWorld());
+	if (!PlayerController)
+	{
+		UE_LOG_IN_GAME_ITEM(Warning, "OwningPlayer's PlayerController is invalid. Operation canceled.")
+		return;
+	}
+
+	const APlayerState* PlayerState = PlayerController->GetPlayerState<APlayerState>();
+	if (!PlayerState)
+	{
+		UE_LOG_IN_GAME_ITEM(Warning, "PlayerState of OwningPlayer is invalid. Operation canceled.")
+		return;
+	}
+
+	// Missile destroyed by power up, broadcast event for the missile.
+	AAccelByteWarsInGameGameMode::OnEntityDestroyedDelegates.Broadcast(
+		ENTITY_TYPE_MISSILE,
+		nullptr,
+		MissileToBeDestroyed->GetName(),
+		MissileToBeDestroyed->GetActorLocation(),
+		ENTITY_DESTROYED_TYPE_HIT_POWERUP,
+		AccelByteWarsUtility::FormatEntityDeathSource(ENTITY_TYPE_POWERUP, AccelByteWarsUtility::GenerateActorEntityId(GetOwner()))
+	);
 }

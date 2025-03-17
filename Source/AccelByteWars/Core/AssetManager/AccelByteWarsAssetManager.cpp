@@ -455,8 +455,8 @@ void UAccelByteWarsAssetManager::TutorialModuleOverride()
 #if UE_EDITOR
 	if (!IsRunningGame() && !IsRunningDedicatedServer())
 	{
-		// Show notification if overriden
-		if (bDisableOtherModules || !IdsToBeOverriden.IsEmpty())
+		// Show notification if overriden and when OverrideNotificationItem is null to make it only shown once
+		if ((bDisableOtherModules || !IdsToBeOverriden.IsEmpty()) && !OverrideNotificationItem)
 		{
 			FNotificationInfo Info(FText::FromString("Overrides found on DefaultEngine.ini"));
 

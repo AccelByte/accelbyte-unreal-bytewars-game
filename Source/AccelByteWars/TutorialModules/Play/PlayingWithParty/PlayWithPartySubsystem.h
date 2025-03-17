@@ -28,8 +28,8 @@ public:
 // @@@MULTISNIP PartyMatchmakingDeclaration {"selectedLines": ["1-5"]}
 // @@@MULTISNIP InvitePartyGameSessionDeclaration {"selectedLines": ["1", "7-8"]}
 // @@@MULTISNIP PartyGameSessionDeclaration {"selectedLines": ["1", "15-22"]}
-// @@@MULTISNIP PartyGameSessionFailureDeclaration {"selectedLines": ["1", "24-35"]}
-// @@@MULTISNIP PartyGameSessionValidation {"selectedLines": ["1", "33-35"]}
+// @@@MULTISNIP PartyGameSessionFailureDeclaration {"selectedLines": ["1", "24-28", "32", "34-35"]}
+// @@@MULTISNIP PartyGameSessionValidation {"selectedLines": ["1", "37-39"]}
 protected:
 	void OnStartPartyMatchmakingComplete();
 	void OnPartyMatchmakingComplete(FName SessionName, bool bSucceeded);

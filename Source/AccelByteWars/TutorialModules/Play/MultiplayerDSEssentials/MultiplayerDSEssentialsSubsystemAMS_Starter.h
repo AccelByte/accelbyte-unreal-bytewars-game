@@ -26,6 +26,8 @@ private:
 	// TODO: Declare your private functions here
 #pragma endregion 
 
+	TSharedPtr<FAccelByteModelsV2GameSession> GetSessionInfo(const FName SessionName) const;
+
 	bool bServerAlreadyRegister;
 	bool bUnregisterServerRunning;
 	FOnlineSessionV2AccelBytePtr ABSessionInt;

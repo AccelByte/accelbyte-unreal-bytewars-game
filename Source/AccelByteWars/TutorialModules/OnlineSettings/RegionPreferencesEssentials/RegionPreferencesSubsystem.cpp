@@ -3,36 +3,70 @@
 // and restrictions contact your company contract manager.
 
 #include "RegionPreferencesSubsystem.h"
+#include "Core/Player/AccelByteWarsPlayerState.h"
+#include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
+#include "TutorialModuleUtilities/StartupSubsystem.h"
+
 #include "OnlineSessionInterfaceV2AccelByte.h"
 #include "OnlineSubsystem.h"
 #include "OnlineSubsystemAccelByteSessionSettings.h"
 #include "OnlineSubsystemUtils.h"
-#include "Core/Player/AccelByteWarsPlayerState.h"
-#include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
 
 #define RETRY_LIMIT 3
 
 void URegionPreferencesSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
-	ApiClient = AccelByte::FMultiRegistry::GetApiClient();
-	OnGetLatenciesSuccessDelegate = THandler<TArray<TPair<FString, float>>>::CreateUObject(this, &ThisClass::OnGetLatenciesSuccess);
-	
+
+#if UE_EDITOR || !UE_SERVER
+	if(IsRunningDedicatedServer())
+	{
+		return;
+	}
+
 	GetIngameLatencyRefreshConfiguration();
-	
-	const TArray<TPair<FString, float>> Latencies = ApiClient->Qos.GetCachedLatencies();
-	if(Latencies.Num() > 0)
+
+	OnGetLatenciesSuccessDelegate = THandler<TArray<TPair<FString, float>>>::CreateUObject(this, &ThisClass::OnGetLatenciesSuccess);
+	if (FOnlineIdentityAccelBytePtr IdentityInterface = GetIdentityInterface())
 	{
-		OnGetLatenciesSuccess(Latencies);
+		IdentityInterface->AddOnConnectLobbyCompleteDelegate_Handle(0, FOnConnectLobbyCompleteDelegate::CreateUObject(this, &ThisClass::OnLobbyConnected));
 	}
-	else
+#endif
+}
+
+void URegionPreferencesSubsystem::Deinitialize()
+{
+	Super::Deinitialize();
+
+#if UE_EDITOR || !UE_SERVER
+	if (IsRunningDedicatedServer())
 	{
-		RefreshRegionLatency(true);
+		return;
 	}
+
+	OnGetLatenciesSuccessDelegate.Unbind();
+	if (FOnlineIdentityAccelBytePtr IdentityInterface = GetIdentityInterface())
+	{
+		IdentityInterface->ClearOnConnectLobbyCompleteDelegates(0, this);
+	}
+#endif
 }
 
 void URegionPreferencesSubsystem::RefreshRegionLatency(bool bRetryOnFailed)
 {
+#if UE_EDITOR || !UE_SERVER
+	if(IsRunningDedicatedServer())
+	{
+		return;
+	}
+	
+	AccelByte::FApiClientPtr ApiClient = UTutorialModuleOnlineUtility::GetApiClient(this);
+	if (!ApiClient)
+	{
+		UE_LOG_REGION_PREFERENCES_ESSENTIALS(Warning, TEXT("Cannot get region latencies. AccelByte API Client is invalid."));
+		return;
+	}
+
 	ApiClient->Qos.GetServerLatencies(OnGetLatenciesSuccessDelegate, FErrorHandler::CreateWeakLambda(this, [this, bRetryOnFailed](int32 ErrorCode, const FString& ErrorMessage)
 	{
 		UE_LOG_REGION_PREFERENCES_ESSENTIALS(Warning, TEXT("Error getting regions latency!! Error code: %d Error Message: %s"), ErrorCode, *ErrorMessage);
@@ -48,11 +82,19 @@ void URegionPreferencesSubsystem::RefreshRegionLatency(bool bRetryOnFailed)
 			NumRetry = 0;
 		}
 	}));
+#endif
 }
 
 TArray<FString> URegionPreferencesSubsystem::GetEnabledRegion()
 {
 	TArray<FString> EnabledRegion = {};
+	
+#if UE_EDITOR || !UE_SERVER
+	if(IsRunningDedicatedServer())
+	{
+		return EnabledRegion;
+	}
+	
 	for(const URegionPreferenceInfo* Info : RegionInfos)
 	{
 		if(Info->bEnabled)
@@ -60,12 +102,21 @@ TArray<FString> URegionPreferencesSubsystem::GetEnabledRegion()
 			EnabledRegion.Add(Info->RegionCode);
 		}
 	}
+#endif
+	
 	return EnabledRegion;
 }
 
 int32 URegionPreferencesSubsystem::GetEnabledRegionCount()
 {
 	int32 Result = 0;
+
+#if UE_EDITOR || !UE_SERVER
+	if(IsRunningDedicatedServer())
+	{
+		return Result;
+	}
+	
 	for(const URegionPreferenceInfo* Info : RegionInfos)
 	{
 		if(Info->bEnabled)
@@ -73,12 +124,21 @@ int32 URegionPreferencesSubsystem::GetEnabledRegionCount()
 			Result+=1;
 		}
 	}
+#endif
+	
 	return Result;
 }
 
 bool URegionPreferencesSubsystem::TryToggleRegion(const FString& RegionCode)
 {
 	URegionPreferenceInfo* RegionInfo = FindRegionInfo(RegionCode);
+
+#if UE_EDITOR || !UE_SERVER
+	if(IsRunningDedicatedServer())
+	{
+		return false;
+	}
+	
 	if(RegionInfo != nullptr)
 	{
 		// toggle region will fail if user try to disable the last remaining enabled in region
@@ -92,11 +152,19 @@ bool URegionPreferencesSubsystem::TryToggleRegion(const FString& RegionCode)
 			return true;
 		}
 	}
+#endif
+	
 	return false;
 }
 
 URegionPreferenceInfo* URegionPreferencesSubsystem::FindRegionInfo(const FString& RegionCode)
 {
+#if UE_EDITOR || !UE_SERVER
+	if(IsRunningDedicatedServer())
+	{
+		return nullptr;
+	}
+	
 	URegionPreferenceInfo** RegionInfo = RegionInfos.FindByPredicate([&RegionCode](const URegionPreferenceInfo* Info)
 	{
 		return Info->RegionCode.Equals(RegionCode);
@@ -106,17 +174,38 @@ URegionPreferenceInfo* URegionPreferencesSubsystem::FindRegionInfo(const FString
 	{
 		return *RegionInfo;
 	}
+#endif
+	
 	return nullptr;
 }
 
 FString URegionPreferencesSubsystem::GetCurrentGameSessionRegion()
 {
+	FString CurrentGameSessionRegion = TEXT("");
+
+#if UE_EDITOR || !UE_SERVER
+	if(IsRunningDedicatedServer())
+	{
+		return CurrentGameSessionRegion;
+	}
+	
 	FAccelByteModelsV2GameSessionDSInformation DSInformation = UTutorialModuleOnlineUtility::GetDedicatedServer(this);
-	return DSInformation.Server.Region;
+	CurrentGameSessionRegion = DSInformation.Server.Region;
+#endif
+
+	return CurrentGameSessionRegion;
 }
 
 bool URegionPreferencesSubsystem::ShouldShowLatencyInGame()
 {
+	bool bResult = false;
+
+#if UE_EDITOR || !UE_SERVER
+	if(IsRunningDedicatedServer())
+	{
+		return bResult;
+	}
+	
 	if(!bShowLatency)
 	{
 		return false;
@@ -141,21 +230,44 @@ bool URegionPreferencesSubsystem::ShouldShowLatencyInGame()
 	FString ServerType = TEXT("");
 	Session->SessionSettings.Get(SETTING_SESSION_SERVER_TYPE, ServerType);
 	
-	return ServerType.ToUpper().Equals("DS");
+	bResult = ServerType.ToUpper().Equals("DS");
+#endif
+
+	return bResult;
 }
 
 void URegionPreferencesSubsystem::StartLatencyRefreshTimer()
 {
+#if UE_EDITOR || !UE_SERVER
+	if(IsRunningDedicatedServer())
+	{
+		return;
+	}
+	
 	GetWorld()->GetTimerManager().SetTimer(LatencyRefreshTimerHandle, this, &ThisClass::RefreshGameLatency, LatencyRefreshInterval, true, 1);
+#endif
 }
 
 void URegionPreferencesSubsystem::StopLatencyRefreshTimer()
 {
+#if UE_EDITOR || !UE_SERVER
+	if(IsRunningDedicatedServer())
+	{
+		return;
+	}
+	
 	GetWorld()->GetTimerManager().ClearTimer(LatencyRefreshTimerHandle);
+#endif
 }
 
 void URegionPreferencesSubsystem::RefreshGameLatency() const
 {
+#if UE_EDITOR || !UE_SERVER
+	if(IsRunningDedicatedServer())
+	{
+		return;
+	}
+	
 	const APlayerController* LocalPlayerController = GetGameInstance()->GetFirstLocalPlayerController();
 	if (!LocalPlayerController)
 	{
@@ -175,10 +287,17 @@ void URegionPreferencesSubsystem::RefreshGameLatency() const
 	{
 		UE_LOG_REGION_PREFERENCES_ESSENTIALS(Warning, TEXT("Unable to get latency, player state is empty!!"));
 	}
+#endif
 }
 
 void URegionPreferencesSubsystem::FilterSessionSearch(TSharedRef<FOnlineSessionSearch> SessionSearch)
 {
+#if UE_EDITOR || !UE_SERVER
+	if(IsRunningDedicatedServer())
+	{
+		return;
+	}
+	
 	SessionSearch->SearchResults.RemoveAll([this](const FOnlineSessionSearchResult& Element)
 	{
 		FString ServerType = TEXT("");
@@ -212,8 +331,10 @@ void URegionPreferencesSubsystem::FilterSessionSearch(TSharedRef<FOnlineSessionS
 		}
 		return false;
 	});
+#endif
 }
 
+#if UE_EDITOR || !UE_SERVER
 TArray<UTutorialModuleSubsystem::FCheatCommandEntry> URegionPreferencesSubsystem::GetCheatCommandEntries()
 {
 	TArray<FCheatCommandEntry> OutArray = {};
@@ -225,6 +346,18 @@ TArray<UTutorialModuleSubsystem::FCheatCommandEntry> URegionPreferencesSubsystem
 		FConsoleCommandWithArgsDelegate::CreateUObject(this, &ThisClass::CheatRefreshGameLatency)));
 
 	return OutArray;
+}
+
+FOnlineIdentityAccelBytePtr URegionPreferencesSubsystem::GetIdentityInterface() const
+{
+	const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+	if (!ensure(Subsystem))
+	{
+		UE_LOG_REGION_PREFERENCES_ESSENTIALS(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and the DefaultPlatformService under [OnlineSubsystem] in the Engine.ini file is set to AccelByte."));
+		return nullptr;
+	}
+
+	return StaticCastSharedPtr<FOnlineIdentityAccelByte>(Subsystem->GetIdentityInterface());
 }
 
 void URegionPreferencesSubsystem::GetIngameLatencyRefreshConfiguration()
@@ -274,6 +407,27 @@ void URegionPreferencesSubsystem::GetIngameLatencyRefreshConfiguration()
 	}
 }
 
+void URegionPreferencesSubsystem::OnLobbyConnected(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& UserId, const FString& Error)
+{
+	AccelByte::FApiClientPtr ApiClient = UTutorialModuleOnlineUtility::GetApiClient(this);
+	if (!ApiClient)
+	{
+		UE_LOG_REGION_PREFERENCES_ESSENTIALS(Warning, TEXT("Cannot initialze region latencies. AccelByte API Client is invalid."));
+		return;
+	}
+
+	// Initialize region latencies from cache if any. Otherwise, query the region latencies.
+	const TArray<TPair<FString, float>> Latencies = ApiClient->Qos.GetCachedLatencies();
+	if (Latencies.Num() > 0)
+	{
+		OnGetLatenciesSuccess(Latencies);
+	}
+	else
+	{
+		RefreshRegionLatency(true);
+	}
+}
+
 void URegionPreferencesSubsystem::OnGetLatenciesSuccess(const TArray<TPair<FString, float>>& InLatencies)
 {
 	UE_LOG_REGION_PREFERENCES_ESSENTIALS(Log, TEXT("Success getting regions latency"));;
@@ -315,9 +469,16 @@ void URegionPreferencesSubsystem::OnGetLatenciesError(int32 ErrorCode, const FSt
 	RegionInfos.Empty();
 	OnRefreshRegionComplete.Broadcast(false);
 }
+#endif
 
 void URegionPreferencesSubsystem::CheatRefreshGameLatency(const TArray<FString>& Args) const
 {
+#if UE_EDITOR || !UE_SERVER
+	if(IsRunningDedicatedServer())
+	{
+		return;
+	}
+	
 	const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
 	if (!Subsystem)
 	{
@@ -340,4 +501,5 @@ void URegionPreferencesSubsystem::CheatRefreshGameLatency(const TArray<FString>&
 	}
 
 	RefreshGameLatency();
+#endif
 }

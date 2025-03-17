@@ -19,7 +19,7 @@
 // @@@MULTISNIP BindJoinSessionDelegate {"selectedLines": ["1-2", "14-15", "30"]}
 // @@@MULTISNIP BindRejectSessionInviteDelegate {"selectedLines": ["1-2", "16-17", "30"]}
 // @@@MULTISNIP BindSessionInviteReceivedDelegate {"selectedLines": ["1-2", "18-19", "30"]}
-// @@@MULTISNIP BindSessionParticipantsChangeDelegate {"selectedLines": ["1-2", "21-30"]}
+// @@@MULTISNIP BindSessionParticipantsChangeDelegate {"selectedLines": ["1-2", "25-28", "30"]}
 void UPlayingWithFriendsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
@@ -57,7 +57,7 @@ void UPlayingWithFriendsSubsystem::Initialize(FSubsystemCollectionBase& Collecti
 // @@@MULTISNIP UnbindJoinSessionDelegate {"selectedLines": ["1-2", "6", "16"]}
 // @@@MULTISNIP UnbindRejectSessionInviteDelegate {"selectedLines": ["1-2", "7", "16"]}
 // @@@MULTISNIP UnbindSessionInviteReceivedDelegate {"selectedLines": ["1-2", "8", "16"]}
-// @@@MULTISNIP UnbindSessionParticipantsChangeDelegate {"selectedLines": ["1-2", "10-16"]}
+// @@@MULTISNIP UnbindSessionParticipantsChangeDelegate {"selectedLines": ["1-2", "13-14", "16"]}
 void UPlayingWithFriendsSubsystem::Deinitialize()
 {
 	Super::Deinitialize();

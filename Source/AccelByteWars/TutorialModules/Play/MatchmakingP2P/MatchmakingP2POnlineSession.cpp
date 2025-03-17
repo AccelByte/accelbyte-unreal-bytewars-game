@@ -306,7 +306,7 @@ void UMatchmakingP2POnlineSession::CancelMatchmaking(APlayerController* PC, cons
 	UE_LOG_MATCHMAKINGP2P(Verbose, TEXT("called"))
 
 	// Abort if the session interface is invalid.
-	if (!ensure(GetSessionInt()))
+	if (!ensure(GetABSessionInt()))
 	{
 		UE_LOG_MATCHMAKINGP2P(Warning, TEXT("Session Interface is not valid."));
 		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
@@ -316,9 +316,10 @@ void UMatchmakingP2POnlineSession::CancelMatchmaking(APlayerController* PC, cons
 		return;
 	}
 
-	if (!ensure(GetABSessionInt()->GetCurrentMatchmakingSearchHandle().IsValid() &&
+	if (!(GetABSessionInt()->GetCurrentMatchmakingSearchHandle().IsValid() &&
 		GetABSessionInt()->GetCurrentMatchmakingSearchHandle()->GetSearchingPlayerId().IsValid()))
 	{
+		// This can happen if the cancel was called just as match was found.
 		UE_LOG_MATCHMAKINGP2P(Warning, TEXT("Searching player ID is not valid."));
 		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{

@@ -6,12 +6,16 @@
 #include "MatchSessionDSOnlineSession_Starter.h"
 
 #include "MatchSessionDSLog.h"
+#include "OnlineSessionSettingsAccelByte.h"
 #include "Core/Player/AccelByteWarsPlayerController.h"
+#include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/InGameMenu/Pause/PauseWidget.h"
 #include "Core/UI/MainMenu/MatchLobby/MatchLobbyWidget.h"
 #include "Core/UI/InGameMenu/GameOver/GameOverWidget.h"
 #include "Interfaces/OnlineIdentityInterface.h"
 #include "Interfaces/OnlineUserInterface.h"
+#include "OnlineSettings/RegionPreferencesEssentials/RegionPreferencesSubsystem.h"
+#include "OnlineSettings/RegionPreferencesEssentials/RegionPreferencesSubsystem_Starter.h"
 #include "TutorialModuleUtilities/StartupSubsystem.h"
 
 void UMatchSessionDSOnlineSession_Starter::RegisterOnlineDelegates()

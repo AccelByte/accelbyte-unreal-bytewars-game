@@ -28,7 +28,7 @@ void UAccelByteWarsServerSubsystemBase::Initialize(FSubsystemCollectionBase& Col
 	AAccelByteWarsGameSession::OnRegisterServerDelegates.AddUObject(this, &ThisClass::RegisterServer);
 	AAccelByteWarsGameSession::OnUnregisterServerDelegates.AddUObject(this, &ThisClass::UnregisterServer);
 	AAccelByteWarsGameMode::OnInitializeListenServerDelegates.AddUObject(this, &ThisClass::OnServerSessionReceived);
-	AAccelByteWarsInGameGameMode::OnGameEndsDelegate.AddWeakLambda(this, [this]()
+	AAccelByteWarsInGameGameMode::OnGameEndsDelegate.AddWeakLambda(this, [this](const FString& Reason)
 	{
 		CloseGameSession();
 	});
@@ -104,7 +104,7 @@ void UAccelByteWarsServerSubsystemBase::OnServerSessionReceived(FName SessionNam
 
 IOnlineSessionPtr UAccelByteWarsServerSubsystemBase::GetSessionInt() const
 {
-	IOnlineSessionPtr SessionInt = Online::GetSessionInterface();
+	IOnlineSessionPtr SessionInt = Online::GetSessionInterface(GetWorld());
 	ensure(SessionInt);
 
 	return SessionInt;

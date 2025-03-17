@@ -5,7 +5,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Core/AccelByteMultiRegistry.h"
+#include "OnlineIdentityInterfaceAccelByte.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "RegionPreferencesModels.h"
 #include "RegionPreferencesEssentialsLog.h"
@@ -19,8 +19,11 @@ UCLASS()
 class ACCELBYTEWARS_API URegionPreferencesSubsystem : public UTutorialModuleSubsystem
 {
 	GENERATED_BODY()
+
 public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	virtual void Deinitialize() override;
+
 	void RefreshRegionLatency(bool bRetryOnFailed = false);
 	
 	TArray<URegionPreferenceInfo*>& GetRegionInfos()
@@ -46,26 +49,38 @@ public:
 	FSimpleMulticastDelegate OnWarningMinimumRegionCount;
 	FOnRefreshRegionComplete OnRefreshRegionComplete;
 	FOnLatencyRefreshComplete OnLatencyRefreshComplete;
+
 protected:
+#if UE_EDITOR || !UE_SERVER
 	virtual TArray<FCheatCommandEntry> GetCheatCommandEntries() override;
+
+	FOnlineIdentityAccelBytePtr GetIdentityInterface() const;
+#endif
+
 private:
+#if UE_EDITOR || !UE_SERVER
 	void GetIngameLatencyRefreshConfiguration();
+
 	void OnGetLatenciesSuccess(const TArray<TPair<FString, float>>& InLatencies);
 	void OnGetLatenciesError(int32 ErrorCode, const FString& ErrorMessage);
+	void OnLobbyConnected(int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& UserId, const FString& Error);
+#endif
 	
 	UFUNCTION()
 	void CheatRefreshGameLatency(const TArray<FString>& Args) const;
 	
-	THandler<TArray<TPair<FString, float>>> OnGetLatenciesSuccessDelegate;	
+#if UE_EDITOR || !UE_SERVER
+	THandler<TArray<TPair<FString, float>>> OnGetLatenciesSuccessDelegate;
+#endif
 
 	UPROPERTY()
 	TArray<URegionPreferenceInfo*> RegionInfos;
 	
-	AccelByte::FApiClientPtr ApiClient;
-
+#if UE_EDITOR || !UE_SERVER
 	int32 NumRetry = 0;
 	const FString CommandMyUserInfo = TEXT("ab.region.RefreshGameLatency");
 	bool bShowLatency = false;
 	int LatencyRefreshInterval = 5;
 	FTimerHandle LatencyRefreshTimerHandle;
+#endif
 };

@@ -276,7 +276,7 @@ bool UStatsEssentialsSubsystem::UpdateConnectedPlayersStats(
 // @@@SNIPEND
 
 // @@@SNIPSTART StatsEssentialsSubsystem.cpp-UpdateConnectedPlayersStatsOnGameEnds
-void UStatsEssentialsSubsystem::UpdateConnectedPlayersStatsOnGameEnds()
+void UStatsEssentialsSubsystem::UpdateConnectedPlayersStatsOnGameEnds(const FString& Reason)
 {
 	const bool bStarted = UpdateConnectedPlayersStats(0, false);
 	if (bStarted)

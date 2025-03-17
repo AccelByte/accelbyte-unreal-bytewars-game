@@ -10,6 +10,7 @@
 
 class ULoginWidget;
 class UAccelByteWarsButtonBase;
+class UAuthEssentialsSubsystem;
 
 #define TEXT_LOGIN_WITH NSLOCTEXT("AccelByteWars", "login_with", "Login with %PLATFORM%")
 #define AUTH_ESSENTIALS_SECTION TEXT("/ByteWars/TutorialModule.AuthEssentials")
@@ -45,5 +46,8 @@ private:
 
 	UPROPERTY()
 	ULoginWidget* LoginWidget;
+
+	UPROPERTY()
+	UAuthEssentialsSubsystem* AuthSubsystem;
 // @@@SNIPEND
 };

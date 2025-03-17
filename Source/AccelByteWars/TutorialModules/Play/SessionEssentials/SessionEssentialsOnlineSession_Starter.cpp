@@ -7,6 +7,7 @@
 
 #include "OnlineSubsystemAccelByteSessionSettings.h"
 #include "SessionEssentialsLog.h"
+#include "Online/OnlineSessionNames.h"
 
 void USessionEssentialsOnlineSession_Starter::RegisterOnlineDelegates()
 {

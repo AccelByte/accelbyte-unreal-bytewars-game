@@ -4,7 +4,7 @@
 
 #include "SDKConfigWidget.h"
 
-#include "Core/AccelByteRegistry.h"
+#include "AccelByteUe4SdkModule.h"
 #include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
 
 #include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
@@ -41,7 +41,7 @@ void USDKConfigWidget::NativeOnDeactivated()
 void USDKConfigWidget::LoadCurrentSdkConfig()
 {
 	// Load current game client sdk config.
-	AccelByte::Settings ClientCreds = AccelByte::FRegistry::Settings;
+	AccelByte::Settings ClientCreds = IAccelByteUe4SdkModuleInterface::Get().GetClientSettings();
 	Edt_GameClientId->SetText(FText::FromString(ClientCreds.ClientId));
 	Edt_GameClientSecret->SetText(FText::FromString(ClientCreds.ClientSecret));
 	Edt_GameClientNamespace->SetText(FText::FromString(ClientCreds.Namespace));
@@ -50,7 +50,7 @@ void USDKConfigWidget::LoadCurrentSdkConfig()
 	Edt_GameClientRedirectUri->SetText(FText::FromString(ClientCreds.RedirectURI));
 
 	// Load current game server sdk config.
-	AccelByte::ServerSettings ServerCreds = AccelByte::FRegistry::ServerSettings;
+	AccelByte::ServerSettings ServerCreds = IAccelByteUe4SdkModuleInterface::Get().GetServerSettings();
 	Edt_ServerClientId->SetText(FText::FromString(ServerCreds.ClientId));
 	Edt_ServerClientSecret->SetText(FText::FromString(ServerCreds.ClientSecret));
 	Edt_ServerNamespace->SetText(FText::FromString(ServerCreds.Namespace));

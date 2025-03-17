@@ -161,6 +161,37 @@ float AAccelByteWarsMissile::GetSurfanceDistanceBetweenObjects(UAccelByteWarsGam
 	return (distance - ((OtherObject->Radius + ThisObject->Radius) * 100.0f));
 }
 
+void AAccelByteWarsMissile::OnMissileHitObject(AAccelByteWarsInGameGameMode* InGameGameMode, AAccelByteWarsPlayerController* ABPlayerController)
+{
+	if (HitObject->ObjectType == EGameplayObjectType::SHIP)
+	{
+		float a = UKismetMathLibrary::FTrunc(Score);
+		SpawnScorePopupHud(a);
+
+		// Hit object is a ship, notify entity destroyed for the ship.
+		NotifyShipHitByMissile();
+
+		InGameGameMode->OnShipDestroyed(HitObject, Score, ABPlayerController);
+
+		HitObject = nullptr;
+	}
+	else
+	{
+		// Missile hit planet, broadcast entity destroyed event for the missile.
+		if (AAccelByteWarsInGameGameMode::OnEntityDestroyedDelegates.IsBound())
+		{
+			AAccelByteWarsInGameGameMode::OnEntityDestroyedDelegates.Broadcast(
+				ENTITY_TYPE_MISSILE,
+				nullptr,
+				GetName(),
+				GetActorLocation(),
+				ENTITY_DESTROYED_TYPE_HIT_PLANET,
+				AccelByteWarsUtility::FormatEntityDeathSource(ENTITY_TYPE_PLANET, AccelByteWarsUtility::GenerateActorEntityId(HitObject->GetOwner()))
+			);
+		}
+	}
+}
+
 void AAccelByteWarsMissile::GetGravityForceToObject(UAccelByteWarsGameplayObjectComponent* OtherObject, UAccelByteWarsGameplayObjectComponent* ThisObject, float& RetValue1, FVector& RetValue2)
 {
 	if (OtherObject == nullptr)
@@ -450,21 +481,25 @@ void AAccelByteWarsMissile::OnDestroyObject()
 	{
 		ABInGameMode->OnMissileDestroyed(GetActorLocation(), HitObject, Color, GetOwner());
 
+		OnMissileHitObject(ABInGameMode, ABPlayerController);
 		NearHitShips.Empty();
 		Destroy();
-
-		if (HitObject->ObjectType == EGameplayObjectType::SHIP)
-		{
-			float a = UKismetMathLibrary::FTrunc(Score);
-			SpawnScorePopupHud(a);
-
-			ABInGameMode->OnShipDestroyed(HitObject, Score, ABPlayerController);
-
-			HitObject = nullptr;
-		}
 	}
 	else
 	{
+		// Missile hit planet, broadcast entity destroyed event for the missile.
+		if (AAccelByteWarsInGameGameMode::OnEntityDestroyedDelegates.IsBound())
+		{
+			AAccelByteWarsInGameGameMode::OnEntityDestroyedDelegates.Broadcast(
+				ENTITY_TYPE_MISSILE,
+				nullptr,
+				GetName(),
+				GetActorLocation(),
+				ENTITY_DESTROYED_TYPE_HIT_LIFETIME,
+				ENTITY_TYPE_UNKNOWN
+			);
+		}
+
 		TreatMissileAsExpired(ABInGameMode);
 	}
 }
@@ -495,4 +530,57 @@ void AAccelByteWarsMissile::DecrementPlayerMissileCount()
 	ABPlayerState->MissilesFired--;
 	ABPawn->FiredMissile = nullptr;
 	ABPawn->MissileTrail = nullptr;
+}
+
+void AAccelByteWarsMissile::NotifyShipHitByMissile() const
+{
+	// Abort if missile owner is invalid.
+	if (!GetOwner()) 
+	{
+		return;
+	}
+
+	const APlayerController* OwnerPC = Cast<APlayerController>(GetOwner()->GetInstigatorController());
+	if (!OwnerPC) 
+	{
+		return;
+	}
+
+	// Collect hit ship information.
+	const AActor* ShipActor = HitObject->GetOwner();
+	if (!ShipActor)
+	{
+		return;
+	}
+
+	const APawn* ShipOwner = Cast<APawn>(ShipActor->GetNetOwner());
+	if (!ShipOwner)
+	{
+		return;
+	}
+
+	const APlayerController* ShipPC = Cast<APlayerController>(ShipOwner->Controller);
+	if (!ShipPC)
+	{
+		return;
+	}
+
+	const AAccelByteWarsPlayerState* ShipPlayerState = Cast<AAccelByteWarsPlayerState>(ShipPC->PlayerState);
+	if (!ShipPlayerState)
+	{
+		return;
+	}
+
+	// Missile hit ship, broadcast entity destroyed event for the ship.
+	if (AAccelByteWarsInGameGameMode::OnEntityDestroyedDelegates.IsBound())
+	{
+		AAccelByteWarsInGameGameMode::OnEntityDestroyedDelegates.Broadcast(
+			ENTITY_TYPE_PLAYER,
+			ShipPlayerState->GetUniqueId().GetUniqueNetId(),
+			ShipActor->GetName(),
+			ShipActor->GetActorLocation(),
+			ENTITY_DESTROYED_TYPE_HIT_SHIP,
+			AccelByteWarsUtility::FormatEntityDeathSource(ENTITY_TYPE_MISSILE, AccelByteWarsUtility::GenerateActorEntityId(OwnerPC))
+		);
+	}
 }

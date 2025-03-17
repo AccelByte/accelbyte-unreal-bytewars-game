@@ -19,8 +19,16 @@ void USinglePlatformAuthWidget_Starter::NativeConstruct()
 	ParentWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
 	ensure(ParentWidget);
 
+	AuthSubsystem = GetGameInstance()->GetSubsystem<UAuthEssentialsSubsystem_Starter>();
 	LoginWidget = Cast<ULoginWidget_Starter>(ParentWidget);
-	ensure(LoginWidget);
+	if (!LoginWidget || !AuthSubsystem)
+	{
+		/*
+		 * This could happen if AuthEssentials is not in starter mode.
+		 * There is already a checker on NativeOnActivated, simply return here.
+		 */
+		return;
+	}
 }
 
 void USinglePlatformAuthWidget_Starter::NativeOnActivated()
@@ -29,7 +37,7 @@ void USinglePlatformAuthWidget_Starter::NativeOnActivated()
 
 	if (!AuthEssentialsModule->IsStarterModeActive())
 	{
-		UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("AuthEssentials is in starter mode and SinglePlatformAuth is dependent upon it. Please also enable the starter mode for the SinglePlatformAuth module."))
+		UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("AuthEssentials is not in starter mode and SinglePlatformAuth is dependent upon it. Please also enable the starter mode for the SinglePlatformAuth module."))
 		Btn_LoginWithSinglePlatformAuth->SetVisibility(ESlateVisibility::Collapsed);
 		return;
 	}

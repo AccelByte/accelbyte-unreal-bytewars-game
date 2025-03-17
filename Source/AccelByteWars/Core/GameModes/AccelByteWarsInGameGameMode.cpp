@@ -61,6 +61,32 @@ void AAccelByteWarsInGameGameMode::BeginPlay()
 	Super::BeginPlay();
 }
 
+void AAccelByteWarsInGameGameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
+
+	if (!ABInGameGameState)
+	{
+		// By Unreal's GameMode design, this shouldn't happen. Just in case.
+		GAMEMODE_LOG(Warning, TEXT("Game State is null right when map about to close."));
+		return;
+	}
+
+	if (ABInGameGameState->GameStatus == EGameStatus::INVALID)
+	{
+		// Game ends properly.
+		return;
+	}
+
+	// Game ends unexpectedly. Notify game ends here.
+	OnGameEndsDelegate.Broadcast(GAME_END_REASON_TERMINATED);
+	GAMEMODE_LOG(
+		Log,
+		TEXT("Game ending unexpectedly. Current status: %s, EndPlayReason: %s"),
+		*UEnum::GetValueAsString(ABInGameGameState->GameStatus),
+		*UEnum::GetValueAsString(EndPlayReason));
+}
+
 // @@@SNIPSTART AccelByteWarsInGameGameMode.cpp-Tick
 // @@@MULTISNIP AwaitingPlayerState {"selectedLines": ["1-2", "8-27", "93"]}
 // @@@MULTISNIP AwaitingPlayerMidGameState {"selectedLines": ["1-2", "36-51", "93"]}
@@ -133,7 +159,7 @@ void AAccelByteWarsInGameGameMode::Tick(float DeltaSeconds)
 		if (ABInGameGameState->TimeLeft <= 0)
 		{
 			ABInGameGameState->TimeLeft = 0;
-			EndGame("Time is over");
+			EndGame(GAME_END_REASON_TIMES_UP);
 		}
 		break;
 	case EGameStatus::GAME_ENDS_DELAY:
@@ -185,6 +211,15 @@ void AAccelByteWarsInGameGameMode::PostLogin(APlayerController* NewPlayer)
 
 	// retrieve player's equipped items
 	AbPlayerState->ClientRetrieveEquippedItems();
+
+	// Notify other if the match has already started
+	switch (ABInGameGameState->GameStatus)
+	{
+	case EGameStatus::GAME_STARTED:
+	case EGameStatus::AWAITING_PLAYERS_MID_GAME:
+		OnPlayerEnteredMatch.Broadcast(AbPlayerState->GetUniqueId().GetUniqueNetId());
+		break;
+	}
 }
 
 void AAccelByteWarsInGameGameMode::DelayedPlayerTeamSetupWithPredefinedData(APlayerController* PlayerController)
@@ -282,7 +317,7 @@ void AAccelByteWarsInGameGameMode::EndGame(const FString Reason)
 {
 	ABInGameGameState->GameStatus = EGameStatus::GAME_ENDS_DELAY;
 
-	OnGameEndsDelegate.Broadcast();
+	OnGameEndsDelegate.Broadcast(Reason);
 
 	GAMEMODE_LOG(Log, TEXT("Game ends with reason: %s."), *Reason);
 }
@@ -357,7 +392,7 @@ void AAccelByteWarsInGameGameMode::OnShipDestroyed(
 	// If only 1 team left, end game
 	if (GetLivingTeamCount() <= 1)
 	{
-		EndGame("One team remains");
+		EndGame(GAME_END_REASON_LAST_TEAM);
 		return;
 	}
 
@@ -450,6 +485,17 @@ void AAccelByteWarsInGameGameMode::StartGame()
 
 	// Spawn planets
 	SpawnPlanets();
+
+	// Notify that the game has started
+	OnGameStartedDelegates.Broadcast();
+	for (const APlayerState* Player: GameState->PlayerArray)
+	{
+		if (!Player)
+		{
+			continue;
+		}
+		OnPlayerEnteredMatch.Broadcast(Player->GetUniqueId().GetUniqueNetId());
+	}
 }
 
 void AAccelByteWarsInGameGameMode::SetupGameplayObject(AActor* Object) const
@@ -774,7 +820,7 @@ bool AAccelByteWarsInGameGameMode::ShouldStartNotEnoughPlayerCountdown() const
 // @@@SNIPEND
 
 // @@@SNIPSTART AccelByteWarsInGameGameMode.cpp-NotEnoughPlayerCountdownCounting
-void AAccelByteWarsInGameGameMode::NotEnoughPlayerCountdownCounting(const float& DeltaSeconds) const
+void AAccelByteWarsInGameGameMode::NotEnoughPlayerCountdownCounting(const float& DeltaSeconds)
 {
 	// start NotEnoughPlayerCountdown to trigger server shutdown
 	ABInGameGameState->NotEnoughPlayerCountdown -= DeltaSeconds;

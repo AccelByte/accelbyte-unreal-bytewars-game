@@ -3,12 +3,12 @@
 // and restrictions contact your company contract manager.
 
 #include "RegisterUserInGameSubsystem_Starter.h"
+#include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
 #include "TutorialModuleUtilities/StartupSubsystem.h"
+
 #include "Core/Utilities/AccelByteWarsUtility.h"
-#include "Core/AccelByteRegistry.h"
 #include "Core/AccelByteWebSocketErrorTypes.h"
 #include "Api/AccelByteUserApi.h"
-#include "OnlineSubsystemUtils.h"
 
 void URegisterUserInGameSubsystem_Starter::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -21,17 +21,6 @@ void URegisterUserInGameSubsystem_Starter::Deinitialize()
     Super::Deinitialize();
 
     // TODO: Add your code here.
-}
-
-FOnlineUserAccelBytePtr URegisterUserInGameSubsystem_Starter::GetUserInterface() const
-{
-    const UWorld* World = GetWorld();
-    if (!ensure(World))
-    {
-        return nullptr;
-    }
-
-    return StaticCastSharedPtr<FOnlineUserAccelByte>(Online::GetUserInterface(World));
 }
 
 void URegisterUserInGameSubsystem_Starter::GetUpgradeAccountConfig()

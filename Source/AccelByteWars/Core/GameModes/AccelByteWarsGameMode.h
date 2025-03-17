@@ -39,6 +39,7 @@ public:
 	
 	virtual void InitGameState() override;
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 	virtual void Logout(AController* Exiting) override;
 	virtual APawn* SpawnDefaultPawnFor_Implementation(AController* NewPlayer, AActor* StartSpot) override;
@@ -60,12 +61,15 @@ public:
 	void AssignTeamManually(int32& InOutTeamId) const;
 
 	UFUNCTION(BlueprintCallable)
+	void KickAllPlayers() const;
+
+	UFUNCTION(BlueprintCallable)
 	void ServerTravel(TSoftObjectPtr<UWorld> Level);
 
 	void DelayedServerTravel(const FString& URL) const;
 
 	/** @brief Shutdown DS and call unregister server if possible */
-	void CloseGame(const FString& Reason) const;
+	void CloseGame(const FString& Reason);
 
 	/** @brief Set the flag to allow immediate shutdown when the last player logs out */
 	void SetImmediatelyShutdownWhenEmpty(const bool bAllow) const;
@@ -96,6 +100,10 @@ protected:
 
 	bool IsServer() const;
 
+	// Countdown functionalities to close the server.
+	void SetupServerCloseCountdownValue();
+	void ServerCloseCountdownCounting(const float& DeltaSeconds);
+
 	// Countdown functionalities to simulate server crash.
 	void SetupSimulateServerCrashCountdownValue(const FString& SimulateServerCrashArg);
 	void SimulateServerCrashCountdownCounting(const float& DeltaSeconds) const;
@@ -109,6 +117,8 @@ private:
 
 	UPROPERTY()
 	AAccelByteWarsGameState* ABGameState = nullptr;
+
+	bool bIsServerClosing = false;
 
 	/* Helper variable to check whether server should simulate 
 	 * crash or not based on the availability of launch param.*/

@@ -6,12 +6,16 @@
 #include "MatchSessionDSOnlineSession.h"
 
 #include "MatchSessionDSLog.h"
+#include "OnlineSessionSettingsAccelByte.h"
 #include "Core/Player/AccelByteWarsPlayerController.h"
+#include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/InGameMenu/Pause/PauseWidget.h"
 #include "Core/UI/MainMenu/MatchLobby/MatchLobbyWidget.h"
 #include "Core/UI/InGameMenu/GameOver/GameOverWidget.h"
 #include "Interfaces/OnlineIdentityInterface.h"
 #include "Interfaces/OnlineUserInterface.h"
+#include "OnlineSettings/RegionPreferencesEssentials/RegionPreferencesSubsystem.h"
+#include "OnlineSettings/RegionPreferencesEssentials/RegionPreferencesSubsystem_Starter.h"
 #include "TutorialModuleUtilities/StartupSubsystem.h"
 
 // @@@SNIPSTART MatchSessionDSOnlineSession.cpp-RegisterOnlineDelegates
@@ -285,6 +289,48 @@ void UMatchSessionDSOnlineSession::CreateMatchSession(
 		MatchTemplateName = UTutorialModuleOnlineUtility::GetMatchSessionTemplateDSOverride();
 	}
 
+#pragma region "Region Preferences"
+	// include region preferences into session setting
+	if(NetworkType == EGameModeNetworkType::DS)
+	{
+		if (const UTutorialModuleDataAsset* ModuleDataAsset = UTutorialModuleUtility::GetTutorialModuleDataAsset(
+			FPrimaryAssetId{ "TutorialModule:REGIONPREFERENCES" },
+			this,
+			true))
+		{
+			const UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetGameInstance());
+			ensure(GameInstance);
+
+			// Get enabled regions
+			TArray<FString> EnabledRegions = {};
+
+			if (ModuleDataAsset->IsStarterModeActive())
+			{
+				// Starter mode is active, use the starter subsystem
+				URegionPreferencesSubsystem_Starter* RegionPreferencesSubsystem = GameInstance->GetSubsystem<URegionPreferencesSubsystem_Starter>();
+				if(RegionPreferencesSubsystem != nullptr)
+				{
+					EnabledRegions = RegionPreferencesSubsystem->GetEnabledRegion();
+				}
+			}
+			else
+			{
+				// Starter mode is not active, use the non starter subsystem.
+				URegionPreferencesSubsystem* RegionPreferencesSubsystem = GameInstance->GetSubsystem<URegionPreferencesSubsystem>();
+				if(RegionPreferencesSubsystem != nullptr)
+				{
+					EnabledRegions = RegionPreferencesSubsystem->GetEnabledRegion();
+				}
+			}
+
+			if(!EnabledRegions.IsEmpty())
+			{
+				FOnlineSessionSettingsAccelByte::Set(SessionSettings, SETTING_GAMESESSION_REQUESTEDREGIONS, EnabledRegions);
+			}
+		}
+	}
+#pragma endregion 
+
 	CreateSession(
 		LocalUserNum,
 		GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession),
@@ -358,6 +404,37 @@ void UMatchSessionDSOnlineSession::OnFindSessionsComplete(bool bSucceeded)
 				FUniqueNetIdRepl(LocalUserNetId),
 				FUniqueNetIdRepl(Element.Session.OwningUserId));
 		});
+
+#pragma region "Region Preferences"
+		// remove session that not in region preferences
+		if (const UTutorialModuleDataAsset* ModuleDataAsset = UTutorialModuleUtility::GetTutorialModuleDataAsset(
+			FPrimaryAssetId{ "TutorialModule:REGIONPREFERENCES" },
+			this,
+			true))
+		{
+			const UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetGameInstance());
+			ensure(GameInstance);
+
+			if (ModuleDataAsset->IsStarterModeActive())
+			{
+				// Starter is enabled, use the starter subsystem.
+				URegionPreferencesSubsystem_Starter* RegionPreferencesSubsystem = GameInstance->GetSubsystem<URegionPreferencesSubsystem_Starter>();
+				if(RegionPreferencesSubsystem != nullptr)
+				{
+					RegionPreferencesSubsystem->FilterSessionSearch(SessionSearch);
+				}
+			}
+			else
+			{
+				// Starter is not enabled, use the non starter subsystem.
+				URegionPreferencesSubsystem* RegionPreferencesSubsystem = GameInstance->GetSubsystem<URegionPreferencesSubsystem>();
+				if(RegionPreferencesSubsystem != nullptr)
+				{
+					RegionPreferencesSubsystem->FilterSessionSearch(SessionSearch);
+				}
+			}
+		}
+#pragma endregion 
 
 		// Get owner’s user info for queried user info.
 		TArray<FUniqueNetIdRef> UserIds;

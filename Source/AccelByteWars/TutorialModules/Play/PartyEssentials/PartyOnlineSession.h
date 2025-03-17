@@ -35,7 +35,7 @@ class ACCELBYTEWARS_API UPartyOnlineSession : public USessionEssentialsOnlineSes
 // @@@MULTISNIP OnKickPlayerFromPartyCompleteDelegate {"selectedLines": ["1", "52-55"]}
 // @@@MULTISNIP OnKickedFromPartyDelegate {"selectedLines": ["1", "56-59"]}
 // @@@MULTISNIP OnPromotePartyLeaderCompleteDelegate {"selectedLines": ["1", "61-64"]}
-// @@@MULTISNIP OnPartySessionUpdateDelegate {"selectedLines": ["1", "66-85"]}
+// @@@MULTISNIP OnPartySessionUpdateDelegate {"selectedLines": ["1", "72-79"]}
 public:
 	virtual void RegisterOnlineDelegates() override;
 	virtual void ClearOnlineDelegates() override;
@@ -138,7 +138,7 @@ public:
 // @@@MULTISNIP OnKickedFromParty {"selectedLines": ["1", "29"]}
 // @@@MULTISNIP OnPromotePartyLeaderComplete {"selectedLines": ["1", "31"]}
 // @@@MULTISNIP DisplayCurrentPartyLeader {"selectedLines": ["1", "32"]}
-// @@@MULTISNIP OnPartySessionUpdate {"selectedLines": ["1", "34-41"]}
+// @@@MULTISNIP OnPartySessionUpdate {"selectedLines": ["1", "37-38"]}
 // @@@MULTISNIP OnConnectLobbyComplete {"selectedLines": ["1", "43"]}
 protected:
 	void OnCreatePartyToInviteMember(FName SessionName, bool bWasSuccessful, const int32 LocalUserNum, const FUniqueNetIdPtr SenderId, const FUniqueNetIdPtr InviteeId);
@@ -198,7 +198,7 @@ protected:
 // @@@MULTISNIP OnKickPlayerFromPartyCompleteDelegate {"selectedLines": ["1", "24"]}
 // @@@MULTISNIP OnKickedFromPartyDelegate {"selectedLines": ["1", "25"]}
 // @@@MULTISNIP OnPromotePartyLeaderCompleteDelegate {"selectedLines": ["1", "27"]}
-// @@@MULTISNIP OnPartySessionUpdateDelegate {"selectedLines": ["1", "29-36"]}
+// @@@MULTISNIP OnPartySessionUpdateDelegate {"selectedLines": ["1", "32-33"]}
 // @@@MULTISNIP PartySessionTemplate {"selectedLines": ["1", "10"]}
 // @@@MULTISNIP LastPartyLeader {"selectedLines": ["1", "11"]}
 // @@@MULTISNIP PartyMemberStatus {"selectedLines": ["1", "13"]}

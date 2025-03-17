@@ -12,6 +12,8 @@
 #include "AccelByteWarsMissile.generated.h"
 
 class AAccelByteWarsGameMode;
+class AAccelByteWarsInGameGameMode;
+class AAccelByteWarsPlayerController;
 
 UCLASS()
 class ACCELBYTEWARS_API AAccelByteWarsMissile : public AActor
@@ -311,4 +313,8 @@ protected:
 	 */
 	UFUNCTION()
 		float GetSurfanceDistanceBetweenObjects(UAccelByteWarsGameplayObjectComponent* OtherObject, UAccelByteWarsGameplayObjectComponent* ThisObject);
+
+private:
+	void OnMissileHitObject(AAccelByteWarsInGameGameMode* InGameGameMode, AAccelByteWarsPlayerController* ABPlayerController);
+	void NotifyShipHitByMissile() const;
 };

@@ -6,6 +6,7 @@
 
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "OnlineSubsystemAccelByte.h"
 #include "OnlineSubsystemTypes.h"
 #include "OnlineSessionSettings.h"
 #include "OnlineSubsystemAccelByteTypes.h"
@@ -36,6 +37,8 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Tutorial Module Online Utility", meta = (WorldContext = "WorldContextObject"))
 	static bool IsAccelByteSDKInitialized(const UObject* Target);
+
+	static AccelByte::FApiClientPtr GetApiClient(const UObject* Context);
 
 	static const FUniqueNetIdAccelByteUserPtr GetAccelByteUserId(const FUniqueNetIdPtr UserId)
 	{

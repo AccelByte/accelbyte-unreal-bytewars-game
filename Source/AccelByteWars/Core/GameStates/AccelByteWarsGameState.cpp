@@ -21,6 +21,7 @@ void AAccelByteWarsGameState::GetLifetimeReplicatedProps(TArray<FLifetimePropert
 	DOREPLIFETIME(ThisClass, bIsServerTravelling);
 	DOREPLIFETIME(ThisClass, Teams);
 
+	DOREPLIFETIME(ThisClass, ServerCloseCountdown);
 	DOREPLIFETIME(ThisClass, SimulateServerCrashCountdown);
 }
 

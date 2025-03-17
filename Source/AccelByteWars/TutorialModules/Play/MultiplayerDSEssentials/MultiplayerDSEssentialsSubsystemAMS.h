@@ -7,6 +7,7 @@
 #include "CoreMinimal.h"
 #include "MultiplayerDSEssentialsSubsystemBase.h"
 #include "OnlineSessionInterfaceV2AccelByte.h"
+#include "OnlineSessionInterfaceV2AccelByte.h"
 #include "MultiplayerDSEssentialsSubsystemAMS.generated.h"
 
 UCLASS()
@@ -30,7 +31,7 @@ protected:
 // @@@MULTISNIP OnSendServerReadyComplete {"selectedLines": ["1", "9"]}
 // @@@MULTISNIP OnAMSDrainReceived {"selectedLines": ["1", "11"]}
 // @@@MULTISNIP OnV2SessionEnded {"selectedLines": ["1", "12"]}
-// @@@MULTISNIP HelperVariable {"selectedLines": ["1", "14-16"]}
+// @@@MULTISNIP Helper {"selectedLines": ["1", "14-18"]}
 private:
 	void RegisterServer(const FName SessionName);
 	void OnRegisterServerComplete(const bool bSucceeded);
@@ -43,6 +44,8 @@ private:
 
 	void OnAMSDrainReceived();
 	void OnV2SessionEnded(const FName SessionName);
+
+	TSharedPtr<FAccelByteModelsV2GameSession> GetSessionInfo(const FName SessionName) const;
 
 	bool bServerAlreadyRegister;
 	bool bUnregisterServerRunning;

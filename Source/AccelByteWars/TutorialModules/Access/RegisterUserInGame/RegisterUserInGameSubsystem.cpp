@@ -3,12 +3,12 @@
 // and restrictions contact your company contract manager.
 
 #include "RegisterUserInGameSubsystem.h"
+#include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
 #include "TutorialModuleUtilities/StartupSubsystem.h"
+
 #include "Core/Utilities/AccelByteWarsUtility.h"
-#include "Core/AccelByteRegistry.h"
 #include "Core/AccelByteWebSocketErrorTypes.h"
 #include "Api/AccelByteUserApi.h"
-#include "OnlineSubsystemUtils.h"
 
 void URegisterUserInGameSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -41,6 +41,14 @@ void URegisterUserInGameSubsystem::UpgradeAndVerifyAccount(
         return;
     }
 
+    AccelByte::FApiClientPtr ApiClient = UTutorialModuleOnlineUtility::GetApiClient(this);
+    if (!ApiClient)
+    {
+        UE_LOG_REGISTERUSERINGAME(Warning, TEXT("Failed to upgrade headless account to full account. AccelByte API Client is invalid."));
+        OnComplete.ExecuteIfBound(false, UPGRADE_ACCOUNT_UNKNOWN_ERROR.ToString(), FAccountUserData());
+        return;
+    }
+
     FUpgradeAndVerifyRequest Request;
     Request.Username = Username;
     Request.DisplayName = Username;
@@ -49,7 +57,7 @@ void URegisterUserInGameSubsystem::UpgradeAndVerifyAccount(
     Request.Password = Password;
     Request.Code = VerificationCode;
 
-    AccelByte::FRegistry::User.UpgradeAndVerify2(
+    ApiClient->User.UpgradeAndVerify2(
         Request,
         THandler<FAccountUserData>::CreateUObject(this, &ThisClass::OnUpgradeAndVerifyAccountSuccess, LocalUserNum, UserId.ToSharedRef(), OnComplete),
         FErrorHandler::CreateWeakLambda(this, [this, OnComplete](int32 ErrorCode, const FString& ErrorMessage)
@@ -74,7 +82,15 @@ void URegisterUserInGameSubsystem::SendUpgradeAccountVerificationCode(
         return;
     }
 
-    AccelByte::FRegistry::User.SendUpgradeVerificationCode(
+    AccelByte::FApiClientPtr ApiClient = UTutorialModuleOnlineUtility::GetApiClient(this);
+    if (!ApiClient)
+    {
+        UE_LOG_REGISTERUSERINGAME(Warning, TEXT("Failed to send upgrade to full account verification code to the registered e-mail. AccelByte API Client is invalid."));
+        OnComplete.ExecuteIfBound(false, UPGRADE_ACCOUNT_UNKNOWN_ERROR.ToString());
+        return;
+    }
+
+    ApiClient->User.SendUpgradeVerificationCode(
         EmailAddress,
         AccelByte::FVoidHandler::CreateWeakLambda(this, [this, EmailAddress, OnComplete]()
         {
@@ -94,8 +110,15 @@ void URegisterUserInGameSubsystem::SendUpgradeAccountVerificationCode(
 // @@@SNIPSTART RegisterUserInGameSubsystem.cpp-IsCurrentUserIsFullAccount
 bool URegisterUserInGameSubsystem::IsCurrentUserIsFullAccount()
 {
-    const bool bHasLinkedEmail = !AccelByte::FRegistry::CredentialsRef->GetUserEmailAddress().IsEmpty();
-    const bool bIsEmailVerified = AccelByte::FRegistry::CredentialsRef->GetAccountUserData().EmailVerified;
+    AccelByte::FApiClientPtr ApiClient = UTutorialModuleOnlineUtility::GetApiClient(this);
+    if (!ApiClient)
+    {
+        UE_LOG_REGISTERUSERINGAME(Warning, TEXT("Cannot get user full account status. AccelByte API Client is invalid."));
+        return false;
+    }
+
+    const bool bHasLinkedEmail = !ApiClient->CredentialsRef->GetUserEmailAddress().IsEmpty();
+    const bool bIsEmailVerified = ApiClient->CredentialsRef->GetAccountUserData().EmailVerified;
     return bHasLinkedEmail && bIsEmailVerified;
 }
 // @@@SNIPEND
@@ -119,11 +142,18 @@ void URegisterUserInGameSubsystem::OnUpgradeAndVerifyAccountSuccess(
         return;
     }
 
+    AccelByte::FApiClientPtr ApiClient = UTutorialModuleOnlineUtility::GetApiClient(this);
+    if (!ApiClient)
+    {
+        UE_LOG_REGISTERUSERINGAME(Warning, TEXT("Failed to handle on upgrade headless account success.. AccelByte API Client is invalid."));
+        return;
+    }
+
     // Query new user info to update account user cache on OSS.
     StartupSubsystem->QueryUserInfo(
         LocalUserNum,
         TPartyMemberArray{ UserId },
-        FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [this, LocalUserNum, UserId, NewFullAccount, OnComplete](
+        FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [this, ApiClient, LocalUserNum, UserId, NewFullAccount, OnComplete](
             const FOnlineError& Error,
             const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
             {
@@ -141,23 +171,12 @@ void URegisterUserInGameSubsystem::OnUpgradeAndVerifyAccountSuccess(
                 UE_LOG_REGISTERUSERINGAME(Log, TEXT("Success to upgrade headless account to full account: %s"), *NewFullAccount.DisplayName);
 
                 // Update account user cache on SDK.
-                AccelByte::FRegistry::Credentials.SetAccountUserData(NewFullAccount);
+                ApiClient->CredentialsRef->SetAccountUserData(NewFullAccount);
 
                 OnComplete.ExecuteIfBound(true, TEXT(""), NewFullAccount);
             }));
 }
 // @@@SNIPEND
-
-FOnlineUserAccelBytePtr URegisterUserInGameSubsystem::GetUserInterface() const
-{
-    const UWorld* World = GetWorld();
-    if (!ensure(World))
-    {
-        return nullptr;
-    }
-
-    return StaticCastSharedPtr<FOnlineUserAccelByte>(Online::GetUserInterface(World));
-}
 
 void URegisterUserInGameSubsystem::GetUpgradeAccountConfig()
 {

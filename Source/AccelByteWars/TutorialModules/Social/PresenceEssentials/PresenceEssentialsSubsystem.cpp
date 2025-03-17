@@ -17,7 +17,7 @@
 #include "Play/OnlineSessionUtils/AccelByteWarsOnlineSessionBase.h"
 
 // @@@SNIPSTART PresenceEssentialsSubsystem.cpp-Initialize
-// @@@MULTISNIP BindPresenceActivityDelegate {"selectedLines": ["1-2", "5-115", "134"]}
+// @@@MULTISNIP BindPresenceActivityDelegate {"selectedLines": ["1-2", "5-64", "74-87", "89-115", "134"]}
 // @@@MULTISNIP BindPlayerListChangeDelegate {"selectedLines": ["1-2", "117-126", "134"]}
 // @@@MULTISNIP BindBulkQueryPresenceDelegate {"selectedLines": ["1-2", "128-130", "132-134"]}
 // @@@MULTISNIP BindPresenceReceivedDelegate {"selectedLines": ["1-2", "128-131", "133-134"]}
@@ -158,7 +158,7 @@ void UPresenceEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collecti
 // @@@SNIPEND
 
 // @@@SNIPSTART PresenceEssentialsSubsystem.cpp-Deinitialize
-// @@@MULTISNIP UnbindPresenceActivityDelegate {"selectedLines": ["1-2", "5-75", "92"]}
+// @@@MULTISNIP UnbindPresenceActivityDelegate {"selectedLines": ["1-2", "5-44", "51-58", "60-75", "92"]}
 // @@@MULTISNIP UnbindPlayerListChangeDelegate {"selectedLines": ["1-2", "77-85", "92"]}
 // @@@MULTISNIP UnbindBulkQueryPresenceDelegate {"selectedLines": ["1-2", "87-88", "90-92"]}
 // @@@MULTISNIP UnbindPresenceReceivedDelegate {"selectedLines": ["1-2", "87-89", "91-92"]}

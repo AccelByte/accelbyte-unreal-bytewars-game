@@ -61,6 +61,26 @@ void UEntitlementsEssentialsSubsystem::Deinitialize()
 	AAccelByteWarsPlayerPawn::OnPowerUpActivatedDelegates.RemoveAll(this);
 }
 
+UInGameItemDataAsset* UEntitlementsEssentialsSubsystem::GetItemDataAssetFromItemStoreId(const FString& StoreItemId)
+{
+	FString ItemSku = TEXT("");
+	for (const UStoreItemDataObject* StoreItem: StoreOffers)
+	{
+		if (StoreItem->GetStoreItemId().Equals(StoreItemId))
+		{
+			ItemSku = StoreItem->GetSkuMap()[EItemSkuPlatform::AccelByte];
+			break;
+		}
+	}
+	if (!ItemSku.IsEmpty())
+	{
+		UInGameItemDataAsset* ItemDataAsset = UInGameItemUtility::GetItemDataAssetBySku(EItemSkuPlatform::AccelByte, ItemSku);
+		return ItemDataAsset;
+	}
+	
+	return nullptr;
+}
+
 void UEntitlementsEssentialsSubsystem::GetOrQueryUserEntitlements(
 	const APlayerController* PlayerController,
 	const FOnGetOrQueryUserEntitlementsComplete& OnComplete,

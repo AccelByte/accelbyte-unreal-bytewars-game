@@ -193,6 +193,10 @@ public:
 	 */
 	void RemoveEmptyTeam();
 	
+	// Countdown to close the server after the game ends.
+	UPROPERTY(Replicated)
+	float ServerCloseCountdown = INDEX_NONE;
+
 	// Countdown to show that the server is simulated to crash.
 	UPROPERTY(Replicated)
 	float SimulateServerCrashCountdown = INDEX_NONE;

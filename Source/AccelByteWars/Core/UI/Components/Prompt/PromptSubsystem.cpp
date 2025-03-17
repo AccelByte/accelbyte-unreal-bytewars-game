@@ -26,7 +26,10 @@ void UPromptSubsystem::Deinitialize()
 void UPromptSubsystem::ShowMessagePopUp(const FText Header, const FText Body)
 {
 	UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->GetBaseUIWidget());
-	ensure(BaseUIWidget);
+	if (!BaseUIWidget) 
+	{
+		return;
+	}
 
 	BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Prompt, BaseUIWidget->DefaultPopUpWidgetClass, [Header, Body](UAccelByteWarsActivatableWidget& Widget)
 	{
@@ -39,42 +42,61 @@ void UPromptSubsystem::ShowMessagePopUp(const FText Header, const FText Body)
 void UPromptSubsystem::ShowDialoguePopUp(const FText Header, const FText Body, const EPopUpType Type, FPopUpResultDynamicDelegate Callback)
 {
 	UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->GetBaseUIWidget());
-	ensure(BaseUIWidget);
+	if (!BaseUIWidget) 
+	{
+		return;
+	}
 
 	BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Prompt, BaseUIWidget->DefaultPopUpWidgetClass, [Header, Body, Type, Callback](UAccelByteWarsActivatableWidget& Widget)
 	{
-		UPopUpWidget* PopUp = Cast<UPopUpWidget>(&Widget);
-		PopUp->SetPopUpText(Header, Body);
-		PopUp->SetPopUpType(Type);
-		PopUp->SetDynamicCallback(Callback);
+		if (UPopUpWidget* PopUp = Cast<UPopUpWidget>(&Widget)) 
+		{
+			PopUp->SetPopUpText(Header, Body);
+			PopUp->SetPopUpType(Type);
+			PopUp->SetDynamicCallback(Callback);
+		}
 	});
 }
 
 void UPromptSubsystem::ShowDialoguePopUp(const FText Header, const FText Body, const EPopUpType Type, FPopUpResultDelegate Callback)
 {
 	UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->GetBaseUIWidget());
-	ensure(BaseUIWidget);
+	if (!BaseUIWidget) 
+	{
+		return;
+	}
 
 	BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Prompt, BaseUIWidget->DefaultPopUpWidgetClass, [Header, Body, Type, Callback](UAccelByteWarsActivatableWidget& Widget)
 	{
-		UPopUpWidget* PopUp = Cast<UPopUpWidget>(&Widget);
-		PopUp->SetPopUpText(Header, Body);
-		PopUp->SetPopUpType(Type);
-		PopUp->SetCallback(Callback);
+		if (UPopUpWidget* PopUp = Cast<UPopUpWidget>(&Widget)) 
+		{
+			PopUp->SetPopUpText(Header, Body);
+			PopUp->SetPopUpType(Type);
+			PopUp->SetCallback(Callback);
+		}
 	});
 }
 
 void UPromptSubsystem::ShowLoading(const FText LoadingMessage)
 {
+	// Abort if loading widget is already displayed.
 	if (LoadingWidget) 
 	{
 		return;
 	}
 	
 	UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->GetBaseUIWidget());
-	ensure(BaseUIWidget);
+	if (!BaseUIWidget) 
+	{
+		return;
+	}
 
 	LoadingWidget = Cast<ULoadingWidget>(BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Prompt, BaseUIWidget->DefaultLoadingWidgetClass));
+	if (!LoadingWidget) 
+	{
+		return;
+	}
+
 	LoadingWidget->OnDeactivated().AddWeakLambda(this, [this]()
 	{
 		LoadingWidget = nullptr;
@@ -84,6 +106,7 @@ void UPromptSubsystem::ShowLoading(const FText LoadingMessage)
 
 void UPromptSubsystem::HideLoading()
 {
+	// No need to hide, the loading widget is not displayed.
 	if (!LoadingWidget) 
 	{
 		return;
@@ -101,7 +124,10 @@ void UPromptSubsystem::PushNotification(UPushNotification* Notification)
 	}
 
 	UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->GetBaseUIWidget());
-	ensure(BaseUIWidget);
+	if (!BaseUIWidget) 
+	{
+		return;
+	}
 
 	if (UPushNotificationWidget* NotificationWidget = BaseUIWidget->GetPushNotificationWidget())
 	{

@@ -7,14 +7,15 @@
 
 #include "OnlineSubsystemAccelByteSessionSettings.h"
 #include "SessionEssentialsLog.h"
+#include "Online/OnlineSessionNames.h"
 
 // @@@SNIPSTART SessionEssentialsOnlineSession.cpp-RegisterOnlineDelegates
-// @@@MULTISNIP BindCreateSessionDelegate {"selectedLines": ["1-2", "5-6", "27"]}
-// @@@MULTISNIP BindJoinSessionDelegate {"selectedLines": ["1-2", "7-8", "27"]}
-// @@@MULTISNIP BindSessionInvitationDelegate {"selectedLines": ["1-2", "9-10", "16-17", "27"]}
-// @@@MULTISNIP BindLeaveSessionDelegate {"selectedLines": ["1-2", "11-12", "27"]}
-// @@@MULTISNIP BindUpdateSessionDelegate {"selectedLines": ["1-2", "13-14", "27"]}
-// @@@MULTISNIP BindSessionParticipantDelegate {"selectedLines": ["1-2", "18-27"]}
+// @@@MULTISNIP BindCreateSessionDelegate {"selectedLines": ["1-2", "5-6", "27"], "highlightedLines": "{4-5}"}
+// @@@MULTISNIP BindJoinSessionDelegate {"selectedLines": ["1-2", "7-8", "27"], "highlightedLines": "{4-5}"}
+// @@@MULTISNIP BindSessionInvitationDelegate {"selectedLines": ["1-2", "9-10", "16-17", "27"], "highlightedLines": "{4-5,7-8}"}
+// @@@MULTISNIP BindLeaveSessionDelegate {"selectedLines": ["1-2", "11-12", "27"], "highlightedLines": "{4-5}"}
+// @@@MULTISNIP BindUpdateSessionDelegate {"selectedLines": ["1-2", "13-14", "27"], "highlightedLines": "{4-5}"}
+// @@@MULTISNIP BindSessionParticipantDelegate {"selectedLines": ["1-2", "22-25", "27"], "highlightedLines": "{4-7}"}
 void USessionEssentialsOnlineSession::RegisterOnlineDelegates()
 {
 	Super::RegisterOnlineDelegates();
@@ -45,12 +46,12 @@ void USessionEssentialsOnlineSession::RegisterOnlineDelegates()
 // @@@SNIPEND
 
 // @@@SNIPSTART SessionEssentialsOnlineSession.cpp-ClearOnlineDelegates
-// @@@MULTISNIP UnbindCreateSessionDelegate {"selectedLines": ["1-2", "5", "19"]}
-// @@@MULTISNIP UnbindJoinSessionDelegate {"selectedLines": ["1-2", "6", "19"]}
-// @@@MULTISNIP UnbindSessionInvitationDelegate {"selectedLines": ["1-2", "7", "11", "19"]}
-// @@@MULTISNIP UnbindLeaveSessionDelegate {"selectedLines": ["1-2", "8", "19"]}
-// @@@MULTISNIP UnbindUpdateSessionDelegate {"selectedLines": ["1-2", "9", "19"]}
-// @@@MULTISNIP UnbindSessionParticipantDelegate {"selectedLines": ["1-2", "13-19"]}
+// @@@MULTISNIP UnbindCreateSessionDelegate {"selectedLines": ["1-2", "5", "19"], "highlightedLines": "{4}"}
+// @@@MULTISNIP UnbindJoinSessionDelegate {"selectedLines": ["1-2", "6", "19"], "highlightedLines": "{4}"}
+// @@@MULTISNIP UnbindSessionInvitationDelegate {"selectedLines": ["1-2", "7", "11", "19"], "highlightedLines": "{4,6}"}
+// @@@MULTISNIP UnbindLeaveSessionDelegate {"selectedLines": ["1-2", "8", "19"], "highlightedLines": "{4}"}
+// @@@MULTISNIP UnbindUpdateSessionDelegate {"selectedLines": ["1-2", "9", "19"], "highlightedLines": "{4}"}
+// @@@MULTISNIP UnbindSessionParticipantDelegate {"selectedLines": ["1-2", "16-17", "19"], "highlightedLines": "{4-5}"}
 void USessionEssentialsOnlineSession::ClearOnlineDelegates()
 {
 	Super::ClearOnlineDelegates();

@@ -129,9 +129,9 @@ void UPartyOnlineSession_Starter::InitializePartyGeneratedWidgets()
     if (GetOnPartyMembersChangeDelegates())
     {
         GetOnPartyMembersChangeDelegates()->AddWeakLambda(this, [this](FName SessionName, const FUniqueNetId& Member, bool bJoined)
-            {
-                UpdatePartyGeneratedWidgets();
-            });
+        {
+            UpdatePartyGeneratedWidgets();
+        });
     }
 #else
     if (GetOnPartyMemberJoinedDelegates())

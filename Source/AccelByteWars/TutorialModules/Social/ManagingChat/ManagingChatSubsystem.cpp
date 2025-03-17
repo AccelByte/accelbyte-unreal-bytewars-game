@@ -8,6 +8,7 @@
 #include "Core/AccelByteApiClient.h"
 #include "Api/AccelByteChatApi.h"
 
+#include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
@@ -93,13 +94,7 @@ void UManagingChatSubsystem::UpdateGeneratedWidgets()
 
 void UManagingChatSubsystem::MuteChat(FUniqueNetIdPtr TargetUserId)
 {
-    if (!GetIdentityInterface()) 
-    {
-        UE_LOG_MANAGINGCHAT(Warning, TEXT("Cannot mute chat. Identity Interface is not valid."));
-        return;
-    }
-
-    AccelByte::FApiClientPtr ApiClient = GetIdentityInterface()->GetApiClient(0);
+    AccelByte::FApiClientPtr ApiClient = UTutorialModuleOnlineUtility::GetApiClient(this);
     if (!ApiClient)
     {
         UE_LOG_MANAGINGCHAT(Warning, TEXT("Cannot mute chat. Api Client is not valid."));
@@ -141,13 +136,7 @@ void UManagingChatSubsystem::MuteChat(FUniqueNetIdPtr TargetUserId)
 
 void UManagingChatSubsystem::UnmuteChat(FUniqueNetIdPtr TargetUserId)
 {
-    if (!GetIdentityInterface())
-    {
-        UE_LOG_MANAGINGCHAT(Warning, TEXT("Cannot unmute chat. Identity Interface is not valid."));
-        return;
-    }
-
-    AccelByte::FApiClientPtr ApiClient = GetIdentityInterface()->GetApiClient(0);
+    AccelByte::FApiClientPtr ApiClient = UTutorialModuleOnlineUtility::GetApiClient(this);
     if (!ApiClient)
     {
         UE_LOG_MANAGINGCHAT(Warning, TEXT("Cannot unmute chat. Api Client is not valid."));
@@ -212,18 +201,6 @@ FUniqueNetIdPtr UManagingChatSubsystem::GetCurrentDisplayedFriendId()
     }
 
     return FriendUserId.GetUniqueNetId();
-}
-
-FOnlineIdentityAccelBytePtr UManagingChatSubsystem::GetIdentityInterface()
-{
-    const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
-    if (!ensure(Subsystem))
-    {
-        UE_LOG_MANAGINGCHAT(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and the DefaultPlatformService under [OnlineSubsystem] in the Engine.ini file is set to AccelByte."));
-        return nullptr;
-    }
-
-    return StaticCastSharedPtr<FOnlineIdentityAccelByte>(Subsystem->GetIdentityInterface());
 }
 
 FOnlineChatAccelBytePtr UManagingChatSubsystem::GetChatInterface()

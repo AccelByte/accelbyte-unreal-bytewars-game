@@ -13,7 +13,7 @@
 #include "Play/SessionEssentials/SessionEssentialsModel.h"
 
 // @@@SNIPSTART CreateSessionWidget.cpp-NativeOnActivated
-// @@@MULTISNIP ReadyUI {"selectedLines": ["1-10", "31"]}
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-10", "31"], "highlightedLines": "{7-9}"}
 void UCreateSessionWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
@@ -48,14 +48,14 @@ void UCreateSessionWidget::NativeOnActivated()
 // @@@SNIPEND
 
 // @@@SNIPSTART CreateSessionWidget.cpp-NativeOnDeactivated
-// @@@MULTISNIP ReadyUI {"selectedLines": ["1-10", "17"]}
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-10", "17"], "highlightedLines": "{7-9}"}
 void UCreateSessionWidget::NativeOnDeactivated()
 {
 	Super::NativeOnDeactivated();
 
 #pragma region "UI related"
-	Btn_CreateSession->OnClicked().RemoveAll(this);
 	Btn_Back->OnClicked().RemoveAll(this);
+	Btn_CreateSession->OnClicked().RemoveAll(this);
 	Btn_Leave->OnClicked().RemoveAll(this);
 	Ws_Processing->OnRetryClicked.RemoveAll(this);
 #pragma endregion 

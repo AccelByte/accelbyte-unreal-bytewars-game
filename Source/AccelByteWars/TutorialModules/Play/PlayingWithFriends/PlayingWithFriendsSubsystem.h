@@ -50,7 +50,7 @@ public:
 // @@@MULTISNIP OnJoinSessionComplete {"selectedLines": ["1", "10"]}
 // @@@MULTISNIP OnGameSessionInviteReceived {"selectedLines": ["1", "12-15"]}
 // @@@MULTISNIP ShowInviteReceivedPopup {"selectedLines": ["1", "16-18"]}
-// @@@MULTISNIP OnGameSessionParticipantsChange {"selectedLines": ["1", "20-25"]}
+// @@@MULTISNIP OnGameSessionParticipantsChange {"selectedLines": ["1", "23-24"]}
 // @@@MULTISNIP HelperFunction {"selectedLines": ["1", "28-41"]}
 // @@@MULTISNIP HelperVariable {"selectedLines": ["1", "44-48"]}
 private:

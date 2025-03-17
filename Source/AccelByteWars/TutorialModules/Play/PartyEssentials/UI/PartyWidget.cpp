@@ -29,6 +29,7 @@ void UPartyWidget::NativeConstruct()
 }
 
 // @@@SNIPSTART PartyWidget.cpp-NativeOnActivated
+// @@@MULTISNIP UE5_2 {"selectedLines": ["1-17", "24-31", "33-40"]}
 void UPartyWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
@@ -72,6 +73,7 @@ void UPartyWidget::NativeOnActivated()
 // @@@SNIPEND
 
 // @@@SNIPSTART PartyWidget.cpp-NativeOnDeactivated
+// @@@MULTISNIP UE5_2 {"selectedLines": ["1-8", "12-13", "15-19"]}
 void UPartyWidget::NativeOnDeactivated()
 {
 	Btn_Leave->OnClicked().Clear();

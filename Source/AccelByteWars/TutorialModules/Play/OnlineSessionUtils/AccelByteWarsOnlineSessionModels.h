@@ -90,10 +90,15 @@ DECLARE_MULTICAST_DELEGATE_TwoParams(FOnMatchSessionFindSessionsComplete, const 
 #pragma endregion
 
 #pragma region "Lobby"
+// @@@SNIPSTART AccelByteWarsOnlineSessionModels.h-Lobby
+// @@@MULTISNIP LobbyFailedMessage {"selectedLines": ["2-3", "5"]}
+// @@@MULTISNIP LobbyReconnectingMessage {"selectedLines": ["5"]}
 #define LOBBY_CONNECT_ERROR_CODE TEXT("login-failed-lobby-connect-error")
 #define LOBBY_FAILED_CONNECT_MESSAGE NSLOCTEXT(BYTEWARS_LOCTEXT_NAMESPACE, "Lobby Connection Failed", "Failed to connect AGS Lobby. Try to Reconnect")
 #define LOBBY_FAILED_RECONNECT_MESSAGE NSLOCTEXT(BYTEWARS_LOCTEXT_NAMESPACE, "Lobby Reconnect Failed", "Failed to reconnect AGS Lobby. Try to Reconnect")
 #define LOBBY_SUCCESS_RECONNECT_MESSAGE NSLOCTEXT(BYTEWARS_LOCTEXT_NAMESPACE, "Lobby Success Reconnect", "Success reconnect to AGS.")
 #define LOBBY_RECONNECTING_MESSAGE NSLOCTEXT(BYTEWARS_LOCTEXT_NAMESPACE, "Lobby Reconnecting", "Reconnecting to AGS.")
+
 #define LOBBY_CONNECTION_CLOSED_AUTO_CONNET_MESSAGE NSLOCTEXT(BYTEWARS_LOCTEXT_NAMESPACE, "Lobby Connection Closed Auto Connect", "Disconnected from AGS. Reconnecting.")
+// @@@SNIPEND
 #pragma endregion

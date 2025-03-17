@@ -11,6 +11,8 @@
 #include "CommonInputSubsystem.h"
 #include "Components/Image.h"
 #include "Components/CheckBox.h"
+#include "Components/SizeBox.h"
+#include "Components/Spacer.h"
 
 void UOptionListEntryBase::NativeOnEntryReleased()
 {
@@ -141,6 +143,17 @@ void UOptionListEntry_Toggler::NativeOnInitialized()
 	Cb_OptionValue->OnCheckStateChanged.AddDynamic(this, &UOptionListEntry_Toggler::OnToggleValueChanged);
 }
 
+void UOptionListEntry_Toggler::NativePreConstruct()
+{
+	Super::NativePreConstruct();
+
+	// Initialize widget
+	SetDisplayName(DisplayName);
+	SetCheckBoxSize(CheckBoxSize);
+	SetTextStyle(TextStyle);
+	SetTextToCheckBoxSeparation(TextToCheckBoxSeparation);
+}
+
 void UOptionListEntry_Toggler::InitOption(const FText& InName, const bool InValue)
 {
 	SetDisplayName(InName);
@@ -156,6 +169,22 @@ void UOptionListEntry_Toggler::SetDisplayName(const FText& InName)
 void UOptionListEntry_Toggler::SetToggleValue(const bool InValue)
 {
 	Cb_OptionValue->SetCheckedState(InValue ? ECheckBoxState::Checked : ECheckBoxState::Unchecked);
+}
+
+void UOptionListEntry_Toggler::SetCheckBoxSize(const float InSize)
+{
+	Sb_OptionValueOuter->SetHeightOverride(InSize);
+	Sb_OptionValueOuter->SetWidthOverride(InSize);
+}
+
+void UOptionListEntry_Toggler::SetTextStyle(const TSubclassOf<UCommonTextStyle> InTextStyle)
+{
+	Txt_OptionName->SetStyle(InTextStyle);
+}
+
+void UOptionListEntry_Toggler::SetTextToCheckBoxSeparation(const float InSize)
+{
+	S_Separation->SetSize(FVector2D(InSize, 1.0f));
 }
 
 bool UOptionListEntry_Toggler::GetToggleValue()

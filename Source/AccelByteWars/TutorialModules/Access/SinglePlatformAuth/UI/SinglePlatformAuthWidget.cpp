@@ -20,24 +20,32 @@ void USinglePlatformAuthWidget::NativeConstruct()
 	ParentWidget = UAccelByteWarsBaseUI::GetActiveWidgetOfStack(EBaseUIStackType::Menu, this);
 	ensure(ParentWidget);
 
+	AuthSubsystem = GetGameInstance()->GetSubsystem<UAuthEssentialsSubsystem>();
 	LoginWidget = Cast<ULoginWidget>(ParentWidget);
-	ensure(LoginWidget);
+	if (!LoginWidget || !AuthSubsystem)
+	{
+		/*
+		 * This could happen if AuthEssentials is in starter mode.
+		 * There is already a checker on NativeOnActivated, simply return here.
+		 */
+		return;
+	}
 }
 // @@@SNIPEND
 
 // @@@SNIPSTART SinglePlatformAuthWidget.cpp-NativeOnActivated
-// @@@MULTISNIP CheckAuthModule {"selectedLines": ["1-10", "29"]}
-// @@@MULTISNIP ReadyUI {"selectedLines": ["1-17", "27", "29"]}
-// @@@MULTISNIP AutoLogin {"selectedLines": ["1-23", "27", "29"]}
-// @@@MULTISNIP ShowDeviceIdLogin {"selectedLines": ["1-23", "27-29"]}
-// @@@MULTISNIP PutItAllTogether {"highlightedLines": "{19-28}"}
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "12-17", "27", "29"], "highlightedLines": "{11}"}
+// @@@MULTISNIP AutoLogin {"selectedLines": ["1-2", "12-23", "27", "29"], "highlightedLines": "{11-15}"}
+// @@@MULTISNIP ShowDeviceIdLogin {"selectedLines": ["1-2", "27-29"], "highlightedLines": "{5}"}
+// @@@MULTISNIP PutItAllTogether {"selectedLines": ["1-2", "19-29"], "highlightedLines": "{4-13}"}
+// @@@MULTISNIP AdaptiveLoginButton {"selectedLines": ["1-2", "19-26", "29"], "highlightedLines": "{10-11}"}
 void USinglePlatformAuthWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
 	if (AuthEssentialsModule->IsStarterModeActive())
 	{
-		UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("AuthEssentials is in starter mode and SinglePlatformAuth is dependent upon it. Please also enable the starter mode for the SinglePlatformAuth module."))
+		UE_LOG_AUTH_ESSENTIALS(Warning, TEXT("AuthEssentials is in starter mode and SinglePlatformAuth is dependent upon it. Please also disable the starter mode for the SinglePlatformAuth module."))
 		Btn_LoginWithSinglePlatformAuth->SetVisibility(ESlateVisibility::Collapsed);
 		return;
 	}
@@ -70,14 +78,11 @@ void USinglePlatformAuthWidget::NativeOnDeactivated()
 }
 
 // @@@SNIPSTART SinglePlatformAuthWidget.cpp-OnLoginWithSinglePlatformAuthButtonClicked
-// @@@MULTISNIP EmptyDefinition {"selectedLines": ["1-2", "14"]}
-// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "6-8", "14"]}
-// @@@MULTISNIP PutItAllTogether {"highlightedLines": "{3-4,12-13}"}
+// @@@MULTISNIP EmptyDefinition {"selectedLines": ["1-2", "11"]}
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-5", "11"]}
+// @@@MULTISNIP PutItAllTogether {"highlightedLines": "{9-10}"}
 void USinglePlatformAuthWidget::OnLoginWithSinglePlatformAuthButtonClicked()
 {
-	UAuthEssentialsSubsystem* AuthSubsystem = GetGameInstance()->GetSubsystem<UAuthEssentialsSubsystem>();
-	ensure(AuthSubsystem);
-
 	// Set the login widget to logging in state and bind the retry login delegate.
 	LoginWidget->SetLoginState(ELoginState::LoggingIn);
 	LoginWidget->OnRetryLoginDelegate.AddUObject(this, &ThisClass::OnLoginWithSinglePlatformAuthButtonClicked);
@@ -85,7 +90,7 @@ void USinglePlatformAuthWidget::OnLoginWithSinglePlatformAuthButtonClicked()
 	// Login with single platform auth is considered as login with default native platform.
 	// Thus, it doesn't need username, token, nor the login method.
 	AuthSubsystem->SetAuthCredentials(EAccelByteLoginType::None, TEXT(""), TEXT(""));
-	AuthSubsystem->Login(GetOwningPlayer(), FAuthOnLoginCompleteDelegate::CreateUObject(LoginWidget, &ULoginWidget::OnLoginComplete));
+	AuthSubsystem->Login(GetOwningPlayer(), FAuthOnLoginCompleteDelegate::CreateUObject(LoginWidget, &std::remove_pointer_t<decltype(LoginWidget)>::OnLoginComplete));
 }
 // @@@SNIPEND
 

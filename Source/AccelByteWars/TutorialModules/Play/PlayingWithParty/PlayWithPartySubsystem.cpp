@@ -18,7 +18,7 @@
 // @@@SNIPSTART PlayWithPartySubsystem.cpp-Initialize
 // @@@MULTISNIP BindPartyMatchmakingDelegate {"selectedLines": ["1-2", "5-11", "30", "50"]}
 // @@@MULTISNIP BindPartyGameSessionDelegate {"selectedLines": ["1-2", "5-6", "13-18", "30", "50"]}
-// @@@MULTISNIP BindPartyGameSessionFailureDelegate {"selectedLines": ["1-2", "5-6", "20-36", "50"]}
+// @@@MULTISNIP BindPartyGameSessionFailureDelegate {"selectedLines": ["1-2", "5-6", "20-24", "28", "30-36", "50"]}
 // @@@MULTISNIP BindPartyGameSessionValidationDelegate {"selectedLines": ["1-2", "38-50"]}
 void UPlayWithPartySubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -75,7 +75,7 @@ void UPlayWithPartySubsystem::Initialize(FSubsystemCollectionBase& Collection)
 // @@@SNIPSTART PlayWithPartySubsystem.cpp-Deinitialize
 // @@@MULTISNIP UnbindPartyMatchmakingDelegate {"selectedLines": ["1-2", "5-11", "30", "56"]}
 // @@@MULTISNIP UnbindPartyGameSessionDelegate {"selectedLines": ["1-2", "5-6", "13-18", "30", "56"]}
-// @@@MULTISNIP UnbindPartyGameSessionFailureDelegate {"selectedLines": ["1-2", "5-6", "20-36", "56"]}
+// @@@MULTISNIP UnbindPartyGameSessionFailureDelegate {"selectedLines": ["1-2", "5-6", "20-24", "28", "30-36", "56"]}
 // @@@MULTISNIP UnbindPartyGameSessionValidationDelegate {"selectedLines": ["1-2", "38-56"]}
 void UPlayWithPartySubsystem::Deinitialize()
 {
@@ -931,10 +931,10 @@ void UPlayWithPartySubsystem::OnPartyGameSessionServerError(FName SessionName, c
 }
 // @@@SNIPEND
 
-// @@@SNIPSTART PlayWithPartySubsystem.cpp-OnPartyGameSessionParticipantRemoved
 #if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
 void UPlayWithPartySubsystem::OnPartyGameSessionParticipantRemoved(FName SessionName, const FUniqueNetId& UserId)
 #else
+// @@@SNIPSTART PlayWithPartySubsystem.cpp-OnPartyGameSessionParticipantLeft
 void UPlayWithPartySubsystem::OnPartyGameSessionParticipantLeft(FName SessionName, const FUniqueNetId& UserId, EOnSessionParticipantLeftReason Reason)
 #endif
 {

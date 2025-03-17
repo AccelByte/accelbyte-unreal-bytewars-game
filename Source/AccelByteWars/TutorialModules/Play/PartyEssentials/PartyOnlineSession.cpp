@@ -23,7 +23,7 @@
 // @@@MULTISNIP BindPartyInviteRejectedDelegate {"selectedLines": ["1-2", "7-8", "14", "27", "33"]}
 // @@@MULTISNIP BindPartyInviteReceivedDelegate {"selectedLines": ["1-2", "7-8", "15", "27", "33"]}
 // @@@MULTISNIP BindKickedFromPartyDelegate {"selectedLines": ["1-2", "7-8", "17", "27", "33"]}
-// @@@MULTISNIP BindPartySessionUpdateDelegate {"selectedLines": ["1-2", "7-8", "19-27", "33"]}
+// @@@MULTISNIP BindPartySessionUpdateDelegate {"selectedLines": ["1-2", "7-8", "22-23", "25-27", "33"]}
 // @@@MULTISNIP BindRestorePartyDelegate {"selectedLines": ["1-2", "29-33"]}
 void UPartyOnlineSession::RegisterOnlineDelegates()
 {
@@ -69,7 +69,7 @@ void UPartyOnlineSession::RegisterOnlineDelegates()
 // @@@MULTISNIP UnbindPartyInviteRejectedDelegate {"selectedLines": ["1-2", "7-8", "14", "27", "33"]}
 // @@@MULTISNIP UnbindPartyInviteReceivedDelegate {"selectedLines": ["1-2", "7-8", "15", "27", "33"]}
 // @@@MULTISNIP UnbindKickedFromPartyDelegate {"selectedLines": ["1-2", "7-8", "17", "27", "33"]}
-// @@@MULTISNIP UnbindPartySessionUpdateDelegate {"selectedLines": ["1-2", "7-8", "19-27", "33"]}
+// @@@MULTISNIP UnbindPartySessionUpdateDelegate {"selectedLines": ["1-2", "7-8", "22-23", "25-27", "33"]}
 // @@@MULTISNIP UnbindRestorePartyDelegate {"selectedLines": ["1-2", "29-33"]}
 void UPartyOnlineSession::ClearOnlineDelegates()
 {
@@ -242,9 +242,9 @@ void UPartyOnlineSession::InitializePartyGeneratedWidgets()
 	if (GetOnPartyMembersChangeDelegates())
 	{
 		GetOnPartyMembersChangeDelegates()->AddWeakLambda(this, [this](FName SessionName, const FUniqueNetId& Member, bool bJoined)
-			{
-				UpdatePartyGeneratedWidgets();
-			});
+		{
+			UpdatePartyGeneratedWidgets();
+		});
 	}
 #else
 	if (GetOnPartyMemberJoinedDelegates())

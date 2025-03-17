@@ -6,7 +6,6 @@
 
 #include "CoreMinimal.h"
 #include "OnlineChatInterfaceAccelByte.h"
-#include "OnlineIdentityInterfaceAccelByte.h"
 #include "ManagingChatLog.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "ManagingChatSubsystem.generated.h"
@@ -33,7 +32,6 @@ protected:
 	FTutorialModuleGeneratedWidget* MuteChatButtonMetadata;
 	FTutorialModuleGeneratedWidget* UnmuteChatButtonMetadata;
 
-	FOnlineIdentityAccelBytePtr GetIdentityInterface();
 	FOnlineChatAccelBytePtr GetChatInterface();
 
 	UPromptSubsystem* GetPromptSubystem();

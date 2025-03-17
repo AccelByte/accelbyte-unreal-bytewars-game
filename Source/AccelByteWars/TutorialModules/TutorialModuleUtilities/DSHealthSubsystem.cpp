@@ -4,6 +4,7 @@
 
 #include "DSHealthSubsystem.h"
 #include "TutorialModuleOnlineUtility.h"
+#include "AccelByteUe4SdkModule.h"
 #include "OnlineSubsystemUtils.h"
 
 DEFINE_LOG_CATEGORY(LogDSHealth);
@@ -36,7 +37,7 @@ void UDSHealthSubsystem::ShowDSHealthLog()
 
     EOnlineSessionState::Type Session = ABSessionInt->GetSessionState(NAME_GameSession);
 
-    UE_LOG_DSHEALTH(VeryVerbose, TEXT("DS Health | DSID : %s | Unreal Session State : %s | Server Status : %s |"), *AccelByte::FRegistry::ServerSettings.DSId, EOnlineSessionState::ToString(Session), *DSInformation.Server.Status);
+    UE_LOG_DSHEALTH(VeryVerbose, TEXT("DS Health | DSID : %s | Unreal Session State : %s | Server Status : %s |"), *IAccelByteUe4SdkModuleInterface::Get().GetServerSettings().DSId, EOnlineSessionState::ToString(Session), *DSInformation.Server.Status);
 }
 
 void UDSHealthSubsystem::StartShowDSHealthLogTimer()

@@ -5,11 +5,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "OnlineErrorAccelByte.h"
 #include "OnlineSubsystemAccelByte.h"
 #include "OnlineSubsystemUtils.h"
 #include "StoreItemPurchaseModel.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "Core/UI/MainMenu/Store/StoreItemModel.h"
+#include "Monetization/EntitlementsEssentials/EntitlementsEssentialsModel.h"
 
 #include "StoreItemPurchaseSubsystem.generated.h"
 
@@ -29,6 +31,8 @@ public:
 		const int32 Quantity = 1) const;
 	FOnOrderComplete OnCheckoutCompleteDelegates;
 
+	static inline FOnItemPurchased OnItemPurchasedDelegates;
+
 private:
 	FOnlinePurchaseAccelBytePtr PurchaseInterface;
 
@@ -36,6 +40,8 @@ private:
 		bool bWasSuccessful,
 		const FAccelByteModelsOrderInfo& OrderInfo,
 		const FOnlineErrorAccelByte& OnlineError) const;
+
+	void NotifyItemPurchased(const FAccelByteModelsOrderInfo& OrderInfo) const;
 
 #pragma region "Utilities"
 	FUniqueNetIdPtr GetLocalPlayerUniqueNetId(const APlayerController* PlayerController) const;

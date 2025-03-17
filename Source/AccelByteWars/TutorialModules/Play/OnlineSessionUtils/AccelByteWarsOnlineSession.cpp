@@ -19,7 +19,9 @@
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "Core/UI/Components/AccelByteWarsButtonBase.h"
+#include "Online/OnlineSessionNames.h"
 #include "OnlineSettings/RegionPreferencesEssentials/RegionPreferencesSubsystem.h"
+#include "OnlineSettings/RegionPreferencesEssentials/RegionPreferencesSubsystem_Starter.h"
 
 #include "Social/FriendsEssentials/UI/FriendDetailsWidget.h"
 #include "TutorialModuleUtilities/StartupSubsystem.h"
@@ -829,7 +831,7 @@ bool UAccelByteWarsOnlineSession::HandleDisconnectInternal(UWorld* World, UNetDr
 
 #pragma region "Matchmaking Session Essentials"
 // @@@SNIPSTART AccelByteWarsOnlineSession.cpp-StartMatchmaking
-// @@@MULTISNIP SetClientVersionAttribute {"selectedLines": ["1-6", "71-81", "130"]}
+// @@@MULTISNIP SetClientVersionAttribute {"selectedLines": ["1-6", "71-81", "145"]}
 void UAccelByteWarsOnlineSession::StartMatchmaking(
 	const APlayerController* PC,
 	const FName& SessionName,
@@ -922,28 +924,44 @@ void UAccelByteWarsOnlineSession::StartMatchmaking(
 		MatchmakingSearchHandle->QuerySettings.Set(SETTING_GAMESESSION_SERVERNAME, ServerName, EOnlineComparisonOp::Equals);
 	}
 
+#pragma region "Region Preferences"
 	// Include region preferences into matchmaking setting.
 	if (const UTutorialModuleDataAsset* ModuleDataAsset = UTutorialModuleUtility::GetTutorialModuleDataAsset(
 		FPrimaryAssetId{ "TutorialModule:REGIONPREFERENCES" },
 		this,
 		true))
 	{
-		if (!ModuleDataAsset->IsStarterModeActive())
-		{
-			UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetGameInstance());
-			ensure(GameInstance);
+		const UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetGameInstance());
+		ensure(GameInstance);
 
+		// Get enabled regions
+		TArray<FString> EnabledRegions = {};
+		if (ModuleDataAsset->IsStarterModeActive())
+		{
+			// Starter mode is active, use the starter subsystem
+			URegionPreferencesSubsystem_Starter* RegionPreferencesSubsystem = GameInstance->GetSubsystem<URegionPreferencesSubsystem_Starter>();
+			if(RegionPreferencesSubsystem != nullptr)
+			{
+				EnabledRegions = RegionPreferencesSubsystem->GetEnabledRegion();
+			}
+		}
+		else
+		{
+			// Starter mode is not active, use the non starter subsystem.
 			URegionPreferencesSubsystem* RegionPreferencesSubsystem = GameInstance->GetSubsystem<URegionPreferencesSubsystem>();
 			if(RegionPreferencesSubsystem != nullptr)
 			{
-				TArray<FString> EnabledRegion = RegionPreferencesSubsystem->GetEnabledRegion();
-				if(!EnabledRegion.IsEmpty())
-				{
-					FOnlineSearchSettingsAccelByte::Set(MatchmakingSearchHandle->QuerySettings, SETTING_GAMESESSION_REQUESTEDREGIONS, RegionPreferencesSubsystem->GetEnabledRegion(), EOnlineComparisonOp::In);
-				}
+				EnabledRegions = RegionPreferencesSubsystem->GetEnabledRegion();
 			}
 		}
+
+		// Set enabled regions
+		if(!EnabledRegions.IsEmpty())
+		{
+			FOnlineSearchSettingsAccelByte::Set(MatchmakingSearchHandle->QuerySettings, SETTING_GAMESESSION_REQUESTEDREGIONS, EnabledRegions, EOnlineComparisonOp::In);
+		}
 	}
+#pragma endregion 
 	
 	if (!GetSessionInt()->StartMatchmaking(
 		USER_ID_TO_MATCHMAKING_USER_ARRAY(PlayerNetId.ToSharedRef()),
@@ -967,7 +985,7 @@ void UAccelByteWarsOnlineSession::CancelMatchmaking(APlayerController* PC, const
 	UE_LOG_ONLINESESSION(Verbose, TEXT("Called"))
 
 	// Abort if the session interface is invalid.
-	if (!ensure(GetSessionInt()))
+	if (!ensure(GetABSessionInt()))
 	{
 		UE_LOG_ONLINESESSION(Warning, TEXT("Session Interface is not valid."));
 		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
@@ -977,9 +995,10 @@ void UAccelByteWarsOnlineSession::CancelMatchmaking(APlayerController* PC, const
 		return;
 	}
 
-	if (!ensure(GetABSessionInt()->GetCurrentMatchmakingSearchHandle().IsValid() &&
+	if (!(GetABSessionInt()->GetCurrentMatchmakingSearchHandle().IsValid() &&
 		GetABSessionInt()->GetCurrentMatchmakingSearchHandle()->GetSearchingPlayerId().IsValid()))
 	{
+		// This can happen if the cancel was called just as match was found. 
 		UE_LOG_ONLINESESSION(Warning, TEXT("Searching player ID is not valid."));
 		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
@@ -1130,6 +1149,7 @@ void UAccelByteWarsOnlineSession::CreateMatchSession(
 		MatchTemplateName = UTutorialModuleOnlineUtility::GetMatchSessionTemplateP2POverride();
 	}
 
+#pragma region "Region Preferences"
 	// include region preferences into session setting
 	if(NetworkType == EGameModeNetworkType::DS)
 	{
@@ -1138,23 +1158,38 @@ void UAccelByteWarsOnlineSession::CreateMatchSession(
 			this,
 			true))
 		{
-			if (!ModuleDataAsset->IsStarterModeActive())
+			const UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetGameInstance());
+			ensure(GameInstance);
+
+			// Get enabled regions
+			TArray<FString> EnabledRegions = {};
+
+			if (ModuleDataAsset->IsStarterModeActive())
 			{
-				UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetGameInstance());
-				ensure(GameInstance);
-	
+				// Starter mode is active, use the starter subsystem
+				URegionPreferencesSubsystem_Starter* RegionPreferencesSubsystem = GameInstance->GetSubsystem<URegionPreferencesSubsystem_Starter>();
+				if(RegionPreferencesSubsystem != nullptr)
+				{
+					EnabledRegions = RegionPreferencesSubsystem->GetEnabledRegion();
+				}
+			}
+			else
+			{
+				// Starter mode is not active, use the non starter subsystem.
 				URegionPreferencesSubsystem* RegionPreferencesSubsystem = GameInstance->GetSubsystem<URegionPreferencesSubsystem>();
 				if(RegionPreferencesSubsystem != nullptr)
 				{
-					TArray<FString> EnabledRegion = RegionPreferencesSubsystem->GetEnabledRegion();
-					if(!EnabledRegion.IsEmpty())
-					{
-						FOnlineSessionSettingsAccelByte::Set(SessionSettings, SETTING_GAMESESSION_REQUESTEDREGIONS, RegionPreferencesSubsystem->GetEnabledRegion());
-					}
+					EnabledRegions = RegionPreferencesSubsystem->GetEnabledRegion();
 				}
+			}
+
+			if(!EnabledRegions.IsEmpty())
+			{
+				FOnlineSessionSettingsAccelByte::Set(SessionSettings, SETTING_GAMESESSION_REQUESTEDREGIONS, EnabledRegions);
 			}
 		}
 	}
+#pragma endregion 
 	
 	CreateSession(
 		LocalUserNum,
@@ -1225,17 +1260,28 @@ void UAccelByteWarsOnlineSession::OnFindSessionsComplete(bool bSucceeded)
 				FUniqueNetIdRepl(Element.Session.OwningUserId));
 		});
 
+#pragma region "Region Preferences"
 		// remove session that not in region preferences
 		if (const UTutorialModuleDataAsset* ModuleDataAsset = UTutorialModuleUtility::GetTutorialModuleDataAsset(
 			FPrimaryAssetId{ "TutorialModule:REGIONPREFERENCES" },
 			this,
 			true))
 		{
-			if (!ModuleDataAsset->IsStarterModeActive())
-			{				
-				UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetGameInstance());
-				ensure(GameInstance);
-	
+			const UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetGameInstance());
+			ensure(GameInstance);
+
+			if (ModuleDataAsset->IsStarterModeActive())
+			{
+				// Starter is enabled, use the starter subsystem.
+				URegionPreferencesSubsystem_Starter* RegionPreferencesSubsystem = GameInstance->GetSubsystem<URegionPreferencesSubsystem_Starter>();
+				if(RegionPreferencesSubsystem != nullptr)
+				{
+					RegionPreferencesSubsystem->FilterSessionSearch(SessionSearch);
+				}
+			}
+			else
+			{
+				// Starter is not enabled, use the non starter subsystem.
 				URegionPreferencesSubsystem* RegionPreferencesSubsystem = GameInstance->GetSubsystem<URegionPreferencesSubsystem>();
 				if(RegionPreferencesSubsystem != nullptr)
 				{
@@ -1243,6 +1289,7 @@ void UAccelByteWarsOnlineSession::OnFindSessionsComplete(bool bSucceeded)
 				}
 			}
 		}
+#pragma endregion 
 
 		// Get owner’s user info for queried user info.
 		TArray<FUniqueNetIdRef> UserIds;
@@ -2692,6 +2739,10 @@ void UAccelByteWarsOnlineSession::ChatConnect(int32 LocalUserNum)
 	return;
 }
 
+// @@@SNIPSTART AccelByteWarsOnlineSession.cpp-OnConnectLobbyComplete
+// @@@MULTISNIP AccelByteOnLobbyReconnectingDelegates {"selectedLines": ["1-2", "11-15", "130", "134", "137"]}
+// @@@MULTISNIP AccelByteOnLobbyConnectionClosedDelegates {"selectedLines": ["1-2", "11-15", "132", "136-137"]}
+// @@@MULTISNIP FailedConnect {"selectedLines": ["1-2", "11-15", "23-70", "137"]}
 void UAccelByteWarsOnlineSession::OnConnectLobbyComplete(int32 LocalUserNum, bool bSucceeded, const FUniqueNetId& UserId, const FString& Error)
 {
 	GetPromptSubystem()->HideLoading();
@@ -2829,7 +2880,9 @@ void UAccelByteWarsOnlineSession::OnConnectLobbyComplete(int32 LocalUserNum, boo
 	ABIdentityInt->AccelByteOnLobbyReconnectedDelegates->AddUObject(this, &ThisClass::OnLobbyReconnected);
 	ABIdentityInt->AccelByteOnLobbyConnectionClosedDelegates->AddUObject(this, &ThisClass::OnLobbyConnectionClosed);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART AccelByteWarsOnlineSession.cpp-OnLobbyReconnecting
 void UAccelByteWarsOnlineSession::OnLobbyReconnecting(int32 LocalUserNum, const FUniqueNetId& UserId, int32 StatusCode, const FString& Reason, bool bWasClean)
 {
 	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
@@ -2841,6 +2894,7 @@ void UAccelByteWarsOnlineSession::OnLobbyReconnecting(int32 LocalUserNum, const 
 	GameInstance->bIsReconnecting = true;
 	GetPromptSubystem()->ShowLoading(LOBBY_RECONNECTING_MESSAGE);
 }
+// @@@SNIPEND
 
 void UAccelByteWarsOnlineSession::OnLobbyReconnected()
 {
@@ -2858,6 +2912,7 @@ void UAccelByteWarsOnlineSession::OnLobbyReconnected()
 	GetPromptSubystem()->HideLoading();
 }
 
+// @@@SNIPSTART AccelByteWarsOnlineSession.cpp-OnLobbyConnectionClosed
 void UAccelByteWarsOnlineSession::OnLobbyConnectionClosed(int32 LocalUserNum, const FUniqueNetId& UserId, int32 StatusCode, const FString& Reason, bool bWasClean)
 {
 	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
@@ -2878,3 +2933,4 @@ void UAccelByteWarsOnlineSession::OnLobbyConnectionClosed(int32 LocalUserNum, co
 		GetPromptSubystem()->ShowLoading(LOBBY_RECONNECTING_MESSAGE);
 	}
 }
+// @@@SNIPEND

@@ -82,7 +82,7 @@ public:
 // @@@MULTISNIP UpdateConnectedPlayersStatsOnGameEnds {"selectedLines": ["1-3"]}
 private:
 	UFUNCTION()
-	void UpdateConnectedPlayersStatsOnGameEnds();
+	void UpdateConnectedPlayersStatsOnGameEnds(const FString& Reason);
 
 	IOnlineIdentityPtr IdentityPtr;
 	FOnlineStatisticAccelBytePtr ABStatsPtr;

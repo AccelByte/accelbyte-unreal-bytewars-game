@@ -300,6 +300,18 @@ void AAccelByteWarsPlayerPawn::ServerActivatePowerUp_Implementation()
 		return;
 	}
 	ItemInterface->OnUse();
+
+	// Notify other
+	constexpr int UsedAmount = 1;
+	const int TotalAmount = AbPlayerState->GetEquippedItem(EItemType::PowerUp).Count;
+	if (OnPowerUpUsedServerDelegates.IsBound()) 
+	{
+		OnPowerUpUsedServerDelegates.Broadcast(
+			AbPlayerState->GetUniqueId().GetUniqueNetId(),
+			GetName(),
+			UsedAmount,
+			TotalAmount);
+	}
 	ClientPowerUpActivated();
 }
 

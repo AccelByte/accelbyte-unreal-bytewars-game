@@ -17,6 +17,9 @@ class UCommonTextBlock;
 class UCommonButtonBase;
 class UCommonRotator;
 class UCheckBox;
+class UCommonTextStyle;
+class USizeBox;
+class USpacer;
 
 UENUM(BlueprintType)
 enum class EOptionEntryType : uint8
@@ -163,6 +166,8 @@ class ACCELBYTEWARS_API UOptionListEntry_Toggler : public UOptionListEntryBase
 {
 	GENERATED_BODY()
 
+	virtual void NativePreConstruct() override;
+
 public:
 	UFUNCTION(BlueprintCallable)
 	void InitOption(const FText& InName, const bool InValue);
@@ -172,12 +177,30 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetToggleValue(const bool InValue);
 
+	UFUNCTION(BlueprintCallable)
+	void SetCheckBoxSize(float InSize);
+
+	UFUNCTION(BlueprintCallable)
+	void SetTextStyle(TSubclassOf<UCommonTextStyle> InTextStyle);
+
+	UFUNCTION(BlueprintCallable)
+	void SetTextToCheckBoxSeparation(float InSize);
+
 	UFUNCTION(BlueprintPure)
 	bool GetToggleValue();
 
 	FOnToggleValueChangedDelegate OnToggleValueChangedDelegate;
 
 protected:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = CommonText, meta = (ExposeOnSpawn = true, AllowPrivateAccess = true))
+	TSubclassOf<UCommonTextStyle> TextStyle;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = CommonText, meta = (ExposeOnSpawn = true, AllowPrivateAccess = true))
+	float CheckBoxSize = 36.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = CommonText, meta = (ExposeOnSpawn = true, AllowPrivateAccess = true))
+	float TextToCheckBoxSeparation = 0.0f;
+
 	void NativeOnInitialized() override;
 
 	UFUNCTION()
@@ -189,4 +212,10 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCheckBox* Cb_OptionValue;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	USizeBox* Sb_OptionValueOuter;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	USpacer* S_Separation;
 };

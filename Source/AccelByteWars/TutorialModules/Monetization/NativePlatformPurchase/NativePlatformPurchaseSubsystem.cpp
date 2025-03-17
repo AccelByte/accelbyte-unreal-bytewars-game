@@ -4,6 +4,9 @@
 
 #include "NativePlatformPurchaseSubsystem.h"
 
+#include "OnlineStoreInterfaceV2AccelByte.h"
+#include "OnlineEntitlementsInterfaceAccelByte.h"
+
 DEFINE_LOG_CATEGORY(LogNativePlatformPurchaseSubsystem);
 
 void UNativePlatformPurchaseSubsystem::Initialize(FSubsystemCollectionBase& Collection)

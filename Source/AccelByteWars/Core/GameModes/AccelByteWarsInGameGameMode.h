@@ -56,7 +56,10 @@ class ACCELBYTEWARS_API AAccelByteWarsInGameGameMode : public AAccelByteWarsGame
 public:
 	AAccelByteWarsInGameGameMode();
 
-	static inline FSimpleMulticastDelegate OnGameEndsDelegate;
+	static inline FOnMatchEnded OnGameEndsDelegate;
+	static inline FSimpleMulticastDelegate OnGameStartedDelegates;
+	static inline FOnPlayerEnteredMatch OnPlayerEnteredMatch;
+	static inline FOnEntityDestroyed OnEntityDestroyedDelegates;
 
 #pragma region "Variables"
 private:
@@ -107,6 +110,7 @@ public:
 	//~AGameModeBase overridden functions
 	virtual void InitGameState() override;
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 	//~End of AGameModeBase overridden functions
@@ -202,7 +206,7 @@ protected:
 #pragma region "Countdown related"
 private:
 	bool ShouldStartNotEnoughPlayerCountdown() const;
-	void NotEnoughPlayerCountdownCounting(const float& DeltaSeconds) const;
+	void NotEnoughPlayerCountdownCounting(const float& DeltaSeconds);
 	void SetupShutdownCountdownsValue() const;
 #pragma endregion 
 

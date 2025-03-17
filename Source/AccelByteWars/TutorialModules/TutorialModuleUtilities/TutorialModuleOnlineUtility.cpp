@@ -5,13 +5,11 @@
 #include "TutorialModuleOnlineUtility.h"
 #include "Core/GameStates/AccelByteWarsGameState.h"
 #include "Core/Utilities/AccelByteWarsUtility.h"
-#include "Core/Utilities/AccelByteWarsBlueprintFunctionLibrary.h"
 
 #include "OnlineSubsystemUtils.h"
 #include "OnlineIdentityInterfaceAccelByte.h"
 #include "OnlineSessionInterfaceV2AccelByte.h"
 
-#include "Core/AccelByteRegistry.h"
 #include "AccelByteUe4SdkModule.h"
 
 #include "Access/AuthEssentials/AuthEssentialsModels.h"
@@ -81,7 +79,7 @@ bool UTutorialModuleOnlineUtility::IsAccelByteSDKInitialized(const UObject* Targ
     if (IsRunningDedicatedServer()) 
     {
         // Check server credentials.
-        AccelByte::ServerSettings ServerCreds = AccelByte::FRegistry::ServerSettings;
+        AccelByte::ServerSettings ServerCreds = IAccelByteUe4SdkModuleInterface::Get().GetServerSettings();
         if (ServerCreds.ClientId.IsEmpty() || ServerCreds.ClientSecret.IsEmpty() ||
             ServerCreds.Namespace.IsEmpty() || ServerCreds.BaseUrl.IsEmpty())
         {
@@ -92,7 +90,7 @@ bool UTutorialModuleOnlineUtility::IsAccelByteSDKInitialized(const UObject* Targ
     else 
     {
         // Check client credentials.
-        AccelByte::Settings ClientCreds = AccelByte::FRegistry::Settings;
+        AccelByte::Settings ClientCreds = IAccelByteUe4SdkModuleInterface::Get().GetClientSettings();
         if (ClientCreds.ClientId.IsEmpty() || ClientCreds.Namespace.IsEmpty() ||
             ClientCreds.BaseUrl.IsEmpty())
         {
@@ -102,6 +100,24 @@ bool UTutorialModuleOnlineUtility::IsAccelByteSDKInitialized(const UObject* Targ
     }
 
     return IsOSSEnabled && !IsSDKCredsEmpty;
+}
+
+AccelByte::FApiClientPtr UTutorialModuleOnlineUtility::GetApiClient(const UObject* Context)
+{
+    if (!ensure(Context)) 
+    {
+        UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Cannot get AccelByte API Client. Context object is invalid."));
+        return nullptr;
+    }
+
+    FOnlineSubsystemAccelByte* Subsystem = static_cast<FOnlineSubsystemAccelByte*>(Online::GetSubsystem(Context->GetWorld()));
+    if (!ensure(Subsystem))
+    {
+        UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Cannot get AccelByte API Client. AccelByte Online Subsystem is invalid."));
+        return nullptr;
+    }
+
+    return Subsystem->GetApiClient(Subsystem->GetLocalUserNumCached());
 }
 
 bool UTutorialModuleOnlineUtility::GetIsServerUseAMS()
@@ -153,15 +169,18 @@ void UTutorialModuleOnlineUtility::OverrideSDKConfig(const TMap<FString, FString
         // Override the value.
         GConfig->SetString(*ClientSectionPath, *ConfigPair.Key, *ConfigPair.Value, GEngineIni);
 
-        // Log the new value.
+        // Log the new value if not contain secret.
         FString ChangedValue;
         GConfig->GetString(*ClientSectionPath, *ConfigPair.Key, ChangedValue, GEngineIni);
-        UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(
-            Log,
-            TEXT("Client SDK config %s is overridden from %s to %s"),
-            *ConfigPair.Key,
-            *LastValue,
-            *ChangedValue);
+        if (!ConfigPair.Key.Contains(TEXT("Secret"), ESearchCase::IgnoreCase)) 
+        {
+            UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(
+                Log,
+                TEXT("Try overriding SDK config for the Game Client %s from %s to %s"),
+                *ConfigPair.Key,
+                *LastValue,
+                *ChangedValue);
+        }
     }
 
     // Try to override sdk config (server).
@@ -181,15 +200,18 @@ void UTutorialModuleOnlineUtility::OverrideSDKConfig(const TMap<FString, FString
         // Override the value.
         GConfig->SetString(*ServerSectionPath, *ConfigPair.Key, *ConfigPair.Value, GEngineIni);
 
-        // Log the new value.
+        // Log the new value if not contain secret.
         FString ChangedValue;
         GConfig->GetString(*ServerSectionPath, *ConfigPair.Key, ChangedValue, GEngineIni);
-        UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(
-            Log,
-            TEXT("Server SDK config %s is overridden from %s to %s"),
-            *ConfigPair.Key,
-            *LastValue,
-            *ChangedValue);
+        if (!ConfigPair.Key.Contains(TEXT("Secret"), ESearchCase::IgnoreCase))
+        {
+            UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(
+                Log,
+                TEXT("Try overriding SDK config for the Game Server %s from %s to %s"),
+                *ConfigPair.Key,
+                *LastValue,
+                *ChangedValue);
+        }
     }
 
     // Abort if no configs to be overridden.
@@ -202,16 +224,16 @@ void UTutorialModuleOnlineUtility::OverrideSDKConfig(const TMap<FString, FString
      * Thus, update the environment to use the default environment.*/
     IAccelByteUe4SdkModuleInterface::Get().SetEnvironment(ESettingsEnvironment::Default);
 
-    /* Reset the original config values.
-     * This way, the config file still remain original. */
-    for (auto& OriginalConfigPair : OriginalClientConfigs)
-    {
-        GConfig->SetString(*ClientSectionPath, *OriginalConfigPair.Key, *OriginalConfigPair.Value, GEngineIni);
-    }
-    for (auto& OriginalConfigPair : OriginalServerConfigs)
-    {
-        GConfig->SetString(*ServerSectionPath, *OriginalConfigPair.Key, *OriginalConfigPair.Value, GEngineIni);
-    }
+    // Print the applied SDK configuration.
+    AccelByte::Settings ClientSettings = IAccelByteUe4SdkModuleInterface::Get().GetClientSettings();
+    UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Log,
+        TEXT("Applied SDK config for the Game Client: {ClientId: %s, Namespace: %s, PublisherNamespace: %s, BaseUrl: %s}"),
+        *ClientSettings.ClientId, *ClientSettings.Namespace, *ClientSettings.PublisherNamespace, *ClientSettings.BaseUrl);
+
+    AccelByte::ServerSettings ServerSettings = IAccelByteUe4SdkModuleInterface::Get().GetServerSettings();
+    UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Log,
+        TEXT("Applied SDK config for the Game Server: {ClientId: %s, Namespace: %s, PublisherNamespace: %s, BaseUrl: %s}"),
+        *ServerSettings.ClientId, *ServerSettings.Namespace, *ServerSettings.PublisherNamespace, *ServerSettings.BaseUrl);
 }
 
 void UTutorialModuleOnlineUtility::CheckForDedicatedServerVersionOverride()
@@ -364,7 +386,7 @@ TMap<FString, FString> UTutorialModuleOnlineUtility::CheckForSDKConfigOverride(c
             UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(
                 Warning,
                 TEXT("Unable to override %s SDK config %s using launch param. Empty or invalid value."),
-                bIsServer ? TEXT("Server") : TEXT("Client"),
+                bIsServer ? TEXT("Game Server") : TEXT("Game Client"),
                 *Config);
             continue;
         }
@@ -372,12 +394,16 @@ TMap<FString, FString> UTutorialModuleOnlineUtility::CheckForSDKConfigOverride(c
         // Collect SDK config value to override.
         SDKConfigs.Add(Config, CmdValue);
 
-        UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(
-            Log,
-            TEXT("%s SDK config %s is overridden by launch param to %s"),
-            bIsServer ? TEXT("Server") : TEXT("Client"),
-            *Config,
-            *CmdValue);
+        // Print log if not contain secret.
+        if (!Config.Contains(TEXT("Secret"), ESearchCase::IgnoreCase))
+        {
+            UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(
+                Log,
+                TEXT("%s SDK config %s will be overridden by launch param to %s"),
+                bIsServer ? TEXT("Game Server") : TEXT("Game Client"),
+                *Config,
+                *CmdValue);
+        }
     }
 
     // Return SDK config to override.
@@ -554,11 +580,19 @@ void UTutorialModuleOnlineUtility::ExecutePredefinedServiceValidator(const EServ
         return;
     }
 
+    AccelByte::FApiClientPtr ApiClient = GetApiClient(Context);
+    if (!ApiClient) 
+    {
+        UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Failed to execute predefined service validator. AccelByte API Client is null."));
+        OnComplete.ExecuteIfBound(false);
+        return;
+    }
+
     switch (ValidatorType)
     {
         case EServicePredefinedValidator::IS_REQUIRED_AMS_ACCOUNT:
         {
-            AccelByte::FRegistry::AMS.GetAccount(
+            ApiClient->Ams.GetAccount(
                 AccelByte::THandler<FAccelByteModelsAMSGetAccountResponse>::CreateWeakLambda(this, [OnComplete](const FAccelByteModelsAMSGetAccountResponse& Result)
                 {
                     UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Log, TEXT("Success to get AMS account configuration. AMS account id: %s"), *(!Result.Id.IsEmpty() ? Result.Id : FString("empty")));
@@ -576,7 +610,7 @@ void UTutorialModuleOnlineUtility::ExecutePredefinedServiceValidator(const EServ
         {
             const FString GameVersion = GetServicePredefinedArgument(EServicePredifinedArgument::GAME_VERSION);
 
-            AccelByte::FRegistry::Configurations.Get(
+            ApiClient->Configurations.Get(
                 FString("bytewars_config_version"),
                 THandler<FAccelByteModelsConfiguration>::CreateWeakLambda(this, [GameVersion, OnComplete](const FAccelByteModelsConfiguration& Result)
                 {
@@ -758,8 +792,8 @@ FString UTutorialModuleOnlineUtility::GetServicePredefinedArgument(const EServic
         }
         case EServicePredifinedArgument::ENV_BASE_URL:
         {
-            const FString ClientBaseURL = AccelByte::FRegistry::Settings.BaseUrl;
-            const FString ServerBaseURL = AccelByte::FRegistry::ServerSettings.BaseUrl;
+            const FString ClientBaseURL = IAccelByteUe4SdkModuleInterface::Get().GetClientSettings().BaseUrl;
+            const FString ServerBaseURL = IAccelByteUe4SdkModuleInterface::Get().GetServerSettings().BaseUrl;
 
             /* Since the environment URL config should be the same between client and server, try to get it from client first.
              * If it is empty, then get it from server config. */
@@ -768,8 +802,8 @@ FString UTutorialModuleOnlineUtility::GetServicePredefinedArgument(const EServic
         }
         case EServicePredifinedArgument::GAME_NAMESPACE:
         {
-            const FString ClientGameNamespace = AccelByte::FRegistry::Settings.Namespace;
-            const FString ServerGameNamespace = AccelByte::FRegistry::ServerSettings.Namespace;
+            const FString ClientGameNamespace = IAccelByteUe4SdkModuleInterface::Get().GetClientSettings().Namespace;
+            const FString ServerGameNamespace = IAccelByteUe4SdkModuleInterface::Get().GetServerSettings().Namespace;
 
             /* Since the game namespace config should be the same between client and server, try to get it from client first.
              * If it is empty, then get it from server config. */
@@ -956,7 +990,20 @@ void UTutorialModuleOnlineUtility::CheckUseVersionChecker()
 
 void UTutorialModuleOnlineUtility::CacheGeneralInformation(const APlayerController* PC)
 {
-    const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+    if (!PC) 
+    {
+        UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Cannot cache general information. Player Controller is not valid."));
+        return;
+    }
+
+    const ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
+    if (!LocalPlayer)
+    {
+        UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Cannot cache general information. Local Player is not valid."));
+        return;
+    }
+
+    FOnlineSubsystemAccelByte* Subsystem = static_cast<FOnlineSubsystemAccelByte*>(Online::GetSubsystem(PC->GetWorld()));
     if (!Subsystem)
     {
         UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Cannot cache general information. Online Subsystem is not valid."));
@@ -971,10 +1018,10 @@ void UTutorialModuleOnlineUtility::CacheGeneralInformation(const APlayerControll
         return;
     }
 
-    const ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
-    if (!LocalPlayer)
+    AccelByte::FApiClientPtr ApiClient = GetApiClient(PC);
+    if (!ApiClient)
     {
-        UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Cannot cache general information. Current logged-in player's is not valid."));
+        UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Cannot cache general information. AccelByte API Client is not valid."));
         return;
     }
 
@@ -1001,7 +1048,7 @@ void UTutorialModuleOnlineUtility::CacheGeneralInformation(const APlayerControll
     }
 
     // Cache current published store id.
-    AccelByte::FRegistry::Item.GetListAllStores(
+    ApiClient->Item.GetListAllStores(
         THandler<TArray<FAccelByteModelsPlatformStore>>::CreateWeakLambda(this, [this](const TArray<FAccelByteModelsPlatformStore>& Result)
         {
             bool bHasPublishedStore = false;
@@ -1014,7 +1061,7 @@ void UTutorialModuleOnlineUtility::CacheGeneralInformation(const APlayerControll
                     break;
                 }
             }
-
+    
             if (bHasPublishedStore) 
             {
                 UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Log, TEXT("Success to cache published store id. Published store id: %s"), *CurrentPublishedStoreId);

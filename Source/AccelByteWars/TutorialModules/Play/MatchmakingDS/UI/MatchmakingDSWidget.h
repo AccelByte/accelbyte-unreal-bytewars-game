@@ -120,6 +120,9 @@ private:
 	UCommonButtonBase* Btn_Cancel;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UCommonButtonBase* Btn_Back;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_Reject;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))

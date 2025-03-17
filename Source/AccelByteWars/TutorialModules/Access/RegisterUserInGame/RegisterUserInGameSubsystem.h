@@ -8,7 +8,6 @@
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "RegisterUserInGameModels.h"
 #include "RegisterUserInGameLog.h"
-#include "OnlineUserInterfaceAccelByte.h"
 #include "RegisterUserInGameSubsystem.generated.h"
 
 UCLASS()
@@ -44,15 +43,12 @@ public:
 
 // @@@SNIPSTART RegisterUserInGameSubsystem.h-protected
 // @@@MULTISNIP OnUpgradeAndVerifyAccountSuccess {"selectedLines": ["1-6"]}
-// @@@MULTISNIP Interface {"selectedLines": ["1", "8"]}
 protected:
 	void OnUpgradeAndVerifyAccountSuccess(
 		const FAccountUserData& NewFullAccount,
 		const int32 LocalUserNum,
 		const FUniqueNetIdRef UserId,
 		const FOnUpgradeAndVerifyAccountComplete OnComplete);
-
-	FOnlineUserAccelBytePtr GetUserInterface() const;
 // @@@SNIPEND
 
 // @@@SNIPSTART RegisterUserInGameSubsystem.h-private

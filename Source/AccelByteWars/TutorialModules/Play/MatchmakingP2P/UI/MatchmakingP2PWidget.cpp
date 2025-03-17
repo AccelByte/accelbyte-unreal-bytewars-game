@@ -14,6 +14,7 @@
 
 #include "Play/MatchmakingEssentials/MatchmakingEssentialsModels.h"
 #include "Play/MatchmakingEssentials/UI/QuickPlayWidget.h"
+#include "Play/MatchmakingP2P/MatchmakingP2PLog.h"
 #include "Play/OnlineSessionUtils/AccelByteWarsOnlineSessionBase.h"
 
 // @@@SNIPSTART MatchmakingP2PWidget.cpp-NativeOnActivated
@@ -43,6 +44,7 @@ void UMatchmakingP2PWidget::NativeOnActivated()
 		}
 	}
 
+	Btn_Back->OnClicked().AddUObject(this, &ThisClass::DeactivateWidget);
 	Btn_Join->OnClicked().AddUObject(this, &ThisClass::JoinSession);
 	Btn_Cancel->OnClicked().AddUObject(this, &ThisClass::CancelMatchmaking);
 	Btn_Reject->OnClicked().AddUObject(this, &ThisClass::RejectSessionInvite);
@@ -66,6 +68,7 @@ void UMatchmakingP2PWidget::NativeOnActivated()
 // @@@MULTISNIP ReadyUI {"selectedLines": ["1-6", "17-18"]}
 void UMatchmakingP2PWidget::NativeOnDeactivated()
 {
+	Btn_Back->OnClicked().RemoveAll(this);
 	Btn_Join->OnClicked().RemoveAll(this);
 	Btn_Cancel->OnClicked().RemoveAll(this);
 	Btn_Reject->OnClicked().RemoveAll(this);
@@ -80,7 +83,8 @@ void UMatchmakingP2PWidget::NativeOnDeactivated()
 	OnlineSession->GetOnCancelMatchmakingCompleteDelegates()->RemoveAll(this);
 	OnlineSession->GetOnRejectSessionInviteCompleteDelegate()->RemoveAll(this);
 
-	Super::NativeOnDeactivated();}
+	Super::NativeOnDeactivated();
+}
 // @@@SNIPEND
 
 // @@@SNIPSTART MatchmakingP2PWidget.cpp-NativeTick
@@ -328,6 +332,13 @@ void UMatchmakingP2PWidget::OnCancelMatchmakingComplete(FName SessionName, bool 
 	// Abort if not a game session.
 	if (!SessionName.IsEqual(OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession)))
 	{
+		return;
+	}
+
+	// Abort if match already found.
+	if (WidgetState == EWidgetState::MATCH_FOUND || WidgetState == EWidgetState::WAITING_FOR_PLAYER)
+	{
+		UE_LOG_MATCHMAKINGP2P(Log, TEXT("Match already found, cancel matchmaking canceled."))
 		return;
 	}
 

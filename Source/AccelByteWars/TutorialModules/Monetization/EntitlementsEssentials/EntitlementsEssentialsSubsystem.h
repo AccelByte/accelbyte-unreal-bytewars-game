@@ -19,6 +19,8 @@ class ACCELBYTEWARS_API UEntitlementsEssentialsSubsystem : public UTutorialModul
 	virtual void Deinitialize() override;
 
 public:
+	UInGameItemDataAsset* GetItemDataAssetFromItemStoreId(const FString& StoreItemId);
+	
 	void GetOrQueryUserEntitlements(
 		const APlayerController* PlayerController,
 		const FOnGetOrQueryUserEntitlementsComplete& OnComplete,

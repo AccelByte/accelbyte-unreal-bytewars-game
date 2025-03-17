@@ -38,11 +38,15 @@ void UMatchmakingDSWidget_Starter::NativeOnActivated()
 		}
 	}
 
+	Btn_Back->OnClicked().AddUObject(this, &ThisClass::DeactivateWidget);
+
 	// TODO: Bind your delegates here.
 }
 
 void UMatchmakingDSWidget_Starter::NativeOnDeactivated()
 {
+	Btn_Back->OnClicked().RemoveAll(this);
+
 	// TODO: Unbind your delegates here.
 
 	Super::NativeOnDeactivated();

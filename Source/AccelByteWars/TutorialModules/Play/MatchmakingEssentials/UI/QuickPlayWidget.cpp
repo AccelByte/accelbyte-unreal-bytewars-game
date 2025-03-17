@@ -11,6 +11,7 @@
 
 #include "CommonButtonBase.h"
 #include "Components/WidgetSwitcher.h"
+#include "Play/MatchmakingEssentials/MatchmakingEssentialsLog.h"
 
 // @@@SNIPSTART QuickPlayWidget.cpp-GetSelectedGameModeType
 EGameModeType UQuickPlayWidget::GetSelectedGameModeType() const
@@ -91,6 +92,23 @@ UWidget* UQuickPlayWidget::NativeGetDesiredFocusTarget() const
 
 void UQuickPlayWidget::SelectGameMode(EGameModeType GameModeType)
 {
+	UOnlineSession* BaseOnlineSession = GetWorld()->GetGameInstance()->GetOnlineSession();
+	if (ensure(BaseOnlineSession))
+	{
+		UAccelByteWarsOnlineSessionBase* OnlineSession = Cast<UAccelByteWarsOnlineSessionBase>(BaseOnlineSession);
+		if(ensure(OnlineSession) && OnlineSession->ValidateToStartMatchmaking.IsBound())
+		{
+			// Check if any requirement to start matchmaking for the current selected game mode. If it doesn't fulfill the requirement, will not proceed to next step.
+			// The failure detail, onscreen notification or any other action to inform players that they cannot proceed should be done by the validator. 
+			bool bResult = OnlineSession->ValidateToStartMatchmaking.Execute(GameModeType);
+			if(!bResult)
+			{
+				UE_LOG_MATCHMAKING(Warning, TEXT("Cannot start matchmaking for game mode %s"), GameModeType == EGameModeType::FFA ? TEXT("Elimination") : TEXT("Team Deathmatch"));
+				return;
+			}
+		}
+	}
+
 	// Set game mode and select server type.
 	SelectedGameModeType = GameModeType;
 	SwitchContent(EContentType::SELECTSERVERTYPE);

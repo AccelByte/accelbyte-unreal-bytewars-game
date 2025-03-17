@@ -20,7 +20,7 @@ public:
 
 private:
 	UFUNCTION()
-	void UpdateConnectedPlayersStatsOnGameEnds();
+	void UpdateConnectedPlayersStatsOnGameEnds(const FString& Reason);
 
 	IOnlineIdentityPtr IdentityPtr;
 	FOnlineStatisticAccelBytePtr ABStatsPtr;

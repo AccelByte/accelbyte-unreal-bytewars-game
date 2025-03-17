@@ -4,6 +4,7 @@
 
 
 #include "StoreItemPurchaseSubsystem_Starter.h"
+#include "OnlinePurchaseInterfaceAccelByte.h"
 
 void UStoreItemPurchaseSubsystem_Starter::Initialize(FSubsystemCollectionBase& Collection)
 {

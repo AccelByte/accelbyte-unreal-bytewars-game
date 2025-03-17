@@ -16,13 +16,14 @@
 #include "Core/UI/InGameMenu/GameOver/GameOverWidget.h"
 #include "Interfaces/OnlineUserInterface.h"
 #include "OnlineSettings/RegionPreferencesEssentials/RegionPreferencesSubsystem.h"
+#include "OnlineSettings/RegionPreferencesEssentials/RegionPreferencesSubsystem_Starter.h"
 
 // @@@SNIPSTART MatchmakingDSOnlineSession.cpp-RegisterOnlineDelegates
-// @@@MULTISNIP BindMatchmakingDelegate {"selectedLines": ["1-2", "19", "22"]}
-// @@@MULTISNIP BindCancelMatchmakingDelegate {"selectedLines": ["1-2", "20", "22"]}
-// @@@MULTISNIP BindSessionServerDelegate {"selectedLines": ["1-2", "6-7", "22"]}
-// @@@MULTISNIP BindBackfillDelegate {"selectedLines": ["1-2", "21", "22"]}
-// @@@MULTISNIP BindLeaveSessionDelegate {"selectedLines": ["1-2", "9-16", "22"]}
+// @@@MULTISNIP BindMatchmakingDelegate {"selectedLines": ["1-2", "19", "22"], "highlightedLines": "{4}"}
+// @@@MULTISNIP BindCancelMatchmakingDelegate {"selectedLines": ["1-2", "20", "22"], "highlightedLines": "{4}"}
+// @@@MULTISNIP BindSessionServerDelegate {"selectedLines": ["1-2", "6-7", "22"], "highlightedLines": "{4-5}"}
+// @@@MULTISNIP BindBackfillDelegate {"selectedLines": ["1-2", "21", "22"], "highlightedLines": "{4}"}
+// @@@MULTISNIP BindLeaveSessionDelegate {"selectedLines": ["1-2", "9-16", "22"], "highlightedLines": "{4-11}"}
 void UMatchmakingDSOnlineSession::RegisterOnlineDelegates()
 {
 	Super::RegisterOnlineDelegates();
@@ -48,11 +49,11 @@ void UMatchmakingDSOnlineSession::RegisterOnlineDelegates()
 // @@@SNIPEND
 
 // @@@SNIPSTART MatchmakingDSOnlineSession.cpp-ClearOnlineDelegates
-// @@@MULTISNIP UnbindMatchmakingDelegate {"selectedLines": ["1-2", "12", "15"]}
-// @@@MULTISNIP UnbindCancelMatchmakingDelegate {"selectedLines": ["1-2", "13", "15"]}
-// @@@MULTISNIP UnbindSessionServerDelegate {"selectedLines": ["1-2", "5-6", "15"]}
-// @@@MULTISNIP UnbindBackfillDelegate {"selectedLines": ["1-2", "14", "15"]}
-// @@@MULTISNIP UnbindLeaveSessionDelegate {"selectedLines": ["1-2", "8-10", "15"]}
+// @@@MULTISNIP UnbindMatchmakingDelegate {"selectedLines": ["1-2", "12", "15"], "highlightedLines": "{4}"}
+// @@@MULTISNIP UnbindCancelMatchmakingDelegate {"selectedLines": ["1-2", "13", "15"], "highlightedLines": "{4}"}
+// @@@MULTISNIP UnbindSessionServerDelegate {"selectedLines": ["1-2", "5-6", "15"], "highlightedLines": "{4-5}"}
+// @@@MULTISNIP UnbindBackfillDelegate {"selectedLines": ["1-2", "14", "15"], "highlightedLines": "{4}"}
+// @@@MULTISNIP UnbindLeaveSessionDelegate {"selectedLines": ["1-2", "8-10", "15"], "highlightedLines": "{4-6}"}
 void UMatchmakingDSOnlineSession::ClearOnlineDelegates()
 {
 	Super::ClearOnlineDelegates();
@@ -355,28 +356,44 @@ void UMatchmakingDSOnlineSession::StartMatchmaking(
 		MatchmakingSearchHandle->QuerySettings.Set(SETTING_GAMESESSION_SERVERNAME, ServerName, EOnlineComparisonOp::Equals);
 	}
 
+#pragma region "Region Preferences"
 	// Include region preferences into matchmaking setting.
 	if (const UTutorialModuleDataAsset* ModuleDataAsset = UTutorialModuleUtility::GetTutorialModuleDataAsset(
 		FPrimaryAssetId{ "TutorialModule:REGIONPREFERENCES" },
 		this,
 		true))
 	{
-		if (!ModuleDataAsset->IsStarterModeActive())
-		{
-			UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetGameInstance());
-			ensure(GameInstance);
+		const UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetGameInstance());
+		ensure(GameInstance);
 
+		// Get enabled regions
+		TArray<FString> EnabledRegions = {};
+		if (ModuleDataAsset->IsStarterModeActive())
+		{
+			// Starter mode is active, use the starter subsystem
+			URegionPreferencesSubsystem_Starter* RegionPreferencesSubsystem = GameInstance->GetSubsystem<URegionPreferencesSubsystem_Starter>();
+			if(RegionPreferencesSubsystem != nullptr)
+			{
+				EnabledRegions = RegionPreferencesSubsystem->GetEnabledRegion();
+			}
+		}
+		else
+		{
+			// Starter mode is not active, use the non starter subsystem.
 			URegionPreferencesSubsystem* RegionPreferencesSubsystem = GameInstance->GetSubsystem<URegionPreferencesSubsystem>();
 			if(RegionPreferencesSubsystem != nullptr)
 			{
-				TArray<FString> EnabledRegion = RegionPreferencesSubsystem->GetEnabledRegion();
-				if(!EnabledRegion.IsEmpty())
-				{
-					FOnlineSearchSettingsAccelByte::Set(MatchmakingSearchHandle->QuerySettings, SETTING_GAMESESSION_REQUESTEDREGIONS, RegionPreferencesSubsystem->GetEnabledRegion(), EOnlineComparisonOp::In);
-				}
+				EnabledRegions = RegionPreferencesSubsystem->GetEnabledRegion();
 			}
 		}
+
+		// Set enabled regions
+		if(!EnabledRegions.IsEmpty())
+		{
+			FOnlineSearchSettingsAccelByte::Set(MatchmakingSearchHandle->QuerySettings, SETTING_GAMESESSION_REQUESTEDREGIONS, EnabledRegions, EOnlineComparisonOp::In);
+		}
 	}
+#pragma endregion 
 	
 	if (!GetSessionInt()->StartMatchmaking(
 		USER_ID_TO_MATCHMAKING_USER_ARRAY(PlayerNetId.ToSharedRef()),
@@ -401,7 +418,7 @@ void UMatchmakingDSOnlineSession::CancelMatchmaking(APlayerController* PC, const
 	UE_LOG_MATCHMAKINGDS(Verbose, TEXT("called"))
 
 	// Abort if the session interface is invalid.
-	if (!ensure(GetSessionInt()))
+	if (!ensure(GetABSessionInt()))
 	{
 		UE_LOG_MATCHMAKINGDS(Warning, TEXT("Session Interface is not valid."));
 		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
@@ -411,9 +428,10 @@ void UMatchmakingDSOnlineSession::CancelMatchmaking(APlayerController* PC, const
 		return;
 	}
 
-	if (!ensure(GetABSessionInt()->GetCurrentMatchmakingSearchHandle().IsValid() &&
+	if (!(GetABSessionInt()->GetCurrentMatchmakingSearchHandle().IsValid() &&
 		GetABSessionInt()->GetCurrentMatchmakingSearchHandle()->GetSearchingPlayerId().IsValid()))
 	{
+		// This can happen if the cancel was called just as match was found.
 		UE_LOG_MATCHMAKINGDS(Warning, TEXT("Searching player ID is not valid."));
 		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, SessionName]()
 		{
