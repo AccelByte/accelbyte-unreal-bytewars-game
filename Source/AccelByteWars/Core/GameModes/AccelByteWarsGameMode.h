@@ -30,8 +30,8 @@ class ACCELBYTEWARS_API AAccelByteWarsGameMode : public AGameModeBase
 	GENERATED_BODY()
 
 // @@@SNIPSTART AccelByteWarsGameMode.h-public
-// @@@MULTISNIP CloseGame {"selectedLines": ["1", "34"]}
-// @@@MULTISNIP OnPreGameShutdownDelegate {"selectedLines": ["1", "42"]}
+// @@@MULTISNIP CloseGame {"selectedLines": ["1", "38"]}
+// @@@MULTISNIP OnPreGameShutdownDelegate {"selectedLines": ["1", "46"]}
 public:
 	AAccelByteWarsGameMode();
 

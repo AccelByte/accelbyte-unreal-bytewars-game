@@ -28,6 +28,11 @@ void AAccelByteWarsPlayerController::TriggerLobbyStart_Implementation()
 
 void AAccelByteWarsPlayerController::LoadingPlayerAssignment() const
 {
+	if (!GetWorld() || GetWorld()->bIsTearingDown) 
+	{
+		return;
+	}
+
 	if (const AAccelByteWarsPlayerState* AbPlayerState = static_cast<AAccelByteWarsPlayerState*>(PlayerState))
 	{
 		UPromptSubsystem* PromptSubsystem = GetGameInstance()->GetSubsystem<UPromptSubsystem>();

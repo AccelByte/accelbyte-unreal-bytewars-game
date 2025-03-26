@@ -67,6 +67,7 @@ To clone the repository and checkout the submodule at the same time, run the fol
    ```batch
     AccelByteWarsServer.exe -server -log
    ```
+
 ### Connect Game Client to Game Server Locally
 
 1. Run both game client and game server.
@@ -78,4 +79,28 @@ To clone the repository and checkout the submodule at the same time, run the fol
 
 ## Run Byte Wars Online (Tutorial Modules Branch)
 
-Follow along Byte Wars [Learning Paths](https://docs.accelbyte.io/gaming-services/tutorials/byte-wars/unreal-engine/learning-paths/). We suggest you to start with the [Login with Device ID and Steam path](https://docs.accelbyte.io/gaming-services/tutorials/byte-wars/unreal-engine/learning-paths/authentication/unreal-path-login-device-id-and-steam/) if you're unsure where to start.
+Follow along Byte Wars [Learning Paths](https://docs.accelbyte.io/gaming-services/tutorials/byte-wars/unreal-engine/learning-paths/). We suggest you to start with the [Login with Device ID and Single Platform Authentication](https://docs.accelbyte.io/gaming-services/tutorials/byte-wars/unreal-engine/learning-paths/authentication/unreal-path-login-device-id-and-single-platform-auth/) if you're unsure where to start.
+
+### Build and Run Steam or EOS
+
+Steam and EOS config are separated in different `.Target.cs` and `DefaultEngine.ini`.
+
+To target the platform when running from the Editor, use the launch parameter below. It switches the `DefaultEngine.ini` based on the platform.
+
+```batch
+// Switch Engine.ini to Steam
+-customconfig=Steam
+
+// Switch Engine.ini to EOS
+-customconfig=EOS
+```
+
+To target the platform when packaging the game, use the launch parameter below. It switches the `Target.cs` and `DefaultEngine.ini` based on the platform.
+
+```batch
+// Retarget to Steam when packaging
+-target=AccelByteWarsSteam
+
+// Retarget to EOS when packaging
+-target=AccelByteWarsEOS
+```

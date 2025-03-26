@@ -70,6 +70,7 @@ void AAccelByteWarsGameState::PostInitializeComponents()
 		GameSetup = GameInstance->GameSetup;
 		if (HasAuthority())
 		{
+			OnNotify_GameSetup();
 			OnNotify_Teams();
 		}
 	}
@@ -83,6 +84,11 @@ void AAccelByteWarsGameState::PostInitializeComponents()
 void AAccelByteWarsGameState::OnNotify_IsServerTravelling() const
 {
 	OnIsServerTravellingChanged.Broadcast();
+}
+
+void AAccelByteWarsGameState::OnNotify_GameSetup() const
+{
+	OnGameSetupChanged.Broadcast();
 }
 
 void AAccelByteWarsGameState::OnNotify_Teams()

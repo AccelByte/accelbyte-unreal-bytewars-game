@@ -79,7 +79,10 @@ void AAccelByteWarsInGameGameMode::EndPlay(const EEndPlayReason::Type EndPlayRea
 	}
 
 	// Game ends unexpectedly. Notify game ends here.
-	OnGameEndsDelegate.Broadcast(GAME_END_REASON_TERMINATED);
+	if (OnGameEndsDelegate.IsBound())
+	{
+		OnGameEndsDelegate.Broadcast(GAME_END_REASON_TERMINATED);
+	}
 	GAMEMODE_LOG(
 		Log,
 		TEXT("Game ending unexpectedly. Current status: %s, EndPlayReason: %s"),
@@ -217,7 +220,10 @@ void AAccelByteWarsInGameGameMode::PostLogin(APlayerController* NewPlayer)
 	{
 	case EGameStatus::GAME_STARTED:
 	case EGameStatus::AWAITING_PLAYERS_MID_GAME:
-		OnPlayerEnteredMatch.Broadcast(AbPlayerState->GetUniqueId().GetUniqueNetId());
+		if (OnPlayerEnteredMatch.IsBound())
+		{
+			OnPlayerEnteredMatch.Broadcast(AbPlayerState->GetUniqueId().GetUniqueNetId());
+		}
 		break;
 	}
 }
@@ -317,7 +323,10 @@ void AAccelByteWarsInGameGameMode::EndGame(const FString Reason)
 {
 	ABInGameGameState->GameStatus = EGameStatus::GAME_ENDS_DELAY;
 
-	OnGameEndsDelegate.Broadcast(Reason);
+	if (OnGameEndsDelegate.IsBound())
+	{
+		OnGameEndsDelegate.Broadcast(Reason);
+	}
 
 	GAMEMODE_LOG(Log, TEXT("Game ends with reason: %s."), *Reason);
 }
@@ -487,14 +496,21 @@ void AAccelByteWarsInGameGameMode::StartGame()
 	SpawnPlanets();
 
 	// Notify that the game has started
-	OnGameStartedDelegates.Broadcast();
+	if (OnGameStartedDelegates.IsBound())
+	{
+		OnGameStartedDelegates.Broadcast();
+	}
 	for (const APlayerState* Player: GameState->PlayerArray)
 	{
 		if (!Player)
 		{
 			continue;
 		}
-		OnPlayerEnteredMatch.Broadcast(Player->GetUniqueId().GetUniqueNetId());
+
+		if (OnPlayerEnteredMatch.IsBound())
+		{
+			OnPlayerEnteredMatch.Broadcast(Player->GetUniqueId().GetUniqueNetId());
+		}
 	}
 }
 
