@@ -114,7 +114,7 @@ public:
 
 protected:
 	virtual void OnDSQueryUserInfoComplete(
-		const FListBulkUserInfo& UserInfoList,
+		const FListUserDataResponse& UserInfoList,
 		const FOnDSQueryUsersInfoComplete& OnComplete){}
 
 	virtual void OnSessionServerUpdateReceived(FName SessionName){}
@@ -126,11 +126,11 @@ protected:
 protected:
 	bool DSRetrieveUserInfoCache(
 		const TArray<FUniqueNetIdRef>& UserIds,
-		TArray<const FBaseUserInfo*> OutUserInfo);
-	void CacheUserInfo(const FListBulkUserInfo& UserInfoList);
+		TArray<const FUserDataResponse*> OutUserInfo);
+	void CacheUserInfo(const FListUserDataResponse& UserInfoList);
 
 private:
-	TArray<FBaseUserInfo> DSCachedUsersInfo = {};
+	TArray<FUserDataResponse> DSCachedUsersInfo = {};
 #pragma endregion 
 #pragma endregion 
 

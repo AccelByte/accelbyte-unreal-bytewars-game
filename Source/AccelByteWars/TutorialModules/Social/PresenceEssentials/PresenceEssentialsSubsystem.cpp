@@ -314,16 +314,21 @@ void UPresenceEssentialsSubsystem::OnLevelLoaded()
         return;
     }
 
-    const AAccelByteWarsGameState* GameState = Cast<AAccelByteWarsGameState>(World->GetGameState());
+    AAccelByteWarsGameState* GameState = Cast<AAccelByteWarsGameState>(World->GetGameState());
 
-    /* On online multiplayer, the game state takes some time to be replicated after the world creation.
-     * When the game state is replicated and initialized, try to update the level status.*/
+    /* In online multiplayer, the game state takes some time to replicate after world creation.
+     * Once the game state is replicated and initialized, attempt to update the level status. */
     AAccelByteWarsGameState::OnInitialized.RemoveAll(this);
     if (!GameState) 
     {
         AAccelByteWarsGameState::OnInitialized.AddUObject(this, &ThisClass::OnLevelLoaded);
         return;
     }
+
+    /* In online multiplayer, the game state may be initialized, but the properties may not be replicated yet.
+     * Therefore, listen for the game state's game setup replication to attempt updating the level status. */
+    GameState->OnGameSetupChanged.RemoveAll(this);
+    GameState->OnGameSetupChanged.AddUObject(this, &ThisClass::OnLevelLoaded);
 
     if (const AAccelByteWarsMainMenuGameState* MainMenuGameState = Cast<AAccelByteWarsMainMenuGameState>(GameState))
     {

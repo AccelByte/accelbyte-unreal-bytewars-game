@@ -146,7 +146,15 @@ void UPeriodicBoardSubsystem::GetLeaderboardCycleIdByName(const FString& InCycle
         return;
     }
 
-    ApiClient->Statistic.GetListStatCycleConfigs(
+    AccelByte::Api::StatisticPtr StatisticApi = ApiClient->GetStatisticApi().Pin();
+    if (!ApiClient)
+    {
+        UE_LOG_PERIODIC_LEADERBOARD(Warning, TEXT("Failed to get Cycle ID of cycle with name %s. Statistic API Client is invalid."), *InCycleName);
+        OnComplete.ExecuteIfBound(false, FString());
+        return;
+    }
+
+    StatisticApi->GetListStatCycleConfigs(
         InCycleType,
         THandler<FAccelByteModelsStatCycleConfigPagingResult>::CreateWeakLambda(this, [InCycleName, OnComplete](const FAccelByteModelsStatCycleConfigPagingResult& Result)
         {

@@ -173,7 +173,7 @@ void UStartupWidget::QuitGame()
 		{
 			if (Result == EPopUpResult::Confirmed)
 			{
-				FPlatformMisc::RequestExit(false);
+				UKismetSystemLibrary::QuitGame(this, GetOwningPlayer(), EQuitPreference::Quit, false);
 			}
 		})
 	);

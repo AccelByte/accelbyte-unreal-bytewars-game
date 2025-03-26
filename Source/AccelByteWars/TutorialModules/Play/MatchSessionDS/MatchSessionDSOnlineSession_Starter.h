@@ -38,7 +38,7 @@ public:
 
 protected:
 	virtual void OnDSQueryUserInfoComplete(
-		const FListBulkUserInfo& UserInfoList,
+		const FListUserDataResponse& UserInfoList,
 		const FOnDSQueryUsersInfoComplete& OnComplete) override;
 
 private:

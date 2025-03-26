@@ -58,7 +58,10 @@ void UStoreItemPurchaseSubsystem::OnCreateNewOrderComplete(
 	// Notify other object
 	NotifyItemPurchased(OrderInfo);
 
-	OnCheckoutCompleteDelegates.Broadcast(OnlineError);
+	if (OnCheckoutCompleteDelegates.IsBound())
+	{
+		OnCheckoutCompleteDelegates.Broadcast(OnlineError);
+	}
 }
 
 void UStoreItemPurchaseSubsystem::NotifyItemPurchased(const FAccelByteModelsOrderInfo& OrderInfo) const

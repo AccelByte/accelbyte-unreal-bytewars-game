@@ -33,12 +33,16 @@ public:
 
 	TArray<TSharedRef<FAccelByteModelsItemMapping>> GetItemMapping();
 
-	void OpenPlatformStore(
+	bool OpenPlatformStore(
 		const APlayerController* OwningPlayer,
 		const TWeakObjectPtr<UStoreItemDataObject> StoreItemData,
 		const int32 SelectedPriceIndex,
 		const TArray<TSharedRef<FAccelByteModelsItemMapping>> ItemMapping) const;
 	FOnRequestCompleted OnSynchPurchaseCompleteDelegates;
+
+	FString GetNativePlatformName() const;
+	bool IsNativePlatformSupported() const;
+	bool IsItemSupportedByNativePlatform(const FString& Item) const;
 
 private:
 	FOnlineStoreV2AccelBytePtr StoreInterface;
@@ -54,7 +58,7 @@ private:
 		const FString& Error);
 
 #pragma region "Steam"
-	void OpenSteamStore(const APlayerController* OwningPlayer,
+	bool OpenSteamStore(const APlayerController* OwningPlayer,
 		const TWeakObjectPtr<UStoreItemDataObject> StoreItemData,
 		const int32 SelectedPriceIndex,
 		const TArray<TSharedRef<FAccelByteModelsItemMapping>> ItemMapping,
@@ -74,5 +78,12 @@ private:
 #pragma region "Utilities"
 	FUniqueNetIdPtr GetUniqueNetIdFromPlayerController(const APlayerController* PlayerController) const;
 	FString GetItemsMappingId(const FString ProductId, const TArray<TSharedRef<FAccelByteModelsItemMapping>> ItemMapping) const;
+
+	const TMap<EAccelBytePlatformType, EAccelBytePlatformMapping> SupportedNativePlatform =
+	{
+		{ EAccelBytePlatformType::Steam, EAccelBytePlatformMapping::STEAM }
+	};
+
+	const TArray<EAccelByteItemType> SupportedNativePlatformItem = { EAccelByteItemType::COINS };
 #pragma endregion 
 };

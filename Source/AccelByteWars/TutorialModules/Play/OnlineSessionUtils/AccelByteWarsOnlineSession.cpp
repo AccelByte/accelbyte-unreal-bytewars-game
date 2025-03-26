@@ -637,8 +637,19 @@ void UAccelByteWarsOnlineSession::DSQueryUserInfo(
 	const FOnDSQueryUsersInfoComplete& OnComplete)
 {
 	UE_LOG_ONLINESESSION(Verbose, TEXT("Called"))
+	
+	AccelByte::FServerApiClientPtr ServerApiClient = UTutorialModuleOnlineUtility::GetServerApiClient(this);
+	if (!ServerApiClient)
+	{
+		UE_LOG_ONLINESESSION(Log, TEXT("Cannot query user info. Server API Client is invalid."));
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, OnComplete]()
+		{
+			OnDSQueryUserInfoComplete({}, OnComplete);
+		}));
+		return;
+	}
 
-	const TArray<const FBaseUserInfo*> UserInfo;
+	const TArray<const FUserDataResponse*> UserInfo;
 	if (DSRetrieveUserInfoCache(UserIds, UserInfo))
 	{
 		UE_LOG_ONLINESESSION(Log, TEXT("Cache found"))
@@ -650,20 +661,21 @@ void UAccelByteWarsOnlineSession::DSQueryUserInfo(
 	else
 	{
 		// Gather user IDs.
-		TArray<FString> AbUserIds;
+		FListUserDataRequest Request;
 		for (const FUniqueNetIdRef& UserId : UserIds)
 		{
 			const FUniqueNetIdAccelByteUserPtr AbUniqueNetId = FUniqueNetIdAccelByteUser::TryCast(*UserId);
 			const FString AbUserId = AbUniqueNetId->GetAccelByteId();
 			if (!AbUserId.IsEmpty())
 			{
-				AbUserIds.Add(AbUserId);
+				Request.UserIds.Add(AbUserId);
+				UE_LOG(LogTemp, Warning, TEXT("Nani Kore: %s"), *AbUserId);
 			}
 		}
 
-		AccelByte::FRegistry::User.BulkGetUserInfo(
-			AbUserIds,
-			THandler<FListBulkUserInfo>::CreateWeakLambda(this, [OnComplete, this](FListBulkUserInfo UserInfo)
+		ServerApiClient->ServerUser.ListUserByUserId(
+			Request,
+			THandler<FListUserDataResponse>::CreateWeakLambda(this, [OnComplete, this](FListUserDataResponse UserInfo)
 			{
 				OnDSQueryUserInfoComplete(UserInfo, OnComplete);
 			}),
@@ -671,7 +683,7 @@ void UAccelByteWarsOnlineSession::DSQueryUserInfo(
 			{
 				ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, OnComplete]()
 				{
-					OnDSQueryUserInfoComplete(FListBulkUserInfo(), OnComplete);
+					OnDSQueryUserInfoComplete({}, OnComplete);
 				}));
 			})
 		);
@@ -767,23 +779,24 @@ bool UAccelByteWarsOnlineSession::TravelToSession(const FName SessionName)
 }
 
 void UAccelByteWarsOnlineSession::OnDSQueryUserInfoComplete(
-	const FListBulkUserInfo& UserInfoList,
+	const FListUserDataResponse& UserInfoList,
 	const FOnDSQueryUsersInfoComplete& OnComplete)
 {
 	UE_LOG_ONLINESESSION(Verbose, TEXT("Called"))
 
-	// reset delegate handle
+	// Reset delegate handle
 	OnDSQueryUserInfoCompleteDelegateHandle.Reset();
 
 	if (UserInfoList.Data.IsEmpty())
 	{
 		OnComplete.ExecuteIfBound(false, {});
+		return;
 	}
 
 	CacheUserInfo(UserInfoList);
 
-	TArray<const FBaseUserInfo*> OnlineUsers;
-	for (const FBaseUserInfo& User : UserInfoList.Data)
+	TArray<const FUserDataResponse*> OnlineUsers;
+	for (const FUserDataResponse& User : UserInfoList.Data)
 	{
 		OnlineUsers.Add(&User);
 	}
@@ -831,7 +844,7 @@ bool UAccelByteWarsOnlineSession::HandleDisconnectInternal(UWorld* World, UNetDr
 
 #pragma region "Matchmaking Session Essentials"
 // @@@SNIPSTART AccelByteWarsOnlineSession.cpp-StartMatchmaking
-// @@@MULTISNIP SetClientVersionAttribute {"selectedLines": ["1-6", "71-81", "145"]}
+// @@@MULTISNIP SetClientVersionAttribute {"selectedLines": ["1-6", "71-81", "146"]}
 void UAccelByteWarsOnlineSession::StartMatchmaking(
 	const APlayerController* PC,
 	const FName& SessionName,
@@ -2704,10 +2717,16 @@ void UAccelByteWarsOnlineSession::LobbyConnect(int32 LocalUserNum)
 	return;
 }
 
-void UAccelByteWarsOnlineSession::ChatConnect(int32 LocalUserNum)
+void UAccelByteWarsOnlineSession::ChatConnect(int32 LocalUserNum, const FUniqueNetIdPtr UserId)
 {
+	if (!UserId) 
+	{
+		UE_LOG_SESSIONCHAT(Warning, TEXT("The user ID is invalid. Cancel chat connect."));
+		return;
+	}
+
 	// Connect Chat service if its not connected
-	const TSharedPtr<FUserOnlineAccountAccelByte> UserAccountAccelByte = StaticCastSharedPtr<FUserOnlineAccountAccelByte>(GetABIdentityInt()->GetUserAccount(LocalUserNum));
+	const TSharedPtr<FUserOnlineAccountAccelByte> UserAccountAccelByte = StaticCastSharedPtr<FUserOnlineAccountAccelByte>(GetABIdentityInt()->GetUserAccount(UserId.ToSharedRef().Get()));
 	if (!ensure(UserAccountAccelByte))
 	{
 		UE_LOG_SESSIONCHAT(Warning, TEXT("The User Online Account is invalid. Cancel chat connect."));
@@ -2817,7 +2836,7 @@ void UAccelByteWarsOnlineSession::OnConnectLobbyComplete(int32 LocalUserNum, boo
 	if (GameInstance->bIsReconnecting)
 	{
 		// Trigger chat reconnect 
-		ChatConnect(LocalUserNum);
+		ChatConnect(LocalUserNum, UserId.AsShared());
 
 		// Show success to reconnect to AGS pop-up message.
 		GameInstance->bIsReconnecting = false;
@@ -2904,9 +2923,22 @@ void UAccelByteWarsOnlineSession::OnLobbyReconnected()
 		return;
 	}
 	
+	APlayerController* PC = GameInstance->GetFirstLocalPlayerController();
+	if (!ensure(PC)) 
+	{
+		return;
+	}
+
+	ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
+	if (!ensure(LocalPlayer))
+	{
+		return;
+	}
+
 	// Trigger chat connect
-	int32 LocalUserNum = GameInstance->GetFirstLocalPlayerController()->GetLocalPlayer()->GetControllerId();
-	ChatConnect(LocalUserNum);
+	int32 LocalUserNum = LocalPlayer->GetControllerId();
+	FUniqueNetIdPtr UserId = LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId();
+	ChatConnect(LocalUserNum, UserId);
 	
 	GameInstance->bIsReconnecting = false;
 	GetPromptSubystem()->HideLoading();

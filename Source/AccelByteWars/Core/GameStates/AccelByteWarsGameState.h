@@ -42,7 +42,7 @@ public:
 	/**
 	 * @brief Game setup info
 	 */
-	UPROPERTY(BlueprintReadOnly, Replicated)
+	UPROPERTY(BlueprintReadOnly, Replicated, ReplicatedUsing = OnNotify_GameSetup)
 	FGameModeData GameSetup;
 
 	/**
@@ -57,6 +57,7 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FGameStateVoidDelegate OnIsServerTravellingChanged;
 
+	FSimpleMulticastDelegate OnGameSetupChanged;
 	FSimpleMulticastDelegate OnTeamsChanged;
 	FSimpleMulticastDelegate OnPowerUpChanged;
 
@@ -67,6 +68,9 @@ public:
 
 	UFUNCTION()
 	void OnNotify_IsServerTravelling() const;
+
+	UFUNCTION()
+	void OnNotify_GameSetup() const;
 
 	UFUNCTION()
 	void OnNotify_Teams();

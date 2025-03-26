@@ -3,13 +3,13 @@
 // and restrictions contact your company contract manager.
 
 #include "Core/UI/MainMenu/MatchLobby/MatchLobbyWidget.h"
-#include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/Player/AccelByteWarsPlayerController.h"
 #include "Core/Utilities/AccelByteWarsUtility.h"
 
 #include "Core/UI/Components/MultiplayerEntries/TeamEntryWidget.h"
 #include "Core/UI/Components/MultiplayerEntries/PlayerEntryWidget.h"
 #include "Core/UI/Components/Countdown/CountdownWidget.h"
+#include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
 
 #include "Components/PanelWidget.h"
 #include "Components/WidgetSwitcher.h"
@@ -52,14 +52,14 @@ void UMatchLobbyWidget::NativeOnActivated()
 		CountdownWidget->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
-	GenerateMultiplayerTeamEntries();
+	QueryTeamMembersInfo();
 
 	SetMatchLobbyState(EMatchLobbyState::Default);
 
 	Btn_Start->OnClicked().AddUObject(this, &UMatchLobbyWidget::StartMatch);
 	Btn_Quit->OnClicked().AddUObject(this, &UMatchLobbyWidget::LeaveMatch);
 
-	GameState->OnTeamsChanged.AddUObject(this, &ThisClass::GenerateMultiplayerTeamEntries);
+	GameState->OnTeamsChanged.AddUObject(this, &ThisClass::QueryTeamMembersInfo);
 
 	// if on P2P game, only enable Btn_Start for host
 	if (GameState->GameSetup.NetworkType == EGameModeNetworkType::P2P)
@@ -136,8 +136,39 @@ void UMatchLobbyWidget::ResetTeamEntries()
 	Panel_TeamList->ClearChildren();
 }
 
+void UMatchLobbyWidget::QueryTeamMembersInfo()
+{
+	Ws_TeamList->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Loading);
+
+	// Collect team member user ids.
+	TArray<FUniqueNetIdRef> MemberUserIds{};
+	for (const FGameplayTeamData& Team : GameState->Teams)
+	{
+		for (const FGameplayPlayerData& Member : Team.TeamMembers)
+		{
+			if (Member.UniqueNetId.IsValid() && Member.UniqueNetId.GetUniqueNetId())
+			{
+				MemberUserIds.Add(Member.UniqueNetId.GetUniqueNetId().ToSharedRef());
+			}
+		}
+	}
+
+	// Broadcast to query user information from backend.
+	if (OnQueryTeamMembersInfoDelegate.IsBound()) 
+	{
+		OnQueryTeamMembersInfoDelegate.Broadcast(
+			GetOwningPlayer(),
+			MemberUserIds,
+			TDelegate<void(const TMap<FUniqueNetIdRepl, FGameplayPlayerData>&)>::CreateUObject(this, &ThisClass::GenerateMultiplayerTeamEntries));
+	}
+	else 
+	{
+		GenerateMultiplayerTeamEntries();
+	}
+}
+
 // @@@SNIPSTART MatchLobbyWidget.cpp-GenerateMultiplayerTeamEntries
-void UMatchLobbyWidget::GenerateMultiplayerTeamEntries()
+void UMatchLobbyWidget::GenerateMultiplayerTeamEntries(const TMap<FUniqueNetIdRepl, FGameplayPlayerData>& AdditionalMembersInfo)
 {
 	// Generate team entries only on game clients.
 	// Also, don't attempt to generate entries when the Listen Server is tearing down.
@@ -166,6 +197,12 @@ void UMatchLobbyWidget::GenerateMultiplayerTeamEntries()
 		for (const FGameplayPlayerData& Member : Team.TeamMembers)
 		{
 			PlayerIndex++;
+
+			FGameplayPlayerData* AdditionalInfo = nullptr;
+			if (AdditionalMembersInfo.Contains(Member.UniqueNetId))
+			{
+				AdditionalInfo = new FGameplayPlayerData(AdditionalMembersInfo[Member.UniqueNetId]);
+			}
 			
 			FString PlayerName = FString::Printf(TEXT("Player %d"), PlayerIndex);
 			const bool bIsLocalPlayer = LocalPlayerNetId.IsValid() && LocalPlayerNetId == Member.UniqueNetId;
@@ -182,13 +219,15 @@ void UMatchLobbyWidget::GenerateMultiplayerTeamEntries()
 			const TWeakObjectPtr<UPlayerEntryWidget> PlayerEntry = MakeWeakObjectPtr<UPlayerEntryWidget>(CreateWidget<UPlayerEntryWidget>(this, PlayerEntryWidget.Get()));
 			TeamEntry->AddPlayerEntry(PlayerEntry.Get());
 			PlayerEntry->SetUsername(FText::FromString(PlayerName));
-			PlayerEntry->SetAvatar(Member.AvatarURL);
+			PlayerEntry->SetAvatar(AdditionalInfo ? AdditionalInfo->AvatarURL : Member.AvatarURL);
 			PlayerEntry->SetAvatarTint(Member.AvatarURL.IsEmpty() ? TeamColor : FLinearColor::White);
 			PlayerEntry->SetTextColor(TeamColor);
 			PlayerEntry->SetNetId(Member.UniqueNetId.GetUniqueNetId());
 			PlayerEntry->ActivateWidget();
 		}
 	}
+
+	Ws_TeamList->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Not_Empty);
 }
 // @@@SNIPEND
 

@@ -48,8 +48,8 @@ public:
 // @@@SNIPEND
 
 // @@@SNIPSTART PrivateChatSubsystem.h-protected
-// @@@MULTISNIP GetChatInterface {"selectedLines": ["1", "7"]}
-// @@@MULTISNIP GetPromptSubsystem {"selectedLines": ["1", "9"]}
+// @@@MULTISNIP GetChatInterface {"selectedLines": ["1", "9"]}
+// @@@MULTISNIP GetPromptSubsystem {"selectedLines": ["1", "12"]}
 // @@@MULTISNIP OnSendPrivateChatComplete {"selectedLines": ["1-2"]}
 // @@@MULTISNIP OnPrivateChatMessageReceived {"selectedLines": ["1", "3"]}
 // @@@MULTISNIP PushPrivateChatMessageReceivedNotification {"selectedLines": ["1", "5"]}

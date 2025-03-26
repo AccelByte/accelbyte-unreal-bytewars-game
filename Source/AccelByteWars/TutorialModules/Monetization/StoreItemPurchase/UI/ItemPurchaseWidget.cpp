@@ -28,9 +28,8 @@ void UItemPurchaseWidget::NativeOnActivated()
 	ensure(PurchaseSubsystem);
 
 	NativePlatformPurchaseSubsystem = GetGameInstance()->GetSubsystem<UNativePlatformPurchaseSubsystem>();
-	ensure(NativePlatformPurchaseSubsystem);
 
-	// setup UI
+	// Setup UI
 	SetupPurchaseButtons(StoreItemDataObject->GetPrices());
 	Ws_Root->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Not_Empty);
 	Tb_Success->SetVisibility(ESlateVisibility::Collapsed);
@@ -38,14 +37,18 @@ void UItemPurchaseWidget::NativeOnActivated()
 	Ss_Amount->SetSelectedIndex(0);
 	Ss_Amount->OnSelectionChangedDelegate.AddUObject(this, &ThisClass::UpdatePrice);
 
-	// show amount if consumable
+	// Show amount if consumable
 	Ss_Amount->SetVisibility(StoreItemDataObject->GetIsConsumable() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 
-	// setup delegate
+	// Setup delegate
 	PurchaseSubsystem->OnCheckoutCompleteDelegates.AddUObject(this, &ThisClass::OnPurchaseComplete);
-	NativePlatformPurchaseSubsystem->OnSynchPurchaseCompleteDelegates.BindUObject(this, &ThisClass::OnSynchPurchaseComplete);
+	if (NativePlatformPurchaseSubsystem) 
+	{
+		// Sync the native platform purchases if the native platform is valid.
+		NativePlatformPurchaseSubsystem->OnSynchPurchaseCompleteDelegates.BindUObject(this, &ThisClass::OnSynchPurchaseComplete);
+	}
 
-	// set focus
+	// Set focus
 	if (W_PurchaseButtonsOuter->HasAnyChildren())
 	{
 		W_PurchaseButtonsOuter->GetChildAt(0)->SetUserFocus(GetOwningPlayer());
@@ -60,27 +63,27 @@ void UItemPurchaseWidget::NativeOnDeactivated()
 
 	PurchaseSubsystem->OnCheckoutCompleteDelegates.RemoveAll(this);
 	Ss_Amount->OnSelectionChangedDelegate.RemoveAll(this);
-	NativePlatformPurchaseSubsystem->OnSynchPurchaseCompleteDelegates.Unbind();
+
+	if (NativePlatformPurchaseSubsystem) 
+	{
+		NativePlatformPurchaseSubsystem->OnSynchPurchaseCompleteDelegates.Unbind();
+	}
 }
 
 void UItemPurchaseWidget::OnClickPurchase(const int32 PriceIndex) const
 {
 	Ws_Root->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Loading);
 
-	const bool bIsNativePlatformValid = IOnlineSubsystem::GetByPlatform() != nullptr;
-	
-	if (bIsNativePlatformValid &&
-		StoreItemDataObject->GetItemType() == ITEM_TYPE_COINS)
+	// Open the native platform store if the native platform is valid and the item type is supported.
+	if (NativePlatformPurchaseSubsystem &&
+		NativePlatformPurchaseSubsystem->IsNativePlatformSupported() &&
+		NativePlatformPurchaseSubsystem->IsItemSupportedByNativePlatform(StoreItemDataObject->GetItemType()) &&
+		NativePlatformPurchaseSubsystem->OpenPlatformStore(GetOwningPlayer(), StoreItemDataObject, PriceIndex, NativePlatformPurchaseSubsystem->GetItemMapping()))
 	{
-		NativePlatformPurchaseSubsystem->OpenPlatformStore(
-			GetOwningPlayer(), 
-			StoreItemDataObject, 
-			PriceIndex, 
-			NativePlatformPurchaseSubsystem->GetItemMapping());
-
 		return;
 	}
 
+	// Otherwise, fallback to use AccelByte platform to purchase the item.
 	PurchaseSubsystem->CreateNewOrder(
 		GetOwningPlayer(),
 		StoreItemDataObject,

@@ -6,9 +6,11 @@
 
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
-#include "OnlineUserCacheAccelByte.h"
+#include "OnlineSubsystemUtils.h"
 #include "OnlineSubsystemTypes.h"
+#include "OnlineUserCacheAccelByte.h"
 #include "OnlineSubsystemAccelByteTypes.h"
+#include "Interfaces/OnlineUserInterface.h"
 #include "Interfaces/OnlinePresenceInterface.h"
 #include "FriendsEssentialsModels.generated.h"
 
@@ -60,22 +62,45 @@ public:
 
     EDataSource DataSource = EDataSource::User;
 
-    static UFriendData* ConvertToFriendData(TSharedRef<FOnlineUser> OnlineUser)
+    static UFriendData* ConvertToFriendData(TSharedRef<FOnlineUser> OnlineUser, const UObject* Context)
     {
-        UFriendData* FriendData = NewObject<UFriendData>();
+        if (!Context || !Context->GetWorld()) 
+        {
+            return nullptr;
+        }
+        
+        IOnlineSubsystem* Subsystem = Online::GetSubsystem(Context->GetWorld());
+        if (!Subsystem) 
+        {
+            return nullptr;
+        }
 
+        IOnlineUserPtr UserInterface = Subsystem->GetUserInterface();
+        if (!UserInterface)
+        {
+            return nullptr;
+        }
+
+        UFriendData* FriendData = NewObject<UFriendData>();
         FriendData->UserId = OnlineUser->GetUserId();
         FriendData->DisplayName = OnlineUser->GetDisplayName();
         OnlineUser->GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, FriendData->AvatarURL);
         FriendData->Status = EFriendStatus::Unknown;
         FriendData->bCannotBeInvited = false;
 
+        // If avatar attribute from online user object is empty, try fetch it from the cache.
+        TSharedPtr<FOnlineUser> CachedUser = UserInterface->GetUserInfo(0, OnlineUser->GetUserId().Get());
+        if (FriendData->AvatarURL.IsEmpty() && CachedUser)
+        {
+            CachedUser->GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, FriendData->AvatarURL);
+        }
+
         return FriendData;
     }
 
-    static UFriendData* ConvertToFriendData(TSharedRef<FOnlineFriend> OnlineUser)
+    static UFriendData* ConvertToFriendData(TSharedRef<FOnlineFriend> OnlineUser, const UObject* Context)
     {
-        UFriendData* FriendData = ConvertToFriendData(StaticCast<TSharedRef<FOnlineUser>>(OnlineUser));
+        UFriendData* FriendData = ConvertToFriendData(StaticCast<TSharedRef<FOnlineUser>>(OnlineUser), Context);
 
         switch (OnlineUser->GetInviteStatus())
         {
@@ -107,9 +132,9 @@ public:
         return FriendData;
     }
 
-    static UFriendData* ConvertToFriendData(TSharedRef<FOnlineBlockedPlayer> OnlineUser)
+    static UFriendData* ConvertToFriendData(TSharedRef<FOnlineBlockedPlayer> OnlineUser, const UObject* Context)
     {
-        UFriendData* FriendData = ConvertToFriendData(StaticCast<TSharedRef<FOnlineUser>>(OnlineUser));
+        UFriendData* FriendData = ConvertToFriendData(StaticCast<TSharedRef<FOnlineUser>>(OnlineUser), Context);
 
         FriendData->Status = EFriendStatus::Blocked;
         FriendData->bCannotBeInvited = true;
@@ -132,9 +157,9 @@ public:
         return FriendData;
     }
 	
-    static UFriendData* ConvertToFriendData(TSharedRef<FOnlineRecentPlayer> OnlineUser)
+    static UFriendData* ConvertToFriendData(TSharedRef<FOnlineRecentPlayer> OnlineUser, const UObject* Context)
     {
-        UFriendData* FriendData = ConvertToFriendData(StaticCast<TSharedRef<FOnlineUser>>(OnlineUser));
+        UFriendData* FriendData = ConvertToFriendData(StaticCast<TSharedRef<FOnlineUser>>(OnlineUser), Context);
 
         FriendData->DataSource = EDataSource::RecentPlayer;
 

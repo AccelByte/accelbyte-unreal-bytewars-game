@@ -17,7 +17,7 @@
 
 void UShopWidget::NativeOnActivated()
 {
-	// will load FTUE later after finished loading store items. 
+	// Widget will load the FTUE later after finished loading store items. 
 	bLoadFTUEImmediately = false;
 	
 	Super::NativeOnActivated();
@@ -26,15 +26,14 @@ void UShopWidget::NativeOnActivated()
 	ensure(StoreSubsystem);
 
 	NativePlatformPurchaseSubsystem = GetGameInstance()->GetSubsystem<UNativePlatformPurchaseSubsystem>();
-	ensure(NativePlatformPurchaseSubsystem);
 
-	// event binding
+	// Event binding
 	Btn_Back->OnClicked().AddUObject(this, &ThisClass::DeactivateWidget);
 	Btn_Refresh->OnClicked().AddUObject(this, &ThisClass::OnRefreshButtonClicked);
 	Tl_ItemCategory->OnTabSelected.AddDynamic(this, &ThisClass::SwitchCategory);
 	Tv_ContentOuter->OnItemClicked().AddUObject(this, &ThisClass::OnStoreItemClicked);
 
-	// reset UI
+	// Reset UI
 	SwitchContent(EAccelByteWarsWidgetSwitcherState::Loading);
 
 	StoreSubsystem->GetOrQueryCategoriesByRootPath(
@@ -42,7 +41,11 @@ void UShopWidget::NativeOnActivated()
 		RootPath,
 		FOnGetOrQueryCategories::CreateUObject(this, &ThisClass::OnGetOrQueryCategoriesComplete));
 
-	NativePlatformPurchaseSubsystem->QueryItemMapping(GetOwningPlayer());
+	if (NativePlatformPurchaseSubsystem)
+	{
+		// Query the native platform item mapping if the native platform is valid.
+		NativePlatformPurchaseSubsystem->QueryItemMapping(GetOwningPlayer());
+	}
 
 	OnActivatedMulticastDelegate.Broadcast(GetOwningPlayer());
 }

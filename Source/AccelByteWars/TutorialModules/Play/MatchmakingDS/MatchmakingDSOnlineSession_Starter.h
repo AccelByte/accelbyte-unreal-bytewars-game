@@ -29,7 +29,7 @@ public:
 	};
 
 protected:
-	virtual void OnDSQueryUserInfoComplete(const FListBulkUserInfo& UserInfoList, const FOnDSQueryUsersInfoComplete& OnComplete) override;
+	virtual void OnDSQueryUserInfoComplete(const FListUserDataResponse& UserInfoList, const FOnDSQueryUsersInfoComplete& OnComplete) override;
 
 	virtual bool HandleDisconnectInternal(UWorld* World, UNetDriver* NetDriver) override;
 

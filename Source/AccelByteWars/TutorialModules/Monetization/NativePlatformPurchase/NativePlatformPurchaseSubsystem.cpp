@@ -30,21 +30,28 @@ void UNativePlatformPurchaseSubsystem::QueryItemMapping(const APlayerController*
 {
 	if (bIsQueryItemMappingRunning)
 	{
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to query item mapping because it is already running."));
 		return;
 	}
 
 	const FUniqueNetIdPtr UserId = GetUniqueNetIdFromPlayerController(PlayerController);
 	if (!UserId.IsValid())
 	{
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to query item mapping. The User Id is invalid."));
+		return;
+	}
+
+	const EAccelBytePlatformType PlatformType = FOnlineSubsystemAccelByteUtils::GetAccelBytePlatformTypeFromAuthType(GetNativePlatformName());
+	if (!SupportedNativePlatform.Contains(PlatformType))
+	{
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to query item mapping. Cannot find item mapping for %s platform."), *GetNativePlatformName());
 		return;
 	}
 
 	bIsQueryItemMappingRunning = true;
 
-	FString StoreId = TEXT("");
-	FString ViewId = TEXT("");
-	FString Region = TEXT("");
-	constexpr EAccelBytePlatformMapping PlatformMapping = EAccelBytePlatformMapping::STEAM;
+	const EAccelBytePlatformMapping PlatformMapping = SupportedNativePlatform[PlatformType];
+	const FString StoreId = TEXT(""), ViewId = TEXT(""), Region = TEXT("");
 	StoreInterface->QueryStorefront(
 		*UserId.Get(),
 		StoreId,
@@ -61,18 +68,28 @@ TArray<TSharedRef<FAccelByteModelsItemMapping>> UNativePlatformPurchaseSubsystem
 	return Mapping;
 }
 
-void UNativePlatformPurchaseSubsystem::OpenPlatformStore(
+bool UNativePlatformPurchaseSubsystem::OpenPlatformStore(
 	const APlayerController* OwningPlayer,
 	const TWeakObjectPtr<UStoreItemDataObject> StoreItemData,
 	const int32 SelectedPriceIndex,
 	const TArray<TSharedRef<FAccelByteModelsItemMapping>> ItemMapping) const
 {
 	const IOnlineSubsystem* PlatformSubsystem = IOnlineSubsystem::GetByPlatform();
-	ensure(PlatformSubsystem);
-
-	if (PlatformSubsystem->GetSubsystemName().IsEqual(TEXT("Steam")))
+	if (!PlatformSubsystem)
 	{
-		OpenSteamStore(OwningPlayer, StoreItemData, SelectedPriceIndex, ItemMapping, PlatformSubsystem);
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to open platform store. The native platform subsystem is invalid."));
+		return false;
+	}
+
+	// Open the platform store based on the supported platform type.
+	EAccelBytePlatformType PlatformType = FOnlineSubsystemAccelByteUtils::GetAccelBytePlatformTypeFromAuthType(GetNativePlatformName());
+	switch (PlatformType)
+	{
+	case EAccelBytePlatformType::Steam:
+		return OpenSteamStore(OwningPlayer, StoreItemData, SelectedPriceIndex, ItemMapping, PlatformSubsystem);
+	default:
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to open platform store. The native store for %s platform is not yet implemented."), *GetNativePlatformName());
+		return false;
 	}
 }
 
@@ -89,7 +106,7 @@ void UNativePlatformPurchaseSubsystem::OnQueryItemMappingComplete(
 }
 
 #pragma region "Steam"
-void UNativePlatformPurchaseSubsystem::OpenSteamStore(
+bool UNativePlatformPurchaseSubsystem::OpenSteamStore(
 	const APlayerController* OwningPlayer,
 	const TWeakObjectPtr<UStoreItemDataObject> StoreItemData,
 	const int32 SelectedPriceIndex,
@@ -97,40 +114,35 @@ void UNativePlatformPurchaseSubsystem::OpenSteamStore(
 	const IOnlineSubsystem* PlatformSubsystem) const
 {
 	FString StoreUrl = TEXT(""); 
-	bool isSuccessGetStoreUrl = false;
-
-	isSuccessGetStoreUrl = TryGetSteamStoreUrl(StoreItemData, ItemMapping, StoreUrl);
-
-	if (!isSuccessGetStoreUrl)
+	if (!TryGetSteamStoreUrl(StoreItemData, ItemMapping, StoreUrl))
 	{
-		FString mErrorMsg = TEXT("Error when trying to get Steam Store Url");
-		OnSynchPurchaseCompleteDelegates.ExecuteIfBound(false, mErrorMsg);
-
 		UE_LOG_NATIVE_PLATFORM_PURCHASE(Error, TEXT("Error OpenSteamStore: Error when trying to get Steam Store Url"));
-		return;
+		return false;
 	}
 
-	FAccelByteModelsEntitlementSyncBase EntitlementSyncBase = GetItemToSync(StoreItemData, SelectedPriceIndex, ItemMapping);
-
+	const FAccelByteModelsEntitlementSyncBase EntitlementSyncBase = GetItemToSync(StoreItemData, SelectedPriceIndex, ItemMapping);
 	if (EntitlementSyncBase.ProductId.IsEmpty())
 	{
-		FString mErrorMsg = TEXT("Item is not mapped in AGS Admin Portal");
-		OnSynchPurchaseCompleteDelegates.ExecuteIfBound(false, mErrorMsg);
-
 		UE_LOG_NATIVE_PLATFORM_PURCHASE(Error, TEXT("Error OpenSteamStore: Item is not mapped in AGS Admin Portal"));
-		return;
+		return false;
 	}
 
 	const ULocalPlayer* LocalPlayer = OwningPlayer->GetLocalPlayer();
-	ensure(LocalPlayer != nullptr);
-	int32 LocalUserNum = LocalPlayer->GetControllerId();
+	if (!LocalPlayer) 
+	{
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Error, TEXT("Error OpenSteamStore: Local Player is invalid."));
+		return false;
+	}
 
-	PlatformSubsystem->GetExternalUIInterface()->ShowWebURL(StoreUrl,
+	const int32 LocalUserNum = LocalPlayer->GetControllerId();
+	PlatformSubsystem->GetExternalUIInterface()->ShowWebURL(
+		StoreUrl,
 		FShowWebUrlParams(),
 		FOnShowWebUrlClosedDelegate::CreateWeakLambda(this, [this, LocalUserNum, EntitlementSyncBase](const FString& FinalUrl)
-			{
-				EntitlementInterface->SyncPlatformPurchase(LocalUserNum, EntitlementSyncBase, OnSynchPurchaseCompleteDelegates);
-			}));
+		{
+			EntitlementInterface->SyncPlatformPurchase(LocalUserNum, EntitlementSyncBase, OnSynchPurchaseCompleteDelegates);
+		}));
+	return true;
 }
 
 bool UNativePlatformPurchaseSubsystem::TryGetSteamStoreUrl(
@@ -215,6 +227,54 @@ FString UNativePlatformPurchaseSubsystem::GetItemsMappingId(const FString Produc
 	}
 
 	return PlatformProductId;
+}
+
+FString UNativePlatformPurchaseSubsystem::GetNativePlatformName() const
+{
+	FOnlineSubsystemAccelByte* ABSubsystem = static_cast<FOnlineSubsystemAccelByte*>(Online::GetSubsystem(GetWorld()));
+	if (!ABSubsystem)
+	{
+		return TEXT("");
+	}
+
+	return ABSubsystem->GetNativePlatformNameString();
+}
+
+bool UNativePlatformPurchaseSubsystem::IsNativePlatformSupported() const
+{
+	if (!GetWorld()) 
+	{
+		return false;
+	}
+
+	const APlayerController* PC = GetWorld()->GetFirstPlayerController();
+	if (!PC) 
+	{
+		return false;
+	}
+
+	const ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
+	if (!LocalPlayer) 
+	{
+		return false;
+	}
+	
+	const FUniqueNetIdAccelByteUserPtr UserABId = StaticCastSharedPtr<const FUniqueNetIdAccelByteUser>(LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId());
+	if (!UserABId) 
+	{
+		return false;
+	}
+
+	// Check if the native platform is valid and if the user's native platform matches the active native platform.
+	const EAccelBytePlatformType UserPlatformType = FOnlineSubsystemAccelByteUtils::GetAccelBytePlatformTypeFromAuthType(UserABId->GetPlatformType());
+	const EAccelBytePlatformType NativePlatformType = FOnlineSubsystemAccelByteUtils::GetAccelBytePlatformTypeFromAuthType(GetNativePlatformName());
+	const bool IsNativePlatformSupported = SupportedNativePlatform.Contains(NativePlatformType);
+	return IsNativePlatformSupported && UserPlatformType == NativePlatformType;
+}
+
+bool UNativePlatformPurchaseSubsystem::IsItemSupportedByNativePlatform(const FString& Item) const
+{
+	return SupportedNativePlatformItem.Contains(FAccelByteUtilities::GetUEnumValueFromString<EAccelByteItemType>(Item));
 }
 
 #pragma endregion 

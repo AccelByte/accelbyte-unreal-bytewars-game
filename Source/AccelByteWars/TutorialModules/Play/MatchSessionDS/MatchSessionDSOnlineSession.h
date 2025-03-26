@@ -26,7 +26,7 @@ class ACCELBYTEWARS_API UMatchSessionDSOnlineSession : public USessionEssentials
 public:
 #pragma region "Game Session Essentials"
 	virtual void DSQueryUserInfo(
-		const TArray<FUniqueNetIdRef>& UserIds,
+		const TArray<FUniqueNetIdRef>& UserIds, 
 		const FOnDSQueryUsersInfoComplete& OnComplete) override;
 
 	virtual bool TravelToSession(const FName SessionName) override;
@@ -67,7 +67,7 @@ public:
 protected:
 #pragma region "Game Session Essentials"
 	virtual void OnDSQueryUserInfoComplete(
-		const FListBulkUserInfo& UserInfoList,
+		const FListUserDataResponse& UserInfoList,
 		const FOnDSQueryUsersInfoComplete& OnComplete) override;
 
 	virtual void OnSessionServerUpdateReceived(FName SessionName) override;

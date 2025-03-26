@@ -20,8 +20,6 @@ class UStoreItemDataObject;
 class UItemPurchaseButton;
 class UAccelByteWarsSequentialSelectionWidget;
 
-#define ITEM_TYPE_COINS TEXT("COINS")
-
 UCLASS(Abstract)
 class ACCELBYTEWARS_API UItemPurchaseWidget : public UAccelByteWarsActivatableWidget
 {

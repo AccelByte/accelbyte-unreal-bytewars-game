@@ -18,9 +18,9 @@
 #include "Play/OnlineSessionUtils/AccelByteWarsOnlineSessionBase.h"
 
 // @@@SNIPSTART MatchmakingDSWidget.cpp-NativeOnActivated
-// @@@MULTISNIP OnlineSession {"selectedLines": ["1-2", "5-12", "40"]}
-// @@@MULTISNIP SelectedGameModeType {"selectedLines": ["1-2", "15-22", "40"]}
-// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "24-27", "40"], "highlightedLines": "{4-7}"}
+// @@@MULTISNIP OnlineSession {"selectedLines": ["1-2", "5-12", "41"]}
+// @@@MULTISNIP SelectedGameModeType {"selectedLines": ["1-2", "15-22", "41"]}
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "24-28", "40-41"], "highlightedLines": "{5-8,10}"}
 void UMatchmakingDSWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
@@ -65,7 +65,7 @@ void UMatchmakingDSWidget::NativeOnActivated()
 // @@@SNIPEND
 
 // @@@SNIPSTART MatchmakingDSWidget.cpp-NativeOnDeactivated
-// @@@MULTISNIP ReadyUI {"selectedLines": ["1-6", "17-18"], "highlightedLines": "{3-6}"}
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-7", "18-19"], "highlightedLines": "{4-7}"}
 void UMatchmakingDSWidget::NativeOnDeactivated()
 {
 	Btn_Back->OnClicked().RemoveAll(this);
@@ -443,7 +443,7 @@ void UMatchmakingDSWidget::ChangeWidgetState(const EWidgetState State)
 	{
 		const TSharedPtr<FOnlineSessionInfoAccelByteV2> SessionInfo =
 			StaticCastSharedPtr<FOnlineSessionInfoAccelByteV2>(SessionInvite->Session.Session.SessionInfo);
-		if (SessionInfo && SessionInfo->IsP2PMatchmaking())
+		if (SessionInfo && SessionInfo->GetServerType() == EAccelByteV2SessionConfigurationServerType::P2P)
 		{
 			Tb_LoadingText->SetText(
 				OnlineSession->GetLocalPlayerUniqueNetId(GetOwningPlayer()) == SessionInfo->GetLeaderId()?

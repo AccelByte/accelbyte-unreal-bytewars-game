@@ -190,12 +190,15 @@ void APowerUpByteBomb::NotifyMissileDestroyed(const AActor* MissileToBeDestroyed
 	}
 
 	// Missile destroyed by power up, broadcast event for the missile.
-	AAccelByteWarsInGameGameMode::OnEntityDestroyedDelegates.Broadcast(
-		ENTITY_TYPE_MISSILE,
-		nullptr,
-		MissileToBeDestroyed->GetName(),
-		MissileToBeDestroyed->GetActorLocation(),
-		ENTITY_DESTROYED_TYPE_HIT_POWERUP,
-		AccelByteWarsUtility::FormatEntityDeathSource(ENTITY_TYPE_POWERUP, AccelByteWarsUtility::GenerateActorEntityId(GetOwner()))
-	);
+	if (AAccelByteWarsInGameGameMode::OnEntityDestroyedDelegates.IsBound())
+	{
+		AAccelByteWarsInGameGameMode::OnEntityDestroyedDelegates.Broadcast(
+		   ENTITY_TYPE_MISSILE,
+		   nullptr,
+		   MissileToBeDestroyed->GetName(),
+		   MissileToBeDestroyed->GetActorLocation(),
+		   ENTITY_DESTROYED_TYPE_HIT_POWERUP,
+		   AccelByteWarsUtility::FormatEntityDeathSource(ENTITY_TYPE_POWERUP, AccelByteWarsUtility::GenerateActorEntityId(GetOwner()))
+	   );
+	}
 }

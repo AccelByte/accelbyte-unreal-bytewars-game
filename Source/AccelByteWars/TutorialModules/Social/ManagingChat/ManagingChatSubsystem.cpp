@@ -3,17 +3,13 @@
 // and restrictions contact your company contract manager.
 
 #include "ManagingChatSubsystem.h"
-
-#include "OnlineSubsystemUtils.h"
-#include "Core/AccelByteApiClient.h"
-#include "Api/AccelByteChatApi.h"
-
 #include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "Core/UI/Components/AccelByteWarsButtonBase.h"
 #include "Social/FriendsEssentials/UI/FriendDetailsWidget.h"
+#include "Api/AccelByteChatApi.h"
 
 void UManagingChatSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -97,7 +93,14 @@ void UManagingChatSubsystem::MuteChat(FUniqueNetIdPtr TargetUserId)
     AccelByte::FApiClientPtr ApiClient = UTutorialModuleOnlineUtility::GetApiClient(this);
     if (!ApiClient)
     {
-        UE_LOG_MANAGINGCHAT(Warning, TEXT("Cannot mute chat. Api Client is not valid."));
+        UE_LOG_MANAGINGCHAT(Warning, TEXT("Cannot mute chat. AccelByte API Client is not valid."));
+        return;
+    }
+
+    AccelByte::Api::ChatPtr ChatApi = ApiClient->GetChatApi().Pin();
+    if (!ChatApi)
+    {
+        UE_LOG_MANAGINGCHAT(Warning, TEXT("Cannot mute chat. Chat API is not valid."));
         return;
     }
 
@@ -108,8 +111,7 @@ void UManagingChatSubsystem::MuteChat(FUniqueNetIdPtr TargetUserId)
         return;
     }
 
-    // TODO: Might need restructure.
-    ApiClient->Chat.BlockUser(
+    ChatApi->BlockUser(
         TargetUserABId->GetAccelByteId(), 
         AccelByte::Api::Chat::FChatBlockUserResponse::CreateWeakLambda(this, [this](const FAccelByteModelsChatBlockUserResponse& Result)
         {
@@ -139,7 +141,14 @@ void UManagingChatSubsystem::UnmuteChat(FUniqueNetIdPtr TargetUserId)
     AccelByte::FApiClientPtr ApiClient = UTutorialModuleOnlineUtility::GetApiClient(this);
     if (!ApiClient)
     {
-        UE_LOG_MANAGINGCHAT(Warning, TEXT("Cannot unmute chat. Api Client is not valid."));
+        UE_LOG_MANAGINGCHAT(Warning, TEXT("Cannot unmute chat. AccelByte API Client is not valid."));
+        return;
+    }
+
+    AccelByte::Api::ChatPtr ChatApi = ApiClient->GetChatApi().Pin();
+    if (!ChatApi)
+    {
+        UE_LOG_MANAGINGCHAT(Warning, TEXT("Cannot unmute chat. Chat API is not valid."));
         return;
     }
 
@@ -150,8 +159,7 @@ void UManagingChatSubsystem::UnmuteChat(FUniqueNetIdPtr TargetUserId)
         return;
     }
 
-    // TODO: Might need restructure.
-    ApiClient->Chat.UnblockUser(
+    ChatApi->UnblockUser(
         TargetUserABId->GetAccelByteId(),
         AccelByte::Api::Chat::FChatUnblockUserResponse::CreateWeakLambda(this, [this](const FAccelByteModelsChatUnblockUserResponse& Result)
         {
@@ -201,18 +209,6 @@ FUniqueNetIdPtr UManagingChatSubsystem::GetCurrentDisplayedFriendId()
     }
 
     return FriendUserId.GetUniqueNetId();
-}
-
-FOnlineChatAccelBytePtr UManagingChatSubsystem::GetChatInterface()
-{
-    const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
-    if (!ensure(Subsystem))
-    {
-        UE_LOG_MANAGINGCHAT(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and the DefaultPlatformService under [OnlineSubsystem] in the Engine.ini file is set to AccelByte."));
-        return nullptr;
-    }
-
-    return StaticCastSharedPtr<FOnlineChatAccelByte>(Subsystem->GetChatInterface());
 }
 
 UPromptSubsystem* UManagingChatSubsystem::GetPromptSubystem()

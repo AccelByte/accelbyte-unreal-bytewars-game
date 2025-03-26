@@ -11,6 +11,7 @@
 #include "OnlineSubsystem.h"
 #include "OnlineSubsystemAccelByteSessionSettings.h"
 #include "OnlineSubsystemUtils.h"
+#include "Api/AccelByteQos.h"
 
 #define RETRY_LIMIT 3
 
@@ -67,7 +68,14 @@ void URegionPreferencesSubsystem::RefreshRegionLatency(bool bRetryOnFailed)
 		return;
 	}
 
-	ApiClient->Qos.GetServerLatencies(OnGetLatenciesSuccessDelegate, FErrorHandler::CreateWeakLambda(this, [this, bRetryOnFailed](int32 ErrorCode, const FString& ErrorMessage)
+	AccelByte::Api::QosPtr QosApi = ApiClient->GetQosApi().Pin();
+	if (!QosApi)
+	{
+		UE_LOG_REGION_PREFERENCES_ESSENTIALS(Warning, TEXT("Cannot get region latencies. QoS API is invalid."));
+		return;
+	}
+
+	QosApi->GetServerLatencies(OnGetLatenciesSuccessDelegate, FErrorHandler::CreateWeakLambda(this, [this, bRetryOnFailed](int32 ErrorCode, const FString& ErrorMessage)
 	{
 		UE_LOG_REGION_PREFERENCES_ESSENTIALS(Warning, TEXT("Error getting regions latency!! Error code: %d Error Message: %s"), ErrorCode, *ErrorMessage);
 		OnGetLatenciesError(ErrorCode, ErrorMessage);
@@ -412,12 +420,19 @@ void URegionPreferencesSubsystem::OnLobbyConnected(int32 LocalUserNum, bool bWas
 	AccelByte::FApiClientPtr ApiClient = UTutorialModuleOnlineUtility::GetApiClient(this);
 	if (!ApiClient)
 	{
-		UE_LOG_REGION_PREFERENCES_ESSENTIALS(Warning, TEXT("Cannot initialze region latencies. AccelByte API Client is invalid."));
+		UE_LOG_REGION_PREFERENCES_ESSENTIALS(Warning, TEXT("Cannot initialize region latencies. AccelByte API Client is invalid."));
+		return;
+	}
+
+	AccelByte::Api::QosPtr QosApi = ApiClient->GetQosApi().Pin();
+	if (!QosApi)
+	{
+		UE_LOG_REGION_PREFERENCES_ESSENTIALS(Warning, TEXT("Cannot initialize region latencies. QoS API is invalid."));
 		return;
 	}
 
 	// Initialize region latencies from cache if any. Otherwise, query the region latencies.
-	const TArray<TPair<FString, float>> Latencies = ApiClient->Qos.GetCachedLatencies();
+	const TArray<TPair<FString, float>> Latencies = QosApi->GetCachedLatencies();
 	if (Latencies.Num() > 0)
 	{
 		OnGetLatenciesSuccess(Latencies);

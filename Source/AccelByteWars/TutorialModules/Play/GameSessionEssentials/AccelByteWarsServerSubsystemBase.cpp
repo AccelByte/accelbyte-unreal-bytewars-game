@@ -227,17 +227,16 @@ void UAccelByteWarsServerSubsystemBase::AuthenticatePlayer(APlayerController* Pl
 	// check cache
 	if (IsRunningDedicatedServer())
 	{
-		for (const TTuple<FString, TTuple<FBaseUserInfo, int>>& UserInfo : DSCachedUsersInfo)
+		for (const TTuple<FString, TTuple<FUserDataResponse, int>>& UserInfo : DSCachedUsersInfo)
 		{
 			if (GameSessionOnlineSession->CompareAccelByteUniqueId(PlayerUniqueNetId, UserInfo.Key) &&
 				UserInfo.Value.Value != INDEX_NONE)
 			{
 				UE_LOG_GAMESESSION(Log, TEXT("Found DS cache"));
 
-				// cache found, trigger immediately
+				// Cache found, trigger immediately
 				AbPlayerState->SetPlayerName(UserInfo.Value.Key.DisplayName);
 				AbPlayerState->TeamId = UserInfo.Value.Value;
-				AbPlayerState->AvatarURL = UserInfo.Value.Key.AvatarUrl;
 
 				ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, PlayerController]()
 				{
@@ -437,7 +436,7 @@ void UAccelByteWarsServerSubsystemBase::AuthenticatePlayer_OnQueryUserInfoComple
 
 void UAccelByteWarsServerSubsystemBase::AuthenticatePlayer_OnDSQueryUserInfoComplete(
 	const bool bSucceeded,
-	const TArray<const FBaseUserInfo*> UserInfos)
+	const TArray<const FUserDataResponse*> UserInfos)
 {
 	UE_LOG_GAMESESSION(Log, TEXT("succeeded: %s"), *FString(bSucceeded ? "TRUE": "FALSE"))
 
@@ -445,11 +444,11 @@ void UAccelByteWarsServerSubsystemBase::AuthenticatePlayer_OnDSQueryUserInfoComp
 
 	if (bSucceeded)
 	{
-		// cache data
-		for (const FBaseUserInfo* User : UserInfos)
+		// Cache data
+		for (const FUserDataResponse* User : UserInfos)
 		{
 			UE_LOG_GAMESESSION(Verbose, TEXT("cache added: %s"), *User->UserId);
-			TPair<FBaseUserInfo, int32>& UserInfo = DSCachedUsersInfo.FindOrAdd(User->UserId);
+			TPair<FUserDataResponse, int32>& UserInfo = DSCachedUsersInfo.FindOrAdd(User->UserId);
 			UserInfo.Key = *User;
 			UserInfo.Value = INDEX_NONE;
 		}
@@ -540,10 +539,9 @@ void UAccelByteWarsServerSubsystemBase::AuthenticatePlayer_CompleteTask(const bo
 				FUniqueNetIdAccelByteUser::TryCast(PlayerState->GetUniqueId().GetUniqueNetId().ToSharedRef());
 			if (DSCachedUsersInfo.Contains(UniqueNetId->GetAccelByteId()))
 			{
-				const TTuple<FBaseUserInfo, int>& UserInfo = DSCachedUsersInfo[UniqueNetId->GetAccelByteId()];
+				const TTuple<FUserDataResponse, int>& UserInfo = DSCachedUsersInfo[UniqueNetId->GetAccelByteId()];
 				PlayerState->SetPlayerName(UserInfo.Key.DisplayName);
 				PlayerState->TeamId = UserInfo.Value;
-				PlayerState->AvatarURL = UserInfo.Key.AvatarUrl;
 
 				bFound = true;
 			}

@@ -6,6 +6,7 @@
 
 #include "CoreMinimal.h"
 #include "OnlineIdentityInterfaceAccelByte.h"
+#include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "StartupSubsystem.generated.h"
 
@@ -123,4 +124,12 @@ protected:
 	UFUNCTION()
 	void KillOthers(const TArray<FString>& Args);
 #pragma endregion 
+
+#pragma region "Core game helpers"
+private:
+	void OnQueryTeamMembersInfo(
+		const APlayerController* PC,
+		const TArray<FUniqueNetIdRef>& MemberUserIds,
+		const TDelegate<void(const TMap<FUniqueNetIdRepl, FGameplayPlayerData>& TeamMembersInfo)> OnComplete);
+#pragma endregion
 };

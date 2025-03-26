@@ -25,7 +25,7 @@ void UFriendsSyncMenuButtonWidget::NativeOnActivated()
 	}
 
 	// Cast Online Subsystem to AccelByte OSS.
-	const FOnlineSubsystemAccelByte* ABSubsystem = static_cast<FOnlineSubsystemAccelByte*>(Subsystem);
+	FOnlineSubsystemAccelByte* ABSubsystem = static_cast<FOnlineSubsystemAccelByte*>(Subsystem);
 	if (!ensure(ABSubsystem))
 	{
 		UE_LOG_NATIVE_FRIENDS_ESSENTIALS(Warning, TEXT("The AccelByte online subsystem is invalid."));
@@ -34,7 +34,7 @@ void UFriendsSyncMenuButtonWidget::NativeOnActivated()
 	}
 
 	// Check if native subsystem active or not
-	const IOnlineSubsystem* NativeSubsystem = ABSubsystem->GetNativePlatformSubsystem();
+	const IOnlineSubsystem* NativeSubsystem = IOnlineSubsystem::Get(ABSubsystem->GetNativePlatformName());
 	if (!NativeSubsystem)
 	{
 		UE_LOG_NATIVE_FRIENDS_ESSENTIALS(Log, TEXT("The native online subsystem is invalid. Button is set to collapsed."))

@@ -11,6 +11,7 @@
 #include "OnlineSubsystem.h"
 #include "OnlineSubsystemAccelByteSessionSettings.h"
 #include "OnlineSubsystemUtils.h"
+#include "Api/AccelByteQos.h"
 
 void URegionPreferencesSubsystem_Starter::Initialize(FSubsystemCollectionBase& Collection)
 {

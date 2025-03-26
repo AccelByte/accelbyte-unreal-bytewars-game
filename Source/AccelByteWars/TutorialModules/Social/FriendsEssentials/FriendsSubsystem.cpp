@@ -132,17 +132,6 @@ void UFriendsSubsystem::GetCacheFriendList(const int32 LocalUserNum, bool bQuery
                         // Refresh friends data with queried friend's user information.
                         TArray<TSharedRef<FOnlineFriend>> NewCachedFriendList{};
                         FriendsInterface->GetFriendsList(LocalUserNum, TEXT(""), NewCachedFriendList);
-                        for (const TSharedRef<FOnlineFriend>& NewCachedFriend : NewCachedFriendList)
-                        {
-                            // Update friend's avatar URL based on queried friend's user information.
-                            FString UserAvatarURL = TEXT("");
-                            TSharedPtr<FOnlineUser> UserInfo = UserInterface->GetUserInfo(
-                                LocalUserNum, NewCachedFriend.Get().GetUserId().Get());
-                            UserInfo->GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, UserAvatarURL);
-                            StaticCastSharedRef<FOnlineFriendAccelByte>(NewCachedFriend).Get().SetUserAttribute(
-                                ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, UserAvatarURL);
-                        }
-
                         OnComplete.ExecuteIfBound(true, NewCachedFriendList, TEXT(""));
                     }));
             }
@@ -194,7 +183,7 @@ void UFriendsSubsystem::GetSelfFriendCode(const APlayerController* PC, const FOn
         {
             const FString FriendCode = UserAccount->GetPublicCode();
             UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Successfully obtained self friend code: %s"), *FriendCode);
-            OnComplete.ExecuteIfBound(true, UFriendData::ConvertToFriendData(UserInfo.ToSharedRef()), FriendCode);
+            OnComplete.ExecuteIfBound(true, UFriendData::ConvertToFriendData(UserInfo.ToSharedRef(), this), FriendCode);
             return;
         }
     }
@@ -219,7 +208,7 @@ void UFriendsSubsystem::GetSelfFriendCode(const APlayerController* PC, const FOn
 
                 const FString FriendCode = UsersInfo[0]->GetPublicCode();
                 UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Successfully obtained self friend code: %s"), *FriendCode);
-                OnComplete.ExecuteIfBound(true, UFriendData::ConvertToFriendData(UsersInfo[0].ToSharedRef()), FriendCode);
+                OnComplete.ExecuteIfBound(true, UFriendData::ConvertToFriendData(UsersInfo[0].ToSharedRef(), this), FriendCode);
             }));
     }
 }
@@ -275,7 +264,7 @@ void UFriendsSubsystem::OnFindFriendComplete(bool bWasSuccessful, const FUniqueN
         TSharedPtr<FOnlineFriend> FoundFriend = FriendsInterface->GetFriend(LocalUserNum, FoundUserId, TEXT(""));
         if (FoundFriend.IsValid())
         {
-            OnComplete.ExecuteIfBound(true, UFriendData::ConvertToFriendData(FoundFriend.ToSharedRef()), TEXT(""));
+            OnComplete.ExecuteIfBound(true, UFriendData::ConvertToFriendData(FoundFriend.ToSharedRef(), this), TEXT(""));
             return;
         }
 
@@ -291,7 +280,7 @@ void UFriendsSubsystem::OnFindFriendComplete(bool bWasSuccessful, const FUniqueN
                 {
                     if (Error.bSucceeded && !UsersInfo.IsEmpty())
                     {
-                        OnComplete.ExecuteIfBound(true, UFriendData::ConvertToFriendData(UsersInfo[0].ToSharedRef()), TEXT(""));
+                        OnComplete.ExecuteIfBound(true, UFriendData::ConvertToFriendData(UsersInfo[0].ToSharedRef(), this), TEXT(""));
                     }
                     else
                     {
@@ -353,7 +342,7 @@ void UFriendsSubsystem::OnSendFriendRequestComplete(int32 LocalUserNum, bool bWa
         UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Success to send a friend request."));
 
         PromptSubsystem->ShowMessagePopUp(MESSAGE_PROMPT_TEXT, SUCCESS_SEND_FRIEND_REQUEST);
-        OnComplete.ExecuteIfBound(true, UFriendData::ConvertToFriendData(FoundFriend.ToSharedRef()), TEXT(""));
+        OnComplete.ExecuteIfBound(true, UFriendData::ConvertToFriendData(FoundFriend.ToSharedRef(), this), TEXT(""));
     }
     else
     {
@@ -382,7 +371,7 @@ void UFriendsSubsystem::OnSendFriendRequestByFriendCodeComplete(int32 LocalUserN
                 TSharedPtr<FOnlineFriend> FoundFriend = FriendsInterface->GetFriend(LocalUserNum, FriendUserId.ToSharedRef().Get(), TEXT(""));
                 if (FoundFriend)
                 {
-                    FriendData = UFriendData::ConvertToFriendData(FoundFriend.ToSharedRef());
+                    FriendData = UFriendData::ConvertToFriendData(FoundFriend.ToSharedRef(), this);
                 }
             }
 
@@ -460,7 +449,7 @@ void UFriendsSubsystem::GetInboundFriendRequestList(const APlayerController* PC,
             TArray<UFriendData*> InboundFriendRequestList;
             for (const TSharedRef<FOnlineFriend>& TempData : CachedFriendList)
             {
-                InboundFriendRequestList.Add(UFriendData::ConvertToFriendData(TempData));
+                InboundFriendRequestList.Add(UFriendData::ConvertToFriendData(TempData, this));
             }
 
             OnComplete.ExecuteIfBound(true, InboundFriendRequestList, TEXT(""));
@@ -497,7 +486,7 @@ void UFriendsSubsystem::GetOutboundFriendRequestList(const APlayerController* PC
             TArray<UFriendData*> OutbondFriendRequestList;
             for (const TSharedRef<FOnlineFriend>& TempData : CachedFriendList)
             {
-                OutbondFriendRequestList.Add(UFriendData::ConvertToFriendData(TempData));
+                OutbondFriendRequestList.Add(UFriendData::ConvertToFriendData(TempData, this));
             }
 
             OnComplete.ExecuteIfBound(true, OutbondFriendRequestList, TEXT(""));
@@ -714,7 +703,7 @@ void UFriendsSubsystem::GetFriendList(const APlayerController* PC, const FOnGetF
             TArray<UFriendData*> AcceptedFriendList;
             for (const TSharedRef<FOnlineFriend>& TempData : CachedFriendList)
             {
-                AcceptedFriendList.Add(UFriendData::ConvertToFriendData(TempData));
+                AcceptedFriendList.Add(UFriendData::ConvertToFriendData(TempData, this));
             }
 
             OnComplete.ExecuteIfBound(true, AcceptedFriendList, TEXT(""));

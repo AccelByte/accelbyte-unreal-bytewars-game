@@ -176,7 +176,7 @@ void UMatchmakingP2PWidget_Starter::ChangeWidgetState(const EWidgetState State)
 	{
 		const TSharedPtr<FOnlineSessionInfoAccelByteV2> SessionInfo =
 			StaticCastSharedPtr<FOnlineSessionInfoAccelByteV2>(SessionInvite->Session.Session.SessionInfo);
-		if (SessionInfo && SessionInfo->IsP2PMatchmaking())
+		if (SessionInfo && SessionInfo->GetServerType() == EAccelByteV2SessionConfigurationServerType::P2P)
 		{
 			Tb_LoadingText->SetText(
 				OnlineSession->GetLocalPlayerUniqueNetId(GetOwningPlayer()) == SessionInfo->GetLeaderId()?

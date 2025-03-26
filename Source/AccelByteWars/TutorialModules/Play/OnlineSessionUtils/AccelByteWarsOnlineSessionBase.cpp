@@ -191,7 +191,7 @@ bool UAccelByteWarsOnlineSessionBase::CompareAccelByteUniqueId(
 #pragma region "Game Session Essentials | Query caching workaround"
 bool UAccelByteWarsOnlineSessionBase::DSRetrieveUserInfoCache(
 	const TArray<FUniqueNetIdRef>& UserIds,
-	TArray<const FBaseUserInfo*> OutUserInfo)
+	TArray<const FUserDataResponse*> OutUserInfo)
 {
 	bool bMissingCache = false;
 	for (const FUniqueNetIdRef& UserId : UserIds)
@@ -199,8 +199,8 @@ bool UAccelByteWarsOnlineSessionBase::DSRetrieveUserInfoCache(
 		const FUniqueNetIdAccelByteUserPtr AbUniqueNetId = FUniqueNetIdAccelByteUser::TryCast(UserId);
 		if (AbUniqueNetId.IsValid())
 		{
-			const FBaseUserInfo* UserInfo =
-				DSCachedUsersInfo.FindByPredicate([AbUniqueNetId](const FBaseUserInfo& UserInfo)
+			const FUserDataResponse* UserInfo = 
+				DSCachedUsersInfo.FindByPredicate([AbUniqueNetId](const FUserDataResponse& UserInfo)
 				{
 					return UserInfo.UserId.Compare(AbUniqueNetId->GetAccelByteId());
 				});
@@ -218,12 +218,12 @@ bool UAccelByteWarsOnlineSessionBase::DSRetrieveUserInfoCache(
 	return !bMissingCache;
 }
 
-void UAccelByteWarsOnlineSessionBase::CacheUserInfo(const FListBulkUserInfo& UserInfoList)
+void UAccelByteWarsOnlineSessionBase::CacheUserInfo(const FListUserDataResponse& UserInfoList)
 {
-	for (const FBaseUserInfo& User : UserInfoList.Data)
+	for (const FUserDataResponse& User : UserInfoList.Data)
 	{
-		// store to own cache as a workaround to OSS cache occasionally missing its data
-		DSCachedUsersInfo.RemoveAll([User](const FBaseUserInfo& SearchedUser)
+		// Store to own cache as a workaround to OSS cache occasionally missing its data
+		DSCachedUsersInfo.RemoveAll([User](const FUserDataResponse& SearchedUser)
 		{
 			return SearchedUser.UserId.Compare(User.UserId);
 		});

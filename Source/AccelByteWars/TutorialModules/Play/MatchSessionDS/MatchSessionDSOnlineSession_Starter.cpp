@@ -50,9 +50,20 @@ void UMatchSessionDSOnlineSession_Starter::DSQueryUserInfo(
 	const TArray<FUniqueNetIdRef>& UserIds,
 	const FOnDSQueryUsersInfoComplete& OnComplete)
 {
-	UE_LOG_MATCHSESSIONDS(Verbose, TEXT("called"))
+	UE_LOG_MATCHSESSIONDS(Verbose, TEXT("Called"))
 
-	const TArray<const FBaseUserInfo*> UserInfo;
+	AccelByte::FServerApiClientPtr ServerApiClient = UTutorialModuleOnlineUtility::GetServerApiClient(this);
+	if (!ServerApiClient)
+	{
+		UE_LOG_MATCHSESSIONDS(Log, TEXT("Cannot query user info. Server API Client is invalid."));
+		ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, OnComplete]()
+		{
+			OnDSQueryUserInfoComplete({}, OnComplete);
+		}));
+		return;
+	}
+
+	const TArray<const FUserDataResponse*> UserInfo;
 	if (DSRetrieveUserInfoCache(UserIds, UserInfo))
 	{
 		UE_LOG_MATCHSESSIONDS(Log, TEXT("Cache found"))
@@ -64,20 +75,20 @@ void UMatchSessionDSOnlineSession_Starter::DSQueryUserInfo(
 	else
 	{
 		// Gather user IDs.
-		TArray<FString> AbUserIds;
+		FListUserDataRequest Request;
 		for (const FUniqueNetIdRef& UserId : UserIds)
 		{
 			const FUniqueNetIdAccelByteUserPtr AbUniqueNetId = FUniqueNetIdAccelByteUser::TryCast(*UserId);
 			const FString AbUserId = AbUniqueNetId->GetAccelByteId();
 			if (!AbUserId.IsEmpty())
 			{
-				AbUserIds.Add(AbUserId);
+				Request.UserIds.Add(AbUserId);
 			}
 		}
 
-		AccelByte::FRegistry::User.BulkGetUserInfo(
-			AbUserIds,
-			THandler<FListBulkUserInfo>::CreateWeakLambda(this, [OnComplete, this](FListBulkUserInfo UserInfo)
+		ServerApiClient->ServerUser.ListUserByUserId(
+			Request,
+			THandler<FListUserDataResponse>::CreateWeakLambda(this, [OnComplete, this](FListUserDataResponse UserInfo)
 			{
 				OnDSQueryUserInfoComplete(UserInfo, OnComplete);
 			}),
@@ -85,7 +96,7 @@ void UMatchSessionDSOnlineSession_Starter::DSQueryUserInfo(
 			{
 				ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, OnComplete]()
 				{
-					OnDSQueryUserInfoComplete(FListBulkUserInfo(), OnComplete);
+					OnDSQueryUserInfoComplete({}, OnComplete);
 				}));
 			})
 		);
@@ -93,12 +104,12 @@ void UMatchSessionDSOnlineSession_Starter::DSQueryUserInfo(
 }
 
 void UMatchSessionDSOnlineSession_Starter::OnDSQueryUserInfoComplete(
-	const FListBulkUserInfo& UserInfoList,
+	const FListUserDataResponse& UserInfoList,
 	const FOnDSQueryUsersInfoComplete& OnComplete)
 {
-	UE_LOG_MATCHSESSIONDS(Verbose, TEXT("called"))
+	UE_LOG_MATCHSESSIONDS(Verbose, TEXT("Called"))
 
-	// reset delegate handle
+	// Reset delegate handle
 	OnDSQueryUserInfoCompleteDelegateHandle.Reset();
 
 	if (UserInfoList.Data.IsEmpty())
@@ -108,8 +119,8 @@ void UMatchSessionDSOnlineSession_Starter::OnDSQueryUserInfoComplete(
 
 	CacheUserInfo(UserInfoList);
 
-	TArray<const FBaseUserInfo*> OnlineUsers;
-	for (const FBaseUserInfo& User : UserInfoList.Data)
+	TArray<const FUserDataResponse*> OnlineUsers;
+	for (const FUserDataResponse& User : UserInfoList.Data)
 	{
 		OnlineUsers.Add(&User);
 	}

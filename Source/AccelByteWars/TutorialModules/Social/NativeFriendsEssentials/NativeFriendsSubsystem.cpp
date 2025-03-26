@@ -6,6 +6,7 @@
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "OnlineSubsystemUtils.h"
+#include "OnlineSubsystemAccelByteUtils.h"
 #include "TutorialModuleUtilities/StartupSubsystem.h"
 
 void UNativeFriendsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -103,7 +104,7 @@ int32 UNativeFriendsSubsystem::GetLocalUserNumFromPlayerController(const APlayer
 
 void UNativeFriendsSubsystem::GetNativeFriendList(const APlayerController* PC, const FOnGetNativeFriendListComplete& OnComplete)
 {
-    IOnlineSubsystem* NativeSubsystem = ABSubsystem->GetNativePlatformSubsystem();
+    IOnlineSubsystem* NativeSubsystem = IOnlineSubsystem::Get(ABSubsystem->GetNativePlatformName());
     if (!ensure(NativeSubsystem))
     {
         const FString ErrorMessage = TEXT("The native online subsystem is invalid.");
@@ -173,7 +174,9 @@ void UNativeFriendsSubsystem::QueryUsersByPlatformIds(const int32 LocalUserNum, 
         FriendIds.Add(Friend->GetUserId()->ToString());
     }
 
-    UserCache->QueryUsersByPlatformIds(LocalUserNum, ABSubsystem->GetNativePlatformTypeAsString(), FriendIds,
+    const EAccelBytePlatformType PlatformType = FOnlineSubsystemAccelByteUtils::GetAccelBytePlatformTypeFromAuthType(ABSubsystem->GetNativePlatformNameString());
+    const FString PlatformTypeStr = PlatformType == EAccelBytePlatformType::None ? TEXT("") : FAccelByteUtilities::GetPlatformString(PlatformType);
+    UserCache->QueryUsersByPlatformIds(LocalUserNum, PlatformTypeStr, FriendIds,
         FOnQueryUsersComplete::CreateUObject(this, &ThisClass::OnQueryUsersComplete, LocalUserNum, OnComplete));
 }
 

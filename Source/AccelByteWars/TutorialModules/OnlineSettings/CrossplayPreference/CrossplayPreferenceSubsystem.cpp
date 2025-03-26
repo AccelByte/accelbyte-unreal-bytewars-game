@@ -5,7 +5,6 @@
 #include "CrossplayPreferenceSubsystem.h"
 
 #include "CrossplayPreferenceLog.h"
-#include "Core/AccelByteMultiRegistry.h"
 #include "OnlineSubsystemUtils.h"
 
 void UCrossplayPreferenceSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -38,30 +37,6 @@ void UCrossplayPreferenceSubsystem::RetrieveCrossplayPreference(
 	UE_LOG_CROSSPLAY_PREFERENCES(Log, TEXT("Called"))
 
 	PlayerAttributes = SessionInterface->GetPlayerAttributes(*PlayerNetId);
-
-	// Check if data valid.
-	if (PlayerAttributes.Platforms.IsEmpty())
-	{
-		// Data is not valid, retrieve from backend.
-		SessionInterface->OnPlayerAttributesInitializedDelegates.AddWeakLambda(this, [this, OnComplete](const FUniqueNetId& LocalPlayerId, bool bWasSuccessful)
-		{
-			UE_LOG_CROSSPLAY_PREFERENCES(
-				Log,
-				TEXT("InitializePlayerAttributes response received. Succeeded: %s"),
-				*FString(bWasSuccessful ? TEXT("TRUE") : TEXT("FALSE")))
-
-			bool bEnableCrossplay = false;
-			if (bWasSuccessful)
-			{
-				PlayerAttributes = SessionInterface->GetPlayerAttributes(LocalPlayerId);
-				bEnableCrossplay = PlayerAttributes.bEnableCrossplay;
-			}
-			OnComplete.ExecuteIfBound(bWasSuccessful, bEnableCrossplay);
-		});
-		SessionInterface->InitializePlayerAttributes(*PlayerNetId);
-		return;
-	}
-
 	OnComplete.ExecuteIfBound(true, PlayerAttributes.bEnableCrossplay);
 }
 

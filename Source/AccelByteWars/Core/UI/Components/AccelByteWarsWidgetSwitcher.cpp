@@ -144,6 +144,8 @@ void UAccelByteWarsWidgetSwitcher::NativeConstruct()
 	});
 
 	Ws_Root->OnActiveWidgetIndexChanged.AddUObject(this, &ThisClass::OnActiveWidgetIndexChanged);
+	Ws_Root->OnTransitioningChanged.AddUObject(this, &ThisClass::OnTransitioningChanged);
+
 	SetWidgetState(DefaultState);
 }
 
@@ -156,6 +158,7 @@ void UAccelByteWarsWidgetSwitcher::NativeDestruct()
 	Btn_Retry->OnClicked().Clear();
 
 	Ws_Root->OnActiveWidgetIndexChanged.Clear();
+	Ws_Root->OnTransitioningChanged.Clear();
 
 	Super::NativeDestruct();
 }
@@ -182,6 +185,15 @@ void UAccelByteWarsWidgetSwitcher::OnActiveWidgetIndexChanged(UWidget* Widget, i
 	else
 	{
 		Ws_Root->SetDisableTransitionAnimation(false);
+	}
+}
+
+void UAccelByteWarsWidgetSwitcher::OnTransitioningChanged(bool bIsTransitioning)
+{
+	// On transition is finished, notify the on-widget index changed event to set the latest widget state.
+	if (!bIsTransitioning)
+	{
+		OnActiveWidgetIndexChanged(Ws_Root->GetActiveWidget(), Ws_Root->GetActiveWidgetIndex());
 	}
 }
 

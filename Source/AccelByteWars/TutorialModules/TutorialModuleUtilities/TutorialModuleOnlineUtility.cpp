@@ -120,6 +120,31 @@ AccelByte::FApiClientPtr UTutorialModuleOnlineUtility::GetApiClient(const UObjec
     return Subsystem->GetApiClient(Subsystem->GetLocalUserNumCached());
 }
 
+AccelByte::FServerApiClientPtr UTutorialModuleOnlineUtility::GetServerApiClient(const UObject* Context)
+{
+    if (!ensure(Context))
+    {
+        UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Cannot get AccelByte Server API Client. Context object is invalid."));
+        return nullptr;
+    }
+
+    FOnlineSubsystemAccelByte* Subsystem = static_cast<FOnlineSubsystemAccelByte*>(Online::GetSubsystem(Context->GetWorld()));
+    if (!ensure(Subsystem))
+    {
+        UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Cannot get AccelByte Server API Client. AccelByte Online Subsystem is invalid."));
+        return nullptr;
+    }
+
+    FAccelByteInstancePtr ABInstance = Subsystem->GetAccelByteInstance().Pin();
+    if (!ensure(ABInstance))
+    {
+        UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Cannot get AccelByte Server API Client. AccelByte Instance is invalid."));
+        return nullptr;
+    }
+
+    return ABInstance->GetServerApiClient();
+}
+
 bool UTutorialModuleOnlineUtility::GetIsServerUseAMS()
 {
     bool bUseAMS = true; // default is true
@@ -592,7 +617,15 @@ void UTutorialModuleOnlineUtility::ExecutePredefinedServiceValidator(const EServ
     {
         case EServicePredefinedValidator::IS_REQUIRED_AMS_ACCOUNT:
         {
-            ApiClient->Ams.GetAccount(
+            AccelByte::Api::AMSPtr AMSApi = ApiClient->GetAmsApi().Pin();
+            if (!AMSApi) 
+            {
+                UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Failed to get AMS account configuration. AMS Api is invalid."));
+                OnComplete.ExecuteIfBound(false);
+                return;
+            }
+
+            AMSApi->GetAccount(
                 AccelByte::THandler<FAccelByteModelsAMSGetAccountResponse>::CreateWeakLambda(this, [OnComplete](const FAccelByteModelsAMSGetAccountResponse& Result)
                 {
                     UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Log, TEXT("Success to get AMS account configuration. AMS account id: %s"), *(!Result.Id.IsEmpty() ? Result.Id : FString("empty")));
@@ -608,9 +641,17 @@ void UTutorialModuleOnlineUtility::ExecutePredefinedServiceValidator(const EServ
         }
         case EServicePredefinedValidator::IS_VALID_CONFIG_VERSION:
         {
+            AccelByte::Api::ConfigurationsPtr ConfigApi = ApiClient->GetConfigurationsApi().Pin();
+            if (!ConfigApi)
+            {
+                UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Failed to get config version from backend. Configuration API is invalid."));
+                OnComplete.ExecuteIfBound(false);
+                return;
+            }
+
             const FString GameVersion = GetServicePredefinedArgument(EServicePredifinedArgument::GAME_VERSION);
 
-            ApiClient->Configurations.Get(
+            ConfigApi->Get(
                 FString("bytewars_config_version"),
                 THandler<FAccelByteModelsConfiguration>::CreateWeakLambda(this, [GameVersion, OnComplete](const FAccelByteModelsConfiguration& Result)
                 {
@@ -1025,6 +1066,13 @@ void UTutorialModuleOnlineUtility::CacheGeneralInformation(const APlayerControll
         return;
     }
 
+    AccelByte::Api::ItemPtr ItemApi = ApiClient->GetItemApi().Pin();
+    if (!ItemApi) 
+    {
+        UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Cannot cache general information. Item API is invalid."));
+        return;
+    }
+
     const FUniqueNetIdAccelByteUserPtr UserABId =
         StaticCastSharedPtr<const FUniqueNetIdAccelByteUser>(LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId());
     if (!UserABId)
@@ -1048,7 +1096,7 @@ void UTutorialModuleOnlineUtility::CacheGeneralInformation(const APlayerControll
     }
 
     // Cache current published store id.
-    ApiClient->Item.GetListAllStores(
+    ItemApi->GetListAllStores(
         THandler<TArray<FAccelByteModelsPlatformStore>>::CreateWeakLambda(this, [this](const TArray<FAccelByteModelsPlatformStore>& Result)
         {
             bool bHasPublishedStore = false;

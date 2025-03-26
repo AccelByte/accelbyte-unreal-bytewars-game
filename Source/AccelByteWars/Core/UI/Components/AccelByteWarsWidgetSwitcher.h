@@ -98,6 +98,7 @@ protected:
 	void HandleFTUE();
 
 	void OnActiveWidgetIndexChanged(UWidget* Widget, int32 Index);
+	void OnTransitioningChanged(bool bIsTransitioning);
 
 	UWidget* GetTargetWidget(const EAccelByteWarsWidgetSwitcherState State) const;
 	int32 GetStateWidgetIndex(const EAccelByteWarsWidgetSwitcherState State) const;

@@ -50,7 +50,7 @@ protected:
 	void AuthenticatePlayer_AddPlayerControllerToQueryQueue(APlayerController* PlayerController);
 	void AuthenticatePlayer_OnRefreshSessionComplete(bool bSucceeded);
 	void AuthenticatePlayer_OnQueryUserInfoComplete(const FOnlineError& Error, const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo);
-	void AuthenticatePlayer_OnDSQueryUserInfoComplete(const bool bSucceeded, const TArray<const FBaseUserInfo*> UserInfos);
+	void AuthenticatePlayer_OnDSQueryUserInfoComplete(const bool bSucceeded, const TArray<const FUserDataResponse*> UserInfos);
 	void AuthenticatePlayer_CompleteTask(const bool bSucceeded);
 
 	void OnAuthenticatePlayerComplete(APlayerController* PlayerController, bool bPlayerIsInSession);
@@ -66,6 +66,6 @@ private:
 	TArray<APlayerController*> QueryUserInfoFromSessionQueue;
 
 	TMap<FUniqueNetIdRepl, TPair<FUserOnlineAccountAccelByte, int32 /*TeamIndex*/>> CachedUsersInfo;
-	TMap<FString, TPair<FBaseUserInfo, int32 /*TeamIndex*/>> DSCachedUsersInfo;
+	TMap<FString, TPair<FUserDataResponse, int32 /*TeamIndex*/>> DSCachedUsersInfo;
 #pragma endregion 
 };

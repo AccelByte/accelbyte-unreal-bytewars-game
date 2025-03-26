@@ -3,7 +3,6 @@
 // and restrictions contact your company contract manager.
 
 #include "StartupSubsystem.h"
-#include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/Utilities/AccelByteWarsUtility.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "UI/StartupWidget.h"
@@ -14,6 +13,7 @@
 #include "Access/AuthEssentials/UI/LoginWidget_Starter.h"
 #include "Core/GameModes/AccelByteWarsInGameGameMode.h"
 #include "Core/Player/AccelByteWarsPlayerController.h"
+#include "Core/UI/MainMenu/MatchLobby/MatchLobbyWidget.h"
 
 void UStartupSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -25,6 +25,11 @@ void UStartupSubsystem::Initialize(FSubsystemCollectionBase& Collection)
     UserInterface = Online::GetUserInterface(World);
 
     InitializePlatformLogin();
+
+    if (!IsRunningDedicatedServer())
+    {
+        UMatchLobbyWidget::OnQueryTeamMembersInfoDelegate.AddUObject(this, &ThisClass::OnQueryTeamMembersInfo);
+    }
 
 #pragma region "Core game cheats"
     if (UGUICheatWidgetEntry* GUICheatEntryKillSelf = FTutorialModuleGeneratedWidget::GetGUICheatMetadataById(GUI_CHEAT_ENTRY_KILL_SELF))
@@ -43,6 +48,11 @@ void UStartupSubsystem::Deinitialize()
     Super::Deinitialize();
 
     DeinitializePlatformLogin();
+
+    if (!IsRunningDedicatedServer())
+    {
+        UMatchLobbyWidget::OnQueryTeamMembersInfoDelegate.RemoveAll(this);
+    }
 }
 
 #pragma region "Common functions"
@@ -142,7 +152,7 @@ void UStartupSubsystem::QueryUserInfo(
 
     if (!UserInterface->QueryUserInfo(LocalUserNum, UserIds))
     {
-        OnQueryUserInfoComplete(LocalUserNum, false, UserIds, "", OnComplete);
+        OnQueryUserInfoComplete(LocalUserNum, false, UserIds, TEXT(""), OnComplete);
     }
 }
 // @@@SNIPEND
@@ -709,7 +719,20 @@ void UStartupSubsystem::LobbyConnect(const TArray<FString>& Args)
     }
 
     const AccelByte::FApiClientPtr ApiClient = AccelByteIdentityInterface->GetApiClient(LoginUserNum);
-    ApiClient->Lobby.Connect();
+    if (!ApiClient) 
+    {
+        UE_LOG_STARTUP(Warning, TEXT("Cannot connect to lobby. AccelByte API Client is invalid."));
+        return;
+    }
+
+    AccelByte::Api::LobbyPtr LobbyApi = ApiClient->GetLobbyApi().Pin();
+    if (!LobbyApi) 
+    {
+        UE_LOG_STARTUP(Warning, TEXT("Cannot connect to lobby. Lobby API is invalid."));
+        return;
+    }
+
+    LobbyApi->Connect();
 }
 
 void UStartupSubsystem::LobbyDisconnect(const TArray<FString>& Args)
@@ -726,7 +749,20 @@ void UStartupSubsystem::LobbyDisconnect(const TArray<FString>& Args)
     }
 
     const AccelByte::FApiClientPtr ApiClient = AccelByteIdentityInterface->GetApiClient(LoginUserNum);
-    ApiClient->Lobby.Disconnect(true);
+    if (!ApiClient)
+    {
+        UE_LOG_STARTUP(Warning, TEXT("Cannot connect to lobby. AccelByte API Client is invalid."));
+        return;
+    }
+
+    AccelByte::Api::LobbyPtr LobbyApi = ApiClient->GetLobbyApi().Pin();
+    if (!LobbyApi)
+    {
+        UE_LOG_STARTUP(Warning, TEXT("Cannot connect to lobby. Lobby API is invalid."));
+        return;
+    }
+
+    LobbyApi->Disconnect(true);
 }
 
 void UStartupSubsystem::KillSelf(const TArray<FString>& Args)
@@ -770,4 +806,45 @@ void UStartupSubsystem::KillOthers(const TArray<FString>& Args)
     });
 
     AccelByteWarsPlayerController->ClientInstructInstaKillPlayer(PlayerStates);
+}
+
+void UStartupSubsystem::OnQueryTeamMembersInfo(
+    const APlayerController* PC,
+    const TArray<FUniqueNetIdRef>& MemberUserIds,
+    const TDelegate<void(const TMap<FUniqueNetIdRepl, FGameplayPlayerData>& TeamMembersInfo)> OnComplete) 
+{
+    if (!PC) 
+    {
+        UE_LOG_STARTUP(Warning, TEXT("Failed to query team member info. Player Controller is invalid"));
+        OnComplete.ExecuteIfBound({});
+        return;
+    }
+
+    ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
+    if (!LocalPlayer) 
+    {
+        UE_LOG_STARTUP(Warning, TEXT("Failed to query team member info. Local Player is invalid"));
+        OnComplete.ExecuteIfBound({});
+        return;
+    }
+
+    int32 LocalUserNum = LocalPlayer->GetControllerId();
+    QueryUserInfo(
+        LocalUserNum, 
+        MemberUserIds, 
+        FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [this, OnComplete](
+        const FOnlineError& Error, const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
+        {
+            TMap<FUniqueNetIdRepl, FGameplayPlayerData> PlayerDataList;
+            for (const TSharedPtr<FUserOnlineAccountAccelByte>& UserInfo : UsersInfo)
+            {
+                FGameplayPlayerData PlayerData;
+                PlayerData.UniqueNetId = UserInfo->GetUserId();
+                UserInfo->GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, PlayerData.AvatarURL);
+
+                PlayerDataList.Add(PlayerData.UniqueNetId, PlayerData);
+            }
+            OnComplete.ExecuteIfBound(PlayerDataList);
+        })
+    );
 }

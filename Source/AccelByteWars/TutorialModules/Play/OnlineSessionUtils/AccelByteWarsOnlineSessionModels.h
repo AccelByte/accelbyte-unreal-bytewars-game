@@ -19,7 +19,7 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnRejectSessionInviteCompleteMulticast, boo
 
 #pragma region "Game Session Essentials"
 DECLARE_DELEGATE_TwoParams(FOnQueryUsersInfoComplete, const bool /*bSucceeded*/, const TArray<FUserOnlineAccountAccelByte*>& /*UsersInfo*/);
-DECLARE_DELEGATE_TwoParams(FOnDSQueryUsersInfoComplete, const bool /*bSucceeded*/, const TArray<const FBaseUserInfo*> /*UsersInfo*/)
+DECLARE_DELEGATE_TwoParams(FOnDSQueryUsersInfoComplete, const bool /*bSucceeded*/, const TArray<const FUserDataResponse*> /*UsersInfo*/)
 DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnServerSessionUpdateReceived, const FName /*SessionName*/, const FOnlineError& /*Error*/, const bool /*bHasClientTravelTriggered*/)
 #pragma endregion
 

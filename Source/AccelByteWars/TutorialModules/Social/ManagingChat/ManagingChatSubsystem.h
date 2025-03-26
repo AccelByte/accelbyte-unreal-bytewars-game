@@ -5,7 +5,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "OnlineChatInterfaceAccelByte.h"
 #include "ManagingChatLog.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "ManagingChatSubsystem.generated.h"
@@ -31,8 +30,6 @@ protected:
 
 	FTutorialModuleGeneratedWidget* MuteChatButtonMetadata;
 	FTutorialModuleGeneratedWidget* UnmuteChatButtonMetadata;
-
-	FOnlineChatAccelBytePtr GetChatInterface();
 
 	UPromptSubsystem* GetPromptSubystem();
 };

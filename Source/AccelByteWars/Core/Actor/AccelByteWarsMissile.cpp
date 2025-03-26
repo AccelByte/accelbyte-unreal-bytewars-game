@@ -487,17 +487,17 @@ void AAccelByteWarsMissile::OnDestroyObject()
 	}
 	else
 	{
-		// Missile hit planet, broadcast entity destroyed event for the missile.
+		// Missile timed out, broadcast entity destroyed event for the missile.
 		if (AAccelByteWarsInGameGameMode::OnEntityDestroyedDelegates.IsBound())
 		{
 			AAccelByteWarsInGameGameMode::OnEntityDestroyedDelegates.Broadcast(
-				ENTITY_TYPE_MISSILE,
-				nullptr,
-				GetName(),
-				GetActorLocation(),
-				ENTITY_DESTROYED_TYPE_HIT_LIFETIME,
-				ENTITY_TYPE_UNKNOWN
-			);
+			   ENTITY_TYPE_MISSILE,
+			   nullptr,
+			   GetName(),
+			   GetActorLocation(),
+			   ENTITY_DESTROYED_TYPE_HIT_LIFETIME,
+			   ENTITY_TYPE_UNKNOWN
+		   );
 		}
 
 		TreatMissileAsExpired(ABInGameMode);
@@ -575,12 +575,12 @@ void AAccelByteWarsMissile::NotifyShipHitByMissile() const
 	if (AAccelByteWarsInGameGameMode::OnEntityDestroyedDelegates.IsBound())
 	{
 		AAccelByteWarsInGameGameMode::OnEntityDestroyedDelegates.Broadcast(
-			ENTITY_TYPE_PLAYER,
-			ShipPlayerState->GetUniqueId().GetUniqueNetId(),
-			ShipActor->GetName(),
-			ShipActor->GetActorLocation(),
-			ENTITY_DESTROYED_TYPE_HIT_SHIP,
-			AccelByteWarsUtility::FormatEntityDeathSource(ENTITY_TYPE_MISSILE, AccelByteWarsUtility::GenerateActorEntityId(OwnerPC))
-		);
+		   ENTITY_TYPE_PLAYER,
+		   ShipPlayerState->GetUniqueId().GetUniqueNetId(),
+		   ShipActor->GetName(),
+		   ShipActor->GetActorLocation(),
+		   ENTITY_DESTROYED_TYPE_HIT_SHIP,
+		   AccelByteWarsUtility::FormatEntityDeathSource(ENTITY_TYPE_MISSILE, AccelByteWarsUtility::GenerateActorEntityId(OwnerPC))
+	   );
 	}
 }

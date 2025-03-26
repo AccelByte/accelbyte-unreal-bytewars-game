@@ -170,7 +170,7 @@ public:
 
 protected:
 	virtual void OnDSQueryUserInfoComplete(
-		const FListBulkUserInfo& UserInfoList,
+		const FListUserDataResponse& UserInfoList,
 		const FOnDSQueryUsersInfoComplete& OnComplete) override;
 
 	virtual void OnSessionServerUpdateReceived(FName SessionName) override;
@@ -461,7 +461,7 @@ private:
 #pragma region "Lobby Essentials"
 protected:
 	void LobbyConnect(int32 LocalUserNum);
-	void ChatConnect(int32 LocalUserNum);
+	void ChatConnect(int32 LocalUserNum, const FUniqueNetIdPtr UserId);
 	void OnConnectLobbyComplete(int32 LocalUserNum, bool bSucceeded, const FUniqueNetId& UserId, const FString& Error);
 	void OnLobbyReconnecting(int32 LocalUserNum, const FUniqueNetId& UserId, int32 StatusCode, const FString& Reason, bool bWasClean);
 	void OnLobbyReconnected();

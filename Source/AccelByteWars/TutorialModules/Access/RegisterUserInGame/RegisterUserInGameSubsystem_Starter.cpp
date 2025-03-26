@@ -5,7 +5,6 @@
 #include "RegisterUserInGameSubsystem_Starter.h"
 #include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
 #include "TutorialModuleUtilities/StartupSubsystem.h"
-
 #include "Core/Utilities/AccelByteWarsUtility.h"
 #include "Core/AccelByteWebSocketErrorTypes.h"
 #include "Api/AccelByteUserApi.h"

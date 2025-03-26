@@ -6,7 +6,6 @@
 
 #include "CoreMinimal.h"
 #include "OnlineSessionInterfaceV2AccelByte.h"
-#include "Core/AccelByteRegistry.h"
 #include "Core/Utilities/AccelByteWarsUtilityLog.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "DSHealthSubsystem.generated.h"

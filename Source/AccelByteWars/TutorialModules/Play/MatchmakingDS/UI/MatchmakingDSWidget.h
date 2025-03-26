@@ -71,9 +71,9 @@ private:
 // @@@SNIPSTART MatchmakingDSWidget.h-UI
 // @@@MULTISNIP ChangeWidgetState {"selectedLines": ["2", "17"]}
 // @@@MULTISNIP StateChanges {"selectedLines": ["19", "30-40"]}
-// @@@MULTISNIP LoadingState {"selectedLines": ["19", "42-43", "54-58"]}
-// @@@MULTISNIP ErrorState {"selectedLines": ["19", "51-52", "60-61"]}
-// @@@MULTISNIP WaitingForPlayerState {"selectedLines": ["19", "45-49", "63-64"]}
+// @@@MULTISNIP LoadingState {"selectedLines": ["19", "42-43", "57-61"]}
+// @@@MULTISNIP ErrorState {"selectedLines": ["19", "45-46", "54-55", "63-64"]}
+// @@@MULTISNIP WaitingForPlayerState {"selectedLines": ["19", "48-52", "66-67"]}
 // @@@MULTISNIP WaitingForPlayerStateCountdown {"selectedLines": ["19", "22", "26"]}
 #pragma region "UI related"
 protected:

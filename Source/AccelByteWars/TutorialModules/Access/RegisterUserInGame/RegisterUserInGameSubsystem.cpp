@@ -5,7 +5,6 @@
 #include "RegisterUserInGameSubsystem.h"
 #include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
 #include "TutorialModuleUtilities/StartupSubsystem.h"
-
 #include "Core/Utilities/AccelByteWarsUtility.h"
 #include "Core/AccelByteWebSocketErrorTypes.h"
 #include "Api/AccelByteUserApi.h"
@@ -40,11 +39,19 @@ void URegisterUserInGameSubsystem::UpgradeAndVerifyAccount(
         OnComplete.ExecuteIfBound(false, UPGRADE_ACCOUNT_UNKNOWN_ERROR.ToString(), FAccountUserData());
         return;
     }
-
+    
     AccelByte::FApiClientPtr ApiClient = UTutorialModuleOnlineUtility::GetApiClient(this);
     if (!ApiClient)
     {
         UE_LOG_REGISTERUSERINGAME(Warning, TEXT("Failed to upgrade headless account to full account. AccelByte API Client is invalid."));
+        OnComplete.ExecuteIfBound(false, UPGRADE_ACCOUNT_UNKNOWN_ERROR.ToString(), FAccountUserData());
+        return;
+    }
+
+    AccelByte::Api::UserPtr UserApi = ApiClient->GetUserApi().Pin();
+    if (!UserApi)
+    {
+        UE_LOG_REGISTERUSERINGAME(Warning, TEXT("Failed to upgrade headless account to full account. User API is invalid."));
         OnComplete.ExecuteIfBound(false, UPGRADE_ACCOUNT_UNKNOWN_ERROR.ToString(), FAccountUserData());
         return;
     }
@@ -57,7 +64,7 @@ void URegisterUserInGameSubsystem::UpgradeAndVerifyAccount(
     Request.Password = Password;
     Request.Code = VerificationCode;
 
-    ApiClient->User.UpgradeAndVerify2(
+    UserApi->UpgradeAndVerify2(
         Request,
         THandler<FAccountUserData>::CreateUObject(this, &ThisClass::OnUpgradeAndVerifyAccountSuccess, LocalUserNum, UserId.ToSharedRef(), OnComplete),
         FErrorHandler::CreateWeakLambda(this, [this, OnComplete](int32 ErrorCode, const FString& ErrorMessage)
@@ -90,7 +97,15 @@ void URegisterUserInGameSubsystem::SendUpgradeAccountVerificationCode(
         return;
     }
 
-    ApiClient->User.SendUpgradeVerificationCode(
+    AccelByte::Api::UserPtr UserApi = ApiClient->GetUserApi().Pin();
+    if (!UserApi)
+    {
+        UE_LOG_REGISTERUSERINGAME(Warning, TEXT("Failed to send upgrade to full account verification code to the registered e-mail. User API is invalid."));
+        OnComplete.ExecuteIfBound(false, UPGRADE_ACCOUNT_UNKNOWN_ERROR.ToString());
+        return;
+    }
+
+    UserApi->SendUpgradeVerificationCode(
         EmailAddress,
         AccelByte::FVoidHandler::CreateWeakLambda(this, [this, EmailAddress, OnComplete]()
         {

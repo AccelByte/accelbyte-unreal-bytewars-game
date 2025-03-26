@@ -90,7 +90,7 @@ void URecentPlayersSubsystem::GetRecentPlayers(const APlayerController* PlayerCo
 		RecentPlayersData.Empty();
 		for(const TSharedRef<FOnlineRecentPlayer>& Player: RecentPlayers)
 		{
-			RecentPlayersData.Add(UFriendData::ConvertToFriendData(Player));
+			RecentPlayersData.Add(UFriendData::ConvertToFriendData(Player, this));
 		}
 
 		UpdatePlayersInviteStatus(PlayerController, OnComplete, RecentPlayersData);

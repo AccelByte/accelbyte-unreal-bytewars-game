@@ -39,6 +39,7 @@ public:
 	static bool IsAccelByteSDKInitialized(const UObject* Target);
 
 	static AccelByte::FApiClientPtr GetApiClient(const UObject* Context);
+	static AccelByte::FServerApiClientPtr GetServerApiClient(const UObject* Context);
 
 	static const FUniqueNetIdAccelByteUserPtr GetAccelByteUserId(const FUniqueNetIdPtr UserId)
 	{

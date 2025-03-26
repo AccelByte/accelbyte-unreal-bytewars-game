@@ -310,7 +310,7 @@ void UManagingFriendsSubsystem::UpdateFriendStatus(const APlayerController* Play
     TSharedPtr<FOnlineFriend> Friend = FriendsInterface->GetFriend(LocalUserNum, *PlayerData->UserId, TEXT(""));
     if(Friend != nullptr)
     {
-        UFriendData* FriendData = UFriendData::ConvertToFriendData(Friend.ToSharedRef());
+        UFriendData* FriendData = UFriendData::ConvertToFriendData(Friend.ToSharedRef(), this);
         PlayerData->Status = FriendData->Status;
         PlayerData->bCannotBeInvited = FriendData->bCannotBeInvited;
         PlayerData->ReasonCannotBeInvited = FriendData->ReasonCannotBeInvited;
@@ -510,7 +510,7 @@ void UManagingFriendsSubsystem::GetBlockedPlayerList(const APlayerController* PC
                             UserInfo->GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, UserAvatarURL);
 
                             // Add the updated blocked player to the list.
-                            UFriendData* BlockedPlayer = UFriendData::ConvertToFriendData(NewCachedBlockedPlayer);
+                            UFriendData* BlockedPlayer = UFriendData::ConvertToFriendData(NewCachedBlockedPlayer, this);
                             BlockedPlayer->AvatarURL = UserAvatarURL;
                             BlockedPlayers.Add(BlockedPlayer);
                         }
@@ -524,7 +524,7 @@ void UManagingFriendsSubsystem::GetBlockedPlayerList(const APlayerController* PC
             TArray<UFriendData*> BlockedPlayers;
             for (const TSharedRef<FOnlineBlockedPlayer>& TempData : CachedBlockedPlayerList)
             {
-                BlockedPlayers.Add(UFriendData::ConvertToFriendData(TempData));
+                BlockedPlayers.Add(UFriendData::ConvertToFriendData(TempData, this));
             }
             
             OnComplete.ExecuteIfBound(true, BlockedPlayers, TEXT(""));
@@ -559,7 +559,7 @@ void UManagingFriendsSubsystem::OnQueryBlockedPlayersComplete(const FUniqueNetId
     TArray<UFriendData*> BlockedPlayers;
     for (const TSharedRef<FOnlineBlockedPlayer>& TempData : CachedBlockedPlayer)
     {
-        BlockedPlayers.Add(UFriendData::ConvertToFriendData(TempData));
+        BlockedPlayers.Add(UFriendData::ConvertToFriendData(TempData, this));
     }
 
     OnComplete.ExecuteIfBound(true, BlockedPlayers, TEXT(""));

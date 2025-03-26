@@ -82,7 +82,7 @@ public:
 // @@@MULTISNIP OnBackfillProposalReceived {"selectedLines": ["1", "19"]}
 protected:
 #pragma region "Game Session Essentials"
-	virtual void OnDSQueryUserInfoComplete(const FListBulkUserInfo& UserInfoList, const FOnDSQueryUsersInfoComplete& OnComplete) override;
+	virtual void OnDSQueryUserInfoComplete(const FListUserDataResponse& UserInfoList, const FOnDSQueryUsersInfoComplete& OnComplete) override;
 
 	virtual void OnSessionServerUpdateReceived(FName SessionName) override;
 	virtual void OnSessionServerErrorReceived(FName SessionName, const FString& Message) override;
