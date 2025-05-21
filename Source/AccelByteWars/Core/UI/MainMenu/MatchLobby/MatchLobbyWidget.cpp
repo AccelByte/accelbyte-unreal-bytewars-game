@@ -170,6 +170,13 @@ void UMatchLobbyWidget::QueryTeamMembersInfo()
 // @@@SNIPSTART MatchLobbyWidget.cpp-GenerateMultiplayerTeamEntries
 void UMatchLobbyWidget::GenerateMultiplayerTeamEntries(const TMap<FUniqueNetIdRepl, FGameplayPlayerData>& AdditionalMembersInfo)
 {
+	// Safety.
+	// Could happen when the query response triggers after the map just changed.
+	if (!IsActivated())
+	{
+		return;
+	}
+
 	// Generate team entries only on game clients.
 	// Also, don't attempt to generate entries when the Listen Server is tearing down.
 	ENetMode NetMode = GetOwningPlayer()->GetNetMode();

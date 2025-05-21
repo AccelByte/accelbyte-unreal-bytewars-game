@@ -9,6 +9,7 @@
 #include "HUDKillFeedWidgetEntry.h"
 #include "Blueprint/SlateBlueprintLibrary.h"
 #include "Components/TextBlock.h"
+#include "Components/HorizontalBox.h"
 #include "Core/GameModes/AccelByteWarsInGameGameMode.h"
 #include "Core/GameStates/AccelByteWarsInGameGameState.h"
 #include "Core/GameStates/AccelByteWarsGameState.h"
@@ -30,62 +31,67 @@ void UHUDWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	ByteWarsGameState = GetWorld()->GetGameState<AAccelByteWarsInGameGameState>();
+	GameState = GetWorld()->GetGameState<AAccelByteWarsInGameGameState>();
+	ensure(GameState);
 
 	// setup pre game countdown
-	Widget_PreGameCountdown->SetupWidget(
+	W_PreGameCountdown->SetupWidget(
 		FText::FromString("Waiting for all players"),
 		FText::FromString("Game Started"));
-	Widget_PreGameCountdown->CheckCountdownStateDelegate.BindUObject(this, &ThisClass::SetPreGameCountdownState);
-	Widget_PreGameCountdown->UpdateCountdownValueDelegate.BindUObject(this, &ThisClass::UpdatePreGameCountdownValue);
+	W_PreGameCountdown->CheckCountdownStateDelegate.BindUObject(this, &ThisClass::SetPreGameCountdownState);
+	W_PreGameCountdown->UpdateCountdownValueDelegate.BindUObject(this, &ThisClass::UpdatePreGameCountdownValue);
 	OnPreGameCountdownFinishedDelegateHandle =
-		Widget_PreGameCountdown->OnCountdownFinishedDelegate.AddUObject(this, &ThisClass::OnPreGameCountdownFinished);
+		W_PreGameCountdown->OnCountdownFinishedDelegate.AddUObject(this, &ThisClass::OnPreGameCountdownFinished);
 
-	if (ByteWarsGameState->GameSetup.NotEnoughPlayerShutdownCountdown != INDEX_NONE &&
-		ByteWarsGameState->GameSetup.MinimumTeamCountToPreventAutoShutdown != INDEX_NONE)
+	if (GameState->GameSetup.NotEnoughPlayerShutdownCountdown != INDEX_NONE &&
+		GameState->GameSetup.MinimumTeamCountToPreventAutoShutdown != INDEX_NONE)
 	{
 		// setup not enough player countdown
-		Widget_NotEnoughPlayerCountdown->SetupWidget(
+		W_NotEnoughPlayerCountdown->SetupWidget(
 			FText::FromString(""),
 			FText::FromString(""),
 			FText::FromString("Not enough players | Shutting down DS in: "),
 			true);
-		Widget_NotEnoughPlayerCountdown->CheckCountdownStateDelegate.BindUObject(this, &ThisClass::SetNotEnoughPlayerCountdownState);
-		Widget_NotEnoughPlayerCountdown->UpdateCountdownValueDelegate.BindUObject(this, &ThisClass::UpdateNotEnoughPlayerCountdownValue);
+		W_NotEnoughPlayerCountdown->CheckCountdownStateDelegate.BindUObject(this, &ThisClass::SetNotEnoughPlayerCountdownState);
+		W_NotEnoughPlayerCountdown->UpdateCountdownValueDelegate.BindUObject(this, &ThisClass::UpdateNotEnoughPlayerCountdownValue);
 		OnNotEnoughPlayerCountdownFinishedDelegateHandle =
-			Widget_NotEnoughPlayerCountdown->OnCountdownFinishedDelegate.AddUObject(this, &ThisClass::OnNotEnoughPlayerCountdownFinished);
+			W_NotEnoughPlayerCountdown->OnCountdownFinishedDelegate.AddUObject(this, &ThisClass::OnNotEnoughPlayerCountdownFinished);
 	}
 	else
 	{
-		Widget_NotEnoughPlayerCountdown->SetVisibility(ESlateVisibility::Collapsed);
+		W_NotEnoughPlayerCountdown->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
 	// Setup HUD update callback
-	ByteWarsGameState->OnTeamsChanged.AddUObject(this, &ThisClass::UpdateHUD);
-	ByteWarsGameState->OnPowerUpChanged.AddUObject(this, &ThisClass::UpdateHUD);
-	UpdateHUD();
+	GameState->OnTeamsChanged.AddUObject(this, &ThisClass::UpdateHUDEntries);
+	GameState->OnPowerUpChanged.AddUObject(this, &ThisClass::UpdateHUDEntries);
+	UpdateHUDEntries();
 	
-	ByteWarsGameState->OnTeamsChanged.AddUObject(this, &ThisClass::CheckSpectatingText);
+	GameState->OnTeamsChanged.AddUObject(this, &ThisClass::CheckSpectatingText);
 
 	// Setup simulate crash countdown
-	if (ByteWarsGameState->SimulateServerCrashCountdown != INDEX_NONE)
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 4
+	if (GameState->SimulateServerCrashCountdown != static_cast<float>(INDEX_NONE))
+#else
+	if (GameState->SimulateServerCrashCountdown != INDEX_NONE)
+#endif
 	{
-		Widget_SimulateServerCrashCountdown->SetupWidget(
+		W_SimulateServerCrashCountdown->SetupWidget(
 			FText::FromString(""),
 			FText::FromString(""),
 			FText::FromString("Simulating DS Crash in: "),
 			true);
-		Widget_SimulateServerCrashCountdown->CheckCountdownStateDelegate.BindUObject(this, &ThisClass::SetSimulateServerCrashCountdownState);
-		Widget_SimulateServerCrashCountdown->UpdateCountdownValueDelegate.BindUObject(this, &ThisClass::UpdateSimulateServerCrashCountdownValue);
+		W_SimulateServerCrashCountdown->CheckCountdownStateDelegate.BindUObject(this, &ThisClass::SetSimulateServerCrashCountdownState);
+		W_SimulateServerCrashCountdown->UpdateCountdownValueDelegate.BindUObject(this, &ThisClass::UpdateSimulateServerCrashCountdownValue);
 		OnSimulateServerCrashCountdownFinishedDelegateHandle =
-			Widget_SimulateServerCrashCountdown->OnCountdownFinishedDelegate.AddUObject(this, &ThisClass::OnSimulateServerCrashCountdownFinished);
+			W_SimulateServerCrashCountdown->OnCountdownFinishedDelegate.AddUObject(this, &ThisClass::OnSimulateServerCrashCountdownFinished);
 	}
 	else
 	{
-		Widget_SimulateServerCrashCountdown->SetVisibility(ESlateVisibility::Collapsed);
+		W_SimulateServerCrashCountdown->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
-	Text_Spectating->SetVisibility(ESlateVisibility::Collapsed);
+	Tb_Spectating->SetVisibility(ESlateVisibility::Collapsed);
 
 	// Only show dedicated server FTUE on online session.
 	if (FFTUEDialogueModel* FTUEDedicatedServer =
@@ -121,10 +127,10 @@ void UHUDWidget::NativeDestruct()
 {
 	Super::NativeDestruct();
 
-	Widget_PreGameCountdown->OnCountdownFinishedDelegate.Remove(OnPreGameCountdownFinishedDelegateHandle);
-	Widget_NotEnoughPlayerCountdown->OnCountdownFinishedDelegate.Remove(OnNotEnoughPlayerCountdownFinishedDelegateHandle);
-	ByteWarsGameState->OnTeamsChanged.RemoveAll(this);
-	ByteWarsGameState->OnPowerUpChanged.RemoveAll(this);
+	W_PreGameCountdown->OnCountdownFinishedDelegate.Remove(OnPreGameCountdownFinishedDelegateHandle);
+	W_NotEnoughPlayerCountdown->OnCountdownFinishedDelegate.Remove(OnNotEnoughPlayerCountdownFinishedDelegateHandle);
+	GameState->OnTeamsChanged.RemoveAll(this);
+	GameState->OnPowerUpChanged.RemoveAll(this);
 
 	AAccelByteWarsInGameGameState::OnPlayerDieDelegate.RemoveAll(this);
 }
@@ -133,136 +139,81 @@ void UHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
 
-	SetTimerValue(ByteWarsGameState->TimeLeft);
+	SetTimerValue(GameState->TimeLeft);
 	UpdateSpectatingTextEffect(InDeltaTime);
 }
 
-void UHUDWidget::UpdateHUD()
+void UHUDWidget::GenerateHUDEntries()
 {
-	for (const FGameplayTeamData& TeamData : ByteWarsGameState->Teams)
+	Hb_LeftPanel->ClearChildren();
+	Hb_RightPanel->ClearChildren();
+
+	// Temporary arrays to hold the teams for left and right panels.
+	TArray<TWeakObjectPtr<UHUDWidgetEntry>> LeftWidgetEntries {};
+	TArray<TWeakObjectPtr<UHUDWidgetEntry>> RightWidgetEntries {};
+
+	int32 Index = 0;
+	for (const FGameplayTeamData& Team : GameState->Teams)
 	{
-		// Toggle entry
-		if (TeamData.TeamMembers.IsEmpty())
+		if (Team.TeamMembers.IsEmpty())
 		{
-			ToggleEntry(TeamData.TeamId, false);
 			continue;
 		}
-		ToggleEntry(TeamData.TeamId, true);
 
-		// Set color
-		UGameInstance* GameInstance = GetGameInstance();
-		if (!GameInstance)
-		{
-			return;
-		}
-		UAccelByteWarsGameInstance* AbGameInstance = Cast<UAccelByteWarsGameInstance>(GameInstance);
-		if (!AbGameInstance)
-		{
-			return;
-		}
+		// Create the widget and store it to the cache.
+		const TWeakObjectPtr<UHUDWidgetEntry> WidgetEntry = 
+			MakeWeakObjectPtr<UHUDWidgetEntry>(CreateWidget<UHUDWidgetEntry>(this, HUDWidgetEntryClass.Get()));
+		HUDWidgetEntries.Add(Team.TeamId, WidgetEntry);
 
-		if (!SetColorChecked(TeamData.TeamId, AbGameInstance->GetTeamColor(TeamData.TeamId)))
+		// Add the entry to the left or right side based on the index.
+		if (++Index % 2 == 0)
 		{
-			return;
+			RightWidgetEntries.Add(WidgetEntry);
 		}
-
-		// Update lives left, score, and kill count
-		SetValue(FString::FromInt(TeamData.GetTeamLivesLeft()), TeamData.TeamId, 0);
-		SetValue(FString::FromInt(TeamData.GetTeamScore()), TeamData.TeamId, 1);
-		SetValue(FString::FromInt(TeamData.GetTeamKillCount()), TeamData.TeamId, 2);
-
-		// Update PowerUps
-		for (int i = 0; i < TeamData.TeamMembers.Num(); ++i)
+		else
 		{
-			UpdatePowerUpDisplay(TeamData.TeamMembers[i], i);
+			LeftWidgetEntries.Add(WidgetEntry);
 		}
+	}
+
+	// Add the right entries in normal order.
+	for (TWeakObjectPtr<UHUDWidgetEntry> WidgetEntry : RightWidgetEntries)
+	{
+		Hb_RightPanel->AddChild(WidgetEntry.Get());
+	}
+
+	// Add the left entries in reversed order.
+	for (int32 i = LeftWidgetEntries.Num() - 1; i >= 0; --i)
+	{
+		Hb_LeftPanel->AddChild(LeftWidgetEntries[i].Get());
 	}
 }
 
-bool UHUDWidget::SetColorChecked(const int32 Index, const FLinearColor Color)
+void UHUDWidget::UpdateHUDEntries()
 {
-	if (Index < 0 || Index > 3)
+	for (const FGameplayTeamData& Team : GameState->Teams)
 	{
-		return false;
+		if (Team.TeamMembers.IsEmpty()) 
+		{
+			continue;
+		}
+
+		/* If the entry for the team does not exist, regenerate the HUD entries.
+		 * This also guarantees the next teams have their entries, so this checker will be called only once. */
+		if (!HUDWidgetEntries.Contains(Team.TeamId))
+		{
+			GenerateHUDEntries();
+		}
+
+		HUDWidgetEntries[Team.TeamId]->Init(Team);
 	}
-
-	UHUDWidgetEntry* TargetWidget;
-	switch (Index)
-	{
-	case 0:
-		TargetWidget = Widget_HUDNameValueP1;
-		break;
-	case 1:
-		TargetWidget = Widget_HUDNameValueP2;
-		break;
-	case 2:
-		TargetWidget = Widget_HUDNameValueP3;
-		break;
-	case 3:
-		TargetWidget = Widget_HUDNameValueP4;
-		break;
-	default:
-		return false;
-	}
-
-	if (!TargetWidget) 
-	{
-		return false;
-	}
-
-	// Change the color if not the same.
-#if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
-	if (!TargetWidget->ColorAndOpacity.Equals(Color))
-#else
-	if (!TargetWidget->GetColorAndOpacity().Equals(Color))
-#endif
-	{
-		TargetWidget->SetColorAndOpacity(Color);
-	}
-
-	return true;
-}
-
-bool UHUDWidget::ToggleEntry(const int32 Index, const bool bActivate)
-{
-	if (Index < 0 || Index > 3)
-	{
-		return false;
-	}
-
-	UHUDWidgetEntry* TargetWidget;
-	switch (Index)
-	{
-	case 0:
-		TargetWidget = Widget_HUDNameValueP1;
-		break;
-	case 1:
-		TargetWidget = Widget_HUDNameValueP2;
-		break;
-	case 2:
-		TargetWidget = Widget_HUDNameValueP3;
-		break;
-	case 3:
-		TargetWidget = Widget_HUDNameValueP4;
-		break;
-	default:
-		return false;
-	}
-
-	if (!TargetWidget) 
-	{
-		return false;
-	}
-
-	TargetWidget->SetVisibility(bActivate ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-	return true;
 }
 
 void UHUDWidget::GetVisibleHUDPixelPosition(FVector2D& OutMinPixelPosition, FVector2D& OutMaxPixelPosition) const
 {
 	FVector2D ViewportPosition;
 
-	const FGeometry& CachedGeometry = Widget_VisibleBorder->GetCachedGeometry();
+	const FGeometry& CachedGeometry = W_VisibleBorder->GetCachedGeometry();
 	const FVector2D& CachedGeometrySize = CachedGeometry.GetLocalSize();
 
 	USlateBlueprintLibrary::LocalToViewport(
@@ -278,139 +229,15 @@ void UHUDWidget::GetVisibleHUDPixelPosition(FVector2D& OutMinPixelPosition, FVec
 	return;
 }
 
-bool UHUDWidget::SetValue(const FString Value, const int32 TeamIndex, const int32 BoxIndex)
-{
-	if (TeamIndex < 0 || TeamIndex > 3)
-	{
-		return false;
-	}
-
-	if (BoxIndex < 0 || BoxIndex > 2)
-	{
-		return false;
-	}
-
-	const UHUDWidgetEntry* TargetWidget;
-	switch (TeamIndex)
-	{
-	case 0:
-		TargetWidget = Widget_HUDNameValueP1;
-		break;
-	case 1:
-		TargetWidget = Widget_HUDNameValueP2;
-		break;
-	case 2:
-		TargetWidget = Widget_HUDNameValueP3;
-		break;
-	case 3:
-		TargetWidget = Widget_HUDNameValueP4;
-		break;
-	default:
-		return false;
-	}
-
-	if (!TargetWidget)
-	{
-		return false;
-	}
-
-	UTextBlock* TargetTextBlock;
-	switch (BoxIndex)
-	{
-	case 0:
-		// Lives left
-		TargetTextBlock = TargetWidget->Text_Value_Left;
-		break;
-	case 1:
-		// Score
-		TargetTextBlock = TargetWidget->Text_Value_Middle;
-		break;
-	case 2:
-		// Kills
-		TargetTextBlock = TargetWidget->Text_Value_Right;
-		break;
-	default:
-		return false;
-	}
-
-	if (!TargetTextBlock) 
-	{
-		return false;
-	}
-
-	TargetTextBlock->SetText(FText::FromString(Value));
-	return true;
-}
-
 void UHUDWidget::SetTimerValue(const float TimeLeft)
 {
-	const FText Text = UKismetTextLibrary::Conv_IntToText(UKismetMathLibrary::FFloor(TimeLeft));
-	Widget_HUDNameValueTimer->Text_Value_Middle->SetText(Text);
-}
-
-void UHUDWidget::UpdatePowerUpDisplay(const FGameplayPlayerData& PlayerData, const int32 TeamMemberIndex) const
-{
-	// Get player state
-	APlayerState* PlayerState = nullptr;
-	for (const TObjectPtr<APlayerState> SearchPlayerState : ByteWarsGameState->PlayerArray)
-	{
-		// construct player's identification
-		int32 ControllerId = INDEX_NONE;
-		if (const APlayerController* PC = SearchPlayerState->GetPlayerController())
-		{
-			if (const ULocalPlayer* LP = PC->GetLocalPlayer())
-			{
-				ControllerId = LP->GetLocalPlayerIndex();
-			}
-		}
-		FGameplayPlayerData SearchPlayerData{SearchPlayerState->GetUniqueId(), ControllerId};
-		if (PlayerData == SearchPlayerData)
-		{
-			PlayerState = SearchPlayerState;
-			break;
-		}
-	}
-	if (!PlayerState)
-	{
-		return;
-	}
-
-	// get equipped power up
-	AAccelByteWarsPlayerState* AbPs = Cast<AAccelByteWarsPlayerState>(PlayerState);
-	if (!AbPs)
-	{
-		return;
-	}
-	const FEquippedItem EquippedItem = AbPs->GetEquippedItem(EItemType::PowerUp, true);
-	if (EquippedItem.ItemId.IsEmpty())
-	{
-		return;
-	}
-
-	// update widget
-	UHUDWidgetEntry* TargetWidget = nullptr;
-	switch (AbPs->TeamId)
-	{
-	case 0:
-		TargetWidget = Widget_HUDNameValueP1;
-		break;
-	case 1:
-		TargetWidget = Widget_HUDNameValueP2;
-		break;
-	case 2:
-		TargetWidget = Widget_HUDNameValueP3;
-		break;
-	case 3:
-		TargetWidget = Widget_HUDNameValueP4;
-		break;
-	}
-	TargetWidget->SetPowerUpValues(EquippedItem.ItemId, EquippedItem.Count, TeamMemberIndex);
+	Tb_Timer->SetText(UKismetTextLibrary::Conv_IntToText(UKismetMathLibrary::FFloor(TimeLeft)));
 }
 
 ECountdownState UHUDWidget::SetPreGameCountdownState() const
 {
 	ECountdownState State;
-	switch (ByteWarsGameState->GameStatus)
+	switch (GameState->GameStatus)
 	{
 	case EGameStatus::IDLE:
 		State = ECountdownState::PRE;
@@ -432,7 +259,7 @@ ECountdownState UHUDWidget::SetPreGameCountdownState() const
 
 int UHUDWidget::UpdatePreGameCountdownValue() const
 {
-	return UKismetMathLibrary::FFloor(ByteWarsGameState->PreGameCountdown);
+	return UKismetMathLibrary::FFloor(GameState->PreGameCountdown);
 }
 
 void UHUDWidget::OnPreGameCountdownFinished()
@@ -442,7 +269,7 @@ void UHUDWidget::OnPreGameCountdownFinished()
 ECountdownState UHUDWidget::SetNotEnoughPlayerCountdownState() const
 {
 	ECountdownState State;
-	switch (ByteWarsGameState->GameStatus)
+	switch (GameState->GameStatus)
 	{
 	case EGameStatus::AWAITING_PLAYERS:
 	case EGameStatus::AWAITING_PLAYERS_MID_GAME:
@@ -456,7 +283,7 @@ ECountdownState UHUDWidget::SetNotEnoughPlayerCountdownState() const
 
 int UHUDWidget::UpdateNotEnoughPlayerCountdownValue() const
 {
-	return UKismetMathLibrary::FFloor(ByteWarsGameState->NotEnoughPlayerCountdown);
+	return UKismetMathLibrary::FFloor(GameState->NotEnoughPlayerCountdown);
 }
 
 void UHUDWidget::OnNotEnoughPlayerCountdownFinished()
@@ -466,7 +293,7 @@ void UHUDWidget::OnNotEnoughPlayerCountdownFinished()
 ECountdownState UHUDWidget::SetSimulateServerCrashCountdownState() const
 {
 	ECountdownState State;
-	switch (ByteWarsGameState->GameStatus)
+	switch (GameState->GameStatus)
 	{
 	case EGameStatus::AWAITING_PLAYERS_MID_GAME:
 	case EGameStatus::GAME_STARTED:
@@ -480,7 +307,7 @@ ECountdownState UHUDWidget::SetSimulateServerCrashCountdownState() const
 
 int UHUDWidget::UpdateSimulateServerCrashCountdownValue() const
 {
-	return UKismetMathLibrary::FFloor(ByteWarsGameState->SimulateServerCrashCountdown);
+	return UKismetMathLibrary::FFloor(GameState->SimulateServerCrashCountdown);
 }
 
 void UHUDWidget::OnSimulateServerCrashCountdownFinished()
@@ -489,17 +316,17 @@ void UHUDWidget::OnSimulateServerCrashCountdownFinished()
 
 void UHUDWidget::OnPlayerDie(const AAccelByteWarsPlayerState* DeathPlayer, const FVector DeathLocation, const AAccelByteWarsPlayerState* Killer)
 {
-	if (!ByteWarsGameState)
+	if (!GameState)
 	{
 		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot handle on-player die event. Game state is null."));
 		return;
 	}
 
 	FGameplayPlayerData* KillerPlayerData =
-		ByteWarsGameState->GetPlayerDataById(Killer->GetUniqueId(), AccelByteWarsUtility::GetControllerId(Killer));
+		GameState->GetPlayerDataById(Killer->GetUniqueId(), AccelByteWarsUtility::GetControllerId(Killer));
 
 	FGameplayPlayerData* VictimPlayerData =
-		ByteWarsGameState->GetPlayerDataById(DeathPlayer->GetUniqueId(), AccelByteWarsUtility::GetControllerId(DeathPlayer));
+		GameState->GetPlayerDataById(DeathPlayer->GetUniqueId(), AccelByteWarsUtility::GetControllerId(DeathPlayer));
 
 	if (!KillerPlayerData || !VictimPlayerData)
 	{
@@ -517,7 +344,7 @@ void UHUDWidget::OnPlayerDie(const AAccelByteWarsPlayerState* DeathPlayer, const
 void UHUDWidget::UpdateSpectatingTextEffect(float DeltaTime)
 {
 	// will make text effect fade out and fade in, each for FADE_DURATION second
-	if(Text_Spectating->GetVisibility() == ESlateVisibility::Visible)
+	if(Tb_Spectating->GetVisibility() == ESlateVisibility::Visible)
 	{
 		SpectatingTextVisibleRunningTime += DeltaTime;		
 
@@ -526,7 +353,7 @@ void UHUDWidget::UpdateSpectatingTextEffect(float DeltaTime)
 		const float Fractional = FMath::Frac(SpectatingTextVisibleRunningTime / TOTAL_DURATION);
 		const float ChangeFactor = ((Fractional < NORMALIZED_MID_VALUE ? 1 - Fractional : Fractional) - NORMALIZED_MID_VALUE) / NORMALIZED_MID_VALUE;
 		const float Opacity = MIN_OPACITY + (ChangeFactor * OPACITY_RANGE);
-		Text_Spectating->SetOpacity(Opacity);
+		Tb_Spectating->SetOpacity(Opacity);
 	}
 }
 
@@ -538,13 +365,13 @@ void UHUDWidget::CheckSpectatingText()
 	{
 		const APlayerController* LocalPlayerController =  GetGameInstance()->GetFirstLocalPlayerController();
 		if(LocalPlayerController != nullptr &&  LocalPlayerController->PlayerState != nullptr
-			&& Text_Spectating->GetVisibility() != ESlateVisibility::Visible)
+			&& Tb_Spectating->GetVisibility() != ESlateVisibility::Visible)
 		{
 			// check using FGameplayPlayerData because num lives from player state have wrong value
 			const FGameplayPlayerData* PlayerData = ABGameState->GetPlayerDataById(LocalPlayerController->PlayerState->GetUniqueId());
 			if(PlayerData && PlayerData->NumLivesLeft <=0)
 			{
-				Text_Spectating->SetVisibility(ESlateVisibility::Visible);
+				Tb_Spectating->SetVisibility(ESlateVisibility::Visible);
 				SpectatingTextVisibleRunningTime = 0.0f;
 			}
 		}

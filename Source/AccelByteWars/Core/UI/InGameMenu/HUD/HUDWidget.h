@@ -10,6 +10,7 @@
 #include "Core/UI/Components/Countdown/CountdownWidget.h"
 #include "HUDWidget.generated.h"
 
+class UHorizontalBox;
 class UHUDWidgetEntry;
 class UPushNotificationWidget;
 class AAccelByteWarsInGameGameState;
@@ -25,26 +26,16 @@ class ACCELBYTEWARS_API UHUDWidget : public UAccelByteWarsActivatableWidget
 
 public:
 	/**
+	 * @brief Generate HUD widget entries based on the team ids.
+	 */
+	UFUNCTION(BlueprintCallable)
+	void GenerateHUDEntries();
+
+	/**
 	 * @brief Update HUD to the current data of teams and player states
 	 */
 	UFUNCTION(BlueprintCallable)
-	void UpdateHUD();
-
-	/**
-	 * @brief Change the color of HUD entry. Will only be executed when Color is not the same with current HUD entry's color
-	 * @param Index Team's index. Currently, this HUD only supports 4 team (0 - 3)
-	 * @param Color Team's color
-	 */
-	UFUNCTION(BlueprintCallable)
-	bool SetColorChecked(const int32 Index, const FLinearColor Color);
-
-	/**
-	 * @brief Toggle activate or deactivate HUD entry.
-	 * @param Index Team's index. Currently, this HUD only supports 4 team (0 - 3)
-	 * @param bActivate Set it to true will activate the widget and vice versa.
-	 */
-	UFUNCTION(BlueprintCallable)
-	bool ToggleEntry(const int32 Index, const bool bActivate);
+	void UpdateHUDEntries();
 
 	/**
 	 * @brief Retrieve the start and end position, on screen, of the top bar on the HUD
@@ -55,51 +46,8 @@ public:
 	void GetVisibleHUDPixelPosition(FVector2D& OutMinPixelPosition, FVector2D& OutMaxPixelPosition) const;
 
 private:
-	/* Used to tell the game what size the visible HUD is */
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UWidget* Widget_VisibleBorder;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UHUDWidgetEntry* Widget_HUDNameValueP1;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UHUDWidgetEntry* Widget_HUDNameValueP2;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UHUDWidgetEntry* Widget_HUDNameValueP3;
-	
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UHUDWidgetEntry* Widget_HUDNameValueP4;
-	
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UHUDWidgetEntry* Widget_HUDNameValueTimer;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UCountdownWidget* Widget_PreGameCountdown;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UCountdownWidget* Widget_NotEnoughPlayerCountdown;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UCountdownWidget* Widget_SimulateServerCrashCountdown;
-	
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UTextBlock* Text_Spectating;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UPushNotificationWidget* W_KillFeed;
-
-	UPROPERTY()
-	AAccelByteWarsInGameGameState* ByteWarsGameState;
-
-	UFUNCTION()
-	bool SetValue(const FString Value, const int32 TeamIndex, const int32 BoxIndex);
-
 	UFUNCTION(BlueprintCallable)
 	void SetTimerValue(const float TimeLeft);
-
-	UFUNCTION()
-	void UpdatePowerUpDisplay(const FGameplayPlayerData& PlayerData, const int32 TeamMemberIndex) const;
 
 	UFUNCTION()
 	ECountdownState SetPreGameCountdownState() const;
@@ -133,7 +81,43 @@ private:
 
 	void UpdateSpectatingTextEffect(float DeltaTime);
 	void CheckSpectatingText();
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UTextBlock* Tb_Timer;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UTextBlock* Tb_Spectating;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UHorizontalBox* Hb_LeftPanel;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UHorizontalBox* Hb_RightPanel;
+
+	/* Used to tell the game what size the visible HUD is */
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UWidget* W_VisibleBorder;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UCountdownWidget* W_PreGameCountdown;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UCountdownWidget* W_NotEnoughPlayerCountdown;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UCountdownWidget* W_SimulateServerCrashCountdown;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UPushNotificationWidget* W_KillFeed;
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UHUDWidgetEntry> HUDWidgetEntryClass;
+
+	UPROPERTY()
+	AAccelByteWarsInGameGameState* GameState;
 	
+	TMap<int32, TWeakObjectPtr<UHUDWidgetEntry>> HUDWidgetEntries;
+
 	FDelegateHandle OnPreGameCountdownFinishedDelegateHandle;
 	FDelegateHandle OnNotEnoughPlayerCountdownFinishedDelegateHandle;
 	FDelegateHandle OnSimulateServerCrashCountdownFinishedDelegateHandle;

@@ -265,4 +265,14 @@ public:
 
 		bConsumable = Other->bConsumable;
 	}
+
+	FString GetSku(const EItemSkuPlatform Platform) const
+	{
+		if (SkuMap.Contains(Platform))
+		{
+			return SkuMap[Platform];
+		}
+
+		return FString();
+	}
 };

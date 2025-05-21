@@ -16,7 +16,7 @@
 
 DEFINE_LOG_CATEGORY(LogAccelByteWarsWidgetSwitcher);
 
-void UAccelByteWarsWidgetSwitcher::SetWidgetState(const EAccelByteWarsWidgetSwitcherState State)
+void UAccelByteWarsWidgetSwitcher::SetWidgetState(const EAccelByteWarsWidgetSwitcherState State, const bool bForce)
 {
 	FText TargetText{};
 	UTextBlock* TargetTextBlock = nullptr;
@@ -50,22 +50,18 @@ void UAccelByteWarsWidgetSwitcher::SetWidgetState(const EAccelByteWarsWidgetSwit
 		break;
 	}
 
-	// Mark widget state as pending if the transition animation is currently playing.
-	if (Ws_Root->IsTransitionPlaying() && Ws_Root->GetActiveWidgetIndex() != GetStateWidgetIndex(State))
+	// Abort if the target widget is invalid.
+	if (!TargetWidget)
 	{
-		// Disable the animation transition to immediately show the pending states later.
-		Ws_Root->SetDisableTransitionAnimation(true);
-
-		UE_LOG_ACCELBYTEWARSWIDGETSWITCHER(Log, TEXT("Widget switcher is currently transitioning. Mark new state as pending: %s"), *UEnum::GetValueAsString(State));
-		PendingStates.Add(State);
+		UE_LOG_ACCELBYTEWARSWIDGETSWITCHER(Log, TEXT("Abort to switch widget switcher state to %s state. Target widget is invalid."), *UEnum::GetValueAsString(State));
 		return;
 	}
 
-	// Abort if the same state is already displayed or target widget is invalid.
-	const bool IsCurrentStateWidgetActive = Ws_Root->GetActiveWidgetIndex() == GetStateWidgetIndex(CurrentState);
-	if ((IsCurrentStateWidgetActive && CurrentState == State) || !TargetWidget)
+	// Mark widget state as pending if the transition animation is currently playing.
+	if (Ws_Root->IsTransitionPlaying() && Ws_Root->GetActiveWidgetIndex() != GetStateWidgetIndex(State))
 	{
-		UE_LOG_ACCELBYTEWARSWIDGETSWITCHER(Log, TEXT("Abort to switch widget switcher state. New state is already displayed: %s"), *UEnum::GetValueAsString(State));
+		UE_LOG_ACCELBYTEWARSWIDGETSWITCHER(Log, TEXT("Widget switcher is currently transitioning. Mark new state as pending: %s"), *UEnum::GetValueAsString(State));
+		PendingStates.Add(State);
 		return;
 	}
 
@@ -83,6 +79,8 @@ void UAccelByteWarsWidgetSwitcher::SetWidgetState(const EAccelByteWarsWidgetSwit
 
 	// Switch state.
 	CurrentState = State;
+	bForceWidgetState = bForce;
+	Ws_Root->SetDisableTransitionAnimation(bForceWidgetState);
 	ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, TargetWidget, State]()
 	{
 		UE_LOG_ACCELBYTEWARSWIDGETSWITCHER(Log, TEXT("Set widget switcher state to: %s"), *UEnum::GetValueAsString(State));
@@ -113,8 +111,7 @@ void UAccelByteWarsWidgetSwitcher::ForceRefresh()
 	const EAccelByteWarsWidgetSwitcherState RefreshState = CurrentState;
 	CurrentState = EAccelByteWarsWidgetSwitcherState::None;
 
-	Ws_Root->SetDisableTransitionAnimation(true);
-	SetWidgetState(RefreshState);
+	SetWidgetState(RefreshState, true);
 }
 
 void UAccelByteWarsWidgetSwitcher::NativePreConstruct()
@@ -123,7 +120,7 @@ void UAccelByteWarsWidgetSwitcher::NativePreConstruct()
 
 	if (IsDesignTime())
 	{
-		SetWidgetState(DefaultState);
+		SetWidgetState(DefaultState, true);
 	}
 }
 
@@ -146,7 +143,7 @@ void UAccelByteWarsWidgetSwitcher::NativeConstruct()
 	Ws_Root->OnActiveWidgetIndexChanged.AddUObject(this, &ThisClass::OnActiveWidgetIndexChanged);
 	Ws_Root->OnTransitioningChanged.AddUObject(this, &ThisClass::OnTransitioningChanged);
 
-	SetWidgetState(DefaultState);
+	SetWidgetState(DefaultState, true);
 }
 
 void UAccelByteWarsWidgetSwitcher::NativeDestruct()
@@ -171,20 +168,24 @@ void UAccelByteWarsWidgetSwitcher::OnActiveWidgetIndexChanged(UWidget* Widget, i
 		const EAccelByteWarsWidgetSwitcherState NextState = PendingStates[0];
 		UE_LOG(LogTemp, Warning, TEXT("Widget switcher has pending state. Switch to pending state: %s"), *UEnum::GetValueAsString(NextState));
 
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 5
+		PendingStates.RemoveAt(0, 1, EAllowShrinking::No);
+#else
 		PendingStates.RemoveAt(0, 1, false);
-		SetWidgetState(NextState);
+#endif
+		SetWidgetState(NextState, bForceWidgetState);
 	}
 	// Force to show the current state if the active widget is incorrect due to Common UI animation race condition.
 	else if (Index != GetStateWidgetIndex(CurrentState))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Widget switcher has incorrect active widget. Switch to the correct current state: %s"), *UEnum::GetValueAsString(CurrentState));
-		Ws_Root->SetDisableTransitionAnimation(true);
-		SetWidgetState(CurrentState);
+		SetWidgetState(CurrentState, true);
 	}
 	// If the state is correctly displayed as active widget, then reset the transition animation.
 	else
 	{
 		Ws_Root->SetDisableTransitionAnimation(false);
+		bForceWidgetState = false;
 	}
 }
 

@@ -532,7 +532,7 @@ int32 AAccelByteWarsInGameGameMode::GetLivingTeamCount() const
 	TArray<int32> ActiveTeams;
 
 	// check if all player in the same team or if there's no player at all
-	for (const TObjectPtr<APlayerState> Player : ABInGameGameState->PlayerArray)
+	for (const TObjectPtr<APlayerState>& Player : ABInGameGameState->PlayerArray)
 	{
 		if (const AAccelByteWarsPlayerState* ByteWarsPlayerState =
 			static_cast<const AAccelByteWarsPlayerState*>(Player))

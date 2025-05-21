@@ -694,7 +694,11 @@ void UTutorialModuleDataAsset::ValidateFTUEDialogues()
 	TArray<TSharedPtr<FJsonValue>> FTUEGroupStates;
 	if (GetLocalAttributes())
 	{
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 4
+		FTUEGroupStates = GetLocalAttributes()->GetArrayField(TEXT(KEY_FTUEGROUPSTATE));
+#else
 		FTUEGroupStates = GetLocalAttributes()->GetArrayField(KEY_FTUEGROUPSTATE);
+#endif
 	}
 
 	// Refresh FTUE dialogues metadata.

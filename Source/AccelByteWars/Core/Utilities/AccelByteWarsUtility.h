@@ -115,6 +115,15 @@ public:
 	 */
 	static bool GetFlagValueOrDefault(const FString& Keyword, const FString& ConfigSectionKeyword, const bool DefaultValue);
 
+	/**
+	 * @brief Get launch parameter value in float on launch param (first prio) or DefaultEngine.ini (second prio). Return DefaultValue if not set or set to non number.
+	 * @param Keyword Launch parameter keyword. Setting this as "param" will make the function look for "-param=" in the launch param
+	 * @param ConfigSectionKeyword DefaultEngine.ini [section] where the flag located
+	 * @param DefaultValue Default Value if flag not found anywhere
+	 * @return Launch parameter value
+	 */
+	static float GetLaunchParamFloatValueOrDefault(const FString& Keyword, const FString& ConfigSectionKeyword, const float DefaultValue);
+
 	static bool IsValidEmailAddress(const FString& Email);
 
 private:

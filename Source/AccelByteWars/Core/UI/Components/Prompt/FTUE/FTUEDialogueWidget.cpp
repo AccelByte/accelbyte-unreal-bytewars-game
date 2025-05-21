@@ -202,7 +202,7 @@ void UFTUEDialogueWidget::PrevDialogue()
 	const bool bIsPositionEqual = IsDialoguePositionEqual(CurrentDialogue, TargetDialogue);
 	if (!bIsPositionEqual)
 	{
-		PlayFadeOutAnimation(W_FTUEDialogue, 1, [=]
+		PlayFadeOutAnimation(W_FTUEDialogue, 1, [this, InitPrevDialogue]
 		{
 			InitPrevDialogue();
 			PlayFadeInAnimation(W_FTUEDialogue);
@@ -247,7 +247,7 @@ void UFTUEDialogueWidget::NextDialogue()
 
 	if (!bIsPositionEqual || bIsDifferentGroup)
 	{
-		PlayFadeOutAnimation(W_FTUEDialogue, 1, [=]
+		PlayFadeOutAnimation(W_FTUEDialogue, 1, [this, InitNextDialogue]
 		{
 			InitNextDialogue();
 			PlayFadeInAnimation(W_FTUEDialogue);
@@ -274,7 +274,7 @@ void UFTUEDialogueWidget::JumpToDialogue(const uint_fast8_t TargetIndex)
 	const uint_fast8_t CurrentIndex = DialogueIndex;
 	DialogueIndex = TargetIndex;
 
-	const TFunction<void()> InitTargetDialogue = [=]
+	const TFunction<void()> InitTargetDialogue = [this, &TargetIndex, &CurrentIndex]
 	{
 		if (DialogueIndex >= 0 && TargetIndex < DialoguesInternal.Num()
 			&& !InitializeDialogue(DialoguesInternal[TargetIndex]))
@@ -291,7 +291,7 @@ void UFTUEDialogueWidget::JumpToDialogue(const uint_fast8_t TargetIndex)
 	const bool bIsPositionEqual = IsDialoguePositionEqual(CurrentDialogue, TargetDialogue);
 	if (!bIsPositionEqual)
 	{
-		PlayFadeOutAnimation(W_FTUEDialogue, 1, [=]
+		PlayFadeOutAnimation(W_FTUEDialogue, 1, [this, InitTargetDialogue]
 		{
 			InitTargetDialogue();
 			PlayFadeInAnimation(W_FTUEDialogue);

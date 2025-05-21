@@ -8,7 +8,9 @@ public class AccelByteWarsTarget : TargetRules
 	public AccelByteWarsTarget( TargetInfo Target) : base(Target)
 	{
 		Type = TargetType.Game;
-		DefaultBuildSettings = BuildSettingsVersion.V2;
+		IncludeOrderVersion = EngineIncludeOrderVersion.Latest;
+		CppStandard = CppStandardVersion.Default;
+		DefaultBuildSettings = BuildSettingsVersion.Latest;
 		ExtraModuleNames.AddRange( new string[] { "AccelByteWars" } );
 		
 		// Enable logging in shipping builds
