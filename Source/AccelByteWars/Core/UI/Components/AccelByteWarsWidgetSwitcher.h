@@ -36,8 +36,13 @@ class ACCELBYTEWARS_API UAccelByteWarsWidgetSwitcher final : public UCommonUserW
 	GENERATED_BODY()
 
 public:
+	/**
+	 * Change the widget state to the desired state.
+	 * @param State The new desired state.
+	 * @param bForce Force the new state to be displayed by skipping the transition animation. Useful to set widget initial state.
+	 */
 	UFUNCTION(BlueprintCallable)
-	void SetWidgetState(const EAccelByteWarsWidgetSwitcherState State);
+	void SetWidgetState(const EAccelByteWarsWidgetSwitcherState State, const bool bForce = false);
 
 	UFUNCTION(BlueprintCallable)
 	void ForceRefresh();
@@ -137,4 +142,5 @@ private:
 	UCommonButtonBase* Btn_Cancel;
 
 	TArray<EAccelByteWarsWidgetSwitcherState> PendingStates{};
+	bool bForceWidgetState = false;
 };

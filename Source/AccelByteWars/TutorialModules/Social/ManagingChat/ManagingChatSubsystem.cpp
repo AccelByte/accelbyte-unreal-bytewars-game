@@ -65,6 +65,9 @@ void UManagingChatSubsystem::UpdateGeneratedWidgets()
     // TODO: Reimplement this later. As currently no functionality whether the player is mute or not.
     return;
 
+    // Compile error on 5.4 and newer, disabling it for now. Need to consider 5.4 and later support when re-implementing
+#if (ENGINE_MAJOR_VERSION==5 && ENGINE_MINOR_VERSION>=4)
+#else
     // Display mute chat if the player is unmuted.
     if (MuteChatButtonMetadata)
     {
@@ -86,6 +89,7 @@ void UManagingChatSubsystem::UpdateGeneratedWidgets()
             Button->SetVisibility(ESlateVisibility::Collapsed);
         }
     }
+#endif
 }
 
 void UManagingChatSubsystem::MuteChat(FUniqueNetIdPtr TargetUserId)

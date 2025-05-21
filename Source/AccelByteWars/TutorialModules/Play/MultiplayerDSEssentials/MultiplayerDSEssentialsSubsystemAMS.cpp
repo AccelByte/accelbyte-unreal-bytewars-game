@@ -6,6 +6,7 @@
 #include "MultiplayerDSEssentialsSubsystemAMS.h"
 
 #include "MultiplayerDSEssentialsLog.h"
+#include "MultiplayerDSEssentialsModels.h"
 #include "OnlineSubsystemUtils.h"
 #include "Core/System/AccelByteWarsGameSession.h"
 #include "Core/GameModes/AccelByteWarsGameMode.h"
@@ -176,7 +177,29 @@ void UMultiplayerDSEssentialsSubsystemAMS::OnSendServerReadyComplete(const bool 
 // @@@SNIPSTART MultiplayerDSEssentialsSubsystemAMS.cpp-OnAMSDrainReceived
 void UMultiplayerDSEssentialsSubsystemAMS::OnAMSDrainReceived()
 {
-	TSharedPtr<FAccelByteModelsV2GameSession> SessionInfo = GetSessionInfo(NAME_GameSession);
+	// Wait for some time to accomodate session info update delay.
+	// Get configured delay value.
+	float DrainDelay = AccelByteWarsUtility::GetLaunchParamFloatValueOrDefault(
+		KEY_DRAIN_LOGIC_DELAY,
+		SECTION_DRAIN_LOGIC_DELAY,
+		DEFAULT_DRAIN_LOGIC_DELAY);
+
+	// Start one shot timer.
+	GetWorld()->GetTimerManager().SetTimer(
+		DrainLogicTimerHandle,
+		FTimerDelegate::CreateUObject(this, &ThisClass::ExecuteDrainLogic),
+		DrainDelay,
+		false,
+		DrainDelay);
+
+	UE_LOG_MultiplayerDSEssentials(Log, TEXT("Received AMS drain message. Wait %f seconds before executing drain logic."), DrainDelay);
+}
+// @@@SNIPEND
+
+// @@@SNIPSTART MultiplayerDSEssentialsSubsystemAMS.cpp-ExecuteDrainLogic
+void UMultiplayerDSEssentialsSubsystemAMS::ExecuteDrainLogic()
+{
+	const TSharedPtr<FAccelByteModelsV2GameSession> SessionInfo = GetSessionInfo(NAME_GameSession);
 	if (SessionInfo && SessionInfo->IsActive)
 	{
 		UE_LOG_MultiplayerDSEssentials(Log, TEXT("Received AMS drain message when there is still in active session; Ignoring the AMS drain message!"));
@@ -191,7 +214,7 @@ void UMultiplayerDSEssentialsSubsystemAMS::OnAMSDrainReceived()
 // @@@SNIPSTART MultiplayerDSEssentialsSubsystemAMS.cpp-OnV2SessionEnded
 void UMultiplayerDSEssentialsSubsystemAMS::OnV2SessionEnded(const FName SessionName)
 {
-	UE_LOG_MultiplayerDSEssentials(Log, TEXT("Received AMS session ended notification; Shutting down the server now!"));
+	UE_LOG_MultiplayerDSEssentials(Log, TEXT("Received AMS session ended notification; Shutting down the server!"));
 
 	if (GetWorld(); AAccelByteWarsGameMode* GameMode = Cast<AAccelByteWarsGameMode>(GetWorld()->GetAuthGameMode()))
 	{

@@ -9,6 +9,7 @@
 #include "OnlineSubsystemAccelByte.h"
 #include "OnlineSubsystemUtils.h"
 #include "StoreItemPurchaseModel.h"
+#include "OnlinePurchaseInterfaceAccelByte.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "Core/UI/MainMenu/Store/StoreItemModel.h"
 #include "Monetization/EntitlementsEssentials/EntitlementsEssentialsModel.h"

@@ -447,6 +447,13 @@ void UMatchSessionDSOnlineSession::OnFindSessionsComplete(bool bSucceeded)
 		}
 #pragma endregion 
 
+		// Trigger immediately if the results are empty at this point.
+		if (SessionSearch->SearchResults.IsEmpty())
+		{
+			OnFindSessionsCompleteDelegates.Broadcast({}, true);
+			return;
+		}
+
 		// Get owner’s user info for queried user info.
 		TArray<FUniqueNetIdRef> UserIds;
 		for (const FOnlineSessionSearchResult& SearchResult : SessionSearch->SearchResults)
@@ -455,7 +462,11 @@ void UMatchSessionDSOnlineSession::OnFindSessionsComplete(bool bSucceeded)
 		}
 
 		// Trigger to query user info
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 4
+		if (UStartupSubsystem* StartupSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UStartupSubsystem>())
+#else
 		if (UStartupSubsystem* StartupSubsystem = GetWorld()->GetGameInstance<UStartupSubsystem>())
+#endif
 		{
 			StartupSubsystem->QueryUserInfo(
 				LocalUserNumSearching,

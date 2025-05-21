@@ -5,6 +5,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
 #include "HUDWidgetEntry.generated.h"
 
@@ -21,59 +22,26 @@ class ACCELBYTEWARS_API UHUDWidgetEntry : public UAccelByteWarsActivatableWidget
 
 public:
 	UFUNCTION(BlueprintCallable)
-	void SetPowerUpValues(const FString& ItemId, const int32 Count, const int32 MemberIndex);
+	void Init(const FGameplayTeamData& Team);
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UTextBlock* Text_Value_Left;
+	UTextBlock* Tb_Lives;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UTextBlock* Text_Value_Middle;
+	UTextBlock* Tb_Score;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UTextBlock* Text_Value_Right;
-
-	UPROPERTY(meta = (ExposeOnSpawn = true), EditAnywhere, BlueprintReadWrite)
-	FLinearColor Color;
-
-	UPROPERTY(meta = (ExposeOnSpawn = true), EditAnywhere, BlueprintReadWrite)
-	FText LabelLeftText;
-
-	UPROPERTY(meta = (ExposeOnSpawn = true), EditAnywhere, BlueprintReadWrite)
-	FText LabelMiddleText;
-
-	UPROPERTY(meta = (ExposeOnSpawn = true), EditAnywhere, BlueprintReadWrite)
-	FText LabelRightText;
-
-	UPROPERTY(meta = (ExposeOnSpawn = true), EditAnywhere, BlueprintReadWrite)
-	bool bHideLeftRight = false;
+	UTextBlock* Tb_Kills;
 
 	UPROPERTY(meta = (ExposeOnSpawn = true), EditAnywhere, BlueprintReadWrite)
 	bool bHidePowerUpWidgets = false;
 
 private:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UTextBlock* Text_Label_Left;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UTextBlock* Text_Label_Middle;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UTextBlock* Text_Label_Right;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UHorizontalBox* Hb_PowerUps;
 
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UPowerUpWidgetEntry* Widget_PowerUpP1;
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UPowerUpWidgetEntry> PowerUpWidgetEntryClass;
 
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UPowerUpWidgetEntry* Widget_PowerUpP2;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UPowerUpWidgetEntry* Widget_PowerUpP3;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UPowerUpWidgetEntry* Widget_PowerUpP4;
-
-	TArray<UPowerUpWidgetEntry*> PowerUpWidgets;
+	TMap<int32, TWeakObjectPtr<UPowerUpWidgetEntry>> PowerUpWidgetEntries;
 };

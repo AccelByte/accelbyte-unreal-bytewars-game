@@ -78,15 +78,19 @@ protected:
 
 // @@@SNIPSTART PresenceEssentialsSubsystem.h-private
 // @@@MULTISNIP OnLevelLoaded {"selectedLines": ["1-2"]}
-// @@@MULTISNIP OnPlayerListChange {"selectedLines": ["1", "3-5"]}
-// @@@MULTISNIP GetPrimaryPlayerUserId {"selectedLines": ["1", "7"]}
-// @@@MULTISNIP OnPresenceReceivedDelegates {"selectedLines": ["1", "9"]}
-// @@@MULTISNIP OnBulkQueryPresenceCompleteDelegates {"selectedLines": ["1", "10"]}
+// @@@MULTISNIP OnPlayerListChange {"selectedLines": ["1", "3-9"]}
+// @@@MULTISNIP GetPrimaryPlayerUserId {"selectedLines": ["1", "11"]}
+// @@@MULTISNIP OnPresenceReceivedDelegates {"selectedLines": ["1", "13"]}
+// @@@MULTISNIP OnBulkQueryPresenceCompleteDelegates {"selectedLines": ["1", "14"]}
 private:
 	void OnLevelLoaded();
 	void OnFriendListChange();
 	void OnBlockedPlayerListChange(int32 LocalUserNum, const FString& ListName);
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 5
+	void OnSessionParticipantJoined(FName SessionName, const FUniqueNetId& UserId);
+#else
 	void OnSessionParticipantChange(FName SessionName, const FUniqueNetId& UserId, bool bJoined);
+#endif
 
 	FUniqueNetIdPtr GetPrimaryPlayerUserId();
 

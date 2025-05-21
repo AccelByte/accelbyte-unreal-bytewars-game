@@ -94,7 +94,12 @@ void UPeriodicBoardSubsystem::GetPeriodicRankings(const APlayerController* PC, c
     const int32 LocalUserNum = GetLocalUserNumFromPlayerController(PC);
 
     FOnlineLeaderboardReadRef LeaderboardObj = MakeShared<FOnlineLeaderboardRead, ESPMode::ThreadSafe>();
+
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 5
+    LeaderboardObj->LeaderboardName = LeaderboardCode;
+#else
     LeaderboardObj->LeaderboardName = FName(LeaderboardCode);
+#endif
 
     // Get the periodic leaderboard within the range of 0 to ResultLimit.
     OnLeaderboardReadCompleteDelegateHandle = LeaderboardInterface->AddOnLeaderboardReadCompleteDelegate_Handle(FOnLeaderboardReadCompleteDelegate::CreateUObject(this, &ThisClass::OnGetPeriodicRankingsComplete, LocalUserNum, LeaderboardObj, OnComplete));
@@ -127,7 +132,12 @@ void UPeriodicBoardSubsystem::GetPlayerPeriodicRanking(const APlayerController* 
     const int32 LocalUserNum = GetLocalUserNumFromPlayerController(PC);
 
     FOnlineLeaderboardReadRef LeaderboardObj = MakeShared<FOnlineLeaderboardRead, ESPMode::ThreadSafe>();
+
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 5
+    LeaderboardObj->LeaderboardName = LeaderboardCode;
+#else
     LeaderboardObj->LeaderboardName = FName(LeaderboardCode);
+#endif
 
     // Get the player's periodic leaderboard ranking.
     OnLeaderboardReadCompleteDelegateHandle = LeaderboardInterface->AddOnLeaderboardReadCompleteDelegate_Handle(FOnLeaderboardReadCompleteDelegate::CreateUObject(this, &ThisClass::OnGetPeriodicRankingsComplete, LocalUserNum, LeaderboardObj, OnComplete));
@@ -202,7 +212,11 @@ void UPeriodicBoardSubsystem::OnGetPeriodicRankingsComplete(
 
     if (!bWasSuccessful)
     {
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 5
+        UE_LOG_PERIODIC_LEADERBOARD(Warning, TEXT("Failed to get periodic leaderboard rankings with code: %s"), *LeaderboardObj->LeaderboardName);
+#else
         UE_LOG_PERIODIC_LEADERBOARD(Warning, TEXT("Failed to get periodic leaderboard rankings with code: %s"), *LeaderboardObj->LeaderboardName.ToString());
+#endif
         OnComplete.ExecuteIfBound(false, TArray<ULeaderboardRank*>());
         return;
     }
@@ -249,18 +263,32 @@ void UPeriodicBoardSubsystem::OnQueryUserInfoComplete(
 
     if (!Error.bSucceeded)
     {
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 5
+        UE_LOG_PERIODIC_LEADERBOARD(
+            Warning,
+            TEXT("Failed to get periodic leaderboard with code: %s. Error: %s"),
+            *LeaderboardObj->LeaderboardName, *Error.ErrorMessage.ToString());
+#else
         UE_LOG_PERIODIC_LEADERBOARD(
             Warning,
             TEXT("Failed to get periodic leaderboard with code: %s. Error: %s"),
             *LeaderboardObj->LeaderboardName.ToString(), *Error.ErrorMessage.ToString());
+#endif
         OnComplete.ExecuteIfBound(false, TArray<ULeaderboardRank*>());
         return;
     }
 
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 5
+    UE_LOG_PERIODIC_LEADERBOARD(
+        Warning,
+        TEXT("Success in getting the periodic leaderboard rankings with code: %s"),
+        *LeaderboardObj->LeaderboardName);
+#else
     UE_LOG_PERIODIC_LEADERBOARD(
         Warning,
         TEXT("Success in getting the periodic leaderboard rankings with code: %s"),
         *LeaderboardObj->LeaderboardName.ToString());
+#endif
 
     // Return periodic leaderboard information along with its members' user info.
     TArray<ULeaderboardRank*> Rankings;
@@ -280,15 +308,15 @@ void UPeriodicBoardSubsystem::OnQueryUserInfoComplete(
 
         // Get the member's stat value.
         float Score = 0;
-        if (Row.Columns.Contains(FName("Cycle_Point")))
+        if (Row.Columns.Contains(TEXT("Cycle_Point")))
         {
             // The stat key is "Cycle_Point" if it was retrieved from FOnlineLeaderboardAccelByte::ReadLeaderboardCycleAroundRank().
-            Row.Columns[FName("Cycle_Point")].GetValue(Score);
+            Row.Columns[TEXT("Cycle_Point")].GetValue(Score);
         }
-        else if (Row.Columns.Contains(FName("Point")))
+        else if (Row.Columns.Contains(TEXT("Point")))
         {
             // The stat key is "Point" if it was retrieved from FOnlineLeaderboardAccelByte::ReadLeaderboardsCycle()
-            Row.Columns[FName("Point")].GetValue(Score);
+            Row.Columns[TEXT("Point")].GetValue(Score);
         }
 
         // Add a new ranking object.

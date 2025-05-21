@@ -21,8 +21,8 @@ class ACCELBYTEWARS_API UPlayersListWidget : public UAccelByteWarsActivatableWid
 	GENERATED_BODY()
 	
 // @@@SNIPSTART PlayersListWidget.h-protected
-// @@@MULTISNIP PlayersListUI {"selectedLines": ["1", "17-21"]}
-// @@@MULTISNIP InitGameSessionPlayerListDeclaration {"selectedLines": ["1", "7-9"]}
+// @@@MULTISNIP PlayersListUI {"selectedLines": ["1", "21-25"]}
+// @@@MULTISNIP InitGameSessionPlayerListDeclaration {"selectedLines": ["1", "7-13"]}
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeOnActivated() override;
@@ -31,7 +31,11 @@ protected:
 
 	void InitGameSessionPlayersList();
 	void OnPlayersListEntryClicked(UObject* Item);
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 5
+	void OnSessionParticipantsJoined(FName SessionName, const FUniqueNetId& User);
+#else
 	void OnSessionParticipantsChanged(FName SessionName, const FUniqueNetId& User, bool bJoined);
+#endif
 
 	UPROPERTY()
 	UAccelByteWarsGameInstance* GameInstance;

@@ -119,18 +119,24 @@ void UBrowseMatchWidget::SwitchContent(const EContentType Type)
 		break;
 	}
 
-	DesiredFocusTargetButton = FocusTarget;
-	FocusTarget->SetUserFocus(GetOwningPlayer());
-	Ws_Root->SetActiveWidget(bBrowseMenu ? W_Browse_Outer : W_Joining_Outer);
+	// Display the target widget. If the last switcher is different, enable force state to directly display the correct initial state.
+	UWidget* TargetWidget = bBrowseMenu ? W_Browse_Outer : W_Joining_Outer;
+	const bool bForceState = Ws_Root->GetActiveWidget() != TargetWidget;
+	Ws_Root->SetActiveWidget(TargetWidget);
+	UAccelByteWarsWidgetSwitcher* TargetWidgetSwitcher = bBrowseMenu ? Ws_Browse_Content : Ws_Joining;
 	if (bBrowseMenu)
 	{
-		Ws_Browse_Content->SetWidgetState(State);
+		Ws_Browse_Content->SetWidgetState(State, bForceState);
 	}
 	else
 	{
 		Btn_Joining_Back->SetVisibility(bJoin_ShowBackButton ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-		Ws_Joining->SetWidgetState(State);
+		Ws_Joining->SetWidgetState(State, bForceState);
 	}
+
+	// Refresh widget focus.
+	DesiredFocusTargetButton = FocusTarget;
+	FocusTarget->SetUserFocus(GetOwningPlayer());
 	RequestRefreshFocus();
 
 	// Set FTUE

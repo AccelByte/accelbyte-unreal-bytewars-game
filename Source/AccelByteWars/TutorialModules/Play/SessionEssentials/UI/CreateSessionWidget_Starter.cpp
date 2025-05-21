@@ -29,6 +29,7 @@ void UCreateSessionWidget_Starter::NativeOnActivated()
 
 	// Set initial UI state.
 	SwitchContent(EContentType::CREATE);
+	Ws_Processing->ForceRefresh();
 
 	// Set UI state to success if already in a session.
 	const FName SessionName = SessionOnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession);
@@ -100,19 +101,19 @@ void UCreateSessionWidget_Starter::SwitchContent(const EContentType Type)
 	default: ;
 	}
 
+	// Display the target widget. If the last widget is different, enable force state to directly display the correct initial state.
+	const bool bForceState = Ws_ContentOuter->GetActiveWidget() != ContentTarget;
+	Ws_ContentOuter->SetActiveWidget(ContentTarget);
+	Ws_Processing->SetWidgetState(ProcessingWidgetState, bForceState);
+
+	// Refresh widget focus.
+	Btn_Back->SetIsEnabled(bEnableBackButton);
+	bIsBackHandler = bEnableBackButton;
 	if (FocusTarget)
 	{
 		DesiredFocusTargetButton = FocusTarget;
 		FocusTarget->SetUserFocus(GetOwningPlayer());
 	}
-	Ws_ContentOuter->SetActiveWidget(ContentTarget);
-	if (ProcessingWidgetState != EAccelByteWarsWidgetSwitcherState::Empty)
-	{
-		Ws_Processing->SetWidgetState(ProcessingWidgetState);
-	}
-
-	Btn_Back->SetIsEnabled(bEnableBackButton);
-	bIsBackHandler = bEnableBackButton;
 	RequestRefreshFocus();
 
 	// Set FTUEs

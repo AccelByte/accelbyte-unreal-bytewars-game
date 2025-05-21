@@ -23,6 +23,7 @@ void UCreateMatchSessionWidget::NativeOnActivated()
 	Btn_TeamDeathMatch->OnClicked().AddUObject(this, &ThisClass::SetSelectedGameMode, EGameModeType::TDM);
 
 	SwitchContent(EContentType::SELECT_GAMEMODE);
+	Ws_Processing->ForceRefresh();
 }
 
 void UCreateMatchSessionWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
@@ -78,7 +79,7 @@ void UCreateMatchSessionWidget::SwitchContent(const EContentType ContentType)
 {
 	UWidget* Target = nullptr;
 	UWidget* FocusTarget = Btn_GameModeType_BackToCreateSession;
-
+	EAccelByteWarsWidgetSwitcherState ProcessingWidgetState = EAccelByteWarsWidgetSwitcherState::Empty;
 	bool bShowBackButton = true;
 
 	switch (ContentType)
@@ -86,11 +87,13 @@ void UCreateMatchSessionWidget::SwitchContent(const EContentType ContentType)
 	case EContentType::SELECT_GAMEMODE:
 		Target = W_SelectGameModeType;
 		CameraTargetY = 600.0f;
+		ProcessingWidgetState = EAccelByteWarsWidgetSwitcherState::Loading;
 		FocusTarget = Btn_Elimination;
 		break;
 	case EContentType::SELECT_NETWORKTYPE:
 		Target = W_SelectGameModeNetworkType;
 		CameraTargetY = 750.0f;
+		ProcessingWidgetState = EAccelByteWarsWidgetSwitcherState::Loading;
 		FocusTarget = W_SelectGameModeNetworkTypeButtonOuter->HasAnyChildren() ?
 			W_SelectGameModeNetworkTypeButtonOuter->GetChildAt(0) :
 			Btn_ServerType_BackToCreateSession;
@@ -98,23 +101,28 @@ void UCreateMatchSessionWidget::SwitchContent(const EContentType ContentType)
 	case EContentType::LOADING:
 		Target = W_Processing;
 		CameraTargetY = 825.0f;
-		Ws_Processing->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Loading);
+		ProcessingWidgetState = EAccelByteWarsWidgetSwitcherState::Loading;
 		FocusTarget = Ws_Processing;
 		bShowBackButton = false;
 		break;
 	case EContentType::ERROR:
 		Target = W_Processing;
-		Ws_Processing->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Error);
+		ProcessingWidgetState = EAccelByteWarsWidgetSwitcherState::Error;
 		CameraTargetY = 825.0f;
 		FocusTarget = Ws_Processing;
 		bShowBackButton = false;
 		break;
 	}
 
+	// Display the target widget. If the last widget is different, enable force state to directly display the correct initial state.
+	const bool bForceState = Ws_ContentOuter->GetActiveWidget() != Target;
+	Ws_ContentOuter->SetActiveWidget(Target);
+	Ws_Processing->SetWidgetState(ProcessingWidgetState, bForceState);
+	
+	// Refresh widget focus.
+	Btn_GameModeType_BackToCreateSession->SetVisibility(bShowBackButton ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	DesiredFocusTargetButton = FocusTarget;
 	FocusTarget->SetUserFocus(GetOwningPlayer());
-	Ws_ContentOuter->SetActiveWidget(Target);
-	Btn_GameModeType_BackToCreateSession->SetVisibility(bShowBackButton ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	RequestRefreshFocus();
 }
 // @@@SNIPEND

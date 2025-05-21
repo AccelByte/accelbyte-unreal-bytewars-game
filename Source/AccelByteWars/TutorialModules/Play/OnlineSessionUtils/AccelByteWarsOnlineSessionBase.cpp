@@ -7,6 +7,7 @@
 
 #include "OnlineSubsystemAccelByteSessionSettings.h"
 #include "OnlineSubsystemUtils.h"
+#include "Online/OnlineSessionNames.h"
 
 #pragma region "Utilities"
 // @@@SNIPSTART AccelByteWarsOnlineSessionBase.cpp-GetABSessionInt

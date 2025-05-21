@@ -275,7 +275,11 @@ void AAccelByteWarsMissile::ApplyGravityToThisGameObjects()
 
 		if (IsNearHitShip(GameObject))
 		{
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 4
+			if (NearHitShips.Contains(GameObject->GetOwner()) == false)
+#else
 			if (NearHitShips.Contains(Cast<AActor>(GameObject)) == false)
+#endif
 			{
 				if (GameObject->GetOwner() == nullptr)
 					continue;
@@ -487,7 +491,7 @@ void AAccelByteWarsMissile::OnDestroyObject()
 	}
 	else
 	{
-		// Missile timed out, broadcast entity destroyed event for the missile.
+		// Missile hit planet, broadcast entity destroyed event for the missile.
 		if (AAccelByteWarsInGameGameMode::OnEntityDestroyedDelegates.IsBound())
 		{
 			AAccelByteWarsInGameGameMode::OnEntityDestroyedDelegates.Broadcast(

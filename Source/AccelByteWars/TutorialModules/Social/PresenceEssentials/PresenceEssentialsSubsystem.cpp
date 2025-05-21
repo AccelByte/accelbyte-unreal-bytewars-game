@@ -17,10 +17,10 @@
 #include "Play/OnlineSessionUtils/AccelByteWarsOnlineSessionBase.h"
 
 // @@@SNIPSTART PresenceEssentialsSubsystem.cpp-Initialize
-// @@@MULTISNIP BindPresenceActivityDelegate {"selectedLines": ["1-2", "5-64", "74-87", "89-115", "134"]}
-// @@@MULTISNIP BindPlayerListChangeDelegate {"selectedLines": ["1-2", "117-126", "134"]}
-// @@@MULTISNIP BindBulkQueryPresenceDelegate {"selectedLines": ["1-2", "128-130", "132-134"]}
-// @@@MULTISNIP BindPresenceReceivedDelegate {"selectedLines": ["1-2", "128-131", "133-134"]}
+// @@@MULTISNIP BindPresenceActivityDelegate {"selectedLines": ["1-2", "5-64", "74-87", "89-115", "138"]}
+// @@@MULTISNIP BindPlayerListChangeDelegate {"selectedLines": ["1-2", "117-130", "138"]}
+// @@@MULTISNIP BindBulkQueryPresenceDelegate {"selectedLines": ["1-2", "132-134", "136-138"]}
+// @@@MULTISNIP BindPresenceReceivedDelegate {"selectedLines": ["1-2", "132-135", "137-138"]}
 void UPresenceEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
@@ -145,7 +145,11 @@ void UPresenceEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collecti
     }
     if (FOnlineSessionV2AccelBytePtr SessionInterface = GetSessionInterface())
     {
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 5
+        SessionInterface->AddOnSessionParticipantJoinedDelegate_Handle(FOnSessionParticipantJoinedDelegate::CreateUObject(this, &ThisClass::OnSessionParticipantJoined));
+#else
         SessionInterface->AddOnSessionParticipantsChangeDelegate_Handle(FOnSessionParticipantsChangeDelegate::CreateUObject(this, &ThisClass::OnSessionParticipantChange));
+#endif
     }
 
     // Listen to presence events.
@@ -158,10 +162,10 @@ void UPresenceEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collecti
 // @@@SNIPEND
 
 // @@@SNIPSTART PresenceEssentialsSubsystem.cpp-Deinitialize
-// @@@MULTISNIP UnbindPresenceActivityDelegate {"selectedLines": ["1-2", "5-44", "51-58", "60-75", "92"]}
-// @@@MULTISNIP UnbindPlayerListChangeDelegate {"selectedLines": ["1-2", "77-85", "92"]}
-// @@@MULTISNIP UnbindBulkQueryPresenceDelegate {"selectedLines": ["1-2", "87-88", "90-92"]}
-// @@@MULTISNIP UnbindPresenceReceivedDelegate {"selectedLines": ["1-2", "87-89", "91-92"]}
+// @@@MULTISNIP UnbindPresenceActivityDelegate {"selectedLines": ["1-2", "5-44", "51-58", "60-75", "96"]}
+// @@@MULTISNIP UnbindPlayerListChangeDelegate {"selectedLines": ["1-2", "77-89", "96"]}
+// @@@MULTISNIP UnbindBulkQueryPresenceDelegate {"selectedLines": ["1-2", "91-92", "94-96"]}
+// @@@MULTISNIP UnbindPresenceReceivedDelegate {"selectedLines": ["1-2", "91-93", "95-96"]}
 void UPresenceEssentialsSubsystem::Deinitialize()
 {
     Super::Deinitialize();
@@ -245,7 +249,11 @@ void UPresenceEssentialsSubsystem::Deinitialize()
     }
     if (FOnlineSessionV2AccelBytePtr SessionInterface = GetSessionInterface())
     {
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 5
+        SessionInterface->ClearOnSessionParticipantJoinedDelegates(this);
+#else
         SessionInterface->ClearOnSessionParticipantsChangeDelegates(this);
+#endif
     }
 
     if (FOnlinePresenceAccelBytePtr PresenceInterface = GetPresenceInterface())
@@ -450,6 +458,13 @@ void UPresenceEssentialsSubsystem::OnBlockedPlayerListChange(int32 LocalUserNum,
 // @@@SNIPEND
 
 // @@@SNIPSTART PresenceEssentialsSubsystem.cpp-OnSessionParticipantChange
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 5
+void UPresenceEssentialsSubsystem::OnSessionParticipantJoined(FName SessionName, const FUniqueNetId& UserId)
+{
+    UE_LOG_PRESENCEESSENTIALS(Log, TEXT("Update presence when session participant change"));
+    GetPresence(UserId.AsShared(), true);
+}
+#else
 void UPresenceEssentialsSubsystem::OnSessionParticipantChange(FName SessionName, const FUniqueNetId& UserId, bool bJoined)
 {
     if(!bJoined)
@@ -459,6 +474,7 @@ void UPresenceEssentialsSubsystem::OnSessionParticipantChange(FName SessionName,
     }
 }
 // @@@SNIPEND
+#endif
 
 // @@@SNIPSTART PresenceEssentialsSubsystem.cpp-GetPresence
 void UPresenceEssentialsSubsystem::GetPresence(const FUniqueNetIdPtr UserId, bool bForceQuery, const FOnPresenceTaskComplete& OnComplete)

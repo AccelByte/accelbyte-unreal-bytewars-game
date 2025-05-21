@@ -56,6 +56,10 @@ void AAccelByteWarsMissileTrail::Server_SetColor_Implementation(FLinearColor InC
 
 void AAccelByteWarsMissileTrail::OnRepNotify_Color()
 {
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 3
+	MissileTrail->SetVariableLinearColor("RibbonColour", TrailColor);
+#else
 	MissileTrail->SetNiagaraVariableLinearColor("RibbonColour", TrailColor);
+#endif
 }
 

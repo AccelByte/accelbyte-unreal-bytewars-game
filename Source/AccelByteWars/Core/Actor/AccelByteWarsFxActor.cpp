@@ -13,8 +13,13 @@ AAccelByteWarsFxActor::AAccelByteWarsFxActor()
 	PrimaryActorTick.TickInterval = 0.05f;
 
 	// Lower the net update frequency since this is only an FX actor
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 5
+	SetNetUpdateFrequency(5.0f);
+	SetMinNetUpdateFrequency(1.0f);
+#else
 	NetUpdateFrequency = 5.0f;
 	MinNetUpdateFrequency = 1.0f;
+#endif
 
 	NewRoot = CreateDefaultSubobject<USceneComponent>(TEXT("DefaultSceneRoot"));
 	RootComponent = NewRoot;

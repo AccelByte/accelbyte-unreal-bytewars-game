@@ -321,6 +321,13 @@ void UMatchSessionP2POnlineSession::OnFindSessionsComplete(bool bSucceeded)
 				FUniqueNetIdRepl(Element.Session.OwningUserId));
 		});
 
+		// Trigger immediately if the results are empty at this point.
+		if (SessionSearch->SearchResults.IsEmpty())
+		{
+			OnFindSessionsCompleteDelegates.Broadcast({}, true);
+			return;
+		}
+
 		// Get owner’s user info for queried user info.
 		TArray<FUniqueNetIdRef> UserIds;
 		for (const FOnlineSessionSearchResult& SearchResult : SessionSearch->SearchResults)

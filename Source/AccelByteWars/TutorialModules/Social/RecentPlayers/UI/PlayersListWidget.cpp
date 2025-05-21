@@ -63,7 +63,7 @@ UWidget* UPlayersListWidget::NativeGetDesiredFocusTarget() const
 }
 
 // @@@SNIPSTART PlayersListWidget.cpp-InitGameSessionPlayersList
-// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "27"]}
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "32"]}
 void UPlayersListWidget::InitGameSessionPlayersList()
 {
 	Tv_PlayersList->OnItemClicked().RemoveAll(this);
@@ -87,8 +87,13 @@ void UPlayersListWidget::InitGameSessionPlayersList()
 
 	if(SessionInterface.IsValid())
 	{
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 5
+		SessionInterface->ClearOnSessionParticipantJoinedDelegates(this);
+		SessionInterface->AddOnSessionParticipantJoinedDelegate_Handle(FOnSessionParticipantJoinedDelegate::CreateUObject(this, &ThisClass::OnSessionParticipantsJoined));
+#else
 		SessionInterface->ClearOnSessionParticipantsChangeDelegates(this);
 		SessionInterface->AddOnSessionParticipantsChangeDelegate_Handle(FOnSessionParticipantsChangeDelegate::CreateUObject(this, &ThisClass::OnSessionParticipantsChanged));
+#endif
 	}
 }
 // @@@SNIPEND
@@ -128,6 +133,31 @@ void UPlayersListWidget::OnPlayersListEntryClicked(UObject* Item)
 // @@@SNIPEND
 
 // @@@SNIPSTART PlayersListWidget.cpp-OnSessionParticipantsChanged
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 5
+void UPlayersListWidget::OnSessionParticipantsJoined(FName SessionName, const FUniqueNetId& User)
+{
+	if (SessionName.IsEqual(NAME_GameSession))
+	{
+		if (!Tv_PlayersList->GetListItems().ContainsByPredicate([&User](UObject* Object)
+			{
+				UFriendData* PlayerData = StaticCast<UFriendData*>(Object);
+				if (PlayerData)
+				{
+					return User == *PlayerData->UserId.Get();
+				}
+				return false;
+			}))
+		{
+			Tv_PlayersList->ClearListItems();
+			InitGameSessionPlayersList();
+		}
+	}
+	else
+	{
+		UE_LOG_RECENTPLAYERS(Warning, TEXT("Player list not game session"));
+	}
+}
+#else
 void UPlayersListWidget::OnSessionParticipantsChanged(FName SessionName, const FUniqueNetId& User, bool bJoined)
 {
 	if(SessionName.IsEqual(NAME_GameSession))
@@ -152,3 +182,4 @@ void UPlayersListWidget::OnSessionParticipantsChanged(FName SessionName, const F
 	}
 }
 // @@@SNIPEND
+#endif

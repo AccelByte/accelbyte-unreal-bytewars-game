@@ -3,6 +3,7 @@
 // and restrictions contact your company contract manager.
 
 #include "FriendWidgetEntry.h"
+#include "OnlineSessionInterfaceV2AccelByte.h"
 #include "Core/Utilities/AccelByteWarsUtility.h"
 #include "Core/UI/Components/AccelByteWarsAsyncImageWidget.h"
 #include "CommonButtonBase.h"
@@ -35,7 +36,7 @@ void UFriendWidgetEntry::NativeConstruct()
 }
 
 // @@@SNIPSTART FriendWidgetEntry.cpp-NativeOnListItemObjectSet
-// @@@MULTISNIP PlayerGameSessionStatus {"highlightedLines": "{22-43}"}
+// @@@MULTISNIP PlayerGameSessionStatus {"highlightedLines": "{22-48}"}
 void UFriendWidgetEntry::NativeOnListItemObjectSet(UObject* ListItemObject)
 {
 	Super::NativeOnListItemObjectSet(ListItemObject);
@@ -73,8 +74,13 @@ void UFriendWidgetEntry::NativeOnListItemObjectSet(UObject* ListItemObject)
 
 				if(SessionInterface.IsValid())
 				{
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 5
+					SessionInterface->ClearOnSessionParticipantJoinedDelegates(this);
+					SessionInterface->AddOnSessionParticipantJoinedDelegate_Handle(FOnSessionParticipantJoinedDelegate::CreateUObject(this, &ThisClass::OnSessionParticipantsJoined));
+#else
 					SessionInterface->ClearOnSessionParticipantsChangeDelegates(this);
 					SessionInterface->AddOnSessionParticipantsChangeDelegate_Handle(FOnSessionParticipantsChangeDelegate::CreateUObject(this, &ThisClass::OnSessionParticipantsChanged));
+#endif
 				}
 			}
 		}
@@ -154,6 +160,16 @@ void UFriendWidgetEntry::OnCancelButtonClicked()
 }
 // @@@SNIPEND
 
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 5
+void UFriendWidgetEntry::OnSessionParticipantsJoined(FName SessionName, const FUniqueNetId& User)
+{
+	if (!SessionName.IsEqual(NAME_GameSession) || User != *CachedFriendData->UserId.Get())
+	{
+		return;
+	}
+	NativeOnListItemObjectSet(CachedFriendData);
+}
+#else
 void UFriendWidgetEntry::OnSessionParticipantsChanged(FName SessionName, const FUniqueNetId& User, bool bJoined)
 {
 	if(!SessionName.IsEqual(NAME_GameSession) || User != *CachedFriendData->UserId.Get())
@@ -162,5 +178,5 @@ void UFriendWidgetEntry::OnSessionParticipantsChanged(FName SessionName, const F
 	}
 	NativeOnListItemObjectSet(CachedFriendData);
 }
-
+#endif
 #undef LOCTEXT_NAMESPACE

@@ -15,7 +15,7 @@ void UMultiplayerDSEssentialsSubsystem_Starter::Initialize(FSubsystemCollectionB
 
 	// TODO: Bind delegates
 
-	ABSessionInt = StaticCastSharedPtr<FOnlineSessionV2AccelByte>(Online::GetSessionInterface());
+	ABSessionInt = StaticCastSharedPtr<FOnlineSessionV2AccelByte>(Online::GetSessionInterface(GetWorld()));
 	ensure(ABSessionInt);
 }
 

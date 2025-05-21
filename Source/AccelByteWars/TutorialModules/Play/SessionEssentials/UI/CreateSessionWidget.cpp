@@ -13,7 +13,7 @@
 #include "Play/SessionEssentials/SessionEssentialsModel.h"
 
 // @@@SNIPSTART CreateSessionWidget.cpp-NativeOnActivated
-// @@@MULTISNIP ReadyUI {"selectedLines": ["1-10", "31"], "highlightedLines": "{7-9}"}
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-10", "32"], "highlightedLines": "{7-9}"}
 void UCreateSessionWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
@@ -36,6 +36,7 @@ void UCreateSessionWidget::NativeOnActivated()
 
 	// Set initial UI state.
 	SwitchContent(EContentType::CREATE);
+	Ws_Processing->ForceRefresh();
 
 	// Set UI state to success if already in a session.
 	const FName SessionName = SessionOnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession);
@@ -188,6 +189,7 @@ void UCreateSessionWidget::SwitchContent(const EContentType Type)
 	{
 	case EContentType::CREATE:
 		ContentTarget = W_Selection;
+		ProcessingWidgetState = EAccelByteWarsWidgetSwitcherState::Loading;
 		FocusTarget = Btn_CreateSession;
 		break;
 	case EContentType::LOADING:
@@ -208,19 +210,19 @@ void UCreateSessionWidget::SwitchContent(const EContentType Type)
 	default: ;
 	}
 
+	// Display the target widget. If the last widget is different, enable force state to directly display the correct initial state.
+	const bool bForceState = Ws_ContentOuter->GetActiveWidget() != ContentTarget;
+	Ws_ContentOuter->SetActiveWidget(ContentTarget);
+	Ws_Processing->SetWidgetState(ProcessingWidgetState, bForceState);
+
+	// Refresh widget focus.
+	Btn_Back->SetIsEnabled(bEnableBackButton);
+	bIsBackHandler = bEnableBackButton;
 	if (FocusTarget)
 	{
 		DesiredFocusTargetButton = FocusTarget;
 		FocusTarget->SetUserFocus(GetOwningPlayer());
 	}
-	Ws_ContentOuter->SetActiveWidget(ContentTarget);
-	if (ProcessingWidgetState != EAccelByteWarsWidgetSwitcherState::Empty)
-	{
-		Ws_Processing->SetWidgetState(ProcessingWidgetState);
-	}
-
-	Btn_Back->SetIsEnabled(bEnableBackButton);
-	bIsBackHandler = bEnableBackButton;
 	RequestRefreshFocus();
 
 	// Set FTUEs

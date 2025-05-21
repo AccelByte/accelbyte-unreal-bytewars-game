@@ -6,8 +6,9 @@
 #include "Blueprint/WidgetBlueprintLibrary.h"
 #include "Runtime/ImageWrapper/Public/IImageWrapperModule.h"
 #include "Runtime/Online/HTTP/Public/Http.h"
-#include "Engine/Classes/GameFramework/PlayerState.h"
-#include "EngineSettings/Classes/GeneralProjectSettings.h"
+#include "Runtime/Engine/Classes/GameFramework/PlayerState.h"
+#include "Runtime/EngineSettings/Classes/GeneralProjectSettings.h"
+#include "Runtime/UMG/Public/Blueprint/UserWidget.h"
 
 const TMap<FString, EImageFormat> AccelByteWarsUtility::ImageFormatMap =
 {
@@ -264,6 +265,35 @@ bool AccelByteWarsUtility::GetFlagValueOrDefault(
 	}
 
 	return bIsActive;
+}
+
+float AccelByteWarsUtility::GetLaunchParamFloatValueOrDefault(
+	const FString& Keyword,
+	const FString& ConfigSectionKeyword,
+	const float DefaultValue)
+{
+	float Value = DefaultValue;
+
+	// Check launch param
+	const FString CmdArgs = FCommandLine::Get();
+	const FString CmdKeyword = FString::Printf(TEXT("-%s="), *Keyword);
+	if (CmdArgs.Contains(*CmdKeyword, ESearchCase::IgnoreCase))
+	{
+		FString ValueInString = TEXT("");
+		FParse::Value(*CmdArgs, *CmdKeyword, ValueInString);
+
+		if (!ValueInString.IsEmpty() && ValueInString.IsNumeric())
+		{
+			Value = FCString::Atoi(*ValueInString);
+		}
+	}
+	// Check DefaultEngine.ini
+	else
+	{
+		Value = GConfig->GetFloatOrDefault(*ConfigSectionKeyword, *Keyword, DefaultValue, GEngineIni);
+	}
+
+	return Value;
 }
 
 bool AccelByteWarsUtility::IsValidEmailAddress(const FString& Email)

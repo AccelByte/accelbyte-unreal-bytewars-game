@@ -400,7 +400,7 @@ void UEntitlementsEssentialsSubsystem::UpdatePlayerEquipmentQuantity(
 				constexpr EItemSkuPlatform AB = EItemSkuPlatform::AccelByte;
 				for (const UStoreItemDataObject* Entitlement : Entitlements)
 				{
-					if (Entitlement->GetSkuMap()[AB].Equals(ItemDataAsset->SkuMap[AB]))
+					if (Entitlement->GetSku(AB).Equals(ItemDataAsset->SkuMap[AB]))
 					{
 						// Non consumable item is expected to have the quantity of 0
 						InItems.Add(ItemDataAsset->Id, Entitlement->GetIsConsumable() ? Entitlement->GetCount() : 1);

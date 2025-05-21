@@ -6,6 +6,7 @@
 #include "MultiplayerDSEssentialsSubsystemAMS_Starter.h"
 
 #include "MultiplayerDSEssentialsLog.h"
+#include "MultiplayerDSEssentialsModels.h"
 #include "OnlineSubsystemUtils.h"
 #include "Core/System/AccelByteWarsGameSession.h"
 #include "Core/GameModes/AccelByteWarsGameMode.h"

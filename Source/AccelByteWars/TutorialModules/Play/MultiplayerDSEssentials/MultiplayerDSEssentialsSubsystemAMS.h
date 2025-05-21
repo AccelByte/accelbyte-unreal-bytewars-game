@@ -7,7 +7,6 @@
 #include "CoreMinimal.h"
 #include "MultiplayerDSEssentialsSubsystemBase.h"
 #include "OnlineSessionInterfaceV2AccelByte.h"
-#include "OnlineSessionInterfaceV2AccelByte.h"
 #include "MultiplayerDSEssentialsSubsystemAMS.generated.h"
 
 UCLASS()
@@ -29,9 +28,10 @@ protected:
 // @@@MULTISNIP OnUnregisterServerComplete {"selectedLines": ["1", "6"]}
 // @@@MULTISNIP SendServerReady {"selectedLines": ["1", "8"]}
 // @@@MULTISNIP OnSendServerReadyComplete {"selectedLines": ["1", "9"]}
-// @@@MULTISNIP OnAMSDrainReceived {"selectedLines": ["1", "11"]}
-// @@@MULTISNIP OnV2SessionEnded {"selectedLines": ["1", "12"]}
-// @@@MULTISNIP Helper {"selectedLines": ["1", "14-18"]}
+// @@@MULTISNIP OnAMSDrainReceived {"selectedLines": ["1", "11-12"]}
+// @@@MULTISNIP OnAMSDrainReceivedTimer {"selectedLines": ["1", "21"]}
+// @@@MULTISNIP OnV2SessionEnded {"selectedLines": ["1", "13"]}
+// @@@MULTISNIP Helper {"selectedLines": ["1", "15-19"]}
 private:
 	void RegisterServer(const FName SessionName);
 	void OnRegisterServerComplete(const bool bSucceeded);
@@ -43,6 +43,7 @@ private:
 	void OnSendServerReadyComplete(const bool bSucceeded);
 
 	void OnAMSDrainReceived();
+	void ExecuteDrainLogic();
 	void OnV2SessionEnded(const FName SessionName);
 
 	TSharedPtr<FAccelByteModelsV2GameSession> GetSessionInfo(const FName SessionName) const;
@@ -50,5 +51,7 @@ private:
 	bool bServerAlreadyRegister;
 	bool bUnregisterServerRunning;
 	FOnlineSessionV2AccelBytePtr ABSessionInt;
+
+	FTimerHandle DrainLogicTimerHandle;
 // @@@SNIPEND
 };

@@ -560,7 +560,7 @@ void AAccelByteWarsGameMode::ServerCloseCountdownCounting(const float& DeltaSeco
 	}
 
 	// Update the countdown.
-	GAMEMODE_LOG(Log, TEXT("Closing the server in: %ds"), (int32)Countdown);
+	GAMEMODE_LOG(VeryVerbose, TEXT("Closing the server in: %ds"), (int32)Countdown);
 	ABGameState->ServerCloseCountdown -= DeltaSeconds;
 }
 

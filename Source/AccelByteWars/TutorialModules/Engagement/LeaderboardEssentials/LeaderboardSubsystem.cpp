@@ -90,7 +90,12 @@ void ULeaderboardSubsystem::GetRankings(const APlayerController* PC, const FStri
     const int32 LocalUserNum = GetLocalUserNumFromPlayerController(PC);
 
     FOnlineLeaderboardReadRef LeaderboardObj = MakeShared<FOnlineLeaderboardRead, ESPMode::ThreadSafe>();
+
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 5
+    LeaderboardObj->LeaderboardName = LeaderboardCode;
+#else
     LeaderboardObj->LeaderboardName = FName(LeaderboardCode);
+#endif
 
     // Get the leaderboard within the range of 0 to ResultLimit.
     OnLeaderboardReadCompleteDelegateHandle = LeaderboardInterface->AddOnLeaderboardReadCompleteDelegate_Handle(FOnLeaderboardReadCompleteDelegate::CreateUObject(this, &ThisClass::OnGetRankingsComplete, LocalUserNum, LeaderboardObj, OnComplete));
@@ -123,7 +128,12 @@ void ULeaderboardSubsystem::GetPlayerRanking(const APlayerController* PC, const 
     const int32 LocalUserNum = GetLocalUserNumFromPlayerController(PC);
 
     FOnlineLeaderboardReadRef LeaderboardObj = MakeShared<FOnlineLeaderboardRead, ESPMode::ThreadSafe>();
+
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 5
+    LeaderboardObj->LeaderboardName = LeaderboardCode;
+#else
     LeaderboardObj->LeaderboardName = FName(LeaderboardCode);
+#endif
 
     // Get the player's leaderboard ranking.
     OnLeaderboardReadCompleteDelegateHandle = LeaderboardInterface->AddOnLeaderboardReadCompleteDelegate_Handle(FOnLeaderboardReadCompleteDelegate::CreateUObject(this, &ThisClass::OnGetRankingsComplete, LocalUserNum, LeaderboardObj, OnComplete));
@@ -141,7 +151,11 @@ void ULeaderboardSubsystem::OnGetRankingsComplete(bool bWasSuccessful, const int
 
     if (!bWasSuccessful) 
     {
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 5
+        UE_LOG_LEADERBOARD_ESSENTIALS(Warning, TEXT("Failed to get leaderboard rankings with code: %s"), *LeaderboardObj->LeaderboardName);
+#else
         UE_LOG_LEADERBOARD_ESSENTIALS(Warning, TEXT("Failed to get leaderboard rankings with code: %s"), *LeaderboardObj->LeaderboardName.ToString());
+#endif
         OnComplete.ExecuteIfBound(false, TArray<ULeaderboardRank*>());
         return;
     }
@@ -192,8 +206,12 @@ void ULeaderboardSubsystem::OnQueryUserInfoComplete(
         return;
     }
 
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 5
+    UE_LOG_LEADERBOARD_ESSENTIALS(Warning, TEXT("Success in getting the leaderboard rankings with code: %s"), *LeaderboardObj->LeaderboardName);
+#else
     UE_LOG_LEADERBOARD_ESSENTIALS(Warning, TEXT("Success in getting the leaderboard rankings with code: %s"), *LeaderboardObj->LeaderboardName.ToString());
-
+#endif
+    
     // Return leaderboard information along with its members' user info.
     TArray<ULeaderboardRank*> Rankings;
     for (const FOnlineStatsRow& Row : LeaderboardObj->Rows)
@@ -212,15 +230,15 @@ void ULeaderboardSubsystem::OnQueryUserInfoComplete(
 
         // Get the member's stat value.
         float Score = 0.0f;
-        if (Row.Columns.Contains(FName("AllTime_Point")))
+        if (Row.Columns.Contains(TEXT("AllTime_Point")))
         {
             // The stat key is "AllTime_Point" if it was retrieved from FOnlineLeaderboardAccelByte::ReadLeaderboardsAroundRank().
-            Row.Columns[FName("AllTime_Point")].GetValue(Score);
+            Row.Columns[TEXT("AllTime_Point")].GetValue(Score);
         }
-        else if (Row.Columns.Contains(FName("Point")))
+        else if (Row.Columns.Contains(TEXT("Point")))
         {
             // The stat key is "Point" if it was retrieved from FOnlineLeaderboardAccelByte::ReadLeaderboards()
-            Row.Columns[FName("Point")].GetValue(Score);
+            Row.Columns[TEXT("Point")].GetValue(Score);
         }
 
         // Add a new ranking object.

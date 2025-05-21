@@ -14,6 +14,7 @@
 #include "Core/AssetManager/InGameItems/InGameItemDataAsset.h"
 #include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
 #include "Core/UI/MainMenu/Store/Components/StoreItemListEntry.h"
+#include "Monetization/EntitlementsEssentials/EntitlementsEssentialsLog.h"
 #include "Monetization/EntitlementsEssentials/EntitlementsEssentialsSubsystem.h"
 
 void UInventoryWidget::NativeOnActivated()
@@ -92,6 +93,10 @@ void UInventoryWidget::OnClickListItem(UObject* Object)
 		SelectedItem = Item;
 		if (!SelectedItem->GetSkuMap().Find(EItemSkuPlatform::AccelByte))
 		{
+			// Item is invalid, hide all action buttons.
+			Btn_Equip->SetVisibility(ESlateVisibility::Collapsed);
+			Btn_Unequip->SetVisibility(ESlateVisibility::Collapsed);
+			SwitchToDefaultState();
 			return;
 		}
 
@@ -150,12 +155,19 @@ void UInventoryWidget::OnClickEquip() const
 		return;
 	}
 
+	const FString Sku = SelectedItem->GetSku(EItemSkuPlatform::AccelByte);
+	if (Sku.IsEmpty())
+	{
+		UE_LOG_ENTITLEMENTS_ESSENTIALS(Warning, TEXT("Item %s don't have AB SKU. Skipping equip"), *SelectedItem->GetTitle().ToString())
+		return;
+	}
+
 	/**
 	 * Item with bConsumable == false will always have its count as 0.
 	 * Byte Wars expects the item to have count as at least 1 to be treated as equipped.
 	 * Therefore, we manually override item count here.
 	 */
-	const TTuple<FString, int32> EquipItemData = {SelectedItem->GetSkuMap()[EItemSkuPlatform::AccelByte], SelectedItem->GetIsConsumable() ? SelectedItem->GetCount() : 1};
+	const TTuple<FString, int32> EquipItemData = {Sku, SelectedItem->GetIsConsumable() ? SelectedItem->GetCount() : 1};
 	const bool bSucceeded = GameInstance->UpdateEquippedItemsBySku(
 		GetOwningPlayer()->GetLocalPlayer()->GetControllerId(),
 		EItemSkuPlatform::AccelByte,

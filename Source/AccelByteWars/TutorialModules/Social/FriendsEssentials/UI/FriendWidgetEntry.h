@@ -23,8 +23,8 @@ public:
 	UFriendData* GetCachedFriendData() const { return CachedFriendData; }
 
 // @@@SNIPSTART FriendWidgetEntry.h-protected
-// @@@MULTISNIP FindFriendEntryUI {"selectedLines": ["1", "18-28"]}
-// @@@MULTISNIP AddFriendEntryUI {"selectedLines": ["1", "33-40"]}
+// @@@MULTISNIP FindFriendEntryUI {"selectedLines": ["1", "22-32"]}
+// @@@MULTISNIP AddFriendEntryUI {"selectedLines": ["1", "37-44"]}
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;
@@ -34,7 +34,11 @@ protected:
 	void OnRejectButtonClicked();
 	void OnCancelButtonClicked();
 
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 5
+	void OnSessionParticipantsJoined(FName SessionName, const FUniqueNetId& User);
+#else
 	void OnSessionParticipantsChanged(FName SessionName, const FUniqueNetId& User, bool bJoined);
+#endif
 
 	UPROPERTY()
 	UFriendsSubsystem* FriendsSubsystem;

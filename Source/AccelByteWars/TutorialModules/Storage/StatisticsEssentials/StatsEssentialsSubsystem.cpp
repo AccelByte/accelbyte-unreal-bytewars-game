@@ -159,7 +159,7 @@ bool UStatsEssentialsSubsystem::UpdateConnectedPlayersStats(
 	// Update players' stats.
 	TArray<FOnlineStatsUserUpdatedStats> UpdatedUsersStats;
 	const int32 WinnerTeamId = GameState->GetWinnerTeamId();
-	for (const TObjectPtr<APlayerState> PlayerState : GameState->PlayerArray)
+	for (const TObjectPtr<APlayerState>& PlayerState : GameState->PlayerArray)
 	{
 		AAccelByteWarsPlayerState* ABPlayerState = Cast<AAccelByteWarsPlayerState>(PlayerState);
 		if (!ABPlayerState)

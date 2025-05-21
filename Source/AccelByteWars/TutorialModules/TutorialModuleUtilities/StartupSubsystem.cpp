@@ -7,6 +7,7 @@
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "UI/StartupWidget.h"
 #include "OnlineSubsystemUtils.h"
+#include "Interfaces/OnlineUserInterface.h"
 #include "StartupLog.h"
 #include "Access/AuthEssentials/AuthEssentialsModels.h"
 #include "Access/AuthEssentials/UI/LoginWidget.h"

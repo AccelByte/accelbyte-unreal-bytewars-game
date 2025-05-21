@@ -26,6 +26,7 @@
 #include "Social/FriendsEssentials/UI/FriendDetailsWidget.h"
 #include "TutorialModuleUtilities/StartupSubsystem.h"
 #include "Social/SessionChat/SessionChatSubsystem.h"
+#include "Online/OnlineSessionNames.h"
 
 class UStartupSubsystem;
 
@@ -669,7 +670,6 @@ void UAccelByteWarsOnlineSession::DSQueryUserInfo(
 			if (!AbUserId.IsEmpty())
 			{
 				Request.UserIds.Add(AbUserId);
-				UE_LOG(LogTemp, Warning, TEXT("Nani Kore: %s"), *AbUserId);
 			}
 		}
 
@@ -1303,6 +1303,13 @@ void UAccelByteWarsOnlineSession::OnFindSessionsComplete(bool bSucceeded)
 			}
 		}
 #pragma endregion 
+
+		// Trigger immediately if the results are empty at this point.
+		if (SessionSearch->SearchResults.IsEmpty())
+		{
+			OnFindSessionsCompleteDelegates.Broadcast({}, true);
+			return;
+		}
 
 		// Get owner’s user info for queried user info.
 		TArray<FUniqueNetIdRef> UserIds;
@@ -2809,7 +2816,11 @@ void UAccelByteWarsOnlineSession::OnConnectLobbyComplete(int32 LocalUserNum, boo
 							UGameplayStatics::OpenLevel(GetWorld(), TEXT("MainMenu"));
 
 							// Pending Perform Logout after Main Menu level opened
+#if (ENGINE_MAJOR_VERSION==5 && ENGINE_MINOR_VERSION>=3)
+							GetWorld()->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateLambda([this, LocalUserNum]()
+#else
 							GetWorld()->GetTimerManager().SetTimerForNextTick(FVoidHandler::CreateLambda([this, LocalUserNum]()
+#endif
 								{
 									// Open Login Menu
 									UTutorialModuleDataAsset* AuthEssentialsDataAsset =
