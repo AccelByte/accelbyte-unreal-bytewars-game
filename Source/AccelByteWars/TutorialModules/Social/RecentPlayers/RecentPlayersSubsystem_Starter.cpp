@@ -18,51 +18,51 @@
 void URecentPlayersSubsystem_Starter::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
-    const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
-    if (!ensure(Subsystem))
-    {
-        UE_LOG_RECENTPLAYERS(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and the DefaultPlatformService under [OnlineSubsystem] in the Engine.ini file is set to AccelByte."));
-        return;
-    }
+	const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+	if (!ensure(Subsystem))
+	{
+		UE_LOG_RECENTPLAYERS(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and the DefaultPlatformService under [OnlineSubsystem] in the Engine.ini file is set to AccelByte."));
+		return;
+	}
 
-    FriendsInterface = StaticCastSharedPtr<FOnlineFriendsAccelByte>(Subsystem->GetFriendsInterface());
-    if (!ensure(FriendsInterface.IsValid()))
-    {
-        UE_LOG_RECENTPLAYERS(Warning, TEXT("Friends Interface is not valid."));
-        return;
-    }
+	FriendsInterface = StaticCastSharedPtr<FOnlineFriendsAccelByte>(Subsystem->GetFriendsInterface());
+	if (!ensure(FriendsInterface.IsValid()))
+	{
+		UE_LOG_RECENTPLAYERS(Warning, TEXT("Friends Interface is not valid."));
+		return;
+	}
 
-    SessionInterface = Subsystem->GetSessionInterface();
-    if (!ensure(SessionInterface.IsValid()))
-    {
-        UE_LOG_RECENTPLAYERS(Warning, TEXT("Session Interface is not valid."));
-        return;
-    }
+	SessionInterface = Subsystem->GetSessionInterface();
+	if (!ensure(SessionInterface.IsValid()))
+	{
+		UE_LOG_RECENTPLAYERS(Warning, TEXT("Session Interface is not valid."));
+		return;
+	}
 
-    // TODO: Add your Module Recent Players code here.
+	// TODO: Add your Module Recent Players code here.
 }
 
 void URecentPlayersSubsystem_Starter::Deinitialize()
 {
 	Super::Deinitialize();
 
-    // TODO: Add your Module Recent Players code here.
+	// TODO: Add your Module Recent Players code here.
 }
 
 FUniqueNetIdPtr URecentPlayersSubsystem_Starter::GetUniqueNetIdFromPlayerController(const APlayerController* PlayerController)
 {
-    if (!PlayerController)
-    {
-        return nullptr;
-    }
+	if (!PlayerController)
+	{
+		return nullptr;
+	}
 
-    const ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer();
-    if (!LocalPlayer)
-    {
-        return nullptr;
-    }
+	const ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer();
+	if (!LocalPlayer)
+	{
+		return nullptr;
+	}
 
-    return LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId();
+	return LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId();
 }
 
 #pragma region Module Recent Players Definitions

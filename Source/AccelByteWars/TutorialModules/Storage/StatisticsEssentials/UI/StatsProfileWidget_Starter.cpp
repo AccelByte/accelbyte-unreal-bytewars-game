@@ -9,6 +9,7 @@
 #include "Core/Utilities/AccelByteWarsUtility.h"
 #include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
 #include "CommonButtonBase.h"
+#include "OnlineError.h"
 #include "Components/WidgetSwitcher.h"
 #include "Components/DynamicEntryBox.h"
 #include "Components/StatsProfileWidgetEntry.h"

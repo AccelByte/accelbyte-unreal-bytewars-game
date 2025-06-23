@@ -21,14 +21,10 @@ class ACCELBYTEWARS_API UWalletBalanceWidget : public UAccelByteWarsActivatableW
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
 
-public:
-	void UpdateBalance(const bool bAlwaysRequestToService);
-
-protected:
+private:
 	void ShowBalance(bool bWasSuccessful, const FAccelByteModelsWalletInfo& Response) const;
 
-private:
-	void UpdateBalanceInternal(const ECurrencyType CurrencyType, const bool bAlwaysRequestToService);
+	void UpdateBalance(const ECurrencyType CurrencyType);
 
 	UPROPERTY()
 	UWalletEssentialsSubsystem* WalletSubsystem;

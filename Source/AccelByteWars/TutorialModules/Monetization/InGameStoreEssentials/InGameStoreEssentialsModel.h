@@ -6,6 +6,8 @@
 #include "Core/UI/MainMenu/Store/StoreItemModel.h"
 #include "Interfaces/OnlineStoreInterfaceV2.h"
 
+// @@@SNIPSTART InGameStoreEssentialsModel.h-Delegates
 DECLARE_DELEGATE_OneParam(FOnGetOrQueryOffersByCategory, TArray<UStoreItemDataObject*> /*Offers*/)
 DECLARE_DELEGATE_OneParam(FOnGetOrQueryOfferById, UStoreItemDataObject* /*Offer*/)
 DECLARE_DELEGATE_OneParam(FOnGetOrQueryCategories, TArray<FOnlineStoreCategory> /*Category*/)
+// @@@SNIPEND

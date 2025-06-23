@@ -28,7 +28,7 @@ class ACCELBYTEWARS_API UShopWidget_Starter : public UAccelByteWarsActivatableWi
 
 protected:
 #pragma region "Tutorial"
-	// put your code here
+	// Put your code here.
 #pragma endregion 
 
 private:
@@ -70,5 +70,10 @@ private:
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UAccelByteWarsActivatableWidget> DetailWidgetClass;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UPanelWidget* W_WalletOuter;
+
+	UAccelByteWarsActivatableWidget* GetBalanceWidget() const; 
 #pragma endregion 
 };

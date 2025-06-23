@@ -9,6 +9,8 @@
 #include "OnlineSubsystemUtils.h"
 #include "Core/AssetManager/InGameItems/InGameItemUtility.h"
 
+// @@@SNIPSTART InGameStoreEssentialsSubsystem.cpp-Initialize
+// @@@MULTISNIP StoreInterface {"selectedLines": ["1-2", "5-9"]}
 void UInGameStoreEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
@@ -18,18 +20,20 @@ void UInGameStoreEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Colle
 	StoreInterface = Subsystem->GetStoreV2Interface();
 	ensure(StoreInterface);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART InGameStoreEssentialsSubsystem.cpp-GetOrQueryOffersByCategory
 void UInGameStoreEssentialsSubsystem::GetOrQueryOffersByCategory(
 	const APlayerController* PlayerController,
 	const FString& Category,
 	FOnGetOrQueryOffersByCategory OnComplete,
 	bool bForceRefresh)
 {
-	// check overall cache
+	// Check overall cache.
 	TArray<FOnlineStoreOfferRef> Offers;
 	StoreInterface->GetOffers(Offers);
 
-	// If empty or forced to refresh, call query
+	// If empty or forced to refresh, call query.
 	if (Offers.IsEmpty() || bForceRefresh)
 	{
 		const FUniqueNetIdPtr LocalUserNetId = GetUniqueNetIdFromPlayerController(PlayerController);
@@ -45,7 +49,7 @@ void UInGameStoreEssentialsSubsystem::GetOrQueryOffersByCategory(
 		OffersByCategoryDelegates.Add(Category, OnComplete);
 		QueryOffers(LocalUserNetId);
 	}
-	// else, call get
+	// Else, call get.
 	else
 	{
 		const TArray<UStoreItemDataObject*> StoreItemDataObjects = GetOffersByCategory(Category);
@@ -55,17 +59,19 @@ void UInGameStoreEssentialsSubsystem::GetOrQueryOffersByCategory(
 		}));
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART InGameStoreEssentialsSubsystem.cpp-GetOrQueryOfferById
 void UInGameStoreEssentialsSubsystem::GetOrQueryOfferById(
 	const APlayerController* PlayerController,
 	const FUniqueOfferId& OfferId,
 	FOnGetOrQueryOfferById OnComplete)
 {
-	// check overall cache
+	// Check overall cache.
 	TArray<FOnlineStoreOfferRef> Offers;
 	StoreInterface->GetOffers(Offers);
 
-	// If empty, call query
+	// If empty, call query.
 	if (Offers.IsEmpty())
 	{
 		const FUniqueNetIdPtr LocalUserNetId = GetUniqueNetIdFromPlayerController(PlayerController);
@@ -81,7 +87,7 @@ void UInGameStoreEssentialsSubsystem::GetOrQueryOfferById(
 		OfferByIdDelegates.Add(OfferId, OnComplete);
 		QueryOffers(LocalUserNetId);
 	}
-	// else, call get
+	// Else, call get.
 	else
 	{
 		UStoreItemDataObject* StoreItemDataObject = GetOfferById(OfferId);
@@ -91,18 +97,20 @@ void UInGameStoreEssentialsSubsystem::GetOrQueryOfferById(
 		}));
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART InGameStoreEssentialsSubsystem.cpp-GetOrQueryCategoriesByRootPath
 void UInGameStoreEssentialsSubsystem::GetOrQueryCategoriesByRootPath(
 	const APlayerController* PlayerController,
 	const FString& RootPath,
 	FOnGetOrQueryCategories OnComplete,
 	bool bForceRefresh)
 {
-	// check overall cache
+	// Check overall cache.
 	TArray<FOnlineStoreCategory> Categories;
 	StoreInterface->GetCategories(Categories);
 
-	// if empty or forced to refresh, query
+	// If empty or forced to refresh, query.
 	if (Categories.IsEmpty() || bForceRefresh)
 	{
 		const FUniqueNetIdPtr LocalUserNetId = GetUniqueNetIdFromPlayerController(PlayerController);
@@ -118,7 +126,7 @@ void UInGameStoreEssentialsSubsystem::GetOrQueryCategoriesByRootPath(
 		CategoriesByRootPathDelegates.Add(RootPath, OnComplete);
 		QueryCategories(LocalUserNetId);
 	}
-	// else, execute immediately
+	// Else, execute immediately.
 	else
 	{
 		const TArray<FOnlineStoreCategory> StoreCategories = GetCategories(RootPath);
@@ -128,7 +136,9 @@ void UInGameStoreEssentialsSubsystem::GetOrQueryCategoriesByRootPath(
 		}));
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART InGameStoreEssentialsSubsystem.cpp-GetOffersByCategory
 TArray<UStoreItemDataObject*> UInGameStoreEssentialsSubsystem::GetOffersByCategory(const FString Category) const
 {
 	TArray<FOnlineStoreOfferRef> FilteredOffers;
@@ -151,7 +161,9 @@ TArray<UStoreItemDataObject*> UInGameStoreEssentialsSubsystem::GetOffersByCatego
 
 	return StoreItems;
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART InGameStoreEssentialsSubsystem.cpp-GetOfferById
 UStoreItemDataObject* UInGameStoreEssentialsSubsystem::GetOfferById(const FUniqueOfferId& OfferId) const
 {
 	UStoreItemDataObject* StoreItem = nullptr;
@@ -161,7 +173,9 @@ UStoreItemDataObject* UInGameStoreEssentialsSubsystem::GetOfferById(const FUniqu
 	}
 	return StoreItem;
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART InGameStoreEssentialsSubsystem.cpp-QueryOffers
 void UInGameStoreEssentialsSubsystem::QueryOffers(const FUniqueNetIdPtr UserId)
 {
 	// Abort if the query process is already running.
@@ -176,7 +190,9 @@ void UInGameStoreEssentialsSubsystem::QueryOffers(const FUniqueNetIdPtr UserId)
 		FOnQueryOnlineStoreOffersComplete::CreateUObject(this, &ThisClass::OnQueryOffersComplete));
 	bIsQueryOfferRunning = true;
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART InGameStoreEssentialsSubsystem.cpp-OnQueryOffersComplete
 void UInGameStoreEssentialsSubsystem::OnQueryOffersComplete(
 	bool bWasSuccessful,
 	const TArray<FUniqueOfferId>& OfferIds,
@@ -189,11 +205,11 @@ void UInGameStoreEssentialsSubsystem::OnQueryOffersComplete(
 	{
 		Delegate.Value.Execute(GetOffersByCategory(Delegate.Key));
 
-		// avoid modifying while it still being used
+		// Avoid modifying while it still being used.
 		OffersByCategoryDelegateToBeDeleted.Add(&Delegate.Key);
 	}
 
-	// delete delegates
+	// Delete delegates.
 	for (const FString* Key : OffersByCategoryDelegateToBeDeleted)
 	{
 		OffersByCategoryDelegates.Remove(*Key);
@@ -204,17 +220,19 @@ void UInGameStoreEssentialsSubsystem::OnQueryOffersComplete(
 	{
 		Delegate.Value.Execute(GetOfferById(Delegate.Key));
 
-		// avoid modifying while it still being used
+		// Avoid modifying while it still being used.
 		OfferByIdDelegateToBeDeleted.Add(&Delegate.Key);
 	}
 
-	// delete delegates
+	// Delete delegates.
 	for (const FUniqueOfferId* Key : OfferByIdDelegateToBeDeleted)
 	{
 		OfferByIdDelegates.Remove(*Key);
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART InGameStoreEssentialsSubsystem.cpp-GetCategories
 TArray<FOnlineStoreCategory> UInGameStoreEssentialsSubsystem::GetCategories(const FString& RootPath) const
 {
 	TArray<FOnlineStoreCategory> Categories;
@@ -231,7 +249,9 @@ TArray<FOnlineStoreCategory> UInGameStoreEssentialsSubsystem::GetCategories(cons
 
 	return ChildCategories;
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART InGameStoreEssentialsSubsystem.cpp-QueryCategories
 void UInGameStoreEssentialsSubsystem::QueryCategories(const FUniqueNetIdPtr UserId)
 {
 	// Abort if the query process is already running.
@@ -245,7 +265,9 @@ void UInGameStoreEssentialsSubsystem::QueryCategories(const FUniqueNetIdPtr User
 		FOnQueryOnlineStoreCategoriesComplete::CreateUObject(this, &ThisClass::OnQueryCategoriesComplete));
 	bIsQueryCategoriesRunning = true;
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART InGameStoreEssentialsSubsystem.cpp-OnQueryCategoriesComplete
 void UInGameStoreEssentialsSubsystem::OnQueryCategoriesComplete(bool bWasSuccessful, const FString& Error)
 {
 	bIsQueryCategoriesRunning = false;
@@ -255,16 +277,17 @@ void UInGameStoreEssentialsSubsystem::OnQueryCategoriesComplete(bool bWasSuccess
 	{
 		Delegate.Value.Execute(GetCategories(Delegate.Key));
 
-		// avoid modifying while it still being used
+		// Avoid modifying while it still being used.
 		KeysToDelete.Add(&Delegate.Key);
 	}
 
-	// delete delegates
+	// Delete delegates.
 	for (const FString* Key : KeysToDelete)
 	{
 		CategoriesByRootPathDelegates.Remove(*Key);
 	}
 }
+// @@@SNIPEND
 
 #pragma region "Utilities"
 FUniqueNetIdPtr UInGameStoreEssentialsSubsystem::GetUniqueNetIdFromPlayerController(const APlayerController* PlayerController) const

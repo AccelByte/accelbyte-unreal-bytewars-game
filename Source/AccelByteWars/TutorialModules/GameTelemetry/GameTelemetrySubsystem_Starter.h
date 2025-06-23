@@ -33,7 +33,7 @@ private:
 	const int32 LocalUserNum = 0;
 
 	void OnGameStarted();
-	void OnGameEnded(const FString& Reason) const;
+	void OnGameEnded(const FString& Reason);
 	void OnPlayerEnteredMatch(const FUniqueNetIdPtr PlayerNetId) const;
 	void OnEntityDestroyed(
 		const FString& DestroyedEntityType,

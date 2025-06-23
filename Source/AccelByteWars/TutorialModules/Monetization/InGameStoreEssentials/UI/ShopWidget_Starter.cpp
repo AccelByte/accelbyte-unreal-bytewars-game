@@ -21,11 +21,11 @@ void UShopWidget_Starter::NativeOnActivated()
 	StoreSubsystem = GetGameInstance()->GetSubsystem<UInGameStoreEssentialsSubsystem_Starter>();
 	ensure(StoreSubsystem);
 
-	// event binding
+	// Event binding.
 	Btn_Back->OnClicked().AddUObject(this, &ThisClass::DeactivateWidget);
 
 #pragma region "Tutorial"
-	// put your code here
+	// Put your code here.
 #pragma endregion 
 
 	OnActivatedMulticastDelegate.Broadcast(GetOwningPlayer());
@@ -38,12 +38,12 @@ void UShopWidget_Starter::NativeOnDeactivated()
 	Btn_Back->OnClicked().RemoveAll(this);
 
 #pragma region "Tutorial"
-	// put your code here
+	// Put your code here.
 #pragma endregion 
 }
 
 #pragma region "Tutorial"
-// put your code here
+// Put your code here.
 #pragma endregion 
 
 #pragma region "UI"
@@ -86,4 +86,16 @@ void UShopWidget_Starter::SwitchContent(EAccelByteWarsWidgetSwitcherState State)
 	FocusTarget->SetUserFocus(GetOwningPlayer());
 	Ws_Loader->SetWidgetState(State);
 }
-#pragma endregion 
+
+UAccelByteWarsActivatableWidget* UShopWidget_Starter::GetBalanceWidget() const
+{
+	UAccelByteWarsActivatableWidget* Widget = nullptr;
+
+	if (W_WalletOuter->HasAnyChildren())
+	{
+		Widget = Cast<UAccelByteWarsActivatableWidget>(W_WalletOuter->GetChildAt(0));
+	}
+
+	return Widget;
+}
+#pragma endregion

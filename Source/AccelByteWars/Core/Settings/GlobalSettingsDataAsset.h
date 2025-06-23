@@ -13,10 +13,10 @@ class UGameModeDataAssets;
 USTRUCT(BlueprintType)
 struct FGlobalTeamSetup {
 
-    GENERATED_USTRUCT_BODY()
+	GENERATED_USTRUCT_BODY()
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    FLinearColor itemColor = FLinearColor::White;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FLinearColor itemColor = FLinearColor::White;
 };
 
 /**
@@ -25,10 +25,10 @@ struct FGlobalTeamSetup {
 UCLASS(BlueprintType)
 class ACCELBYTEWARS_API UGlobalSettingsDataAsset : public UDataAsset
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
 public:
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TArray<FGlobalTeamSetup> GlobalTeamSetup;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<FGlobalTeamSetup> GlobalTeamSetup;
 };

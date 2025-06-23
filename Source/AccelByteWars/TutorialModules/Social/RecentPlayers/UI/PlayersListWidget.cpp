@@ -56,10 +56,10 @@ void UPlayersListWidget::NativeOnDeactivated()
 UWidget* UPlayersListWidget::NativeGetDesiredFocusTarget() const
 {
 	if (Tv_PlayersList->GetListItems().IsEmpty()) 
-    {
-    	return Btn_Back;
-    }
-    return Tv_PlayersList;
+	{
+		return Btn_Back;
+	}
+	return Tv_PlayersList;
 }
 
 // @@@SNIPSTART PlayersListWidget.cpp-InitGameSessionPlayersList

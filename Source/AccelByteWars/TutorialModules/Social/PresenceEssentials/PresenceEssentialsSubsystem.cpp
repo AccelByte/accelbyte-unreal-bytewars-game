@@ -23,141 +23,141 @@
 // @@@MULTISNIP BindPresenceReceivedDelegate {"selectedLines": ["1-2", "132-135", "137-138"]}
 void UPresenceEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
-    Super::Initialize(Collection);
+	Super::Initialize(Collection);
 
-    // On world loaded, update level status.
-    FWorldDelegates::OnPostWorldInitialization.AddWeakLambda(this, [this](UWorld* World, const UWorld::InitializationValues IVS)
-    {
-        if (!World) 
-        {
-            return;
-        }
+	// On world loaded, update level status.
+	FWorldDelegates::OnPostWorldInitialization.AddWeakLambda(this, [this](UWorld* World, const UWorld::InitializationValues IVS)
+	{
+		if (!World) 
+		{
+			return;
+		}
 
-        World->OnWorldBeginPlay.RemoveAll(this);
-        World->OnWorldBeginPlay.AddUObject(this, &ThisClass::OnLevelLoaded);
-    });
+		World->OnWorldBeginPlay.RemoveAll(this);
+		World->OnWorldBeginPlay.AddUObject(this, &ThisClass::OnLevelLoaded);
+	});
 
-    if (UAccelByteWarsOnlineSessionBase* OnlineSession = GetOnlineSession())
-    {
-        // On matchmaking started, set matchmaking status.
-        if (FOnMatchmakingResponse* OnStartMatchmakingComplete = OnlineSession->GetOnStartMatchmakingCompleteDelegates())
-        {
-            OnStartMatchmakingComplete->AddWeakLambda(this, [this](FName SessionName, bool bSucceeded)
-            {
-                ActivityStatus = bSucceeded ? TEXT_PRESENCE_ACTIVITY_MATCHMAKING.ToString() : FString();
-                UpdatePrimaryPlayerPresenceStatus();
-            });
-        }
+	if (UAccelByteWarsOnlineSessionBase* OnlineSession = GetOnlineSession())
+	{
+		// On matchmaking started, set matchmaking status.
+		if (FOnMatchmakingResponse* OnStartMatchmakingComplete = OnlineSession->GetOnStartMatchmakingCompleteDelegates())
+		{
+			OnStartMatchmakingComplete->AddWeakLambda(this, [this](FName SessionName, bool bSucceeded)
+			{
+				ActivityStatus = bSucceeded ? TEXT_PRESENCE_ACTIVITY_MATCHMAKING.ToString() : FString();
+				UpdatePrimaryPlayerPresenceStatus();
+			});
+		}
 
-        // On matchmaking complete, remove matchmaking status.
-        if (FOnMatchmakingResponse* OnMatchmakingComplete = OnlineSession->GetOnMatchmakingCompleteDelegates())
-        {
-            OnMatchmakingComplete->AddWeakLambda(this, [this](FName SessionName, bool bSucceeded)
-            {
-                ActivityStatus = FString();
-                UpdatePrimaryPlayerPresenceStatus();
-            });
-        }
+		// On matchmaking complete, remove matchmaking status.
+		if (FOnMatchmakingResponse* OnMatchmakingComplete = OnlineSession->GetOnMatchmakingCompleteDelegates())
+		{
+			OnMatchmakingComplete->AddWeakLambda(this, [this](FName SessionName, bool bSucceeded)
+			{
+				ActivityStatus = FString();
+				UpdatePrimaryPlayerPresenceStatus();
+			});
+		}
 
-        // On matchmaking canceled, remove matchmaking status.
-        if (FOnMatchmakingResponse* OnCancelMatchmakingComplete = OnlineSession->GetOnCancelMatchmakingCompleteDelegates())
-        {
-            OnCancelMatchmakingComplete->AddWeakLambda(this, [this](FName SessionName, bool bSucceeded)
-            {
-                ActivityStatus = FString();
-                UpdatePrimaryPlayerPresenceStatus();
-            });
-        }
+		// On matchmaking canceled, remove matchmaking status.
+		if (FOnMatchmakingResponse* OnCancelMatchmakingComplete = OnlineSession->GetOnCancelMatchmakingCompleteDelegates())
+		{
+			OnCancelMatchmakingComplete->AddWeakLambda(this, [this](FName SessionName, bool bSucceeded)
+			{
+				ActivityStatus = FString();
+				UpdatePrimaryPlayerPresenceStatus();
+			});
+		}
 
-        // On party session updated, update party presence status.
-        if (FOnJoinSessionComplete* OnJoinPartyComplete = OnlineSession->GetOnJoinPartyCompleteDelegates())
-        {
-            OnJoinPartyComplete->AddWeakLambda(this, [this](FName SessionName, EOnJoinSessionCompleteResult::Type Result)
-            {
-                UpdatePrimaryPlayerPresenceStatus();
-            });
-        }
-        if (FOnDestroySessionComplete* OnLeavePartyComplete = OnlineSession->GetOnLeavePartyCompleteDelegates())
-        {
-            OnLeavePartyComplete->AddWeakLambda(this, [this](FName SessionName, bool bSucceeded)
-            {
-                UpdatePrimaryPlayerPresenceStatus();
-            });
-        }
+		// On party session updated, update party presence status.
+		if (FOnJoinSessionComplete* OnJoinPartyComplete = OnlineSession->GetOnJoinPartyCompleteDelegates())
+		{
+			OnJoinPartyComplete->AddWeakLambda(this, [this](FName SessionName, EOnJoinSessionCompleteResult::Type Result)
+			{
+				UpdatePrimaryPlayerPresenceStatus();
+			});
+		}
+		if (FOnDestroySessionComplete* OnLeavePartyComplete = OnlineSession->GetOnLeavePartyCompleteDelegates())
+		{
+			OnLeavePartyComplete->AddWeakLambda(this, [this](FName SessionName, bool bSucceeded)
+			{
+				UpdatePrimaryPlayerPresenceStatus();
+			});
+		}
 
 #if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
-        if (FOnSessionParticipantsChange* OnPartyMemberChange = OnlineSession->GetOnPartyMembersChangeDelegates())
-        {
-            OnPartyMemberChange->AddWeakLambda(this, [this](FName SessionName, const FUniqueNetId& Member, bool bJoined)
-            {
-                UpdatePrimaryPlayerPresenceStatus();
-            });
-        }
+		if (FOnSessionParticipantsChange* OnPartyMemberChange = OnlineSession->GetOnPartyMembersChangeDelegates())
+		{
+			OnPartyMemberChange->AddWeakLambda(this, [this](FName SessionName, const FUniqueNetId& Member, bool bJoined)
+			{
+				UpdatePrimaryPlayerPresenceStatus();
+			});
+		}
 #else
-        if (FOnSessionParticipantJoined* OnPartyMemberJoined = OnlineSession->GetOnPartyMemberJoinedDelegates())
-        {
-            OnPartyMemberJoined->AddWeakLambda(this, [this](FName SessionName, const FUniqueNetId& Member)
-            {
-                UpdatePrimaryPlayerPresenceStatus();
-            });
-        }
-        if (FOnSessionParticipantLeft* OnPartyMemberLeft = OnlineSession->GetOnPartyMemberLeftDelegates())
-        {
-            OnPartyMemberLeft->AddWeakLambda(this, [this](FName SessionName, const FUniqueNetId& Member, EOnSessionParticipantLeftReason Reason)
-            {
-                UpdatePrimaryPlayerPresenceStatus();
-            });
-        }
+		if (FOnSessionParticipantJoined* OnPartyMemberJoined = OnlineSession->GetOnPartyMemberJoinedDelegates())
+		{
+			OnPartyMemberJoined->AddWeakLambda(this, [this](FName SessionName, const FUniqueNetId& Member)
+			{
+				UpdatePrimaryPlayerPresenceStatus();
+			});
+		}
+		if (FOnSessionParticipantLeft* OnPartyMemberLeft = OnlineSession->GetOnPartyMemberLeftDelegates())
+		{
+			OnPartyMemberLeft->AddWeakLambda(this, [this](FName SessionName, const FUniqueNetId& Member, EOnSessionParticipantLeftReason Reason)
+			{
+				UpdatePrimaryPlayerPresenceStatus();
+			});
+		}
 #endif
 
-        if (FOnSessionUpdateReceived* OnPartySessionUpdateReceived = OnlineSession->GetOnPartySessionUpdateReceivedDelegates())
-        {
-            OnPartySessionUpdateReceived->AddWeakLambda(this, [this](FName SessionName)
-            {
-                UpdatePrimaryPlayerPresenceStatus();
-            });
-        }
-        if (FOnDestroySessionComplete* OnLeaveSessionComplete = OnlineSession->GetOnLeaveSessionCompleteDelegates())
-        {
-            OnLeaveSessionComplete->AddWeakLambda(this, [this](FName SessionName, bool bSucceeded)
-            {
-                UpdatePrimaryPlayerPresenceStatus();
-            });
-        }
-    }
+		if (FOnSessionUpdateReceived* OnPartySessionUpdateReceived = OnlineSession->GetOnPartySessionUpdateReceivedDelegates())
+		{
+			OnPartySessionUpdateReceived->AddWeakLambda(this, [this](FName SessionName)
+			{
+				UpdatePrimaryPlayerPresenceStatus();
+			});
+		}
+		if (FOnDestroySessionComplete* OnLeaveSessionComplete = OnlineSession->GetOnLeaveSessionCompleteDelegates())
+		{
+			OnLeaveSessionComplete->AddWeakLambda(this, [this](FName SessionName, bool bSucceeded)
+			{
+				UpdatePrimaryPlayerPresenceStatus();
+			});
+		}
+	}
 
-    // Update presence status once the player logged in and connected to lobby.
-    if (FOnlineIdentityAccelBytePtr IdentityInterface = GetIdentityInterface()) 
-    {
-        IdentityInterface->AddOnConnectLobbyCompleteDelegate_Handle(0,
-            FOnConnectLobbyCompleteDelegate::CreateWeakLambda(this, [this](int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& UserId, const FString& Error)
-            {
-                UpdatePrimaryPlayerPresenceStatus();
-            }
-        ));
-    }
+	// Update presence status once the player logged in and connected to lobby.
+	if (FOnlineIdentityAccelBytePtr IdentityInterface = GetIdentityInterface()) 
+	{
+		IdentityInterface->AddOnConnectLobbyCompleteDelegate_Handle(0,
+			FOnConnectLobbyCompleteDelegate::CreateWeakLambda(this, [this](int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& UserId, const FString& Error)
+			{
+				UpdatePrimaryPlayerPresenceStatus();
+			}
+		));
+	}
 
-    // Update presence when friend list, blocked player list, and session member list changed.
-    if (FOnlineFriendsAccelBytePtr FriendsInterface = GetFriendsInterface())
-    {
-        FriendsInterface->AddOnFriendsChangeDelegate_Handle(0, FOnFriendsChangeDelegate::CreateUObject(this, &ThisClass::OnFriendListChange));
-        FriendsInterface->AddOnBlockListChangeDelegate_Handle(0, FOnBlockListChangeDelegate::CreateUObject(this, &ThisClass::OnBlockedPlayerListChange));
-    }
-    if (FOnlineSessionV2AccelBytePtr SessionInterface = GetSessionInterface())
-    {
+	// Update presence when friend list, blocked player list, and session member list changed.
+	if (FOnlineFriendsAccelBytePtr FriendsInterface = GetFriendsInterface())
+	{
+		FriendsInterface->AddOnFriendsChangeDelegate_Handle(0, FOnFriendsChangeDelegate::CreateUObject(this, &ThisClass::OnFriendListChange));
+		FriendsInterface->AddOnBlockListChangeDelegate_Handle(0, FOnBlockListChangeDelegate::CreateUObject(this, &ThisClass::OnBlockedPlayerListChange));
+	}
+	if (FOnlineSessionV2AccelBytePtr SessionInterface = GetSessionInterface())
+	{
 #if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 5
-        SessionInterface->AddOnSessionParticipantJoinedDelegate_Handle(FOnSessionParticipantJoinedDelegate::CreateUObject(this, &ThisClass::OnSessionParticipantJoined));
+		SessionInterface->AddOnSessionParticipantJoinedDelegate_Handle(FOnSessionParticipantJoinedDelegate::CreateUObject(this, &ThisClass::OnSessionParticipantJoined));
 #else
-        SessionInterface->AddOnSessionParticipantsChangeDelegate_Handle(FOnSessionParticipantsChangeDelegate::CreateUObject(this, &ThisClass::OnSessionParticipantChange));
+		SessionInterface->AddOnSessionParticipantsChangeDelegate_Handle(FOnSessionParticipantsChangeDelegate::CreateUObject(this, &ThisClass::OnSessionParticipantChange));
 #endif
-    }
+	}
 
-    // Listen to presence events.
-    if (FOnlinePresenceAccelBytePtr PresenceInterface = GetPresenceInterface())
-    {
-        PresenceInterface->AddOnPresenceReceivedDelegate_Handle(FOnPresenceReceivedDelegate::CreateUObject(this, &ThisClass::OnPresenceReceived));
-        PresenceInterface->AddOnBulkQueryPresenceCompleteDelegate_Handle(FOnBulkQueryPresenceCompleteDelegate::CreateUObject(this, &ThisClass::OnBulkQueryPresenceComplete));
-    }
+	// Listen to presence events.
+	if (FOnlinePresenceAccelBytePtr PresenceInterface = GetPresenceInterface())
+	{
+		PresenceInterface->AddOnPresenceReceivedDelegate_Handle(FOnPresenceReceivedDelegate::CreateUObject(this, &ThisClass::OnPresenceReceived));
+		PresenceInterface->AddOnBulkQueryPresenceCompleteDelegate_Handle(FOnBulkQueryPresenceCompleteDelegate::CreateUObject(this, &ThisClass::OnBulkQueryPresenceComplete));
+	}
 }
 // @@@SNIPEND
 
@@ -168,292 +168,292 @@ void UPresenceEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collecti
 // @@@MULTISNIP UnbindPresenceReceivedDelegate {"selectedLines": ["1-2", "91-93", "95-96"]}
 void UPresenceEssentialsSubsystem::Deinitialize()
 {
-    Super::Deinitialize();
+	Super::Deinitialize();
 
-    // Clean-up cache.
-    LevelStatus = FString();
-    ActivityStatus = FString();
+	// Clean-up cache.
+	LevelStatus = FString();
+	ActivityStatus = FString();
 
-    // Unbind events.
-    AAccelByteWarsGameState::OnInitialized.RemoveAll(this);
+	// Unbind events.
+	AAccelByteWarsGameState::OnInitialized.RemoveAll(this);
 
-    FWorldDelegates::OnPostWorldInitialization.RemoveAll(this);
-    if (GetWorld())
-    {
-        GetWorld()->OnWorldBeginPlay.RemoveAll(this);
-    }
+	FWorldDelegates::OnPostWorldInitialization.RemoveAll(this);
+	if (GetWorld())
+	{
+		GetWorld()->OnWorldBeginPlay.RemoveAll(this);
+	}
 
-    if (UAccelByteWarsOnlineSessionBase* OnlineSession = GetOnlineSession())
-    {
-        if (FOnMatchmakingResponse* OnStartMatchmakingComplete = OnlineSession->GetOnStartMatchmakingCompleteDelegates())
-        {
-            OnStartMatchmakingComplete->RemoveAll(this);
-        }
+	if (UAccelByteWarsOnlineSessionBase* OnlineSession = GetOnlineSession())
+	{
+		if (FOnMatchmakingResponse* OnStartMatchmakingComplete = OnlineSession->GetOnStartMatchmakingCompleteDelegates())
+		{
+			OnStartMatchmakingComplete->RemoveAll(this);
+		}
 
-        if (FOnMatchmakingResponse* OnMatchmakingComplete = OnlineSession->GetOnMatchmakingCompleteDelegates())
-        {
-            OnMatchmakingComplete->RemoveAll(this);
-        }
+		if (FOnMatchmakingResponse* OnMatchmakingComplete = OnlineSession->GetOnMatchmakingCompleteDelegates())
+		{
+			OnMatchmakingComplete->RemoveAll(this);
+		}
 
-        if (FOnMatchmakingResponse* OnCancelMatchmakingComplete = OnlineSession->GetOnCancelMatchmakingCompleteDelegates())
-        {
-            OnCancelMatchmakingComplete->RemoveAll(this);
-        }
+		if (FOnMatchmakingResponse* OnCancelMatchmakingComplete = OnlineSession->GetOnCancelMatchmakingCompleteDelegates())
+		{
+			OnCancelMatchmakingComplete->RemoveAll(this);
+		}
 
-        if (FOnJoinSessionComplete* OnJoinPartyComplete = OnlineSession->GetOnJoinPartyCompleteDelegates())
-        {
-            OnJoinPartyComplete->RemoveAll(this);
-        }
+		if (FOnJoinSessionComplete* OnJoinPartyComplete = OnlineSession->GetOnJoinPartyCompleteDelegates())
+		{
+			OnJoinPartyComplete->RemoveAll(this);
+		}
 
-        if (FOnDestroySessionComplete* OnLeavePartyComplete = OnlineSession->GetOnLeavePartyCompleteDelegates())
-        {
-            OnLeavePartyComplete->RemoveAll(this);
-        }
+		if (FOnDestroySessionComplete* OnLeavePartyComplete = OnlineSession->GetOnLeavePartyCompleteDelegates())
+		{
+			OnLeavePartyComplete->RemoveAll(this);
+		}
 
 #if UNREAL_ENGINE_VERSION_OLDER_THAN_5_2
-        if (FOnSessionParticipantsChange* OnPartyMemberChange = OnlineSession->GetOnPartyMembersChangeDelegates())
-        {
-            OnPartyMemberChange->RemoveAll(this);
-        }
+		if (FOnSessionParticipantsChange* OnPartyMemberChange = OnlineSession->GetOnPartyMembersChangeDelegates())
+		{
+			OnPartyMemberChange->RemoveAll(this);
+		}
 #else
-        if (FOnSessionParticipantJoined* OnPartyMemberJoined = OnlineSession->GetOnPartyMemberJoinedDelegates())
-        {
-            OnPartyMemberJoined->RemoveAll(this);
-        }
-        if (FOnSessionParticipantLeft* OnPartyMemberLeft = OnlineSession->GetOnPartyMemberLeftDelegates())
-        {
-            OnPartyMemberLeft->RemoveAll(this);
-        }
+		if (FOnSessionParticipantJoined* OnPartyMemberJoined = OnlineSession->GetOnPartyMemberJoinedDelegates())
+		{
+			OnPartyMemberJoined->RemoveAll(this);
+		}
+		if (FOnSessionParticipantLeft* OnPartyMemberLeft = OnlineSession->GetOnPartyMemberLeftDelegates())
+		{
+			OnPartyMemberLeft->RemoveAll(this);
+		}
 #endif
 
-        if (FOnSessionUpdateReceived* OnPartySessionUpdateReceived = OnlineSession->GetOnPartySessionUpdateReceivedDelegates())
-        {
-            OnPartySessionUpdateReceived->RemoveAll(this);
-        }
+		if (FOnSessionUpdateReceived* OnPartySessionUpdateReceived = OnlineSession->GetOnPartySessionUpdateReceivedDelegates())
+		{
+			OnPartySessionUpdateReceived->RemoveAll(this);
+		}
 
-        if (FOnDestroySessionComplete* OnLeaveSessionComplete = OnlineSession->GetOnLeaveSessionCompleteDelegates())
-        {
-            OnLeaveSessionComplete->RemoveAll(this);
-        }
-    }
+		if (FOnDestroySessionComplete* OnLeaveSessionComplete = OnlineSession->GetOnLeaveSessionCompleteDelegates())
+		{
+			OnLeaveSessionComplete->RemoveAll(this);
+		}
+	}
 
-    if (FOnlineIdentityAccelBytePtr IdentityInterface = GetIdentityInterface())
-    {
-        IdentityInterface->ClearOnConnectLobbyCompleteDelegates(0, this);
-    }
+	if (FOnlineIdentityAccelBytePtr IdentityInterface = GetIdentityInterface())
+	{
+		IdentityInterface->ClearOnConnectLobbyCompleteDelegates(0, this);
+	}
 
-    if (FOnlineFriendsAccelBytePtr FriendsInterface = GetFriendsInterface())
-    {
-        FriendsInterface->ClearOnFriendsChangeDelegates(0, this);
-        FriendsInterface->ClearOnBlockListChangeDelegates(0, this);
-    }
-    if (FOnlineSessionV2AccelBytePtr SessionInterface = GetSessionInterface())
-    {
+	if (FOnlineFriendsAccelBytePtr FriendsInterface = GetFriendsInterface())
+	{
+		FriendsInterface->ClearOnFriendsChangeDelegates(0, this);
+		FriendsInterface->ClearOnBlockListChangeDelegates(0, this);
+	}
+	if (FOnlineSessionV2AccelBytePtr SessionInterface = GetSessionInterface())
+	{
 #if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 5
-        SessionInterface->ClearOnSessionParticipantJoinedDelegates(this);
+		SessionInterface->ClearOnSessionParticipantJoinedDelegates(this);
 #else
-        SessionInterface->ClearOnSessionParticipantsChangeDelegates(this);
+		SessionInterface->ClearOnSessionParticipantsChangeDelegates(this);
 #endif
-    }
+	}
 
-    if (FOnlinePresenceAccelBytePtr PresenceInterface = GetPresenceInterface())
-    {
-        PresenceInterface->ClearOnPresenceReceivedDelegates(this);
-        PresenceInterface->ClearOnBulkQueryPresenceCompleteDelegates(this);
-    }
+	if (FOnlinePresenceAccelBytePtr PresenceInterface = GetPresenceInterface())
+	{
+		PresenceInterface->ClearOnPresenceReceivedDelegates(this);
+		PresenceInterface->ClearOnBulkQueryPresenceCompleteDelegates(this);
+	}
 }
 // @@@SNIPEND
 
 // @@@SNIPSTART PresenceEssentialsSubsystem.cpp-UpdatePrimaryPlayerPresenceStatus
 void UPresenceEssentialsSubsystem::UpdatePrimaryPlayerPresenceStatus()
 {
-    FOnlineIdentityAccelBytePtr IdentityInterface = GetIdentityInterface();
-    if (!IdentityInterface)
-    {
-        UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Unable to update current logged-in player's presence. Identity interface is invalid."));
-        return;
-    }
+	FOnlineIdentityAccelBytePtr IdentityInterface = GetIdentityInterface();
+	if (!IdentityInterface)
+	{
+		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Unable to update current logged-in player's presence. Identity interface is invalid."));
+		return;
+	}
 
-    const FUniqueNetIdPtr UserId = GetPrimaryPlayerUserId();
-    if (!UserId)
-    {
-        UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Unable to update current logged-in player's presence. User Id is invalid."));
-        return;
-    }
+	const FUniqueNetIdPtr UserId = GetPrimaryPlayerUserId();
+	if (!UserId)
+	{
+		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Unable to update current logged-in player's presence. User Id is invalid."));
+		return;
+	}
 
-    // Abort if not logged-in.
-    if (IdentityInterface->GetLoginStatus(UserId.ToSharedRef().Get()) != ELoginStatus::Type::LoggedIn) 
-    {
-        UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Unable to update current logged-in player's presence. Primary player is not logged-in."));
-        return;
-    }
+	// Abort if not logged-in.
+	if (IdentityInterface->GetLoginStatus(UserId.ToSharedRef().Get()) != ELoginStatus::Type::LoggedIn) 
+	{
+		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Unable to update current logged-in player's presence. Primary player is not logged-in."));
+		return;
+	}
 
-    /* Only consider player is in a party if the party member is more than one.
-     * This is because by the game design, the game always creates a party for the player.*/
-    FString PartyStatus;
-    if (UAccelByteWarsOnlineSessionBase* OnlineSession = GetOnlineSession())
-    {
-        PartyStatus = (OnlineSession->GetPartyMembers().Num() > 1) ? TEXT_PRESENCE_ACTIVITY_PARTY.ToString() : FString();
-    }
+	/* Only consider player is in a party if the party member is more than one.
+	 * This is because by the game design, the game always creates a party for the player.*/
+	FString PartyStatus;
+	if (UAccelByteWarsOnlineSessionBase* OnlineSession = GetOnlineSession())
+	{
+		PartyStatus = (OnlineSession->GetPartyMembers().Num() > 1) ? TEXT_PRESENCE_ACTIVITY_PARTY.ToString() : FString();
+	}
 
-    // Collect and construct presence status in "level - activity, party status" format.
-    FString PresenceStatus = LevelStatus;
-    if (!ActivityStatus.IsEmpty()) 
-    {
-        PresenceStatus += FString(" - ") + ActivityStatus;
-    }
-    if (!PartyStatus.IsEmpty())
-    {
-        PresenceStatus += (ActivityStatus.IsEmpty() ? FString(" - ") : FString(", ")) + PartyStatus;
-    }
+	// Collect and construct presence status in "level - activity, party status" format.
+	FString PresenceStatus = LevelStatus;
+	if (!ActivityStatus.IsEmpty()) 
+	{
+		PresenceStatus += FString(" - ") + ActivityStatus;
+	}
+	if (!PartyStatus.IsEmpty())
+	{
+		PresenceStatus += (ActivityStatus.IsEmpty() ? FString(" - ") : FString(", ")) + PartyStatus;
+	}
 
-    // Set presence status.
-    SetPresenceStatus(UserId, PresenceStatus);
+	// Set presence status.
+	SetPresenceStatus(UserId, PresenceStatus);
 }
 // @@@SNIPEND
 
 // @@@SNIPSTART PresenceEssentialsSubsystem.cpp-OnLevelLoaded
 void UPresenceEssentialsSubsystem::OnLevelLoaded()
 {
-    const UWorld* World = GetWorld();
-    if (!World)
-    {
-        UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Unable to update level status presence. World is not valid."));
-        return;
-    }
+	const UWorld* World = GetWorld();
+	if (!World)
+	{
+		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Unable to update level status presence. World is not valid."));
+		return;
+	}
 
-    AAccelByteWarsGameState* GameState = Cast<AAccelByteWarsGameState>(World->GetGameState());
+	AAccelByteWarsGameState* GameState = Cast<AAccelByteWarsGameState>(World->GetGameState());
 
-    /* In online multiplayer, the game state takes some time to replicate after world creation.
-     * Once the game state is replicated and initialized, attempt to update the level status. */
-    AAccelByteWarsGameState::OnInitialized.RemoveAll(this);
-    if (!GameState) 
-    {
-        AAccelByteWarsGameState::OnInitialized.AddUObject(this, &ThisClass::OnLevelLoaded);
-        return;
-    }
+	/* In online multiplayer, the game state takes some time to replicate after world creation.
+	 * Once the game state is replicated and initialized, attempt to update the level status. */
+	AAccelByteWarsGameState::OnInitialized.RemoveAll(this);
+	if (!GameState) 
+	{
+		AAccelByteWarsGameState::OnInitialized.AddUObject(this, &ThisClass::OnLevelLoaded);
+		return;
+	}
 
-    /* In online multiplayer, the game state may be initialized, but the properties may not be replicated yet.
-     * Therefore, listen for the game state's game setup replication to attempt updating the level status. */
-    GameState->OnGameSetupChanged.RemoveAll(this);
-    GameState->OnGameSetupChanged.AddUObject(this, &ThisClass::OnLevelLoaded);
+	/* In online multiplayer, the game state may be initialized, but the properties may not be replicated yet.
+	 * Therefore, listen for the game state's game setup replication to attempt updating the level status. */
+	GameState->OnGameSetupChanged.RemoveAll(this);
+	GameState->OnGameSetupChanged.AddUObject(this, &ThisClass::OnLevelLoaded);
 
-    if (const AAccelByteWarsMainMenuGameState* MainMenuGameState = Cast<AAccelByteWarsMainMenuGameState>(GameState))
-    {
-        // Set level status to "In Main Menu".
-        if (MainMenuGameState->GetNetMode() == ENetMode::NM_Standalone) 
-        {
-            LevelStatus = TEXT_PRESENCE_LEVEL_MAINMENU.ToString();
-            ActivityStatus = FString("");
-        }
-        /* Already travelled to online session.
-         * Set level status to "In Match" and activity status to "In Lobby".*/
-        else 
-        {
-            LevelStatus = TEXT_PRESENCE_LEVEL_GAMEPLAY.ToString();
-            ActivityStatus = TEXT_PRESENCE_ACTIVITY_LOBBY.ToString();
-        }
-    }
-    else if (const AAccelByteWarsInGameGameState* InGameGameState = Cast<AAccelByteWarsInGameGameState>(GameState))
-    {
-        // Set level status to "In Match" and activity status to the current game mode type.
-        LevelStatus = TEXT_PRESENCE_LEVEL_GAMEPLAY.ToString();
-        ActivityStatus = FText::Format(TEXT_PRESENCE_ACTIVITY_GAMEPLAY, InGameGameState->GameSetup.DisplayName).ToString();
-    }
-    else
-    {
-        // Fallback, set status to unknown.
-        LevelStatus = TEXT_PRESENCE_ACTIVITY_UNKNOWN.ToString();
-        ActivityStatus = FString("");
-    }
+	if (const AAccelByteWarsMainMenuGameState* MainMenuGameState = Cast<AAccelByteWarsMainMenuGameState>(GameState))
+	{
+		// Set level status to "In Main Menu".
+		if (MainMenuGameState->GetNetMode() == ENetMode::NM_Standalone) 
+		{
+			LevelStatus = TEXT_PRESENCE_LEVEL_MAINMENU.ToString();
+			ActivityStatus = FString("");
+		}
+		/* Already travelled to online session.
+		 * Set level status to "In Match" and activity status to "In Lobby".*/
+		else 
+		{
+			LevelStatus = TEXT_PRESENCE_LEVEL_GAMEPLAY.ToString();
+			ActivityStatus = TEXT_PRESENCE_ACTIVITY_LOBBY.ToString();
+		}
+	}
+	else if (const AAccelByteWarsInGameGameState* InGameGameState = Cast<AAccelByteWarsInGameGameState>(GameState))
+	{
+		// Set level status to "In Match" and activity status to the current game mode type.
+		LevelStatus = TEXT_PRESENCE_LEVEL_GAMEPLAY.ToString();
+		ActivityStatus = FText::Format(TEXT_PRESENCE_ACTIVITY_GAMEPLAY, InGameGameState->GameSetup.DisplayName).ToString();
+	}
+	else
+	{
+		// Fallback, set status to unknown.
+		LevelStatus = TEXT_PRESENCE_ACTIVITY_UNKNOWN.ToString();
+		ActivityStatus = FString("");
+	}
 
-    UpdatePrimaryPlayerPresenceStatus();
+	UpdatePrimaryPlayerPresenceStatus();
 }
 // @@@SNIPEND
 
 // @@@SNIPSTART PresenceEssentialsSubsystem.cpp-OnFriendListChange
 void UPresenceEssentialsSubsystem::OnFriendListChange()
 {
-    FOnlineFriendsAccelBytePtr FriendsInterface = GetFriendsInterface();
-    if (!FriendsInterface)
-    {
-        UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Unable to query friends' presences. Friends interface is invalid."));
-        return;
-    }
+	FOnlineFriendsAccelBytePtr FriendsInterface = GetFriendsInterface();
+	if (!FriendsInterface)
+	{
+		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Unable to query friends' presences. Friends interface is invalid."));
+		return;
+	}
 
-    const FUniqueNetIdPtr UserId = GetPrimaryPlayerUserId();
-    if (!UserId)
-    {
-        UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Unable to query friends' presences. Current logged-in player's User Id is invalid."));
-        return;
-    }
+	const FUniqueNetIdPtr UserId = GetPrimaryPlayerUserId();
+	if (!UserId)
+	{
+		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Unable to query friends' presences. Current logged-in player's User Id is invalid."));
+		return;
+	}
 
-    // Get cached friend list.
-    TArray<TSharedRef<FOnlineFriend>> OutFriendList;
-    if (!FriendsInterface->GetFriendsList(0, TEXT(""), OutFriendList))
-    {
-        UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Unable to query friends' presences. Cannot get cached friend list."));
-        return;
-    }
-    if (OutFriendList.IsEmpty())
-    {
-        UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Unable to query friends' presences. No friends found."));
-        return;
-    }
+	// Get cached friend list.
+	TArray<TSharedRef<FOnlineFriend>> OutFriendList;
+	if (!FriendsInterface->GetFriendsList(0, TEXT(""), OutFriendList))
+	{
+		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Unable to query friends' presences. Cannot get cached friend list."));
+		return;
+	}
+	if (OutFriendList.IsEmpty())
+	{
+		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Unable to query friends' presences. No friends found."));
+		return;
+	}
 
-    // Collect their user IDs.
-    TArray<FUniqueNetIdRef> FriendIds;
-    for (const TSharedRef<FOnlineFriend>& Friend : OutFriendList)
-    {
-        FriendIds.Add(Friend->GetUserId());
-    }
+	// Collect their user IDs.
+	TArray<FUniqueNetIdRef> FriendIds;
+	for (const TSharedRef<FOnlineFriend>& Friend : OutFriendList)
+	{
+		FriendIds.Add(Friend->GetUserId());
+	}
 
-    // Query friends' presences.
-    UE_LOG_PRESENCEESSENTIALS(Log, TEXT("Querying friends' presences."));
-    BulkQueryPresence(UserId, FriendIds);
+	// Query friends' presences.
+	UE_LOG_PRESENCEESSENTIALS(Log, TEXT("Querying friends' presences."));
+	BulkQueryPresence(UserId, FriendIds);
 }
 // @@@SNIPEND
 
 // @@@SNIPSTART PresenceEssentialsSubsystem.cpp-OnBlockedPlayerListChange
 void UPresenceEssentialsSubsystem::OnBlockedPlayerListChange(int32 LocalUserNum, const FString& ListName)
 {
-    FOnlineFriendsAccelBytePtr FriendsInterface = GetFriendsInterface();
-    if (!FriendsInterface)
-    {
-        UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Unable to query blocked players' presences. Friends interface is invalid."));
-        return;
-    }
+	FOnlineFriendsAccelBytePtr FriendsInterface = GetFriendsInterface();
+	if (!FriendsInterface)
+	{
+		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Unable to query blocked players' presences. Friends interface is invalid."));
+		return;
+	}
 
-    const FUniqueNetIdPtr UserId = GetPrimaryPlayerUserId();
-    if (!UserId)
-    {
-        UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Unable to query blocked player' presences. Current logged-in player's User Id is invalid."));
-        return;
-    }
+	const FUniqueNetIdPtr UserId = GetPrimaryPlayerUserId();
+	if (!UserId)
+	{
+		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Unable to query blocked player' presences. Current logged-in player's User Id is invalid."));
+		return;
+	}
 
-    // Get cached blocked player list.
-    TArray<TSharedRef<FOnlineBlockedPlayer>> OutBlockedPlayerList;
-    if (!FriendsInterface->GetBlockedPlayers(UserId.ToSharedRef().Get(), OutBlockedPlayerList))
-    {
-        UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Unable to query blocked players' presences. Cannot get cached blocked player list."));
-        return;
-    }
-    if (OutBlockedPlayerList.IsEmpty())
-    {
-        UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Unable to query blocked players' presences. No blocked player found."));
-        return;
-    }
+	// Get cached blocked player list.
+	TArray<TSharedRef<FOnlineBlockedPlayer>> OutBlockedPlayerList;
+	if (!FriendsInterface->GetBlockedPlayers(UserId.ToSharedRef().Get(), OutBlockedPlayerList))
+	{
+		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Unable to query blocked players' presences. Cannot get cached blocked player list."));
+		return;
+	}
+	if (OutBlockedPlayerList.IsEmpty())
+	{
+		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Unable to query blocked players' presences. No blocked player found."));
+		return;
+	}
 
-    // Collect their user IDs.
-    TArray<FUniqueNetIdRef> BlockedPlayerIds;
-    for (const TSharedRef<FOnlineBlockedPlayer>& BlockedPlayer : OutBlockedPlayerList)
-    {
-        BlockedPlayerIds.Add(BlockedPlayer->GetUserId());
-    }
+	// Collect their user IDs.
+	TArray<FUniqueNetIdRef> BlockedPlayerIds;
+	for (const TSharedRef<FOnlineBlockedPlayer>& BlockedPlayer : OutBlockedPlayerList)
+	{
+		BlockedPlayerIds.Add(BlockedPlayer->GetUserId());
+	}
 
-    // Query blocked players' presences.
-    UE_LOG_PRESENCEESSENTIALS(Log, TEXT("Querying blocked players' presences."));
-    BulkQueryPresence(UserId, BlockedPlayerIds);
+	// Query blocked players' presences.
+	UE_LOG_PRESENCEESSENTIALS(Log, TEXT("Querying blocked players' presences."));
+	BulkQueryPresence(UserId, BlockedPlayerIds);
 }
 // @@@SNIPEND
 
@@ -461,17 +461,17 @@ void UPresenceEssentialsSubsystem::OnBlockedPlayerListChange(int32 LocalUserNum,
 #if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 5
 void UPresenceEssentialsSubsystem::OnSessionParticipantJoined(FName SessionName, const FUniqueNetId& UserId)
 {
-    UE_LOG_PRESENCEESSENTIALS(Log, TEXT("Update presence when session participant change"));
-    GetPresence(UserId.AsShared(), true);
+	UE_LOG_PRESENCEESSENTIALS(Log, TEXT("Update presence when session participant change"));
+	GetPresence(UserId.AsShared(), true);
 }
 #else
 void UPresenceEssentialsSubsystem::OnSessionParticipantChange(FName SessionName, const FUniqueNetId& UserId, bool bJoined)
 {
-    if(!bJoined)
-    {
-        UE_LOG_PRESENCEESSENTIALS(Log, TEXT("Update presence when session participant change"));
-        GetPresence(UserId.AsShared(),true);
-    }
+	if(!bJoined)
+	{
+		UE_LOG_PRESENCEESSENTIALS(Log, TEXT("Update presence when session participant change"));
+		GetPresence(UserId.AsShared(),true);
+	}
 }
 // @@@SNIPEND
 #endif
@@ -479,310 +479,310 @@ void UPresenceEssentialsSubsystem::OnSessionParticipantChange(FName SessionName,
 // @@@SNIPSTART PresenceEssentialsSubsystem.cpp-GetPresence
 void UPresenceEssentialsSubsystem::GetPresence(const FUniqueNetIdPtr UserId, bool bForceQuery, const FOnPresenceTaskComplete& OnComplete)
 {
-    FOnlinePresenceAccelBytePtr PresenceInterface = GetPresenceInterface();
-    if (!PresenceInterface)
-    {
-        UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Cannot get presence. Presence interface is invalid."));
-        OnComplete.ExecuteIfBound(false, nullptr);
-        return;
-    }
+	FOnlinePresenceAccelBytePtr PresenceInterface = GetPresenceInterface();
+	if (!PresenceInterface)
+	{
+		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Cannot get presence. Presence interface is invalid."));
+		OnComplete.ExecuteIfBound(false, nullptr);
+		return;
+	}
 
-    const FUniqueNetIdAccelByteUserPtr UserABId = StaticCastSharedPtr<const FUniqueNetIdAccelByteUser>(UserId);
-    if (!UserABId)
-    {
-        UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Cannot get presence. User Id is invalid."));
-        OnComplete.ExecuteIfBound(false, nullptr);
-        return;
-    }
+	const FUniqueNetIdAccelByteUserPtr UserABId = StaticCastSharedPtr<const FUniqueNetIdAccelByteUser>(UserId);
+	if (!UserABId)
+	{
+		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Cannot get presence. User Id is invalid."));
+		OnComplete.ExecuteIfBound(false, nullptr);
+		return;
+	}
 
-    if(!bForceQuery)
-    {
-        // Try get the presence from cache.
-        TSharedPtr<FOnlineUserPresence> OutPresence = nullptr;
-        PresenceInterface->GetCachedPresence(UserABId.ToSharedRef().Get(), OutPresence);
-        if (TSharedPtr<FOnlineUserPresenceAccelByte> ABPresence = StaticCastSharedPtr<FOnlineUserPresenceAccelByte>(OutPresence))
-        {
-            UE_LOG_PRESENCEESSENTIALS(Log, TEXT("Success to get presence for user: %s"), *UserABId->GetAccelByteId());
-            OnComplete.ExecuteIfBound(true, ABPresence);
-            return;
-        }
-    }
+	if(!bForceQuery)
+	{
+		// Try get the presence from cache.
+		TSharedPtr<FOnlineUserPresence> OutPresence = nullptr;
+		PresenceInterface->GetCachedPresence(UserABId.ToSharedRef().Get(), OutPresence);
+		if (TSharedPtr<FOnlineUserPresenceAccelByte> ABPresence = StaticCastSharedPtr<FOnlineUserPresenceAccelByte>(OutPresence))
+		{
+			UE_LOG_PRESENCEESSENTIALS(Log, TEXT("Success to get presence for user: %s"), *UserABId->GetAccelByteId());
+			OnComplete.ExecuteIfBound(true, ABPresence);
+			return;
+		}
+	}
 
-    // If the presence is not available on cache, then query it.
-    PresenceInterface->QueryPresence(
-        UserABId.ToSharedRef().Get(),
-        IOnlinePresence::FOnPresenceTaskCompleteDelegate::CreateUObject(this, &ThisClass::OnGetPresenceComplete, OnComplete));
+	// If the presence is not available on cache, then query it.
+	PresenceInterface->QueryPresence(
+		UserABId.ToSharedRef().Get(),
+		IOnlinePresence::FOnPresenceTaskCompleteDelegate::CreateUObject(this, &ThisClass::OnGetPresenceComplete, OnComplete));
 }
 // @@@SNIPEND
 
 // @@@SNIPSTART PresenceEssentialsSubsystem.cpp-OnGetPresenceComplete
 void UPresenceEssentialsSubsystem::OnGetPresenceComplete(const FUniqueNetId& UserId, const bool bWasSuccessful, const FOnPresenceTaskComplete OnComplete)
 {
-    const FUniqueNetIdAccelByteUserRef UserABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(UserId.AsShared());
-    if (!UserABId->IsValid())
-    {
-        UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Failed to get presence. User Id is invalid."));
-        OnComplete.ExecuteIfBound(false, nullptr);
-        return;
-    }
+	const FUniqueNetIdAccelByteUserRef UserABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(UserId.AsShared());
+	if (!UserABId->IsValid())
+	{
+		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Failed to get presence. User Id is invalid."));
+		OnComplete.ExecuteIfBound(false, nullptr);
+		return;
+	}
 
-    FOnlinePresenceAccelBytePtr PresenceInterface = GetPresenceInterface();
-    if (!PresenceInterface)
-    {
-        UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Failed to get presence for user: %s. Presence interface is invalid."));
-        OnComplete.ExecuteIfBound(false, nullptr);
-        return;
-    }
+	FOnlinePresenceAccelBytePtr PresenceInterface = GetPresenceInterface();
+	if (!PresenceInterface)
+	{
+		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Failed to get presence for user: %s. Presence interface is invalid."));
+		OnComplete.ExecuteIfBound(false, nullptr);
+		return;
+	}
 
-    if (!bWasSuccessful)
-    {
-        UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Failed to get presence for user: %s. Operation failed."), *UserABId->GetAccelByteId());
-        OnComplete.ExecuteIfBound(false, nullptr);
-        return;
-    }
+	if (!bWasSuccessful)
+	{
+		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Failed to get presence for user: %s. Operation failed."), *UserABId->GetAccelByteId());
+		OnComplete.ExecuteIfBound(false, nullptr);
+		return;
+	}
 
-    TSharedPtr<FOnlineUserPresence> OutPresence;
-    PresenceInterface->GetCachedPresence(UserABId.Get(), OutPresence);
+	TSharedPtr<FOnlineUserPresence> OutPresence;
+	PresenceInterface->GetCachedPresence(UserABId.Get(), OutPresence);
 
-    TSharedPtr<FOnlineUserPresenceAccelByte> ABPresence = StaticCastSharedPtr<FOnlineUserPresenceAccelByte>(OutPresence);
-    if (!ABPresence)
-    {
-        UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Failed to get presence for user: %s. Invalid presence type."), *UserABId->GetAccelByteId());
-        OnComplete.ExecuteIfBound(false, nullptr);
-        return;
-    }
+	TSharedPtr<FOnlineUserPresenceAccelByte> ABPresence = StaticCastSharedPtr<FOnlineUserPresenceAccelByte>(OutPresence);
+	if (!ABPresence)
+	{
+		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Failed to get presence for user: %s. Invalid presence type."), *UserABId->GetAccelByteId());
+		OnComplete.ExecuteIfBound(false, nullptr);
+		return;
+	}
 
-    UE_LOG_PRESENCEESSENTIALS(Log, TEXT("Success to get presence for user: %s"), *UserABId->GetAccelByteId());
+	UE_LOG_PRESENCEESSENTIALS(Log, TEXT("Success to get presence for user: %s"), *UserABId->GetAccelByteId());
 
-    OnComplete.ExecuteIfBound(true, ABPresence);
+	OnComplete.ExecuteIfBound(true, ABPresence);
 }
 // @@@SNIPEND
 
 // @@@SNIPSTART PresenceEssentialsSubsystem.cpp-BulkQueryPresence
 void UPresenceEssentialsSubsystem::BulkQueryPresence(const FUniqueNetIdPtr UserId, const TArray<FUniqueNetIdRef>& UserIds)
 {
-    FUserIDPresenceMap CachedPresences;
+	FUserIDPresenceMap CachedPresences;
 
-    FOnlinePresenceAccelBytePtr PresenceInterface = GetPresenceInterface();
-    if (!PresenceInterface)
-    {
-        UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Cannot bulk query presence. Presence interface is invalid."));
-        OnBulkQueryPresenceComplete(false, CachedPresences);
-        return;
-    }
+	FOnlinePresenceAccelBytePtr PresenceInterface = GetPresenceInterface();
+	if (!PresenceInterface)
+	{
+		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Cannot bulk query presence. Presence interface is invalid."));
+		OnBulkQueryPresenceComplete(false, CachedPresences);
+		return;
+	}
 
-    if (!UserId || UserIds.IsEmpty())
-    {
-        UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Cannot bulk query presence. User Ids are invalid."));
-        OnBulkQueryPresenceComplete(false, CachedPresences);
-        return;
-    }
+	if (!UserId || UserIds.IsEmpty())
+	{
+		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Cannot bulk query presence. User Ids are invalid."));
+		OnBulkQueryPresenceComplete(false, CachedPresences);
+		return;
+	}
 
-    // Try to collect cached presences.
-    for (const FUniqueNetIdRef& TargetUserId : UserIds)
-    {
-        const FUniqueNetIdAccelByteUserRef TargetUserABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(TargetUserId);
-        if (!TargetUserABId->IsValid())
-        {
-            return;
-        }
+	// Try to collect cached presences.
+	for (const FUniqueNetIdRef& TargetUserId : UserIds)
+	{
+		const FUniqueNetIdAccelByteUserRef TargetUserABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(TargetUserId);
+		if (!TargetUserABId->IsValid())
+		{
+			return;
+		}
 
-        TSharedPtr<FOnlineUserPresence> OutPresence;
-        PresenceInterface->GetCachedPresence(TargetUserABId.Get(), OutPresence);
-        
-        if (const TSharedPtr<FOnlineUserPresenceAccelByte> ABPresence = StaticCastSharedPtr<FOnlineUserPresenceAccelByte>(OutPresence))
-        {
-            CachedPresences.Add(TargetUserABId->GetAccelByteId(), ABPresence.ToSharedRef());
-        }
-        else
-        {
-            break;
-        }
-    }
+		TSharedPtr<FOnlineUserPresence> OutPresence;
+		PresenceInterface->GetCachedPresence(TargetUserABId.Get(), OutPresence);
+		
+		if (const TSharedPtr<FOnlineUserPresenceAccelByte> ABPresence = StaticCastSharedPtr<FOnlineUserPresenceAccelByte>(OutPresence))
+		{
+			CachedPresences.Add(TargetUserABId->GetAccelByteId(), ABPresence.ToSharedRef());
+		}
+		else
+		{
+			break;
+		}
+	}
 
-    // The cached presences are complete, return the cached presence.
-    if (CachedPresences.Num() == UserIds.Num())
-    {
-        OnBulkQueryPresenceComplete(true, CachedPresences);
-        return;
-    }
+	// The cached presences are complete, return the cached presence.
+	if (CachedPresences.Num() == UserIds.Num())
+	{
+		OnBulkQueryPresenceComplete(true, CachedPresences);
+		return;
+	}
 
-    // There are some missing cached presences, try to query.
-    PresenceInterface->BulkQueryPresence(UserId.ToSharedRef().Get(), UserIds);
+	// There are some missing cached presences, try to query.
+	PresenceInterface->BulkQueryPresence(UserId.ToSharedRef().Get(), UserIds);
 }
 // @@@SNIPEND
 
 // @@@SNIPSTART PresenceEssentialsSubsystem.cpp-OnBulkQueryPresenceComplete
 void UPresenceEssentialsSubsystem::OnBulkQueryPresenceComplete(const bool bWasSuccessful, const FUserIDPresenceMap& Presences)
 {
-    UE_LOG_PRESENCEESSENTIALS(Log, TEXT("%s to bulk query presences. Presences found: %d"), bWasSuccessful ? TEXT("Success") : TEXT("Failed"), Presences.Num());
+	UE_LOG_PRESENCEESSENTIALS(Log, TEXT("%s to bulk query presences. Presences found: %d"), bWasSuccessful ? TEXT("Success") : TEXT("Failed"), Presences.Num());
 
-    OnBulkQueryPresenceCompleteDelegates.Broadcast(bWasSuccessful, Presences);
+	OnBulkQueryPresenceCompleteDelegates.Broadcast(bWasSuccessful, Presences);
 }
 // @@@SNIPEND
 
 // @@@SNIPSTART PresenceEssentialsSubsystem.cpp-SetPresenceStatus
 void UPresenceEssentialsSubsystem::SetPresenceStatus(const FUniqueNetIdPtr UserId, const FString& Status, const FOnPresenceTaskComplete& OnComplete)
 {
-    FOnlinePresenceAccelBytePtr PresenceInterface = GetPresenceInterface();
-    if (!PresenceInterface)
-    {
-        UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Cannot set presence status. Presence interface is invalid."));
-        OnComplete.ExecuteIfBound(false, nullptr);
-        return;
-    }
+	FOnlinePresenceAccelBytePtr PresenceInterface = GetPresenceInterface();
+	if (!PresenceInterface)
+	{
+		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Cannot set presence status. Presence interface is invalid."));
+		OnComplete.ExecuteIfBound(false, nullptr);
+		return;
+	}
 
-    if (!UserId)
-    {
-        UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Cannot set presence status. User Id is invalid."));
-        OnComplete.ExecuteIfBound(false, nullptr);
-        return;
-    }
+	if (!UserId)
+	{
+		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Cannot set presence status. User Id is invalid."));
+		OnComplete.ExecuteIfBound(false, nullptr);
+		return;
+	}
 
-    FOnlineUserPresenceStatus PresenceStatus;
-    PresenceStatus.StatusStr = Status;
-    PresenceStatus.State = EOnlinePresenceState::Type::Online;
+	FOnlineUserPresenceStatus PresenceStatus;
+	PresenceStatus.StatusStr = Status;
+	PresenceStatus.State = EOnlinePresenceState::Type::Online;
 
-    PresenceInterface->SetPresence(
-        UserId.ToSharedRef().Get(),
-        PresenceStatus,
-        IOnlinePresence::FOnPresenceTaskCompleteDelegate::CreateUObject(this, &ThisClass::OnSetPresenceStatusComplete, OnComplete));
+	PresenceInterface->SetPresence(
+		UserId.ToSharedRef().Get(),
+		PresenceStatus,
+		IOnlinePresence::FOnPresenceTaskCompleteDelegate::CreateUObject(this, &ThisClass::OnSetPresenceStatusComplete, OnComplete));
 }
 // @@@SNIPEND
 
 // @@@SNIPSTART PresenceEssentialsSubsystem.cpp-OnSetPresenceStatusComplete
 void UPresenceEssentialsSubsystem::OnSetPresenceStatusComplete(const FUniqueNetId& UserId, const bool bWasSuccessful, const FOnPresenceTaskComplete OnComplete)
 {
-    const FUniqueNetIdAccelByteUserRef UserABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(UserId.AsShared());
-    if (!UserABId->IsValid())
-    {
-        UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Failed to set presence status. User Id is invalid."));
-        OnComplete.ExecuteIfBound(false, nullptr);
-        return;
-    }
+	const FUniqueNetIdAccelByteUserRef UserABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(UserId.AsShared());
+	if (!UserABId->IsValid())
+	{
+		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Failed to set presence status. User Id is invalid."));
+		OnComplete.ExecuteIfBound(false, nullptr);
+		return;
+	}
 
-    FOnlinePresenceAccelBytePtr PresenceInterface = GetPresenceInterface();
-    if (!PresenceInterface)
-    {
-        UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Failed to set presence status for user: %s. Presence interface is invalid."), *UserABId->GetAccelByteId());
-        OnComplete.ExecuteIfBound(false, nullptr);
-        return;
-    }
+	FOnlinePresenceAccelBytePtr PresenceInterface = GetPresenceInterface();
+	if (!PresenceInterface)
+	{
+		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Failed to set presence status for user: %s. Presence interface is invalid."), *UserABId->GetAccelByteId());
+		OnComplete.ExecuteIfBound(false, nullptr);
+		return;
+	}
 
-    TSharedPtr<FOnlineUserPresence> OutPresence;
-    PresenceInterface->GetCachedPresence(UserABId.Get(), OutPresence);
+	TSharedPtr<FOnlineUserPresence> OutPresence;
+	PresenceInterface->GetCachedPresence(UserABId.Get(), OutPresence);
 
-    const TSharedPtr<FOnlineUserPresenceAccelByte> ABPresence = StaticCastSharedPtr<FOnlineUserPresenceAccelByte>(OutPresence);
-    if (bWasSuccessful && ABPresence)
-    {
-        UE_LOG_PRESENCEESSENTIALS(Log, TEXT("Success to set presence status for user: %s"), *UserABId->GetAccelByteId());
-        OnComplete.ExecuteIfBound(true, ABPresence);
-    }
-    else
-    {
-        UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Failed to set presence status for user: %s. Operation failed."), *UserABId->GetAccelByteId());
-        OnComplete.ExecuteIfBound(false, nullptr);
-    }
+	const TSharedPtr<FOnlineUserPresenceAccelByte> ABPresence = StaticCastSharedPtr<FOnlineUserPresenceAccelByte>(OutPresence);
+	if (bWasSuccessful && ABPresence)
+	{
+		UE_LOG_PRESENCEESSENTIALS(Log, TEXT("Success to set presence status for user: %s"), *UserABId->GetAccelByteId());
+		OnComplete.ExecuteIfBound(true, ABPresence);
+	}
+	else
+	{
+		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Failed to set presence status for user: %s. Operation failed."), *UserABId->GetAccelByteId());
+		OnComplete.ExecuteIfBound(false, nullptr);
+	}
 }
 // @@@SNIPEND
 
 // @@@SNIPSTART PresenceEssentialsSubsystem.cpp-OnPresenceReceived
 void UPresenceEssentialsSubsystem::OnPresenceReceived(const FUniqueNetId& UserId, const TSharedRef<FOnlineUserPresence>& Presence)
 {
-    const FUniqueNetIdAccelByteUserRef UserABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(UserId.AsShared());
-    if (!UserABId->IsValid()) 
-    {
-        UE_LOG_PRESENCEESSENTIALS(Log, TEXT("Received presence update for but is null"));
-        return;
-    }
+	const FUniqueNetIdAccelByteUserRef UserABId = StaticCastSharedRef<const FUniqueNetIdAccelByteUser>(UserId.AsShared());
+	if (!UserABId->IsValid()) 
+	{
+		UE_LOG_PRESENCEESSENTIALS(Log, TEXT("Received presence update for but is null"));
+		return;
+	}
 
-    UE_LOG_PRESENCEESSENTIALS(Log, TEXT("Received presence update for user: %s"), *UserABId->GetAccelByteId());
+	UE_LOG_PRESENCEESSENTIALS(Log, TEXT("Received presence update for user: %s"), *UserABId->GetAccelByteId());
 
-    OnPresenceReceivedDelegates.Broadcast(UserABId.Get(), Presence);
+	OnPresenceReceivedDelegates.Broadcast(UserABId.Get(), Presence);
 }
 // @@@SNIPEND
 
 FOnlinePresenceAccelBytePtr UPresenceEssentialsSubsystem::GetPresenceInterface() const
 {
-    const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
-    if (!ensure(Subsystem))
-    {
-        UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and the DefaultPlatformService under [OnlineSubsystem] in the Engine.ini file is set to AccelByte."));
-        return nullptr;
-    }
+	const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+	if (!ensure(Subsystem))
+	{
+		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and the DefaultPlatformService under [OnlineSubsystem] in the Engine.ini file is set to AccelByte."));
+		return nullptr;
+	}
 
-    return StaticCastSharedPtr<FOnlinePresenceAccelByte>(Subsystem->GetPresenceInterface());
+	return StaticCastSharedPtr<FOnlinePresenceAccelByte>(Subsystem->GetPresenceInterface());
 }
 
 TSharedPtr<FOnlineFriendsAccelByte, ESPMode::ThreadSafe> UPresenceEssentialsSubsystem::GetFriendsInterface() const
 {
-    const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
-    if (!ensure(Subsystem))
-    {
-        UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and the DefaultPlatformService under [OnlineSubsystem] in the Engine.ini file is set to AccelByte."));
-        return nullptr;
-    }
+	const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+	if (!ensure(Subsystem))
+	{
+		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and the DefaultPlatformService under [OnlineSubsystem] in the Engine.ini file is set to AccelByte."));
+		return nullptr;
+	}
 
-    return StaticCastSharedPtr<FOnlineFriendsAccelByte>(Subsystem->GetFriendsInterface());
+	return StaticCastSharedPtr<FOnlineFriendsAccelByte>(Subsystem->GetFriendsInterface());
 }
 
 TSharedPtr<FOnlineIdentityAccelByte, ESPMode::ThreadSafe> UPresenceEssentialsSubsystem::GetIdentityInterface() const
 {
-    const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
-    if (!ensure(Subsystem))
-    {
-        UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and the DefaultPlatformService under [OnlineSubsystem] in the Engine.ini file is set to AccelByte."));
-        return nullptr;
-    }
+	const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+	if (!ensure(Subsystem))
+	{
+		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and the DefaultPlatformService under [OnlineSubsystem] in the Engine.ini file is set to AccelByte."));
+		return nullptr;
+	}
 
-    return StaticCastSharedPtr<FOnlineIdentityAccelByte>(Subsystem->GetIdentityInterface());
+	return StaticCastSharedPtr<FOnlineIdentityAccelByte>(Subsystem->GetIdentityInterface());
 }
 
 TSharedPtr<FOnlineSessionV2AccelByte, ESPMode::ThreadSafe> UPresenceEssentialsSubsystem::GetSessionInterface() const
 {
-    const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
-    if (!ensure(Subsystem))
-    {
-        UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and the DefaultPlatformService under [OnlineSubsystem] in the Engine.ini file is set to AccelByte."));
-        return nullptr;
-    }
+	const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+	if (!ensure(Subsystem))
+	{
+		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and the DefaultPlatformService under [OnlineSubsystem] in the Engine.ini file is set to AccelByte."));
+		return nullptr;
+	}
 
-    return StaticCastSharedPtr<FOnlineSessionV2AccelByte>(Subsystem->GetSessionInterface());
+	return StaticCastSharedPtr<FOnlineSessionV2AccelByte>(Subsystem->GetSessionInterface());
 }
 
 UAccelByteWarsOnlineSessionBase* UPresenceEssentialsSubsystem::GetOnlineSession() const
 {
-    if (!GetGameInstance()) 
-    {
-        return nullptr;
-    }
+	if (!GetGameInstance()) 
+	{
+		return nullptr;
+	}
 
-    return Cast<UAccelByteWarsOnlineSessionBase>(GetGameInstance()->GetOnlineSession());
+	return Cast<UAccelByteWarsOnlineSessionBase>(GetGameInstance()->GetOnlineSession());
 }
 
 // @@@SNIPSTART PresenceEssentialsSubsystem.cpp-GetPrimaryPlayerUserId
 FUniqueNetIdPtr UPresenceEssentialsSubsystem::GetPrimaryPlayerUserId()
 {
-    if (!GetGameInstance())
-    {
-        UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Unable to get current logged in player's User Id. GameInstance is invalid."));
-        return nullptr;
-    }
+	if (!GetGameInstance())
+	{
+		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Unable to get current logged in player's User Id. GameInstance is invalid."));
+		return nullptr;
+	}
 
-    const APlayerController* PC = GetGameInstance()->GetFirstLocalPlayerController();
-    if (!PC)
-    {
-        UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Unable to get current logged in player's User Id. PlayerController is invalid."));
-        return nullptr;
-    }
+	const APlayerController* PC = GetGameInstance()->GetFirstLocalPlayerController();
+	if (!PC)
+	{
+		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Unable to get current logged in player's User Id. PlayerController is invalid."));
+		return nullptr;
+	}
 
-    const ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
-    if (!LocalPlayer)
-    {
-        UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Unable to get current logged in player's User Id. LocalPlayer is invalid."));
-        return nullptr;
-    }
+	const ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
+	if (!LocalPlayer)
+	{
+		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Unable to get current logged in player's User Id. LocalPlayer is invalid."));
+		return nullptr;
+	}
 
-    return LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId();
+	return LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId();
 }
 // @@@SNIPEND

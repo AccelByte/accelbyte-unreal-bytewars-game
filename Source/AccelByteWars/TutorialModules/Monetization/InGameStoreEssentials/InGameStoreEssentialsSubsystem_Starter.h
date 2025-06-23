@@ -21,14 +21,14 @@ class ACCELBYTEWARS_API UInGameStoreEssentialsSubsystem_Starter : public UTutori
 
 public:
 #pragma region "Tutorial"
-	// put your code here
+	// Put your code here.
 #pragma endregion 
 
 private:
 	IOnlineStoreV2Ptr StoreInterface;
 
 #pragma region "Tutorial"
-	// put your code here
+	// Put your code here.
 #pragma endregion 
 
 #pragma region "Utilities"

@@ -115,6 +115,8 @@ void UTutorialModuleDataAsset::OverridesIsActive(const bool bInIsActive)
 {
 	bOverriden = true;
 	bIsActive = bInIsActive;
+
+	ValidateDataAssetProperties();
 }
 
 void UTutorialModuleDataAsset::ResetOverrides()

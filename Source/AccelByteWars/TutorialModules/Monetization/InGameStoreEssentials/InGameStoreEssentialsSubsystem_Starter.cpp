@@ -20,7 +20,7 @@ void UInGameStoreEssentialsSubsystem_Starter::Initialize(FSubsystemCollectionBas
 }
 
 #pragma region "Tutorial"
-// put your code here
+// Put your code here.
 #pragma endregion 
 
 #pragma region "Utilities"

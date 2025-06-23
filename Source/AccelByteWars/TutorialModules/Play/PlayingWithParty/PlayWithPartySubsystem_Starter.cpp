@@ -17,76 +17,76 @@
 
 void UPlayWithPartySubsystem_Starter::Initialize(FSubsystemCollectionBase& Collection)
 {
-    Super::Initialize(Collection);
+	Super::Initialize(Collection);
 
-    if (GetSessionInterface())
-    {
-        // TODO: Bind session delegates here.
-    }
+	if (GetSessionInterface())
+	{
+		// TODO: Bind session delegates here.
+	}
 
-    // Add party validation to online session related UIs.
-    if (GetOnlineSession())
-    {
-        // TODO: Bind party online session validation delegates here.
-    }
+	// Add party validation to online session related UIs.
+	if (GetOnlineSession())
+	{
+		// TODO: Bind party online session validation delegates here.
+	}
 }
 
 void UPlayWithPartySubsystem_Starter::Deinitialize()
 {
-    Super::Deinitialize();
+	Super::Deinitialize();
 
-    if (GetSessionInterface())
-    {
-        // TODO: Unbind session delegates here.
-    }
+	if (GetSessionInterface())
+	{
+		// TODO: Unbind session delegates here.
+	}
 
-    // Remove party validation to online session related UIs.
-    if (GetOnlineSession())
-    {
-        // TODO: Unbind party online session validation delegates here.
-    }
+	// Remove party validation to online session related UIs.
+	if (GetOnlineSession())
+	{
+		// TODO: Unbind party online session validation delegates here.
+	}
 }
 
 UAccelByteWarsOnlineSessionBase* UPlayWithPartySubsystem_Starter::GetOnlineSession() const
 {
-    if (!GetGameInstance())
-    {
-        return nullptr;
-    }
+	if (!GetGameInstance())
+	{
+		return nullptr;
+	}
 
-    return Cast<UAccelByteWarsOnlineSessionBase>(GetGameInstance()->GetOnlineSession());
+	return Cast<UAccelByteWarsOnlineSessionBase>(GetGameInstance()->GetOnlineSession());
 }
 
 FOnlineSessionV2AccelBytePtr UPlayWithPartySubsystem_Starter::GetSessionInterface() const
 {
-    const UWorld* World = GetWorld();
-    if (!ensure(World))
-    {
-        return nullptr;
-    }
+	const UWorld* World = GetWorld();
+	if (!ensure(World))
+	{
+		return nullptr;
+	}
 
-    return StaticCastSharedPtr<FOnlineSessionV2AccelByte>(Online::GetSessionInterface(World));
+	return StaticCastSharedPtr<FOnlineSessionV2AccelByte>(Online::GetSessionInterface(World));
 }
 
 FOnlineIdentityAccelBytePtr UPlayWithPartySubsystem_Starter::GetIdentityInterface() const
 {
-    const UWorld* World = GetWorld();
-    if (!ensure(World))
-    {
-        return nullptr;
-    }
+	const UWorld* World = GetWorld();
+	if (!ensure(World))
+	{
+		return nullptr;
+	}
 
-    return StaticCastSharedPtr<FOnlineIdentityAccelByte>(Online::GetIdentityInterface(World));
+	return StaticCastSharedPtr<FOnlineIdentityAccelByte>(Online::GetIdentityInterface(World));
 }
 
 UPromptSubsystem* UPlayWithPartySubsystem_Starter::GetPromptSubystem()
 {
-    if (UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance()))
-    {
-        return GameInstance->GetSubsystem<UPromptSubsystem>();
-    }
+	if (UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance()))
+	{
+		return GameInstance->GetSubsystem<UPromptSubsystem>();
+	}
 
-    return nullptr;
+	return nullptr;
 }
 
 #pragma region "Playing With Party Module Function Definitions"

@@ -33,8 +33,8 @@ class ACCELBYTEWARS_API AAccelByteWarsPlayerState : public APlayerState
 	GENERATED_BODY()
 
 	//~AActor overriden functions
+	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-	virtual void ClientInitialize(AController* C) override;
 	//~End of AActor overriden functions
 
 public:

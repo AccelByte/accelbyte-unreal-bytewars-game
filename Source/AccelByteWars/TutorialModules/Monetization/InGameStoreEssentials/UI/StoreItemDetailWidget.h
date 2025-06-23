@@ -12,7 +12,6 @@
 class UCommonButtonBase;
 class UStoreItemListEntry;
 class UPanelWidget;
-class UWalletBalanceWidget;
 
 UCLASS(Abstract)
 class ACCELBYTEWARS_API UStoreItemDetailWidget : public UAccelByteWarsActivatableWidget
@@ -25,6 +24,7 @@ class ACCELBYTEWARS_API UStoreItemDetailWidget : public UAccelByteWarsActivatabl
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 	virtual UWidget* NativeGetDesiredFocusTarget() const override;
 
+// @@@SNIPSTART StoreItemDetailWidget.h-private
 private:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UStoreItemListEntry* W_ItemDetail;
@@ -37,12 +37,16 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_Back;
+// @@@SNIPEND
 #pragma endregion 
 
+// @@@SNIPSTART StoreItemDetailWidget.h-public
+// @@@MULTISNIP Setup {"selectedLines": ["1", "5"]}
 public:
 	UPROPERTY()
 	UStoreItemDataObject* StoreItemDataObject;
 
 	void Setup(const UStoreItemDataObject* Object);
-	TWeakObjectPtr<UWalletBalanceWidget> GetBalanceWidget() const; 
+	TWeakObjectPtr<UAccelByteWarsActivatableWidget> GetBalanceWidget() const;
+// @@@SNIPEND
 };

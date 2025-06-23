@@ -21,17 +21,11 @@ class ACCELBYTEWARS_API UWalletBalanceWidget_Starter : public UAccelByteWarsActi
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
 
-public:
-#pragma region "Tutorial"
-	// put your code here
-#pragma endregion
-
-protected:
-#pragma region "Tutorial"
-	// put your code here
-#pragma endregion
-
 private:
+#pragma region "Tutorial"
+	// put your code here
+#pragma endregion
+
 	UPROPERTY()
 	UWalletEssentialsSubsystem_Starter* WalletSubsystem;
 

@@ -2,7 +2,7 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-#include "GameTelemetry/GameTelemetrySubsystem_Starter.h"
+#include "GameTelemetrySubsystem_Starter.h"
 
 #include "GameTelemetryLog.h"
 #include "GameTelemetryModels.h"
@@ -63,7 +63,7 @@ void UGameTelemetrySubsystem_Starter::OnGameStarted()
 	// put your code here
 }
 
-void UGameTelemetrySubsystem_Starter::OnGameEnded(const FString& Reason) const
+void UGameTelemetrySubsystem_Starter::OnGameEnded(const FString& Reason)
 {
 	// put your code here
 }

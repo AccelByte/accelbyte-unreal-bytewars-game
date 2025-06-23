@@ -21,6 +21,8 @@ class ACCELBYTEWARS_API UAccelByteWarsAsyncImageWidget final : public UCommonUse
 {
 	GENERATED_BODY()
 
+// @@@SNIPSTART AccelByteWarsAsyncImageWidget.h-public
+// @@@MULTISNIP LoadImage {"selectedLines": ["1-7"]}
 public:
 	/**
 	 * Retrieve image from the given URL. Will use DefaultBrush if URL isn't valid
@@ -41,6 +43,7 @@ public:
 
 	UPROPERTY(EditAnywhere)
 	FSlateBrush DefaultBrush;
+// @@@SNIPEND
 
 protected:
 	virtual void NativePreConstruct() override;

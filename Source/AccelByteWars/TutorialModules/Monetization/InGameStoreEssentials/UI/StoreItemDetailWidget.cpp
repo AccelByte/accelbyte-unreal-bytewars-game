@@ -7,7 +7,6 @@
 
 #include "CommonButtonBase.h"
 #include "Core/UI/MainMenu/Store/Components/StoreItemListEntry.h"
-#include "Monetization/WalletEssentials/UI/WalletBalanceWidget.h"
 
 #pragma region "UI"
 void UStoreItemDetailWidget::NativeOnActivated()
@@ -39,7 +38,7 @@ UWidget* UStoreItemDetailWidget::NativeGetDesiredFocusTarget() const
 
 void UStoreItemDetailWidget::Setup(const UStoreItemDataObject* Object)
 {
-	// Copy the object since we don't want the ShouldShowPrices to be set on the original data
+	// Copy the object since we don't want the ShouldShowPrices to be set on the original data.
 	StoreItemDataObject = NewObject<UStoreItemDataObject>();
 	StoreItemDataObject->Setup(Object);
 	StoreItemDataObject->SetShouldShowPrices(false);
@@ -47,13 +46,13 @@ void UStoreItemDetailWidget::Setup(const UStoreItemDataObject* Object)
 	W_ItemDetail->Setup(StoreItemDataObject);
 }
 
-TWeakObjectPtr<UWalletBalanceWidget> UStoreItemDetailWidget::GetBalanceWidget() const
+TWeakObjectPtr<UAccelByteWarsActivatableWidget> UStoreItemDetailWidget::GetBalanceWidget() const
 {
-	TWeakObjectPtr<UWalletBalanceWidget> Widget = nullptr;
+	TWeakObjectPtr<UAccelByteWarsActivatableWidget> Widget = nullptr;
 
 	if (W_WalletOuter->HasAnyChildren())
 	{
-		UWalletBalanceWidget* WidgetRawPtr = Cast<UWalletBalanceWidget>(W_WalletOuter->GetChildAt(0));
+		UAccelByteWarsActivatableWidget* WidgetRawPtr = Cast<UAccelByteWarsActivatableWidget>(W_WalletOuter->GetChildAt(0));
 		if (WidgetRawPtr)
 		{
 			Widget = MakeWeakObjectPtr(WidgetRawPtr);

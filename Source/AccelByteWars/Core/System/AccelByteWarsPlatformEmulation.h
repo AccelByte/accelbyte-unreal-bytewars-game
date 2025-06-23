@@ -11,44 +11,44 @@
 UCLASS(config = EditorPerProjectUserSettings, MinimalAPI)
 class UAccelByteWarsPlatformEmulation : public UDeveloperSettingsBackedByCVars
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
 public:
 #if WITH_EDITOR
-    virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
-    virtual void PostReloadConfig(FProperty* PropertyThatWasLoaded) override;
-    virtual void PostInitProperties() override;
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+	virtual void PostReloadConfig(FProperty* PropertyThatWasLoaded) override;
+	virtual void PostInitProperties() override;
 #endif
 
-    virtual FName GetCategoryName() const override;
+	virtual FName GetCategoryName() const override;
 
-    FName GetActivateEmulatedPlatformName() const;
-    FName GetBaseDeviceProfileName() const;
+	FName GetActivateEmulatedPlatformName() const;
+	FName GetBaseDeviceProfileName() const;
 
 private:
 #if WITH_EDITOR
-    void ApplyPlatformEmulationSettings();
-    void ActivateEmulatedPlatform(FName NewPlatformName);
-    void ActivateEmulatedDeviceProfile();
+	void ApplyPlatformEmulationSettings();
+	void ActivateEmulatedPlatform(FName NewPlatformName);
+	void ActivateEmulatedDeviceProfile();
 #endif
 
-    void SetDefaultBaseDeviceProfile();
+	void SetDefaultBaseDeviceProfile();
 
-    UFUNCTION()
-    TArray<FName> GetPlatformIds() const;
+	UFUNCTION()
+	TArray<FName> GetPlatformIds() const;
 
-    UFUNCTION()
-    TArray<FName> GetDeviceProfiles() const;
+	UFUNCTION()
+	TArray<FName> GetDeviceProfiles() const;
 
-    UPROPERTY(EditAnywhere, config, Category = PlatformEmulation, meta = (GetOptions = GetPlatformIds))
-    FName EmulatedPlatform;
+	UPROPERTY(EditAnywhere, config, Category = PlatformEmulation, meta = (GetOptions = GetPlatformIds))
+	FName EmulatedPlatform;
 
-    UPROPERTY(EditAnywhere, config, Category = PlatformEmulation, meta = (GetOptions = GetDeviceProfiles, EditCondition = bApplyDeviceProfiles))
-    FName BaseDeviceProfile;
+	UPROPERTY(EditAnywhere, config, Category = PlatformEmulation, meta = (GetOptions = GetDeviceProfiles, EditCondition = bApplyDeviceProfiles))
+	FName BaseDeviceProfile;
 
-    UPROPERTY(EditAnywhere, config, Category = PlatformEmulation, meta = (InlineEditConditionToggle))
-    bool bApplyDeviceProfiles = false;
+	UPROPERTY(EditAnywhere, config, Category = PlatformEmulation, meta = (InlineEditConditionToggle))
+	bool bApplyDeviceProfiles = false;
 
-    FName LastActivateEmulatedPlatform;
-    FString CurrentAppliedDeviceProfile;
+	FName LastActivateEmulatedPlatform;
+	FString CurrentAppliedDeviceProfile;
 };

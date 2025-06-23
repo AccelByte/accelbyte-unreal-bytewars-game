@@ -11,25 +11,25 @@
 UENUM(BlueprintType)
 enum class EWidgetValidationState : uint8
 {
-    VALID UMETA(DisplayName = "Valid"),
-    INVALID UMETA(DisplayName = "Invalid"),
-    VALIDATING UMETA(DisplayName = "Validating")
+	VALID UMETA(DisplayName = "Valid"),
+	INVALID UMETA(DisplayName = "Invalid"),
+	VALIDATING UMETA(DisplayName = "Validating")
 };
 
 UINTERFACE(BlueprintType)
 class ACCELBYTEWARS_API UAccelByteWarsWidgetInterface : public UInterface
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 };
 
 class ACCELBYTEWARS_API IAccelByteWarsWidgetInterface
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
 public:
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "AccelByteWars Widget Interface")
-    void ToggleHighlight(const bool bToHighlight);
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "AccelByteWars Widget Interface")
+	void ToggleHighlight(const bool bToHighlight);
 
-    UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "AccelByteWars Widget Interface")
-    void SetWidgetValidationState(const EWidgetValidationState State, const FString& StateMessage, const FString& FallbackURL);
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "AccelByteWars Widget Interface")
+	void SetWidgetValidationState(const EWidgetValidationState State, const FString& StateMessage, const FString& FallbackURL);
 };

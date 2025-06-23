@@ -12,7 +12,6 @@
 #include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
 #include "Monetization/InGameStoreEssentials/UI/StoreItemDetailWidget.h"
 #include "Monetization/StoreItemPurchase/StoreItemPurchaseSubsystem_Starter.h"
-#include "Monetization/WalletEssentials/UI/WalletBalanceWidget.h"
 
 void UItemPurchaseWidget_Starter::NativeOnActivated()
 {

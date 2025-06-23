@@ -13,65 +13,65 @@ using namespace AccelByte::GameServerApi;
 
 void UDSHealthSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
-    Super::Initialize(Collection);
+	Super::Initialize(Collection);
 
-    ABSessionInt = StaticCastSharedPtr<FOnlineSessionV2AccelByte>(Online::GetSessionInterface(GetWorld()));
+	ABSessionInt = StaticCastSharedPtr<FOnlineSessionV2AccelByte>(Online::GetSessionInterface(GetWorld()));
 
-    ensure(ABSessionInt);
+	ensure(ABSessionInt);
 
-    CheckCommandLineParam();
+	CheckCommandLineParam();
 
-    StartShowDSHealthLogTimer();
+	StartShowDSHealthLogTimer();
 }
 
 void UDSHealthSubsystem::Deinitialize()
 {
-    Super::Deinitialize();
+	Super::Deinitialize();
 
-    StopShowDSHealthLogTimer();
+	StopShowDSHealthLogTimer();
 }
 
 void UDSHealthSubsystem::ShowDSHealthLog()
-{    
-    FAccelByteModelsV2GameSessionDSInformation DSInformation = UTutorialModuleOnlineUtility::GetDedicatedServer(this);
+{	
+	FAccelByteModelsV2GameSessionDSInformation DSInformation = UTutorialModuleOnlineUtility::GetDedicatedServer(this);
 
-    EOnlineSessionState::Type Session = ABSessionInt->GetSessionState(NAME_GameSession);
+	EOnlineSessionState::Type Session = ABSessionInt->GetSessionState(NAME_GameSession);
 
-    UE_LOG_DSHEALTH(VeryVerbose, TEXT("DS Health | DSID : %s | Unreal Session State : %s | Server Status : %s |"), *IAccelByteUe4SdkModuleInterface::Get().GetServerSettings().DSId, EOnlineSessionState::ToString(Session), *DSInformation.Server.Status);
+	UE_LOG_DSHEALTH(VeryVerbose, TEXT("DS Health | DSID : %s | Unreal Session State : %s | Server Status : %s |"), *IAccelByteUe4SdkModuleInterface::Get().GetServerSettings().DSId, EOnlineSessionState::ToString(Session), *DSInformation.Server.Status);
 }
 
 void UDSHealthSubsystem::StartShowDSHealthLogTimer()
 {
-    if (bShowDSHealthLog)
-    {
-        GetWorld()->GetTimerManager().SetTimer(ShowDSHealthLogHandle, this, &ThisClass::ShowDSHealthLog, DSHealthLogInterval, true, 1);
-    }
+	if (bShowDSHealthLog)
+	{
+		GetWorld()->GetTimerManager().SetTimer(ShowDSHealthLogHandle, this, &ThisClass::ShowDSHealthLog, DSHealthLogInterval, true, 1);
+	}
 }
 
 void UDSHealthSubsystem::StopShowDSHealthLogTimer()
 {
-    if (bShowDSHealthLog)
-    {
-        GetWorld()->GetTimerManager().ClearTimer(ShowDSHealthLogHandle);
-    }
+	if (bShowDSHealthLog)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(ShowDSHealthLogHandle);
+	}
 }
 
 void UDSHealthSubsystem::CheckCommandLineParam()
 {
-    FString CmdArgs = FCommandLine::Get();
-    if (!CmdArgs.Contains(DS_HEALTH_LOG_SHOW_PARAM, ESearchCase::IgnoreCase))
-    {
-        return;
-    }
+	FString CmdArgs = FCommandLine::Get();
+	if (!CmdArgs.Contains(DS_HEALTH_LOG_SHOW_PARAM, ESearchCase::IgnoreCase))
+	{
+		return;
+	}
 
-    bShowDSHealthLog = true;
+	bShowDSHealthLog = true;
 
-    FString DSHealthIntervalString = TEXT("");
-    const FString DSHealthLogIntervalParam = FString::Printf(TEXT("-%s="), DS_HEALTH_LOG_INTERVAL_PARAM);
-    FParse::Value(FCommandLine::Get(), *DSHealthLogIntervalParam, DSHealthIntervalString);
+	FString DSHealthIntervalString = TEXT("");
+	const FString DSHealthLogIntervalParam = FString::Printf(TEXT("-%s="), DS_HEALTH_LOG_INTERVAL_PARAM);
+	FParse::Value(FCommandLine::Get(), *DSHealthLogIntervalParam, DSHealthIntervalString);
 
-    if (!DSHealthIntervalString.IsEmpty())
-    {
-        DSHealthLogInterval = FCString::Atof(*DSHealthIntervalString);
-    }
+	if (!DSHealthIntervalString.IsEmpty())
+	{
+		DSHealthLogInterval = FCString::Atof(*DSHealthIntervalString);
+	}
 }

@@ -158,7 +158,7 @@ void UInventoryWidget::OnClickEquip() const
 	const FString Sku = SelectedItem->GetSku(EItemSkuPlatform::AccelByte);
 	if (Sku.IsEmpty())
 	{
-		UE_LOG_ENTITLEMENTS_ESSENTIALS(Warning, TEXT("Item %s don't have AB SKU. Skipping equip"), *SelectedItem->GetTitle().ToString())
+		UE_LOG_ENTITLEMENTS_ESSENTIALS(Warning, "Item %s don't have AB SKU. Skipping equip", *SelectedItem->GetTitle().ToString())
 		return;
 	}
 

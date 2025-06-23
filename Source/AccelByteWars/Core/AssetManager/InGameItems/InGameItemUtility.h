@@ -51,6 +51,9 @@ UCLASS(BlueprintType)
 class UInGameItemUtility : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
+
+// @@@SNIPSTART InGameItemUtility.h-public
+// @@@MULTISNIP GetItem {"selectedLines": ["1-8"]}
 public:
 	UFUNCTION(BlueprintPure, Category = "Item")
 	static UInGameItemDataAsset* GetItemDataAsset(const FString& ItemId);
@@ -59,4 +62,5 @@ public:
 	static UInGameItemDataAsset* GetItemDataAssetBySku(
 		const EItemSkuPlatform Platform,
 		const FString& Sku);
+// @@@SNIPEND
 };

@@ -7,8 +7,8 @@
 
 void UTutorialModuleOnlineSession::RegisterOnlineDelegates()
 {
-    // Assign associate Tutorial Module based on default object.
-    AssociateTutorialModule = GetClass()->GetDefaultObject<UTutorialModuleOnlineSession>()->AssociateTutorialModule;
+	// Assign associate Tutorial Module based on default object.
+	AssociateTutorialModule = GetClass()->GetDefaultObject<UTutorialModuleOnlineSession>()->AssociateTutorialModule;
 }
 
 void UTutorialModuleOnlineSession::ClearOnlineDelegates() {}

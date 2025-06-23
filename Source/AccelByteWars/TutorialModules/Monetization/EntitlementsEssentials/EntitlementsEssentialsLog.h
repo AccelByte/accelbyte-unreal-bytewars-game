@@ -10,5 +10,5 @@ ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogEntitlementsEssentials, Log, Al
 
 #define UE_LOG_ENTITLEMENTS_ESSENTIALS(Verbosity, Format, ...) \
 { \
-UE_LOG_FUNC(LogEntitlementsEssentials, Verbosity, TEXT("%s"), *FString::Printf(Format, ##__VA_ARGS__)); \
+UE_LOG_FUNC(LogEntitlementsEssentials, Verbosity, TEXT("%s"), *FString::Printf(TEXT(Format), ##__VA_ARGS__)); \
 }

@@ -17,6 +17,8 @@
 #include "Components/HorizontalBox.h"
 #include "CommonButtonBase.h"
 
+#define PARTY_WIDGET_ENTRY_CLASS UPartyWidgetEntry_Starter
+
 void UPartyWidget_Starter::NativeConstruct()
 {
 	Super::NativeConstruct();
@@ -61,3 +63,5 @@ void UPartyWidget_Starter::OnLeaveButtonClicked()
 {
 	// TODO: Call leave party here.
 }
+
+#undef PARTY_WIDGET_ENTRY_CLASS

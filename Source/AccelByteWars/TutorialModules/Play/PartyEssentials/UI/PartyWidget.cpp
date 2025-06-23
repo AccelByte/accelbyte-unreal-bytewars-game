@@ -17,6 +17,8 @@
 #include "Components/HorizontalBox.h"
 #include "CommonButtonBase.h"
 
+#define PARTY_WIDGET_ENTRY_CLASS UPartyWidgetEntry
+
 void UPartyWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
@@ -172,9 +174,9 @@ void UPartyWidget::DisplayParty()
 						continue;
 					}
 
-					const TWeakObjectPtr<UPartyWidgetEntry> PartyMemberEntry =
-						MakeWeakObjectPtr<UPartyWidgetEntry>(
-							CreateWidget<UPartyWidgetEntry>(this, PartyWidgetEntryClass.Get()));
+					const TWeakObjectPtr<PARTY_WIDGET_ENTRY_CLASS> PartyMemberEntry =
+						MakeWeakObjectPtr<PARTY_WIDGET_ENTRY_CLASS>(
+							CreateWidget<PARTY_WIDGET_ENTRY_CLASS>(this, PartyWidgetEntryClass.Get()));
 					Hb_Party->AddChild(PartyMemberEntry.Get());
 
 					// Display party member information.
@@ -182,9 +184,9 @@ void UPartyWidget::DisplayParty()
 					{
 						/* Mark party member as leader if valid.
 						 * If not in any party, then assume the player as the leader.*/
-						PartyMemberEntry->SetPartyMember(*UsersInfo[i],
-						                                 PartyOnlineSession->IsPartyLeader(UsersInfo[i]->GetUserId()) ||
-						                                 !bIsInParty);
+						PartyMemberEntry->SetPartyMember(
+							*UsersInfo[i],
+							PartyOnlineSession->IsPartyLeader(UsersInfo[i]->GetUserId()) || !bIsInParty);
 					}
 					// Display button to add more party members.
 					else
@@ -206,3 +208,5 @@ void UPartyWidget::OnLeaveButtonClicked()
 	DeactivateWidget();
 }
 // @@@SNIPEND
+
+#undef PARTY_WIDGET_ENTRY_CLASS

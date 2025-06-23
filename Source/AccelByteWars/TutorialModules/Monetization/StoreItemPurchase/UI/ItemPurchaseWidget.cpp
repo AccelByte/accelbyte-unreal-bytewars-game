@@ -12,7 +12,6 @@
 #include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
 #include "Monetization/InGameStoreEssentials/UI/StoreItemDetailWidget.h"
 #include "Monetization/StoreItemPurchase/StoreItemPurchaseSubsystem.h"
-#include "Monetization/WalletEssentials/UI/WalletBalanceWidget.h"
 
 void UItemPurchaseWidget::NativeOnActivated()
 {
@@ -102,9 +101,10 @@ void UItemPurchaseWidget::OnPurchaseComplete(const FOnlineError& Error) const
 		Tb_Error->SetVisibility(ESlateVisibility::Collapsed);
 
 		// update wallet
-		if (TWeakObjectPtr<UWalletBalanceWidget> Widget = W_Parent->GetBalanceWidget(); Widget.IsValid())
+		if (TWeakObjectPtr<UAccelByteWarsActivatableWidget> Widget = W_Parent->GetBalanceWidget(); Widget.IsValid())
 		{
-			Widget->UpdateBalance(true);
+			Widget->DeactivateWidget();
+			Widget->ActivateWidget();
 		}
 	}
 	else

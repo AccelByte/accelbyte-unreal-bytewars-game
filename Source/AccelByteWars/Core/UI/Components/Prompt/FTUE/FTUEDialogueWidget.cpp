@@ -456,26 +456,26 @@ void UFTUEDialogueWidget::InitializeCloseButton() const
 
 void UFTUEDialogueWidget::InitializePageNumber() const
 {
-    const TArray<FFTUEDialogueModel*>* DialoguesInGroup = DialoguesByGroup.Find(DialoguesInternal[DialogueIndex]->Group);
+	const TArray<FFTUEDialogueModel*>* DialoguesInGroup = DialoguesByGroup.Find(DialoguesInternal[DialogueIndex]->Group);
 
-    if (DialoguesInGroup && DialoguesInGroup->Num() > 1)
-    {
-	    const int32 IndexInGroup = DialoguesInGroup->IndexOfByPredicate([&](const FFTUEDialogueModel* Dialogue)
-        {
-            return Dialogue == DialoguesInternal[DialogueIndex];
-        });
+	if (DialoguesInGroup && DialoguesInGroup->Num() > 1)
+	{
+		const int32 IndexInGroup = DialoguesInGroup->IndexOfByPredicate([&](const FFTUEDialogueModel* Dialogue)
+		{
+			return Dialogue == DialoguesInternal[DialogueIndex];
+		});
 
-        if (IndexInGroup != INDEX_NONE)
-        {
-            const FText PageNumberText = FText::Format(
-                LOCTEXT("PageNumber", "{0} of {1}"), IndexInGroup + 1, DialoguesInGroup->Num());
+		if (IndexInGroup != INDEX_NONE)
+		{
+			const FText PageNumberText = FText::Format(
+				LOCTEXT("PageNumber", "{0} of {1}"), IndexInGroup + 1, DialoguesInGroup->Num());
 
-            Tb_PageNumber->SetText(PageNumberText);
-            return;
-        }
-    }
+			Tb_PageNumber->SetText(PageNumberText);
+			return;
+		}
+	}
 
-    Tb_PageNumber->SetText(FText());
+	Tb_PageNumber->SetText(FText());
 }
 
 void UFTUEDialogueWidget::ValidateDialogues()
@@ -726,29 +726,29 @@ void UFTUEDialogueWidget::ClearHighlightedWidget()
 
 void UFTUEDialogueWidget::CloseDialoguesByGroup()
 {
-    const FFTUEDialogueGroup* CurrentGroup = DialoguesInternal[DialogueIndex]->Group;
-    uint_fast8_t NextGroupIndex = DialoguesInternal.Num();
+	const FFTUEDialogueGroup* CurrentGroup = DialoguesInternal[DialogueIndex]->Group;
+	uint_fast8_t NextGroupIndex = DialoguesInternal.Num();
 
-    for (uint_fast8_t Index = DialogueIndex + 1; Index < DialoguesInternal.Num(); Index++)
-    {
-        if (DialoguesInternal[Index]->Group != CurrentGroup)
-        {
-            NextGroupIndex = Index;
-            break;
-        }
-    }
+	for (uint_fast8_t Index = DialogueIndex + 1; Index < DialoguesInternal.Num(); Index++)
+	{
+		if (DialoguesInternal[Index]->Group != CurrentGroup)
+		{
+			NextGroupIndex = Index;
+			break;
+		}
+	}
 
-    if (NextGroupIndex == DialoguesInternal.Num())
-    {
-        CloseDialogues();
-        return;
-    }
+	if (NextGroupIndex == DialoguesInternal.Num())
+	{
+		CloseDialogues();
+		return;
+	}
 
-    PlayFadeOutAnimation(W_FTUEDialogue, 1, [this, NextGroupIndex]
-    {
-        JumpToDialogue(NextGroupIndex);
-        PlayFadeInAnimation(W_FTUEDialogue);
-    });
+	PlayFadeOutAnimation(W_FTUEDialogue, 1, [this, NextGroupIndex]
+	{
+		JumpToDialogue(NextGroupIndex);
+		PlayFadeInAnimation(W_FTUEDialogue);
+	});
 }
 
 void UFTUEDialogueWidget::HandleDarkBorderTransition(const FFTUEDialogueModel* CurrentDialogue,
@@ -805,9 +805,9 @@ void UFTUEDialogueWidget::PlayFadeInAnimation(UWidget* TargetWidget, const float
 	const TFunction<void()>& OnAnimationCompleted, const bool bEnableShrinkIn)
 {
 	if (!IsValid(TargetWidget))
-    {
-        return;
-    }
+	{
+		return;
+	}
 
 	const float AnimationDelay = 0.001f / AnimationSpeedModifier;
 	constexpr float ScaleModifier = 0.0005f;
@@ -854,9 +854,9 @@ void UFTUEDialogueWidget::PlayFadeOutAnimation(UWidget* TargetWidget, const floa
 	const TFunction<void()>& OnAnimationCompleted, const bool bEnableExpandOut)
 {
 	if (!IsValid(TargetWidget))
-    {
-        return;
-    }
+	{
+		return;
+	}
 
 	const float AnimationDelay = 0.001f / AnimationSpeedModifier;
 	constexpr float ScaleModifier = 0.0005f;
@@ -869,7 +869,7 @@ void UFTUEDialogueWidget::PlayFadeOutAnimation(UWidget* TargetWidget, const floa
 
 	Async(EAsyncExecution::TaskGraph, [=]
 	{
-        FWidgetTransform InRenderTransform = FWidgetTransform();
+		FWidgetTransform InRenderTransform = FWidgetTransform();
 		for (float CurrentOpacity = InitialOpacity; CurrentOpacity >= TargetOpacity; CurrentOpacity -= OpacityModifier)
 		{
 			if (bEnableExpandOut)

@@ -18,7 +18,12 @@ void UWalletBalanceWidget::NativeOnActivated()
 
 	WalletSubsystem->OnQueryOrGetWalletInfoCompleteDelegates.AddUObject(this, &ThisClass::ShowBalance);
 
-	UpdateBalance(false);
+	// Update balance.
+	W_Root->ClearChildren();
+	CurrencyBalanceEntryMap.Empty();
+
+	UpdateBalance(ECurrencyType::COIN);
+	UpdateBalance(ECurrencyType::GEM);
 }
 
 void UWalletBalanceWidget::NativeOnDeactivated()
@@ -26,15 +31,6 @@ void UWalletBalanceWidget::NativeOnDeactivated()
 	Super::NativeOnDeactivated();
 
 	WalletSubsystem->OnQueryOrGetWalletInfoCompleteDelegates.RemoveAll(this);
-}
-
-void UWalletBalanceWidget::UpdateBalance(const bool bAlwaysRequestToService)
-{
-	W_Root->ClearChildren();
-	CurrencyBalanceEntryMap.Empty();
-
-	UpdateBalanceInternal(ECurrencyType::COIN, bAlwaysRequestToService);
-	UpdateBalanceInternal(ECurrencyType::GEM, bAlwaysRequestToService);
 }
 
 void UWalletBalanceWidget::ShowBalance(bool bWasSuccessful, const FAccelByteModelsWalletInfo& Response) const
@@ -52,7 +48,7 @@ void UWalletBalanceWidget::ShowBalance(bool bWasSuccessful, const FAccelByteMode
 	}
 }
 
-void UWalletBalanceWidget::UpdateBalanceInternal(const ECurrencyType CurrencyType, const bool bAlwaysRequestToService)
+void UWalletBalanceWidget::UpdateBalance(const ECurrencyType CurrencyType)
 {
 	const FString CurrencyCode = FPreConfigCurrency::GetCodeFromType(CurrencyType);
 
@@ -63,5 +59,6 @@ void UWalletBalanceWidget::UpdateBalanceInternal(const ECurrencyType CurrencyTyp
 	W_Root->AddChild(Entry);
 	CurrencyBalanceEntryMap.Add(CurrencyCode, Entry);
 
-	WalletSubsystem->QueryOrGetWalletInfoByCurrencyCode(GetOwningPlayer(), CurrencyCode, bAlwaysRequestToService);
+	// Always retrieve from backend to make sure data is updated.
+	WalletSubsystem->QueryOrGetWalletInfoByCurrencyCode(GetOwningPlayer(), CurrencyCode, true);
 }

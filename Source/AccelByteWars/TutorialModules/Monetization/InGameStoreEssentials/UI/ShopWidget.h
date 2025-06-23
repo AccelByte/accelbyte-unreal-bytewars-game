@@ -18,7 +18,6 @@ class UStoreItemListEntry;
 class UPanelWidget;
 class UStoreItemDetailWidget;
 class UAccelByteWarsTabListWidget;
-class UWalletBalanceWidget;
 
 UCLASS(Abstract)
 class ACCELBYTEWARS_API UShopWidget : public UAccelByteWarsActivatableWidget
@@ -28,17 +27,24 @@ class ACCELBYTEWARS_API UShopWidget : public UAccelByteWarsActivatableWidget
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
 
+// @@@SNIPSTART ShopWidget.h-protected
+// @@@MULTISNIP QueryComplete {"selectedLines": ["1-4"]}
+// @@@MULTISNIP OnClicked {"selectedLines": ["1", "6-10"]}
 protected:
 	void OnGetOrQueryCategoriesComplete(TArray<FOnlineStoreCategory> Categories);
 	void OnRefreshCategoriesComplete(TArray<FOnlineStoreCategory> Categories);
 	void OnGetOrQueryOffersComplete(const TArray<UStoreItemDataObject*> Offers) const;
-	void OnStoreItemClicked(UObject* Item) const;
 
+	void OnStoreItemClicked(UObject* Item) const;
 	void OnRefreshButtonClicked();
 
 	UFUNCTION()
 	void SwitchCategory(FName Id);
-
+// @@@SNIPEND
+	
+// @@@SNIPSTART ShopWidget.h-private
+// @@@MULTISNIP RootPath {"selectedLines": ["1-3"]}
+// @@@MULTISNIP Subsystem {"selectedLines": ["1", "5-6"]}
 private:
 	UPROPERTY(EditAnywhere)
 	FString RootPath;
@@ -48,18 +54,28 @@ private:
 
 	UPROPERTY()
 	UNativePlatformPurchaseSubsystem* NativePlatformPurchaseSubsystem;
+// @@@SNIPEND
 
 #pragma region "UI"
+// @@@SNIPSTART ShopWidget.h-public-delegates
 public:
 	inline static TMulticastDelegate<void(const APlayerController*)> OnActivatedMulticastDelegate;
 	FSimpleMulticastDelegate OnRefreshButtonClickedDelegates;
+// @@@SNIPEND
 
+// @@@SNIPSTART ShopWidget.h-protected-UI
+// @@@MULTISNIP SwitchContent {"selectedLines": ["1", "5"]}
 protected:
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 	virtual UWidget* NativeGetDesiredFocusTarget() const override;
 
 	void SwitchContent(EAccelByteWarsWidgetSwitcherState State) const;
+// @@@SNIPEND
 
+// @@@SNIPSTART ShopWidget.h-private-UI
+// @@@MULTISNIP Components {"selectedLines": ["1-18"]}
+// @@@MULTISNIP DetailWidgetClass {"selectedLines": ["1", "20-21"]}
+// @@@MULTISNIP Wallet {"selectedLines": ["1", "23-26"]}
 private:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UWidget* W_ListOuter;
@@ -85,6 +101,8 @@ private:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UPanelWidget* W_WalletOuter;
 
-	UWalletBalanceWidget* GetBalanceWidget() const; 
-#pragma endregion 
+	UAccelByteWarsActivatableWidget* GetBalanceWidget() const; 
+#pragma endregion
+// @@@SNIPEND
 };
+

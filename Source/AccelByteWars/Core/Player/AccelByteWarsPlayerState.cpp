@@ -12,6 +12,19 @@
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Net/UnrealNetwork.h"
 
+void AAccelByteWarsPlayerState::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (const AAccelByteWarsPlayerController* PlayerController = Cast<AAccelByteWarsPlayerController>(GetOwningController()))
+	{
+		if (HasLocalNetOwner())
+		{
+			PlayerController->LoadingPlayerAssignment();
+		}
+	}
+}
+
 void AAccelByteWarsPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -26,19 +39,6 @@ void AAccelByteWarsPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimePrope
 	DOREPLIFETIME(AAccelByteWarsPlayerState, bPendingTeamAssignment);
 	DOREPLIFETIME(AAccelByteWarsPlayerState, NumKilledAttemptInSingleLifetime);
 	DOREPLIFETIME(AAccelByteWarsPlayerState, EquippedItems);
-}
-
-void AAccelByteWarsPlayerState::ClientInitialize(AController* C)
-{
-	Super::ClientInitialize(C);
-
-	if (const AAccelByteWarsPlayerController* PlayerController = Cast<AAccelByteWarsPlayerController>(C))
-	{
-		if (HasLocalNetOwner())
-		{
-			PlayerController->LoadingPlayerAssignment();
-		}
-	}
 }
 
 void AAccelByteWarsPlayerState::RepNotify_PendingTeamAssignment()

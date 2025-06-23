@@ -23,148 +23,148 @@
 UENUM()
 enum class EFriendStatus : uint8
 {
-    Accepted = 0,
-    PendingInbound,
-    PendingOutbound,
-    Searched,
-    Blocked,
-    Unknown
+	Accepted = 0,
+	PendingInbound,
+	PendingOutbound,
+	Searched,
+	Blocked,
+	Unknown
 };
 // @@@SNIPEND
 
 UENUM()
 enum class EDataSource : uint8
 {
-    User = 0,
-    RecentPlayer,
-    GameSessionPlayer
+	User = 0,
+	RecentPlayer,
+	GameSessionPlayer
 };
 
 // @@@SNIPSTART FriendsEssentialsModels.h-FriendDataClass
 UCLASS()
 class ACCELBYTEWARS_API UFriendData : public UObject
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
 public:
-    UFriendData() : bIsOnline(false), bCannotBeInvited(false) {}
+	UFriendData() : bIsOnline(false), bCannotBeInvited(false) {}
 
-    FUniqueNetIdPtr UserId;
-    FString DisplayName{};
-    FString AvatarURL{};
-    EFriendStatus Status = EFriendStatus::Unknown;
+	FUniqueNetIdPtr UserId;
+	FString DisplayName{};
+	FString AvatarURL{};
+	EFriendStatus Status = EFriendStatus::Unknown;
 
-    bool bIsOnline = false;
-    FDateTime LastOnline{};
+	bool bIsOnline = false;
+	FDateTime LastOnline{};
 
-    bool bCannotBeInvited = false;
-    FString ReasonCannotBeInvited{};
+	bool bCannotBeInvited = false;
+	FString ReasonCannotBeInvited{};
 
-    EDataSource DataSource = EDataSource::User;
+	EDataSource DataSource = EDataSource::User;
 
-    static UFriendData* ConvertToFriendData(TSharedRef<FOnlineUser> OnlineUser, const UObject* Context)
-    {
-        if (!Context || !Context->GetWorld()) 
-        {
-            return nullptr;
-        }
-        
-        IOnlineSubsystem* Subsystem = Online::GetSubsystem(Context->GetWorld());
-        if (!Subsystem) 
-        {
-            return nullptr;
-        }
+	static UFriendData* ConvertToFriendData(TSharedRef<FOnlineUser> OnlineUser, const UObject* Context)
+	{
+		if (!Context || !Context->GetWorld()) 
+		{
+			return nullptr;
+		}
+		
+		IOnlineSubsystem* Subsystem = Online::GetSubsystem(Context->GetWorld());
+		if (!Subsystem) 
+		{
+			return nullptr;
+		}
 
-        IOnlineUserPtr UserInterface = Subsystem->GetUserInterface();
-        if (!UserInterface)
-        {
-            return nullptr;
-        }
+		IOnlineUserPtr UserInterface = Subsystem->GetUserInterface();
+		if (!UserInterface)
+		{
+			return nullptr;
+		}
 
-        UFriendData* FriendData = NewObject<UFriendData>();
-        FriendData->UserId = OnlineUser->GetUserId();
-        FriendData->DisplayName = OnlineUser->GetDisplayName();
-        OnlineUser->GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, FriendData->AvatarURL);
-        FriendData->Status = EFriendStatus::Unknown;
-        FriendData->bCannotBeInvited = false;
+		UFriendData* FriendData = NewObject<UFriendData>();
+		FriendData->UserId = OnlineUser->GetUserId();
+		FriendData->DisplayName = OnlineUser->GetDisplayName();
+		OnlineUser->GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, FriendData->AvatarURL);
+		FriendData->Status = EFriendStatus::Unknown;
+		FriendData->bCannotBeInvited = false;
 
-        // If avatar attribute from online user object is empty, try fetch it from the cache.
-        TSharedPtr<FOnlineUser> CachedUser = UserInterface->GetUserInfo(0, OnlineUser->GetUserId().Get());
-        if (FriendData->AvatarURL.IsEmpty() && CachedUser)
-        {
-            CachedUser->GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, FriendData->AvatarURL);
-        }
+		// If avatar attribute from online user object is empty, try fetch it from the cache.
+		TSharedPtr<FOnlineUser> CachedUser = UserInterface->GetUserInfo(0, OnlineUser->GetUserId().Get());
+		if (FriendData->AvatarURL.IsEmpty() && CachedUser)
+		{
+			CachedUser->GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, FriendData->AvatarURL);
+		}
 
-        return FriendData;
-    }
+		return FriendData;
+	}
 
-    static UFriendData* ConvertToFriendData(TSharedRef<FOnlineFriend> OnlineUser, const UObject* Context)
-    {
-        UFriendData* FriendData = ConvertToFriendData(StaticCast<TSharedRef<FOnlineUser>>(OnlineUser), Context);
+	static UFriendData* ConvertToFriendData(TSharedRef<FOnlineFriend> OnlineUser, const UObject* Context)
+	{
+		UFriendData* FriendData = ConvertToFriendData(StaticCast<TSharedRef<FOnlineUser>>(OnlineUser), Context);
 
-        switch (OnlineUser->GetInviteStatus())
-        {
-        case EInviteStatus::Accepted:
-            FriendData->Status = EFriendStatus::Accepted;
-            FriendData->bCannotBeInvited = true;
-            FriendData->ReasonCannotBeInvited = ALREADY_FRIEND_REASON_MESSAGE.ToString();
-            break;
-        case EInviteStatus::PendingInbound:
-            FriendData->Status = EFriendStatus::PendingInbound;
-            FriendData->bCannotBeInvited = true;
-            FriendData->ReasonCannotBeInvited = BEEN_INVITED_REASON_MESSAGE.ToString();
-            break;
-        case EInviteStatus::PendingOutbound:
-            FriendData->Status = EFriendStatus::PendingOutbound;
-            FriendData->bCannotBeInvited = true;
-            FriendData->ReasonCannotBeInvited = ALREADY_INVITED_REASON_MESSAGE.ToString();
-            break;
-        case EInviteStatus::Blocked:
-            FriendData->Status = EFriendStatus::Blocked;
-            FriendData->bCannotBeInvited = true;
-            FriendData->ReasonCannotBeInvited = BLOCKED_REASON_MESSAGE.ToString();
-            break;
-        default:
-            FriendData->Status = EFriendStatus::Unknown;
-            FriendData->bCannotBeInvited = false;
-        }
+		switch (OnlineUser->GetInviteStatus())
+		{
+		case EInviteStatus::Accepted:
+			FriendData->Status = EFriendStatus::Accepted;
+			FriendData->bCannotBeInvited = true;
+			FriendData->ReasonCannotBeInvited = ALREADY_FRIEND_REASON_MESSAGE.ToString();
+			break;
+		case EInviteStatus::PendingInbound:
+			FriendData->Status = EFriendStatus::PendingInbound;
+			FriendData->bCannotBeInvited = true;
+			FriendData->ReasonCannotBeInvited = BEEN_INVITED_REASON_MESSAGE.ToString();
+			break;
+		case EInviteStatus::PendingOutbound:
+			FriendData->Status = EFriendStatus::PendingOutbound;
+			FriendData->bCannotBeInvited = true;
+			FriendData->ReasonCannotBeInvited = ALREADY_INVITED_REASON_MESSAGE.ToString();
+			break;
+		case EInviteStatus::Blocked:
+			FriendData->Status = EFriendStatus::Blocked;
+			FriendData->bCannotBeInvited = true;
+			FriendData->ReasonCannotBeInvited = BLOCKED_REASON_MESSAGE.ToString();
+			break;
+		default:
+			FriendData->Status = EFriendStatus::Unknown;
+			FriendData->bCannotBeInvited = false;
+		}
 
-        return FriendData;
-    }
+		return FriendData;
+	}
 
-    static UFriendData* ConvertToFriendData(TSharedRef<FOnlineBlockedPlayer> OnlineUser, const UObject* Context)
-    {
-        UFriendData* FriendData = ConvertToFriendData(StaticCast<TSharedRef<FOnlineUser>>(OnlineUser), Context);
+	static UFriendData* ConvertToFriendData(TSharedRef<FOnlineBlockedPlayer> OnlineUser, const UObject* Context)
+	{
+		UFriendData* FriendData = ConvertToFriendData(StaticCast<TSharedRef<FOnlineUser>>(OnlineUser), Context);
 
-        FriendData->Status = EFriendStatus::Blocked;
-        FriendData->bCannotBeInvited = true;
-        FriendData->ReasonCannotBeInvited = BLOCKED_REASON_MESSAGE.ToString();
+		FriendData->Status = EFriendStatus::Blocked;
+		FriendData->bCannotBeInvited = true;
+		FriendData->ReasonCannotBeInvited = BLOCKED_REASON_MESSAGE.ToString();
 
-        return FriendData;
-    }
+		return FriendData;
+	}
 	
-    static UFriendData* ConvertToFriendData(TSharedRef<const FAccelByteUserInfo> OnlineUser)
-    {
-        UFriendData* FriendData = NewObject<UFriendData>();
+	static UFriendData* ConvertToFriendData(TSharedRef<const FAccelByteUserInfo> OnlineUser)
+	{
+		UFriendData* FriendData = NewObject<UFriendData>();
 
-        FriendData->UserId = OnlineUser->Id;
-        FriendData->DisplayName = OnlineUser->DisplayName;
-        FriendData->AvatarURL = OnlineUser->GameAvatarUrl;
-        FriendData->Status = EFriendStatus::Unknown;
-        FriendData->bCannotBeInvited = false;
-        FriendData->DataSource = EDataSource::GameSessionPlayer;
+		FriendData->UserId = OnlineUser->Id;
+		FriendData->DisplayName = OnlineUser->DisplayName;
+		FriendData->AvatarURL = OnlineUser->GameAvatarUrl;
+		FriendData->Status = EFriendStatus::Unknown;
+		FriendData->bCannotBeInvited = false;
+		FriendData->DataSource = EDataSource::GameSessionPlayer;
 
-        return FriendData;
-    }
+		return FriendData;
+	}
 	
-    static UFriendData* ConvertToFriendData(TSharedRef<FOnlineRecentPlayer> OnlineUser, const UObject* Context)
-    {
-        UFriendData* FriendData = ConvertToFriendData(StaticCast<TSharedRef<FOnlineUser>>(OnlineUser), Context);
+	static UFriendData* ConvertToFriendData(TSharedRef<FOnlineRecentPlayer> OnlineUser, const UObject* Context)
+	{
+		UFriendData* FriendData = ConvertToFriendData(StaticCast<TSharedRef<FOnlineUser>>(OnlineUser), Context);
 
-        FriendData->DataSource = EDataSource::RecentPlayer;
+		FriendData->DataSource = EDataSource::RecentPlayer;
 
-        return FriendData;
-    }
+		return FriendData;
+	}
 };
 // @@@SNIPEND
 

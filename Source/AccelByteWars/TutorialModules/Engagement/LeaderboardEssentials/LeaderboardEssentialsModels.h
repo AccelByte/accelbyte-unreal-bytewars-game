@@ -11,21 +11,21 @@
 UCLASS()
 class ACCELBYTEWARS_API ULeaderboardRank : public UObject
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
 public:
-    FUniqueNetIdRepl UserId;
-    int32 Rank;
-    FString DisplayName;
-    float Score;
+	FUniqueNetIdRepl UserId;
+	int32 Rank;
+	FString DisplayName;
+	float Score;
 
-    void Init(const FUniqueNetIdRepl InUserId, const int32 InRank, const FString InDisplayName, const float InScore)
-    {
-        UserId = InUserId;
-        Rank = InRank;
-        DisplayName = InDisplayName;
-        Score = InScore;
-    }
+	void Init(const FUniqueNetIdRepl InUserId, const int32 InRank, const FString InDisplayName, const float InScore)
+	{
+		UserId = InUserId;
+		Rank = InRank;
+		DisplayName = InDisplayName;
+		Score = InScore;
+	}
 };
 // @@@SNIPEND
 

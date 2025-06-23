@@ -36,41 +36,41 @@ DECLARE_DELEGATE_TwoParams(FOnPresenceTaskComplete, const bool /*bWasSuccessful*
 // @@@SNIPSTART PresenceEssentialsModels.h-GetLastOnline
 inline static FString GetLastOnline(const FDateTime LastOnline) 
 {
-    // Only check last online within a year.
-    const FDateTime CurrentTime = FDateTime::UtcNow();
-    if (CurrentTime.GetYear() != LastOnline.GetYear())
-    {
-        return TEXT_PRESENCE_LAST_ONLINE_YEARS.ToString();
-    }
+	// Only check last online within a year.
+	const FDateTime CurrentTime = FDateTime::UtcNow();
+	if (CurrentTime.GetYear() != LastOnline.GetYear())
+	{
+		return TEXT_PRESENCE_LAST_ONLINE_YEARS.ToString();
+	}
 
-    // Check last online in months.
-    if (CurrentTime.GetMonth() > LastOnline.GetMonth())
-    {
-        const int32 Months = CurrentTime.GetMonth() - LastOnline.GetMonth();
-        return FText::Format(TEXT_PRESENCE_LAST_ONLINE_MONTHS, Months).ToString();
-    }
+	// Check last online in months.
+	if (CurrentTime.GetMonth() > LastOnline.GetMonth())
+	{
+		const int32 Months = CurrentTime.GetMonth() - LastOnline.GetMonth();
+		return FText::Format(TEXT_PRESENCE_LAST_ONLINE_MONTHS, Months).ToString();
+	}
 
-    // Check last online in days.
-    if (CurrentTime.GetDay() > LastOnline.GetDay())
-    {
-        const int32 Days = CurrentTime.GetDay() - LastOnline.GetDay();
-        return FText::Format(TEXT_PRESENCE_LAST_ONLINE_DAYS, Days).ToString();
-    }
+	// Check last online in days.
+	if (CurrentTime.GetDay() > LastOnline.GetDay())
+	{
+		const int32 Days = CurrentTime.GetDay() - LastOnline.GetDay();
+		return FText::Format(TEXT_PRESENCE_LAST_ONLINE_DAYS, Days).ToString();
+	}
 
-    // Check last online in hours.
-    if (CurrentTime.GetHour() > LastOnline.GetHour())
-    {
-        const int32 Hours = CurrentTime.GetHour() - LastOnline.GetHour();
-        return FText::Format(TEXT_PRESENCE_LAST_ONLINE_HOURS, Hours).ToString();
-    }
+	// Check last online in hours.
+	if (CurrentTime.GetHour() > LastOnline.GetHour())
+	{
+		const int32 Hours = CurrentTime.GetHour() - LastOnline.GetHour();
+		return FText::Format(TEXT_PRESENCE_LAST_ONLINE_HOURS, Hours).ToString();
+	}
 
-    // Check last online in minutes.
-    if (CurrentTime.GetMinute() > LastOnline.GetMinute())
-    {
-        const int32 Minutes = CurrentTime.GetMinute() - LastOnline.GetMinute();
-        return FText::Format(TEXT_PRESENCE_LAST_ONLINE_MINUTES, Minutes).ToString();
-    }
+	// Check last online in minutes.
+	if (CurrentTime.GetMinute() > LastOnline.GetMinute())
+	{
+		const int32 Minutes = CurrentTime.GetMinute() - LastOnline.GetMinute();
+		return FText::Format(TEXT_PRESENCE_LAST_ONLINE_MINUTES, Minutes).ToString();
+	}
 
-    return TEXT_PRESENCE_LAST_ONLINE_AWHILE.ToString();
+	return TEXT_PRESENCE_LAST_ONLINE_AWHILE.ToString();
 }
 // @@@SNIPEND

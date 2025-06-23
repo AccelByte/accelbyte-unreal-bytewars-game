@@ -5,6 +5,7 @@
 
 #include "EntitlementsEssentialsSubsystem.h"
 
+#include "EntitlementsEssentialsLog.h"
 #include "OnlineSubsystemUtils.h"
 #include "Core/AssetManager/InGameItems/InGameItemDataAsset.h"
 #include "TutorialModules/Monetization/InGameStoreEssentials/UI/ShopWidget.h"
@@ -12,6 +13,8 @@
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Monetization/InGameStoreEssentials/InGameStoreEssentialsSubsystem.h"
 #include "Storage/CloudSaveEssentials/CloudSaveSubsystem.h"
+
+#define STORE_SUBSYSTEM_CLASS UInGameStoreEssentialsSubsystem
 
 void UEntitlementsEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -182,16 +185,27 @@ void UEntitlementsEssentialsSubsystem::ConsumeItemEntitlementByInGameId(
 			}
 		});
 
-	// trigger query store item
-	if (UTutorialModuleUtility::IsTutorialModuleActive(FPrimaryAssetId{ "TutorialModule:INGAMESTOREESSENTIALS" }, this))
+	// Trigger query store item.
+	UTutorialModuleDataAsset* StoreDataAsset = UTutorialModuleUtility::GetTutorialModuleDataAsset(
+		FPrimaryAssetId{ "TutorialModule:INGAMESTOREESSENTIALS" },
+		this,
+		true);
+	if (StoreDataAsset && !StoreDataAsset->IsStarterModeActive())
 	{
-		UInGameStoreEssentialsSubsystem* StoreSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UInGameStoreEssentialsSubsystem>();
+		STORE_SUBSYSTEM_CLASS* StoreSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<STORE_SUBSYSTEM_CLASS>();
 		if (!ensure(StoreSubsystem))
 		{
 			return;
 		}
 
 		StoreSubsystem->GetOrQueryOffersByCategory(PlayerController, TEXT("/ingamestore/item"), OnStoreOfferComplete);
+	}
+	else
+	{
+		UE_LOG_ENTITLEMENTS_ESSENTIALS(Warning, "INGAMESTOREESSENTIALS module is inactive or not in the same starter mode as this module. Treating as failed.")
+
+		// Store Essential module is inactive or not in the same starter mode as this module. Treat as failed.
+		OnStoreOfferComplete.ExecuteIfBound({});
 	}
 }
 
@@ -225,9 +239,14 @@ void UEntitlementsEssentialsSubsystem::QueryUserEntitlement(const APlayerControl
 		TEXT(""),
 		FPagedQuery());
 
-	if (UTutorialModuleUtility::IsTutorialModuleActive(FPrimaryAssetId{ "TutorialModule:INGAMESTOREESSENTIALS" }, this))
+	// Trigger query offers.
+	const UTutorialModuleDataAsset* StoreDataAsset = UTutorialModuleUtility::GetTutorialModuleDataAsset(
+		FPrimaryAssetId{ "TutorialModule:INGAMESTOREESSENTIALS" },
+		this,
+		true);
+	if (StoreDataAsset && !StoreDataAsset->IsStarterModeActive())
 	{
-		UInGameStoreEssentialsSubsystem* StoreSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UInGameStoreEssentialsSubsystem>();
+		STORE_SUBSYSTEM_CLASS* StoreSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<STORE_SUBSYSTEM_CLASS>();
 		if (!ensure(StoreSubsystem))
 		{
 			return;
@@ -238,6 +257,13 @@ void UEntitlementsEssentialsSubsystem::QueryUserEntitlement(const APlayerControl
 			PlayerController,
 			TEXT("/ingamestore/item"),
 			FOnGetOrQueryOffersByCategory::CreateUObject(this, &ThisClass::OnQueryStoreOfferComplete));
+	}
+	else
+	{
+		UE_LOG_ENTITLEMENTS_ESSENTIALS(Warning, "INGAMESTOREESSENTIALS module is inactive or not in the same starter mode as this module. Treating as failed.")
+
+		// Store Essential module is inactive or not in the same starter mode as this module. Treat as failed.
+		OnQueryStoreOfferComplete({});
 	}
 }
 
@@ -488,3 +514,5 @@ FUniqueNetIdPtr UEntitlementsEssentialsSubsystem::GetLocalPlayerUniqueNetId(
 	return LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId();
 }
 #pragma endregion 
+
+#undef STORE_SUBSYSTEM_CLASS
