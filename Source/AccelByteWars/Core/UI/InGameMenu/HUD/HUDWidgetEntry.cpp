@@ -44,7 +44,7 @@ void UHUDWidgetEntry::Init(const FGameplayTeamData& Team)
 
 	// Collect equipped powerups of each team members.
 	TMap<const FUniqueNetIdRepl, const FEquippedItem> MemberPowerUps {};
-	for (const TObjectPtr<APlayerState> PlayerState : GameState->PlayerArray)
+	for (const TObjectPtr<APlayerState>& PlayerState : GameState->PlayerArray)
 	{
 		int32 ControllerId = INDEX_NONE;
 		if (const APlayerController* PC = PlayerState->GetPlayerController())

@@ -34,12 +34,21 @@ public:
 	 * @brief Calculates where to spawn left missile
 	 */
 	UFUNCTION(Category = AccelByteWars)
-	AAccelByteWarsMissile* SpawnMissile(APawn* SplitMissileOwner, FTransform SpawnTransform, float InClampedInitialSpeed, FLinearColor InColor, TSubclassOf<
-	                                    AActor> InFiredMissileActor);
+	AAccelByteWarsMissile* SpawnMissile(
+		APawn* SplitMissileOwner,
+		FTransform SpawnTransform,
+		float InClampedInitialSpeed,
+		FLinearColor InColor,
+		TSubclassOf<AActor> InFiredMissileActor);
 
 	template<class T>
 	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
-	T* SpawnBPActorInWorld(APawn* OwningPawn, const FVector Location, const FRotator Rotation, TSubclassOf<AActor> ActorClass, bool ShouldReplicate);
+	T* SpawnBPActorInWorld(
+		APawn* OwningPawn,
+		const FVector Location,
+		const FRotator Rotation,
+		TSubclassOf<AActor> ActorClass,
+		bool ShouldReplicate);
 
 	/**
 	 * @brief Calculates where to spawn missile
