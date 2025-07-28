@@ -5,7 +5,6 @@
 #pragma once
 
 #include "AccelByteWars/Core/Actor/AccelByteWarsMissile.h"
-#include "AccelByteWars/Core/Actor/AccelByteWarsMissileTrail.h"
 
 #include "CoreMinimal.h"
 #include "Core/AssetManager/InGameItems/InGameItemUtility.h"

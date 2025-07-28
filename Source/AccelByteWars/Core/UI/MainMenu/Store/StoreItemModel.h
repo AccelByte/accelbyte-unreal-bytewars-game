@@ -18,6 +18,7 @@
 #define TEXT_CURRENCY_CONFIG_COIN_DEFAULT TEXT("BC")
 #define TEXT_CURRENCY_CONFIG_GEM_DEFAULT TEXT("BG")
 
+// @@@SNIPSTART StoreItemModel.h-CurrencyType
 UENUM(BlueprintType)
 enum class ECurrencyType : uint8
 {
@@ -25,7 +26,11 @@ enum class ECurrencyType : uint8
 	COIN,
 	GEM
 };
+// @@@SNIPEND
 
+// @@@SNIPSTART StoreItemModel.h-PreConfigCurrency
+// @@@MULTISNIP GetCodeFromType {"selectedLines": ["1-4", "59"]}
+// @@@MULTISNIP GetTypeFromCode {"selectedLines": ["1-3", "34", "59"]}
 class FPreConfigCurrency
 {
 public:
@@ -85,7 +90,10 @@ public:
 		return ECurrencyType::NONE;
 	}
 };
+// @@@SNIPEND
 
+// @@@SNIPSTART StoreItemModel.h-StoreItemPriceDataObject
+// @@@MULTISNIP Data {"selectedLines": ["1-3", "22-31"]}
 UCLASS(BlueprintType)
 class UStoreItemPriceDataObject : public UObject
 {
@@ -117,6 +125,7 @@ private:
 	UPROPERTY(EditAnywhere)
 	int64 FinalPrice;
 };
+// @@@SNIPEND
 
 UCLASS()
 class UStoreItemDataObject : public UObject

@@ -7,6 +7,7 @@
 #include "Core/GameStates/AccelByteWarsInGameGameState.h"
 #include "Core/Player/AccelByteWarsPlayerPawn.h"
 #include "Core/Utilities/AccelByteWarsUtilityLog.h"
+#include "Kismet/KismetMathLibrary.h"
 
 APowerUpSplitMissile::APowerUpSplitMissile()
 {
@@ -78,9 +79,14 @@ void APowerUpSplitMissile::FireMissiles()
 	{
 		return;
 	}
+	AAccelByteWarsMissile* Missile = Pawn->FiredMissile;
+	if (!Missile)
+	{
+		return;
+	}
 
 	// Calculate missile spawn location
-	const FTransform SpawnTransform = CalculateWhereToSpawnMissile(Pawn->FiredMissile->GetActorTransform());
+	const FTransform SpawnTransform = CalculateWhereToSpawnMissile(Missile->GetActorTransform());
 
 	// Clamp initial missile speed
 	const float ClampedInitialSpeed = UKismetMathLibrary::MapRangeClamped(
@@ -110,43 +116,6 @@ void APowerUpSplitMissile::FireMissiles()
 
 	// Rotate right missile 90 degrees
 	RightFiredMissile->Velocity = RightFiredMissile->InitialSpeed * GetActorTransform().GetRotation().GetForwardVector();
-
-	// Spawn left missile trail
-	AAccelByteWarsMissileTrail* LeftMissileTrail = SpawnBPActorInWorld<AAccelByteWarsMissileTrail>(
-		Pawn,
-		SpawnTransform.GetLocation(),
-		SpawnTransform.Rotator(),
-		Pawn->MissileTrailActor,
-		true);
-	if (LeftMissileTrail == nullptr)
-	{
-		return;
-	}
-
-	// Spawn right missile trail
-	AAccelByteWarsMissileTrail* RightMissileTrail = SpawnBPActorInWorld<AAccelByteWarsMissileTrail>(
-		Pawn,
-		SpawnTransform.GetLocation(),
-		SpawnTransform.Rotator(),
-		Pawn->MissileTrailActor,
-		true);
-	if (LeftMissileTrail == nullptr)
-	{
-		return;
-	}
-
-	// Set Trail colors
-	LeftMissileTrail->Server_SetColor(Pawn->GetPawnColor());
-	RightMissileTrail->Server_SetColor(Pawn->GetPawnColor());
-
-	// Attach left/right trail to left/right missile actor
-	const FAttachmentTransformRules AttachmentRules(
-		EAttachmentRule::SnapToTarget,
-		EAttachmentRule::SnapToTarget,
-		EAttachmentRule::KeepRelative,
-		true);
-	LeftMissileTrail->AttachToActor(LeftFiredMissile, AttachmentRules);
-	RightMissileTrail->AttachToActor(RightFiredMissile, AttachmentRules);
 
 	// Increment missiles fired
 	AAccelByteWarsPlayerState* ABPlayerState = Cast<AAccelByteWarsPlayerState>(Pawn->GetPlayerState());

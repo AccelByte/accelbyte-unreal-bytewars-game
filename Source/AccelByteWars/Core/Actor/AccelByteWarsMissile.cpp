@@ -4,6 +4,7 @@
 
 #include "Core/Actor/AccelByteWarsMissile.h"
 
+#include "AccelByteWarsMissileTrail.h"
 #include "AccelByteWars/Core/Player/AccelByteWarsPlayerPawn.h"
 #include "Core/GameModes/AccelByteWarsInGameGameMode.h"
 #include "Core/GameStates/AccelByteWarsInGameGameState.h"
@@ -61,6 +62,8 @@ void AAccelByteWarsMissile::BeginPlay()
 	
 	// Setup event for OnOwnerDestroyed (in blueprint)
 	DestroyActorOnOwnerDestroyed();
+
+	SpawnMissileTrail();
 }
 
 void AAccelByteWarsMissile::Destroyed()
@@ -241,6 +244,10 @@ void AAccelByteWarsMissile::OnRepNotify_Color()
 		return;
 
 	AccelByteWarsProceduralMesh->UpdateColor(Color);
+	if (HasAuthority())
+	{
+		MissileTrail->Server_SetColor(Color);
+	}
 }
 
 void AAccelByteWarsMissile::OnRepNotify_Velocity()
@@ -516,10 +523,6 @@ void AAccelByteWarsMissile::DecrementPlayerMissileCount()
 	if (GetOwner() == nullptr)
 		return;
 
-	AAccelByteWarsPlayerPawn* ABPawn = Cast<AAccelByteWarsPlayerPawn>(GetOwner());
-	if (ABPawn == nullptr)
-		return;
-
 	AAccelByteWarsPlayerController* ABPlayerController = Cast<AAccelByteWarsPlayerController>(GetOwner()->GetInstigatorController());
 	if (ABPlayerController == nullptr)
 		return;
@@ -532,8 +535,6 @@ void AAccelByteWarsMissile::DecrementPlayerMissileCount()
 		return;
 
 	ABPlayerState->MissilesFired--;
-	ABPawn->FiredMissile = nullptr;
-	ABPawn->MissileTrail = nullptr;
 }
 
 void AAccelByteWarsMissile::NotifyShipHitByMissile() const
@@ -587,4 +588,28 @@ void AAccelByteWarsMissile::NotifyShipHitByMissile() const
 		   AccelByteWarsUtility::FormatEntityDeathSource(ENTITY_TYPE_MISSILE, AccelByteWarsUtility::GenerateActorEntityId(OwnerPC))
 	   );
 	}
+}
+
+void AAccelByteWarsMissile::SpawnMissileTrail()
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	FActorSpawnParameters SpawnParameters;
+	SpawnParameters.Owner = this;
+	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	MissileTrail = Owner->GetWorld()->SpawnActor<AAccelByteWarsMissileTrail>(
+		MissileTrailActor,
+		FTransform(GetActorRotation(), GetActorLocation()),
+		SpawnParameters);
+	if (!MissileTrail)
+	{
+		return;
+	}
+
+	MissileTrail->SetReplicates(true);
+	MissileTrail->AttachToActor(this, FAttachmentTransformRules::SnapToTargetIncludingScale);
 }

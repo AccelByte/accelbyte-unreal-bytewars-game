@@ -39,13 +39,6 @@ void UStoreItemListEntry::Setup(const UStoreItemDataObject* Object)
 
 	// Set UI
 	Tb_Name->SetText(ItemData->GetTitle());
-	if (const FString* Sku = ItemData->GetSkuMap().Find(EItemSkuPlatform::AccelByte))
-	{
-		if (const UInGameItemDataAsset* Item = UInGameItemUtility::GetItemDataAssetBySku(EItemSkuPlatform::AccelByte, *Sku))
-		{
-			W_Image->DefaultBrush = Item->DefaultImage;
-		}
-	}
 	W_Image->LoadImage(ItemData->GetIconUrl());
 	if (ItemData->GetShouldShowPrices())
 	{

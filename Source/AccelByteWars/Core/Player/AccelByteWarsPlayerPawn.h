@@ -13,7 +13,6 @@
 
 class APlayerShipBase;
 class UAccelByteWarsGameplayObjectComponent;
-class AAccelByteWarsMissileTrail;
 class AAccelByteWarsMissile;
 class UAccelByteWarsGameplayObjectComponent;
 class UAccelByteWarsProceduralMeshComponent;
@@ -66,17 +65,8 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = AccelByteWars)
 	AAccelByteWarsMissile* FiredMissile = nullptr;
 
-	/**
-	 * @brief Referenced to latest fired missile
-	 */
-	UPROPERTY(BlueprintReadOnly, Category = AccelByteWars)
-	AAccelByteWarsMissileTrail* MissileTrail = nullptr;
-
 	UPROPERTY(BlueprintReadOnly, Category = AccelByteWars, EditAnywhere)
 	TSubclassOf<AActor> MissileActor;
-
-	UPROPERTY(BlueprintReadOnly, Category = AccelByteWars, EditAnywhere)
-	TSubclassOf<AActor> MissileTrailActor;
 
 	UPROPERTY(BlueprintReadOnly, Category = AccelByteWars, EditAnywhere)
 	UInGameItemDataAsset* DefaultSkin;
@@ -154,7 +144,7 @@ public:
 	void FireMissileFx(FTransform SpawnTransform);
 
 	/**
-	 * @brief Calculates the transform to be passed to the missile and missile trail when firing a missile
+	 * @brief Calculates the transform to be passed to the missile when firing a missile.
 	 */
 	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
 	FTransform CalculateWhereToSpawnMissile();
@@ -276,15 +266,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AccelByteWars, ReplicatedUsing = OnRepNotify_Color)
 	FLinearColor PawnColor = FLinearColor::Yellow;
 
-	/**
-	 * @brief Spawns a missile with provided data
-	 */
-	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
-	AAccelByteWarsMissile* SpawnMissileInWorld(AActor* ActorOwner, FTransform InTransform, float InitialSpeed, FString BlueprintPath, bool ShouldReplicate);
-
 	template<class T>
 	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
-	T* SpawnActorInWorld(APawn* OwningPawn, const FVector Location, const FRotator Rotation, TSubclassOf<AActor> ActorClass, bool ShouldReplicate);
+	T* SpawnActorInWorld(AActor* Owner, const FVector Location, const FRotator Rotation, TSubclassOf<AActor> ActorClass, bool ShouldReplicate);
 
 	/**
 	 * @brief Determines if the player's ship is able to fire a missile
