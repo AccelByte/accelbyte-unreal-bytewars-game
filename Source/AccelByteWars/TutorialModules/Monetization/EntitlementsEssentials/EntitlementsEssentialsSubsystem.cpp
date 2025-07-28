@@ -16,6 +16,10 @@
 
 #define STORE_SUBSYSTEM_CLASS UInGameStoreEssentialsSubsystem
 
+// @@@SNIPSTART EntitlementsEssentialsSubsystem.cpp-Initialize
+// @@@MULTISNIP Interface {"selectedLines": ["1-15", "38"]}
+// @@@MULTISNIP Query {"selectedLines": ["1-21", "38"]}
+// @@@MULTISNIP Consume {"selectedLines": ["1-24", "38"]}
 void UEntitlementsEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
@@ -33,14 +37,15 @@ void UEntitlementsEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Coll
 	}
 
 	EntitlementsInterface->OnQueryEntitlementsCompleteDelegates.AddUObject(this, &ThisClass::OnQueryEntitlementComplete);
-	EntitlementsInterface->OnConsumeEntitlementCompleteDelegates.AddUObject(this, &ThisClass::OnConsumeEntitlementComplete);
-
 	UShopWidget::OnActivatedMulticastDelegate.AddWeakLambda(this, [this](const APlayerController* PC)
 	{
 		QueryUserEntitlement(PC);
 	});
+
+	EntitlementsInterface->OnConsumeEntitlementCompleteDelegates.AddUObject(this, &ThisClass::OnConsumeEntitlementComplete);
 	AAccelByteWarsPlayerPawn::OnPowerUpActivatedDelegates.AddUObject(this, &ThisClass::OnPowerUpActivated);
 
+	// Persistent inventory implementation through cloud save.
 	if (const UTutorialModuleDataAsset* ModuleDataAsset = UTutorialModuleUtility::GetTutorialModuleDataAsset(
 		FPrimaryAssetId{ "TutorialModule:CLOUDSAVEESSENTIALS" },
 		this,
@@ -53,43 +58,28 @@ void UEntitlementsEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Coll
 		}
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART EntitlementsEssentialsSubsystem.cpp-Deinitialize
+// @@@MULTISNIP Query {"selectedLines": ["1-6", "9"]}
 void UEntitlementsEssentialsSubsystem::Deinitialize()
 {
 	Super::Deinitialize();
 
 	EntitlementsInterface->OnQueryEntitlementsCompleteDelegates.RemoveAll(this);
-
 	UShopWidget::OnActivatedMulticastDelegate.RemoveAll(this);
+
 	AAccelByteWarsPlayerPawn::OnPowerUpActivatedDelegates.RemoveAll(this);
 }
+// @@@SNIPEND
 
-UInGameItemDataAsset* UEntitlementsEssentialsSubsystem::GetItemDataAssetFromItemStoreId(const FString& StoreItemId)
-{
-	FString ItemSku = TEXT("");
-	for (const UStoreItemDataObject* StoreItem: StoreOffers)
-	{
-		if (StoreItem->GetStoreItemId().Equals(StoreItemId))
-		{
-			ItemSku = StoreItem->GetSkuMap()[EItemSkuPlatform::AccelByte];
-			break;
-		}
-	}
-	if (!ItemSku.IsEmpty())
-	{
-		UInGameItemDataAsset* ItemDataAsset = UInGameItemUtility::GetItemDataAssetBySku(EItemSkuPlatform::AccelByte, ItemSku);
-		return ItemDataAsset;
-	}
-	
-	return nullptr;
-}
-
+// @@@SNIPSTART EntitlementsEssentialsSubsystem.cpp-GetOrQueryUserEntitlements
 void UEntitlementsEssentialsSubsystem::GetOrQueryUserEntitlements(
 	const APlayerController* PlayerController,
 	const FOnGetOrQueryUserEntitlementsComplete& OnComplete,
 	const bool bForceRequest)
 {
-	// check cache
+	// Check overall cache.
 	TArray<TSharedRef<FOnlineEntitlement>> Entitlements;
 	if (!bForceRequest)
 	{
@@ -99,27 +89,29 @@ void UEntitlementsEssentialsSubsystem::GetOrQueryUserEntitlements(
 			Entitlements);
 	}
 
-	// if empty, trigger query
+	// If empty, trigger query.
 	if (Entitlements.IsEmpty() || bForceRequest)
 	{
 		UserEntitlementsParams.Add(PlayerController, OnComplete);
 		QueryUserEntitlement(PlayerController);
 	}
-	// if not, trigger OnComplete immediately
+	// If not, trigger OnComplete immediately.
 	else
 	{
 		const FOnlineError Error = FOnlineError::Success();
 		OnComplete.Execute(Error, EntitlementsToDataObjects(Entitlements));
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART EntitlementsEssentialsSubsystem.cpp-GetOrQueryUserItemEntitlement
 void UEntitlementsEssentialsSubsystem::GetOrQueryUserItemEntitlement(
 	const APlayerController* PlayerController,
 	const FUniqueOfferId& StoreItemId,
 	const FOnGetOrQueryUserItemEntitlementComplete& OnComplete,
 	const bool bForceRequest)
 {
-	// check overall cache
+	// Check overall cache.
 	TArray<TSharedRef<FOnlineEntitlement>> Entitlements;
 	if (!bForceRequest)
 	{
@@ -129,27 +121,29 @@ void UEntitlementsEssentialsSubsystem::GetOrQueryUserItemEntitlement(
 			Entitlements);
 	}
 
-	// if empty, trigger query
+	// If empty, trigger query.
 	if (Entitlements.IsEmpty() || bForceRequest)
 	{
 		UserItemEntitlementParams.Add(StoreItemId, {PlayerController, OnComplete});
 		QueryUserEntitlement(PlayerController);
 	}
-	// if not, trigger OnComplete immediately
+	// If not, trigger OnComplete immediately.
 	else
 	{
 		const FOnlineError Error = FOnlineError::Success();
 		OnComplete.ExecuteIfBound(Error, GetItemEntitlement(GetLocalPlayerUniqueNetId(PlayerController), StoreItemId));
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART EntitlementsEssentialsSubsystem.cpp-ConsumeItemEntitlementByInGameId
 void UEntitlementsEssentialsSubsystem::ConsumeItemEntitlementByInGameId(
 	const APlayerController* PlayerController,
 	const FString& InGameItemId,
 	const int32 UseCount,
 	const FOnConsumeUserEntitlementComplete& OnComplete)
 {
-	// get item's AB SKU
+	// Get item's AB SKU.
 	UInGameItemDataAsset* Item = UInGameItemUtility::GetItemDataAsset(InGameItemId);
 	if (!ensure(Item))
 	{
@@ -157,7 +151,7 @@ void UEntitlementsEssentialsSubsystem::ConsumeItemEntitlementByInGameId(
 	}
 	const FString ItemSku = Item->SkuMap[EItemSkuPlatform::AccelByte];
 
-	// consume item
+	// Construct delegate to consume item.
 	FOnGetOrQueryUserItemEntitlementComplete OnItemEntitlementComplete = FOnGetOrQueryUserItemEntitlementComplete::CreateWeakLambda(
 		this, [this, PlayerController, OnComplete, UseCount](const FOnlineError& Error, const UStoreItemDataObject* Entitlement)
 		{
@@ -171,7 +165,7 @@ void UEntitlementsEssentialsSubsystem::ConsumeItemEntitlementByInGameId(
 			}
 		});
 
-	// get store Item ID by SKU, then get entitlement ID
+	// Construct delegate to get store Item ID by SKU, then get entitlement ID.
 	const FOnGetOrQueryOffersByCategory OnStoreOfferComplete = FOnGetOrQueryOffersByCategory::CreateWeakLambda(
 		this, [PlayerController, this, OnItemEntitlementComplete, ItemSku](TArray<UStoreItemDataObject*> Offers)
 		{
@@ -208,7 +202,9 @@ void UEntitlementsEssentialsSubsystem::ConsumeItemEntitlementByInGameId(
 		OnStoreOfferComplete.ExecuteIfBound({});
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART EntitlementsEssentialsSubsystem.cpp-ConsumeEntitlementByEntitlementId
 void UEntitlementsEssentialsSubsystem::ConsumeEntitlementByEntitlementId(
 	const APlayerController* PlayerController,
 	const FString& EntitlementId,
@@ -221,7 +217,9 @@ void UEntitlementsEssentialsSubsystem::ConsumeEntitlementByEntitlementId(
 		EntitlementId,
 		UseCount);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART EntitlementsEssentialsSubsystem.cpp-QueryUserEntitlement
 void UEntitlementsEssentialsSubsystem::QueryUserEntitlement(const APlayerController* PlayerController)
 {
 	if (!PlayerController)
@@ -234,6 +232,8 @@ void UEntitlementsEssentialsSubsystem::QueryUserEntitlement(const APlayerControl
 		return;
 	}
 	QueryProcess++;
+
+	// Trigger query entitlements.
 	EntitlementsInterface->QueryEntitlements(
 		GetLocalPlayerUniqueNetId(PlayerController).ToSharedRef().Get(),
 		TEXT(""),
@@ -244,11 +244,13 @@ void UEntitlementsEssentialsSubsystem::QueryUserEntitlement(const APlayerControl
 		FPrimaryAssetId{ "TutorialModule:INGAMESTOREESSENTIALS" },
 		this,
 		true);
-	if (StoreDataAsset && !StoreDataAsset->IsStarterModeActive())
+	if (StoreDataAsset)
 	{
 		STORE_SUBSYSTEM_CLASS* StoreSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<STORE_SUBSYSTEM_CLASS>();
 		if (!ensure(StoreSubsystem))
 		{
+			UE_LOG_ENTITLEMENTS_ESSENTIALS(Warning, "INGAMESTOREESSENTIALS module is inactive or its starter mode doesn't match entitlement module's starter mode. Treating as failed.")
+			OnQueryStoreOfferComplete({});
 			return;
 		}
 
@@ -260,13 +262,13 @@ void UEntitlementsEssentialsSubsystem::QueryUserEntitlement(const APlayerControl
 	}
 	else
 	{
-		UE_LOG_ENTITLEMENTS_ESSENTIALS(Warning, "INGAMESTOREESSENTIALS module is inactive or not in the same starter mode as this module. Treating as failed.")
-
-		// Store Essential module is inactive or not in the same starter mode as this module. Treat as failed.
+		UE_LOG_ENTITLEMENTS_ESSENTIALS(Warning, "INGAMESTOREESSENTIALS module is inactive or its starter mode doesn't match entitlement module's starter mode. Treating as failed.")
 		OnQueryStoreOfferComplete({});
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART EntitlementsEssentialsSubsystem.cpp-OnQueryEntitlementComplete
 void UEntitlementsEssentialsSubsystem::OnQueryEntitlementComplete(
 	bool bWasSuccessful,
 	const FUniqueNetId& UserId,
@@ -287,7 +289,9 @@ void UEntitlementsEssentialsSubsystem::OnQueryEntitlementComplete(
 		CompleteQuery();
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART EntitlementsEssentialsSubsystem.cpp-OnQueryStoreOfferComplete
 void UEntitlementsEssentialsSubsystem::OnQueryStoreOfferComplete(TArray<UStoreItemDataObject*> Offers)
 {
 	QueryProcess--;
@@ -298,9 +302,34 @@ void UEntitlementsEssentialsSubsystem::OnQueryStoreOfferComplete(TArray<UStoreIt
 		CompleteQuery();
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART EntitlementsEssentialsSubsystem.cpp-GetItemEntitlement
+UStoreItemDataObject* UEntitlementsEssentialsSubsystem::GetItemEntitlement(
+	const FUniqueNetIdPtr UserId,
+	const FUniqueOfferId OfferId) const
+{
+	if (!UserId) 
+	{
+		return nullptr;
+	}
+
+	UStoreItemDataObject* Item = nullptr;
+	if (const TSharedPtr<FOnlineEntitlement> Entitlement = 
+		EntitlementsInterface->GetItemEntitlement(UserId.ToSharedRef().Get(), OfferId); 
+		Entitlement.IsValid())
+	{
+		Item = EntitlementToDataObject(Entitlement.ToSharedRef());
+	}
+
+	return Item;
+}
+// @@@SNIPEND
+
+// @@@SNIPSTART EntitlementsEssentialsSubsystem.cpp-CompleteQuery
 void UEntitlementsEssentialsSubsystem::CompleteQuery()
 {
+	// Trigger on complete delegate of GetOrQueryUserEntitlements function.
 	TArray<const APlayerController*> UserEntitlementsParamToDelete;
 	for (const TTuple<const APlayerController*, FOnGetOrQueryUserEntitlementsComplete>& Param : UserEntitlementsParams)
 	{
@@ -320,12 +349,13 @@ void UEntitlementsEssentialsSubsystem::CompleteQuery()
 		}
 	}
 
-	// delete delegates
+	// Delete delegates.
 	for (const APlayerController* PlayerController : UserEntitlementsParamToDelete)
 	{
 		UserEntitlementsParams.Remove(PlayerController);
 	}
 
+	// Trigger on complete delegate of GetOrQueryUserItemEntitlement function.
 	TArray<FUniqueOfferId> UserItemEntitlementParamToDelete;
 	for (const TTuple<const FUniqueOfferId, FUserItemEntitlementRequest>& Param : UserItemEntitlementParams)
 	{
@@ -339,13 +369,15 @@ void UEntitlementsEssentialsSubsystem::CompleteQuery()
 		}
 	}
 
-	// delete delegates
+	// Delete delegates.
 	for (const FUniqueOfferId& OfferId : UserItemEntitlementParamToDelete)
 	{
 		UserItemEntitlementParams.Remove(OfferId);
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART EntitlementsEssentialsSubsystem.cpp-OnConsumeEntitlementComplete
 void UEntitlementsEssentialsSubsystem::OnConsumeEntitlementComplete(
 	bool bWasSuccessful,
 	const FUniqueNetId& UserId,
@@ -372,27 +404,31 @@ void UEntitlementsEssentialsSubsystem::OnConsumeEntitlementComplete(
 		ConsumeEntitlementParams.Remove(Param);
 	}
 }
+// @@@SNIPEND
 
-UStoreItemDataObject* UEntitlementsEssentialsSubsystem::GetItemEntitlement(
-	const FUniqueNetIdPtr UserId,
-	const FUniqueOfferId OfferId) const
+// @@@SNIPSTART EntitlementsEssentialsSubsystem.cpp-OnPowerUpActivated
+void UEntitlementsEssentialsSubsystem::OnPowerUpActivated(const APlayerController* PlayerController, const FString& ItemId)
 {
-	if (!UserId) 
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
 	{
-		return nullptr;
-	}
+		const APlayerController* PC = It->Get();
+		if (!PC || !PC->IsLocalPlayerController())
+		{
+			return;
+		}
 
-	UStoreItemDataObject* Item = nullptr;
-	if (const TSharedPtr<FOnlineEntitlement> Entitlement = 
-		EntitlementsInterface->GetItemEntitlement(UserId.ToSharedRef().Get(), OfferId); 
-		Entitlement.IsValid())
-	{
-		Item = EntitlementToDataObject(Entitlement.ToSharedRef());
+		if (PlayerController == PC)
+		{
+			ConsumeItemEntitlementByInGameId(
+				PlayerController,
+				ItemId,
+				1);
+		}
 	}
-
-	return Item;
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART EntitlementsEssentialsSubsystem.cpp-UpdatePlayerEquipmentQuantity
 void UEntitlementsEssentialsSubsystem::UpdatePlayerEquipmentQuantity(
 	const APlayerController* PlayerController,
 	const TArray<FString>& ItemIds)
@@ -443,26 +479,7 @@ void UEntitlementsEssentialsSubsystem::UpdatePlayerEquipmentQuantity(
 			GameInstance->UpdateEquippedItemsByInGameItemId(LocalPlayer->GetControllerId(), InItems);
 		}));
 }
-
-void UEntitlementsEssentialsSubsystem::OnPowerUpActivated(const APlayerController* PlayerController, const FString& ItemId)
-{
-	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
-	{
-		const APlayerController* PC = It->Get();
-		if (!PC || !PC->IsLocalPlayerController())
-		{
-			return;
-		}
-
-		if (PlayerController == PC)
-		{
-			ConsumeItemEntitlementByInGameId(
-				PlayerController,
-				ItemId,
-				1);
-		}
-	}
-}
+// @@@SNIPEND
 
 #pragma region "Utilities"
 TArray<UStoreItemDataObject*> UEntitlementsEssentialsSubsystem::EntitlementsToDataObjects(
@@ -482,7 +499,7 @@ UStoreItemDataObject* UEntitlementsEssentialsSubsystem::EntitlementToDataObject(
 	UStoreItemDataObject* Item = NewObject<UStoreItemDataObject>();
 	Item->Setup(Entitlement.Get());
 
-	// Byte Wars specifics, used to hide the prices on the UI
+	// Byte Wars specifics, used to hide the prices on the UI.
 	Item->SetShouldShowPrices(false);
 
 	for (const UStoreItemDataObject* Offer : StoreOffers)

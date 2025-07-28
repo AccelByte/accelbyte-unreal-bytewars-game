@@ -18,9 +18,10 @@ class ACCELBYTEWARS_API UEntitlementsEssentialsSubsystem : public UTutorialModul
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 
+// @@@SNIPSTART EntitlementsEssentialsSubsystem.h-public
+// @@@MULTISNIP Query {"selectedLines": ["1-10"]}
+// @@@MULTISNIP Consume {"selectedLines": ["1", "11-20"]}
 public:
-	UInGameItemDataAsset* GetItemDataAssetFromItemStoreId(const FString& StoreItemId);
-	
 	void GetOrQueryUserEntitlements(
 		const APlayerController* PlayerController,
 		const FOnGetOrQueryUserEntitlementsComplete& OnComplete,
@@ -40,29 +41,32 @@ public:
 		const FString& EntitlementId,
 		const int32 UseCount = 1,
 		const FOnConsumeUserEntitlementComplete& OnComplete = FOnConsumeUserEntitlementComplete());
+// @@@SNIPEND
 
+// @@@SNIPSTART EntitlementsEssentialsSubsystem.h-private
+// @@@MULTISNIP Interface {"selectedLines": ["1-2"]}
+// @@@MULTISNIP StoreOffers {"selectedLines": ["1", "4-5"]}
+// @@@MULTISNIP ObjectConversion {"selectedLines": ["1", "35-36"]}
+// @@@MULTISNIP GetLocalPlayerUniqueNetId {"selectedLines": ["1", "37"]}
+// @@@MULTISNIP DelegatesQuery {"selectedLines": ["1", "7-8"]}
+// @@@MULTISNIP DelegatesConsume {"selectedLines": ["1", "9"]}
+// @@@MULTISNIP Query {"selectedLines": ["1", "11-23"]}
+// @@@MULTISNIP OnConsumeEntitlementComplete {"selectedLines": ["1", "25-29"]}
+// @@@MULTISNIP OnPowerUpActivated {"selectedLines": ["1", "31"]}
 private:
-	struct FUserItemEntitlementRequest
-	{
-		const APlayerController* PlayerController;
-		FOnGetOrQueryUserItemEntitlementComplete OnComplete;
-	};
-	struct FConsumeEntitlementRequest
-	{
-		const APlayerController* PlayerController;
-		FOnConsumeUserEntitlementComplete OnComplete;
-	};
+	FOnlineEntitlementsAccelBytePtr EntitlementsInterface;
+
+	UPROPERTY()
+	TArray<UStoreItemDataObject*> StoreOffers;
 
 	TMultiMap<const APlayerController*, FOnGetOrQueryUserEntitlementsComplete> UserEntitlementsParams;
 	TMultiMap<const FUniqueOfferId /*OfferId*/, FUserItemEntitlementRequest> UserItemEntitlementParams;
 	TMultiMap<const FString /*InGameItemId*/, FConsumeEntitlementRequest> ConsumeEntitlementParams;
 
-	FOnlineEntitlementsAccelBytePtr EntitlementsInterface;
-
 	uint8 QueryProcess = 0;
-	UPROPERTY() TArray<UStoreItemDataObject*> StoreOffers;
 	FUniqueNetIdPtr QueryResultUserId;
 	FOnlineError QueryResultError;
+
 	void QueryUserEntitlement(const APlayerController* PlayerController);
 	void OnQueryEntitlementComplete(
 		bool bWasSuccessful,
@@ -70,6 +74,7 @@ private:
 		const FString& Namespace,
 		const FString& ErrorMessage);
 	void OnQueryStoreOfferComplete(TArray<UStoreItemDataObject*> Offers);
+	UStoreItemDataObject* GetItemEntitlement(const FUniqueNetIdPtr UserId, const FUniqueOfferId OfferId) const;
 	void CompleteQuery();
 
 	void OnConsumeEntitlementComplete(
@@ -78,14 +83,13 @@ private:
 		const TSharedPtr<FOnlineEntitlement>& Entitlement,
 		const FOnlineError& Error);
 
-	UStoreItemDataObject* GetItemEntitlement(const FUniqueNetIdPtr UserId, const FUniqueOfferId OfferId) const;
-
-	void UpdatePlayerEquipmentQuantity(const APlayerController* PlayerController, const TArray<FString>& ItemIds);
 	void OnPowerUpActivated(const APlayerController* PlayerController, const FString& ItemId);
+	void UpdatePlayerEquipmentQuantity(const APlayerController* PlayerController, const TArray<FString>& ItemIds);
 
 #pragma region "Utilities"
 	TArray<UStoreItemDataObject*> EntitlementsToDataObjects(TArray<TSharedRef<FOnlineEntitlement>> Entitlements) const;
 	UStoreItemDataObject* EntitlementToDataObject(TSharedRef<FOnlineEntitlement> Entitlement) const;
 	FUniqueNetIdPtr GetLocalPlayerUniqueNetId(const APlayerController* PlayerController) const;
 #pragma endregion
+// @@@SNIPEND
 };

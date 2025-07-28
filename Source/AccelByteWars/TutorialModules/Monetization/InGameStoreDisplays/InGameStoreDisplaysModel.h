@@ -9,8 +9,9 @@
 #include "Models/AccelByteEcommerceModels.h"
 #include "InGameStoreDisplaysModel.generated.h"
 
+// @@@SNIPSTART InGameStoreDisplaysModel.h
 DECLARE_DELEGATE_TwoParams(FOnQueryOrGetDisplaysComplete, TArray<TSharedRef<FAccelByteModelsViewInfo>>&, const FOnlineError&)
-DECLARE_DELEGATE_TwoParams(FOnQueryOrGetSectionsInDisplaComplete, TArray<TSharedRef<FAccelByteModelsSectionInfo>>&, const FOnlineError&)
+DECLARE_DELEGATE_TwoParams(FOnQueryOrGetSectionsInDisplayComplete, TArray<TSharedRef<FAccelByteModelsSectionInfo>>&, const FOnlineError&)
 DECLARE_DELEGATE_TwoParams(FOnQueryOrGetOffersInSectionComplete, TArray<UStoreItemDataObject*>&, const FOnlineError&)
 
 UCLASS()
@@ -30,3 +31,18 @@ public:
 		return SectionInfo.SectionId.Equals(Other.SectionInfo.SectionId);
 	}
 };
+
+struct FQueryOrGetSectionsParam
+{
+	const FUniqueNetIdPtr UserId;
+	const FString& DisplayId;
+	const FOnQueryOrGetSectionsInDisplayComplete OnComplete;
+};
+
+struct FQueryOrGetOffersParam
+{
+	const FUniqueNetIdPtr UserId;
+	const FString SectionId;
+	const FOnQueryOrGetOffersInSectionComplete OnComplete;
+};
+// @@@SNIPEND

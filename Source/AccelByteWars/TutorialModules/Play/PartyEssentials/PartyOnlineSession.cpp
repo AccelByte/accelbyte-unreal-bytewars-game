@@ -1037,7 +1037,7 @@ void UPartyOnlineSession::OnPartyInviteRejected(FName SessionName, const FUnique
 					return;
 				}
 
-				FUserOnlineAccountAccelByte MemberInfo = *UsersInfo[0];
+				const FUserOnlineAccountAccelByte& MemberInfo = *UsersInfo[0];
 
 				const FText NotifMessage = FText::Format(PARTY_INVITE_REJECTED_MESSAGE, FText::FromString(
 					MemberInfo.GetDisplayName().IsEmpty() ?
@@ -1091,7 +1091,7 @@ void UPartyOnlineSession::OnPartyInviteReceived(const FUniqueNetId& UserId, cons
 					return;
 				}
 
-				FUserOnlineAccountAccelByte MemberInfo = *UsersInfo[0];
+				const FUserOnlineAccountAccelByte& MemberInfo = *UsersInfo[0];
 
 				const FText NotifMessage = FText::Format(PARTY_INVITE_RECEIVED_MESSAGE, FText::FromString(
 					MemberInfo.GetDisplayName().IsEmpty() ?
@@ -1252,7 +1252,7 @@ void UPartyOnlineSession::DisplayCurrentPartyLeader()
 					return;
 				}
 
-				FUserOnlineAccountAccelByte MemberInfo = *UsersInfo[0];
+				const FUserOnlineAccountAccelByte& MemberInfo = *UsersInfo[0];
 
 				const FText NotifMessage = FText::Format(PARTY_NEW_LEADER_MESSAGE, FText::FromString(
 					MemberInfo.GetDisplayName().IsEmpty() ?
@@ -1327,7 +1327,7 @@ void UPartyOnlineSession::OnPartyMembersChange(FName SessionName, const FUniqueN
 							return;
 						}
 
-						FUserOnlineAccountAccelByte MemberInfo = *UsersInfo[0];
+						const FUserOnlineAccountAccelByte& MemberInfo = *UsersInfo[0];
 
 						const FString MemberDisplayName = MemberInfo.GetDisplayName().IsEmpty() ?
 							UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(MemberABId.Get()) :
@@ -1408,7 +1408,7 @@ void UPartyOnlineSession::OnPartyMemberJoined(FName SessionName, const FUniqueNe
 						return;
 					}
 
-					FUserOnlineAccountAccelByte MemberInfo = *UsersInfo[0];
+					const FUserOnlineAccountAccelByte& MemberInfo = *UsersInfo[0];
 
 					const FString MemberDisplayName = MemberInfo.GetDisplayName().IsEmpty() ?
 						UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(MemberABId.Get()) :
@@ -1488,7 +1488,7 @@ void UPartyOnlineSession::OnPartyMemberLeft(FName SessionName, const FUniqueNetI
 						return;
 					}
 
-					FUserOnlineAccountAccelByte MemberInfo = *UsersInfo[0];
+					const FUserOnlineAccountAccelByte& MemberInfo = *UsersInfo[0];
 
 					const FString MemberDisplayName = MemberInfo.GetDisplayName().IsEmpty() ?
 						UTutorialModuleOnlineUtility::GetUserDefaultDisplayName(MemberABId.Get()) :

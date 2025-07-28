@@ -3,7 +3,7 @@
 // and restrictions contact your company contract manager.
 
 
-#include "InventoryWidget.h"
+#include "InventoryWidget_Starter.h"
 #include "Components/TileView.h"
 #include "CommonButtonBase.h"
 #include "Components/Image.h"
@@ -15,38 +15,35 @@
 #include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
 #include "Core/UI/MainMenu/Store/Components/StoreItemListEntry.h"
 #include "Monetization/EntitlementsEssentials/EntitlementsEssentialsLog.h"
-#include "Monetization/EntitlementsEssentials/EntitlementsEssentialsSubsystem.h"
+#include "Monetization/EntitlementsEssentials/EntitlementsEssentialsSubsystem_Starter.h"
 
-// @@@SNIPSTART InventoryWidget.cpp-NativeOnActivated
-// @@@MULTISNIP Subsystem {"selectedLines": ["1-6", "24"]}
-void UInventoryWidget::NativeOnActivated()
+void UInventoryWidget_Starter::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
-	EntitlementsSubsystem = GetGameInstance()->GetSubsystem<UEntitlementsEssentialsSubsystem>();
+	EntitlementsSubsystem = GetGameInstance()->GetSubsystem<UEntitlementsEssentialsSubsystem_Starter>();
 	ensure(EntitlementsSubsystem);
 
 	// bind
-	Tv_Content->OnItemClicked().AddUObject(this, &UInventoryWidget::OnClickListItem);
+	Tv_Content->OnItemClicked().AddUObject(this, &UInventoryWidget_Starter::OnClickListItem);
 	Btn_Back->OnClicked().AddUObject(this, &ThisClass::DeactivateWidget);
 	Btn_Equip->OnClicked().AddUObject(this, &ThisClass::OnClickEquip);
 	Btn_Unequip->OnClicked().AddUObject(this, &ThisClass::OnClickUnEquip);
 
 	// reset UI
 	Ws_Root->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Loading);
-	EntitlementsSubsystem->GetOrQueryUserEntitlements(
-		GetOwningPlayer(),
-		FOnGetOrQueryUserEntitlementsComplete::CreateUObject(this, &ThisClass::ShowEntitlements));
+
+#pragma region "Tutorial"
+	// Put your code here.
+#pragma endregion 
 
 	SelectedItem = nullptr;
 	SwitchToDefaultState();
 
 	Btn_Equip->SetVisibility(ESlateVisibility::Collapsed);
 }
-// @@@SNIPEND
 
-// @@@SNIPSTART InventoryWidget.cpp-NativeOnDeactivated
-void UInventoryWidget::NativeOnDeactivated()
+void UInventoryWidget_Starter::NativeOnDeactivated()
 {
 	Super::NativeOnDeactivated();
 
@@ -62,38 +59,13 @@ void UInventoryWidget::NativeOnDeactivated()
 	}
 	OnInventoryMenuDeactivated.Broadcast();
 }
-// @@@SNIPEND
 
-// @@@SNIPSTART InventoryWidget.cpp-ShowEntitlements
-void UInventoryWidget::ShowEntitlements(const FOnlineError& Error, const TArray<UStoreItemDataObject*> Entitlements) const
-{
-	if (Error.bSucceeded)
-	{
-		// filter items
-		TArray<UStoreItemDataObject*> FilteredEntitlements = Entitlements;
-		FilteredEntitlements.RemoveAll([this](const UStoreItemDataObject* Item)
-		{
-			return bIsConsumable != Item->GetIsConsumable() || (Item->GetIsConsumable() && Item->GetCount() <= 0);
-		});
-
-		Tv_Content->ClearListItems();
-		Tv_Content->SetListItems(FilteredEntitlements);
-
-		Ws_Root->SetWidgetState(Tv_Content->GetListItems().IsEmpty()
-			? EAccelByteWarsWidgetSwitcherState::Empty
-			: EAccelByteWarsWidgetSwitcherState::Not_Empty);
-		Tv_Content->SetUserFocus(GetOwningPlayer());
-	}
-	else
-	{
-		Ws_Root->ErrorMessage = Error.ErrorMessage;
-		Ws_Root->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Error);
-	}
-}
-// @@@SNIPEND
+#pragma region "Tutorial"
+// Put your code here.
+#pragma endregion 
 
 #pragma region "Byte Wars specific"
-void UInventoryWidget::OnClickListItem(UObject* Object)
+void UInventoryWidget_Starter::OnClickListItem(UObject* Object)
 {
 	if (UStoreItemDataObject* Item = Cast<UStoreItemDataObject>(Object))
 	{
@@ -149,7 +121,7 @@ void UInventoryWidget::OnClickListItem(UObject* Object)
 	}
 }
 
-void UInventoryWidget::OnClickEquip() const
+void UInventoryWidget_Starter::OnClickEquip() const
 {
 	if (!SelectedItem)
 	{
@@ -184,7 +156,7 @@ void UInventoryWidget::OnClickEquip() const
 	OnEquipped.Broadcast();
 }
 
-void UInventoryWidget::OnClickUnEquip() const
+void UInventoryWidget_Starter::OnClickUnEquip() const
 {
 	if (!SelectedItem)
 	{
@@ -208,7 +180,7 @@ void UInventoryWidget::OnClickUnEquip() const
 #pragma endregion 
 
 #pragma region "UI"
-void UInventoryWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+void UInventoryWidget_Starter::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
 
@@ -216,18 +188,18 @@ void UInventoryWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 	MoveCameraToTargetLocation(InDeltaTime, MenuViewTarget);
 }
 
-UWidget* UInventoryWidget::NativeGetDesiredFocusTarget() const
+UWidget* UInventoryWidget_Starter::NativeGetDesiredFocusTarget() const
 {
 	return Tv_Content->GetListItems().IsEmpty() ? static_cast<UWidget*>(Btn_Back) : static_cast<UWidget*>(Tv_Content);
 }
 
-void UInventoryWidget::SwitchActionButton(bool bShowEquipButton) const
+void UInventoryWidget_Starter::SwitchActionButton(bool bShowEquipButton) const
 {
 	Btn_Equip->SetVisibility(bShowEquipButton ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	Btn_Unequip->SetVisibility(bShowEquipButton ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
 }
 
-void UInventoryWidget::SwitchToDefaultState() const
+void UInventoryWidget_Starter::SwitchToDefaultState() const
 {
 	/**
 	 * bIsConsumable is used to differentiate power up and skin item in Byte Wars

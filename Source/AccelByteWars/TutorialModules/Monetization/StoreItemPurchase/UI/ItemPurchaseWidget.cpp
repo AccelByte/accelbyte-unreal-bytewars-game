@@ -13,6 +13,11 @@
 #include "Monetization/InGameStoreEssentials/UI/StoreItemDetailWidget.h"
 #include "Monetization/StoreItemPurchase/StoreItemPurchaseSubsystem.h"
 
+// @@@SNIPSTART ItemPurchaseWidget.cpp-NativeOnActivated
+// @@@MULTISNIP StoreItemDataObject {"selectedLines": ["1-2", "5-9", "42"]}
+// @@@MULTISNIP PurchaseSubsystem {"selectedLines": ["1-2", "11-12", "42"]}
+// @@@MULTISNIP Setup {"selectedLines": ["1-12", "16-25", "35-42"]}
+// @@@MULTISNIP Finishing {"selectedLines": ["1-12", "16-28", "35-42"]}
 void UItemPurchaseWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
@@ -44,7 +49,7 @@ void UItemPurchaseWidget::NativeOnActivated()
 	if (NativePlatformPurchaseSubsystem) 
 	{
 		// Sync the native platform purchases if the native platform is valid.
-		NativePlatformPurchaseSubsystem->OnSynchPurchaseCompleteDelegates.BindUObject(this, &ThisClass::OnSynchPurchaseComplete);
+		NativePlatformPurchaseSubsystem->OnSynchPurchaseCompleteDelegates.BindUObject(this, &ThisClass::OnSyncPurchaseComplete);
 	}
 
 	// Set focus
@@ -55,7 +60,11 @@ void UItemPurchaseWidget::NativeOnActivated()
 
 	FTUESetup();
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART ItemPurchaseWidget.cpp-NativeOnDeactivated
+// @@@MULTISNIP Setup {"selectedLines": ["1-3", "6", "12"]}
+// @@@MULTISNIP Finishing {"selectedLines": ["1-6", "12"]}
 void UItemPurchaseWidget::NativeOnDeactivated()
 {
 	Super::NativeOnDeactivated();
@@ -68,7 +77,11 @@ void UItemPurchaseWidget::NativeOnDeactivated()
 		NativePlatformPurchaseSubsystem->OnSynchPurchaseCompleteDelegates.Unbind();
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART ItemPurchaseWidget.cpp-OnClickPurchase
+// @@@MULTISNIP Setup {"selectedLines": ["1-3", "20"]}
+// @@@MULTISNIP Finishing {"selectedLines": ["1-3", "14-20"]}
 void UItemPurchaseWidget::OnClickPurchase(const int32 PriceIndex) const
 {
 	Ws_Root->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Loading);
@@ -89,7 +102,9 @@ void UItemPurchaseWidget::OnClickPurchase(const int32 PriceIndex) const
 		PriceIndex,
 		GetSelectedAmount());
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART ItemPurchaseWidget.cpp-OnPurchaseComplete
 void UItemPurchaseWidget::OnPurchaseComplete(const FOnlineError& Error) const
 {
 	OnPurchaseCompleteMulticastDelegate.Broadcast(GetOwningPlayer());
@@ -115,8 +130,9 @@ void UItemPurchaseWidget::OnPurchaseComplete(const FOnlineError& Error) const
 		Tb_Error->SetVisibility(ESlateVisibility::Visible);
 	}
 }
+// @@@SNIPEND
 
-void UItemPurchaseWidget::OnSynchPurchaseComplete(bool bWasSuccessful, const FString& Error) const
+void UItemPurchaseWidget::OnSyncPurchaseComplete(bool bWasSuccessful, const FString& Error) const
 {
 	FOnlineError mError(bWasSuccessful);
 	mError.ErrorRaw = Error;
@@ -150,6 +166,7 @@ UWidget* UItemPurchaseWidget::NativeGetDesiredFocusTarget() const
 	return FocusTarget;
 }
 
+// @@@SNIPSTART ItemPurchaseWidget.cpp-SetupPurchaseButtons
 void UItemPurchaseWidget::SetupPurchaseButtons(TArray<UStoreItemPriceDataObject*> Prices)
 {
 	W_PurchaseButtonsOuter->ClearChildren();
@@ -163,6 +180,7 @@ void UItemPurchaseWidget::SetupPurchaseButtons(TArray<UStoreItemPriceDataObject*
 		W_PurchaseButtonsOuter->AddChild(Entry);
 	}
 }
+// @@@SNIPEND
 
 void UItemPurchaseWidget::UpdatePrice(const int32 SelectedIndex)
 {

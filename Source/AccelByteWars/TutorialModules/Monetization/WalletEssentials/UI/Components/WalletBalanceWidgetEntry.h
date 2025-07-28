@@ -21,12 +21,16 @@ class ACCELBYTEWARS_API UWalletBalanceWidgetEntry : public UUserWidget
 	virtual void NativePreConstruct() override;
 #endif
 
+// @@@SNIPSTART WalletBalanceWidgetEntry.h-public
+// @@@MULTISNIP Setup {"selectedLines": ["1-2"]}
 public:
 	void Setup(const FText& Balance, const ECurrencyType CurrencyType) const;
 
 	UPROPERTY(EditAnywhere, meta = (ToolTip = "Change symbol for preview purpose"))
 	ECurrencyType DebugCurrencyType;
+// @@@SNIPEND
 
+// @@@SNIPSTART WalletBalanceWidgetEntry.h-private
 private:
 	UPROPERTY(EditDefaultsOnly)
 	FSlateBrush Brush_Coin;
@@ -39,4 +43,5 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UImage* I_CurrencySymbol;
+// @@@SNIPEND
 };

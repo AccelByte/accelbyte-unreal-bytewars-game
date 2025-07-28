@@ -21,24 +21,22 @@ class ACCELBYTEWARS_API USectionedShopWidget_Starter : public UAccelByteWarsActi
 	virtual void NativeOnDeactivated() override;
 
 private:
+	UPROPERTY()
+	UInGameStoreDisplaysSubsystem_Starter* InGameStoreDisplaysSubsystem;
+
+	UPROPERTY()
+	TArray<USectionDataObject*> SectionDatas;
+	
+	UPROPERTY(EditAnywhere)
+	FString TargetDisplayName;
+
 #pragma region "Tutorial"
 	// Put your code here
 #pragma endregion 
 
-	UPROPERTY(EditAnywhere)
-	FString TargetDisplayName;
-
-	UPROPERTY()
-	UInGameStoreDisplaysSubsystem_Starter* InGameStoreDisplaysSubsystem;
-
 #pragma region "UI"
 private:
 	FLinearColor GetSectionPresetColor(const int Index) const;
-
-	UFUNCTION()
-	void OnParentRefreshButtonClicked();
-
-	bool bRefreshing = false;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UListView* Lv_Root;

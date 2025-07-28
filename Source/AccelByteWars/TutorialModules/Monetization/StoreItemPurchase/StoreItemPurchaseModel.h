@@ -5,4 +5,6 @@
 #pragma once
 #include "OnlineError.h"
 
+// @@@SNIPSTART StoreItemPurchaseModel.h
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnOrderComplete, const FOnlineError& /*Error*/)
+// @@@SNIPEND

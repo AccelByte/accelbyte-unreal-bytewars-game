@@ -7,6 +7,7 @@
 
 #include "OnlineSubsystemUtils.h"
 
+// @@@SNIPSTART InGameStoreDisplaysSubsystem.cpp-Initialize
 void UInGameStoreDisplaysSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
@@ -18,7 +19,9 @@ void UInGameStoreDisplaysSubsystem::Initialize(FSubsystemCollectionBase& Collect
 	StoreInterface = StaticCastSharedPtr<FOnlineStoreV2AccelByte>(StorePtr);
 	ensure(StoreInterface);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART InGameStoreDisplaysSubsystem.cpp-QueryOrGetDisplays
 void UInGameStoreDisplaysSubsystem::QueryOrGetDisplays(
 	const APlayerController* PlayerController,
 	const FOnQueryOrGetDisplaysComplete& OnComplete,
@@ -41,11 +44,13 @@ void UInGameStoreDisplaysSubsystem::QueryOrGetDisplays(
 	QueryOrGetDisplaysOnCompleteDelegates.Add(OnComplete);
 	QueryStoreFront(*UserId.Get());
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART InGameStoreDisplaysSubsystem.cpp-QueryOrGetSectionsForDisplay
 void UInGameStoreDisplaysSubsystem::QueryOrGetSectionsForDisplay(
 	const APlayerController* PlayerController,
 	const FString& DisplayId,
-	const FOnQueryOrGetSectionsInDisplaComplete& OnComplete,
+	const FOnQueryOrGetSectionsInDisplayComplete& OnComplete,
 	const bool bForceRefresh)
 {
 	const FUniqueNetIdPtr UserId = GetUniqueNetIdFromPlayerController(PlayerController);
@@ -66,7 +71,9 @@ void UInGameStoreDisplaysSubsystem::QueryOrGetSectionsForDisplay(
 	QueryOrGetSectionsOnCompleteDelegates.Add({UserId, DisplayId, OnComplete});
 	QueryStoreFront(*UserId.Get());
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART InGameStoreDisplaysSubsystem.cpp-QueryOrGetOffersInSection
 void UInGameStoreDisplaysSubsystem::QueryOrGetOffersInSection(
 	const APlayerController* PlayerController,
 	const FString& SectionId,
@@ -99,14 +106,18 @@ void UInGameStoreDisplaysSubsystem::QueryOrGetOffersInSection(
 		FOnlineStoreFilter(),
 		FOnQueryOnlineStoreOffersComplete::CreateUObject(this, &ThisClass::OnQueryOffersComplete));
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART InGameStoreDisplaysSubsystem.cpp-GetDisplays
 TArray<TSharedRef<FAccelByteModelsViewInfo>> UInGameStoreDisplaysSubsystem::GetDisplays() const
 {
 	TArray<TSharedRef<FAccelByteModelsViewInfo, ESPMode::ThreadSafe>> Displays;
 	StoreInterface->GetDisplays(Displays);
 	return Displays;
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART InGameStoreDisplaysSubsystem.cpp-GetSectionsForDisplay
 TArray<TSharedRef<FAccelByteModelsSectionInfo>> UInGameStoreDisplaysSubsystem::GetSectionsForDisplay(
 	const FUniqueNetId& UserId,
 	const FString& DisplayId) const
@@ -115,7 +126,9 @@ TArray<TSharedRef<FAccelByteModelsSectionInfo>> UInGameStoreDisplaysSubsystem::G
 	StoreInterface->GetSectionsForDisplay(UserId, DisplayId, Sections);
 	return Sections;
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART InGameStoreDisplaysSubsystem.cpp-GetOffersForSection
 TArray<UStoreItemDataObject*> UInGameStoreDisplaysSubsystem::GetOffersForSection(
 	const FUniqueNetId& UserId,
 	const FString& SectionId) const
@@ -130,7 +143,9 @@ TArray<UStoreItemDataObject*> UInGameStoreDisplaysSubsystem::GetOffersForSection
 	}
 	return OfferObjects;
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART InGameStoreDisplaysSubsystem.cpp-QueryStoreFront
 void UInGameStoreDisplaysSubsystem::QueryStoreFront(const FUniqueNetId& UserId)
 {
 	if (bIsQueryStoreFrontRunning)
@@ -151,7 +166,9 @@ void UInGameStoreDisplaysSubsystem::QueryStoreFront(const FUniqueNetId& UserId)
 		PlatformMapping,
 		FOnQueryStorefrontComplete::CreateUObject(this, &ThisClass::OnQueryStoreFrontComplete));
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART InGameStoreDisplaysSubsystem.cpp-OnQueryStoreFrontComplete
 void UInGameStoreDisplaysSubsystem::OnQueryStoreFrontComplete(
 	bool bWasSuccessful,
 	const TArray<FString>& ViewIds,
@@ -180,7 +197,9 @@ void UInGameStoreDisplaysSubsystem::OnQueryStoreFrontComplete(
 	}
 	QueryOrGetSectionsOnCompleteDelegates.Empty();
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART InGameStoreDisplaysSubsystem.cpp-OnQueryOffersComplete
 void UInGameStoreDisplaysSubsystem::OnQueryOffersComplete(
 	bool bWasSuccessful,
 	const TArray<FUniqueOfferId>& OfferIds,
@@ -199,6 +218,7 @@ void UInGameStoreDisplaysSubsystem::OnQueryOffersComplete(
 	}
 	QueryOrGetOffersOnCompleteDelegates.Empty();
 }
+// @@@SNIPEND
 
 #pragma region "Utilities"
 FUniqueNetIdPtr UInGameStoreDisplaysSubsystem::GetUniqueNetIdFromPlayerController(

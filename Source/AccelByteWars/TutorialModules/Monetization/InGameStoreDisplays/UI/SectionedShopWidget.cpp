@@ -9,7 +9,11 @@
 #include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
 #include "Core/Utilities/AccelByteWarsUtility.h"
 #include "Monetization/InGameStoreEssentials/UI/ShopWidget.h"
+#include "Monetization/InGameStoreEssentials/UI/ShopWidget_Starter.h"
 
+// @@@SNIPSTART SectionedShopWidget.cpp-NativeOnActivated
+// @@@MULTISNIP InGameStoreDisplaysSubsystem {"selectedLines": ["1-2", "5-6", "23"]}
+// @@@MULTISNIP Setup {"selectedLines": ["1-8", "14-23"]}
 void USectionedShopWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
@@ -28,8 +32,14 @@ void USectionedShopWidget::NativeOnActivated()
 	{
 		ShopWidget->OnRefreshButtonClickedDelegates.AddUObject(this, &ThisClass::OnParentRefreshButtonClicked);
 	}
+	else if (UShopWidget_Starter* ShopWidget_Starter = GetFirstOccurenceOuter<UShopWidget_Starter>())
+	{
+		ShopWidget_Starter->OnRefreshButtonClickedDelegates.AddUObject(this, &ThisClass::OnParentRefreshButtonClicked);
+	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SectionedShopWidget.cpp-NativeOnDeactivated
 void USectionedShopWidget::NativeOnDeactivated()
 {
 	Super::NativeOnDeactivated();
@@ -38,8 +48,33 @@ void USectionedShopWidget::NativeOnDeactivated()
 	{
 		ShopWidget->OnRefreshButtonClickedDelegates.RemoveAll(this);
 	}
+	else if (UShopWidget_Starter* ShopWidget_Starter = GetFirstOccurenceOuter<UShopWidget_Starter>())
+	{
+		ShopWidget_Starter->OnRefreshButtonClickedDelegates.RemoveAll(this);
+	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SectionedShopWidget.cpp-OnParentRefreshButtonClicked
+// @@@MULTISNIP Setup {"selectedLines": ["1-9", "14"]}
+void USectionedShopWidget::OnParentRefreshButtonClicked()
+{
+	if (bRefreshing)
+	{
+		return;
+	}
+	bRefreshing = true;
+
+	Ws_Root->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Loading);
+	InGameStoreDisplaysSubsystem->QueryOrGetDisplays(
+		GetOwningPlayer(),
+		FOnQueryOrGetDisplaysComplete::CreateUObject(this, &ThisClass::OnQueryOrGetDisplaysCompleted),
+		bRefreshing);
+}
+// @@@SNIPEND
+
+// @@@SNIPSTART SectionedShopWidget.cpp-OnQueryOrGetDisplaysCompleted
+// @@@MULTISNIP Setup {"selectedLines": ["1-15", "21-32"]}
 void USectionedShopWidget::OnQueryOrGetDisplaysCompleted(
 	TArray<TSharedRef<FAccelByteModelsViewInfo>>& Displays,
 	const FOnlineError& Error)
@@ -58,7 +93,7 @@ void USectionedShopWidget::OnQueryOrGetDisplaysCompleted(
 				InGameStoreDisplaysSubsystem->QueryOrGetSectionsForDisplay(
 					GetOwningPlayer(),
 					Display->ViewId,
-					FOnQueryOrGetSectionsInDisplaComplete::CreateUObject(this, &ThisClass::OnQueryOrGetSectionsCompleted),
+					FOnQueryOrGetSectionsInDisplayComplete::CreateUObject(this, &ThisClass::OnQueryOrGetSectionsCompleted),
 					bRefreshing);
 				return;
 			}
@@ -72,7 +107,10 @@ void USectionedShopWidget::OnQueryOrGetDisplaysCompleted(
 		bRefreshing = false;
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SectionedShopWidget.cpp-OnQueryOrGetSectionsCompleted
+// @@@MULTISNIP Setup {"selectedLines": ["1-20", "28-36"]}
 void USectionedShopWidget::OnQueryOrGetSectionsCompleted(
 	TArray<TSharedRef<FAccelByteModelsSectionInfo>>& Sections,
 	const FOnlineError& Error)
@@ -109,7 +147,9 @@ void USectionedShopWidget::OnQueryOrGetSectionsCompleted(
 		bRefreshing = false;
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SectionedShopWidget.cpp-OnQueryOrGetOffersInSectionCompleted
 void USectionedShopWidget::OnQueryOrGetOffersInSectionCompleted(
 	TArray<UStoreItemDataObject*>& Offers,
 	const FOnlineError& Error,
@@ -120,9 +160,9 @@ void USectionedShopWidget::OnQueryOrGetOffersInSectionCompleted(
 		USectionDataObject* Filter = NewObject<USectionDataObject>();
 		Filter->SectionInfo.SectionId = SectionId;
 		if (USectionDataObject** Data = SectionDatas.FindByPredicate([SectionId](const USectionDataObject* Obj)
-		{
-			return Obj->SectionInfo.SectionId.Equals(SectionId);
-		}))
+			{
+				return Obj->SectionInfo.SectionId.Equals(SectionId);
+			}))
 		{
 			(*Data)->Offers = Offers;
 		}
@@ -132,36 +172,34 @@ void USectionedShopWidget::OnQueryOrGetOffersInSectionCompleted(
 		Ws_Root->ErrorMessage = Error.ErrorMessage;
 		Ws_Root->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Error);
 		bRefreshing = false;
+		return;
 	}
 
 	QueryOrGetOffersInSectionCount--;
 	if (QueryOrGetOffersInSectionCount <= 0)
 	{
-		Ws_Root->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Not_Empty);
+		// Check if all data is empty or not.
+		bool bIsNoOffers = true;
+		for (const USectionDataObject* SectionData : SectionDatas)
+		{
+			if (!SectionData->Offers.IsEmpty())
+			{
+				bIsNoOffers = false;
+				break;
+			}
+		}
+
+		Ws_Root->SetWidgetState(bIsNoOffers ? EAccelByteWarsWidgetSwitcherState::Empty : EAccelByteWarsWidgetSwitcherState::Not_Empty);
 		Lv_Root->SetListItems(SectionDatas);
 		bRefreshing = false;
 	}
 }
+// @@@SNIPEND
 
 #pragma region "UI"
 FLinearColor USectionedShopWidget::GetSectionPresetColor(const int Index) const
 {
 	const int TrueIndex = AccelByteWarsUtility::PositiveModulo(Index, SectionBackgroundColorPreset.Num());
 	return SectionBackgroundColorPreset[TrueIndex];
-}
-
-void USectionedShopWidget::OnParentRefreshButtonClicked()
-{
-	if (bRefreshing)
-	{
-		return;
-	}
-	bRefreshing = true;
-
-	Ws_Root->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Loading);
-	InGameStoreDisplaysSubsystem->QueryOrGetDisplays(
-		GetOwningPlayer(),
-		FOnQueryOrGetDisplaysComplete::CreateUObject(this, &ThisClass::OnQueryOrGetDisplaysCompleted),
-		bRefreshing);
 }
 #pragma endregion 

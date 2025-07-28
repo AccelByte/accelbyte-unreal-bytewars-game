@@ -18,13 +18,21 @@ class ACCELBYTEWARS_API UWalletEssentialsSubsystem : public UTutorialModuleSubsy
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 
+// @@@SNIPSTART WalletEssentialsSubsystem.h-public
+// @@@MULTISNIP QueryOrGetWalletInfoByCurrencyCode {"selectedLines": ["1-5"]}
+// @@@MULTISNIP OnQueryOrGetWalletInfoCompleteDelegates {"selectedLines": ["1", "6"]}
 public:
 	void QueryOrGetWalletInfoByCurrencyCode(
 		const APlayerController* OwningPlayer,
 		const FString& CurrencyCode,
 		const bool bAlwaysRequestToService = true) const;
 	FOnGetWalletInfoComplete OnQueryOrGetWalletInfoCompleteDelegates;
+// @@@SNIPEND
 
+// @@@SNIPSTART WalletEssentialsSubsystem.h-private
+// @@@MULTISNIP Interface {"selectedLines": ["1-2"]}
+// @@@MULTISNIP OnQueryOrGetWalletInfoByCurrencyCodeComplete {"selectedLines": ["1", "4-8"]}
+// @@@MULTISNIP GetLocalUserNumFromPlayerController {"selectedLines": ["1", "11"]}
 private:
 	FOnlineWalletAccelBytePtr WalletInterface;
 
@@ -36,5 +44,6 @@ private:
 
 #pragma region "Utilities"
 	static int32 GetLocalUserNumFromPlayerController(const APlayerController* PlayerController);
-#pragma endregion 
+#pragma endregion
+// @@@SNIPEND
 };

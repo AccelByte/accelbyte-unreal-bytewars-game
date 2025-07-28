@@ -17,14 +17,22 @@ UCLASS(Abstract)
 class ACCELBYTEWARS_API USectionWidgetEntry : public UAccelByteWarsWidgetEntry
 {
 	GENERATED_BODY()
-	
+
+// @@@SNIPSTART SectionWidgetEntry.h
+// @@@MULTISNIP NativeOnListItemObjectSet {"selectedLines": ["1"]}
 	virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;
 	virtual void NativeOnEntryReleased() override;
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
+// @@@SNIPEND
 
+// @@@SNIPSTART SectionWidgetEntry.h-protected
 protected:
 	void OnItemClicked(UObject* Item) const;
+// @@@SNIPEND
 
+// @@@SNIPSTART SectionWidgetEntry.h-private
+// @@@MULTISNIP UI {"selectedLines": ["1", "4-17"]}
+// @@@MULTISNIP TimeLeft {"selectedLines": ["1-2"]}
 private:
 	FTimespan TimeLeft;
 
@@ -42,4 +50,5 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UListView* Lv_Items;
+// @@@SNIPEND
 };

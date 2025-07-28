@@ -158,7 +158,7 @@ void UAccelByteWarsServerSubsystemBase::UpdateUserCache()
 	{
 		for (const FString& UserId : Teams[i].UserIDs)
 		{
-			for (TTuple<FUniqueNetIdRepl, TTuple<FUserOnlineAccountAccelByte, int>>& UserInfo : CachedUsersInfo)
+			for (TTuple<FUniqueNetIdRepl, TTuple<TSharedPtr<FUserOnlineAccountAccelByte>, int>>& UserInfo : CachedUsersInfo)
 			{
 				if (GameSessionOnlineSession->CompareAccelByteUniqueId(UserInfo.Key, UserId))
 				{
@@ -248,7 +248,7 @@ void UAccelByteWarsServerSubsystemBase::AuthenticatePlayer(APlayerController* Pl
 	}
 	else
 	{
-		for (const TTuple<FUniqueNetIdRepl, TTuple<FUserOnlineAccountAccelByte, int>>& UserInfo : CachedUsersInfo)
+		for (const TTuple<FUniqueNetIdRepl, TTuple<TSharedPtr<FUserOnlineAccountAccelByte>, int>>& UserInfo : CachedUsersInfo)
 		{
 			if (GameSessionOnlineSession->CompareAccelByteUniqueId(PlayerUniqueNetId, UserInfo.Key) &&
 				UserInfo.Value.Value != INDEX_NONE)
@@ -256,9 +256,9 @@ void UAccelByteWarsServerSubsystemBase::AuthenticatePlayer(APlayerController* Pl
 				UE_LOG_GAMESESSION(Log, TEXT("Found cache"));
 
 				// cache found, trigger immediately
-				AbPlayerState->SetPlayerName(UserInfo.Value.Key.GetDisplayName());
+				AbPlayerState->SetPlayerName(UserInfo.Value.Key->GetDisplayName());
 				AbPlayerState->TeamId = UserInfo.Value.Value;
-				UserInfo.Value.Key.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AbPlayerState->AvatarURL);
+				UserInfo.Value.Key->GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, AbPlayerState->AvatarURL);
 
 				ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [this, PlayerController]()
 				{
@@ -418,8 +418,8 @@ void UAccelByteWarsServerSubsystemBase::AuthenticatePlayer_OnQueryUserInfoComple
 		// cache data
 		for (const TSharedPtr<FUserOnlineAccountAccelByte>& OnlineUser : UsersInfo)
 		{
-			TPair<FUserOnlineAccountAccelByte, int32>& UserInfo = CachedUsersInfo.FindOrAdd(FUniqueNetIdRepl(OnlineUser->GetUserId()));
-			UserInfo.Key = *OnlineUser;
+			TPair<TSharedPtr<FUserOnlineAccountAccelByte>, int32>& UserInfo = CachedUsersInfo.FindOrAdd(FUniqueNetIdRepl(OnlineUser->GetUserId()));
+			UserInfo.Key = OnlineUser;
 			UserInfo.Value = INDEX_NONE;
 		}
 
@@ -551,10 +551,10 @@ void UAccelByteWarsServerSubsystemBase::AuthenticatePlayer_CompleteTask(const bo
 			const FUniqueNetIdRepl& UniqueNetId = PlayerState->GetUniqueId();
 			if (CachedUsersInfo.Contains(UniqueNetId))
 			{
-				const TTuple<FUserOnlineAccountAccelByte, int>& UserInfo = CachedUsersInfo[UniqueNetId];
-				PlayerState->SetPlayerName(UserInfo.Key.GetDisplayName());
+				const TTuple<TSharedPtr<FUserOnlineAccountAccelByte>, int>& UserInfo = CachedUsersInfo[UniqueNetId];
+				PlayerState->SetPlayerName(UserInfo.Key->GetDisplayName());
 				PlayerState->TeamId = UserInfo.Value;
-				UserInfo.Key.GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, PlayerState->AvatarURL);
+				UserInfo.Key->GetUserAttribute(ACCELBYTE_ACCOUNT_GAME_AVATAR_URL, PlayerState->AvatarURL);
 
 				bFound = true;
 			}

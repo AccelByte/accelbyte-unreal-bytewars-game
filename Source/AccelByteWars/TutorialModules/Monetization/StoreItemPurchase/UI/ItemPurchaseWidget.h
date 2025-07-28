@@ -28,9 +28,15 @@ class ACCELBYTEWARS_API UItemPurchaseWidget : public UAccelByteWarsActivatableWi
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
 
+// @@@SNIPSTART ItemPurchaseWidget.h-public
 public:
 	inline static TMulticastDelegate<void(const APlayerController*)> OnPurchaseCompleteMulticastDelegate;
+// @@@SNIPEND
 
+// @@@SNIPSTART ItemPurchaseWidget.h-private
+// @@@MULTISNIP PurchaseSubsystem {"selectedLines": ["1-3"]}
+// @@@MULTISNIP StoreItemDataObject {"selectedLines": ["1", "5-6"]}
+// @@@MULTISNIP Setup {"selectedLines": ["1", "11-12"]}
 private:
 	UPROPERTY()
 	UStoreItemPurchaseSubsystem* PurchaseSubsystem;
@@ -43,7 +49,8 @@ private:
 
 	void OnClickPurchase(const int32 PriceIndex) const;
 	void OnPurchaseComplete(const FOnlineError& Error) const;
-	void OnSynchPurchaseComplete(bool bWasSuccessful,const FString& Error) const;
+	void OnSyncPurchaseComplete(bool bWasSuccessful,const FString& Error) const;
+// @@@SNIPEND
 
 #pragma region "FTUE"
 private:
@@ -54,6 +61,11 @@ private:
 protected:
 	virtual UWidget* NativeGetDesiredFocusTarget() const override;
 
+// @@@SNIPSTART ItemPurchaseWidget.h-private-ui
+// @@@MULTISNIP SetupPurchaseButtons {"selectedLines": ["1-2"]}
+// @@@MULTISNIP UpdatePrice {"selectedLines": ["1", "3"]}
+// @@@MULTISNIP GetSelectedAmount {"selectedLines": ["1", "4"]}
+// @@@MULTISNIP UI {"selectedLines": ["1", "6-22"]}
 private:
 	void SetupPurchaseButtons(TArray<UStoreItemPriceDataObject*> Prices);
 	void UpdatePrice(const int32 SelectedIndex);
@@ -79,5 +91,6 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UAccelByteWarsSequentialSelectionWidget* Ss_Amount;
-#pragma endregion 
+#pragma endregion
+// @@@SNIPEND
 };

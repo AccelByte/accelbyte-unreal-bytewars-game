@@ -75,6 +75,8 @@ void UShopWidget_Starter::SwitchContent(EAccelByteWarsWidgetSwitcherState State)
 		break;
 	case EAccelByteWarsWidgetSwitcherState::Not_Empty:
 		FocusTarget = Tv_ContentOuter;
+		// Initialize FTUE after item shops available.
+		InitializeFTUEDialogues(bOnActivatedInitializeFTUE);
 		break;
 	case EAccelByteWarsWidgetSwitcherState::Empty:
 		FocusTarget = Btn_Back;
@@ -85,6 +87,9 @@ void UShopWidget_Starter::SwitchContent(EAccelByteWarsWidgetSwitcherState State)
 
 	FocusTarget->SetUserFocus(GetOwningPlayer());
 	Ws_Loader->SetWidgetState(State);
+
+	// Disable refresh button on loading state.
+	Btn_Refresh->SetIsEnabled(State != EAccelByteWarsWidgetSwitcherState::Loading);
 }
 
 UAccelByteWarsActivatableWidget* UShopWidget_Starter::GetBalanceWidget() const

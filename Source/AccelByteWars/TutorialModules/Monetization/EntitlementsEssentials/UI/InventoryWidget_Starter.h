@@ -10,26 +10,24 @@
 #include "OnlineError.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
 #include "Core/UI/MainMenu/Store/StoreItemModel.h"
-#include "InventoryWidget.generated.h"
+#include "InventoryWidget_Starter.generated.h"
 
 class UCommonButtonBase;
 class UAccelByteWarsAsyncImageWidget;
 class UTextBlock;
 class UTileView;
 class UImage;
-class UEntitlementsEssentialsSubsystem;
+class UEntitlementsEssentialsSubsystem_Starter;
 class UAccelByteWarsWidgetSwitcher;
 class UWidgetSwitcher;
 class UMultiLineEditableText;
 class UMediaPlayer;
 
 UCLASS(Abstract)
-class ACCELBYTEWARS_API UInventoryWidget : public UAccelByteWarsActivatableWidget
+class ACCELBYTEWARS_API UInventoryWidget_Starter : public UAccelByteWarsActivatableWidget
 {
 	GENERATED_BODY()
 
-// @@@SNIPSTART InventoryWidget.h-public
-// @@@MULTISNIP Delegates {"selectedLines": ["1-4"]}
 public:
 	inline static FSimpleMulticastDelegate OnInventoryMenuDeactivated;
 	FSimpleMulticastDelegate OnEquipped;
@@ -37,37 +35,29 @@ public:
 
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
-// @@@SNIPEND
 
-// @@@SNIPSTART InventoryWidget.h-private
-// @@@MULTISNIP Subsystem {"selectedLines": ["1-3"]}
-// @@@MULTISNIP bIsConsumable {"selectedLines": ["1", "5-6"]}
-// @@@MULTISNIP ShowEntitlements {"selectedLines": ["1", "8"]}
 private:
 	UPROPERTY()
-	UEntitlementsEssentialsSubsystem* EntitlementsSubsystem;
+	UEntitlementsEssentialsSubsystem_Starter* EntitlementsSubsystem;
 
 	UPROPERTY(EditAnywhere)
 	bool bIsConsumable = true;
 
-	void ShowEntitlements(const FOnlineError& Error, const TArray<UStoreItemDataObject*> Entitlements) const;
-// @@@SNIPEND
+#pragma region "Tutorial"
+	// Put your code here.
+#pragma endregion
 
 #pragma region "Byte Wars specific"
-// @@@SNIPSTART InventoryWidget.h-bytewars-private
 private:
 	void OnClickListItem(UObject* Object);
 	void OnClickEquip() const;
 	void OnClickUnEquip() const;
-// @@@SNIPEND
 #pragma endregion 
 
 #pragma region "UI"
-// @@@SNIPSTART InventoryWidget.h-ui-public
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	UMediaPlayer* MediaPlayer;
-// @@@SNIPEND
 
 protected:
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
@@ -75,9 +65,6 @@ protected:
 	void SwitchActionButton(bool bShowEquipButton) const;
 	void SwitchToDefaultState() const;
 
-// @@@SNIPSTART InventoryWidget.h-ui-private
-// @@@MULTISNIP SelectedItem {"selectedLines": ["1-3"]}
-// @@@MULTISNIP Setup {"selectedLines": ["1", "5-30"]}
 private:
 	UPROPERTY()
 	UStoreItemDataObject* SelectedItem;
@@ -108,6 +95,5 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_Back;
-// @@@SNIPEND
 #pragma endregion 
 };

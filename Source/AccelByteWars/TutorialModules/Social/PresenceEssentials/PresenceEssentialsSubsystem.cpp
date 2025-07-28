@@ -529,7 +529,7 @@ void UPresenceEssentialsSubsystem::OnGetPresenceComplete(const FUniqueNetId& Use
 	FOnlinePresenceAccelBytePtr PresenceInterface = GetPresenceInterface();
 	if (!PresenceInterface)
 	{
-		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Failed to get presence for user: %s. Presence interface is invalid."));
+		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Failed to get presence for user: %s. Presence interface is invalid."), *UserABId->GetAccelByteId());
 		OnComplete.ExecuteIfBound(false, nullptr);
 		return;
 	}

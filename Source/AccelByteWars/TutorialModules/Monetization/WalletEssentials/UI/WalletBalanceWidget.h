@@ -21,6 +21,9 @@ class ACCELBYTEWARS_API UWalletBalanceWidget : public UAccelByteWarsActivatableW
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
 
+// @@@SNIPSTART WalletBalanceWidget.h-private
+// @@@MULTISNIP WalletSubsystem {"selectedLines": ["1", "6-7"]}
+// @@@MULTISNIP Functions {"selectedLines": ["1-4"]}
 private:
 	void ShowBalance(bool bWasSuccessful, const FAccelByteModelsWalletInfo& Response) const;
 
@@ -28,8 +31,13 @@ private:
 
 	UPROPERTY()
 	UWalletEssentialsSubsystem* WalletSubsystem;
+// @@@SNIPEND
 
 #pragma region "UI"
+// @@@SNIPSTART WalletBalanceWidget.h-private-ui
+// @@@MULTISNIP UI {"selectedLines": ["1", "7-8"]}
+// @@@MULTISNIP CurrencyBalanceEntryMap {"selectedLines": ["1-2"]}
+// @@@MULTISNIP CurrencyBalanceClass {"selectedLines": ["1", "4-5"]}
 private:
 	TMap<FString, UWalletBalanceWidgetEntry*> CurrencyBalanceEntryMap;
 
@@ -38,5 +46,6 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UPanelWidget* W_Root;
-#pragma endregion 
+#pragma endregion
+// @@@SNIPEND
 };

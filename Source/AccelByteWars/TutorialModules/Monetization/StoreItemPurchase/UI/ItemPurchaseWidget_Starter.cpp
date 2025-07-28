@@ -21,7 +21,7 @@ void UItemPurchaseWidget_Starter::NativeOnActivated()
 	ensure(W_Parent);
 
 	StoreItemDataObject = W_Parent->StoreItemDataObject;
-	ensure(StoreItemDataObject.IsValid());
+	ensure(StoreItemDataObject);
 
 	PurchaseSubsystem = GetGameInstance()->GetSubsystem<UStoreItemPurchaseSubsystem_Starter>();
 	ensure(PurchaseSubsystem);

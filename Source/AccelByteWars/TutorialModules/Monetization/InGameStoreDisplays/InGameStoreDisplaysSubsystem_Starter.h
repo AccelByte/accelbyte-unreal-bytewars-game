@@ -28,23 +28,6 @@ public:
 private:
 	FOnlineStoreV2AccelBytePtr StoreInterface;
 
-	struct FQueryOrGetSectionsParam
-	{
-		const FUniqueNetIdPtr UserId;
-		const FString& DisplayId;
-		const FOnQueryOrGetSectionsInDisplaComplete& OnComplete;
-	};
-	struct FQueryOrGetOffersParam
-	{
-		const FUniqueNetIdPtr UserId;
-		const FString SectionId;
-		const FOnQueryOrGetOffersInSectionComplete& OnComplete;
-	};
-
-	TArray<FOnQueryOrGetDisplaysComplete> QueryOrGetDisplaysOnCompleteDelegates;
-	TArray<FQueryOrGetSectionsParam> QueryOrGetSectionsOnCompleteDelegates;
-	TArray<FQueryOrGetOffersParam> QueryOrGetOffersOnCompleteDelegates;
-
 #pragma region "Tutorial"
 	// Put your code here
 #pragma endregion

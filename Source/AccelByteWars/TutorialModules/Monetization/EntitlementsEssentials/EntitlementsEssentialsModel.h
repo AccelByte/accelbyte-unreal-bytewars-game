@@ -6,6 +6,8 @@
 #include "OnlineError.h"
 #include "Core/UI/MainMenu/Store/StoreItemModel.h"
 
+// @@@SNIPSTART EntitlementsEssentialsModel.h
+// @@@MULTISNIP DelegatesAndStructs {"selectedLines": ["4-6", "16-33"]}
 #define TEXT_NOTHING_SELECTED NSLOCTEXT("AccelByteWars", "nothing-selected", "Nothing Selected")
 #define TEXT_OWNED NSLOCTEXT("AccelByteWars", "owned", "Owned")
 
@@ -28,3 +30,15 @@ DECLARE_MULTICAST_DELEGATE_FiveParams(
 	const FString& /*ItemName*/,
 	const int /*Amount*/,
 	const int /*EndAmount*/)
+
+struct FUserItemEntitlementRequest
+{
+	const APlayerController* PlayerController;
+	FOnGetOrQueryUserItemEntitlementComplete OnComplete;
+};
+struct FConsumeEntitlementRequest
+{
+	const APlayerController* PlayerController;
+	FOnConsumeUserEntitlementComplete OnComplete;
+};
+// @@@SNIPEND

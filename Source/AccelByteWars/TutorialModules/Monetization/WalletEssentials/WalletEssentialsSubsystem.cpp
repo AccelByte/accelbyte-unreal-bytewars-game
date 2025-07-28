@@ -8,6 +8,8 @@
 #include "OnlineSubsystemUtils.h"
 #include "OnlineWalletInterfaceAccelByte.h"
 
+// @@@SNIPSTART WalletEssentialsSubsystem.cpp-Initialize
+// @@@MULTISNIP Interface {"selectedLines": ["1-2", "5-9", "12"]}
 void UWalletEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
@@ -20,28 +22,29 @@ void UWalletEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collection
 
 	WalletInterface->OnGetWalletInfoCompletedDelegates->AddUObject(this, &ThisClass::OnQueryOrGetWalletInfoByCurrencyCodeComplete);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART WalletEssentialsSubsystem.cpp-Deinitialize
 void UWalletEssentialsSubsystem::Deinitialize()
 {
 	Super::Deinitialize();
 
 	WalletInterface->OnGetWalletInfoCompletedDelegates->RemoveAll(this);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART WalletEssentialsSubsystem.cpp-QueryOrGetWalletInfoByCurrencyCode
 void UWalletEssentialsSubsystem::QueryOrGetWalletInfoByCurrencyCode(
 	const APlayerController* OwningPlayer,
 	const FString& CurrencyCode,
 	const bool bAlwaysRequestToService) const
 {
 	const int32 LocalUserNum = GetLocalUserNumFromPlayerController(OwningPlayer);
-	if (!WalletInterface->GetWalletInfoByCurrencyCode(LocalUserNum, CurrencyCode, bAlwaysRequestToService))
-	{
-		const FAccelByteModelsWalletInfo Response;
-		const FString Error;
-		OnQueryOrGetWalletInfoByCurrencyCodeComplete(LocalUserNum, false, Response, Error);
-	}
+	WalletInterface->GetWalletInfoByCurrencyCode(LocalUserNum, CurrencyCode, bAlwaysRequestToService);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART WalletEssentialsSubsystem.cpp-OnQueryOrGetWalletInfoByCurrencyCodeComplete
 void UWalletEssentialsSubsystem::OnQueryOrGetWalletInfoByCurrencyCodeComplete(
 	int32 LocalUserNum,
 	bool bWasSuccessful,
@@ -50,6 +53,7 @@ void UWalletEssentialsSubsystem::OnQueryOrGetWalletInfoByCurrencyCodeComplete(
 {
 	OnQueryOrGetWalletInfoCompleteDelegates.Broadcast(bWasSuccessful, Response);
 }
+// @@@SNIPEND
 
 #pragma region "Utilities"
 int32 UWalletEssentialsSubsystem::GetLocalUserNumFromPlayerController(const APlayerController* PlayerController)

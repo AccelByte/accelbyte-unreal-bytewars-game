@@ -20,6 +20,7 @@ class ACCELBYTEWARS_API UInGameStoreDisplaysSubsystem : public UTutorialModuleSu
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
+// @@@SNIPSTART InGameStoreDisplaysSubsystem.h-public
 public:
 	/**
 	 * @brief Retrieve store displays info from endpoint / cache if exist
@@ -42,7 +43,7 @@ public:
 	void QueryOrGetSectionsForDisplay(
 		const APlayerController* PlayerController,
 		const FString& DisplayId,
-		const FOnQueryOrGetSectionsInDisplaComplete& OnComplete,
+		const FOnQueryOrGetSectionsInDisplayComplete& OnComplete,
 		const bool bForceRefresh = false);
 
 	/**
@@ -57,22 +58,17 @@ public:
 		const FString& SectionId,
 		const FOnQueryOrGetOffersInSectionComplete& OnComplete,
 		const bool bForceRefresh = false);
+// @@@SNIPEND
 
+// @@@SNIPSTART InGameStoreDisplaysSubsystem.h-private
+// @@@MULTISNIP StoreInterface {"selectedLines": ["1-2"]}
+// @@@MULTISNIP Params {"selectedLines": ["1", "4-6"]}
+// @@@MULTISNIP Cache {"selectedLines": ["1", "8-12"]}
+// @@@MULTISNIP Query {"selectedLines": ["1", "14-28"]}
+// @@@MULTISNIP GetUniqueNetIdFromPlayerController {"selectedLines": ["1", "31"]}
+// @@@MULTISNIP ConvertStoreData {"selectedLines": ["1", "32"]}
 private:
 	FOnlineStoreV2AccelBytePtr StoreInterface;
-
-	struct FQueryOrGetSectionsParam
-	{
-		const FUniqueNetIdPtr UserId;
-		const FString& DisplayId;
-		const FOnQueryOrGetSectionsInDisplaComplete OnComplete;
-	};
-	struct FQueryOrGetOffersParam
-	{
-		const FUniqueNetIdPtr UserId;
-		const FString SectionId;
-		const FOnQueryOrGetOffersInSectionComplete OnComplete;
-	};
 
 	TArray<FOnQueryOrGetDisplaysComplete> QueryOrGetDisplaysOnCompleteDelegates;
 	TArray<FQueryOrGetSectionsParam> QueryOrGetSectionsOnCompleteDelegates;
@@ -103,5 +99,6 @@ private:
 #pragma region "Utilities"
 	FUniqueNetIdPtr GetUniqueNetIdFromPlayerController(const APlayerController* PlayerController) const;
 	UStoreItemDataObject* ConvertStoreData(const FOnlineStoreOfferAccelByteRef Offer) const;
-#pragma endregion 
+#pragma endregion
+// @@@SNIPEND
 };

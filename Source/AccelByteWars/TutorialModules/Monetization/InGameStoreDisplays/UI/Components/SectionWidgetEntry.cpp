@@ -20,6 +20,14 @@ void USectionWidgetEntry::NativeOnListItemObjectSet(UObject* ListItemObject)
 	const USectionDataObject* SectionDataObject = Cast<USectionDataObject>(ListItemObject);
 	if (!SectionDataObject)
 	{
+		SetVisibility(ESlateVisibility::Collapsed);
+		return;
+	}
+
+	// Hide self if there's no offers to show.
+	if (SectionDataObject->Offers.IsEmpty())
+	{
+		SetVisibility(ESlateVisibility::Collapsed);
 		return;
 	}
 
@@ -39,6 +47,11 @@ void USectionWidgetEntry::NativeOnEntryReleased()
 void USectionWidgetEntry::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
+
+	if (GetVisibility() != ESlateVisibility::Visible)
+	{
+		return;
+	}
 
 	TimeLeft -= InDeltaTime;
 

@@ -65,7 +65,7 @@ private:
 	UPROPERTY()
 	TArray<APlayerController*> QueryUserInfoFromSessionQueue;
 
-	TMap<FUniqueNetIdRepl, TPair<FUserOnlineAccountAccelByte, int32 /*TeamIndex*/>> CachedUsersInfo;
+	TMap<FUniqueNetIdRepl, TPair<TSharedPtr<FUserOnlineAccountAccelByte>, int32 /*TeamIndex*/>> CachedUsersInfo;
 	TMap<FString, TPair<FUserDataResponse, int32 /*TeamIndex*/>> DSCachedUsersInfo;
 #pragma endregion 
 };

@@ -9,10 +9,8 @@
 #include "OnlineSubsystemAccelByte.h"
 #include "OnlineSubsystemUtils.h"
 #include "StoreItemPurchaseModel.h"
-#include "OnlinePurchaseInterfaceAccelByte.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "Core/UI/MainMenu/Store/StoreItemModel.h"
-#include "Monetization/EntitlementsEssentials/EntitlementsEssentialsModel.h"
 
 #include "StoreItemPurchaseSubsystem.generated.h"
 
@@ -24,6 +22,9 @@ class ACCELBYTEWARS_API UStoreItemPurchaseSubsystem : public UTutorialModuleSubs
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 
+// @@@SNIPSTART StoreItemPurchaseSubsystem.h-public
+// @@@MULTISNIP CreateNewOrder {"selectedLines": ["1-6"]}
+// @@@MULTISNIP OnCheckoutCompleteDelegates {"selectedLines": ["1", "7"]}
 public:
 	void CreateNewOrder(
 		const APlayerController* OwningPlayer,
@@ -31,9 +32,12 @@ public:
 		const int32 SelectedPriceIndex,
 		const int32 Quantity = 1) const;
 	FOnOrderComplete OnCheckoutCompleteDelegates;
+// @@@SNIPEND
 
-	static inline FOnItemPurchased OnItemPurchasedDelegates;
-
+// @@@SNIPSTART StoreItemPurchaseSubsystem.h-private
+// @@@MULTISNIP PurchaseInterface {"selectedLines": ["1-2"]}
+// @@@MULTISNIP OnCreateNewOrderComplete {"selectedLines": ["1", "4-7"]}
+// @@@MULTISNIP GetLocalPlayerUniqueNetId {"selectedLines": ["1", "10"]}
 private:
 	FOnlinePurchaseAccelBytePtr PurchaseInterface;
 
@@ -42,9 +46,8 @@ private:
 		const FAccelByteModelsOrderInfo& OrderInfo,
 		const FOnlineErrorAccelByte& OnlineError) const;
 
-	void NotifyItemPurchased(const FAccelByteModelsOrderInfo& OrderInfo) const;
-
 #pragma region "Utilities"
 	FUniqueNetIdPtr GetLocalPlayerUniqueNetId(const APlayerController* PlayerController) const;
-#pragma endregion 
+#pragma endregion
+// @@@SNIPEND
 };

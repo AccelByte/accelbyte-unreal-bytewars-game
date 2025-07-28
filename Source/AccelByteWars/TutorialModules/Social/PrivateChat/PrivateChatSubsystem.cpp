@@ -4,6 +4,7 @@
 
 #include "PrivateChatSubsystem.h"
 #include "OnlineSubsystemUtils.h"
+#include "Misc/Optional.h"
 
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
@@ -146,7 +147,8 @@ FString UPrivateChatSubsystem::GetPrivateChatRoomId(const FUniqueNetIdPtr Sender
 		return FString();
 	}
 
-	return GetChatInterface()->PersonalChatTopicId(SenderABId->GetAccelByteId(), RecipientABId->GetAccelByteId());
+	TOptional<FString> PersonalRoomId = GetChatInterface()->GetPersonalChatTopicId(SenderABId->GetAccelByteId(), RecipientABId->GetAccelByteId());
+	return PersonalRoomId.IsSet() ? PersonalRoomId.GetValue() : TEXT("");
 }
 // @@@SNIPEND
 

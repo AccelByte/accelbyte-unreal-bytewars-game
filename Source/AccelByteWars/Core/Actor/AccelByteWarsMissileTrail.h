@@ -12,10 +12,15 @@
 #include "GameFramework/Actor.h"
 #include "AccelByteWarsMissileTrail.generated.h"
 
+ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogMissileTrail, Log, All);
+
 UCLASS()
 class ACCELBYTEWARS_API AAccelByteWarsMissileTrail : public AActor
 {
 	GENERATED_BODY()
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void Destroyed() override;
 	
 public:	
 	// Sets default values for this actor's properties
@@ -26,59 +31,58 @@ protected:
 	virtual void BeginPlay() override;
 	//~End of UObject overridden functions
 
+	UFUNCTION()
+	void OnOwnerDestroyed(AActor* InActor);
+
 public:	
 	//~UObject overridden functions
 	virtual void Tick(float DeltaTime) override;
 	//~End of UObject overridden functions
 
-
 	/**
 	 * @brief Current reference to the UNiagaraComponent missile trail
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AccelByteWars)
-		UNiagaraComponent* MissileTrail = nullptr;
+	UNiagaraComponent* MissileTrail = nullptr;
 
 	/**
 	 * @brief Current Alpha color used
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AccelByteWars)
-		float CurrentAlpha = 0.02f;
+	float CurrentAlpha = 0.02f;
 
 	/**
 	 * @brief Current Alpha color desired
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AccelByteWars)
-		float WantedAlpha = 0.02f;
+	float WantedAlpha = 0.02f;
 
 	/**
 	 * @brief Rate to interpolate between the current Alpha and the WantedAlpha
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AccelByteWars)
-		float AlphaRate = 10.0f;
+	float AlphaRate = 10.0f;
 
-	/**
-	 * @brief How long the missile trail should be alive and visible
-	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AccelByteWars)
-		float MaximumLifetime = 30.0f;
+	float DelayedFadeOutTime = 5.0f;
 
-	/**
-	 * @brief Returns true if the missile trail is faded out
-	 */
-	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
-		bool IsFadeOut();
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AccelByteWars)
+	float DelayedFadeOutCurrentTime = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, Category = AccelByteWars)
+	bool bFadeOutDelayStarted = false;
 
 	/**
 	 * @brief Starts the missile trail fade out sequence
 	 */
 	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
-		void TriggerFadeOut();
+	void TriggerFadeOut();
 
 	/**
 	 * @brief Lets other players know the color of the missile trail
 	 */
 	UFUNCTION(BlueprintCallable, Server, Unreliable, Category = AccelByteWars)
-		void Server_SetColor(FLinearColor InColor);
+	void Server_SetColor(FLinearColor InColor);
 
 protected:
 
@@ -86,11 +90,22 @@ protected:
 	 * @brief Current missile trail color
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AccelByteWars, ReplicatedUsing = OnRepNotify_Color)
-		FLinearColor TrailColor = FLinearColor::Yellow;
+	FLinearColor TrailColor = FLinearColor::Yellow;
 
 	/**
 	 * @brief Generic on rep notify for the missile trail color
 	 */
 	UFUNCTION()
-		void OnRepNotify_Color();
+	void OnRepNotify_Color();
+
+	/**
+	 * @brief Returns true if the missile trail is faded out
+	 */
+	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
+	bool IsFadeOut();
+
+	/**
+	 * @brief Set the alpha value of the trail.
+	 */
+	void SetRibbonAlpha(const float Alpha) const;
 };

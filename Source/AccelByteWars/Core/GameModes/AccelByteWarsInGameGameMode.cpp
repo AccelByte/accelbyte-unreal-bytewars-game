@@ -591,9 +591,12 @@ AAccelByteWarsPlayerPawn* AAccelByteWarsInGameGameMode::CreatePlayerPawn(
 	SpawnParameters.Owner = PlayerController;
 	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
+	// Random rotation.
+	const float RandomYaw = FMath::RandRange(180.0, -180.0);
+
 	AAccelByteWarsPlayerPawn* NewPlayerPawn = PlayerController->GetWorld()->SpawnActor<AAccelByteWarsPlayerPawn>(
 		PawnClass,
-		FTransform(FRotator::ZeroRotator, Location),
+		FTransform(FRotator(0.0, RandomYaw, 0.0), Location),
 		SpawnParameters);
 	if (NewPlayerPawn == nullptr)
 		return nullptr;

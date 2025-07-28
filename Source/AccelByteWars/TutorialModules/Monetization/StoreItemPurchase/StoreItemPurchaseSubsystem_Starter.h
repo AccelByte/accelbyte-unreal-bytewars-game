@@ -11,7 +11,6 @@
 #include "StoreItemPurchaseModel.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "Core/UI/MainMenu/Store/StoreItemModel.h"
-#include "Monetization/EntitlementsEssentials/EntitlementsEssentialsModel.h"
 
 #include "StoreItemPurchaseSubsystem_Starter.generated.h"
 
@@ -28,12 +27,8 @@ public:
 	// put your code here
 #pragma endregion
 
-	static inline FOnItemPurchased OnItemPurchasedDelegates;
-
 private:
 	FOnlinePurchaseAccelBytePtr PurchaseInterface;
-
-	const TMap<ECurrencyType, FString> CurrencyCodeMap = {};
 
 #pragma region "Tutorial"
 	// put your code here

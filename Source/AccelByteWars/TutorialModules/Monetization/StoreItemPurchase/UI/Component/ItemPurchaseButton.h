@@ -16,10 +16,14 @@ class ACCELBYTEWARS_API UItemPurchaseButton : public UAccelByteWarsButtonBase
 {
 	GENERATED_BODY()
 
+// @@@SNIPSTART ItemPurchaseButton.h-public
 public:
 	void SetPrice(const UStoreItemPriceDataObject* PriceData, const int32 PriceMultiplier = 1) const;
+// @@@SNIPEND
 
+// @@@SNIPSTART ItemPurchaseButton.h-private
 private:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UStoreItemPriceListEntry* W_Price;
+// @@@SNIPEND
 };

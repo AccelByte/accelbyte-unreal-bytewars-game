@@ -8,6 +8,7 @@
 #include "Components/ListView.h"
 #include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
 #include "Core/Utilities/AccelByteWarsUtility.h"
+#include "Monetization/InGameStoreEssentials/UI/ShopWidget.h"
 #include "Monetization/InGameStoreEssentials/UI/ShopWidget_Starter.h"
 
 void USectionedShopWidget_Starter::NativeOnActivated()
@@ -20,22 +21,15 @@ void USectionedShopWidget_Starter::NativeOnActivated()
 #pragma region "Tutorial"
 	// Put your code here
 #pragma endregion
-
-	// Bind parent's (store essentials) refresh function with this refresh function
-	if (UShopWidget_Starter* ShopWidget = GetFirstOccurenceOuter<UShopWidget_Starter>())
-	{
-		ShopWidget->OnRefreshButtonClickedDelegates.AddUObject(this, &ThisClass::OnParentRefreshButtonClicked);
-	}
 }
 
 void USectionedShopWidget_Starter::NativeOnDeactivated()
 {
 	Super::NativeOnDeactivated();
 
-	if (UShopWidget_Starter* ShopWidget = GetFirstOccurenceOuter<UShopWidget_Starter>())
-	{
-		ShopWidget->OnRefreshButtonClickedDelegates.RemoveAll(this);
-	}
+#pragma region "Tutorial"
+	// Put your code here
+#pragma endregion
 }
 
 #pragma region "Tutorial"
@@ -48,18 +42,4 @@ FLinearColor USectionedShopWidget_Starter::GetSectionPresetColor(const int Index
 	const int TrueIndex = AccelByteWarsUtility::PositiveModulo(Index, SectionBackgroundColorPreset.Num());
 	return SectionBackgroundColorPreset[TrueIndex];
 }
-
-void USectionedShopWidget_Starter::OnParentRefreshButtonClicked()
-{
-	if (bRefreshing)
-	{
-		return;
-	}
-	bRefreshing = true;
-
-	Ws_Root->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Loading);
-#pragma region "Tutorial"
-	// Put your code here
 #pragma endregion
-}
-#pragma endregion 

@@ -7,12 +7,12 @@
 #include "AccelByteWarsPlayerController.h"
 #include "Components/SphereComponent.h"
 #include "Core/Actor/AccelByteWarsMissile.h"
-#include "Core/Actor/AccelByteWarsMissileTrail.h"
 #include "Core/AssetManager/InGameItems/InGameItemDataAsset.h"
 #include "Core/Components/AccelByteWarsGameplayObjectComponent.h"
 #include "Core/GameStates/AccelByteWarsInGameGameState.h"
 #include "Core/Ships/PlayerShipBase.h"
 #include "Core/Utilities/AccelByteWarsUtilityLog.h"
+#include "Kismet/KismetMathLibrary.h"
 
 // Sets default values
 AAccelByteWarsPlayerPawn::AAccelByteWarsPlayerPawn()
@@ -57,13 +57,6 @@ void AAccelByteWarsPlayerPawn::Tick(float DeltaTime)
 
 	if (HasAuthority())
 	{
-		// Destroy and remove index
-		if (MissileTrail != nullptr)
-		{
-			if (MissileTrail->IsFadeOut())
-				MissileTrail->Destroy();
-		}
-
 		// Adjust fire power
 		if (FirePowerAdjustRate != 0.0f)
 		{
@@ -106,53 +99,32 @@ void AAccelByteWarsPlayerPawn::GetLifetimeReplicatedProps(TArray<FLifetimeProper
 	DOREPLIFETIME(AAccelByteWarsPlayerPawn, PawnColor);
 }
 
-AAccelByteWarsMissile* AAccelByteWarsPlayerPawn::SpawnMissileInWorld(AActor* ActorOwner, FTransform InTransform, float InitialSpeed, FString BlueprintPath, bool ShouldReplicate)
-{
-	if (ActorOwner == nullptr)
-		return nullptr;
-
-	FActorSpawnParameters SpawnParameters;
-	SpawnParameters.Owner = ActorOwner;
-	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	UClass* GenericClass = StaticLoadClass(AActor::StaticClass(), ActorOwner, *BlueprintPath);
-
-	AAccelByteWarsMissile* NewActor = ActorOwner->GetWorld()->SpawnActor<AAccelByteWarsMissile>(GenericClass, InTransform, SpawnParameters);
-	if (NewActor == nullptr)
-		return nullptr;
-
-	NewActor->Server_SetColor(PawnColor);
-	NewActor->InitialSpeed = InitialSpeed;
-	NewActor->SetVelocity();
-	NewActor->SetInstigator(this);
-	NewActor->SetReplicates(ShouldReplicate);
-
-	return NewActor;
-}
-
 template<class T>
 T* AAccelByteWarsPlayerPawn::SpawnActorInWorld(
-	APawn* OwningPawn,
+	AActor* Owner,
 	const FVector Location,
 	const FRotator Rotation,
 	TSubclassOf<AActor> ActorClass,
 	bool ShouldReplicate)
 {
-	if (OwningPawn == nullptr)
+	if (Owner == nullptr)
 		return nullptr;
 
 	FActorSpawnParameters SpawnParameters;
-	SpawnParameters.Owner = OwningPawn;
+	SpawnParameters.Owner = Owner;
 	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	T* NewActor = OwningPawn->GetWorld()->SpawnActor<T>(ActorClass, FTransform(Rotation, Location), SpawnParameters);
+	T* NewActor = Owner->GetWorld()->SpawnActor<T>(ActorClass, FTransform(Rotation, Location), SpawnParameters);
 	if (NewActor == nullptr)
 	{
 		LOG_TO_CONSOLE("Failed to generate actor class for: " + ActorClass->GetName());
 		return nullptr;
 	}
 
-	NewActor->SetInstigator(OwningPawn);
+	if (APawn* OwningPawn = Cast<APawn>(Owner))
+	{
+		NewActor->SetInstigator(OwningPawn);
+	}
 	NewActor->SetReplicates(ShouldReplicate);
 
 	return NewActor;
@@ -348,28 +320,6 @@ void AAccelByteWarsPlayerPawn::Server_FireMissile_Implementation()
 
 	// Play sound for missile fire
 	FireMissileFx(SpawnTransform);
-
-	if (MissileTrail != nullptr)
-	{
-		MissileTrail->TriggerFadeOut();
-		MissileTrail = nullptr;
-	}
-
-	// Spawn missile trail
-	MissileTrail = SpawnActorInWorld<AAccelByteWarsMissileTrail>(
-		this,
-		SpawnTransform.GetLocation(),
-		SpawnTransform.Rotator(),
-		MissileTrailActor,
-		true);
-	if (MissileTrail == nullptr)
-		return;
-
-	MissileTrail->Server_SetColor(PawnColor);
-
-	// Attach new trail to missile actor
-	FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, EAttachmentRule::SnapToTarget, EAttachmentRule::KeepRelative, true);
-	MissileTrail->AttachToActor(FiredMissile, AttachmentRules);
 
 	// Reduce ship glow if MissilesFired limit reached
 	UpdateShipGlow();
