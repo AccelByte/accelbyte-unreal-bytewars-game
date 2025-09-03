@@ -48,7 +48,7 @@ public:
 	 * @brief Change current widget state
 	 * @param State Target state
 	 */
-	void SetWidgetState(const EAccelByteWarsWidgetSwitcherState State) const;
+	void SetWidgetState(const EAccelByteWarsWidgetSwitcherState State, const FText& StateMessage = FText::GetEmpty()) const;
 
 	/**
 	 * @brief Retrieve predefined max chat entry

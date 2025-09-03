@@ -46,6 +46,7 @@ void UCustomMatchSubsystem::CreateCustomGameSession(
 	const int32 LocalUserNum,
 	const EGameModeNetworkType NetworkType,
 	const EGameModeType GameModeType,
+	const EGameStyle GameStyle,
 	const EAccelByteV2SessionJoinability Joinability,
 	const int32 Duration,
 	const int32 PlayerLives,
@@ -85,6 +86,7 @@ void UCustomMatchSubsystem::CreateCustomGameSession(
 	SessionSettings.Set(GAMESETUP_IsCustomGame, true);
 	SessionSettings.Set(GAMESETUP_DisplayName, TEXT("Custom Game"));
 	SessionSettings.Set(GAMESETUP_GameModeType, UEnum::GetValueAsString(GameModeType));
+	SessionSettings.Set(GAMESETUP_GameStyle, UEnum::GetValueAsString(GameStyle));
 	SessionSettings.Set(GAMESETUP_NetworkType, UEnum::GetValueAsString(NetworkType));
 	SessionSettings.Set(GAMESETUP_MatchTime, static_cast<double>(Duration));
 	SessionSettings.Set(GAMESETUP_StartingLives, static_cast<double>(PlayerLives));
@@ -93,6 +95,7 @@ void UCustomMatchSubsystem::CreateCustomGameSession(
 	SessionSettings.Set(GAMESETUP_MaxTeamNum, static_cast<double>(GameModeType == EGameModeType::TDM ? MaxTeamNum : MaxPlayerTotalNum));
 	SessionSettings.Set(GAMESETUP_IsTeamGame, GameModeType == EGameModeType::TDM);
 	SessionSettings.Set(GAMESETUP_StartGameCountdown, static_cast<double>(INDEX_NONE));
+	SessionSettings.Set(GAMESETUP_MinimumTeamCountToPreventAutoShutdown, 1);
 
 	// Set a flag so we can request a filtered session from backend.
 	// We're using the Match Session flag as we want the browse matches to work with this right away

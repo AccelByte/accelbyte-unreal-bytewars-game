@@ -21,6 +21,8 @@ void UCreateMatchSessionWidget::NativeOnActivated()
 
 	Btn_Elimination->OnClicked().AddUObject(this, &ThisClass::SetSelectedGameMode, EGameModeType::FFA);
 	Btn_TeamDeathMatch->OnClicked().AddUObject(this, &ThisClass::SetSelectedGameMode, EGameModeType::TDM);
+	Btn_Elimination->OnClicked().AddUObject(this, &ThisClass::SetSelectedGameStyle, EGameStyle::Zen);
+	Btn_TeamDeathMatch->OnClicked().AddUObject(this, &ThisClass::SetSelectedGameStyle, EGameStyle::Zen);
 
 	SwitchContent(EContentType::SELECT_GAMEMODE);
 	Ws_Processing->ForceRefresh();
@@ -56,6 +58,11 @@ void UCreateMatchSessionWidget::SetSelectedGameMode(EGameModeType GameModeType)
 	SelectedGameModeType = GameModeType;
 
 	SwitchContent(EContentType::SELECT_NETWORKTYPE);
+}
+
+void UCreateMatchSessionWidget::SetSelectedGameStyle(EGameStyle GameStyle)
+{
+	SelectedGameStyle = GameStyle;
 }
 
 // @@@SNIPSTART CreateMatchSessionWidget.cpp-SetLoadingMessage

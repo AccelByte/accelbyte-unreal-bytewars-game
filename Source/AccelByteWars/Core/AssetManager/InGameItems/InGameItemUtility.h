@@ -18,8 +18,7 @@ UENUM(BlueprintType)
 enum class EItemSkuPlatform : uint8
 {
 	AccelByte,
-	Playstation,
-	Steam,
+	Native,
 };
 
 UENUM(BlueprintType)

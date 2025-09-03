@@ -6,7 +6,7 @@
 #include "WalletEssentialsSubsystem_Starter.h"
 
 #include "OnlineSubsystemUtils.h"
-#include "OnlineWalletInterfaceAccelByte.h"
+#include "OnlineWalletV2InterfaceAccelByte.h"
 
 void UWalletEssentialsSubsystem_Starter::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -15,7 +15,7 @@ void UWalletEssentialsSubsystem_Starter::Initialize(FSubsystemCollectionBase& Co
 	const FOnlineSubsystemAccelByte* Subsystem = static_cast<FOnlineSubsystemAccelByte*>(Online::GetSubsystem(GetWorld()));
 	ensure(Subsystem);
 
-	WalletInterface = Subsystem->GetWalletInterface();
+	WalletInterface = Subsystem->GetWalletV2Interface();
 	ensure(WalletInterface);
 
 	// put your code here

@@ -15,9 +15,9 @@
 #include "Core/UI/MainMenu/Store/StoreItemModel.h"
 
 // @@@SNIPSTART ShopWidget.cpp-NativeOnActivated
-// @@@MULTISNIP Subsystem {"selectedLines": ["1-2", "8-9", "34"]}
-// @@@MULTISNIP Setup {"selectedLines": ["1-2", "13-17", "19-20", "33-34"], "highlightedLines": "{6-11}"}
-// @@@MULTISNIP Combine {"selectedLines": ["1-2", "19-25", "33-34"], "highlightedLines": "{7-10}"}
+// @@@MULTISNIP Subsystem {"selectedLines": ["1-2", "8-9", "26"]}
+// @@@MULTISNIP Setup {"selectedLines": ["1-2", "11-15", "17-18", "25-26"], "highlightedLines": "{6-11}"}
+// @@@MULTISNIP Combine {"selectedLines": ["1-2", "17-23", "25-26"], "highlightedLines": "{7-10}"}
 void UShopWidget::NativeOnActivated()
 {
 	// Widget will load the FTUE later after finished loading store items. 
@@ -28,13 +28,12 @@ void UShopWidget::NativeOnActivated()
 	StoreSubsystem = GetGameInstance()->GetSubsystem<UInGameStoreEssentialsSubsystem>();
 	ensure(StoreSubsystem);
 
-	NativePlatformPurchaseSubsystem = GetGameInstance()->GetSubsystem<UNativePlatformPurchaseSubsystem>();
-
 	// Event binding.
 	Btn_Back->OnClicked().AddUObject(this, &ThisClass::DeactivateWidget);
 	Btn_Refresh->OnClicked().AddUObject(this, &ThisClass::OnRefreshButtonClicked);
 	Tl_ItemCategory->OnTabSelected.AddDynamic(this, &ThisClass::SwitchCategory);
 	Tv_ContentOuter->OnItemClicked().AddUObject(this, &ThisClass::OnStoreItemClicked);
+	Tv_ContentOuter->ClearListItems();
 
 	// Reset UI.
 	SwitchContent(EAccelByteWarsWidgetSwitcherState::Loading);
@@ -43,12 +42,6 @@ void UShopWidget::NativeOnActivated()
 		GetOwningPlayer(),
 		RootPath,
 		FOnGetOrQueryCategories::CreateUObject(this, &ThisClass::OnGetOrQueryCategoriesComplete));
-
-	if (NativePlatformPurchaseSubsystem)
-	{
-		// Query the native platform item mapping if the native platform is valid.
-		NativePlatformPurchaseSubsystem->QueryItemMapping(GetOwningPlayer());
-	}
 
 	OnActivatedMulticastDelegate.Broadcast(GetOwningPlayer());
 }
@@ -131,18 +124,8 @@ void UShopWidget::OnRefreshCategoriesComplete(TArray<FOnlineStoreCategory> Categ
 // @@@SNIPSTART ShopWidget.cpp-OnGetOrQueryOffersComplete
 void UShopWidget::OnGetOrQueryOffersComplete(const TArray<UStoreItemDataObject*> Offers) const
 {
-	TArray<UStoreItemDataObject*> ExistingItems;
-	for (UObject* Object : Tv_ContentOuter->GetListItems())
-	{
-		if (UStoreItemDataObject* ExistingItem = Cast<UStoreItemDataObject>(Object))
-		{
-			ExistingItems.Add(ExistingItem);
-		}
-	}
-	ExistingItems.Append(Offers);
-	Tv_ContentOuter->SetListItems(ExistingItems);
-
-	SwitchContent(ExistingItems.IsEmpty() ?
+	Tv_ContentOuter->SetListItems(Offers);
+	SwitchContent(Tv_ContentOuter->GetNumItems() <= 0 ?
 		EAccelByteWarsWidgetSwitcherState::Empty : EAccelByteWarsWidgetSwitcherState::Not_Empty);
 }
 // @@@SNIPEND

@@ -9,5 +9,5 @@
 // @@@SNIPSTART WalletEssentialsModel.h
 #define TEXT_BALANCE_ERROR NSLOCTEXT("AccelByteWars", "balance_error", "NaN")
 
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnGetWalletInfoComplete, bool /*bWasSuccessful*/, const FAccelByteModelsWalletInfo& /*Response*/);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnGetWalletInfoComplete, bool /*bWasSuccessful*/, const FAccelByteModelsWalletInfoResponse& /*Response*/);
 // @@@SNIPEND

@@ -24,7 +24,7 @@ public:
 #pragma endregion
 
 private:
-	FOnlineWalletAccelBytePtr WalletInterface;
+	FOnlineWalletV2AccelBytePtr WalletInterface;
 
 #pragma region "Tutorial"
 	// put your code here

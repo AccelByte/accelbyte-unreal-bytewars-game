@@ -5,20 +5,11 @@
 using UnrealBuildTool;
 using System.Collections.Generic;
 
-public class AccelByteWarsSteamTarget : TargetRules
+public class AccelByteWarsSteamTarget : AccelByteWarsTarget
 {
-    public AccelByteWarsSteamTarget(TargetInfo Target) : base(Target)
-    {
-        CustomConfig = "Steam";
-
-        Type = TargetType.Game;
-        DefaultBuildSettings = BuildSettingsVersion.V2;
-        ExtraModuleNames.AddRange(new string[] { "AccelByteWars", "AccelByteUe4Sdk", "OnlineSubsystemAccelByte", "AccelByteNetworkUtilities" });
-
-        // Enable logging in shipping builds
-        if (Configuration == UnrealTargetConfiguration.Shipping)
-        {
-            bUseLoggingInShipping = true;
-        }
-    }
+	public AccelByteWarsSteamTarget(TargetInfo Target) : base(Target)
+	{
+		CustomConfig = "Steam";
+		ProjectDefinitions.Add("PLATFORM_STEAM");
+	}
 }

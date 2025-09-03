@@ -34,12 +34,12 @@ public:
 // @@@MULTISNIP OnQueryOrGetWalletInfoByCurrencyCodeComplete {"selectedLines": ["1", "4-8"]}
 // @@@MULTISNIP GetLocalUserNumFromPlayerController {"selectedLines": ["1", "11"]}
 private:
-	FOnlineWalletAccelBytePtr WalletInterface;
+	FOnlineWalletV2AccelBytePtr WalletInterface;
 
 	void OnQueryOrGetWalletInfoByCurrencyCodeComplete(
 		int32 LocalUserNum,
 		bool bWasSuccessful,
-		const FAccelByteModelsWalletInfo& Response,
+		const FAccelByteModelsWalletInfoResponse& Response,
 		const FString& Error) const;
 
 #pragma region "Utilities"

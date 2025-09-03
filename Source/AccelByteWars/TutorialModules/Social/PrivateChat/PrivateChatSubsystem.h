@@ -49,10 +49,12 @@ public:
 
 // @@@SNIPSTART PrivateChatSubsystem.h-protected
 // @@@MULTISNIP GetChatInterface {"selectedLines": ["1", "9"]}
+// @@@MULTISNIP GetIdentityInterface {"selectedLines": ["1", "10"]}
 // @@@MULTISNIP GetPromptSubsystem {"selectedLines": ["1", "12"]}
 // @@@MULTISNIP OnSendPrivateChatComplete {"selectedLines": ["1-2"]}
 // @@@MULTISNIP OnPrivateChatMessageReceived {"selectedLines": ["1", "3"]}
 // @@@MULTISNIP PushPrivateChatMessageReceivedNotification {"selectedLines": ["1", "5"]}
+// @@@MULTISNIP ReconnectChat {"selectedLines": ["1", "7"]}
 protected:
 	void OnSendPrivateChatComplete(FString UserId, FString MsgBody, FString RoomId, bool bWasSuccessful);
 	void OnPrivateChatMessageReceived(const FUniqueNetId& UserId, const TSharedRef<FChatMessage>& Message);
@@ -70,11 +72,12 @@ protected:
 // @@@SNIPSTART PrivateChatSubsystem.h-private
 // @@@MULTISNIP OnSendPrivateChatCompleteDelegates {"selectedLines": ["1-2"]}
 // @@@MULTISNIP OnPrivateChatMessageReceivedDelegates {"selectedLines": ["1", "3"]}
+// @@@MULTISNIP ReconnectChatNumTries {"selectedLines": ["1", "5-6"]}
 private:
 	FOnSendChatComplete OnSendPrivateChatCompleteDelegates;
 	FOnChatPrivateMessageReceived OnPrivateChatMessageReceivedDelegates;
-// @@@SNIPEND
 
 	int32 ReconnectChatNumTries = 0;
 	const int32 ReconnectChatMaxTries = 3;
+// @@@SNIPEND
 };

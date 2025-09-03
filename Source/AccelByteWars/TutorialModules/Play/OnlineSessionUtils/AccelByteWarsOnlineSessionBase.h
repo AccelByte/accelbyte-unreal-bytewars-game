@@ -140,7 +140,7 @@ public:
 		const APlayerController* PC,
 		const FName& SessionName,
 		const EGameModeNetworkType NetworkType,
-		const EGameModeType GameModeType){}
+		const EGameModeType GameModeType, const EGameStyle GameStyle){}
 	virtual void CancelMatchmaking(APlayerController* PC, const FName& SessionName){}
 
 	virtual FOnMatchmakingResponse* GetOnStartMatchmakingCompleteDelegates(){ return nullptr; }
@@ -172,7 +172,7 @@ public:
 	virtual void CreateMatchSession(
 		const int32 LocalUserNum,
 		const EGameModeNetworkType NetworkType,
-		const EGameModeType GameModeType){}
+		const EGameModeType GameModeType, const EGameStyle GameStyle){}
 
 	virtual void FindSessions(
 		const int32 LocalUserNum,

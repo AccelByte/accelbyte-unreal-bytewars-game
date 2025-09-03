@@ -6,11 +6,13 @@
 
 #include "CoreMinimal.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
+#include "TutorialModules/Access/RegisterUserInGame/RegisterUserInGameSubsystem.h"
 #include "UpgradeAccountWidget.generated.h"
 
 class UTextBlock;
 class UEditableText;
 class UCommonButtonBase;
+class UAccelByteWarsGameInstance;
 
 UCLASS()
 class ACCELBYTEWARS_API UUpgradeAccountWidget : public UAccelByteWarsActivatableWidget
@@ -18,7 +20,7 @@ class ACCELBYTEWARS_API UUpgradeAccountWidget : public UAccelByteWarsActivatable
 	GENERATED_BODY()
 
 // @@@SNIPSTART UpgradeAccountWidget.h-protected
-// @@@MULTISNIP UpgradeAccountUI {"selectedLines": ["1", "11-27"]}
+// @@@MULTISNIP UpgradeAccountUI {"selectedLines": ["1", "14-33"]}
 // @@@MULTISNIP UpgradeAccount {"selectedLines": ["1", "6"]}
 protected:
 	virtual void NativeOnActivated() override;
@@ -30,11 +32,17 @@ protected:
 	void ToggleWarningText(bool bShow, const FText& Message = FText::GetEmpty());
 	void ProceedToVerifyAccount();
 
+	UAccelByteWarsGameInstance* GameInstance;
+	URegisterUserInGameSubsystem* RegisterUserInGameSubsystem;
+
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Tb_Warning;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UEditableText* Edt_Username;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
+	UEditableText* Edt_DisplayName;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UEditableText* Edt_Email;
@@ -54,4 +62,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UAccelByteWarsActivatableWidget> VerifyAccountWidgetClass;
 // @@@SNIPEND
+
+private:
+	bool bResetInputOnDeactivated = true;
 };

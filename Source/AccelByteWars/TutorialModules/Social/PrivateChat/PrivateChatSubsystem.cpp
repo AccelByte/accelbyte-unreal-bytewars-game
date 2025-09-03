@@ -17,8 +17,9 @@
 #include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
 
 // @@@SNIPSTART PrivateChatSubsystem.cpp-Initialize
-// @@@MULTISNIP OnSendChatCompleteDelegates {"selectedLines": ["1-2", "66-68", "87-88"]}
-// @@@MULTISNIP OnChatPrivateMessageReceivedDelegates {"selectedLines": ["1-2", "66-67", "69-72", "87-88"]}
+// @@@MULTISNIP OnSendChatCompleteDelegates {"selectedLines": ["1-2", "66-68", "87-88"], "highlightedLines": "{4-8}"}
+// @@@MULTISNIP OnChatPrivateMessageReceivedDelegates {"selectedLines": ["1-2", "66-67", "69-72", "87-88"], "highlightedLines": "{4-12}"}
+// @@@MULTISNIP ReconnectChatDelegates {"selectedLines": ["1-2", "66-67", "74-86", "87-88"], "highlightedLines": "{4-21}"}
 void UPrivateChatSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
@@ -110,8 +111,9 @@ void UPrivateChatSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 // @@@SNIPEND
 
 // @@@SNIPSTART PrivateChatSubsystem.cpp-Deinitialize
-// @@@MULTISNIP OnSendChatCompleteDelegates {"selectedLines": ["1-2", "5-7", "12-13"]}
-// @@@MULTISNIP OnChatPrivateMessageReceivedDelegates {"selectedLines": ["1-2", "5-6", "8-9", "12-13"]}
+// @@@MULTISNIP OnSendChatCompleteDelegates {"selectedLines": ["1-2", "5-7", "12-13"], "highlightedLines": "{4-8}"}
+// @@@MULTISNIP OnChatPrivateMessageReceivedDelegates {"selectedLines": ["1-2", "5-6", "8", "12-13"], "highlightedLines": "{4-9}"}
+// @@@MULTISNIP ReconnectChatDelegates {"selectedLines": ["1-2", "5-6", "10-11", "12-13"], "highlightedLines": "{4-9}"}
 void UPrivateChatSubsystem::Deinitialize()
 {
 	Super::Deinitialize();
@@ -301,6 +303,7 @@ void UPrivateChatSubsystem::PushPrivateChatMessageReceivedNotification(const FUn
 }
 // @@@SNIPEND
 
+// @@@SNIPSTART PrivateChatSubsystem.cpp-ReconnectChat
 void UPrivateChatSubsystem::ReconnectChat(FString Message)
 {
 	if (!GetWorld() || GetWorld()->bIsTearingDown)
@@ -332,6 +335,7 @@ void UPrivateChatSubsystem::ReconnectChat(FString Message)
 	GetChatInterface()->Connect(0);
 	ReconnectChatNumTries++;
 }
+// @@@SNIPEND
 
 // @@@SNIPSTART PrivateChatSubsystem.cpp-GetChatInterface
 FOnlineChatAccelBytePtr UPrivateChatSubsystem::GetChatInterface() const
@@ -347,6 +351,7 @@ FOnlineChatAccelBytePtr UPrivateChatSubsystem::GetChatInterface() const
 }
 // @@@SNIPEND
 
+// @@@SNIPSTART PrivateChatSubsystem.cpp-GetIdentityInterface
 FOnlineIdentityAccelBytePtr UPrivateChatSubsystem::GetIdentityInterface() const
 {
 	const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
@@ -358,6 +363,7 @@ FOnlineIdentityAccelBytePtr UPrivateChatSubsystem::GetIdentityInterface() const
 
 	return StaticCastSharedPtr<FOnlineIdentityAccelByte>(Subsystem->GetIdentityInterface());
 }
+// @@@SNIPEND
 
 // @@@SNIPSTART PrivateChatSubsystem.cpp-GetPromptSubsystem
 UPromptSubsystem* UPrivateChatSubsystem::GetPromptSubsystem() const

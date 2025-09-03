@@ -4,19 +4,27 @@
 
 #include "Core/GameModes/AccelByteWarsInGameGameMode.h"
 
+#include <algorithm>
+
+#include "Core/Actor/AccelByteWarsFxActor.h"
 #include "Core/Player/AccelByteWarsPlayerPawn.h"
 #include "Core/Components/AccelByteWarsGameplayObjectComponent.h"
+#include "Core/Player/AccelByteWarsBotController.h"
 #include "Core/Player/AccelByteWarsPlayerController.h"
 #include "Core/Player/AccelByteWarsPlayerState.h"
-#include "Core/System/AccelByteWarsGameSession.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
+#include "Core/Utilities/AccelByteWars2DProbabilityDistribution.h"
 #include "Core/Utilities/AccelByteWarsUtility.h"
+#include "Core/Actor/AccelByteWarsSpawner.h"
+#include "Core/Settings/SpawnerConfigurationDataAsset.h"
 #include "GameFramework/PlayerStart.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
-#include "Kismet/KismetSystemLibrary.h"
+#include "Core/Player/AccelByteWarsAttributeSet.h"
 
-#define NULLPTR_CHECK(Object) if (!Object) return;
+#define NULLPTR_CHECK(Object) \
+	if (!Object)              \
+		return;
 
 AAccelByteWarsInGameGameMode::AAccelByteWarsInGameGameMode()
 {
@@ -57,12 +65,19 @@ void AAccelByteWarsInGameGameMode::BeginPlay()
 	}
 #endif
 #pragma endregion
-	
+
 	Super::BeginPlay();
 }
 
 void AAccelByteWarsInGameGameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	// Clean up the Asteroid spawner
+	if (Spawner)
+	{
+		Spawner->StopSpawning();
+		Spawner = nullptr;
+	}
+
 	Super::EndPlay(EndPlayReason);
 
 	if (!ABInGameGameState)
@@ -91,101 +106,102 @@ void AAccelByteWarsInGameGameMode::EndPlay(const EEndPlayReason::Type EndPlayRea
 }
 
 // @@@SNIPSTART AccelByteWarsInGameGameMode.cpp-Tick
-// @@@MULTISNIP AwaitingPlayerState {"selectedLines": ["1-2", "8-27", "93"]}
-// @@@MULTISNIP AwaitingPlayerMidGameState {"selectedLines": ["1-2", "36-51", "93"]}
-// @@@MULTISNIP GameStartedState {"selectedLines": ["1-2", "52-70", "93"]}
-// @@@MULTISNIP GameEndsState {"selectedLines": ["1-2", "78-88", "93"]}
+// @@@MULTISNIP AwaitingPlayerState {"selectedLines": ["1-2", "8-28", "93"]}
+// @@@MULTISNIP AwaitingPlayerMidGameState {"selectedLines": ["1-2", "37-52", "93"]}
+// @@@MULTISNIP GameStartedState {"selectedLines": ["1-2", "53-71", "93"]}
+// @@@MULTISNIP GameEndsState {"selectedLines": ["1-2", "79-89", "93"]}
 void AAccelByteWarsInGameGameMode::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
 	switch (ABInGameGameState->GameStatus)
 	{
-	case EGameStatus::IDLE:
-	case EGameStatus::AWAITING_PLAYERS:
-		// Check if all registered players have re-entered the server
-		if (ABInGameGameState->PlayerArray.Num() == ABInGameGameState->GetRegisteredPlayersNum())
-		{
-			ABInGameGameState->GameStatus = EGameStatus::PRE_GAME_COUNTDOWN_STARTED;
-			if (IsRunningDedicatedServer())
+		case EGameStatus::IDLE:
+		case EGameStatus::AWAITING_PLAYERS:
+			// Check if all registered players have re-entered the server
+			if (ABInGameGameState->PlayerArray.Num() == ABInGameGameState->GetRegisteredPlayersNum())
 			{
-				// reset NotEnoughPlayerCountdown
-				SetupShutdownCountdownsValue();
-			}
-		}
-		else
-		{
-			// Use NotEnoughPlayerCountdown as a countdown to wait for all registered players to reconnect to the DS.
-			if (IsRunningDedicatedServer())
-			{
-				NotEnoughPlayerCountdownCounting(DeltaSeconds);
-			}
-		}
-		break;
-	case EGameStatus::PRE_GAME_COUNTDOWN_STARTED:
-		ABInGameGameState->PreGameCountdown -= DeltaSeconds;
-		if (ABInGameGameState->PreGameCountdown <= 0)
-		{
-			ABInGameGameState->GameStatus = EGameStatus::GAME_STARTED;
-			StartGame();
-		}
-		break;
-	case EGameStatus::AWAITING_PLAYERS_MID_GAME:
-		if (IsRunningDedicatedServer())
-		{
-			SimulateServerCrashCountdownCounting(DeltaSeconds);
-
-			if (ShouldStartNotEnoughPlayerCountdown())
-			{
-				NotEnoughPlayerCountdownCounting(DeltaSeconds);
+				ABInGameGameState->GameStatus = EGameStatus::PRE_GAME_COUNTDOWN_STARTED;
+				FillEmptySlotWithBot();
+				if (IsRunningDedicatedServer())
+				{
+					// reset NotEnoughPlayerCountdown
+					SetupShutdownCountdownsValue();
+				}
 			}
 			else
 			{
+				// Use NotEnoughPlayerCountdown as a countdown to wait for all registered players to reconnect to the DS.
+				if (IsRunningDedicatedServer())
+				{
+					NotEnoughPlayerCountdownCounting(DeltaSeconds);
+				}
+			}
+			break;
+		case EGameStatus::PRE_GAME_COUNTDOWN_STARTED:
+			ABInGameGameState->PreGameCountdown -= DeltaSeconds;
+			if (ABInGameGameState->PreGameCountdown <= 0)
+			{
 				ABInGameGameState->GameStatus = EGameStatus::GAME_STARTED;
-				SetupShutdownCountdownsValue();
+				StartGame();
 			}
-		}
-		break;
-	case EGameStatus::GAME_STARTED:
-		if (IsRunningDedicatedServer())
-		{
-			SimulateServerCrashCountdownCounting(DeltaSeconds);
-
-			if (ShouldStartNotEnoughPlayerCountdown())
+			break;
+		case EGameStatus::AWAITING_PLAYERS_MID_GAME:
+			if (IsRunningDedicatedServer())
 			{
-				ABInGameGameState->GameStatus = EGameStatus::AWAITING_PLAYERS_MID_GAME;
-			}
-		}
+				SimulateServerCrashCountdownCounting(DeltaSeconds);
 
-		// Gameplay timer
-		ABInGameGameState->TimeLeft -= DeltaSeconds;
-		if (ABInGameGameState->TimeLeft <= 0)
-		{
-			ABInGameGameState->TimeLeft = 0;
-			EndGame(GAME_END_REASON_TIMES_UP);
-		}
-		break;
-	case EGameStatus::GAME_ENDS_DELAY:
-		GameEndsDelay -= DeltaSeconds;
-		if (GameEndsDelay <= 0)
-		{
-			ABInGameGameState->GameStatus = EGameStatus::GAME_ENDS;
-		}
-		break;
-	case EGameStatus::GAME_ENDS:
-		if (IsRunningDedicatedServer() && ABInGameGameState->GameSetup.GameEndsShutdownCountdown != INDEX_NONE)
-		{
-			ABInGameGameState->PostGameCountdown -= DeltaSeconds;
-			if (ABInGameGameState->PostGameCountdown <= 0)
-			{
-				ABInGameGameState->GameStatus = EGameStatus::INVALID;
-				CloseGame("Game finished");
+				if (ShouldStartNotEnoughPlayerCountdown())
+				{
+					NotEnoughPlayerCountdownCounting(DeltaSeconds);
+				}
+				else
+				{
+					ABInGameGameState->GameStatus = EGameStatus::GAME_STARTED;
+					SetupShutdownCountdownsValue();
+				}
 			}
-		}
-		break;
-	case EGameStatus::INVALID:
-		break;
-	default: ;
+			break;
+		case EGameStatus::GAME_STARTED:
+			if (IsRunningDedicatedServer())
+			{
+				SimulateServerCrashCountdownCounting(DeltaSeconds);
+
+				if (ShouldStartNotEnoughPlayerCountdown())
+				{
+					ABInGameGameState->GameStatus = EGameStatus::AWAITING_PLAYERS_MID_GAME;
+				}
+			}
+
+			// Gameplay timer
+			ABInGameGameState->TimeLeft -= DeltaSeconds;
+			if (ABInGameGameState->TimeLeft <= 0)
+			{
+				ABInGameGameState->TimeLeft = 0;
+				EndGame(GAME_END_REASON_TIMES_UP);
+			}
+			break;
+		case EGameStatus::GAME_ENDS_DELAY:
+			GameEndsDelay -= DeltaSeconds;
+			if (GameEndsDelay <= 0)
+			{
+				ABInGameGameState->GameStatus = EGameStatus::GAME_ENDS;
+			}
+			break;
+		case EGameStatus::GAME_ENDS:
+			if (IsRunningDedicatedServer() && ABInGameGameState->GameSetup.GameEndsShutdownCountdown != INDEX_NONE)
+			{
+				ABInGameGameState->PostGameCountdown -= DeltaSeconds;
+				if (ABInGameGameState->PostGameCountdown <= 0)
+				{
+					ABInGameGameState->GameStatus = EGameStatus::INVALID;
+					CloseGame("Game finished");
+				}
+			}
+			break;
+		case EGameStatus::INVALID:
+			break;
+		default:;
 	}
 }
 // @@@SNIPEND
@@ -218,13 +234,46 @@ void AAccelByteWarsInGameGameMode::PostLogin(APlayerController* NewPlayer)
 	// Notify other if the match has already started
 	switch (ABInGameGameState->GameStatus)
 	{
-	case EGameStatus::GAME_STARTED:
-	case EGameStatus::AWAITING_PLAYERS_MID_GAME:
-		if (OnPlayerEnteredMatch.IsBound())
+		case EGameStatus::GAME_STARTED:
+		case EGameStatus::AWAITING_PLAYERS_MID_GAME:
+			if (OnPlayerEnteredMatch.IsBound())
+			{
+				OnPlayerEnteredMatch.Broadcast(AbPlayerState->GetUniqueId().GetUniqueNetId());
+			}
+			break;
+	}
+}
+
+void AAccelByteWarsInGameGameMode::Logout(AController* Exiting)
+{
+	Super::Logout(Exiting);
+
+	if (!Exiting)
+	{
+		return;
+	}
+
+	// Check if this was a human player (not a bot)
+	if (IsValid(Exiting->PlayerState) && Cast<AAccelByteWarsPlayerController>(Exiting))
+	{
+		const AAccelByteWarsPlayerState* ExitingPlayerState = Cast<AAccelByteWarsPlayerState>(Exiting->PlayerState);
+		if (ExitingPlayerState && ExitingPlayerState->GetUniqueId().IsValid())
 		{
-			OnPlayerEnteredMatch.Broadcast(AbPlayerState->GetUniqueId().GetUniqueNetId());
+			GAMEMODE_LOG(Log, TEXT("Human player disconnected: %s"), *ExitingPlayerState->GetPlayerName());
 		}
-		break;
+
+		// Check if we still have valid players after this logout
+		if (!HasValidPlayers())
+		{
+			GAMEMODE_LOG(Warning, TEXT("No valid players remaining after logout. Game may need to end."));
+
+			// Only trigger automatic shutdown if configured and we're in a running state
+			if (ShouldStartNotEnoughPlayerCountdown() && (ABInGameGameState->GameStatus == EGameStatus::GAME_STARTED || ABInGameGameState->GameStatus == EGameStatus::AWAITING_PLAYERS_MID_GAME))
+			{
+				ABInGameGameState->GameStatus = EGameStatus::AWAITING_PLAYERS_MID_GAME;
+				GAMEMODE_LOG(Log, TEXT("Transitioning to AWAITING_PLAYERS_MID_GAME due to insufficient players"));
+			}
+		}
 	}
 }
 
@@ -245,10 +294,7 @@ void AAccelByteWarsInGameGameMode::DelayedPlayerTeamSetupWithPredefinedData(APla
 	}
 
 	if (
-		ABInGameGameState->HasGameStarted() &&
-		HasMatchStarted() &&
-		!AbPlayerState->bPendingTeamAssignment &&
-		!ABInGameGameState->HasGameEnded())
+		ABInGameGameState->HasGameStarted() && HasMatchStarted() && !AbPlayerState->bPendingTeamAssignment && !ABInGameGameState->HasGameEnded())
 	{
 		SpawnAndPossesPawn(PlayerState);
 	}
@@ -275,7 +321,7 @@ int32 AAccelByteWarsInGameGameMode::AddPlayerScore(
 	}
 
 	// set score in PlayerState and GameState
-	const float FinalScore = AccelByteWarsPlayerState->GetScore() + InScore;
+	const float FinalScore = AccelByteWarsPlayerState->GetScore() + (InScore * AccelByteWarsPlayerState->GetAttributeSet()->ScoreMultiplier.GetCurrentValue());
 	AccelByteWarsPlayerState->SetScore(FinalScore);
 	PlayerData->Score = FinalScore;
 
@@ -319,6 +365,31 @@ int32 AAccelByteWarsInGameGameMode::DecreasePlayerLife(APlayerState* PlayerState
 	return AccelByteWarsPlayerState->NumLivesLeft;
 }
 
+int32 AAccelByteWarsInGameGameMode::IncrementPlayerLife(APlayerState* PlayerState, uint8 Increment)
+{
+	AAccelByteWarsPlayerState* AccelByteWarsPlayerState = static_cast<AAccelByteWarsPlayerState*>(PlayerState);
+	if (!AccelByteWarsPlayerState)
+	{
+		GAMEMODE_LOG(Warning, TEXT("PlayerState is not derived from AAccelByteWarsPlayerState. Operation cancelled"));
+		return INDEX_NONE;
+	}
+
+	FGameplayPlayerData* PlayerData =
+		ABInGameGameState->GetPlayerDataById(PlayerState->GetUniqueId(), AccelByteWarsUtility::GetControllerId(PlayerState));
+	if (!PlayerData)
+	{
+		GAMEMODE_LOG(Warning, TEXT("Player is not in Teams data. Add player to team via AddToTeam. Operation cancelled"));
+		return INDEX_NONE;
+	}
+
+	AccelByteWarsPlayerState->NumLivesLeft += Increment;
+	PlayerData->NumLivesLeft = AccelByteWarsPlayerState->NumLivesLeft;
+
+	ABInGameGameState->OnNotify_Teams();
+
+	return AccelByteWarsPlayerState->NumLivesLeft;
+}
+
 void AAccelByteWarsInGameGameMode::EndGame(const FString Reason)
 {
 	ABInGameGameState->GameStatus = EGameStatus::GAME_ENDS_DELAY;
@@ -331,16 +402,67 @@ void AAccelByteWarsInGameGameMode::EndGame(const FString Reason)
 	GAMEMODE_LOG(Log, TEXT("Game ends with reason: %s."), *Reason);
 }
 
+bool AAccelByteWarsInGameGameMode::HasValidPlayers() const
+{
+	if (!ABInGameGameState)
+	{
+		GAMEMODE_LOG(Warning, TEXT("GameState is null when checking for valid players"));
+		return false;
+	}
+
+	const int32 HumanPlayerCount = GetConnectedHumanPlayerCount();
+
+	const bool bHasHumanPlayers = HumanPlayerCount > 0;
+	const bool bHasRegisteredPlayers = ABInGameGameState->GetRegisteredPlayersNum() > 0;
+	const bool bIsAwaitingReconnection = (ABInGameGameState->GameStatus == EGameStatus::AWAITING_PLAYERS || ABInGameGameState->GameStatus == EGameStatus::AWAITING_PLAYERS_MID_GAME);
+
+	return bHasHumanPlayers || (bHasRegisteredPlayers && bIsAwaitingReconnection);
+}
+
+int32 AAccelByteWarsInGameGameMode::GetConnectedHumanPlayerCount() const
+{
+	if (!ABInGameGameState)
+	{
+		return 0;
+	}
+
+	int32 HumanPlayerCount = 0;
+
+	for (const TObjectPtr<APlayerState>& PlayerState : ABInGameGameState->PlayerArray)
+	{
+		if (!PlayerState)
+		{
+			continue;
+		}
+
+		if (const AController* PlayerController = PlayerState->GetOwningController())
+		{
+			if (Cast<AAccelByteWarsPlayerController>(PlayerController))
+			{
+				if (PlayerState->GetUniqueId().IsValid())
+				{
+					HumanPlayerCount++;
+				}
+			}
+		}
+	}
+
+	return HumanPlayerCount;
+}
+
 void AAccelByteWarsInGameGameMode::OnShipDestroyed(
 	UAccelByteWarsGameplayObjectComponent* Ship,
 	const float MissileScore,
-	APlayerController* SourcePlayerController)
+	AController* SourcePlayerController)
 {
-	NULLPTR_CHECK(Ship);
-	NULLPTR_CHECK(SourcePlayerController);
-
-	AAccelByteWarsPlayerState* SourcePlayerState = Cast<AAccelByteWarsPlayerState>(SourcePlayerController->PlayerState);
-	NULLPTR_CHECK(SourcePlayerState);
+	// NOTE: Non missile hitting player will don't have SourcePlayerController, you need to always check whether
+	// the instigator is from player or not.
+	AAccelByteWarsPlayerState* SourcePlayerState = nullptr;
+	if (SourcePlayerController != nullptr)
+	{
+		SourcePlayerState = Cast<AAccelByteWarsPlayerState>(SourcePlayerController->PlayerState);
+		NULLPTR_CHECK(SourcePlayerState);
+	}
 
 	const AActor* ShipActor = Ship->GetOwner();
 	NULLPTR_CHECK(ShipActor);
@@ -348,7 +470,7 @@ void AAccelByteWarsInGameGameMode::OnShipDestroyed(
 	const APawn* ShipOwner = Cast<APawn>(ShipActor->GetNetOwner());
 	NULLPTR_CHECK(ShipOwner);
 
-	const APlayerController* ShipPC = Cast<APlayerController>(ShipOwner->Controller);
+	const AController* ShipPC = Cast<AController>(ShipOwner->Controller);
 	NULLPTR_CHECK(ShipPC);
 
 	AAccelByteWarsPlayerState* ShipPlayerState = Cast<AAccelByteWarsPlayerState>(ShipPC->PlayerState);
@@ -371,7 +493,7 @@ void AAccelByteWarsInGameGameMode::OnShipDestroyed(
 	// Adjust player's var
 	DecreasePlayerLife(ShipPlayerState, 1);
 	// If friendly, do nothing
-	if (SourcePlayerState->TeamId != ShipPlayerState->TeamId)
+	if (SourcePlayerState && SourcePlayerState->TeamId != ShipPlayerState->TeamId)
 	{
 		AddPlayerScore(SourcePlayerState, MissileScore);
 	}
@@ -406,21 +528,36 @@ void AAccelByteWarsInGameGameMode::OnShipDestroyed(
 	}
 
 	// If score limit reached, end game
-	FGameplayTeamData TeamData{};
-	float TeamScore = 0;
-	int32 TeamLivesLeft = 0, TeamKillCount = 0, TeamDeaths = 0;
-	ABInGameGameState->GetTeamDataByTeamId(SourcePlayerState->TeamId, TeamData, TeamScore, TeamLivesLeft, TeamKillCount, TeamDeaths);
-	if (ABInGameGameState->GameSetup.ScoreLimit >= 0)
+	if (SourcePlayerState)
 	{
-		if (TeamScore >= ABInGameGameState->GameSetup.ScoreLimit)
+		FGameplayTeamData TeamData{};
+		float TeamScore = 0;
+		int32 TeamLivesLeft = 0, TeamKillCount = 0, TeamDeaths = 0;
+		ABInGameGameState->GetTeamDataByTeamId(SourcePlayerState->TeamId, TeamData, TeamScore, TeamLivesLeft, TeamKillCount, TeamDeaths);
+		if (ABInGameGameState->GameSetup.ScoreLimit >= 0)
 		{
-			EndGame("Score limit reached");
-			return;
+			if (TeamScore >= ABInGameGameState->GameSetup.ScoreLimit)
+			{
+				EndGame("Score limit reached");
+				return;
+			}
 		}
 	}
 }
 
-void AAccelByteWarsInGameGameMode::IncreasePlayerKilledAttempt(const APlayerController* TargetPlayer)
+void AAccelByteWarsInGameGameMode::OnMissileDestroyed_Implementation(FVector Location,
+	UAccelByteWarsGameplayObjectComponent* HitObject, FLinearColor MissileColour, AActor* MissileOwner)
+{
+	FActorSpawnParameters Parameters;
+	Parameters.Owner = MissileOwner;
+	AAccelByteWarsFxActor* FxActor = GetWorld()->SpawnActor<AAccelByteWarsFxActor>(DestroyedFxActor, Location, FRotator::ZeroRotator, Parameters);
+	if (FxActor)
+	{
+		FxActor->SetNiagaraFxColor(MissileColour);
+	}
+}
+
+void AAccelByteWarsInGameGameMode::IncreasePlayerKilledAttempt(const AController* TargetPlayer)
 {
 	NULLPTR_CHECK(TargetPlayer);
 
@@ -471,15 +608,34 @@ void AAccelByteWarsInGameGameMode::InstaKillPlayers(const TArray<APlayerState*>&
 void AAccelByteWarsInGameGameMode::RemoveFromActiveGameObjects(AActor* DestroyedActor)
 {
 	if (UAccelByteWarsGameplayObjectComponent* Component =
-		DestroyedActor->FindComponentByClass<UAccelByteWarsGameplayObjectComponent>())
+			DestroyedActor->FindComponentByClass<UAccelByteWarsGameplayObjectComponent>())
 	{
 		ABInGameGameState->ActiveGameObjects.Remove(Component);
+	}
+}
+
+void AAccelByteWarsInGameGameMode::OnShipDestroyedFX_Implementation(AController* SourcePlayerController,
+	const FTransform ShipTransform, AAccelByteWarsPlayerState* ShipPlayerState)
+{
+	FActorSpawnParameters SpawnParameters;
+	SpawnParameters.Owner = ShipPlayerState->GetOwningController();
+	AAccelByteWarsFxActor* DestroyFx = GetWorld()->SpawnActor<AAccelByteWarsFxActor>(ShipDestroyFxClass, ShipTransform, SpawnParameters);
+	if (DestroyFx)
+	{
+		DestroyFx->SetNiagaraFxColor(ShipPlayerState->TeamColor);
+	}
+	if (AAccelByteWarsPlayerPawn* DestroyedPawn = Cast<AAccelByteWarsPlayerPawn>(ShipPlayerState->GetOwner()))
+	{
+		DestroyedPawn->PulseCameraBackground();
 	}
 }
 
 #pragma region "Gameplay logic"
 void AAccelByteWarsInGameGameMode::StartGame()
 {
+	// Spawn planets
+	SpawnPlanets();
+
 	// Spawn player start
 	for (const FVector& PlayerStart : PlayerStartPoints)
 	{
@@ -491,16 +647,51 @@ void AAccelByteWarsInGameGameMode::StartGame()
 	{
 		SpawnAndPossesPawn(PlayerState);
 	}
+	AAccelByteWarsInGameGameState* InGameGameState = GetGameState<AAccelByteWarsInGameGameState>();
+	// Create AccelByteWarsSpawner using DataAsset configuration
+	if (!Spawner && HasAuthority() && InGameGameState && InGameGameState->GameSetup.SpawnerConfiguration)
+	{
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		SpawnParams.Owner = this;
 
-	// Spawn planets
-	SpawnPlanets();
+		Spawner = GetWorld()->SpawnActor<AAccelByteWarsSpawner>(
+			AAccelByteWarsSpawner::StaticClass(),
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			SpawnParams);
+
+		USpawnerConfigurationDataAsset* SpawnerConfiguration = InGameGameState->GameSetup.SpawnerConfiguration;
+
+		if (Spawner)
+		{
+			if (SpawnerConfiguration)
+			{
+				// Apply configuration from DataAsset
+				SpawnerConfiguration->ApplyConfigurationToSpawner(Spawner);
+				UE_LOG(LogTemp, Log, TEXT("AccelByteWarsInGameGameMode: Created Asteroid spawner and applied DataAsset configuration"));
+				if (InGameGameState->HasGameStarted() && SpawnerConfiguration->Configuration.bAutoStartSpawning)
+				{
+					Spawner->StartSpawning();
+				}
+				else
+				{
+					Spawner->StopSpawning();
+				}
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("AccelByteWarsInGameGameMode: Failed to create Asteroid spawner"));
+		}
+	}
 
 	// Notify that the game has started
 	if (OnGameStartedDelegates.IsBound())
 	{
 		OnGameStartedDelegates.Broadcast();
 	}
-	for (const APlayerState* Player: GameState->PlayerArray)
+	for (const APlayerState* Player : GameState->PlayerArray)
 	{
 		if (!Player)
 		{
@@ -518,7 +709,7 @@ void AAccelByteWarsInGameGameMode::SetupGameplayObject(AActor* Object) const
 {
 	Object->SetReplicates(true);
 	if (UAccelByteWarsGameplayObjectComponent* Component =
-		Cast<UAccelByteWarsGameplayObjectComponent>(Object->GetComponentByClass(UAccelByteWarsGameplayObjectComponent::StaticClass())))
+			Cast<UAccelByteWarsGameplayObjectComponent>(Object->GetComponentByClass(UAccelByteWarsGameplayObjectComponent::StaticClass())))
 	{
 		ABInGameGameState->ActiveGameObjects.Add(Component);
 	}
@@ -535,7 +726,7 @@ int32 AAccelByteWarsInGameGameMode::GetLivingTeamCount() const
 	for (const TObjectPtr<APlayerState>& Player : ABInGameGameState->PlayerArray)
 	{
 		if (const AAccelByteWarsPlayerState* ByteWarsPlayerState =
-			static_cast<const AAccelByteWarsPlayerState*>(Player))
+				static_cast<const AAccelByteWarsPlayerState*>(Player))
 		{
 			// if player's have no lives left, skip
 			if (ByteWarsPlayerState->NumLivesLeft <= 0)
@@ -556,7 +747,7 @@ void AAccelByteWarsInGameGameMode::SpawnAndPossesPawn(APlayerState* PlayerState)
 	AAccelByteWarsPlayerState* ABPlayerState = Cast<AAccelByteWarsPlayerState>(PlayerState);
 	NULLPTR_CHECK(ABPlayerState)
 
-	APlayerController* PlayerController = ABPlayerState->GetPlayerController();
+	AController* PlayerController = ABPlayerState->GetOwningController();
 	NULLPTR_CHECK(PlayerController)
 
 	// Only spawn if player have lives
@@ -568,7 +759,7 @@ void AAccelByteWarsInGameGameMode::SpawnAndPossesPawn(APlayerState* PlayerState)
 		return;
 
 	// Pawn uses BP class pawn and "expose on spawn"ed parameters, use implementable event
-	AAccelByteWarsPlayerPawn* Pawn = CreatePlayerPawn(FindGoodPlayerPosition(ABPlayerState), PlayerController);
+	AAccelByteWarsPlayerPawn* Pawn = CreateShipPawn(FindGoodPlayerPosition(ABPlayerState), PlayerController);
 	NULLPTR_CHECK(Pawn);
 
 	// setup and posses
@@ -584,17 +775,23 @@ AAccelByteWarsPlayerPawn* AAccelByteWarsInGameGameMode::CreatePlayerPawn(
 	const FVector& Location,
 	APlayerController* PlayerController) const
 {
-	if (PlayerController == nullptr)
+	return CreateShipPawn(Location, PlayerController);
+}
+
+AAccelByteWarsPlayerPawn* AAccelByteWarsInGameGameMode::CreateShipPawn(const FVector& Location,
+	AController* Controller) const
+{
+	if (Controller == nullptr)
 		return nullptr;
 
 	FActorSpawnParameters SpawnParameters;
-	SpawnParameters.Owner = PlayerController;
+	SpawnParameters.Owner = Controller;
 	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	// Random rotation.
 	const float RandomYaw = FMath::RandRange(180.0, -180.0);
 
-	AAccelByteWarsPlayerPawn* NewPlayerPawn = PlayerController->GetWorld()->SpawnActor<AAccelByteWarsPlayerPawn>(
+	AAccelByteWarsPlayerPawn* NewPlayerPawn = Controller->GetWorld()->SpawnActor<AAccelByteWarsPlayerPawn>(
 		PawnClass,
 		FTransform(FRotator(0.0, RandomYaw, 0.0), Location),
 		SpawnParameters);
@@ -605,11 +802,12 @@ AAccelByteWarsPlayerPawn* AAccelByteWarsInGameGameMode::CreatePlayerPawn(
 	if (ABGameInstance == nullptr)
 		return nullptr;
 
-	AAccelByteWarsPlayerController* ABPlayerController = Cast<AAccelByteWarsPlayerController>(PlayerController);
-	if (ABPlayerController == nullptr)
-		return nullptr;
+	// Can be bot
+	// AAccelByteWarsPlayerController* ABPlayerController = Cast<AAccelByteWarsPlayerController>(PlayerController);
+	// if (ABPlayerController == nullptr)
+	// 	return nullptr;
 
-	APlayerState* PlayerState = ABPlayerController->PlayerState;
+	APlayerState* PlayerState = Controller->PlayerState;
 	if (PlayerState == nullptr)
 		return nullptr;
 
@@ -620,6 +818,26 @@ AAccelByteWarsPlayerPawn* AAccelByteWarsInGameGameMode::CreatePlayerPawn(
 	NewPlayerPawn->SetReplicates(true);
 
 	return NewPlayerPawn;
+}
+
+void AAccelByteWarsInGameGameMode::FillEmptySlotWithBot()
+{
+	const int32 CurrentPlayers = ABInGameGameState->PlayerArray.Num();
+	const int32 MaxPlayers = ABInGameGameState->GameSetup.MaxPlayers;
+
+	if (CurrentPlayers < MaxPlayers)
+	{
+		const int32 BotsNeeded = MaxPlayers - CurrentPlayers;
+
+		for (int32 i = 0; i < BotsNeeded; ++i)
+		{
+			// Create bot controller
+			AAccelByteWarsBotController* BotController = GetWorld()->SpawnActor<AAccelByteWarsBotController>(AAccelByteWarsBotController::StaticClass());
+			BotController->InitPlayerState();
+			ABInGameGameState->AddPlayerState(BotController->PlayerState);
+			PlayerTeamSetup(BotController);
+		}
+	}
 }
 
 TArray<FVector> AAccelByteWarsInGameGameMode::GetActiveGameObjectsPosition() const
@@ -645,10 +863,10 @@ TArray<FVector> AAccelByteWarsInGameGameMode::GetActiveGameObjectsPosition() con
 bool AAccelByteWarsInGameGameMode::FindGoodSpawnLocation(FVector2D& OutCoord)
 {
 	if (!FindGoodSpawnLocation(
-		OutCoord,
-		GetActiveGameObjectsPosition(),
-		ABInGameGameState->MinGameBound,
-		ABInGameGameState->MaxGameBound))
+			OutCoord,
+			GetActiveGameObjectsPosition(),
+			ABInGameGameState->MinGameBound,
+			ABInGameGameState->MaxGameBound))
 	{
 		return false;
 	}
@@ -657,6 +875,20 @@ bool AAccelByteWarsInGameGameMode::FindGoodSpawnLocation(FVector2D& OutCoord)
 
 void AAccelByteWarsInGameGameMode::SpawnPlanets()
 {
+	AccelByteWars2DProbabilityDistribution spawnGrid(ABInGameGameState->MinGameBound, ABInGameGameState->MaxGameBound, 20);
+
+	int numRows = spawnGrid.GetNumRows();
+	int numCols = spawnGrid.GetNumCols();
+	FVector2D cellSize = spawnGrid.GetCellSize();
+
+	spawnGrid.IterateGrid([numRows, numCols, cellSize](int col, int row, float& value) {
+		value = std::min(
+			{ (col + 1) * cellSize.X,
+				(row + 1) * cellSize.Y,
+				(numCols - col) * cellSize.X,
+				(numRows - row) * cellSize.Y });
+	});
+
 	for (int i = 0; i < MaxTargetPlanetCount; ++i)
 	{
 		// random which planet to spawn
@@ -664,14 +896,22 @@ void AAccelByteWarsInGameGameMode::SpawnPlanets()
 		const FPlanetMetadata PlanetData = *PlanetMap.Find(RandomIndex);
 
 		// Calculate pseudorandom location
-		FVector Location;
-		if (!FindGoodPlanetPosition(Location))
+		FVector2D Location;
+		if (!spawnGrid.FindGoodPosition(Location, PlanetData.PlanetRadius))
 		{
 			continue;
 		}
 
+		spawnGrid.IterateGrid([&spawnGrid, cellSize, Location, radius = PlanetData.PlanetRadius](int col, int row, float& value) {
+			FVector2D cellPosition = spawnGrid.GetCellLocation(col, row);
+			float distToCell = FVector2D::Distance(cellPosition, Location) - radius;
+			distToCell = FMath::Max(0.0f, distToCell);
+			value = FMath::Min(value, distToCell);
+		});
+
+		FVector Location3D = FVector(Location.X, Location.Y, 0.0f);
 		const TSubclassOf<AActor>& ObjectToSpawn = ObjectsToSpawn[PlanetData.PlanetID];
-		AActor* SpawnedObject = GetWorld()->SpawnActor(ObjectToSpawn, &Location, &FRotator::ZeroRotator);
+		AActor* SpawnedObject = GetWorld()->SpawnActor(ObjectToSpawn, &Location3D, &FRotator::ZeroRotator);
 		SetupGameplayObject(SpawnedObject);
 
 		// In case issue "missile go through object" happened again
@@ -720,10 +960,10 @@ bool AAccelByteWarsInGameGameMode::FindGoodPlanetPosition(FVector& Position) con
 	const TArray<FVector> ActiveGameObjectsCoords = GetActiveGameObjectsPosition();
 	FVector2D Position2D;
 	if (!FindGoodSpawnLocation(
-		Position2D,
-		ActiveGameObjectsCoords,
-		MinBound,
-		MaxBound))
+			Position2D,
+			ActiveGameObjectsCoords,
+			MinBound,
+			MaxBound))
 	{
 		return false;
 	}
@@ -733,7 +973,7 @@ bool AAccelByteWarsInGameGameMode::FindGoodPlanetPosition(FVector& Position) con
 
 	// Assign a constant Z coord in case the game assign a random number
 	Position.Z = CommonZCoord;
-	
+
 	return true;
 }
 
@@ -755,35 +995,35 @@ FVector AAccelByteWarsInGameGameMode::FindGoodPlayerPosition(APlayerState* Playe
 	const float HalfHeight = FMath::Abs(ABInGameGameState->MaxGameBound.Y - ABInGameGameState->MinGameBound.Y) / 2.0f;
 
 	// Quadrant balancing, make sure that the second player will be spawned diagonal to the first one
-	constexpr int QuadrantIndices[4] = {0, 3, 2, 1};
+	constexpr int QuadrantIndices[4] = { 0, 3, 2, 1 };
 
 	switch (QuadrantIndices[ABPlayerState->TeamId])
 	{
-	case 0: // Top-Left Quadrant
-		MinBound.X = ABInGameGameState->MinGameBound.X;
-		MinBound.Y = ABInGameGameState->MinGameBound.Y + HalfHeight + SafeZone;
-		MaxBound.X = ABInGameGameState->MaxGameBound.X - HalfWidth - SafeZone;
-		MaxBound.Y = ABInGameGameState->MaxGameBound.Y;
-		break;
-	case 1: // Top-Right Quadrant
-		MinBound.X = ABInGameGameState->MinGameBound.X + HalfWidth + SafeZone;
-		MinBound.Y = ABInGameGameState->MinGameBound.Y + HalfHeight + SafeZone;
-		MaxBound.X = ABInGameGameState->MaxGameBound.X;
-		MaxBound.Y = ABInGameGameState->MaxGameBound.Y;
-		break;
-	case 2: // Bottom-Left Quadrant
-		MinBound.X = ABInGameGameState->MinGameBound.X;
-		MinBound.Y = ABInGameGameState->MinGameBound.Y;
-		MaxBound.X = ABInGameGameState->MaxGameBound.X - HalfWidth - SafeZone;
-		MaxBound.Y = ABInGameGameState->MaxGameBound.Y - HalfHeight - SafeZone;
-		break;
-	case 3: // Bottom-Right Quadrant
-		MinBound.X = ABInGameGameState->MinGameBound.X + HalfWidth + SafeZone;
-		MinBound.Y = ABInGameGameState->MinGameBound.Y;
-		MaxBound.X = ABInGameGameState->MaxGameBound.X;
-		MaxBound.Y = ABInGameGameState->MaxGameBound.Y - HalfHeight - SafeZone;
-		break;
-	default: ;
+		case 0: // Top-Left Quadrant
+			MinBound.X = ABInGameGameState->MinGameBound.X;
+			MinBound.Y = ABInGameGameState->MinGameBound.Y + HalfHeight + SafeZone;
+			MaxBound.X = ABInGameGameState->MaxGameBound.X - HalfWidth - SafeZone;
+			MaxBound.Y = ABInGameGameState->MaxGameBound.Y;
+			break;
+		case 1: // Top-Right Quadrant
+			MinBound.X = ABInGameGameState->MinGameBound.X + HalfWidth + SafeZone;
+			MinBound.Y = ABInGameGameState->MinGameBound.Y + HalfHeight + SafeZone;
+			MaxBound.X = ABInGameGameState->MaxGameBound.X;
+			MaxBound.Y = ABInGameGameState->MaxGameBound.Y;
+			break;
+		case 2: // Bottom-Left Quadrant
+			MinBound.X = ABInGameGameState->MinGameBound.X;
+			MinBound.Y = ABInGameGameState->MinGameBound.Y;
+			MaxBound.X = ABInGameGameState->MaxGameBound.X - HalfWidth - SafeZone;
+			MaxBound.Y = ABInGameGameState->MaxGameBound.Y - HalfHeight - SafeZone;
+			break;
+		case 3: // Bottom-Right Quadrant
+			MinBound.X = ABInGameGameState->MinGameBound.X + HalfWidth + SafeZone;
+			MinBound.Y = ABInGameGameState->MinGameBound.Y;
+			MaxBound.X = ABInGameGameState->MaxGameBound.X;
+			MaxBound.Y = ABInGameGameState->MaxGameBound.Y - HalfHeight - SafeZone;
+			break;
+		default:;
 	}
 
 	// pseudo-randomizer
@@ -818,23 +1058,27 @@ FVector AAccelByteWarsInGameGameMode::FindGoodPlayerPosition(APlayerState* Playe
 			0,
 			10.0f);
 	}
-	
+
 	return Position;
 }
-#pragma endregion 
+#pragma endregion
 
 #pragma region "Countdown related"
 // @@@SNIPSTART AccelByteWarsInGameGameMode.cpp-ShouldStartNotEnoughPlayerCountdown
 bool AAccelByteWarsInGameGameMode::ShouldStartNotEnoughPlayerCountdown() const
 {
 	// check if the config is enabled in game setup
-	if (ABInGameGameState->GameSetup.NotEnoughPlayerShutdownCountdown == INDEX_NONE ||
-		ABInGameGameState->GameSetup.MinimumTeamCountToPreventAutoShutdown == INDEX_NONE)
+	if (ABInGameGameState->GameSetup.NotEnoughPlayerShutdownCountdown == INDEX_NONE || ABInGameGameState->GameSetup.MinimumTeamCountToPreventAutoShutdown == INDEX_NONE)
 	{
 		return false;
 	}
 
-	return GetLivingTeamCount() < ABInGameGameState->GameSetup.MinimumTeamCountToPreventAutoShutdown;
+	const int32 LivingTeamCount = GetLivingTeamCount();
+	const int32 HumanPlayerCount = GetConnectedHumanPlayerCount();
+	const int32 MinRequiredCount = ABInGameGameState->GameSetup.MinimumTeamCountToPreventAutoShutdown;
+
+	// Start countdown if either not enough teams OR not enough actual human players
+	return (LivingTeamCount < MinRequiredCount) || (HumanPlayerCount < MinRequiredCount);
 }
 // @@@SNIPEND
 
@@ -865,78 +1109,48 @@ bool AAccelByteWarsInGameGameMode::FindGoodSpawnLocation(
 	const FVector2D& MinBound,
 	const FVector2D& MaxBound) const
 {
-	// Calculate prohibited area size
-	double AreaProhibited = 0.0;
+	AccelByteWars2DProbabilityDistribution spawnGrid(MinBound, MaxBound, 20);
+
+	int numRows = spawnGrid.GetNumRows();
+	int numCols = spawnGrid.GetNumCols();
+	FVector2D cellSize = spawnGrid.GetCellSize();
+
+	spawnGrid.IterateGrid([numRows, numCols, cellSize, &spawnGrid](int col, int row, float& value) {
+		FVector2D cellLocation = spawnGrid.GetCellLocation(col, row);
+		value = cellLocation.Length() - cellSize.X * 8.0f;
+		// value = FMath::Min(value, FMath::Abs(cellLocation.X));
+		// value = std::min<float>({ (float)col * (float)cellSize.X * 4.0f, (float)row * (float)cellSize.Y * 4.0f, value });
+		value = FMath::Max(0.0f, value);
+	});
+
 	for (const FVector& CircleCoord : ActiveGameObjectsCoords)
 	{
-		// assuming all object takes the shape of a circle with Z as the radius
-		// closest distance between circle's center to box's outer rim
-		float d = FMath::Sqrt(
-			FMath::Square(FMath::Min(FMath::Max(CircleCoord.X, MinBound.X), MaxBound.X) - CircleCoord.X) +
-			FMath::Square(FMath::Min(FMath::Max(CircleCoord.Y, MinBound.Y), MaxBound.Y) - CircleCoord.Y));
-		float OverlapArea =
-			FMath::Square(CircleCoord.Z) *
-			FMath::Acos(d / (2 * CircleCoord.Z)) -
-			((d / 2) - FMath::Sqrt(
-				FMath::Square(CircleCoord.Z) -
-				FMath::Square(d / 2)));
-
-		// if NaN, meaning the circle is entirely outside the bounding box
-		if (FMath::IsNaN(OverlapArea))
-		{
-			OverlapArea = 0;
-		}
-
-		AreaProhibited += OverlapArea;
+		FVector2D location(CircleCoord.X, CircleCoord.Y);
+		spawnGrid.IterateGrid([&spawnGrid, cellSize, location, radius = CircleCoord.Z](int col, int row, float& value) {
+			FVector2D cellPosition = spawnGrid.GetCellLocation(col, row);
+			float distToCell = FVector2D::Distance(cellPosition, location);
+			distToCell = FMath::Max(0.0f, distToCell);
+			value = FMath::Min(value, distToCell);
+		});
 	}
 
-	// Calculate total play area size
-	const double Width = (MaxBound.X - MinBound.X);
-	const double Height = (MaxBound.Y - MinBound.Y);
-	const double AreaTotal = UKismetMathLibrary::Abs(Width * Height);
-
-	// Calculate allowable area size
-	const double AreaAllowed = AreaTotal - AreaProhibited;
-
-	// Negative value means not enough room in the game play area -> skip spawn
-	if (AreaAllowed < 0)
+	if (spawnGrid.FindGoodPosition(OutCoord, 250.0f))
 	{
-		GAMEMODE_LOG(Warning, TEXT("Not enough room, skipping spawn."));
-		return false;
+		return true;
 	}
 
-	// Random value within the allowable area
-	double RelativeLocation = static_cast<float>(UKismetMathLibrary::RandomIntegerInRange(0, AreaAllowed));
-
-	OutCoord = CalculateActualCoord(RelativeLocation, MinBound, Width);
-
-	// check if "overlapped" with existing objects
-	bool bUpdated = true;
-	while (bUpdated)
+	if (spawnGrid.FindGoodPosition(OutCoord, 0.0f))
 	{
-		bUpdated = false;
-		for (const FVector& CircleCoord : ActiveGameObjectsCoords)
-		{
-			if (IsInsideCircle(OutCoord, CircleCoord))
-			{
-				// Add the X axis length inside the circle on the specified Y to the RelativeLocation
-				RelativeLocation += CalculateCircleLengthAlongXonY(CircleCoord, OutCoord.Y);
-				OutCoord = CalculateActualCoord(RelativeLocation, MinBound, Width);
-
-				bUpdated = true;
-				break;
-			}
-		}
+		return true;
 	}
 
-	return true;
+	return false;
 }
 
 bool AAccelByteWarsInGameGameMode::IsInsideCircle(const FVector2D& Target, const FVector& Circle) const
 {
 	const double a = FMath::Pow(FMath::Pow(Circle.Z, 2.0) - FMath::Pow(Target.X - Circle.X, 2.0), 0.5);
-	return
-		Target.Y < Circle.Y + a && Target.Y > Circle.Y - a;
+	return Target.Y < Circle.Y + a && Target.Y > Circle.Y - a;
 }
 
 double AAccelByteWarsInGameGameMode::CalculateCircleLengthAlongXonY(const FVector& Circle, const double Ycoord) const
@@ -1006,6 +1220,7 @@ bool AAccelByteWarsInGameGameMode::LocationHasLineOfSightToOtherShip(const FVect
 
 	return false;
 }
+
 #pragma endregion
 
 #pragma region "Debugging"
@@ -1035,7 +1250,7 @@ void AAccelByteWarsInGameGameMode::ResetPlanets()
 	for (AActor* Actor : Actors)
 	{
 		if (const UAccelByteWarsGameplayObjectComponent* Component =
-			Cast<UAccelByteWarsGameplayObjectComponent>(Actor->GetComponentByClass(UAccelByteWarsGameplayObjectComponent::StaticClass())))
+				Cast<UAccelByteWarsGameplayObjectComponent>(Actor->GetComponentByClass(UAccelByteWarsGameplayObjectComponent::StaticClass())))
 		{
 			if (Component->ObjectType != EGameplayObjectType::SHIP)
 			{
@@ -1077,9 +1292,7 @@ void AAccelByteWarsInGameGameMode::ModifyGameBoundExtendModifier(const float New
 		(FMath::Abs(ABInGameGameState->MaxGameBound.X - ABInGameGameState->MinGameBound.X) * (NewModifier - 1)) / 2;
 	const float NewHalfHeight =
 		(FMath::Abs(ABInGameGameState->MaxGameBound.Y - ABInGameGameState->MinGameBound.Y) * (NewModifier - 1)) / 2;
-	ABInGameGameState->MaxGameBoundExtend =
-		{ABInGameGameState->MaxGameBound.X + NewHalfWidth, ABInGameGameState->MaxGameBound.Y + NewHalfHeight};
-	ABInGameGameState->MinGameBoundExtend =
-		{ABInGameGameState->MinGameBound.X - NewHalfWidth, ABInGameGameState->MinGameBound.Y - NewHalfHeight};
+	ABInGameGameState->MaxGameBoundExtend = { ABInGameGameState->MaxGameBound.X + NewHalfWidth, ABInGameGameState->MaxGameBound.Y + NewHalfHeight };
+	ABInGameGameState->MinGameBoundExtend = { ABInGameGameState->MinGameBound.X - NewHalfWidth, ABInGameGameState->MinGameBound.Y - NewHalfHeight };
 }
-#pragma endregion 
+#pragma endregion

@@ -5,13 +5,17 @@
 #include "Core/Player/AccelByteWarsPlayerPawn.h"
 
 #include "AccelByteWarsPlayerController.h"
+#include "AccelByteWarsPlayerState.h"
 #include "Components/SphereComponent.h"
 #include "Core/Actor/AccelByteWarsMissile.h"
+#include "Core/GameModes/AccelByteWarsGameMode.h"
 #include "Core/AssetManager/InGameItems/InGameItemDataAsset.h"
 #include "Core/Components/AccelByteWarsGameplayObjectComponent.h"
 #include "Core/GameStates/AccelByteWarsInGameGameState.h"
 #include "Core/Ships/PlayerShipBase.h"
 #include "Core/Utilities/AccelByteWarsUtilityLog.h"
+#include "AbilitySystemComponent.h"
+#include "AccelByteWarsAttributeSet.h"
 #include "Kismet/KismetMathLibrary.h"
 
 // Sets default values
@@ -30,7 +34,7 @@ AAccelByteWarsPlayerPawn::AAccelByteWarsPlayerPawn()
 	GameplayObject->Radius = 0.5f;
 	GameplayObject->ObjectType = EGameplayObjectType::SHIP;
 
- 	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	AActor::SetReplicateMovement(true);
 	bReplicates = true;
@@ -68,15 +72,7 @@ void AAccelByteWarsPlayerPawn::Tick(float DeltaTime)
 
 		if (RotationDirection != 0)
 		{
-			if (RotationDirection == 1) // Clock-wise
-			{
-				CurrentYaw += (ConstRotateRate * -1.0f);
-			}
-			else if (RotationDirection == 2) // Counter clock-wise
-			{
-				CurrentYaw += ConstRotateRate;
-			}
-
+			CurrentYaw -= (ConstRotateRate * RotationDirection);
 			OnRepNotify_CurrentYaw();
 		}
 	}
@@ -86,7 +82,39 @@ void AAccelByteWarsPlayerPawn::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 
+	// Initialize GAS on the server when possessed
+	if (AAccelByteWarsPlayerState* PS = GetPlayerState<AAccelByteWarsPlayerState>())
+	{
+		if (UAbilitySystemComponent* ASC = PS->GetAbilitySystemComponent())
+		{
+			ASC->InitAbilityActorInfo(PS, this);
+		}
+	}
+
 	UpdateSkin();
+}
+
+void AAccelByteWarsPlayerPawn::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+
+	// Initialize GAS on the client when PlayerState replicates
+	if (AAccelByteWarsPlayerState* PS = GetPlayerState<AAccelByteWarsPlayerState>())
+	{
+		if (UAbilitySystemComponent* ASC = PS->GetAbilitySystemComponent())
+		{
+			ASC->InitAbilityActorInfo(PS, this);
+		}
+	}
+}
+
+UAbilitySystemComponent* AAccelByteWarsPlayerPawn::GetAbilitySystemComponent() const
+{
+	if (AAccelByteWarsPlayerState* PS = GetPlayerState<AAccelByteWarsPlayerState>())
+	{
+		return PS->GetAbilitySystemComponent();
+	}
+	return nullptr;
 }
 
 void AAccelByteWarsPlayerPawn::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -99,7 +127,7 @@ void AAccelByteWarsPlayerPawn::GetLifetimeReplicatedProps(TArray<FLifetimeProper
 	DOREPLIFETIME(AAccelByteWarsPlayerPawn, PawnColor);
 }
 
-template<class T>
+template <class T>
 T* AAccelByteWarsPlayerPawn::SpawnActorInWorld(
 	AActor* Owner,
 	const FVector Location,
@@ -137,12 +165,13 @@ void AAccelByteWarsPlayerPawn::UpdateSkin()
 		return;
 	}
 
-	const APlayerController* PlayerController = Cast<APlayerController>(Controller);
-	if (!PlayerController)
-	{
-		return;
-	}
-	AAccelByteWarsPlayerState* AbPlayerState = Cast<AAccelByteWarsPlayerState>(PlayerController->PlayerState);
+	// TODO: Can be bot
+	// const APlayerController* PlayerController = Cast<APlayerController>(Controller);
+	// if (!PlayerController)
+	// {
+	// 	return;
+	// }
+	AAccelByteWarsPlayerState* AbPlayerState = Cast<AAccelByteWarsPlayerState>(Controller->PlayerState);
 	if (!AbPlayerState)
 	{
 		return;
@@ -261,6 +290,7 @@ void AAccelByteWarsPlayerPawn::ServerActivatePowerUp_Implementation()
 		return;
 	}
 	PowerUp->SetInstigator(this);
+	PowerUp->AttachToActor(this, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, false));
 
 	// decrease use num
 	AbPlayerState->DecreaseEquippedItemCount(EItemType::PowerUp);
@@ -276,7 +306,7 @@ void AAccelByteWarsPlayerPawn::ServerActivatePowerUp_Implementation()
 	// Notify other
 	constexpr int UsedAmount = 1;
 	const int TotalAmount = AbPlayerState->GetEquippedItem(EItemType::PowerUp).Count;
-	if (OnPowerUpUsedServerDelegates.IsBound()) 
+	if (OnPowerUpUsedServerDelegates.IsBound())
 	{
 		OnPowerUpUsedServerDelegates.Broadcast(
 			AbPlayerState->GetUniqueId().GetUniqueNetId(),
@@ -311,6 +341,9 @@ void AAccelByteWarsPlayerPawn::Server_FireMissile_Implementation()
 
 	ShowPowerLevelUITimer = 0.0f;
 
+	// Update last missile fire time for cooldown
+	LastMissileFireTime = GetWorld()->GetTimeSeconds();
+
 	// Increment missiles fired
 	AAccelByteWarsPlayerState* ABPlayerState = Cast<AAccelByteWarsPlayerState>(GetPlayerState());
 	if (ABPlayerState == nullptr)
@@ -318,11 +351,64 @@ void AAccelByteWarsPlayerPawn::Server_FireMissile_Implementation()
 
 	ABPlayerState->MissilesFired++;
 
+	// Apply buff if any
+	FiredMissile->SetActorScale3D(FVector::One() * ABPlayerState->GetAttributeSet()->MissileSizeMultiplier.GetCurrentValue());
+	FiredMissile->AccelByteWarsGameplayObjectComponent->Radius *= ABPlayerState->GetAttributeSet()->MissileSizeMultiplier.GetCurrentValue();
+
 	// Play sound for missile fire
 	FireMissileFx(SpawnTransform);
 
 	// Reduce ship glow if MissilesFired limit reached
 	UpdateShipGlow();
+
+	// Track this missile and clean up when it gets destroyed
+	TrackedMissiles.Add(FiredMissile);
+	// Bind to missile's OnDestroyed to remove from tracking when it dies by itself
+	FiredMissile->OnDestroyed.AddDynamic(this, &AAccelByteWarsPlayerPawn::OnTrackedMissileDestroyed);
+}
+
+void AAccelByteWarsPlayerPawn::Destroyed()
+{
+	Super::Destroyed();
+
+	// Server-side: expire all missiles owned by this pawn when the pawn is destroyed
+	if (HasAuthority())
+	{
+		AAccelByteWarsGameMode* GameMode = Cast<AAccelByteWarsGameMode>(GetWorld()->GetAuthGameMode());
+
+		// Copy to local array to avoid modifying set while iterating
+		TArray<TWeakObjectPtr<AAccelByteWarsMissile>> ToExpire;
+		ToExpire.Reserve(TrackedMissiles.Num());
+		for (const TWeakObjectPtr<AAccelByteWarsMissile>& WeakMissile : TrackedMissiles)
+		{
+			ToExpire.Add(WeakMissile);
+		}
+
+		for (const TWeakObjectPtr<AAccelByteWarsMissile>& WeakMissile : ToExpire)
+		{
+			if (AAccelByteWarsMissile* Missile = WeakMissile.Get())
+			{
+				// Unbind to avoid callbacks into this pawn during teardown
+				Missile->OnDestroyed.RemoveAll(this);
+				Missile->TreatMissileAsExpired(GameMode);
+			}
+		}
+
+		TrackedMissiles.Empty();
+	}
+}
+
+void AAccelByteWarsPlayerPawn::OnTrackedMissileDestroyed(AActor* DestroyedActor)
+{
+	if (!HasAuthority() || !DestroyedActor)
+	{
+		return;
+	}
+
+	if (AAccelByteWarsMissile* Missile = Cast<AAccelByteWarsMissile>(DestroyedActor))
+	{
+		TrackedMissiles.Remove(Missile);
+	}
 }
 
 FTransform AAccelByteWarsPlayerPawn::CalculateWhereToSpawnMissile()
@@ -349,10 +435,21 @@ bool AAccelByteWarsPlayerPawn::ShouldFire()
 	if (ABInGameState == nullptr)
 		return false;
 
-	if (ABPlayerState->MissilesFired < ABInGameState->GameSetup.FiredMissilesLimit)
-		return true;
+	// Check missile limit
+	if (ABPlayerState->MissilesFired >= ABInGameState->GameSetup.FiredMissilesLimit)
+		return false;
 
-	return false;
+	// Check cooldown timer
+	float CurrentTime = GetWorld()->GetTimeSeconds();
+	if (CurrentTime - LastMissileFireTime < MissileCooldownDuration)
+		return false;
+
+	return true;
+}
+
+void AAccelByteWarsPlayerPawn::ResetMissileCooldown()
+{
+	LastMissileFireTime = 0.0f;
 }
 
 void AAccelByteWarsPlayerPawn::AdjustFirePower(int Rate)
@@ -371,7 +468,7 @@ void AAccelByteWarsPlayerPawn::OnPlayerInputThisFrame()
 
 void AAccelByteWarsPlayerPawn::Server_RotatePawn_Implementation(int Rate)
 {
-	if (!HasAuthority()) 
+	if (!HasAuthority())
 	{
 		return;
 	}
@@ -403,9 +500,7 @@ void AAccelByteWarsPlayerPawn::Client_RotatePawn_Implementation(int Rate)
 {
 	if (HasAuthority())
 	{
-		int InRate = FMath::Clamp(Rate, 0, 2);
-
-		RotationDirection = InRate;
+		RotationDirection = FMath::Sign(Rate);
 		OnRepNotify_RotationDirection();
 	}
 }
@@ -417,21 +512,7 @@ void AAccelByteWarsPlayerPawn::Server_AdjustFirePower_Implementation(FVector Pla
 		return;
 	}
 
-	int InRate = FMath::Clamp(Rate, 0, 2);
-
-	if (InRate == 0)
-	{
-		FirePowerAdjustRate = 0.0f;
-	}
-	else if (InRate == 1)
-	{
-		FirePowerAdjustRate = 1.0f;
-	}
-	else if (InRate == 2)
-	{
-		FirePowerAdjustRate = -1.0f;
-	}
-
+	FirePowerAdjustRate = FMath::Sign(Rate);
 	Client_AdjustFirePower(PlayerPosition, PawnColor);
 }
 
@@ -500,6 +581,9 @@ void AAccelByteWarsPlayerPawn::Client_OnDestroyed_Implementation()
 
 	ShowPowerLevelUITimer = 0.0f;
 	ShowShipLabelUITimer = 0.0f;
+
+	// Reset missile cooldown when player is destroyed
+	ResetMissileCooldown();
 
 	UpdatePowerBarUI(0.01f);
 	UpdateShipLabelUI(0.01f);

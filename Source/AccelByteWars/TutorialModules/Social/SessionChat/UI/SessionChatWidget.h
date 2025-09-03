@@ -23,6 +23,9 @@ public:
 	void SetDefaultChatType(const EAccelByteChatRoomType ChatRoomType);
 	EAccelByteChatRoomType GetCurrentChatType() const { return CurrentChatRoomType; }
 
+// @@@SNIPSTART SessionChatWidget.h-protected
+// @@@MULTISNIP Overview {"selectedLines": ["1", "24-55"]}
+// @@@MULTISNIP AddingUI {"selectedLines": ["1", "9-16"]}
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeOnActivated() override;
@@ -78,4 +81,5 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_PartyChat;
 #pragma endregion
+// @@@SNIPEND
 };

@@ -21,7 +21,6 @@ class ACCELBYTEWARS_API UAccelByteWarsProceduralMeshComponent : public UProcedur
 	//~End of UObject overridden functions
 
 public:
-
 	/**
 	 * @brief Call in ConstructionScript to apply the procedural mesh
 	 */
@@ -44,10 +43,10 @@ public:
 
 	UPROPERTY(EditAnywhere)
 	TArray<FVector> OutlineVertices = {
-		{0.0f, 50.0f, 0.0f},
-		{35.0f, -35.0f, 0.0f},
-		{20.0f, -45.0f, 0.0f},
-		{0.0f, -35.0f, 0.0f}
+		{ 0.0f, 50.0f, 0.0f },
+		{ 35.0f, -35.0f, 0.0f },
+		{ 20.0f, -45.0f, 0.0f },
+		{ 0.0f, -35.0f, 0.0f }
 	};
 
 	UPROPERTY()
@@ -62,12 +61,14 @@ public:
 	UPROPERTY(EditAnywhere)
 	float Glow = 50.0f;
 
+	const FLinearColor& GetColor() const { return Color; }
+
 protected:
 	TArray<int32> Triangles;
 	TArray<FVector> Vertices;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (ExposeOnSpawn), Replicated)
-	FLinearColor Color = {1.0f, 1.0f, 1.0f, 0.0f};
+	FLinearColor Color = { 1.0f, 1.0f, 1.0f, 0.0f };
 
 	UPROPERTY(EditAnywhere)
 	TArray<uint8> TriStripPattern = {

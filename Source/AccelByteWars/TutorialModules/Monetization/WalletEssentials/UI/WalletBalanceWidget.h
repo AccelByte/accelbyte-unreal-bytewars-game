@@ -25,7 +25,7 @@ class ACCELBYTEWARS_API UWalletBalanceWidget : public UAccelByteWarsActivatableW
 // @@@MULTISNIP WalletSubsystem {"selectedLines": ["1", "6-7"]}
 // @@@MULTISNIP Functions {"selectedLines": ["1-4"]}
 private:
-	void ShowBalance(bool bWasSuccessful, const FAccelByteModelsWalletInfo& Response) const;
+	void ShowBalance(bool bWasSuccessful, const FAccelByteModelsWalletInfoResponse& Response) const;
 
 	void UpdateBalance(const ECurrencyType CurrencyType);
 

@@ -18,9 +18,9 @@
 #include "Play/OnlineSessionUtils/AccelByteWarsOnlineSessionBase.h"
 
 // @@@SNIPSTART MatchmakingP2PWidget.cpp-NativeOnActivated
-// @@@MULTISNIP OnlineSession {"selectedLines": ["1-2", "5-12", "41"]}
-// @@@MULTISNIP SelectedGameModeType {"selectedLines": ["1-2", "15-22", "41"]}
-// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "24-28", "40-41"]}
+// @@@MULTISNIP OnlineSession {"selectedLines": ["1-2", "5-12", "42"]}
+// @@@MULTISNIP SelectedGameModeType {"selectedLines": ["1-2", "15-23", "42"]}
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "25-29", "41-42"]}
 void UMatchmakingP2PWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
@@ -41,6 +41,7 @@ void UMatchmakingP2PWidget::NativeOnActivated()
 		if (const UQuickPlayWidget* QuickPlayWidget = Cast<UQuickPlayWidget>(Widget))
 		{
 			SelectedGameModeType = QuickPlayWidget->GetSelectedGameModeType();
+			SelectedGameStyle = QuickPlayWidget->GetSelectedGameStyle();
 		}
 	}
 
@@ -160,7 +161,7 @@ void UMatchmakingP2PWidget::StartMatchmaking()
 		GetOwningPlayer(),
 		OnlineSession->GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession),
 		EGameModeNetworkType::P2P,
-		SelectedGameModeType);
+		SelectedGameModeType, SelectedGameStyle);
 }
 // @@@SNIPEND
 

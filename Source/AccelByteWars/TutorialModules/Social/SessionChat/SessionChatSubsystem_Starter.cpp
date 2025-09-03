@@ -154,6 +154,18 @@ FOnlineSessionV2AccelBytePtr USessionChatSubsystem_Starter::GetSessionInterface(
 	return StaticCastSharedPtr<FOnlineSessionV2AccelByte>(Subsystem->GetSessionInterface());
 }
 
+FOnlineIdentityAccelBytePtr USessionChatSubsystem_Starter::GetIdentityInterface() const
+{
+	const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+	if (!ensure(Subsystem))
+	{
+		UE_LOG_SESSIONCHAT(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and DefaultPlatformService under [OnlineSubsystem] in the Engine.ini set to AccelByte."));
+		return nullptr;
+	}
+
+	return StaticCastSharedPtr<FOnlineIdentityAccelByte>(Subsystem->GetIdentityInterface());
+}
+
 UPromptSubsystem* USessionChatSubsystem_Starter::GetPromptSubsystem() const
 {
 	const UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());

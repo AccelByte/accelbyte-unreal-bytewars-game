@@ -104,7 +104,7 @@ void UVerifyAccountWidget::SendVerificationCode(const bool bForceResend)
 // @@@SNIPEND
 
 // @@@SNIPSTART VerifyAccountWidget.cpp-UpgradeAndVerifyAccount
-// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "35"]}
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "36"]}
 void UVerifyAccountWidget::UpgradeAndVerifyAccount()
 {
 	const FString VerificationCode = Edt_VerificationCode->GetText().ToString();
@@ -122,6 +122,7 @@ void UVerifyAccountWidget::UpgradeAndVerifyAccount()
 		AccelByteWarsUtility::GetLocalUserNum(GetOwningPlayer()),
 		AccelByteWarsUtility::GetUserId(GetOwningPlayer()),
 		UpgradeAccountData.GetUsername(),
+		UpgradeAccountData.GetDisplayName(),
 		UpgradeAccountData.GetEmail(),
 		UpgradeAccountData.GetPassword(),
 		VerificationCode,

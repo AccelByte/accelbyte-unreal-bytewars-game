@@ -25,6 +25,7 @@ public:
 		const int32 LocalUserNum,
 		const EGameModeNetworkType NetworkType,
 		const EGameModeType GameModeType,
+		const EGameStyle GameStyle,
 		const EAccelByteV2SessionJoinability Joinability,
 		const int32 Duration,
 		const int32 PlayerLives,

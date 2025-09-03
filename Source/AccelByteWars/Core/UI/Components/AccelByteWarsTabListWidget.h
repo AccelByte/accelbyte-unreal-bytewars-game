@@ -6,9 +6,16 @@
 
 #include "CoreMinimal.h"
 #include "AccelByteWarsButtonBase.h"
+#include "Core/Utilities/AccelByteWarsUtilityLog.h"
 #include "CommonTabListWidgetBase.h"
 #include "CommonAnimatedSwitcher.h"
 #include "AccelByteWarsTabListWidget.generated.h"
+
+ACCELBYTEWARS_API DECLARE_LOG_CATEGORY_EXTERN(LogAccelByteWarsTabListWidget, Log, All);
+#define UE_LOG_ACCELBYTEWARSTABLISTWIDGET(Verbosity, Format, ...) \
+{ \
+	UE_LOG_FUNC(LogAccelByteWarsTabListWidget, Verbosity, Format, ##__VA_ARGS__) \
+}
 
 class UCommonActionWidget;
 class UCommonButtonStyle;
@@ -101,9 +108,9 @@ private:
 	UFUNCTION()
 	void HandleOnTabSelected(FName TabId);
 
-	FName PreviouslySelectedTabId;
+	bool UpdateTabButtonStyle(const FName& TabNameID, const FText& ButtonText = FText());
 
-	TMap<FName, int32> TargetIndexMap;
+	FName PreviouslySelectedTabId;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UWidget* PreviousTabActionWrapper;

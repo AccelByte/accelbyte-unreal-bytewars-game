@@ -18,6 +18,10 @@ EGameModeType UQuickPlayWidget::GetSelectedGameModeType() const
 {
 	return SelectedGameModeType;
 }
+EGameStyle UQuickPlayWidget::GetSelectedGameStyle() const
+{
+	return SelectedGameStyle;
+}
 // @@@SNIPEND
 
 void UQuickPlayWidget::SwitchContent(const EContentType State)
@@ -60,6 +64,13 @@ void UQuickPlayWidget::NativeOnActivated()
 
 	Btn_Elimination->OnClicked().AddUObject(this, &ThisClass::SelectGameMode, EGameModeType::FFA);
 	Btn_TeamDeathMatch->OnClicked().AddUObject(this, &ThisClass::SelectGameMode, EGameModeType::TDM);
+	Btn_EliminationFrenzy->OnClicked().AddUObject(this, &ThisClass::SelectGameMode, EGameModeType::FFA);
+	Btn_TeamDeathMatchFrenzy->OnClicked().AddUObject(this, &ThisClass::SelectGameMode, EGameModeType::TDM);
+
+	Btn_Elimination->OnClicked().AddUObject(this, &ThisClass::SetGameStyle, EGameStyle::Zen);
+	Btn_TeamDeathMatch->OnClicked().AddUObject(this, &ThisClass::SetGameStyle, EGameStyle::Zen);
+	Btn_EliminationFrenzy->OnClicked().AddUObject(this, &ThisClass::SetGameStyle, EGameStyle::Frenzy);
+	Btn_TeamDeathMatchFrenzy->OnClicked().AddUObject(this, &ThisClass::SetGameStyle, EGameStyle::Frenzy);
 
 	Btn_SelectGameMode_Back->OnClicked().AddUObject(this, &ThisClass::DeactivateWidget);
 	Btn_SelectServerType_Back->OnClicked().AddUObject(this, &ThisClass::SwitchContent, EContentType::SELECTGAMEMODE);
@@ -73,6 +84,8 @@ void UQuickPlayWidget::NativeOnDeactivated()
 
 	Btn_Elimination->OnClicked().RemoveAll(this);
 	Btn_TeamDeathMatch->OnClicked().RemoveAll(this);
+	Btn_EliminationFrenzy->OnClicked().RemoveAll(this);
+	Btn_TeamDeathMatchFrenzy->OnClicked().RemoveAll(this);
 
 	Btn_SelectGameMode_Back->OnClicked().RemoveAll(this);
 	Btn_SelectServerType_Back->OnClicked().RemoveAll(this);
@@ -112,4 +125,9 @@ void UQuickPlayWidget::SelectGameMode(EGameModeType GameModeType)
 	// Set game mode and select server type.
 	SelectedGameModeType = GameModeType;
 	SwitchContent(EContentType::SELECTSERVERTYPE);
+}
+
+void UQuickPlayWidget::SetGameStyle(EGameStyle GameStyle)
+{
+	SelectedGameStyle = GameStyle;
 }

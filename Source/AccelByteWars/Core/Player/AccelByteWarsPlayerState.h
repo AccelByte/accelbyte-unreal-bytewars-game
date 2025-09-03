@@ -7,35 +7,50 @@
 #include "CoreMinimal.h"
 #include "Core/AssetManager/InGameItems/InGameItemUtility.h"
 #include "GameFramework/PlayerState.h"
+#include "AbilitySystemInterface.h"
 #include "AccelByteWarsPlayerState.generated.h"
+
+class UAbilitySystemComponent;
+class UAccelByteWarsAttributeSet;
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnEquippedItemsLoaded, APlayerState* /*Owner*/)
 
-USTRUCT(BlueprintType)
+	USTRUCT(BlueprintType)
 struct FEquippedItem
 {
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditAnywhere) EItemType ItemType = EItemType::None;
-	UPROPERTY(EditAnywhere) FString ItemId{};
-	UPROPERTY(EditAnywhere) int32 Count = 0;
+	UPROPERTY(EditAnywhere)
+	EItemType ItemType = EItemType::None;
+	UPROPERTY(EditAnywhere)
+	FString ItemId{};
+	UPROPERTY(EditAnywhere)
+	int32 Count = 0;
 
-	bool operator== (const FEquippedItem& Other) const
+	bool operator==(const FEquippedItem& Other) const
 	{
 		return Other.ItemType == ItemType && Other.ItemId.Equals(ItemId);
 	}
 };
 
 UCLASS()
-class ACCELBYTEWARS_API AAccelByteWarsPlayerState : public APlayerState
+class ACCELBYTEWARS_API AAccelByteWarsPlayerState : public APlayerState, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
+
+public:
+	AAccelByteWarsPlayerState();
 
 	//~AActor overriden functions
 	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	//~End of AActor overriden functions
+
+	//~IAbilitySystemInterface
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	//~End of IAbilitySystemInterface
+	const TObjectPtr<UAccelByteWarsAttributeSet>& GetAttributeSet() const { return AttributeSet; }
 
 public:
 	/** @brief Called just after server load equipped item data */
@@ -104,6 +119,32 @@ public:
 	void ClientRetrieveEquippedItems();
 
 protected:
+	/**
+	 * @brief Called when a GameplayEffect is applied to handle tag-based effects
+	 */
+	UFUNCTION()
+	void OnGameplayEffectApplied(UAbilitySystemComponent* ASC, const FGameplayEffectSpec& EffectSpec, FActiveGameplayEffectHandle EffectHandle);
+
+	/**
+	 * @brief Called when an active GameplayEffect is added (for HUD notifications)
+	 */
+	UFUNCTION()
+	void OnActiveGameplayEffectAdded(UAbilitySystemComponent* ASC, const FGameplayEffectSpec& EffectSpec, FActiveGameplayEffectHandle EffectHandle);
+
+	/**
+	 * @brief Called when an active GameplayEffect is removed (for HUD cleanup)
+	 */
+	UFUNCTION()
+	void OnActiveGameplayEffectRemoved(const FActiveGameplayEffect& RemovedEffect);
+
+protected:
+	// GAS Components
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
+	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
+	TObjectPtr<UAccelByteWarsAttributeSet> AttributeSet;
+
 	/*
 	 * @brief Used in server client logic only, for replication reason. Use the one in GameInstance for anything else.
 	 */

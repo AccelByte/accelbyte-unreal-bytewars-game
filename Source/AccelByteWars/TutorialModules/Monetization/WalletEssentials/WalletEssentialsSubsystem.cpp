@@ -6,7 +6,7 @@
 #include "WalletEssentialsSubsystem.h"
 
 #include "OnlineSubsystemUtils.h"
-#include "OnlineWalletInterfaceAccelByte.h"
+#include "OnlineWalletV2InterfaceAccelByte.h"
 
 // @@@SNIPSTART WalletEssentialsSubsystem.cpp-Initialize
 // @@@MULTISNIP Interface {"selectedLines": ["1-2", "5-9", "12"]}
@@ -17,10 +17,10 @@ void UWalletEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collection
 	const FOnlineSubsystemAccelByte* Subsystem = static_cast<FOnlineSubsystemAccelByte*>(Online::GetSubsystem(GetWorld()));
 	ensure(Subsystem);
 
-	WalletInterface = Subsystem->GetWalletInterface();
+	WalletInterface = Subsystem->GetWalletV2Interface();
 	ensure(WalletInterface);
 
-	WalletInterface->OnGetWalletInfoCompletedDelegates->AddUObject(this, &ThisClass::OnQueryOrGetWalletInfoByCurrencyCodeComplete);
+	WalletInterface->OnGetWalletInfoV2CompletedDelegates->AddUObject(this, &ThisClass::OnQueryOrGetWalletInfoByCurrencyCodeComplete);
 }
 // @@@SNIPEND
 
@@ -29,7 +29,7 @@ void UWalletEssentialsSubsystem::Deinitialize()
 {
 	Super::Deinitialize();
 
-	WalletInterface->OnGetWalletInfoCompletedDelegates->RemoveAll(this);
+	WalletInterface->OnGetWalletInfoV2CompletedDelegates->RemoveAll(this);
 }
 // @@@SNIPEND
 
@@ -40,15 +40,15 @@ void UWalletEssentialsSubsystem::QueryOrGetWalletInfoByCurrencyCode(
 	const bool bAlwaysRequestToService) const
 {
 	const int32 LocalUserNum = GetLocalUserNumFromPlayerController(OwningPlayer);
-	WalletInterface->GetWalletInfoByCurrencyCode(LocalUserNum, CurrencyCode, bAlwaysRequestToService);
+	WalletInterface->GetWalletInfoByCurrencyCodeV2(LocalUserNum, CurrencyCode, bAlwaysRequestToService);
 }
 // @@@SNIPEND
 
 // @@@SNIPSTART WalletEssentialsSubsystem.cpp-OnQueryOrGetWalletInfoByCurrencyCodeComplete
 void UWalletEssentialsSubsystem::OnQueryOrGetWalletInfoByCurrencyCodeComplete(
-	int32 LocalUserNum,
+	int32 LocalUserNum, 
 	bool bWasSuccessful,
-	const FAccelByteModelsWalletInfo& Response,
+	const FAccelByteModelsWalletInfoResponse& Response, 
 	const FString& Error) const
 {
 	OnQueryOrGetWalletInfoCompleteDelegates.Broadcast(bWasSuccessful, Response);

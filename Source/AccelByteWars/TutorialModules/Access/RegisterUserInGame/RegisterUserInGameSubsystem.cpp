@@ -23,11 +23,48 @@ void URegisterUserInGameSubsystem::Deinitialize()
 }
 // @@@SNIPEND
 
+// @@@SNIPSTART RegisterUserInGameSubsystem.cpp-ValidateUserInput
+void URegisterUserInGameSubsystem::ValidateUserInput(
+	const FUserInputValidationRequest& Request, 
+	const FOnUserInputValidationComplete& OnComplete)
+{
+	AccelByte::FApiClientPtr ApiClient = UTutorialModuleOnlineUtility::GetApiClient(this);
+	if (!ApiClient)
+	{
+		UE_LOG_REGISTERUSERINGAME(Warning, TEXT("Failed to validate user input. AccelByte API Client is invalid."));
+		OnComplete.ExecuteIfBound(false, UPGRADE_ACCOUNT_UNKNOWN_ERROR.ToString());
+		return;
+	}
+
+	AccelByte::Api::UserPtr UserApi = ApiClient->GetUserApi().Pin();
+	if (!UserApi)
+	{
+		UE_LOG_REGISTERUSERINGAME(Warning, TEXT("Failed to validate user input. User API is invalid."));
+		OnComplete.ExecuteIfBound(false, UPGRADE_ACCOUNT_UNKNOWN_ERROR.ToString());
+		return;
+	}
+
+	UserApi->ValidateUserInput(
+		Request,
+		THandler<FUserInputValidationResponse>::CreateWeakLambda(this, [this, OnComplete](const FUserInputValidationResponse& Result)
+		{
+			UE_LOG_REGISTERUSERINGAME(Log, TEXT("Success to validate user input."));
+			OnComplete.ExecuteIfBound(Result.Valid, Result.Message);
+		}),
+		FErrorHandler::CreateWeakLambda(this, [this, OnComplete](int32 ErrorCode, const FString& ErrorMessage)
+		{
+			UE_LOG_REGISTERUSERINGAME(Warning, TEXT("Failed to validate user input. Error %d: %s"), ErrorCode, *ErrorMessage);
+			OnComplete.ExecuteIfBound(false, ErrorMessage);
+		}));
+}
+// @@@SNIPEND
+
 // @@@SNIPSTART RegisterUserInGameSubsystem.cpp-UpgradeAndVerifyAccount
 void URegisterUserInGameSubsystem::UpgradeAndVerifyAccount(
 	const int32 LocalUserNum,
 	const FUniqueNetIdPtr UserId,
 	const FString& Username,
+	const FString& DisplayName,
 	const FString& EmailAddress,
 	const FString& Password,
 	const FString& VerificationCode,
@@ -58,8 +95,8 @@ void URegisterUserInGameSubsystem::UpgradeAndVerifyAccount(
 
 	FUpgradeAndVerifyRequest Request;
 	Request.Username = Username;
-	Request.DisplayName = Username;
-	Request.UniqueDisplayName = Username;
+	Request.DisplayName = DisplayName;
+	Request.UniqueDisplayName = DisplayName;
 	Request.EmailAddress = EmailAddress;
 	Request.Password = Password;
 	Request.Code = VerificationCode;

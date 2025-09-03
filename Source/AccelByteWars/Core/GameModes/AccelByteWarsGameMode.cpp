@@ -3,6 +3,7 @@
 
 #include "AccelByteWarsGameMode.h"
 
+#include "Core/Player/AccelByteWarsBotController.h"
 #include "Core/Player/AccelByteWarsPlayerState.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/System/AccelByteWarsGameSession.h"
@@ -141,16 +142,16 @@ void AAccelByteWarsGameMode::ResetGameData()
 	ABGameState->EmptyTeams();
 }
 
-void AAccelByteWarsGameMode::PlayerTeamSetup(APlayerController* PlayerController) const
+void AAccelByteWarsGameMode::PlayerTeamSetup(AController* Controller) const
 {
 	// failsafe
-	if (!PlayerController)
+	if (!Controller)
 	{
 		GAMEMODE_LOG(Warning, TEXT("PlayerTeamSetup: PlayerController null. Canceling operation"));
 		return;
 	}
 
-	APlayerState* PlayerState = PlayerController->PlayerState;
+	APlayerState* PlayerState = Controller->PlayerState;
 	if (!PlayerState)
 	{
 		GAMEMODE_LOG(Warning, TEXT("PlayerTeamSetup: PlayerState is invalid. Canceling operation"));
@@ -163,6 +164,8 @@ void AAccelByteWarsGameMode::PlayerTeamSetup(APlayerController* PlayerController
 		GAMEMODE_LOG(Warning, TEXT("PlayerTeamSetup: PlayerState is not (derived from) AAccelByteWarsPlayerState. Canceling operation"));
 		return;
 	}
+	APlayerController* AbPlayerController = Cast<APlayerController>(Controller);
+	AAccelByteWarsBotController* AbBotPlayerController = Cast<AAccelByteWarsBotController>(Controller);
 
 	int32 TeamId = INDEX_NONE;
 	const FUniqueNetIdRepl PlayerUniqueId = AbPlayerState->GetUniqueId();
@@ -196,7 +199,7 @@ void AAccelByteWarsGameMode::PlayerTeamSetup(APlayerController* PlayerController
 #if UE_BUILD_DEVELOPMENT
 		const bool bUniqueIdValid = PlayerUniqueId.GetUniqueNetId().IsValid();
 		const FString Identity = bUniqueIdValid ?
-			PlayerUniqueId.GetUniqueNetId()->ToDebugString() : PlayerController->PlayerState->GetPlayerName();
+			PlayerUniqueId.GetUniqueNetId()->ToDebugString() : Controller->PlayerState->GetPlayerName();
 		GAMEMODE_LOG(
 			Warning,
 			TEXT("Found player's (%s [UniqueId: %s]) data in existing PlayerDatas. Assigning team: %d"),
@@ -207,7 +210,7 @@ void AAccelByteWarsGameMode::PlayerTeamSetup(APlayerController* PlayerController
 	}
 	else
 	{
-		if (OnPlayerPostLoginDelegates.IsBound() && IsServer())
+		if (OnPlayerPostLoginDelegates.IsBound() && IsServer() && AbPlayerController)
 		{
 			// notify client
 			AbPlayerState->bPendingTeamAssignment = true;
@@ -218,20 +221,20 @@ void AAccelByteWarsGameMode::PlayerTeamSetup(APlayerController* PlayerController
 			}
 
 			// tutorial module active, let the subsystem handle the team assignment logic
-			OnPlayerPostLoginDelegates.Broadcast(PlayerController);
+			OnPlayerPostLoginDelegates.Broadcast(AbPlayerController);
 
 			return;
 		}
 		else
 		{
 			// kick player if max player reached
-			if (ABGameState->GetRegisteredPlayersNum() >= ABGameState->GameSetup.MaxPlayers)
+			if (ABGameState->GetRegisteredPlayersNum() >= ABGameState->GameSetup.MaxPlayers && AbPlayerController)
 			{
 				// kick can happen as early as PostLogin
 				GAMEMODE_LOG(Warning, TEXT("Player did not registered in Teams data. Max registered players reached (%d / %d). Kicking this player"),
 					ABGameState->GetRegisteredPlayersNum(),
 					ABGameState->GameSetup.MaxPlayers);
-				GameSession->KickPlayer(PlayerController, FText::FromString("Max player reached"));
+				GameSession->KickPlayer(AbPlayerController, FText::FromString("Max player reached"));
 				return;
 			}
 			// assign team manually
@@ -252,7 +255,7 @@ void AAccelByteWarsGameMode::PlayerTeamSetup(APlayerController* PlayerController
 #if UE_BUILD_DEVELOPMENT
 				const bool bUniqueIdValid = PlayerUniqueId.GetUniqueNetId().IsValid();
 				const FString Identity = bUniqueIdValid ?
-					PlayerUniqueId.GetUniqueNetId()->ToDebugString() : PlayerController->PlayerState->GetPlayerName();
+					PlayerUniqueId.GetUniqueNetId()->ToDebugString() : Controller->PlayerState->GetPlayerName();
 				GAMEMODE_LOG(
 					Warning,
 					TEXT("No player's (%s [UniqueId: %s]) data found. Assigning team: %d"),
@@ -260,6 +263,28 @@ void AAccelByteWarsGameMode::PlayerTeamSetup(APlayerController* PlayerController
 					*FString(bUniqueIdValid ? "TRUE" : "FALSE"),
 					TeamId);
 #endif
+				
+				// Assign bot
+				if (AbBotPlayerController)
+				{
+					AbPlayerState->SetPlayerName(TEXT("BOT"));
+					AbPlayerState->NumLivesLeft = ABGameState->GameSetup.StartingLives;
+					ABGameState->AddPlayerToTeam(
+						TeamId,
+						PlayerUniqueId,
+						AbPlayerState->NumLivesLeft,
+						ControllerId,
+						AbPlayerState->GetScore(),
+						AbPlayerState->KillCount,
+						AbPlayerState->Deaths,
+						AbPlayerState->GetPlayerName(),
+						TEXT(""),
+						true,
+						true);
+				
+					ABGameState->OnNotify_Teams();
+					return;
+				}
 			}
 		}
 	}

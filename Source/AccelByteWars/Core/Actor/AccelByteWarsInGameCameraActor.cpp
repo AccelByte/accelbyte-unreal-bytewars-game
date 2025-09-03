@@ -2,15 +2,20 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-
 #include "AccelByteWarsInGameCameraActor.h"
 
 #include "AccelByteWarsFxActor.h"
+#include "AccelByteWarsAsteroid.h"
 #include "Camera/CameraComponent.h"
 #include "Core/Components/AccelByteWarsGameplayObjectComponent.h"
 #include "Core/GameStates/AccelByteWarsInGameGameState.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
+
+AAccelByteWarsInGameCameraActor::AAccelByteWarsInGameCameraActor()
+{
+	PrimaryActorTick.bCanEverTick = true;
+}
 
 void AAccelByteWarsInGameCameraActor::BeginPlay()
 {
@@ -49,7 +54,8 @@ void AAccelByteWarsInGameCameraActor::AdjustCamera()
 	const FVector LocationTarget = {
 		InGameGameState->MinGameBound.X + (GameWidth / 2),
 		InGameGameState->MinGameBound.Y + ((GameHeight + HUDHeight) / 2),
-		GetCameraComponent()->GetComponentLocation().Z};
+		GetCameraComponent()->GetComponentLocation().Z
+	};
 	GetCameraComponent()->SetWorldLocation(LocationTarget, false, nullptr, ETeleportType::TeleportPhysics);
 
 	// check if there's actor that is outside or inside play area
@@ -59,8 +65,26 @@ void AAccelByteWarsInGameCameraActor::AdjustCamera()
 	UGameplayStatics::GetAllActorsOfClass(this, AActor::StaticClass(), Actors);
 	for (const AActor* Actor : Actors)
 	{
-		if (Actor->GetComponentByClass(UAccelByteWarsGameplayObjectComponent::StaticClass()) ||
-			Cast<AAccelByteWarsFxActor>(Actor))
+		// Skip invalid actors (destroyed, pending kill, etc.)
+		if (!IsValid(Actor))
+		{
+			continue;
+		}
+
+		// Skip Asteroids to prevent them from affecting camera zoom
+		if (Cast<AAccelByteWarsAsteroid>(Actor))
+		{
+			continue;
+		}
+
+		// Handle FxActor tracking check with additional safety
+		const AAccelByteWarsFxActor* FxActor = Cast<AAccelByteWarsFxActor>(Actor);
+		if (IsValid(FxActor) && !FxActor->ShouldTrackForCameraZoom())
+		{
+			continue;
+		}
+
+		if (Actor->GetComponentByClass(UAccelByteWarsGameplayObjectComponent::StaticClass()) || Cast<AAccelByteWarsFxActor>(Actor))
 		{
 			if (Actor->GetActorLocation().X > InGameGameState->MaxGameBound.X)
 			{
@@ -84,16 +108,20 @@ void AAccelByteWarsInGameCameraActor::AdjustCamera()
 	// calculate camera bound and clamp
 	FVector2D MaxCamBound = {
 		FMath::Max(InGameGameState->MaxGameBound.X + DeltaX, InGameGameState->MaxGameBound.X),
-		FMath::Max(InGameGameState->MaxGameBound.Y + DeltaY, InGameGameState->MaxGameBound.Y)};
+		FMath::Max(InGameGameState->MaxGameBound.Y + DeltaY, InGameGameState->MaxGameBound.Y)
+	};
 	FVector2D MinCamBound = {
 		FMath::Min(InGameGameState->MinGameBound.X - DeltaX, InGameGameState->MinGameBound.X),
-		FMath::Min(InGameGameState->MinGameBound.Y - DeltaY, InGameGameState->MinGameBound.Y)};
+		FMath::Min(InGameGameState->MinGameBound.Y - DeltaY, InGameGameState->MinGameBound.Y)
+	};
 	MaxCamBound = {
 		FMath::Min(MaxCamBound.X, InGameGameState->MaxGameBoundExtend.X),
-		FMath::Min(MaxCamBound.Y, InGameGameState->MaxGameBoundExtend.Y)};
+		FMath::Min(MaxCamBound.Y, InGameGameState->MaxGameBoundExtend.Y)
+	};
 	MinCamBound = {
 		FMath::Max(MinCamBound.X, InGameGameState->MinGameBoundExtend.X),
-		FMath::Max(MinCamBound.Y, InGameGameState->MinGameBoundExtend.Y)};
+		FMath::Max(MinCamBound.Y, InGameGameState->MinGameBoundExtend.Y)
+	};
 
 	// fit to X or fit to Y
 	const float OrthoWidthTarget = UKismetMathLibrary::Max(

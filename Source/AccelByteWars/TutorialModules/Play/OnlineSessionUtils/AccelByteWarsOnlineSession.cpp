@@ -849,7 +849,7 @@ void UAccelByteWarsOnlineSession::StartMatchmaking(
 	const APlayerController* PC,
 	const FName& SessionName,
 	const EGameModeNetworkType NetworkType,
-	const EGameModeType GameModeType)
+	const EGameModeType GameModeType, const EGameStyle GameStyle)
 {
 	UE_LOG_ONLINESESSION(Verbose, TEXT("Called"))
 
@@ -879,7 +879,7 @@ void UAccelByteWarsOnlineSession::StartMatchmaking(
 			&ThisClass::OnLeaveSessionForReMatchmakingComplete,
 			GetLocalUserNumFromPlayerController(PC),
 			NetworkType,
-			GameModeType);
+			GameModeType, GameStyle);
 		LeaveSession(SessionName);
 		return;
 	}
@@ -896,7 +896,7 @@ void UAccelByteWarsOnlineSession::StartMatchmaking(
 	}
 
 	// Get match pool ID based on game mode type
-	FString MatchPoolId = MatchmakingPoolIdMap[{NetworkType, GameModeType}];
+	FString MatchPoolId = MatchmakingPoolIdMap[{NetworkType, GameModeType, GameStyle}];
 	const FString GameModeCode = MatchmakingTargetGameModeMap[MatchPoolId];
 
 	// AMS is the default multiplayer server on AGS. If the game runs on legacy AGS Armada, remove the -ams suffix.
@@ -1101,7 +1101,7 @@ void UAccelByteWarsOnlineSession::OnLeaveSessionForReMatchmakingComplete(
 	bool bSucceeded,
 	const int32 LocalUserNum,
 	const EGameModeNetworkType NetworkType,
-	const EGameModeType GameModeType)
+	const EGameModeType GameModeType, const EGameStyle GameStyle)
 {
 	UE_LOG_ONLINESESSION(Verbose, TEXT("Called"))
 
@@ -1118,7 +1118,7 @@ void UAccelByteWarsOnlineSession::OnLeaveSessionForReMatchmakingComplete(
 			return;
 		}
 
-		StartMatchmaking(PC, SessionName, NetworkType, GameModeType);
+		StartMatchmaking(PC, SessionName, NetworkType, GameModeType, GameStyle);
 	}
 	else
 	{
@@ -1132,7 +1132,7 @@ void UAccelByteWarsOnlineSession::OnLeaveSessionForReMatchmakingComplete(
 void UAccelByteWarsOnlineSession::CreateMatchSession(
 	const int32 LocalUserNum,
 	const EGameModeNetworkType NetworkType,
-	const EGameModeType GameModeType)
+	const EGameModeType GameModeType, const EGameStyle GameStyle)
 {
 	FOnlineSessionSettings SessionSettings;
 	// Set a flag so we can request a filtered session from backend
@@ -1141,7 +1141,7 @@ void UAccelByteWarsOnlineSession::CreateMatchSession(
 	// flag to signify the server which game mode to use
 	SessionSettings.Set(
 		GAMESETUP_GameModeCode,
-		MatchSessionTargetGameModeMap[{NetworkType, GameModeType}]);
+		MatchSessionTargetGameModeMap[{NetworkType, GameModeType, GameStyle}]);
 	
 	// Get match session template based on game mode type
 	FString MatchTemplateName = MatchSessionTemplateNameMap[{NetworkType, GameModeType}];

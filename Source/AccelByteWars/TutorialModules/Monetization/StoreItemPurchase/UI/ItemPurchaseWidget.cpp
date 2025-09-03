@@ -14,10 +14,10 @@
 #include "Monetization/StoreItemPurchase/StoreItemPurchaseSubsystem.h"
 
 // @@@SNIPSTART ItemPurchaseWidget.cpp-NativeOnActivated
-// @@@MULTISNIP StoreItemDataObject {"selectedLines": ["1-2", "5-9", "42"]}
-// @@@MULTISNIP PurchaseSubsystem {"selectedLines": ["1-2", "11-12", "42"]}
-// @@@MULTISNIP Setup {"selectedLines": ["1-12", "16-25", "35-42"]}
-// @@@MULTISNIP Finishing {"selectedLines": ["1-12", "16-28", "35-42"]}
+// @@@MULTISNIP StoreItemDataObject {"selectedLines": ["1-2", "5-9", "50"]}
+// @@@MULTISNIP PurchaseSubsystem {"selectedLines": ["1-2", "11-12", "50"]}
+// @@@MULTISNIP Setup {"selectedLines": ["1-12", "16-25", "43-50"]}
+// @@@MULTISNIP Finishing {"selectedLines": ["1-12", "16-36", "43-50"]}
 void UItemPurchaseWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
@@ -43,13 +43,21 @@ void UItemPurchaseWidget::NativeOnActivated()
 
 	// Show amount if consumable
 	Ss_Amount->SetVisibility(StoreItemDataObject->GetIsConsumable() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	
+	// Hide amount if native item
+	for (UStoreItemPriceDataObject* Price : StoreItemDataObject->GetPrices()) {
+		if (Price->GetCurrencyType() == ECurrencyType::NATIVE) {
+			Ss_Amount->SetVisibility(ESlateVisibility::Collapsed);
+			break;
+		}
+	}
 
 	// Setup delegate
 	PurchaseSubsystem->OnCheckoutCompleteDelegates.AddUObject(this, &ThisClass::OnPurchaseComplete);
 	if (NativePlatformPurchaseSubsystem) 
 	{
 		// Sync the native platform purchases if the native platform is valid.
-		NativePlatformPurchaseSubsystem->OnSynchPurchaseCompleteDelegates.BindUObject(this, &ThisClass::OnSyncPurchaseComplete);
+		NativePlatformPurchaseSubsystem->OnSyncPurchaseCompleteDelegates.BindUObject(this, &ThisClass::OnSyncPurchaseComplete);
 	}
 
 	// Set focus
@@ -74,24 +82,36 @@ void UItemPurchaseWidget::NativeOnDeactivated()
 
 	if (NativePlatformPurchaseSubsystem) 
 	{
-		NativePlatformPurchaseSubsystem->OnSynchPurchaseCompleteDelegates.Unbind();
+		NativePlatformPurchaseSubsystem->OnSyncPurchaseCompleteDelegates.Unbind();
 	}
 }
 // @@@SNIPEND
 
 // @@@SNIPSTART ItemPurchaseWidget.cpp-OnClickPurchase
-// @@@MULTISNIP Setup {"selectedLines": ["1-3", "20"]}
-// @@@MULTISNIP Finishing {"selectedLines": ["1-3", "14-20"]}
+// @@@MULTISNIP Setup {"selectedLines": ["1-3", "31"]}
+// @@@MULTISNIP Finishing {"selectedLines": ["1-3", "25-31"]}
 void UItemPurchaseWidget::OnClickPurchase(const int32 PriceIndex) const
 {
 	Ws_Root->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Loading);
 
+	bool bIsNativeItem = false;
+	TArray<EItemSkuPlatform> SkuPlatforms;
+	StoreItemDataObject->GetSkuMap().GenerateKeyArray(SkuPlatforms);
+	for(const EItemSkuPlatform& SkuPlatform : SkuPlatforms)
+	{
+		if(SkuPlatform != EItemSkuPlatform::AccelByte)
+		{
+			bIsNativeItem = true;
+			break;
+		}
+	}
+
 	// Open the native platform store if the native platform is valid and the item type is supported.
 	if (NativePlatformPurchaseSubsystem &&
 		NativePlatformPurchaseSubsystem->IsNativePlatformSupported() &&
-		NativePlatformPurchaseSubsystem->IsItemSupportedByNativePlatform(StoreItemDataObject->GetItemType()) &&
-		NativePlatformPurchaseSubsystem->OpenPlatformStore(GetOwningPlayer(), StoreItemDataObject, PriceIndex, NativePlatformPurchaseSubsystem->GetItemMapping()))
+		bIsNativeItem)
 	{
+		NativePlatformPurchaseSubsystem->CheckoutItem(GetOwningPlayer(), StoreItemDataObject);
 		return;
 	}
 

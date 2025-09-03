@@ -18,11 +18,11 @@ public:
 	virtual void ClearOnlineDelegates() override;
 
 // @@@SNIPSTART MatchSessionP2POnlineSession.h-public
-// @@@MULTISNIP HelperDelegateDeclaration {"selectedLines": ["1", "5-8", "26-29"]}
-// @@@MULTISNIP MatchSessionTemplateNameMap {"selectedLines": ["1", "12-15"]}
+// @@@MULTISNIP HelperDelegateDeclaration {"selectedLines": ["1", "5-8", "32-35"]}
+// @@@MULTISNIP MatchSessionTemplateNameMap {"selectedLines": ["1", "12-21"]}
 // @@@MULTISNIP TravelToSession {"selectedLines": ["1", "3"]}
-// @@@MULTISNIP CreateMatchSession {"selectedLines": ["1", "17-20"]}
-// @@@MULTISNIP FindSessions {"selectedLines": ["1", "21-24"]}
+// @@@MULTISNIP CreateMatchSession {"selectedLines": ["1", "23-26"]}
+// @@@MULTISNIP FindSessions {"selectedLines": ["1", "27-30"]}
 public:
 #pragma region "Game Session Essentials"
 	virtual bool TravelToSession(const FName SessionName) override;
@@ -38,11 +38,17 @@ public:
 		{{EGameModeNetworkType::P2P, EGameModeType::FFA}, "unreal-elimination-p2p"},
 		{{EGameModeNetworkType::P2P, EGameModeType::TDM}, "unreal-teamdeathmatch-p2p"}
 	};
+	TMap<TTuple<EGameModeType, EGameStyle>, FString> MatchSessionTargetGameModeMap = {
+		{ { EGameModeType::FFA, EGameStyle::Zen }, "ELIMINATION-P2P-USERCREATED" },
+		{ { EGameModeType::TDM, EGameStyle::Zen }, "TEAMDEATHMATCH-P2P-USERCREATED" },
+		{ { EGameModeType::FFA, EGameStyle::Frenzy }, "FRENZY-ELIMINATION-P2P-USERCREATED" },
+		{ { EGameModeType::TDM, EGameStyle::Frenzy }, "FRENZY-TEAMDEATHMATCH-P2P-USERCREATED" }
+	};
 
 	virtual void CreateMatchSession(
 		const int32 LocalUserNum,
 		const EGameModeNetworkType NetworkType,
-		const EGameModeType GameModeType) override;
+		const EGameModeType GameModeType, const EGameStyle GameStyle) override;
 	virtual void FindSessions(
 		const int32 LocalUserNum,
 		const int32 MaxQueryNum,

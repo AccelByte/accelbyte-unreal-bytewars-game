@@ -37,8 +37,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, EditFixedSize)
 	TMap<EItemSkuPlatform, FString> SkuMap = {
 		{EItemSkuPlatform::AccelByte, TEXT("")},
-		{EItemSkuPlatform::Steam, TEXT("")},
-		{EItemSkuPlatform::Playstation, TEXT("")}
+		{EItemSkuPlatform::Native, TEXT("")}
 	};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)

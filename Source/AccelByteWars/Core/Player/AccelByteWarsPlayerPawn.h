@@ -9,6 +9,7 @@
 #include "Core/AssetManager/InGameItems/InGameItemUtility.h"
 #include "Core/Utilities/AccelByteWarsUtility.h"
 #include "GameFramework/Pawn.h"
+#include "AbilitySystemInterface.h"
 #include "AccelByteWarsPlayerPawn.generated.h"
 
 class APlayerShipBase;
@@ -16,11 +17,12 @@ class UAccelByteWarsGameplayObjectComponent;
 class AAccelByteWarsMissile;
 class UAccelByteWarsGameplayObjectComponent;
 class UAccelByteWarsProceduralMeshComponent;
+class UAbilitySystemComponent;
 
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnActivatePowerUp, const APlayerController* PlayerController, const FString& ItemId)
 
 UCLASS()
-class ACCELBYTEWARS_API AAccelByteWarsPlayerPawn : public APawn
+class ACCELBYTEWARS_API AAccelByteWarsPlayerPawn : public APawn, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
@@ -33,10 +35,17 @@ protected:
 	virtual void BeginPlay() override;
 	//~End of UObject overridden functions
 
-public:	
+public:
 	//~UObject overridden functions
 	virtual void Tick(float DeltaTime) override;
-	virtual void PossessedBy(AController* NewController) override;	//~End of UObject overridden functions
+	virtual void PossessedBy(AController* NewController) override;
+	virtual void OnRep_PlayerState() override;
+	virtual void Destroyed() override;
+	//~End of UObject overridden functions
+
+	//~IAbilitySystemInterface
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	//~End of IAbilitySystemInterface
 
 	// Notify other object that a power up has been used
 	static inline FOnPowerUpUsed OnPowerUpUsedServerDelegates;
@@ -118,6 +127,18 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AccelByteWars)
 	float MaxMissileSpeed = 900.0f;
+
+	/**
+	 * @brief Cooldown duration in seconds between missile fires
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AccelByteWars)
+	float MissileCooldownDuration = 3.0f;
+
+	/**
+	 * @brief Last time a missile was fired (in world seconds)
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = AccelByteWars)
+	float LastMissileFireTime = 0.0f;
 
 	/**
 	 * @brief Lets the pawn know that it has been destroyed
@@ -266,7 +287,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AccelByteWars, ReplicatedUsing = OnRepNotify_Color)
 	FLinearColor PawnColor = FLinearColor::Yellow;
 
-	template<class T>
+	template <class T>
 	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
 	T* SpawnActorInWorld(AActor* Owner, const FVector Location, const FRotator Rotation, TSubclassOf<AActor> ActorClass, bool ShouldReplicate);
 
@@ -274,6 +295,12 @@ protected:
 	 * @brief Determines if the player's ship is able to fire a missile
 	 */
 	bool ShouldFire();
+
+	/**
+	 * @brief Resets the missile cooldown timer
+	 */
+	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
+	void ResetMissileCooldown();
 
 	/**
 	 * @brief Takes in -1, 0, or 1 to adjust the fire power level
@@ -303,4 +330,17 @@ protected:
 	 */
 	UFUNCTION()
 	void OnRepNotify_CurrentYaw();
+
+	/**
+	 * @brief Callback when a tracked missile is destroyed; removes it from tracking collection
+	 */
+	UFUNCTION()
+	void OnTrackedMissileDestroyed(AActor* DestroyedActor);
+
+protected:
+	/**
+	 * @brief Missiles fired by this pawn that are currently alive (server-side tracking)
+	 */
+	UPROPERTY()
+	TSet<TWeakObjectPtr<AAccelByteWarsMissile>> TrackedMissiles;
 };

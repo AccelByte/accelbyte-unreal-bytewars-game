@@ -80,7 +80,7 @@ void UCreateMatchSessionP2PWidget::CreateSession() const
 	OnlineSession->CreateMatchSession(
 		OnlineSession->GetLocalUserNumFromPlayerController(GetOwningPlayer()),
 		EGameModeNetworkType::P2P,
-		W_Parent->GetSelectedGameModeType());
+		W_Parent->GetSelectedGameModeType(), W_Parent->GetSelectedGameStyle());
 }
 // @@@SNIPEND
 

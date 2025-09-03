@@ -16,17 +16,23 @@ class ACCELBYTEWARS_API URegisterUserInGameSubsystem : public UTutorialModuleSub
 	GENERATED_BODY()
 	
 // @@@SNIPSTART RegisterUserInGameSubsystem.h-public
-// @@@MULTISNIP UpgradeAndVerifyAccount {"selectedLines": ["1", "5-12"]}
-// @@@MULTISNIP SendUpgradeAccountVerificationCode {"selectedLines": ["1", "14-17"]}
-// @@@MULTISNIP IsCurrentUserIsFullAccount {"selectedLines": ["1", "19"]}
+// @@@MULTISNIP ValidateUserInput {"selectedLines": ["1", "5-7"]}
+// @@@MULTISNIP UpgradeAndVerifyAccount {"selectedLines": ["1", "9-17"]}
+// @@@MULTISNIP SendUpgradeAccountVerificationCode {"selectedLines": ["1", "19-22"]}
+// @@@MULTISNIP IsCurrentUserIsFullAccount {"selectedLines": ["1", "24"]}
 public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
+
+	void ValidateUserInput(
+		const FUserInputValidationRequest& Request,
+		const FOnUserInputValidationComplete& OnComplete = FOnUserInputValidationComplete());
 
 	void UpgradeAndVerifyAccount(
 		const int32 LocalUserNum,
 		const FUniqueNetIdPtr UserId,
 		const FString& Username,
+		const FString& DisplayName,
 		const FString& EmailAddress,
 		const FString& Password,
 		const FString& VerificationCode,

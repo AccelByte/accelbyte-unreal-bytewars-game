@@ -46,6 +46,7 @@ public:
 
 	EGameModeNetworkType NetworkType = EGameModeNetworkType::DS;
 	EGameModeType GameModeType = EGameModeType::FFA;
+	EGameStyle GameStyle = EGameStyle::Zen;
 
 	int32 RegisteredPlayerCount = 0;
 	int32 MaxPlayerCount = 0;

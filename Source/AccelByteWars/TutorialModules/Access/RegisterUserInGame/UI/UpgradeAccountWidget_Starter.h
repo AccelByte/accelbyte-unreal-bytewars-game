@@ -6,11 +6,13 @@
 
 #include "CoreMinimal.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
+#include "TutorialModules/Access/RegisterUserInGame/RegisterUserInGameSubsystem_Starter.h"
 #include "UpgradeAccountWidget_Starter.generated.h"
 
 class UTextBlock;
 class UEditableText;
 class UCommonButtonBase;
+class UAccelByteWarsGameInstance;
 
 UCLASS()
 class ACCELBYTEWARS_API UUpgradeAccountWidget_Starter : public UAccelByteWarsActivatableWidget
@@ -29,11 +31,17 @@ protected:
 	// TODO: Add your protected function declarations here.
 #pragma endregion
 
+	UAccelByteWarsGameInstance* GameInstance;
+	URegisterUserInGameSubsystem_Starter* RegisterUserInGameSubsystem;
+
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Tb_Warning;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UEditableText* Edt_Username;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
+	UEditableText* Edt_DisplayName;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UEditableText* Edt_Email;
@@ -52,4 +60,7 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UAccelByteWarsActivatableWidget> VerifyAccountWidgetClass;
+
+private:
+	bool bResetInputOnDeactivated = true;
 };

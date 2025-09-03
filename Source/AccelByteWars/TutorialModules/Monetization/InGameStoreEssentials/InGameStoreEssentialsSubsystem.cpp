@@ -8,6 +8,7 @@
 #include "OnlineStoreInterfaceV2AccelByte.h"
 #include "OnlineSubsystemUtils.h"
 #include "Core/AssetManager/InGameItems/InGameItemUtility.h"
+#include "Monetization/NativePlatformPurchase/NativePlatformPurchaseModels.h"
 
 // @@@SNIPSTART InGameStoreEssentialsSubsystem.cpp-Initialize
 // @@@MULTISNIP StoreInterface {"selectedLines": ["1-2", "5-9"]}
@@ -156,7 +157,7 @@ TArray<UStoreItemDataObject*> UInGameStoreEssentialsSubsystem::GetOffersByCatego
 
 	for (const TSharedRef<FOnlineStoreOffer>& Offer : FilteredOffers)
 	{
-		StoreItems.Add(ConvertStoreData(Offer.Get()));
+		StoreItems.Add(FInGameStoreEssentialsUtils::ConvertStoreData(Offer.Get()));
 	}
 
 	return StoreItems;
@@ -169,7 +170,7 @@ UStoreItemDataObject* UInGameStoreEssentialsSubsystem::GetOfferById(const FUniqu
 	UStoreItemDataObject* StoreItem = nullptr;
 	if (const TSharedPtr<FOnlineStoreOffer> Offer = StoreInterface->GetOffer(OfferId); Offer.IsValid())
 	{
-		StoreItem = ConvertStoreData(*Offer.Get());
+		StoreItem = FInGameStoreEssentialsUtils::ConvertStoreData(*Offer.Get());
 	}
 	return StoreItem;
 }
@@ -260,9 +261,19 @@ void UInGameStoreEssentialsSubsystem::QueryCategories(const FUniqueNetIdPtr User
 		return;
 	}
 
-	StoreInterface->QueryCategories(
-		*UserId.Get(),
-		FOnQueryOnlineStoreCategoriesComplete::CreateUObject(this, &ThisClass::OnQueryCategoriesComplete));
+	// If bound, meaning NativePlatformPurchaseSubsystem is active
+	if (FNativePlatformPurchaseUtils::OnQueryItemMapping.IsBound())
+	{
+		FNativePlatformPurchaseUtils::OnQueryItemMapping.Execute(UserId, FOnQueryItemMappingCompleted::CreateWeakLambda(this, [this, UserId](const FNativeItemPricingMap& Pricing)
+		{
+			StoreInterface->QueryCategories(*UserId.Get(), FOnQueryOnlineStoreCategoriesComplete::CreateUObject(this, &ThisClass::OnQueryCategoriesComplete));
+		}));
+	}
+	// If not bound, meaning the NativePlatformPurchaseSubsystem is not active
+	else
+	{
+		StoreInterface->QueryCategories(*UserId.Get(), FOnQueryOnlineStoreCategoriesComplete::CreateUObject(this, &ThisClass::OnQueryCategoriesComplete));
+	}
 	bIsQueryCategoriesRunning = true;
 }
 // @@@SNIPEND
@@ -310,63 +321,4 @@ FUniqueNetIdPtr UInGameStoreEssentialsSubsystem::GetUniqueNetIdFromPlayerControl
 	return Subsystem->GetIdentityInterface()->GetUniquePlayerId(LocalUserNum);
 }
 
-UStoreItemDataObject* UInGameStoreEssentialsSubsystem::ConvertStoreData(const FOnlineStoreOffer& Offer) const
-{
-	TMap<EItemSkuPlatform, FString> SkuMap;
-	if (const FString* SkuPtr = Offer.DynamicFields.Find(TEXT("Sku")))
-	{
-		SkuMap.Add(EItemSkuPlatform::AccelByte, *SkuPtr);
-	}
-	bool bConsumable = false;
-	if (const FString* ConsumablePtr = Offer.DynamicFields.Find(TEXT("IsConsumable")))
-	{
-		bConsumable = ConsumablePtr->Equals("true");
-	}
-	FText Category;
-	if (const FString* CategoryPtr = Offer.DynamicFields.Find(TEXT("Category")))
-	{
-		Category = FText::FromString(*CategoryPtr);
-	}
-	FString ItemType;
-	if (const FString* ItemTypePtr = Offer.DynamicFields.Find(TEXT("ItemType")))
-	{
-		ItemType = *ItemTypePtr;
-	}
-	FString IconUrl;
-	if (const FString* IconUrlPtr = Offer.DynamicFields.Find(TEXT("IconUrl")))
-	{
-		IconUrl = *IconUrlPtr;
-	}
-
-	TArray<UStoreItemPriceDataObject*> Prices;
-	if (const FOnlineStoreOfferAccelByte* OfferAccelByte = (FOnlineStoreOfferAccelByte*) &Offer)
-	{
-		for (const FAccelByteModelsItemRegionDataItem& RegionData : OfferAccelByte->RegionData)
-		{
-			UStoreItemPriceDataObject* PriceData = NewObject<UStoreItemPriceDataObject>();
-			PriceData->Setup(
-				FPreConfigCurrency::GetTypeFromCode(RegionData.CurrencyCode),
-				RegionData.Price,
-				RegionData.DiscountedPrice);
-
-			Prices.Add(PriceData);
-		}
-	}
-
-	UStoreItemDataObject* Item = NewObject<UStoreItemDataObject>();
-	const FString EmptyEntitlementId;
-	constexpr int32 Count = 1;
-	Item->Setup(
-		Offer.Title,
-		Category,
-		ItemType,
-		Offer.OfferId,
-		EmptyEntitlementId,
-		IconUrl,
-		SkuMap,
-		Prices,
-		Count,
-		bConsumable);
-	return Item;
-}
 #pragma endregion 

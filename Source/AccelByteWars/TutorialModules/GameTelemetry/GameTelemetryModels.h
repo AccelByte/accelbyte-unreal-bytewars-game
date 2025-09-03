@@ -8,8 +8,10 @@
 #define TEXT_SESSION_TYPE_MATCHSESSION TEXT("CreateMatch")
 #define TEXT_SESSION_TYPE_CUSTOMMATCH TEXT("CustomMatch")
 #define TEXT_SESSION_TYPE_LOCAL TEXT("Offline")
-#define TEXT_GAME_MODE_FFA TEXT("Elimination")
-#define TEXT_GAME_MODE_TDM TEXT("TeamDeathMatch")
+#define TEXT_GAME_MODE_FFA TEXT("Elimination Zen")
+#define TEXT_GAME_MODE_TDM TEXT("TeamDeathMatch Zen")
+#define TEXT_GAME_MODE_FFA_FRENZY TEXT("Elimination Frenzy")
+#define TEXT_GAME_MODE_TDM_FRENZY TEXT("TeamDeathMatch Frenzy")
 
 #define TEXT_RESOURCE_TRANSACTION_TYPE_CONSUMED TEXT("Consumed")
 #define TEXT_RESOURCE_TRANSACTION_TYPE_INGAMESTORE TEXT("InGameStore")

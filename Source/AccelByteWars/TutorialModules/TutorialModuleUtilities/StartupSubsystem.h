@@ -113,6 +113,7 @@ private:
 
 	bool bPlatformAccountSelected = false;
 	bool bAutoUseTokenForABLogin = true;
+	bool bUseNativeOSSLogin = false;
 
 #pragma endregion
 

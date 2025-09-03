@@ -40,7 +40,7 @@ void UWalletBalanceWidget::NativeOnDeactivated()
 // @@@SNIPEND
 
 // @@@SNIPSTART WalletBalanceWidget.cpp-ShowBalance
-void UWalletBalanceWidget::ShowBalance(bool bWasSuccessful, const FAccelByteModelsWalletInfo& Response) const
+void UWalletBalanceWidget::ShowBalance(bool bWasSuccessful, const FAccelByteModelsWalletInfoResponse& Response) const
 {
 	if (!bWasSuccessful)
 	{

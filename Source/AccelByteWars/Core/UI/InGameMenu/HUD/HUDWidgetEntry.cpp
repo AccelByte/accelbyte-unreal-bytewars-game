@@ -4,16 +4,44 @@
 
 
 #include "Core/UI/InGameMenu/HUD/HUDWidgetEntry.h"
+#include "Core/Actor/AccelByteWarsCrateBase.h"
 #include "Core/UI/InGameMenu/HUD/PowerUpWidgetEntry.h"
+#include "Core/UI/InGameMenu/HUD/GameplayEffectWidgetEntry.h"
 #include "Core/GameStates/AccelByteWarsInGameGameState.h"
+#include "Core/Player/AccelByteWarsPlayerState.h"
 #include "Components/TextBlock.h"
 #include "Components/HorizontalBox.h"
+#include "AbilitySystemComponent.h"
+#include "GameplayEffect.h"
 
 void UHUDWidgetEntry::NativePreConstruct()
 {
 	Super::NativePreConstruct();
 
 	Hb_PowerUps->SetVisibility(bHidePowerUpWidgets ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
+
+	if (Hb_GameplayEffects)
+	{
+		Hb_GameplayEffects->SetVisibility(bHideGameplayEffectWidgets ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
+	}
+	if (AAccelByteWarsGameState* GameState = GetWorld()->GetGameState<AAccelByteWarsGameState>())
+	{
+		GameStateTeamChangedHandle = GameState->OnTeamsChanged.AddUObject(this, &UHUDWidgetEntry::OnTeamDataChanged);
+	}
+}
+
+void UHUDWidgetEntry::NativeDestruct()
+{
+	// Unbind from GameState delegate
+	if (GameStateTeamChangedHandle.IsValid())
+	{
+		if (AAccelByteWarsGameState* GameState = GetWorld()->GetGameState<AAccelByteWarsGameState>())
+		{
+			GameState->OnTeamsChanged.Remove(GameStateTeamChangedHandle);
+		}
+	}
+
+	Super::NativeDestruct();
 }
 
 void UHUDWidgetEntry::Init(const FGameplayTeamData& Team)
@@ -34,6 +62,9 @@ void UHUDWidgetEntry::Init(const FGameplayTeamData& Team)
 	{
 		return;
 	}
+
+	// Store current team for use in delegate callbacks
+	CurrentTeam = Team;
 
 	// Set entry information.
 	Tb_Lives->SetText(FText::FromString(FString::FromInt(Team.GetTeamLivesLeft())));
@@ -118,4 +149,129 @@ void UHUDWidgetEntry::Init(const FGameplayTeamData& Team)
 
 		PowerUpWidgetEntries[i]->SetVisibility(ESlateVisibility::Collapsed);
 	}
+
+	// Bind to GameState delegate for team changes (which includes gameplay effects)
+	if (AAccelByteWarsGameState* ABGameState = GetWorld()->GetGameState<AAccelByteWarsGameState>())
+	{
+		// Initial refresh of gameplay effects
+		RefreshGameplayEffectWidgets();
+	}
 }
+
+void UHUDWidgetEntry::OnTeamDataChanged()
+{
+	// Refresh gameplay effects when team data changes (including when effects are applied/removed)
+	RefreshGameplayEffectWidgets();
+}
+
+void UHUDWidgetEntry::RefreshGameplayEffectWidgets()
+{
+	if (!Hb_GameplayEffects || bHideGameplayEffectWidgets)
+	{
+		return;
+	}
+
+	Hb_GameplayEffects->ClearChildren();
+
+	// Get game state to access player states
+	const AAccelByteWarsInGameGameState* GameState = GetWorld()->GetGameState<AAccelByteWarsInGameGameState>();
+	if (!GameState)
+	{
+		return;
+	}
+
+	// Collect active effects from team members and update widgets
+	TArray<FGameplayEffectEntryKey> ValidKeys;
+
+	for (const FGameplayPlayerData& Member : CurrentTeam.TeamMembers)
+	{
+		// Find the player state for this team member
+		AAccelByteWarsPlayerState* ABPlayerState = nullptr;
+		for (const TObjectPtr<APlayerState>& PlayerState : GameState->PlayerArray)
+		{
+			if (PlayerState->GetUniqueId() == Member.UniqueNetId)
+			{
+				ABPlayerState = Cast<AAccelByteWarsPlayerState>(PlayerState);
+				break;
+			}
+		}
+
+		if (!ABPlayerState)
+		{
+			continue;
+		}
+
+		// Get the ability system component
+		UAbilitySystemComponent* ASC = ABPlayerState->GetAbilitySystemComponent();
+		if (!ASC)
+		{
+			continue;
+		}
+
+		// Get active gameplay effects with duration
+		FGameplayEffectQuery Query;
+		Query.EffectDefinition = nullptr;
+		Query.OwningTagQuery = FGameplayTagQuery::EmptyQuery;
+		Query.SourceTagQuery = FGameplayTagQuery::EmptyQuery;
+
+		TArray<FActiveGameplayEffectHandle> ActiveEffects = ASC->GetActiveEffects(Query);
+		
+		for (const FActiveGameplayEffectHandle& EffectHandle : ActiveEffects)
+		{
+			const FActiveGameplayEffect* ActiveEffect = ASC->GetActiveGameplayEffect(EffectHandle);
+			if (!ActiveEffect || !ActiveEffect->Spec.Def)
+			{
+				continue;
+			}
+
+			// Only show effects with duration
+			if (ActiveEffect->Spec.Def->DurationPolicy != EGameplayEffectDurationType::HasDuration)
+			{
+				continue;
+			}
+
+			// Get remaining duration
+			float RemainingDuration = ASC->GetGameplayEffectDuration(EffectHandle);
+			if (RemainingDuration <= 0.0f)
+			{
+				continue;
+			}
+
+			FGameplayEffectEntryKey Key(ASC, ActiveEffect->Spec.Def);
+			ValidKeys.Add(Key);
+
+			// Create or update widget entry
+			if (!GameplayEffectWidgetEntries.Contains(Key))
+			{
+				TWeakObjectPtr<UGameplayEffectWidgetEntry> NewEntry = MakeWeakObjectPtr<UGameplayEffectWidgetEntry>(
+					CreateWidget<UGameplayEffectWidgetEntry>(this, GameplayEffectWidgetEntryClass.Get())
+				);
+				GameplayEffectWidgetEntries.Add(Key, NewEntry);
+			}
+
+			TWeakObjectPtr<UGameplayEffectWidgetEntry> EffectEntry = GameplayEffectWidgetEntries[Key];
+			if (EffectEntry.IsValid())
+			{
+				EffectEntry->SetValue(EffectHandle, ASC);
+				EffectEntry->SetVisibility(ESlateVisibility::Visible);
+				Hb_GameplayEffects->AddChild(EffectEntry.Get());
+			}
+		}
+	}
+
+	// Remove invalid entries
+	TArray<FGameplayEffectEntryKey> KeysToRemove;
+	for (TPair<FGameplayEffectEntryKey, TWeakObjectPtr<UGameplayEffectWidgetEntry>>& Entry : GameplayEffectWidgetEntries)
+	{
+		if (!ValidKeys.Contains(Entry.Key))
+		{
+			KeysToRemove.Add(Entry.Key);
+		}
+	}
+
+	for (const FGameplayEffectEntryKey& KeyToRemove : KeysToRemove)
+	{
+		GameplayEffectWidgetEntries.Remove(KeyToRemove);
+	}
+}
+

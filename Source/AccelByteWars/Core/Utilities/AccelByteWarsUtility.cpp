@@ -4,6 +4,7 @@
 
 #include "AccelByteWarsUtility.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
+#include "Core/Player/AccelByteWarsBotController.h"
 #include "Runtime/ImageWrapper/Public/IImageWrapperModule.h"
 #include "Runtime/Online/HTTP/Public/Http.h"
 #include "Runtime/Engine/Classes/GameFramework/PlayerState.h"
@@ -204,6 +205,11 @@ int32 AccelByteWarsUtility::GetControllerId(const APlayerState* PlayerState)
 		{
 			ControllerId = LP->GetLocalPlayerIndex();
 		}
+	}
+	else if(const AAccelByteWarsBotController* AIController = Cast<AAccelByteWarsBotController>(PlayerState->GetOwningController()))
+	{
+		// Use object UniqueID
+		ControllerId = AIController->GetUniqueID();
 	}
 	return ControllerId;
 }

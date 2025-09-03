@@ -21,16 +21,20 @@ public:
 public:
 	const TMap<FString, FString> TargetGameModeMap = {
 		{"unreal-elimination-p2p", "ELIMINATION-P2P"},
-		{"unreal-teamdeathmatch-p2p", "TEAMDEATHMATCH-P2P"}
+		{"unreal-teamdeathmatch-p2p", "TEAMDEATHMATCH-P2P"},
+		{"unreal-frenzy-elimination-p2p", "FRENZY-ELIMINATION-P2P"},
+		{"unreal-frenzy-teamdeathmatch-p2p", "FRENZY-TEAMDEATHMATCH-P2P"}
 	};
 
 protected:
 	virtual bool HandleDisconnectInternal(UWorld* World, UNetDriver* NetDriver) override;
 
 private:
-	const TMap<EGameModeType, FString> MatchPoolIds = {
-		{EGameModeType::FFA, "unreal-elimination-p2p"},
-		{EGameModeType::TDM, "unreal-teamdeathmatch-p2p"}
+	const TMap<TPair<EGameModeType, EGameStyle>, FString> MatchPoolIds = {
+		{{EGameModeType::FFA, EGameStyle::Zen}, "unreal-elimination-p2p"},
+		{{EGameModeType::TDM, EGameStyle::Zen}, "unreal-teamdeathmatch-p2p"},
+		{{EGameModeType::FFA, EGameStyle::Frenzy}, "unreal-frenzy-elimination-p2p"},
+		{{EGameModeType::TDM, EGameStyle::Frenzy}, "unreal-frenzy-teamdeathmatch-p2p"}
 	};
 
 	bool bIsInSessionServer = false;

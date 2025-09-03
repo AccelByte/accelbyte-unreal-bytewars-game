@@ -23,6 +23,7 @@ DECLARE_DELEGATE_OneParam(FOnImageReceived, FCacheBrush);
 #define ENTITY_DESTROYED_TYPE_HIT_PLANET FString(TEXT("PlanetHit"))
 #define ENTITY_DESTROYED_TYPE_HIT_LIFETIME FString(TEXT("Lifetime"))
 #define ENTITY_DESTROYED_TYPE_HIT_POWERUP FString(TEXT("Powerup"))
+#define ENTITY_DESTROYED_TYPE_HIT_MISSILE FString(TEXT("MissileHit"))
 
 // All possible EntityType to be used for the FOnEntityDestroyed delegate.
 #define ENTITY_TYPE_MISSILE FString(TEXT("Missile"))

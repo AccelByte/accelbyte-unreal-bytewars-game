@@ -58,7 +58,7 @@ protected:
 // @@@SNIPSTART MatchmakingDSWidget.h-private
 // @@@MULTISNIP OnlineSession {"selectedLines": ["1-3"]}
 // @@@MULTISNIP SessionInvite {"selectedLines": ["1", "5"]}
-// @@@MULTISNIP SelectedGameModeType {"selectedLines": ["1", "7"]}
+// @@@MULTISNIP SelectedGameModeType {"selectedLines": ["1", "7-9"]}
 private:
 	UPROPERTY()
 	UAccelByteWarsOnlineSessionBase* OnlineSession;
@@ -66,6 +66,8 @@ private:
 	TSharedPtr<FOnlineSessionInviteAccelByte> SessionInvite;
 
 	EGameModeType SelectedGameModeType;
+
+	EGameStyle SelectedGameStyle;
 // @@@SNIPEND
 
 // @@@SNIPSTART MatchmakingDSWidget.h-UI

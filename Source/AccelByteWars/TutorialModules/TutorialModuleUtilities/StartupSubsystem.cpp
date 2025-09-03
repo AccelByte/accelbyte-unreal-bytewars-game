@@ -245,9 +245,17 @@ void UStartupSubsystem::InitializePlatformLogin()
 	}
 
 	PlatformType = FOnlineSubsystemAccelByteUtils::GetAccelByteLoginTypeFromNativeSubsystem(PlatformSubsystem->GetSubsystemName());
+	
+	// Read config whether to use native OSS for single platform auth login.
+	const FString SingleAuthConfigSection = TEXT("/ByteWars/TutorialModule.SinglePlatformAuth");
+	const FString UseNativeOSSLogin = TEXT("bUseNativeOnlineSubsystemLogin");
+	GConfig->GetBool(*SingleAuthConfigSection, *UseNativeOSSLogin, bUseNativeOSSLogin, GEngineIni);
 
+	// Read config whether to auto consume platform token for login.
 	CheckAutoUseTokenForABLogin();
-	if (!IsAutoUseTokenForABLogin()) 
+
+	// Override single platform auth button action.
+	if (bUseNativeOSSLogin || !IsAutoUseTokenForABLogin()) 
 	{
 		OverrideSinglePlatformAuthButtonAction();
 	}
@@ -357,23 +365,64 @@ void UStartupSubsystem::OnLoginWithSinglePlatformAuthButtonClicked()
 		return;
 	}
 
+	// Setup login widget.
+	APlayerController* PC = nullptr;
+	FOnLoginPlatformCompleteDelegate OnLoginCompleteCallback;
 	if (LoginWidget)
 	{
-		LoginWidget->SetLoginState(ELoginState::LoggingIn);
+		PC = LoginWidget->GetOwningPlayer();
+		LoginWidget->SetLoginState(PC ? ELoginState::LoggingIn : ELoginState::Failed);
 		LoginWidget->OnRetryLoginDelegate.RemoveAll(this);
 		LoginWidget->OnRetryLoginDelegate.AddUObject(this, &ThisClass::OnLoginWithSinglePlatformAuthButtonClicked);
-		LoginPlatformCredsToAccelByte(
-			LoginWidget->GetOwningPlayer(), 
-			FOnLoginPlatformCompleteDelegate::CreateUObject(LoginWidget, &ULoginWidget::OnLoginComplete));
+		OnLoginCompleteCallback = FOnLoginPlatformCompleteDelegate::CreateUObject(LoginWidget, &ULoginWidget::OnLoginComplete);
 	}
 	else if (LoginWidgetStarter)
 	{
-		LoginWidgetStarter->SetLoginState(ELoginState::LoggingIn);
+		PC = LoginWidgetStarter->GetOwningPlayer();
+		LoginWidgetStarter->SetLoginState(PC ? ELoginState::LoggingIn : ELoginState::Failed);
 		LoginWidgetStarter->OnRetryLoginDelegate.RemoveAll(this);
 		LoginWidgetStarter->OnRetryLoginDelegate.AddUObject(this, &ThisClass::OnLoginWithSinglePlatformAuthButtonClicked);
-		LoginPlatformCredsToAccelByte(
-			LoginWidgetStarter->GetOwningPlayer(), 
-			FOnLoginPlatformCompleteDelegate::CreateUObject(LoginWidgetStarter, &ULoginWidget_Starter::OnLoginComplete));
+		OnLoginCompleteCallback = FOnLoginPlatformCompleteDelegate::CreateUObject(LoginWidgetStarter, &ULoginWidget_Starter::OnLoginComplete);
+	}
+	
+	if (!PC) 
+	{
+		UE_LOG_STARTUP(Warning, TEXT("Failed to login to AccelByte with platform credentials. PlayerController is null."));
+		return;
+	}
+
+	ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
+	if (!LocalPlayer) 
+	{
+		UE_LOG_STARTUP(Warning, TEXT("Failed to login to AccelByte with platform credentials. LocalPlayer is null."));
+		return;
+	}
+
+	const int32 LocalUserNum = LocalPlayer->GetControllerId();
+
+	// Create a callback to handle the completion of native platform login.
+	const FOnLoginPlatformCompleteDelegate OnLoginPlatformCompleteCallback =
+		FOnLoginPlatformCompleteDelegate::CreateWeakLambda(this, [this, PC, OnLoginCompleteCallback](const bool bSucceeded, const FString& ErrorMessage)
+		{
+			if (!bSucceeded)
+			{
+				OnLoginCompleteCallback.ExecuteIfBound(bSucceeded, ErrorMessage);
+				return;
+			}
+
+			LoginPlatformCredsToAccelByte(PC, OnLoginCompleteCallback);
+		});
+
+	/* If the native online subsystem login option is enabled, attempt to log in with the platform first.
+	 * Upon success, use the platform token to authenticate with AccelByte.*/
+	if (bUseNativeOSSLogin)
+	{
+		LoginPlatformOnly(PC, OnLoginPlatformCompleteCallback);
+	}
+	// Otherwise, assume the platform token is already cached and proceed directly to AccelByte login.
+	else
+	{
+		OnLoginPlatformCompleteCallback.ExecuteIfBound(true, TEXT(""));
 	}
 }
 
@@ -428,14 +477,14 @@ void UStartupSubsystem::LoginPlatformOnly(const APlayerController* PC, const FOn
 				LocalUserNum,
 				true,
 				false,
-				FOnLoginUIClosedDelegate::CreateWeakLambda(this, [this, PC, OnLoginComplete](FUniqueNetIdPtr UniqueId, const int ControllerIndex, const FOnlineError& Error)
+				FOnLoginUIClosedDelegate::CreateWeakLambda(this, [this, PC, OnLoginComplete](FUniqueNetIdPtr UserId, const int LocalUserNum, const FOnlineError& Error)
 				{
 					// Set whether an account was selected successfully from the external platform UI.
 					// If the platform does not implement external platform UI, ignore the checker.
 					bPlatformAccountSelected = 
 						Error.ErrorCode.Equals(PLATFORM_LOGIN_UI_NOT_IMPLEMENTED_CODE, ESearchCase::IgnoreCase) ?
 						true : 
-						Error.bSucceeded && UniqueId.IsValid();
+						Error.bSucceeded && UserId.IsValid();
 
 					if (!bPlatformAccountSelected)
 					{
@@ -445,7 +494,24 @@ void UStartupSubsystem::LoginPlatformOnly(const APlayerController* PC, const FOn
 						return;
 					}
 
-					LoginPlatformOnly(PC, OnLoginComplete);
+					/* On some platforms, when the native login UI is closed, the native platform may already handle the login.
+					 * Some platforms may also just select an account but not actually login to the account. */
+					const ELoginStatus::Type PlatformLoginStatus = PlatformIdentityInterface->GetLoginStatus(LocalUserNum);
+					if (PlatformLoginStatus == ELoginStatus::LoggedIn) 
+					{
+						// Already login, the operation is completed.
+						OnLoginPlatformOnlyComplete(
+							LocalUserNum, 
+							bPlatformAccountSelected, 
+							UserId.ToSharedRef().Get(), 
+							Error.ErrorMessage.ToString(), 
+							OnLoginComplete);
+					}
+					else 
+					{
+						// Resume login with selected account.
+						LoginPlatformOnly(PC, OnLoginComplete);
+					}
 				}
 			));
 
@@ -546,6 +612,27 @@ void UStartupSubsystem::OnLoginPlatformOnlyComplete(
 
 	FString PlatformTypeStr = FAccelByteUtilities::GetUEnumValueAsString(PlatformType);
 	FString PlatformToken = FGenericPlatformHttp::UrlEncode(PlatformIdentityInterface->GetAuthToken(LocalUserNum));
+
+#if PLATFORM_ANDROID
+	// Google Play does not implement GetAuthToken(), hence the token need to be extracted manually.
+	const TSharedPtr<FUserOnlineAccount> GooglePlayAccount = PlatformIdentityInterface->GetUserAccount(UserId);
+	if (!GooglePlayAccount)
+	{
+		const FString ErrorMessage = FString::Printf(TEXT("Login with platform only failed. Unable to find Google Play account."));
+		UE_LOG_STARTUP(Warning, TEXT("%s"), *ErrorMessage);
+		OnLoginComplete.ExecuteIfBound(false, ErrorMessage);
+		return;
+	}
+	FString GooglePlayToken = TEXT("");
+	if (!GooglePlayAccount->GetAuthAttribute(AUTH_ATTR_ID_TOKEN, GooglePlayToken))
+	{
+		const FString ErrorMessage = FString::Printf(TEXT("Login with platform only failed. Invalid Google Play token."));
+		UE_LOG_STARTUP(Warning, TEXT("%s"), *ErrorMessage);
+		OnLoginComplete.ExecuteIfBound(false, ErrorMessage);
+		return;
+	}
+	PlatformToken = GooglePlayToken;
+#endif
 
 	PlatformCredentials.Id = TEXT("");
 	PlatformCredentials.Type = PlatformTypeStr;

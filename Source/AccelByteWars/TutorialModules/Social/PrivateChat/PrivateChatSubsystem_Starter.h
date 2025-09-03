@@ -7,6 +7,7 @@
 #include "CoreMinimal.h"
 #include "OnlineSubsystemAccelByte.h"
 #include "OnlineChatInterfaceAccelByte.h"
+#include "OnlineIdentityInterfaceAccelByte.h"
 #include "PrivateChatLog.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "PrivateChatSubsystem_Starter.generated.h"
@@ -26,6 +27,7 @@ protected:
 	void PushPrivateChatMessageReceivedNotification(const FUniqueNetId& UserId, const TSharedRef<FChatMessage>& Message);
 
 	FOnlineChatAccelBytePtr GetChatInterface() const;
+	FOnlineIdentityAccelBytePtr GetIdentityInterface() const;
 
 	UPromptSubsystem* GetPromptSubsystem() const;
 

@@ -66,6 +66,8 @@ private:
 	TSharedPtr<FOnlineSessionInviteAccelByte> SessionInvite;
 
 	EGameModeType SelectedGameModeType;
+
+	EGameStyle SelectedGameStyle;
 // @@@SNIPEND
 
 // @@@SNIPSTART MatchmakingP2PWidget.h-UI

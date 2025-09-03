@@ -52,7 +52,7 @@ public:
 	void ResetGameData();
 
 	UFUNCTION(BlueprintCallable)
-	void PlayerTeamSetup(APlayerController* PlayerController) const;
+	void PlayerTeamSetup(AController* Controller) const;
 
 	UFUNCTION(BlueprintCallable)
 	virtual void DelayedPlayerTeamSetupWithPredefinedData(APlayerController* PlayerController);

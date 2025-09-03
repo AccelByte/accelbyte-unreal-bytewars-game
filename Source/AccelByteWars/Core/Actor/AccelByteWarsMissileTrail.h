@@ -21,8 +21,8 @@ class ACCELBYTEWARS_API AAccelByteWarsMissileTrail : public AActor
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void Destroyed() override;
-	
-public:	
+
+public:
 	// Sets default values for this actor's properties
 	AAccelByteWarsMissileTrail();
 
@@ -34,7 +34,7 @@ protected:
 	UFUNCTION()
 	void OnOwnerDestroyed(AActor* InActor);
 
-public:	
+public:
 	//~UObject overridden functions
 	virtual void Tick(float DeltaTime) override;
 	//~End of UObject overridden functions
@@ -85,7 +85,6 @@ public:
 	void Server_SetColor(FLinearColor InColor);
 
 protected:
-
 	/**
 	 * @brief Current missile trail color
 	 */
@@ -108,4 +107,8 @@ protected:
 	 * @brief Set the alpha value of the trail.
 	 */
 	void SetRibbonAlpha(const float Alpha) const;
+
+private:
+	// Ensures we only bind once to the owner's OnDestroyed delegate when Owner becomes available on clients.
+	bool bOwnerDestroyBound = false;
 };

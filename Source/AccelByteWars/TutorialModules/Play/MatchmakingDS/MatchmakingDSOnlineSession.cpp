@@ -284,7 +284,7 @@ void UMatchmakingDSOnlineSession::StartMatchmaking(
 	const APlayerController* PC,
 	const FName& SessionName,
 	const EGameModeNetworkType NetworkType,
-	const EGameModeType GameModeType)
+	const EGameModeType GameModeType, const EGameStyle GameStyle)
 {
 	UE_LOG_MATCHMAKINGDS(Verbose, TEXT("called"))
 
@@ -313,7 +313,8 @@ void UMatchmakingDSOnlineSession::StartMatchmaking(
 			this,
 			&ThisClass::OnLeaveSessionForReMatchmakingComplete,
 			GetLocalUserNumFromPlayerController(PC),
-			GameModeType);
+			GameModeType,
+			GameStyle);
 		LeaveSession(SessionName);
 		return;
 	}
@@ -330,7 +331,7 @@ void UMatchmakingDSOnlineSession::StartMatchmaking(
 	}
 	
 	// Get match pool ID based on game mode type
-	FString MatchPoolId = MatchPoolIds[GameModeType];
+	FString MatchPoolId = MatchPoolIds[{GameModeType, GameStyle}];
 	const FString GameModeCode = TargetGameModeMap[MatchPoolId];
 
 	// AMS is the default multiplayer server on AGS. If the game runs on legacy AGS Armada, remove the -ams suffix.
@@ -541,7 +542,7 @@ void UMatchmakingDSOnlineSession::OnLeaveSessionForReMatchmakingComplete(
 	FName SessionName,
 	bool bSucceeded,
 	const int32 LocalUserNum,
-	const EGameModeType GameModeType)
+	const EGameModeType GameModeType, const EGameStyle GameStyle)
 {
 	UE_LOG_MATCHMAKINGDS(Verbose, TEXT("called"))
 
@@ -558,7 +559,7 @@ void UMatchmakingDSOnlineSession::OnLeaveSessionForReMatchmakingComplete(
 			return;
 		}
 
-		StartMatchmaking(PC, SessionName, EGameModeNetworkType::DS, GameModeType);
+		StartMatchmaking(PC, SessionName, EGameModeNetworkType::DS, GameModeType, GameStyle);
 	}
 	else
 	{

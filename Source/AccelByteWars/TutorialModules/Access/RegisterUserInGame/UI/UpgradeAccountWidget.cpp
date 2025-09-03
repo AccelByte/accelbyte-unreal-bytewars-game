@@ -13,14 +13,22 @@
 #include "CommonButtonBase.h"
 
 // @@@SNIPSTART UpgradeAccountWidget.cpp-NativeOnActivated
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "14-16"], "highlightedLines": "{5}"}
 void UUpgradeAccountWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
-	
+
+	GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+	ensure(GameInstance);
+
+	RegisterUserInGameSubsystem = GameInstance->GetSubsystem<URegisterUserInGameSubsystem>();
+	ensure(RegisterUserInGameSubsystem);
+
+	bResetInputOnDeactivated = true;
+	ToggleWarningText(false);
+
 	Btn_Back->OnClicked().AddUObject(this, &ThisClass::DeactivateWidget);
 	Btn_Upgrade->OnClicked().AddUObject(this, &ThisClass::UpgradeAccount);
-
-	ToggleWarningText(false);
 }
 // @@@SNIPEND
 
@@ -29,10 +37,14 @@ void UUpgradeAccountWidget::NativeOnDeactivated()
 	Btn_Back->OnClicked().Clear();
 	Btn_Upgrade->OnClicked().Clear();
 
-	Edt_Username->SetText(FText::GetEmpty());
-	Edt_Email->SetText(FText::GetEmpty());
-	Edt_Password->SetText(FText::GetEmpty());
-	Edt_RetypePassword->SetText(FText::GetEmpty());
+	if (bResetInputOnDeactivated) 
+	{
+		Edt_Username->SetText(FText::GetEmpty());
+		Edt_DisplayName->SetText(FText::GetEmpty());
+		Edt_Email->SetText(FText::GetEmpty());
+		Edt_Password->SetText(FText::GetEmpty());
+		Edt_RetypePassword->SetText(FText::GetEmpty());
+	}
 
 	Super::NativeOnDeactivated();
 }
@@ -43,23 +55,21 @@ UWidget* UUpgradeAccountWidget::NativeGetDesiredFocusTarget() const
 }
 
 // @@@SNIPSTART UpgradeAccountWidget.cpp-UpgradeAccount
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-26", "49"]}
 void UUpgradeAccountWidget::UpgradeAccount()
 {
 	const FString Username = Edt_Username->GetText().ToString();
+	const FString DisplayName = Edt_DisplayName->GetText().ToString();
 	const FString Email = Edt_Email->GetText().ToString();
 	const FString Password = Edt_Password->GetText().ToString();
 	const FString RetypePassword = Edt_RetypePassword->GetText().ToString();
 
-	// Validate input.
 	ToggleWarningText(false);
-	if (Username.IsEmpty() || Email.IsEmpty() || Password.IsEmpty() || RetypePassword.IsEmpty()) 
+
+	// Basic local input validations.
+	if (Username.IsEmpty() || DisplayName.IsEmpty() || Email.IsEmpty() || Password.IsEmpty() || RetypePassword.IsEmpty()) 
 	{
 		ToggleWarningText(true, EMPTY_REQUIRED_FIELDS_ERROR);
-		return;
-	}
-	else if (!IsValidUsername(Username)) 
-	{
-		ToggleWarningText(true, GetUpgradeAccountErrorMessage(EUpgradeAccountErrorTypes::UsernameInputViolation));
 		return;
 	}
 	else if (!AccelByteWarsUtility::IsValidEmailAddress(Email))
@@ -72,13 +82,28 @@ void UUpgradeAccountWidget::UpgradeAccount()
 		ToggleWarningText(true, PASSWORD_NOT_MATCH_ERROR);
 		return;
 	}
-	else if (!IsValidPassword(Password))
-	{
-		ToggleWarningText(true, GetUpgradeAccountErrorMessage(EUpgradeAccountErrorTypes::PasswordInputViolation));
-		return;
-	}
 
-	ProceedToVerifyAccount();
+	// Send request to validate inputs.
+	FUserInputValidationRequest Request;
+	Request.Username = Username;
+	Request.DisplayName = DisplayName;
+	Request.UniqueDisplayName = DisplayName;
+	Request.Password = Password;
+	Btn_Upgrade->SetIsEnabled(false);
+	RegisterUserInGameSubsystem->ValidateUserInput(
+		Request, 
+		FOnUserInputValidationComplete::CreateWeakLambda(this, [this]
+		(bool bIsValid, const FString& ValidationMessage)
+		{
+			Btn_Upgrade->SetIsEnabled(true);
+			if (bIsValid)
+			{
+				ProceedToVerifyAccount();
+				return;
+			}
+
+			ToggleWarningText(true, FText::FromString(ValidationMessage));
+		}));
 }
 // @@@SNIPEND
 
@@ -90,13 +115,6 @@ void UUpgradeAccountWidget::ToggleWarningText(bool bShow, const FText& Message)
 
 void UUpgradeAccountWidget::ProceedToVerifyAccount()
 {
-	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
-	if (!GameInstance)
-	{
-		UE_LOG_REGISTERUSERINGAME(Warning, TEXT("Failed to proceed to verify account. Game instance is null."));
-		return;
-	}
-
 	UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->GetBaseUIWidget());
 	if (!BaseUIWidget)
 	{
@@ -105,12 +123,14 @@ void UUpgradeAccountWidget::ProceedToVerifyAccount()
 	}
 
 	const FString Username = Edt_Username->GetText().ToString();
+	const FString DisplayName = Edt_DisplayName->GetText().ToString();
 	const FString Email = Edt_Email->GetText().ToString();
 	const FString Password = Edt_Password->GetText().ToString();
+	bResetInputOnDeactivated = false;
 
 	if (UVerifyAccountWidget* VerifyAccountWidget = Cast<UVerifyAccountWidget>(BaseUIWidget->PushWidgetToStack(EBaseUIStackType::Menu, VerifyAccountWidgetClass)))
 	{
-		FUpgradeAccountData UpgradeAccountData(Username, Email, Password);
+		FUpgradeAccountData UpgradeAccountData(Username, DisplayName, Email, Password);
 		VerifyAccountWidget->SetAccountToVerify(UpgradeAccountData);
 		UpgradeAccountData.Reset();
 	}

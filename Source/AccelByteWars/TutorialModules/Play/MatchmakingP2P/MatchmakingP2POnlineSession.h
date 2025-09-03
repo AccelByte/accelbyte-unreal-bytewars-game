@@ -15,14 +15,14 @@ class ACCELBYTEWARS_API UMatchmakingP2POnlineSession : public USessionEssentials
 	GENERATED_BODY()
 
 // @@@SNIPSTART MatchmakingP2POnlineSession.h-public
-// @@@MULTISNIP TargetGameModeMap {"selectedLines": ["1", "15-18"]}
-// @@@MULTISNIP StartMatchmaking {"selectedLines": ["1", "20-24"]}
-// @@@MULTISNIP CancelMatchmaking {"selectedLines": ["1", "25"]}
+// @@@MULTISNIP TargetGameModeMap {"selectedLines": ["1", "15-20"]}
+// @@@MULTISNIP StartMatchmaking {"selectedLines": ["1", "22-26"]}
+// @@@MULTISNIP CancelMatchmaking {"selectedLines": ["1", "27"]}
 // @@@MULTISNIP TravelToSession {"selectedLines": ["1", "6"]}
-// @@@MULTISNIP OnStartMatchmakingCompleteDelegate {"selectedLines": ["1", "27-30"]}
-// @@@MULTISNIP OnMatchmakingCompleteDelegate {"selectedLines": ["1", "31-34"]}
-// @@@MULTISNIP OnCancelMatchmakingCompleteDelegate {"selectedLines": ["1", "35-38"]}
-// @@@MULTISNIP OnAcceptBackfillProposalCompleteDelegates {"selectedLines": ["1", "39-42"]}
+// @@@MULTISNIP OnStartMatchmakingCompleteDelegate {"selectedLines": ["1", "29-32"]}
+// @@@MULTISNIP OnMatchmakingCompleteDelegate {"selectedLines": ["1", "33-36"]}
+// @@@MULTISNIP OnCancelMatchmakingCompleteDelegate {"selectedLines": ["1", "37-40"]}
+// @@@MULTISNIP OnAcceptBackfillProposalCompleteDelegates {"selectedLines": ["1", "41-44"]}
 // @@@MULTISNIP OnSessionServerUpdateReceivedDelegate {"selectedLines": ["1", "8-11"]}
 public:
 	virtual void RegisterOnlineDelegates() override;
@@ -40,14 +40,16 @@ public:
 #pragma region "Matchmaking Session Essentials"
 	const TMap<FString, FString> TargetGameModeMap = {
 		{"unreal-elimination-p2p", "ELIMINATION-P2P"},
-		{"unreal-teamdeathmatch-p2p", "TEAMDEATHMATCH-P2P"}
+		{"unreal-teamdeathmatch-p2p", "TEAMDEATHMATCH-P2P"},
+		{"unreal-frenzy-elimination-p2p", "FRENZY-ELIMINATION-P2P"},
+		{"unreal-frenzy-teamdeathmatch-p2p", "FRENZY-TEAMDEATHMATCH-P2P"}
 	};
 
 	virtual void StartMatchmaking(
 		const APlayerController* PC,
 		const FName& SessionName,
 		const EGameModeNetworkType NetworkType,
-		const EGameModeType GameModeType) override;
+		const EGameModeType GameModeType, const EGameStyle GameStyle) override;
 	virtual void CancelMatchmaking(APlayerController* PC, const FName& SessionName) override;
 
 	virtual FOnMatchmakingResponse* GetOnStartMatchmakingCompleteDelegates() override
@@ -102,12 +104,12 @@ protected:
 // @@@SNIPEND
 
 // @@@SNIPSTART MatchmakingP2POnlineSession.h-private
-// @@@MULTISNIP MatchPoolIdMap {"selectedLines": ["1", "9-12"]}
-// @@@MULTISNIP OnLeaveSessionForReMatchmakingComplete {"selectedLines": ["1", "19-24"]}
-// @@@MULTISNIP OnStartMatchmakingCompleteDelegate {"selectedLines": ["1", "14"]}
-// @@@MULTISNIP OnMatchmakingCompleteDelegate {"selectedLines": ["1", "15"]}
-// @@@MULTISNIP OnCancelMatchmakingCompleteDelegate {"selectedLines": ["1", "16"]}
-// @@@MULTISNIP OnAcceptBackfillProposalCompleteDelegates {"selectedLines": ["1", "17"]}
+// @@@MULTISNIP MatchPoolIdMap {"selectedLines": ["1", "9-14"]}
+// @@@MULTISNIP OnLeaveSessionForReMatchmakingComplete {"selectedLines": ["1", "21-26"]}
+// @@@MULTISNIP OnStartMatchmakingCompleteDelegate {"selectedLines": ["1", "16"]}
+// @@@MULTISNIP OnMatchmakingCompleteDelegate {"selectedLines": ["1", "17"]}
+// @@@MULTISNIP OnCancelMatchmakingCompleteDelegate {"selectedLines": ["1", "18"]}
+// @@@MULTISNIP OnAcceptBackfillProposalCompleteDelegates {"selectedLines": ["1", "19"]}
 // @@@MULTISNIP OnSessionServerUpdateReceivedDelegate {"selectedLines": ["1", "5"]}
 private:
 #pragma region "Game Session Essentials"
@@ -117,9 +119,11 @@ private:
 #pragma endregion 
 
 #pragma region "Matchmaking Session Essentials"
-	const TMap<EGameModeType, FString> MatchPoolIds = {
-		{EGameModeType::FFA, "unreal-elimination-p2p"},
-		{EGameModeType::TDM, "unreal-teamdeathmatch-p2p"}
+	const TMap<TPair<EGameModeType, EGameStyle>, FString> MatchPoolIds = {
+		{{EGameModeType::FFA, EGameStyle::Zen}, "unreal-elimination-p2p"},
+		{{EGameModeType::TDM, EGameStyle::Zen}, "unreal-teamdeathmatch-p2p"},
+		{{EGameModeType::FFA, EGameStyle::Frenzy}, "unreal-frenzy-elimination-p2p"},
+		{{EGameModeType::TDM, EGameStyle::Frenzy}, "unreal-frenzy-teamdeathmatch-p2p"}
 	};
 
 	FOnMatchmakingResponse OnStartMatchmakingCompleteDelegates;
@@ -131,7 +135,7 @@ private:
 		FName SessionName,
 		bool bSucceeded,
 		const int32 LocalUserNum,
-		const EGameModeType GameModeType);
+		const EGameModeType GameModeType, const EGameStyle GameStyle);
 	FDelegateHandle OnLeaveSessionForReMatchmakingCompleteDelegateHandle;
 #pragma endregion
 // @@@SNIPEND

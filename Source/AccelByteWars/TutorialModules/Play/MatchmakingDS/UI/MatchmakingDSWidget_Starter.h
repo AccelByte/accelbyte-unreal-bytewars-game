@@ -37,6 +37,8 @@ private:
 
 	EGameModeType SelectedGameModeType;
 
+	EGameStyle SelectedGameStyle;
+
 #pragma region "UI related"
 protected:
 	enum class EWidgetState : uint8

@@ -196,14 +196,20 @@ public:
 		{"unreal-teamdeathmatch-ds", "TEAMDEATHMATCH-DS"},
 		{"unreal-teamdeathmatch-ds-ams", "TEAMDEATHMATCH-DS"},
 		{"unreal-elimination-p2p", "ELIMINATION-P2P"},
-		{"unreal-teamdeathmatch-p2p", "TEAMDEATHMATCH-P2P"}
+		{"unreal-teamdeathmatch-p2p", "TEAMDEATHMATCH-P2P"},
+		{"unreal-frenzy-elimination-ds", "FRENZY-ELIMINATION-DS"},
+		{"unreal-frenzy-elimination-ds-ams", "FRENZY-ELIMINATION-DS"},
+		{"unreal-frenzy-teamdeathmatch-ds", "FRENZY-TEAMDEATHMATCH-DS"},
+		{"unreal-frenzy-teamdeathmatch-ds-ams", "FRENZY-TEAMDEATHMATCH-DS"},
+		{"unreal-frenzy-elimination-p2p", "FRENZY-ELIMINATION-P2P"},
+		{"unreal-frenzy-teamdeathmatch-p2p", "FRENZY-TEAMDEATHMATCH-P2P"}
 	};
 
 	virtual void StartMatchmaking(
 		const APlayerController* PC,
 		const FName& SessionName,
 		const EGameModeNetworkType NetworkType,
-		const EGameModeType GameModeType) override;
+		const EGameModeType GameModeType, const EGameStyle GameStyle) override;
 	virtual void CancelMatchmaking(APlayerController* PC, const FName& SessionName) override;
 
 	virtual FOnMatchmakingResponse* GetOnStartMatchmakingCompleteDelegates() override
@@ -234,11 +240,15 @@ protected:
 	virtual void OnBackfillProposalReceived(FAccelByteModelsV2MatchmakingBackfillProposalNotif Proposal) override;
 
 private:
-	TMap<TPair<EGameModeNetworkType, EGameModeType>, FString> MatchmakingPoolIdMap = {
-		{{EGameModeNetworkType::DS, EGameModeType::FFA}, "unreal-elimination-ds-ams"},
-		{{EGameModeNetworkType::DS, EGameModeType::TDM}, "unreal-teamdeathmatch-ds-ams"},
-		{{EGameModeNetworkType::P2P, EGameModeType::FFA}, "unreal-elimination-p2p"},
-		{{EGameModeNetworkType::P2P, EGameModeType::TDM}, "unreal-teamdeathmatch-p2p"}
+	TMap<TTuple<EGameModeNetworkType, EGameModeType, EGameStyle>, FString> MatchmakingPoolIdMap = {
+		{{EGameModeNetworkType::DS, EGameModeType::FFA, EGameStyle::Zen}, "unreal-elimination-ds-ams"},
+		{{EGameModeNetworkType::DS, EGameModeType::TDM, EGameStyle::Zen}, "unreal-teamdeathmatch-ds-ams"},
+		{{EGameModeNetworkType::P2P, EGameModeType::FFA, EGameStyle::Zen}, "unreal-elimination-p2p"},
+		{{EGameModeNetworkType::P2P, EGameModeType::TDM, EGameStyle::Zen}, "unreal-teamdeathmatch-p2p"},
+		{{EGameModeNetworkType::DS, EGameModeType::FFA, EGameStyle::Frenzy}, "unreal-frenzy-elimination-ds-ams"},
+		{{EGameModeNetworkType::DS, EGameModeType::TDM, EGameStyle::Frenzy}, "unreal-frenzy-teamdeathmatch-ds-ams"},
+		{{EGameModeNetworkType::P2P, EGameModeType::FFA, EGameStyle::Frenzy}, "unreal-frenzy-elimination-p2p"},
+		{{EGameModeNetworkType::P2P, EGameModeType::TDM, EGameStyle::Frenzy}, "unreal-frenzy-teamdeathmatch-p2p"}
 	};
 
 	FOnMatchmakingResponse OnStartMatchmakingCompleteDelegates;
@@ -251,7 +261,7 @@ private:
 		bool bSucceeded,
 		const int32 LocalUserNum,
 		const EGameModeNetworkType NetworkType,
-		const EGameModeType GameModeType);
+		const EGameModeType GameModeType, const EGameStyle GameStyle);
 	FDelegateHandle OnLeaveSessionForReMatchmakingCompleteDelegateHandle;
 #pragma endregion
 
@@ -260,7 +270,7 @@ public:
 	virtual void CreateMatchSession(
 		const int32 LocalUserNum,
 		const EGameModeNetworkType NetworkType,
-		const EGameModeType GameModeType) override;
+		const EGameModeType GameModeType, const EGameStyle GameStyle) override;
 	virtual void FindSessions(
 		const int32 LocalUserNum,
 		const int32 MaxQueryNum,
@@ -281,11 +291,15 @@ private:
 		{{EGameModeNetworkType::P2P, EGameModeType::FFA}, "unreal-elimination-p2p"},
 		{{EGameModeNetworkType::P2P, EGameModeType::TDM}, "unreal-teamdeathmatch-p2p"}
 	};
-	TMap<TPair<EGameModeNetworkType, EGameModeType>, FString> MatchSessionTargetGameModeMap = {
-		{{EGameModeNetworkType::DS, EGameModeType::FFA}, "ELIMINATION-DS-USERCREATED"},
-		{{EGameModeNetworkType::DS, EGameModeType::TDM}, "TEAMDEATHMATCH-DS-USERCREATED"},
-		{{EGameModeNetworkType::P2P, EGameModeType::FFA}, "ELIMINATION-P2P-USERCREATED"},
-		{{EGameModeNetworkType::P2P, EGameModeType::TDM}, "TEAMDEATHMATCH-P2P-USERCREATED"}
+	TMap<TTuple<EGameModeNetworkType, EGameModeType, EGameStyle>, FString> MatchSessionTargetGameModeMap = {
+		{{EGameModeNetworkType::DS, EGameModeType::FFA, EGameStyle::Zen}, "ELIMINATION-DS-USERCREATED"},
+		{{EGameModeNetworkType::DS, EGameModeType::TDM, EGameStyle::Zen}, "TEAMDEATHMATCH-DS-USERCREATED"},
+		{{EGameModeNetworkType::P2P, EGameModeType::FFA, EGameStyle::Zen}, "ELIMINATION-P2P-USERCREATED"},
+		{{EGameModeNetworkType::P2P, EGameModeType::TDM, EGameStyle::Zen}, "TEAMDEATHMATCH-P2P-USERCREATED"},
+		{{EGameModeNetworkType::DS, EGameModeType::FFA, EGameStyle::Frenzy}, "FRENZY-ELIMINATION-DS-USERCREATED"},
+		{{EGameModeNetworkType::DS, EGameModeType::TDM, EGameStyle::Frenzy}, "FRENZY-TEAMDEATHMATCH-DS-USERCREATED"},
+		{{EGameModeNetworkType::P2P, EGameModeType::FFA, EGameStyle::Frenzy}, "FRENZY-ELIMINATION-P2P-USERCREATED"},
+		{{EGameModeNetworkType::P2P, EGameModeType::TDM, EGameStyle::Frenzy}, "FRENZY-TEAMDEATHMATCH-P2P-USERCREATED"}
 	};
 
 	TSharedRef<FOnlineSessionSearch> SessionSearch = MakeShared<FOnlineSessionSearch>(FOnlineSessionSearch());

@@ -15,24 +15,24 @@ void UCreditsWidget::InitCredits()
 	bShouldTick = true;
 	TMap<ECreditsRoleType, TWeakObjectPtr<UCreditsRoleGroupWidget>> RoleGroupMap;
 
-	for (FCreditsData Credit : CreditsData)
+	CreditsDataTable->ForeachRow<FCreditsData>(TEXT(""), [&](const FName& RowName, const FCreditsData& RowData)
 	{
 		// Initialize the role group if it is not yet.
-		if (!RoleGroupMap.Contains(Credit.RoleType))
+		if (!RoleGroupMap.Contains(RowData.RoleType))
 		{
 			const TWeakObjectPtr<UCreditsRoleGroupWidget> NewRoleWidget = MakeWeakObjectPtr<UCreditsRoleGroupWidget>(CreateWidget<UCreditsRoleGroupWidget>(this, CreditsRoleGroupClass.Get()));
-			NewRoleWidget->InitData(ConvertCreditsRoleToText(Credit.RoleType));
+			NewRoleWidget->InitData(ConvertCreditsRoleToText(RowData.RoleType));
 
-			RoleGroupMap.Add(Credit.RoleType, NewRoleWidget);
+			RoleGroupMap.Add(RowData.RoleType, NewRoleWidget);
 			Scb_CreditsList->AddChild(NewRoleWidget.Get());
 		}
 
 		// Assign the credit to respective role group.
 		const TWeakObjectPtr<UCreditsEntry> NewCredit = MakeWeakObjectPtr<UCreditsEntry>(CreateWidget<UCreditsEntry>(this, CreditsEntryClass.Get()));
-		NewCredit->InitData(Credit);
+		NewCredit->InitData(RowData);
 
-		RoleGroupMap[Credit.RoleType]->AddChild(NewCredit.Get());
-	}
+		RoleGroupMap[RowData.RoleType]->AddChild(NewCredit.Get());
+	});
 
 	BeginCreditsAutoScroll();
 }

@@ -18,11 +18,11 @@ class ACCELBYTEWARS_API UMatchSessionDSOnlineSession : public USessionEssentials
 
 // @@@SNIPSTART MatchSessionDSOnlineSession.h-public
 // @@@MULTISNIP QueryUserInfoDeclaration {"selectedLines": ["1", "3-5"]}
-// @@@MULTISNIP HelperDelegateDeclaration {"selectedLines": ["1", "9-12", "30-33"]}
-// @@@MULTISNIP MatchSessionTemplateNameMap {"selectedLines": ["1", "16-19"]}
+// @@@MULTISNIP HelperDelegateDeclaration {"selectedLines": ["1", "9-12", "36-39"]}
+// @@@MULTISNIP MatchSessionTemplateNameMap {"selectedLines": ["1", "16-25"]}
 // @@@MULTISNIP TravelToSession {"selectedLines": ["1", "7"]}
-// @@@MULTISNIP CreateMatchSession {"selectedLines": ["1", "21-24"]}
-// @@@MULTISNIP FindSessions {"selectedLines": ["1", "25-28"]}
+// @@@MULTISNIP CreateMatchSession {"selectedLines": ["1", "27-30"]}
+// @@@MULTISNIP FindSessions {"selectedLines": ["1", "31-34"]}
 public:
 #pragma region "Game Session Essentials"
 	virtual void DSQueryUserInfo(
@@ -42,11 +42,17 @@ public:
 		{{EGameModeNetworkType::DS, EGameModeType::FFA}, "unreal-elimination-ds-ams"},
 		{{EGameModeNetworkType::DS, EGameModeType::TDM}, "unreal-teamdeathmatch-ds-ams"}
 	};
+	const TMap<TPair<EGameModeType, EGameStyle>, FString> MatchSessionTargetGameModeMap = {
+		{ { EGameModeType::FFA, EGameStyle::Zen }, "ELIMINATION-DS-USERCREATED" },
+		{ { EGameModeType::TDM, EGameStyle::Zen }, "TEAMDEATHMATCH-DS-USERCREATED" },
+		{ { EGameModeType::FFA, EGameStyle::Frenzy }, "FRENZY-ELIMINATION-DS-USERCREATED" },
+		{ { EGameModeType::TDM, EGameStyle::Frenzy }, "FRENZY-TEAMDEATHMATCH-DS-USERCREATED" }
+	};
 
 	virtual void CreateMatchSession(
 		const int32 LocalUserNum,
 		const EGameModeNetworkType NetworkType,
-		const EGameModeType GameModeType) override;
+		const EGameModeType GameModeType, const EGameStyle GameStyle) override;
 	virtual void FindSessions(
 		const int32 LocalUserNum,
 		const int32 MaxQueryNum,

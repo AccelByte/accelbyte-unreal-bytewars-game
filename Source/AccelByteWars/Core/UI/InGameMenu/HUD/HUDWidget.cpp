@@ -10,12 +10,15 @@
 #include "Blueprint/SlateBlueprintLibrary.h"
 #include "Components/TextBlock.h"
 #include "Components/HorizontalBox.h"
+#include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/GameModes/AccelByteWarsInGameGameMode.h"
 #include "Core/GameStates/AccelByteWarsInGameGameState.h"
 #include "Core/GameStates/AccelByteWarsGameState.h"
 #include "Core/Settings/GameModeDataAssets.h"
 #include "Core/Utilities/AccelByteWarsUtility.h"
+#include "Core/Player/AccelByteWarsInGamePlayerController.h"
 #include "Core/UI/Components/Prompt/PushNotification/PushNotificationWidget.h"
+#include "Core/UI/Components/AccelByteWarsButtonBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetTextLibrary.h"
@@ -31,65 +34,33 @@ void UHUDWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
+	Btn_Pause->OnClicked().AddUObject(this, &ThisClass::Pause);
+	InitMobileControls();
+
 	GameState = GetWorld()->GetGameState<AAccelByteWarsInGameGameState>();
 	ensure(GameState);
 
-	// setup pre game countdown
-	W_PreGameCountdown->SetupWidget(
-		FText::FromString("Waiting for all players"),
-		FText::FromString("Game Started"));
 	W_PreGameCountdown->CheckCountdownStateDelegate.BindUObject(this, &ThisClass::SetPreGameCountdownState);
 	W_PreGameCountdown->UpdateCountdownValueDelegate.BindUObject(this, &ThisClass::UpdatePreGameCountdownValue);
 	OnPreGameCountdownFinishedDelegateHandle =
 		W_PreGameCountdown->OnCountdownFinishedDelegate.AddUObject(this, &ThisClass::OnPreGameCountdownFinished);
 
-	if (GameState->GameSetup.NotEnoughPlayerShutdownCountdown != INDEX_NONE &&
-		GameState->GameSetup.MinimumTeamCountToPreventAutoShutdown != INDEX_NONE)
-	{
-		// setup not enough player countdown
-		W_NotEnoughPlayerCountdown->SetupWidget(
-			FText::FromString(""),
-			FText::FromString(""),
-			FText::FromString("Not enough players | Shutting down DS in: "),
-			true);
-		W_NotEnoughPlayerCountdown->CheckCountdownStateDelegate.BindUObject(this, &ThisClass::SetNotEnoughPlayerCountdownState);
-		W_NotEnoughPlayerCountdown->UpdateCountdownValueDelegate.BindUObject(this, &ThisClass::UpdateNotEnoughPlayerCountdownValue);
-		OnNotEnoughPlayerCountdownFinishedDelegateHandle =
-			W_NotEnoughPlayerCountdown->OnCountdownFinishedDelegate.AddUObject(this, &ThisClass::OnNotEnoughPlayerCountdownFinished);
-	}
-	else
-	{
-		W_NotEnoughPlayerCountdown->SetVisibility(ESlateVisibility::Collapsed);
-	}
+	W_NotEnoughPlayerCountdown->CheckCountdownStateDelegate.BindUObject(this, &ThisClass::SetNotEnoughPlayerCountdownState);
+	W_NotEnoughPlayerCountdown->UpdateCountdownValueDelegate.BindUObject(this, &ThisClass::UpdateNotEnoughPlayerCountdownValue);
+	OnNotEnoughPlayerCountdownFinishedDelegateHandle =
+		W_NotEnoughPlayerCountdown->OnCountdownFinishedDelegate.AddUObject(this, &ThisClass::OnNotEnoughPlayerCountdownFinished);
 
 	// Setup HUD update callback
 	GameState->OnTeamsChanged.AddUObject(this, &ThisClass::UpdateHUDEntries);
 	GameState->OnPowerUpChanged.AddUObject(this, &ThisClass::UpdateHUDEntries);
-	UpdateHUDEntries();
 	
 	GameState->OnTeamsChanged.AddUObject(this, &ThisClass::CheckSpectatingText);
 
 	// Setup simulate crash countdown
-#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 4
-	if (GameState->SimulateServerCrashCountdown != static_cast<float>(INDEX_NONE))
-#else
-	if (GameState->SimulateServerCrashCountdown != INDEX_NONE)
-#endif
-	{
-		W_SimulateServerCrashCountdown->SetupWidget(
-			FText::FromString(""),
-			FText::FromString(""),
-			FText::FromString("Simulating DS Crash in: "),
-			true);
-		W_SimulateServerCrashCountdown->CheckCountdownStateDelegate.BindUObject(this, &ThisClass::SetSimulateServerCrashCountdownState);
-		W_SimulateServerCrashCountdown->UpdateCountdownValueDelegate.BindUObject(this, &ThisClass::UpdateSimulateServerCrashCountdownValue);
-		OnSimulateServerCrashCountdownFinishedDelegateHandle =
-			W_SimulateServerCrashCountdown->OnCountdownFinishedDelegate.AddUObject(this, &ThisClass::OnSimulateServerCrashCountdownFinished);
-	}
-	else
-	{
-		W_SimulateServerCrashCountdown->SetVisibility(ESlateVisibility::Collapsed);
-	}
+	W_SimulateServerCrashCountdown->CheckCountdownStateDelegate.BindUObject(this, &ThisClass::SetSimulateServerCrashCountdownState);
+	W_SimulateServerCrashCountdown->UpdateCountdownValueDelegate.BindUObject(this, &ThisClass::UpdateSimulateServerCrashCountdownValue);
+	OnSimulateServerCrashCountdownFinishedDelegateHandle =
+		W_SimulateServerCrashCountdown->OnCountdownFinishedDelegate.AddUObject(this, &ThisClass::OnSimulateServerCrashCountdownFinished);
 
 	Tb_Spectating->SetVisibility(ESlateVisibility::Collapsed);
 
@@ -127,12 +98,67 @@ void UHUDWidget::NativeDestruct()
 {
 	Super::NativeDestruct();
 
+	Btn_Pause->OnClicked().Clear();
+	ResetMobileControls();
+
 	W_PreGameCountdown->OnCountdownFinishedDelegate.Remove(OnPreGameCountdownFinishedDelegateHandle);
 	W_NotEnoughPlayerCountdown->OnCountdownFinishedDelegate.Remove(OnNotEnoughPlayerCountdownFinishedDelegateHandle);
 	GameState->OnTeamsChanged.RemoveAll(this);
 	GameState->OnPowerUpChanged.RemoveAll(this);
 
 	AAccelByteWarsInGameGameState::OnPlayerDieDelegate.RemoveAll(this);
+}
+
+void UHUDWidget::NativeOnActivated()
+{
+	Super::NativeOnActivated();
+
+	// setup pre game countdown
+	W_PreGameCountdown->SetVisibility(ESlateVisibility::Visible);
+	W_PreGameCountdown->SetupWidget(
+		FText::FromString("Waiting for all players"),
+		FText::FromString("Game Started"));
+
+	if (GameState->GameSetup.NotEnoughPlayerShutdownCountdown != INDEX_NONE && GameState->GameSetup.MinimumTeamCountToPreventAutoShutdown != INDEX_NONE)
+	{
+		// setup not enough player countdown
+		W_NotEnoughPlayerCountdown->SetupWidget(
+			FText::FromString(""),
+			FText::FromString(""),
+			FText::FromString("Not enough players | Shutting down DS in: "),
+			true);
+		W_NotEnoughPlayerCountdown->SetVisibility(ESlateVisibility::Visible);
+	}
+	else
+	{
+		W_NotEnoughPlayerCountdown->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 4
+	if (GameState->SimulateServerCrashCountdown != static_cast<float>(INDEX_NONE))
+#else
+	if (GameState->SimulateServerCrashCountdown != INDEX_NONE)
+#endif
+	{
+		W_SimulateServerCrashCountdown->SetupWidget(
+			FText::FromString(""),
+			FText::FromString(""),
+			FText::FromString("Simulating DS Crash in: "),
+			true);
+		W_SimulateServerCrashCountdown->SetVisibility(ESlateVisibility::Visible);
+	}
+	else
+	{
+		W_SimulateServerCrashCountdown->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	if (!HUDWidgetEntries.IsEmpty())
+	{
+		Hb_LeftPanel->ClearChildren();
+		Hb_RightPanel->ClearChildren();
+		HUDWidgetEntries.Empty();
+	}
+	UpdateHUDEntries();
 }
 
 void UHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
@@ -321,6 +347,11 @@ void UHUDWidget::OnPlayerDie(const AAccelByteWarsPlayerState* DeathPlayer, const
 		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Cannot handle on-player die event. Game state is null."));
 		return;
 	}
+	if (!Killer)
+	{
+		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Player died, but not because other player."));
+		return;
+	}
 
 	FGameplayPlayerData* KillerPlayerData =
 		GameState->GetPlayerDataById(Killer->GetUniqueId(), AccelByteWarsUtility::GetControllerId(Killer));
@@ -377,6 +408,96 @@ void UHUDWidget::CheckSpectatingText()
 		}
 	}
 }
+
+void UHUDWidget::Pause()
+{
+	if (UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance()))
+	{
+		if (UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->GetBaseUIWidget())) 
+		{
+			BaseUIWidget->PushWidgetToStack(EBaseUIStackType::InGameMenu, PauseWidgetClass);
+		}
+	}
+}
+
+#pragma region Mobile Controls
+void UHUDWidget::InitMobileControls()
+{
+	// Only enable use power up button if there is power up equipped.
+	Btn_UsePowerUpMobile->SetVisibility(ESlateVisibility::Collapsed);
+	if (AAccelByteWarsInGamePlayerController* PC = Cast<AAccelByteWarsInGamePlayerController>(GetOwningPlayer()))
+	{
+		AAccelByteWarsPlayerState* PlayerState = Cast<AAccelByteWarsPlayerState>(PC->PlayerState);
+		if (PlayerState)
+		{
+			const FEquippedItem PowerUp = PlayerState->GetEquippedItem(EItemType::PowerUp, true);
+			Btn_UsePowerUpMobile->SetVisibility(PowerUp.ItemId.IsEmpty() ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
+		}
+	}
+
+	Btn_PowerUpMobile->OnHold.AddUObject(this, &ThisClass::AdjustPowerMobile, 1.0f);
+	Btn_PowerDownMobile->OnHold.AddUObject(this, &ThisClass::AdjustPowerMobile, -1.0f);
+	Btn_PowerUpMobile->OnReleased.AddUObject(this, &ThisClass::AdjustPowerMobile, 0.0f);
+	Btn_PowerDownMobile->OnReleased.AddUObject(this, &ThisClass::AdjustPowerMobile, 0.0f);
+
+	Btn_RotateRightMobile->OnPressed.AddUObject(this, &ThisClass::RotateShipMobile, 1.0f);
+	Btn_RotateLeftMobile->OnPressed.AddUObject(this, &ThisClass::RotateShipMobile, -1.0f);
+	Btn_RotateRightMobile->OnReleased.AddUObject(this, &ThisClass::RotateShipMobile, 0.0f);
+	Btn_RotateLeftMobile->OnReleased.AddUObject(this, &ThisClass::RotateShipMobile, 0.0f);
+
+	Btn_FireMissileMobile->OnClicked().AddUObject(this, &ThisClass::FireMissileMobile);
+	Btn_UsePowerUpMobile->OnClicked().AddUObject(this, &ThisClass::UsePowerUpMobile);
+}
+
+void UHUDWidget::ResetMobileControls()
+{
+	Btn_PowerUpMobile->OnHold.Clear();
+	Btn_PowerDownMobile->OnHold.Clear();
+	Btn_PowerUpMobile->OnReleased.Clear();
+	Btn_PowerDownMobile->OnReleased.Clear();
+
+	Btn_RotateRightMobile->OnPressed.Clear();
+	Btn_RotateLeftMobile->OnPressed.Clear();
+	Btn_RotateRightMobile->OnReleased.Clear();
+	Btn_RotateLeftMobile->OnReleased.Clear();
+
+	Btn_FireMissileMobile->OnClicked().Clear();
+	Btn_UsePowerUpMobile->OnClicked().Clear();
+}
+
+void UHUDWidget::RotateShipMobile(const float Value)
+{
+	if (AAccelByteWarsInGamePlayerController* PC = Cast<AAccelByteWarsInGamePlayerController>(GetOwningPlayer()))
+	{
+		PC->RotateShip(Value);
+	}
+}
+
+void UHUDWidget::AdjustPowerMobile(const float Value)
+{
+	if (AAccelByteWarsInGamePlayerController* PC = Cast<AAccelByteWarsInGamePlayerController>(GetOwningPlayer()))
+	{
+		PC->AdjustPower(Value);
+	}
+}
+
+void UHUDWidget::FireMissileMobile()
+{
+	if (AAccelByteWarsInGamePlayerController* PC = Cast<AAccelByteWarsInGamePlayerController>(GetOwningPlayer()))
+	{
+		PC->FireMissile();
+	}
+}
+
+void UHUDWidget::UsePowerUpMobile()
+{
+	if (AAccelByteWarsInGamePlayerController* PC = Cast<AAccelByteWarsInGamePlayerController>(GetOwningPlayer()))
+	{
+		PC->UsePowerUp();
+	}
+}
+
+#pragma endregion
 
 #undef FADE_DURATION
 #undef TOTAL_DURATION

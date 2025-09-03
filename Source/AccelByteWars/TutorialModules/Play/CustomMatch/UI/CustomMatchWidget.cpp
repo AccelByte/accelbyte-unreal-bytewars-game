@@ -80,6 +80,7 @@ void UCustomMatchWidget::CreateCustomGameSession()
 		LocalUserNum,
 		static_cast<EGameModeNetworkType>(W_NetworkTypeSelection->GetSelectedIndex()),
 		static_cast<EGameModeType>(W_GameModeTypeSelection->GetSelectedIndex()),
+		static_cast<EGameStyle>(W_GameStyleSelection->GetSelectedIndex()),
 		Joinability,
 		FCString::Atoi(*W_DurationSelection->GetSelected().ToString()),
 		FCString::Atoi(*W_PlayerLivesSelection->GetSelected().ToString()),

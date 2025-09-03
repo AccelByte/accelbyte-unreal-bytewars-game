@@ -25,7 +25,6 @@ void UPrivateChatWidget::NativeConstruct()
 }
 
 // @@@SNIPSTART PrivateChatWidget.cpp-NativeOnActivated
-// @@@MULTISNIP Bind {"selectedLines": ["1-2", "10", "13-21"]}
 void UPrivateChatWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
@@ -50,7 +49,6 @@ void UPrivateChatWidget::NativeOnActivated()
 // @@@SNIPEND
 
 // @@@SNIPSTART PrivateChatWidget.cpp-NativeOnDeactivated
-// @@@MULTISNIP Unbind {"selectedLines": ["1-2", "6", "9-14", "17"]}
 void UPrivateChatWidget::NativeOnDeactivated()
 {
 	PrivateChatRecipientUserId = nullptr;
@@ -81,6 +79,7 @@ void UPrivateChatWidget::SetPrivateChatRecipient(FUniqueNetIdPtr RecipientUserId
 }
 
 // @@@SNIPSTART PrivateChatWidget.cpp-AppendChatMessage
+// @@@MULTISNIP AddingUI {"selectedLines": ["1-2", "9-31", "34-43"]}
 void UPrivateChatWidget::AppendChatMessage(const FChatMessage& Message) const
 {
 	if (!PrivateChatSubsystem)
@@ -127,7 +126,7 @@ void UPrivateChatWidget::AppendChatMessage(const FChatMessage& Message) const
 // @@@SNIPEND
 
 // @@@SNIPSTART PrivateChatWidget.cpp-SendPrivateChatMessage
-// @@@MULTISNIP AddingUI {"selectedLines": ["1-20", "27"]}
+// @@@MULTISNIP AddingUI {"selectedLines": ["1-2", "9-20", "27"]}
 void UPrivateChatWidget::SendPrivateChatMessage(const FText& MessageText)
 {
 	if (!PrivateChatSubsystem)
@@ -188,7 +187,7 @@ void UPrivateChatWidget::OnPrivateChatMessageReceived(const FUniqueNetId& UserId
 // @@@SNIPEND
 
 // @@@SNIPSTART PrivateChatWidget.cpp-GetLastPrivateChatMessages
-// @@@MULTISNIP AddingUI {"selectedLines": ["1-20", "61"]}
+// @@@MULTISNIP AddingUI {"selectedLines": ["1-2" ,"9-20", "61"]}
 void UPrivateChatWidget::GetLastPrivateChatMessages() const
 {
 	if (!PrivateChatSubsystem)
@@ -218,7 +217,7 @@ void UPrivateChatWidget::GetLastPrivateChatMessages() const
 	// Abort if room id was not found.
 	if (ChatRoomId.IsEmpty())
 	{
-		W_Chat->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Error);
+		W_Chat->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Empty, NO_CHAT_MESSAGE);
 		return;
 	}
 
@@ -233,7 +232,7 @@ void UPrivateChatWidget::GetLastPrivateChatMessages() const
 		// Abort if last messages is empty.
 		if (OutMessages.IsEmpty())
 		{
-			W_Chat->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Empty);
+			W_Chat->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Empty, NO_CHAT_MESSAGE);
 			return;
 		}
 
@@ -247,7 +246,7 @@ void UPrivateChatWidget::GetLastPrivateChatMessages() const
 	// Show error message if failed.
 	else 
 	{
-		W_Chat->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Error);
+		W_Chat->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Error, FAILED_TO_LOAD_CHAT_MESSAGE);
 	}
 }
 // @@@SNIPEND

@@ -58,6 +58,9 @@ private:
 	UAccelByteWarsSequentialSelectionWidget* W_GameModeTypeSelection;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UAccelByteWarsSequentialSelectionWidget* W_GameStyleSelection;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UAccelByteWarsSequentialSelectionWidget* W_NetworkTypeSelection;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))

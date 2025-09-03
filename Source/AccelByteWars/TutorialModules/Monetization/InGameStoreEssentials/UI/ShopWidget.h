@@ -51,9 +51,6 @@ private:
 
 	UPROPERTY()
 	UInGameStoreEssentialsSubsystem* StoreSubsystem;
-
-	UPROPERTY()
-	UNativePlatformPurchaseSubsystem* NativePlatformPurchaseSubsystem;
 // @@@SNIPEND
 
 #pragma region "UI"

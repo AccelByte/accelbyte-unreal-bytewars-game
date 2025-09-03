@@ -228,16 +228,14 @@ bool UMatchSessionP2POnlineSession::HandleDisconnectInternal(UWorld* World, UNet
 void UMatchSessionP2POnlineSession::CreateMatchSession(
 	const int32 LocalUserNum,
 	const EGameModeNetworkType NetworkType,
-	const EGameModeType GameModeType)
+	const EGameModeType GameModeType, const EGameStyle GameStyle)
 {
 	FOnlineSessionSettings SessionSettings;
 	// Set a flag so we can request a filtered session from backend
 	SessionSettings.Set(GAME_SESSION_REQUEST_TYPE, GAME_SESSION_REQUEST_TYPE_MATCHSESSION);
 
 	// flag to signify the server which game mode to use
-	SessionSettings.Set(
-		GAMESETUP_GameModeCode,
-		FString(GameModeType == EGameModeType::FFA ? "ELIMINATION-P2P-USERCREATED" : "TEAMDEATHMATCH-P2P-USERCREATED"));
+	SessionSettings.Set(GAMESETUP_GameModeCode, MatchSessionTargetGameModeMap[{ GameModeType, GameStyle }]);
 
 	// Get match session template name based on game mode type
 	FString MatchTemplateName = MatchSessionTemplateNameMap[{EGameModeNetworkType::P2P, GameModeType}];

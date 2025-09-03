@@ -40,19 +40,6 @@ void UGameOverWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
-	// if on server, disable play again button
-	if (GetOwningPlayer()->HasAuthority())
-	{
-		Btn_PlayAgain->SetVisibility(ESlateVisibility::Visible);
-		Widget_Countdown->SetVisibility(ESlateVisibility::Hidden);
-	}
-	else
-	{
-		// on server
-		Btn_PlayAgain->SetVisibility(ESlateVisibility::Collapsed);
-		Widget_Countdown->SetVisibility(ESlateVisibility::Visible);
-	}
-
 	// Bind buttons click event.
 	Btn_PlayAgain->OnClicked().AddUObject(this, &UGameOverWidget::PlayGameAgain);
 	Btn_Quit->OnClicked().AddUObject(this, &UGameOverWidget::QuitGame);
@@ -76,6 +63,19 @@ void UGameOverWidget::NativeOnActivated()
 	{
 		Widget_Countdown->SetVisibility(ESlateVisibility::Collapsed);
 	}
+	
+	// if on server, disable play again button
+	if (GetOwningPlayer()->HasAuthority())
+	{
+		Btn_PlayAgain->SetVisibility(ESlateVisibility::Visible);
+		Widget_Countdown->SetVisibility(ESlateVisibility::Hidden);
+	}
+	else
+	{
+		// on server
+		Btn_PlayAgain->SetVisibility(ESlateVisibility::Collapsed);
+		Widget_Countdown->SetVisibility(ESlateVisibility::Visible);
+	}
 }
 
 void UGameOverWidget::NativeOnDeactivated()
@@ -90,6 +90,7 @@ void UGameOverWidget::NativeOnDeactivated()
 
 void UGameOverWidget::SetupLeaderboard()
 {
+	Vb_Leaderboard->ClearChildren();
 	int32 WinnerTeamId = GameState->GetWinnerTeamId();
 	FString WinnerPlayerName = TEXT("");
 	bool bIsWinnerLocalPlayer = false;

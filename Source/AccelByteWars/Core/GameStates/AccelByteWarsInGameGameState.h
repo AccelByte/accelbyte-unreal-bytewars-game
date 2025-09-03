@@ -45,6 +45,10 @@ public:
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastOnPlayerDie(const AAccelByteWarsPlayerState* DeathPlayer, const FVector DeathLocation, const AAccelByteWarsPlayerState* Killer);
 
+    // Notify all clients to refresh HUD gameplay effect widgets
+    UFUNCTION(NetMulticast, Unreliable)
+    void MulticastRefreshHUDGameplayEffects();
+
 	/**
 	 * @brief Current gameplay state
 	 */

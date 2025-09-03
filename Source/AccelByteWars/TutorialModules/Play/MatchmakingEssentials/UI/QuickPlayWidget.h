@@ -24,6 +24,7 @@ public:
 	};
 
 	EGameModeType GetSelectedGameModeType() const;
+	EGameStyle GetSelectedGameStyle() const;
 
 	void SwitchContent(EContentType State);
 
@@ -35,8 +36,10 @@ protected:
 
 private:
 	void SelectGameMode(EGameModeType GameModeType);
+	void SetGameStyle(EGameStyle GameStyle);
 
 	EGameModeType SelectedGameModeType = EGameModeType::TDM;
+	EGameStyle SelectedGameStyle = EGameStyle::Zen;
 	float CameraTargetY = 600.f;
 
 	UPROPERTY()
@@ -56,6 +59,12 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_TeamDeathMatch;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UCommonButtonBase* Btn_EliminationFrenzy;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UCommonButtonBase* Btn_TeamDeathMatchFrenzy;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_SelectGameMode_Back;

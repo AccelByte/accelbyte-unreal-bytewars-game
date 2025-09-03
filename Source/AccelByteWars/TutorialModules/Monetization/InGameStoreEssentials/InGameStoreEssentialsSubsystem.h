@@ -71,8 +71,6 @@ private:
 
 #pragma region "Utilities"
 	FUniqueNetIdPtr GetUniqueNetIdFromPlayerController(const APlayerController* PlayerController) const;
-	UStoreItemDataObject* ConvertStoreData(
-		const FOnlineStoreOffer& Offer) const;
 #pragma endregion
 // @@@SNIPEND
 };

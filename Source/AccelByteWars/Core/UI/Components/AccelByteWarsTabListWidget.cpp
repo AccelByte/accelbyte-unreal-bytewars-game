@@ -12,6 +12,8 @@
 #include "Groups/CommonButtonGroupBase.h"
 #include "Blueprint/WidgetTree.h"
 
+DEFINE_LOG_CATEGORY(LogAccelByteWarsTabListWidget);
+
 void UAccelByteWarsTabListWidget::NativePreConstruct()
 {
 	Super::NativePreConstruct();
@@ -44,6 +46,11 @@ void UAccelByteWarsTabListWidget::NativePreConstruct()
 void UAccelByteWarsTabListWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+
+	NextTabAction->SetInputAction(NextTabInputActionData);
+	PreviousTabAction->SetInputAction(PreviousTabInputActionData);
+
+	SetLinkedSwitcher(LinkedSwitcher.Get());
 
 	// need to be called at least here, since some of the object that RegisterTab uses, constructed on NativeOnInitialized
 	for (const FAccelByteWarsTabDescriptor& TabInfo : PreRegisteredTabInfos)
@@ -93,10 +100,15 @@ void UAccelByteWarsTabListWidget::HandleTabRemoval_Implementation(FName TabNameI
 
 void UAccelByteWarsTabListWidget::ParentOnActivated()
 {
+	// Select the previous selected tab if any, otherwise select the first tab.
 	if (!PreviouslySelectedTabId.IsNone())
 	{
 		SelectTabByID(PreviouslySelectedTabId);
 		PreviouslySelectedTabId = FName();
+	}
+	else if (!PreRegisteredTabInfos.IsEmpty())
+	{
+		SelectTabByID(PreRegisteredTabInfos[0].TabId);
 	}
 }
 
@@ -113,57 +125,99 @@ bool UAccelByteWarsTabListWidget::RegisterTabWithPresets(
 	const bool bForce)
 {
 	bool bIsRegistered = false;
+	TMap<FName, FCommonRegisteredTabInfo> TempTabs = GetRegisteredTabsByID();
 
-	if (GetRegisteredTabsByID().Contains(TabNameID))
+	// If forced or the tab button is invalid, unregister the existing tab first.
+	const UCommonButtonBase* TabButton = GetTabButtonBaseByID(TabNameID);
+	if (bForce || !TabButton)
 	{
-		// If forced or tab button is invalid, remove the tab.
-		UCommonButtonBase* TabButton = GetTabButtonBaseByID(TabNameID);
-		if (bForce || !GetTabButtonBaseByID(TabNameID))
+		RemoveTab(TabNameID);
+	}
+
+	// If the target tab index is greater than current number of tabs, then append at the end.
+	if (TabIndex <= INDEX_NONE || TabIndex >= TempTabs.Num())
+	{
+		bIsRegistered = RegisterTab(TabNameID, PresetButtonClass, ContentWidget, TempTabs.Num());
+		if (bIsRegistered)
 		{
-			RemoveTab(TabNameID);
-			TargetIndexMap.Remove(TabNameID);
+			UpdateTabButtonStyle(TabNameID, ButtonText);
 		}
-		// If tab button is valid, re-add to the tab list.
-		else 
+	}
+	// Otherwise, rebuild all tabs and insert new one at correct position
+	else
+	{
+		RemoveAllTabs();
+
+		// Sort existing tabs by tab index
+		TArray<TPair<FName, FCommonRegisteredTabInfo>> SortedTabs = TempTabs.Array();
+		SortedTabs.Sort([](const TPair<FName, FCommonRegisteredTabInfo>& A, const TPair<FName, FCommonRegisteredTabInfo>& B)
 		{
-			if (!W_TabButtonContainer->HasChild(TabButton)) 
+			return A.Value.TabIndex < B.Value.TabIndex;
+		});
+
+		int32 CurrentIndex = 0;
+		bool bInsertedNewTab = false;
+		for (const TPair<FName, FCommonRegisteredTabInfo>& Tab : SortedTabs)
+		{
+			// Insert new tab at the desired index
+			if (!bInsertedNewTab && Tab.Value.TabIndex == TabIndex)
 			{
-				HandleTabCreation_Implementation(TabNameID, TabButton);
+				bInsertedNewTab = true;
+				bIsRegistered = RegisterTab(TabNameID, PresetButtonClass, ContentWidget, CurrentIndex++);
+				if (bIsRegistered)
+				{
+					UpdateTabButtonStyle(TabNameID, ButtonText);
+				}
 			}
-			bIsRegistered = true;
+
+			/* If the existing tabs is not properly rebuilt, then treat it as fatal operation.
+			 * Then, remove all tabs and notify that the target index is invalid. */
+			if (!RegisterTab(Tab.Key, Tab.Value.TabButtonClass, Tab.Value.ContentInstance, CurrentIndex++))
+			{
+				UE_LOG_ACCELBYTEWARSTABLISTWIDGET(
+					Warning, 
+					TEXT("Failed to insert new tab with ID %s and rebuild existing tabs. Target index %d is invalid."),
+					*TabNameID.ToString(), TabIndex);
+				RemoveAllTabs();
+				return false;
+			}
+			// Otherwise, update the registered existing tab button style.
+			else 
+			{
+				UpdateTabButtonStyle(Tab.Key);
+			}
 		}
 	}
 	
-	if (!bIsRegistered) 
+	return bIsRegistered;
+}
+
+bool UAccelByteWarsTabListWidget::UpdateTabButtonStyle(const FName& TabNameID, const FText& ButtonText)
+{
+	if (UAccelByteWarsButtonBase* Button = Cast<UAccelByteWarsButtonBase>(GetTabButtonBaseByID(TabNameID)))
 	{
-		// Figure out what index should be used for the tab button.
-		int32 CalculatedIndex = TabIndex;
-		for (const TTuple<FName, int>& TargetIndex : TargetIndexMap)
+		/* Make sure the button tab has a label.
+		 * If the text param is empty, fallback to existing button text.
+		 * Otherwise fallback to the tab ID. */
+		Button->SetButtonText(
+			ButtonText.IsEmpty() ?
+			Button->GetButtonText().IsEmpty() ?
+			FText::FromString(TabNameID.ToString()) :
+			Button->GetButtonText() :
+			ButtonText);
+
+		Button->SetIsFocusable(false);
+		Button->SetPadding(PaddingBetweenButtons);
+
+		if (IsValid(PresetButtonStyle))
 		{
-			if (TargetIndex.Value == TabIndex + 1 && GetRegisteredTabsByID().Contains(TargetIndex.Key))
-			{
-				CalculatedIndex = GetRegisteredTabsByID()[TargetIndex.Key].TabIndex;
-			}
+			Button->SetStyle(PresetButtonStyle);
 		}
 
-		bIsRegistered = RegisterTab(TabNameID, PresetButtonClass, ContentWidget, CalculatedIndex);
-
-		if (bIsRegistered)
-		{
-			TargetIndexMap.Add(TabNameID, TabIndex);
-
-			UAccelByteWarsButtonBase* Button = Cast<UAccelByteWarsButtonBase>(GetTabButtonBaseByID(TabNameID));
-			Button->SetButtonText(ButtonText);
-			Button->SetIsFocusable(false);
-			Button->SetPadding(PaddingBetweenButtons);
-			if (IsValid(PresetButtonStyle))
-			{
-				Button->SetStyle(PresetButtonStyle);
-			}
-		}
+		return true;
 	}
 
-	return bIsRegistered;
+	return false;
 }
 
 void UAccelByteWarsTabListWidget::HandleOnTabButtonCreation(FName TabId, UCommonButtonBase* TabButton)
@@ -181,6 +235,8 @@ void UAccelByteWarsTabListWidget::HandleOnTabButtonCreation(FName TabId, UCommon
 
 void UAccelByteWarsTabListWidget::HandleOnTabSelected(FName TabId)
 {
+	PreviouslySelectedTabId = TabId;
+
 	const FCommonRegisteredTabInfo* TabInfo = GetRegisteredTabsByID().Find(TabId);
 	if (!TabInfo) 
 	{

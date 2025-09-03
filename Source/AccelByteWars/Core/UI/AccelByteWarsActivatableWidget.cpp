@@ -645,6 +645,9 @@ TWeakObjectPtr<UAccelByteWarsButtonBase> UAccelByteWarsActivatableWidget::Genera
 	FTutorialModuleGeneratedWidget& Metadata,
 	UAccelByteWarsTabListWidget& WidgetContainer)
 {
+	TWeakObjectPtr<UAccelByteWarsButtonBase> Button =
+		Cast<UAccelByteWarsButtonBase>(WidgetContainer.GetTabButtonBaseByID(Metadata.TabNameId));
+
 	UAccelByteWarsGameInstance* GameInstance = StaticCast<UAccelByteWarsGameInstance*>(GetWorld()->GetGameInstance());
 	ensure(GameInstance);
 	const UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget();
@@ -664,12 +667,21 @@ TWeakObjectPtr<UAccelByteWarsButtonBase> UAccelByteWarsActivatableWidget::Genera
 	// Create entry widget
 	UAccelByteWarsActivatableWidget* EntryWidget = CreateWidget<UAccelByteWarsActivatableWidget>(this, EntryWidgetClass.Get());
 
-	// Register tab list entry
-	if (!WidgetContainer.RegisterTabWithPresets(
-		Metadata.TabNameId,
-		Metadata.ButtonText,
-		EntryWidget,
-		Metadata.TabIndex))
+	// If the tab list is already registered, update the content widget instead.
+	bool bRegistered = false;
+	if (Button.IsValid())
+	{
+		bRegistered = WidgetContainer.RegisterTabContentWidget(Metadata.TabNameId, EntryWidget);
+	}
+	// Otherwise, register a new tab list entry
+	else 
+	{
+		bRegistered = WidgetContainer.RegisterTabWithPresets(Metadata.TabNameId, Metadata.ButtonText, EntryWidget, Metadata.TabIndex);
+		Button = Cast<UAccelByteWarsButtonBase>(WidgetContainer.GetTabButtonBaseByID(Metadata.TabNameId));
+	}
+
+	// Validate new tab list registration.
+	if (!bRegistered)
 	{
 		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(
 			Warning,
@@ -677,9 +689,7 @@ TWeakObjectPtr<UAccelByteWarsButtonBase> UAccelByteWarsActivatableWidget::Genera
 		return nullptr;
 	}
 
-	// Get the tab list entry button.
-	const TWeakObjectPtr<UAccelByteWarsButtonBase> Button =
-		Cast<UAccelByteWarsButtonBase>(WidgetContainer.GetTabButtonBaseByID(Metadata.TabNameId));
+	// Validate the tab list entry button.
 	if (!Button.Get())
 	{
 		UE_LOG_ACCELBYTEWARSACTIVATABLEWIDGET(Warning, TEXT("Failed to create an instance of widget entry button"));
@@ -697,7 +707,6 @@ TWeakObjectPtr<UAccelByteWarsButtonBase> UAccelByteWarsActivatableWidget::Genera
 
 	EntryWidget->ActivateWidget();
 	Metadata.GenerateWidgetRef = Button.Get();
-	GeneratedWidgetPool.Add(Button.Get());
 
 	return Button;
 }

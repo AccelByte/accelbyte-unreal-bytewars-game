@@ -4,13 +4,13 @@
 
 #include "PrivateChatSubsystem_Starter.h"
 #include "OnlineSubsystemUtils.h"
+#include "Misc/Optional.h"
 
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
 
 #include "Social/FriendsEssentials/UI/FriendDetailsWidget.h"
-#include "Social/ChatEssentials/ChatEssentialsModels.h"
 #include "Social/PrivateChat/UI/PrivateChatWidget_Starter.h"
 #include "Social/ChatEssentials/ChatEssentialsModels.h"
 
@@ -138,6 +138,18 @@ FOnlineChatAccelBytePtr UPrivateChatSubsystem_Starter::GetChatInterface() const
 	}
 
 	return StaticCastSharedPtr<FOnlineChatAccelByte>(Subsystem->GetChatInterface());
+}
+
+FOnlineIdentityAccelBytePtr UPrivateChatSubsystem_Starter::GetIdentityInterface() const
+{
+	const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+	if (!ensure(Subsystem))
+	{
+		UE_LOG_PRIVATECHAT(Warning, TEXT("The online subsystem is invalid. Please make sure OnlineSubsystemAccelByte is enabled and DefaultPlatformService under [OnlineSubsystem] in the Engine.ini set to AccelByte."));
+		return nullptr;
+	}
+
+	return StaticCastSharedPtr<FOnlineIdentityAccelByte>(Subsystem->GetIdentityInterface());
 }
 
 UPromptSubsystem* UPrivateChatSubsystem_Starter::GetPromptSubsystem() const

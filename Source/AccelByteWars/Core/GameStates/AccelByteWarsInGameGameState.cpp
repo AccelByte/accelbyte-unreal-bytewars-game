@@ -73,3 +73,9 @@ void AAccelByteWarsInGameGameState::MulticastOnPlayerDie_Implementation(const AA
 {
 	OnPlayerDieDelegate.Broadcast(DeathPlayer, DeathLocation, Killer);
 }
+
+void AAccelByteWarsInGameGameState::MulticastRefreshHUDGameplayEffects_Implementation()
+{
+    // Broadcast locally so UI listening to OnTeamsChanged refreshes effect entries
+    OnNotify_Teams();
+}

@@ -5,33 +5,39 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/DataTable.h"
 #include "CreditsDataModel.generated.h"
 
-UENUM()
+UENUM(BlueprintType)
 enum class ECreditsRoleType : uint8
 {
+	GrandWranglerSupreme,
 	ChiefWranglers,
-	MasterOfFun,
+	GrandAlchemistOfCode,
+	LogicAlchemists,
 	HeadOfShinyThings,
-	EverythingElse,
+	MakersOfThePretty,
+	ChaosOverlord,
+	ChaosCoordinators,
+	GlitchWhisperers,
 	SpecialThanks,
 	Music,
 	Fonts
 };
 
 USTRUCT(BlueprintType)
-struct FCreditsData
+struct FCreditsData: public FTableRowBase
 {
-	GENERATED_BODY()
+	GENERATED_USTRUCT_BODY()
 
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	ECreditsRoleType RoleType = ECreditsRoleType::Fonts;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (MultiLine="true"))
 	FText Name;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FText AdditionalDescription;
 };
 
@@ -43,22 +49,32 @@ inline const FText ConvertCreditsRoleToText(ECreditsRoleType Type)
 {
 	switch (Type)
 	{
-		case ECreditsRoleType::ChiefWranglers:   
-			return LOCTEXT("CreditsRoleType_1", "Chief Wranglers");
-		case ECreditsRoleType::MasterOfFun:
-			return LOCTEXT("CreditsRoleType_2", "Master of Fun");
+		case ECreditsRoleType::GrandWranglerSupreme:
+			return LOCTEXT("CreditsRoleType_1", "Grand Wrangler Supreme");
+		case ECreditsRoleType::ChiefWranglers:
+			return LOCTEXT("CreditsRoleType_2", "Chief Wranglers");
+		case ECreditsRoleType::GrandAlchemistOfCode:
+			return LOCTEXT("CreditsRoleType_3", "Grand Alchemist of Code");
+		case ECreditsRoleType::LogicAlchemists:
+			return LOCTEXT("CreditsRoleType_4", "Logic Alchemists");
+		case ECreditsRoleType::MakersOfThePretty:
+			return LOCTEXT("CreditsRoleType_5", "Makers of the Pretty");
 		case ECreditsRoleType::HeadOfShinyThings:
-			return LOCTEXT("CreditsRoleType_3", "Head of Shiny Things");
-		case ECreditsRoleType::EverythingElse:
-			return LOCTEXT("CreditsRoleType_4", "Everything Else");
+			return LOCTEXT("CreditsRoleType_6", "Head of Shiny Things");
+		case ECreditsRoleType::ChaosOverlord:
+			return LOCTEXT("CreditsRoleType_7", "Chaos Overlord");
+		case ECreditsRoleType::ChaosCoordinators:
+			return LOCTEXT("CreditsRoleType_8", "Chaos Coordinators");
+		case ECreditsRoleType::GlitchWhisperers:
+			return LOCTEXT("CreditsRoleType_9", "Glitch Whisperers");
 		case ECreditsRoleType::SpecialThanks:
-			return LOCTEXT("CreditsRoleType_5", "Special Thanks");
+			return LOCTEXT("CreditsRoleType_10", "Special Thanks");
 		case ECreditsRoleType::Music:
-			return LOCTEXT("CreditsRoleType_6", "Music");
+			return LOCTEXT("CreditsRoleType_11", "Music");
 		case ECreditsRoleType::Fonts:
-			return LOCTEXT("CreditsRoleType_7", "Fonts");
+			return LOCTEXT("CreditsRoleType_12", "Fonts");
 		default:
-			return LOCTEXT("CreditsRoleType_8", "Unknown");
+			return LOCTEXT("CreditsRoleType_13", "Unknown");
 	}
 }
 

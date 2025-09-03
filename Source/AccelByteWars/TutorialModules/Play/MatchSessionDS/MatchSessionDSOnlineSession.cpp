@@ -274,16 +274,14 @@ bool UMatchSessionDSOnlineSession::HandleDisconnectInternal(UWorld* World, UNetD
 void UMatchSessionDSOnlineSession::CreateMatchSession(
 	const int32 LocalUserNum,
 	const EGameModeNetworkType NetworkType,
-	const EGameModeType GameModeType)
+	const EGameModeType GameModeType, const EGameStyle GameStyle)
 {
 	FOnlineSessionSettings SessionSettings;
 	// Set a flag so we can request a filtered session from backend
 	SessionSettings.Set(GAME_SESSION_REQUEST_TYPE, GAME_SESSION_REQUEST_TYPE_MATCHSESSION);
 
 	// flag to signify the server which game mode to use
-	SessionSettings.Set(
-		GAMESETUP_GameModeCode,
-		FString(GameModeType == EGameModeType::FFA ? "ELIMINATION-DS-USERCREATED" : "TEAMDEATHMATCH-DS-USERCREATED"));
+	SessionSettings.Set(GAMESETUP_GameModeCode, MatchSessionTargetGameModeMap[{ GameModeType, GameStyle }]);
 	
 	// Get match session template name based on game mode type
 	FString MatchTemplateName = MatchSessionTemplateNameMap[{EGameModeNetworkType::DS, GameModeType}];

@@ -8,6 +8,7 @@
 #include "OnlineSubsystemAccelByte.h"
 #include "OnlineChatInterfaceAccelByte.h"
 #include "OnlineSessionInterfaceV2AccelByte.h"
+#include "OnlineIdentityInterfaceAccelByte.h"
 #include "SessionChatLog.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "SessionChatSubsystem_Starter.generated.h"
@@ -28,6 +29,7 @@ protected:
 
 	FOnlineChatAccelBytePtr GetChatInterface() const;
 	FOnlineSessionV2AccelBytePtr GetSessionInterface() const;
+	FOnlineIdentityAccelBytePtr GetIdentityInterface() const;
 
 	UPromptSubsystem* GetPromptSubsystem() const;
 

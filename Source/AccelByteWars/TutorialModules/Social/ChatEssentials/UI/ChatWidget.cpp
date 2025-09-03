@@ -73,8 +73,23 @@ void UChatWidget::ClearInput() const
 	Edt_ChatMessage->SetUserFocus(GetOwningPlayer());
 }
 
-void UChatWidget::SetWidgetState(const EAccelByteWarsWidgetSwitcherState State) const
+void UChatWidget::SetWidgetState(const EAccelByteWarsWidgetSwitcherState State, const FText& StateMessage) const
 {
+	if (!StateMessage.IsEmpty()) 
+	{
+		switch (State) 
+		{
+		case EAccelByteWarsWidgetSwitcherState::Empty:
+			Ws_ChatMessage->EmptyMessage = StateMessage;
+			break;
+		case EAccelByteWarsWidgetSwitcherState::Loading:
+			Ws_ChatMessage->LoadingMessage = StateMessage;
+			break;
+		case EAccelByteWarsWidgetSwitcherState::Error:
+			Ws_ChatMessage->ErrorMessage = StateMessage;
+			break;
+		}
+	}
 	Ws_ChatMessage->SetWidgetState(State);
 }
 

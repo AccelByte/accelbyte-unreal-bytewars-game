@@ -19,12 +19,13 @@ class ACCELBYTEWARS_API UCreateMatchSessionWidget : public UAccelByteWarsActivat
 	GENERATED_BODY()
 
 // @@@SNIPSTART CreateMatchSessionWidget.h-public
-// @@@MULTISNIP GetSelectedGameModeType {"selectedLines": ["1", "5"]}
+// @@@MULTISNIP GetSelectedGameModeType {"selectedLines": ["1", "5-6"]}
 public:
 	virtual void NativeOnActivated() override;
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
 	EGameModeType GetSelectedGameModeType() const { return SelectedGameModeType; }
+	EGameStyle GetSelectedGameStyle() const { return SelectedGameStyle; }
 	UAccelByteWarsWidgetSwitcher* GetProcessingWidgetComponent() const { return Ws_Processing; }
 
 	enum class EContentType : uint8
@@ -48,15 +49,19 @@ protected:
 
 	UFUNCTION()
 	void SetSelectedGameMode(EGameModeType GameModeType);
+	UFUNCTION()
+	void SetSelectedGameStyle(EGameStyle GameStyle);
 
 	float CameraTargetY = 600.f;
 // @@@SNIPEND
 
 // @@@SNIPSTART CreateMatchSessionWidget.h-private
-// @@@MULTISNIP CreateMatchSessionUISwitcher {"selectedLines": ["1", "6-7", "18-19"]}
-// @@@MULTISNIP SelectGameModeUI {"selectedLines": ["1", "33-37"]}
+// @@@MULTISNIP CreateMatchSessionUISwitcher {"selectedLines": ["1", "8-9", "20-21"]}
+// @@@MULTISNIP SelectGameModeUI {"selectedLines": ["1", "35-39"]}
 private:
 	EGameModeType SelectedGameModeType = EGameModeType::FFA;
+
+	EGameStyle SelectedGameStyle = EGameStyle::Zen;
 
 	UWidget* DesiredFocusTargetButton;
 

@@ -20,6 +20,9 @@ class ACCELBYTEWARS_API APowerUpSplitMissile : public AActor, public IInGameItem
 	virtual void DestroyItem() override;
 	virtual EItemType GetType() override { return EItemType::PowerUp; }
 
+	UFUNCTION()
+	void OnParentMissileDestroyed(AActor* DestroyedActor);
+
 public:
 	APowerUpSplitMissile();
 

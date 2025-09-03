@@ -12,6 +12,10 @@
 #include "Engine/SCS_Node.h"
 #include "AccelByteWarsInGameGameMode.generated.h"
 
+class AAccelByteWarsFxActor;
+class AAccelByteWarsSpawner;
+class USpawnerConfigurationDataAsset;
+
 USTRUCT(BlueprintType)
 struct FPlanetMetadata
 {
@@ -38,7 +42,7 @@ struct FPlanetMetadata
 		: PlanetID(InPlanetID), PlanetName(InPlanetName), PlanetRadius(InPlanetRadius), PlanetPosition(InPlanetPosition)
 	{
 	}
-	
+
 	FPlanetMetadata& operator=(const FPlanetMetadata& Other)
 	{
 		PlanetID = Other.PlanetID;
@@ -64,10 +68,10 @@ public:
 #pragma region "Variables"
 private:
 	const TArray<FVector> PlayerStartPoints = {
-		{400.0f, 500.0f, 0.0f},
-		{-400.0f, -500.0f, 0.0f},
-		{0.0f, -500.0f, 0.0f},
-		{-400.0f, 500.0f, 0.0f}
+		{ 400.0f, 500.0f, 0.0f },
+		{ -400.0f, -500.0f, 0.0f },
+		{ 0.0f, -500.0f, 0.0f },
+		{ -400.0f, 500.0f, 0.0f }
 	};
 
 	float GameEndsDelay = 1.0f;
@@ -75,22 +79,25 @@ private:
 	UPROPERTY()
 	AAccelByteWarsInGameGameState* ABInGameGameState = nullptr;
 
+	UPROPERTY()
+	AAccelByteWarsSpawner* Spawner = nullptr;
+
 protected:
 	UPROPERTY(EditAnywhere)
 	TArray<TSubclassOf<AActor>> ObjectsToSpawn;
 
 	// Can't retrieve objects` actor component before initiating it, use this preset instead
 	const TMap<int32, FPlanetMetadata> PlanetMap = {
-		{0, FPlanetMetadata{ 0, TEXT("SmallRed"), 100.0f }},
-		{1, FPlanetMetadata{ 1, TEXT("SmallRed2"), 125.0f }},
-		{2, FPlanetMetadata{ 2, TEXT("MediumOrange"), 150.0f }},
-		{3, FPlanetMetadata{ 3, TEXT("MediumOrange2"), 175.0f }},
-		{4, FPlanetMetadata{ 4, TEXT("LargeBlue"), 200.0f }},
-		{5, FPlanetMetadata{ 5, TEXT("LargeBlue2"), 225.0f }}
+		{ 0, FPlanetMetadata{ 0, TEXT("SmallRed"), 100.0f } },
+		{ 1, FPlanetMetadata{ 1, TEXT("SmallRed2"), 125.0f } },
+		{ 2, FPlanetMetadata{ 2, TEXT("MediumOrange"), 150.0f } },
+		{ 3, FPlanetMetadata{ 3, TEXT("MediumOrange2"), 175.0f } },
+		{ 4, FPlanetMetadata{ 4, TEXT("LargeBlue"), 200.0f } },
+		{ 5, FPlanetMetadata{ 5, TEXT("LargeBlue2"), 225.0f } }
 	};
 
 public:
-	// Zone in which players' can't be spawn along the x and y axis of the the center of the play area 
+	// Zone in which players' can't be spawn along the x and y axis of the the center of the play area
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn Settings")
 	float SafeZone = 150.0f;
 
@@ -113,6 +120,7 @@ public:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void PostLogin(APlayerController* NewPlayer) override;
+	virtual void Logout(AController* Exiting) override;
 	//~End of AGameModeBase overridden functions
 
 	UPROPERTY(BlueprintReadOnly, EditAnywhere)
@@ -127,28 +135,47 @@ public:
 	 * @param bAddKillCount Should increase player's kill count
 	 * @return Player's new score
 	 */
-	UFUNCTION(BlueprintCallable) UPARAM(DisplayName = "CurrentScore")
+	UFUNCTION(BlueprintCallable)
+	UPARAM(DisplayName = "CurrentScore")
 	int32 AddPlayerScore(APlayerState* PlayerState, float InScore, bool bAddKillCount = true);
 
 	/**
-	 * @brief 
+	 * @brief
 	 * @param PlayerState Target PlayerState
 	 * @param Decrement Value to be subtracted from player's life count
 	 * @return Player's new life count
 	 */
-	UFUNCTION(BlueprintCallable) UPARAM(DisplayName = "CurrentLifes")
+	UFUNCTION(BlueprintCallable)
+	UPARAM(DisplayName = "CurrentLifes")
 	int32 DecreasePlayerLife(APlayerState* PlayerState, uint8 Decrement = 1);
 
 	UFUNCTION(BlueprintCallable)
+	int32 IncrementPlayerLife(APlayerState* PlayerState, uint8 Increment);
+
+	UFUNCTION(BlueprintCallable)
 	void EndGame(const FString Reason = "");
-	
+
+	/**
+	 * @brief Check if the current game mode has valid players to continue the game
+	 * @return true if there are valid players, false otherwise
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Player Validation")
+	bool HasValidPlayers() const;
+
+	/**
+	 * @brief Get the number of connected human players (excluding bots)
+	 * @return Number of human players currently connected
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Player Validation")
+	int32 GetConnectedHumanPlayerCount() const;
+
 	UFUNCTION(BlueprintCallable)
 	void OnShipDestroyed(
 		UAccelByteWarsGameplayObjectComponent* Ship,
 		const float MissileScore,
-		APlayerController* SourcePlayerController);
+		AController* SourcePlayerController);
 
-	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = AccelByteWars)
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = AccelByteWars)
 	void OnMissileDestroyed(FVector Location, UAccelByteWarsGameplayObjectComponent* HitObject, FLinearColor MissileColour, AActor* MissileOwner);
 
 	/**
@@ -156,7 +183,7 @@ public:
 	 * @param TargetPlayer The player that was almost got killed.
 	 */
 	UFUNCTION(BlueprintCallable)
-	void IncreasePlayerKilledAttempt(const APlayerController* TargetPlayer);
+	void IncreasePlayerKilledAttempt(const AController* TargetPlayer);
 
 #pragma region "Testing purposes"
 	/**
@@ -164,51 +191,65 @@ public:
 	 * @param PlayerStates Players to insta kill
 	 */
 	void InstaKillPlayers(const TArray<APlayerState*>& PlayerStates);
-#pragma endregion 
+#pragma endregion
 
 private:
 	UFUNCTION()
 	void RemoveFromActiveGameObjects(AActor* DestroyedActor);
 
 protected:
-	UFUNCTION(BlueprintImplementableEvent)
+	UFUNCTION(BlueprintNativeEvent)
 	void OnShipDestroyedFX(
-		APlayerController* SourcePlayerController,
+		AController* SourcePlayerController,
 		const FTransform ShipTransform,
 		AAccelByteWarsPlayerState* ShipPlayerState);
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TSubclassOf<AAccelByteWarsFxActor> ShipDestroyFxClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TSubclassOf<AAccelByteWarsFxActor> DestroyedFxActor;
+
 #pragma region "Gameplay logic"
+public:
+	void SetupGameplayObject(AActor* Object) const;
+
 private:
 	void StartGame();
-	void SetupGameplayObject(AActor* Object) const;
 	int32 GetLivingTeamCount() const;
 	void SpawnAndPossesPawn(APlayerState* PlayerState);
 
 	TArray<FVector> GetActiveGameObjectsPosition() const;
 	const float CommonZCoord = 0.0f;
+
 public:
 	/**
-	 * @brief Find randomize spawn location that is not occupied with other object and within the gameplay 
+	 * @brief Find randomize spawn location that is not occupied with other object and within the gameplay
 	 */
 	bool FindGoodSpawnLocation(FVector2D& OutCoord);
+
 private:
 	void SpawnPlanets();
 	bool FindGoodPlanetPosition(FVector& Position) const;
-	
+
 	// #jog afif Need to replace team id with player id
 	FVector FindGoodPlayerPosition(APlayerState* PlayerState) const;
 
 protected:
 	UFUNCTION()
 	AAccelByteWarsPlayerPawn* CreatePlayerPawn(const FVector& Location, APlayerController* PlayerController) const;
-#pragma endregion 
+
+private:
+	AAccelByteWarsPlayerPawn* CreateShipPawn(const FVector& Location, AController* Controller) const;
+	void FillEmptySlotWithBot();
+#pragma endregion
 
 #pragma region "Countdown related"
 private:
 	bool ShouldStartNotEnoughPlayerCountdown() const;
 	void NotEnoughPlayerCountdownCounting(const float& DeltaSeconds);
 	void SetupShutdownCountdownsValue() const;
-#pragma endregion 
+#pragma endregion
 
 #pragma region "Gameplay logic math helper"
 private:
@@ -230,7 +271,7 @@ private:
 	double CalculateCircleLengthAlongXonY(const FVector& Circle, const double Ycoord) const;
 	FVector2D CalculateActualCoord(const double RelativeLocation, const FVector2D& MinBound, const double RangeX) const;
 	bool LocationHasLineOfSightToOtherShip(const FVector& PositionToTest) const;
-#pragma endregion 
+#pragma endregion
 
 #pragma region "Debugging"
 	UFUNCTION(Exec)
@@ -238,7 +279,7 @@ private:
 
 	UFUNCTION(Exec)
 	void StopPlanetSpawningTimer();
-	
+
 	UFUNCTION(Exec)
 	void ResetPlanets();
 

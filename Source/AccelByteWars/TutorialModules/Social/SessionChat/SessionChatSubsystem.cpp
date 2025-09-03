@@ -15,6 +15,10 @@
 
 #include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
 
+// @@@SNIPSTART SessionChatSubsystem.cpp-Initialize
+// @@@MULTISNIP OnSendChatCompleteDelegates {"selectedLines": ["1-2", "41-43", "62-63"], "highlightedLines": "{4-8}"}
+// @@@MULTISNIP OnChatMessageReceivedDelegates {"selectedLines": ["1-2", "41-42", "44-47", "62-63"], "highlightedLines": "{4-12}"}
+// @@@MULTISNIP ReconnectChatDelegates {"selectedLines": ["1-2", "41-42", "49-61", "62-63"], "highlightedLines": "{4-21}"}
 void USessionChatSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
@@ -78,7 +82,12 @@ void USessionChatSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		GetChatInterface()->OnChatDisconnectedDelegates.AddUObject(this, &ThisClass::ReconnectChat);
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionChatSubsystem.cpp-Deinitialize
+// @@@MULTISNIP OnSendChatCompleteDelegates {"selectedLines": ["1-2", "5-7", "12-13"], "highlightedLines": "{4-8}"}
+// @@@MULTISNIP OnChatMessageReceivedDelegates {"selectedLines": ["1-2", "5-6", "8", "12-13"], "highlightedLines": "{4-9}"}
+// @@@MULTISNIP ReconnectChatDelegates {"selectedLines": ["1-2", "5-6", "10-11", "12-13"], "highlightedLines": "{4-10}"}
 void USessionChatSubsystem::Deinitialize()
 {
 	Super::Deinitialize();
@@ -92,7 +101,9 @@ void USessionChatSubsystem::Deinitialize()
 		GetChatInterface()->OnChatDisconnectedDelegates.RemoveAll(this);
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionChatSubsystem.cpp-GetChatRoomIdBasedOnType
 FString USessionChatSubsystem::GetChatRoomIdBasedOnType(const EAccelByteChatRoomType ChatRoomType)
 {
 	FString ChatRoomId;
@@ -109,7 +120,9 @@ FString USessionChatSubsystem::GetChatRoomIdBasedOnType(const EAccelByteChatRoom
 
 	return ChatRoomId;
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionChatSubsystem.cpp-GetGameSessionChatRoomId
 FString USessionChatSubsystem::GetGameSessionChatRoomId()
 {
 	if (!GetChatInterface())
@@ -130,7 +143,9 @@ FString USessionChatSubsystem::GetGameSessionChatRoomId()
 
 	return GetChatInterface()->SessionV2IdToChatTopicId(GameSession->GetSessionIdStr());
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionChatSubsystem.cpp-GetPartyChatRoomId
 FString USessionChatSubsystem::GetPartyChatRoomId()
 {
 	if (!GetChatInterface())
@@ -151,7 +166,9 @@ FString USessionChatSubsystem::GetPartyChatRoomId()
 
 	return GetChatInterface()->PartyV2IdToChatTopicId(PartySession->GetSessionIdStr());
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionChatSubsystem.cpp-SendChatMessage
 void USessionChatSubsystem::SendChatMessage(const FUniqueNetIdPtr UserId, const FChatRoomId& RoomId, const FString& Message)
 {
 	if (!GetChatInterface()) 
@@ -177,7 +194,9 @@ void USessionChatSubsystem::SendChatMessage(const FUniqueNetIdPtr UserId, const 
 
 	GetChatInterface()->SendRoomChat(UserId.ToSharedRef().Get(), RoomId, Message);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionChatSubsystem.cpp-GetLastChatMessages
 bool USessionChatSubsystem::GetLastChatMessages(const FUniqueNetIdPtr UserId, const FChatRoomId& RoomId, const int32 NumMessages, TArray<TSharedRef<FChatMessage>>& OutMessages)
 {
 	if (!GetChatInterface())
@@ -203,7 +222,9 @@ bool USessionChatSubsystem::GetLastChatMessages(const FUniqueNetIdPtr UserId, co
 
 	return true;
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionChatSubsystem.cpp-IsMessageFromLocalUser
 bool USessionChatSubsystem::IsMessageFromLocalUser(const FUniqueNetIdPtr UserId, const FChatMessage& Message)
 {
 	if (!GetChatInterface())
@@ -220,7 +241,9 @@ bool USessionChatSubsystem::IsMessageFromLocalUser(const FUniqueNetIdPtr UserId,
 
 	return GetChatInterface()->IsMessageFromLocalUser(UserId.ToSharedRef().Get(), Message, true);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionChatSubsystem.cpp-GetChatRoomType
 EAccelByteChatRoomType USessionChatSubsystem::GetChatRoomType(const FString& RoomId)
 {
 	if (!GetChatInterface())
@@ -232,7 +255,9 @@ EAccelByteChatRoomType USessionChatSubsystem::GetChatRoomType(const FString& Roo
 
 	return GetChatInterface()->GetChatRoomType(RoomId);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionChatSubsystem.cpp-OnSendChatComplete
 void USessionChatSubsystem::OnSendChatComplete(FString UserId, FString MsgBody, FString RoomId, bool bWasSuccessful)
 {
 	if (bWasSuccessful) 
@@ -246,7 +271,9 @@ void USessionChatSubsystem::OnSendChatComplete(FString UserId, FString MsgBody, 
 
 	OnSendChatCompleteDelegates.Broadcast(UserId, MsgBody, RoomId, bWasSuccessful);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionChatSubsystem.cpp-OnChatRoomMessageReceived
 void USessionChatSubsystem::OnChatRoomMessageReceived(const FUniqueNetId& UserId, const FChatRoomId& RoomId, const TSharedRef<FChatMessage>& Message)
 {
 	UE_LOG_SESSIONCHAT(Log, 
@@ -257,7 +284,9 @@ void USessionChatSubsystem::OnChatRoomMessageReceived(const FUniqueNetId& UserId
 
 	OnChatRoomMessageReceivedDelegates.Broadcast(UserId, RoomId, Message);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionChatSubsystem.cpp-PushChatRoomMessageReceivedNotification
 void USessionChatSubsystem::PushChatRoomMessageReceivedNotification(const FUniqueNetId& Sender, const FChatRoomId& RoomId, const TSharedRef<FChatMessage>& Message)
 {
 	if (!GetChatInterface())
@@ -322,7 +351,9 @@ void USessionChatSubsystem::PushChatRoomMessageReceivedNotification(const FUniqu
 		}
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionChatSubsystem.cpp-ReconnectChat
 void USessionChatSubsystem::ReconnectChat(FString Message)
 {
 	if (!GetWorld() || GetWorld()->bIsTearingDown)
@@ -354,7 +385,9 @@ void USessionChatSubsystem::ReconnectChat(FString Message)
 	GetChatInterface()->Connect(0);
 	ReconnectChatNumTries++;
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionChatSubsystem.cpp-GetChatInterface
 FOnlineChatAccelBytePtr USessionChatSubsystem::GetChatInterface() const
 {
 	const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
@@ -366,7 +399,9 @@ FOnlineChatAccelBytePtr USessionChatSubsystem::GetChatInterface() const
 
 	return StaticCastSharedPtr<FOnlineChatAccelByte>(Subsystem->GetChatInterface());
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionChatSubsystem.cpp-GetSessionInterface
 FOnlineSessionV2AccelBytePtr USessionChatSubsystem::GetSessionInterface() const
 {
 	const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
@@ -378,7 +413,9 @@ FOnlineSessionV2AccelBytePtr USessionChatSubsystem::GetSessionInterface() const
 
 	return StaticCastSharedPtr<FOnlineSessionV2AccelByte>(Subsystem->GetSessionInterface());
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionChatSubsystem.cpp-GetIdentityInterface
 FOnlineIdentityAccelBytePtr USessionChatSubsystem::GetIdentityInterface() const
 {
 	const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
@@ -390,7 +427,9 @@ FOnlineIdentityAccelBytePtr USessionChatSubsystem::GetIdentityInterface() const
 
 	return StaticCastSharedPtr<FOnlineIdentityAccelByte>(Subsystem->GetIdentityInterface());
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionChatSubsystem.cpp-GetPromptSubsystem
 UPromptSubsystem* USessionChatSubsystem::GetPromptSubsystem() const
 {
 	const UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
@@ -401,3 +440,4 @@ UPromptSubsystem* USessionChatSubsystem::GetPromptSubsystem() const
 
 	return GameInstance->GetSubsystem<UPromptSubsystem>();
 }
+// @@@SNIPEND

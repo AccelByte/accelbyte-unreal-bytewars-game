@@ -25,6 +25,7 @@ void USessionChatWidget::NativeConstruct()
 	ensure(PromptSubsystem);
 }
 
+// @@@SNIPSTART SessionChatWidget.cpp-NativeOnActivated
 void USessionChatWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
@@ -53,7 +54,9 @@ void USessionChatWidget::NativeOnActivated()
 
 	SwitchChatMessageType(CurrentChatRoomType);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionChatWidget.cpp-NativeOnDeactivated
 void USessionChatWidget::NativeOnDeactivated()
 {
 	CurrentChatRoomType = EAccelByteChatRoomType::SESSION_V2;
@@ -74,6 +77,7 @@ void USessionChatWidget::NativeOnDeactivated()
 
 	Super::NativeOnDeactivated();
 }
+// @@@SNIPEND
 
 UWidget* USessionChatWidget::NativeGetDesiredFocusTarget() const
 {
@@ -97,6 +101,8 @@ void USessionChatWidget::SetDefaultChatType(const EAccelByteChatRoomType ChatRoo
 	CurrentChatRoomType = ChatRoomType;
 }
 
+// @@@SNIPSTART SessionChatWidget.cpp-SwitchChatMessageType
+// @@@MULTISNIP AddingUI {"selectedLines": ["1-16", "25"]}
 void USessionChatWidget::SwitchChatMessageType(const EAccelByteChatRoomType ChatRoomType)
 {
 	// Switch chat message active panel based on type.
@@ -122,7 +128,10 @@ void USessionChatWidget::SwitchChatMessageType(const EAccelByteChatRoomType Chat
 		GetLastChatMessages();
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionChatWidget.cpp-AppendChatMessage
+// @@@MULTISNIP AddingUI {"selectedLines": ["1-2", "9-31", "34-43"]}
 void USessionChatWidget::AppendChatMessage(const FChatMessage& Message)
 {
 	if (!SessionChatSubsystem)
@@ -166,7 +175,10 @@ void USessionChatWidget::AppendChatMessage(const FChatMessage& Message)
 	// Display chat message.
 	W_ActiveChat->AppendChatMessage(ChatData);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionChatWidget.cpp-SendChatMessage
+// @@@MULTISNIP AddingUI {"selectedLines": ["1-2", "9-20", "27"]}
 void USessionChatWidget::SendChatMessage(const FText& MessageText)
 {
 	if (!SessionChatSubsystem)
@@ -194,7 +206,10 @@ void USessionChatWidget::SendChatMessage(const FText& MessageText)
 		SessionChatSubsystem->GetChatRoomIdBasedOnType(CurrentChatRoomType),
 		MessageText.ToString());
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionChatWidget.cpp-GetLastChatMessages
+// @@@MULTISNIP AddingUI {"selectedLines": ["1-2", "9-26", "77"]}
 void USessionChatWidget::GetLastChatMessages()
 {
 	if (!SessionChatSubsystem) 
@@ -228,7 +243,19 @@ void USessionChatWidget::GetLastChatMessages()
 	// Abort if room id was not found.
 	if (ChatRoomId.IsEmpty())
 	{
-		W_ActiveChat->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Error);
+		FText ChatRoomNotFoundMessage = INVALID_CHAT_ROOM_MESSAGE;
+		switch (CurrentChatRoomType) 
+		{
+		case EAccelByteChatRoomType::PARTY_V1:
+		case EAccelByteChatRoomType::PARTY_V2:
+			ChatRoomNotFoundMessage = INVALID_PARTY_CHAT_ROOM_MESSAGE;
+			break;
+		case EAccelByteChatRoomType::SESSION_V2:
+			ChatRoomNotFoundMessage = INVALID_GAMESESSION_CHAT_ROOM_MESSAGE;
+			break;
+		}
+
+		W_ActiveChat->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Error, ChatRoomNotFoundMessage);
 		return;
 	}
 
@@ -243,7 +270,7 @@ void USessionChatWidget::GetLastChatMessages()
 		// Abort if last messages is empty.
 		if (OutMessages.IsEmpty())
 		{
-			W_ActiveChat->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Empty);
+			W_ActiveChat->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Empty, NO_CHAT_MESSAGE);
 			return;
 		}
 
@@ -257,10 +284,13 @@ void USessionChatWidget::GetLastChatMessages()
 	// Show error message if failed.
 	else
 	{
-		W_ActiveChat->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Error);
+		W_ActiveChat->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Error, FAILED_TO_LOAD_CHAT_MESSAGE);
 	}
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionChatWidget.cpp-OnSendChatComplete
+// @@@MULTISNIP AddingUI {"selectedLines": ["1-12", "26-31"]}
 void USessionChatWidget::OnSendChatComplete(FString UserId, FString MsgBody, FString RoomId, bool bWasSuccessful)
 {
 	// Abort and push a notification if failed.
@@ -292,7 +322,10 @@ void USessionChatWidget::OnSendChatComplete(FString UserId, FString MsgBody, FSt
 	ChatData->bIsSenderLocal = true;
 	W_ActiveChat->AppendChatMessage(ChatData);
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART SessionChatWidget.cpp-OnChatRoomMessageReceived
+// @@@MULTISNIP AddingUI {"selectedLines": ["1-2", "15-17"]}
 void USessionChatWidget::OnChatRoomMessageReceived(const FUniqueNetId& UserId, const FChatRoomId& RoomId, const TSharedRef<FChatMessage>& Message)
 {
 	if (!SessionChatSubsystem)
@@ -310,3 +343,4 @@ void USessionChatWidget::OnChatRoomMessageReceived(const FUniqueNetId& UserId, c
 	// Show the received chat message.
 	AppendChatMessage(Message.Get());
 }
+// @@@SNIPEND
