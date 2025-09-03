@@ -7,6 +7,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "NiagaraComponent.h"
+#include "Net/UnrealNetwork.h"
 #include "AccelByteWarsFxActor.generated.h"
 
 /**
@@ -21,15 +22,33 @@ class ACCELBYTEWARS_API AAccelByteWarsFxActor : public AActor
 
 	//~AActor overridden functions
 	virtual void BeginPlay() override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	//~End of AActor overridden functions
 
-protected:
+public:
+	void SetNiagaraFxColor(const FLinearColor& InColor);
+	const bool ShouldTrackForCameraZoom() const { return bShouldTrackForCameraZoom; }
 
+protected:
 	UFUNCTION(Reliable, Server)
 	void DestroySelfOnParticleSystemFinished(UNiagaraComponent* Component);
 
+	UFUNCTION()
+	void OnParticleSystemFinishedLocal(UNiagaraComponent* Component);
+
+	UFUNCTION()
+	void OnRep_ShouldTrackForCameraZoom();
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Components")
 	UNiagaraComponent* ParticleSystem;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FString NiagaraVariableColorName{};
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, ReplicatedUsing = OnRep_NiagaraFxColor)
+	FLinearColor NiagaraFxColor{};
+	UFUNCTION()
+	void OnRep_NiagaraFxColor();
 
 	/**
 	 * @brief Use this instead of DefaultSceneRoot
@@ -42,4 +61,13 @@ protected:
 	 */
 	UPROPERTY(EditDefaultsOnly)
 	bool bDestroyOnParticleSystemFinished = true;
+
+	/**
+	 * @brief affect camera zoom out if out of bounds
+	 */
+	UPROPERTY(EditDefaultsOnly, Replicated, ReplicatedUsing = OnRep_ShouldTrackForCameraZoom)
+	bool bShouldTrackForCameraZoom = true;
+
+	/** Timer handle for camera tracking failsafe */
+	FTimerHandle CameraTrackingTimer;
 };

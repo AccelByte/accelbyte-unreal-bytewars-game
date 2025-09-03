@@ -10,7 +10,7 @@
 #include "GameModeTypeDataAsset.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class ACCELBYTEWARS_API UGameModeTypeDataAsset : public UAccelByteWarsDataAsset
@@ -27,13 +27,17 @@ public:
 	{
 		return FPrimaryAssetId(UGameModeTypeDataAsset::GameModeTypeAssetType, GetFName());
 	}
+
 public:
 	static FGameModeTypeData GetGameModeTypeDataForType(const FPrimaryAssetId& InType);
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	EGameModeType Type = EGameModeType::FFA;
-	
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	EGameStyle GameStyle = EGameStyle::Zen;
+
 public:
 	static const FPrimaryAssetType GameModeTypeAssetType;
 };

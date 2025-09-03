@@ -13,10 +13,12 @@ enum class EGameplayObjectType : uint8
 {
 	SHIP,
 	PLANET,
-	STAR
+	STAR,
+	MISSILE,
+	PICKUP
 };
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class ACCELBYTEWARS_API UAccelByteWarsGameplayObjectComponent : public UActorComponent
 {
 	GENERATED_BODY()

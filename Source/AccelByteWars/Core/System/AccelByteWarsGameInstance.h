@@ -60,10 +60,21 @@ public:
 	// Number of attempt the player was almost got killed in a single-lifetime
 	UPROPERTY(BlueprintReadWrite)
 	int32 NumKilledAttemptInSingleLifetime = 0;
+	
+	UPROPERTY(BlueprintReadWrite)
+	int32 bIsBot = false;
 
 	bool operator==(const FGameplayPlayerData& Other) const
 	{
-		return UniqueNetId.IsValid() ? UniqueNetId == Other.UniqueNetId : ControllerId == Other.ControllerId;
+		if(UniqueNetId.IsValid())
+		{
+			return UniqueNetId == Other.UniqueNetId;
+		}
+		if(!UniqueNetId.IsValid() || bIsBot)
+		{
+			return ControllerId == Other.ControllerId;
+		}
+		return false;
 	}
 };
 

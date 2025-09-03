@@ -182,7 +182,8 @@ public:
 		const int32 Deaths = 0,
 		const FString PlayerName = TEXT(""),
 		const FString AvatarURL = TEXT(""),
-		const bool bForce = false);
+		const bool bForce = false,
+		const bool bIsBot = false);
 
 	/**
 	 * @brief Remove Player from a team

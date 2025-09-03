@@ -9,7 +9,6 @@
 #include "Core/Settings/GameModeDataAssets.h"
 #include "GameModeDataAsset.generated.h"
 
-
 UCLASS()
 class ACCELBYTEWARS_API UGameModeDataAsset : public UAccelByteWarsDataAsset
 {
@@ -31,7 +30,7 @@ public:
 		// Use Alias for Game Mode AssetId for easy lookup
 		return UGameModeDataAsset::GenerateAssetIdFromCodeName(CodeName);
 	}
-	
+
 public:
 	static FGameModeData GetGameModeDataByCodeName(const FString& InCodeName);
 
@@ -45,6 +44,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	EGameModeType GameModeType = EGameModeType::FFA;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	EGameStyle GameStyle = EGameStyle::Zen;
+
 	// Alias to set for this mode (needs to be unique)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FString CodeName;
@@ -53,11 +55,11 @@ public:
 	// Stored as string so it is asset registry searchable
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, AssetRegistrySearchable)
 	FString GameModeTypeString;
-	
+
 	// Network type
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	EGameModeNetworkType NetworkType;
-	
+
 	// Either team game or not; If FFA then should be false.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bIsTeamGame;
@@ -83,13 +85,13 @@ public:
 	int32 GameEndsShutdownCountdown;
 
 	// Minimum player count to prevent server to start the NotEnoughPlayerCountdown to shut the game down. Set to -1 to disable. DS only.
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (EditCondition="NetworkType == EGameModeNetworkType::DS"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (EditCondition = "NetworkType == EGameModeNetworkType::DS"))
 	int32 MinimumTeamCountToPreventAutoShutdown;
 
 	// Countdown used to shut the game down when currently connected player is less than MinimumTeamCountToPreventAutoShutdown. Set to -1 to disable. DS only.
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (EditCondition="NetworkType == EGameModeNetworkType::DS"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (EditCondition = "NetworkType == EGameModeNetworkType::DS"))
 	int32 NotEnoughPlayerCountdown;
-	
+
 	// Default score limit
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 ScoreLimit;
@@ -125,7 +127,7 @@ public:
 	// Missile skim score multiplier
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	float SkimScoreAdditionalMultiplier;
-	
+
 public:
 	static const FPrimaryAssetType GameModeAssetType;
 };

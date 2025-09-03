@@ -9,6 +9,10 @@
 #include "Core/UI/AccelByteWarsWidgetInterface.h"
 #include "AccelByteWarsButtonBase.generated.h"
 
+DECLARE_MULTICAST_DELEGATE(FOnButtonPressedDelegate);
+DECLARE_MULTICAST_DELEGATE(FOnButtonHoldDelegate);
+DECLARE_MULTICAST_DELEGATE(FOnButtonReleasedDelegate);
+
 UENUM(BlueprintType)
 enum class EAccelByteWarsButtonBaseType : uint8
 {
@@ -24,6 +28,9 @@ class ACCELBYTEWARS_API UAccelByteWarsButtonBase : public UCommonButtonBase, pub
 public:
 	UFUNCTION(BlueprintCallable)
 	void SetButtonText(const FText& InText);
+
+	UFUNCTION(BlueprintPure)
+	const FText& GetButtonText() { return ButtonText; }
 
 	UFUNCTION(BlueprintCallable)
 	void SetButtonImage(const FSlateBrush& InBrush);
@@ -43,6 +50,18 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void CallOnClick();
 
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Events")
+	void OnButtonPressed();
+	FOnButtonPressedDelegate OnPressed;
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Events")
+	void OnButtonHold();
+	FOnButtonHoldDelegate OnHold;
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Events")
+	void OnButtonReleased();
+	FOnButtonReleasedDelegate OnReleased;
+
 protected:
 	// UUserWidget interface
 	virtual void NativePreConstruct() override;
@@ -52,11 +71,13 @@ protected:
 	// End of UUserWidget interface
 
 	// UCommonButtonBase interface
+	virtual void NativeOnPressed() override;
+	virtual void NativeOnReleased() override;
+	virtual void NativeOnHovered() override;
 	virtual void UpdateInputActionWidget() override;
 	virtual void OnInputMethodChanged(ECommonInputType CurrentInputType) override;
-	virtual void NativeOnHovered() override;
 	// End of UCommonButtonBase interface
-
+	
 	void RefreshButtonText();
 
 	UFUNCTION(BlueprintImplementableEvent)
@@ -73,6 +94,9 @@ protected:
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Button")
 	EAccelByteWarsButtonBaseType ButtonType = EAccelByteWarsButtonBaseType::TEXT_BUTTON;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Button", meta = (EditCondition = "ButtonType==EAccelByteWarsButtonBaseType::IMAGE_BUTTON", EditConditionHides))
+	FVector2D ButtonSize = FVector2D(80.0f, 80.0f);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Button")
 	bool bShowExclamationMark = false;
@@ -95,4 +119,7 @@ private:
 
 	UPROPERTY()
 	FSlateSound ClickSound;
+
+	FTimerHandle HoldTimerHandle;
+	float HoldRepeatInterval = 0.1f;
 };

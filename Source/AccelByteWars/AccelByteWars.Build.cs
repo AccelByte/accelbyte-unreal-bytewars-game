@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 using UnrealBuildTool;
+using System.Linq;
 
 public class AccelByteWars : ModuleRules
 {
@@ -8,12 +9,10 @@ public class AccelByteWars : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-
 		PublicIncludePaths.AddRange(new string[] 
 		{
 			"AccelByteWars"
 		});
-
 
 		PublicDependencyModuleNames.AddRange(new string[] 
 		{ 
@@ -21,15 +20,19 @@ public class AccelByteWars : ModuleRules
 			"CoreUObject", 
 			"Engine", 
 			"InputCore", 
+			"ApplicationCore",
 			"CommonUI", 
 			"CommonInput",
-            "GameplayTags",
-            "OnlineSubsystem",
+			"GameplayTags",
+			"GameplayAbilities",
+			"OnlineSubsystem",
 			"OnlineSubsystemUtils",
 			"Json",
+			"JsonUtilities",
 			"HTTP",
-			"EngineSettings"
-        });
+			"EngineSettings",
+			"AIModule"
+		});
 
 
 		PrivateDependencyModuleNames.AddRange(new string[] 

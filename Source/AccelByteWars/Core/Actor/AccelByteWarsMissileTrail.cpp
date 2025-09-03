@@ -2,7 +2,6 @@
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
-
 #include "Core/Actor/AccelByteWarsMissileTrail.h"
 
 #include "Core/Utilities/AccelByteWarsUtilityLog.h"
@@ -19,6 +18,9 @@ AAccelByteWarsMissileTrail::AAccelByteWarsMissileTrail()
 
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+
+	// Replicate trail so clients see it; set here to avoid pre-init SetReplicates warnings when using deferred spawn.
+	bReplicates = true;
 }
 
 // Called when the game starts or when spawned
@@ -27,17 +29,24 @@ void AAccelByteWarsMissileTrail::BeginPlay()
 	Super::BeginPlay();
 
 	// Make sure the niagara component is in the correct position before activating particle.
-	if (Owner)
+	// Owner/attachment might not be replicated to clients yet on first spawn; only activate when one is valid.
+	if (AActor* AttachParent = GetAttachParentActor())
 	{
-		MissileTrail->SetWorldLocation(Owner->GetActorLocation());
+		MissileTrail->SetWorldLocation(AttachParent->GetActorLocation());
+		MissileTrail->Activate();
+	}
+	else if (AActor* LocalOwner = GetOwner())
+	{
+		MissileTrail->SetWorldLocation(LocalOwner->GetActorLocation());
+		MissileTrail->Activate();
 	}
 	else
 	{
-		UE_LOG_FUNC(LogMissileTrail, Warning, TEXT("Owner is null. Trail might start at incorrect location."))
+		// No valid reference yet; wait for Tick to activate when attachment/owner becomes valid.
+		MissileTrail->SetWorldLocation(GetActorLocation());
 	}
-	MissileTrail->Activate();
 
-	// Set component's color in case the class member was set before this. 
+	// Set component's color in case the class member was set before this.
 	OnRepNotify_Color();
 	SetRibbonAlpha(CurrentAlpha);
 
@@ -47,13 +56,17 @@ void AAccelByteWarsMissileTrail::BeginPlay()
 	}
 
 	// Destroy self if owner destroyed or if there's no owner to avoid "zombie" trail.
-	if (Owner)
+	if (AActor* LocalOwner = GetOwner())
 	{
-		Owner->OnDestroyed.AddDynamic(this, &ThisClass::OnOwnerDestroyed);
+		if (!bOwnerDestroyBound)
+		{
+			LocalOwner->OnDestroyed.AddDynamic(this, &ThisClass::OnOwnerDestroyed);
+			bOwnerDestroyBound = true;
+		}
 	}
 	else
 	{
-		Destroy();
+		// Owner might not be replicated on clients yet; don't destroy here. We'll attempt to bind in Tick when owner becomes valid.
 	}
 }
 
@@ -85,6 +98,34 @@ void AAccelByteWarsMissileTrail::Tick(float DeltaTime)
 	{
 		CurrentAlpha = FMath::Lerp(CurrentAlpha, WantedAlpha, DeltaTime * AlphaRate);
 		SetRibbonAlpha(CurrentAlpha);
+	}
+
+	// If we haven't activated yet or bound due to missing owner/attachment at BeginPlay, try again now.
+	if (!MissileTrail->IsActive())
+	{
+		if (AActor* AttachParent = GetAttachParentActor())
+		{
+			MissileTrail->SetWorldLocation(AttachParent->GetActorLocation());
+			MissileTrail->Activate();
+			OnRepNotify_Color();
+			SetRibbonAlpha(CurrentAlpha);
+		}
+		else if (AActor* LocalOwner = GetOwner())
+		{
+			MissileTrail->SetWorldLocation(LocalOwner->GetActorLocation());
+			MissileTrail->Activate();
+			OnRepNotify_Color();
+			SetRibbonAlpha(CurrentAlpha);
+		}
+	}
+
+	if (!bOwnerDestroyBound)
+	{
+		if (AActor* LocalOwner = GetOwner())
+		{
+			LocalOwner->OnDestroyed.AddDynamic(this, &ThisClass::OnOwnerDestroyed);
+			bOwnerDestroyBound = true;
+		}
 	}
 
 	// Destroy logic.
@@ -151,4 +192,3 @@ void AAccelByteWarsMissileTrail::SetRibbonAlpha(const float Alpha) const
 	MissileTrail->SetNiagaraVariableFloat("RibbonAlphaScale", Alpha);
 #endif
 }
-

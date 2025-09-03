@@ -11,6 +11,7 @@
 #include "GameFramework/Actor.h"
 #include "AccelByteWarsMissile.generated.h"
 
+class AAccelByteWarsFxActor;
 class AAccelByteWarsGameMode;
 class AAccelByteWarsInGameGameMode;
 class AAccelByteWarsPlayerController;
@@ -20,13 +21,16 @@ UCLASS()
 class ACCELBYTEWARS_API AAccelByteWarsMissile : public AActor
 {
 	GENERATED_BODY()
-	
-public:	
+
+public:
 	// Sets default values for this actor's properties
 	AAccelByteWarsMissile();
 
 	UPROPERTY(BlueprintReadOnly, Category = AccelByteWars, EditAnywhere)
 	TSubclassOf<AAccelByteWarsMissileTrail> MissileTrailActor;
+
+	UPROPERTY(BlueprintReadOnly, Category = AccelByteWars, EditAnywhere)
+	TSubclassOf<AAccelByteWarsFxActor> ExpiredFxActor;
 
 protected:
 	//~UObject overridden functions
@@ -34,7 +38,10 @@ protected:
 	virtual void Destroyed() override;
 	//~End of UObject overridden functions
 
-public:	
+	UFUNCTION()
+	void OnMissileDestroyed(AActor* DestroyedActor);
+
+public:
 	//~UObject overridden functions
 	virtual void Tick(float DeltaTime) override;
 	//~End of UObject overridden functions
@@ -104,6 +111,12 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AccelByteWars)
 	bool KillActorThisFrame = false;
+
+	/**
+	 * @brief Flag to destroy this actor if out of bounds
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AccelByteWars)
+	bool bAutoDestroyOnOutOfBounds = true;
 
 	/**
 	 * @brief Max time the missile is allowed to be alive if it doesn't hit anything
@@ -198,7 +211,7 @@ public:
 	/**
 	 * @brief Starts the destruction of the missile for various reasons
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = AccelByteWars)
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = AccelByteWars)
 	void TreatMissileAsExpired(AAccelByteWarsGameMode* ABGameMode);
 
 	/**
@@ -291,9 +304,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
 	void DestroyOnOutOfBounds();
 
-
 protected:
-
 	/**
 	 * @brief Current color of the missile body
 	 */
@@ -318,12 +329,22 @@ protected:
 	UFUNCTION()
 	float GetSurfanceDistanceBetweenObjects(UAccelByteWarsGameplayObjectComponent* OtherObject, UAccelByteWarsGameplayObjectComponent* ThisObject);
 
+	/**
+	 * @brief Checks for collision with another missile and handles destruction
+	 */
+	UFUNCTION()
+	bool CheckMissileToMissileCollision(UAccelByteWarsGameplayObjectComponent* OtherMissile);
+
+	bool CheckMissileToCrateCollision(UAccelByteWarsGameplayObjectComponent* Crate);
+
 private:
-	void OnMissileHitObject(AAccelByteWarsInGameGameMode* InGameGameMode, AAccelByteWarsPlayerController* ABPlayerController);
+	void OnMissileHitObject(AAccelByteWarsInGameGameMode* InGameGameMode, AController* ABPlayerController);
 	void NotifyShipHitByMissile() const;
 
 	UPROPERTY()
 	AAccelByteWarsMissileTrail* MissileTrail = nullptr;
 
 	void SpawnMissileTrail();
+
+	bool bIsMissileExpired{ false };
 };

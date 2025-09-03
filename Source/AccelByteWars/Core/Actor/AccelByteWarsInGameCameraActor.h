@@ -15,6 +15,8 @@ class ACCELBYTEWARS_API AAccelByteWarsInGameCameraActor : public ACameraActor
 {
 	GENERATED_BODY()
 
+	AAccelByteWarsInGameCameraActor();
+
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 

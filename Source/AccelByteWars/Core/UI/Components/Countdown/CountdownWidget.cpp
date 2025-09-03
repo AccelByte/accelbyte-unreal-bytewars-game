@@ -82,7 +82,13 @@ void UCountdownWidget::SetupWidget(
 	const FText CountdownText,
 	const bool bInForceTick)
 {
+	bAutoActivate = true;
+	bClosing = false;
+	bHasFinished = false;
+	ClosingElapsed = 0.0f;
 	bForceTick = bInForceTick;
+	ChangeWidgetVisibility(true);
+	SetRenderOpacity(1);
 
 	Text_PreCountdown->SetText(PreCountdownText);
 	Text_PostCountdown->SetText(PostCountdownText);

@@ -13,6 +13,7 @@
 class UHorizontalBox;
 class UHUDWidgetEntry;
 class UPushNotificationWidget;
+class UAccelByteWarsButtonBase;
 class AAccelByteWarsInGameGameState;
 
 UCLASS()
@@ -22,6 +23,7 @@ class ACCELBYTEWARS_API UHUDWidget : public UAccelByteWarsActivatableWidget
 
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
+	virtual void NativeOnActivated() override;
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
 public:
@@ -44,6 +46,9 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable)
 	void GetVisibleHUDPixelPosition(FVector2D& OutMinPixelPosition, FVector2D& OutMaxPixelPosition) const;
+
+	UFUNCTION()
+	void Pause();
 
 private:
 	UFUNCTION(BlueprintCallable)
@@ -81,6 +86,12 @@ private:
 
 	void UpdateSpectatingTextEffect(float DeltaTime);
 	void CheckSpectatingText();
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UAccelByteWarsActivatableWidget> PauseWidgetClass;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UAccelByteWarsButtonBase* Btn_Pause;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Tb_Timer;
@@ -123,4 +134,39 @@ private:
 	FDelegateHandle OnSimulateServerCrashCountdownFinishedDelegateHandle;
 
 	float SpectatingTextVisibleRunningTime = 0.0f;
+
+#pragma region Mobile Controls
+	void InitMobileControls();
+	void ResetMobileControls();
+
+	UFUNCTION()
+	void RotateShipMobile(const float Value);
+
+	UFUNCTION()
+	void AdjustPowerMobile(const float Value);
+
+	UFUNCTION()
+	void FireMissileMobile();
+
+	UFUNCTION()
+	void UsePowerUpMobile();
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UAccelByteWarsButtonBase* Btn_RotateLeftMobile;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UAccelByteWarsButtonBase* Btn_RotateRightMobile;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UAccelByteWarsButtonBase* Btn_FireMissileMobile;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UAccelByteWarsButtonBase* Btn_PowerUpMobile;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UAccelByteWarsButtonBase* Btn_PowerDownMobile;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
+	UAccelByteWarsButtonBase* Btn_UsePowerUpMobile;
+#pragma endregion
 };

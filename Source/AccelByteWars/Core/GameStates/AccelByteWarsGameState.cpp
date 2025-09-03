@@ -140,6 +140,11 @@ void AAccelByteWarsGameState::AssignCustomGameMode(const FOnlineSessionSettings*
 		Custom.SetGameModeTypeWithString(GameModeTypeString);
 	}
 
+	if (FString GameStyleString; Setting->Get(GAMESETUP_GameStyle, GameStyleString))
+	{
+		Custom.SetGameStyleWithString(GameStyleString);
+	}
+
 	if (FString DisplayNameString; Setting->Get(GAMESETUP_DisplayName, DisplayNameString))
 	{
 		Custom.DisplayName = FText::FromString(DisplayNameString);
@@ -398,7 +403,8 @@ bool AAccelByteWarsGameState::AddPlayerToTeam(
 	const int32 Deaths,
 	const FString PlayerName,
 	const FString AvatarURL,
-	const bool bForce)
+	const bool bForce,
+	const bool bIsBot)
 {
 	if (TeamId <= INDEX_NONE) 
 	{
@@ -465,7 +471,7 @@ bool AAccelByteWarsGameState::AddPlayerToTeam(
 
 	// Add player's data to the team
 	OutLives = OutLives == INDEX_NONE ? GameSetup.StartingLives : OutLives;
-	TargetTeam->TeamMembers.Add(FGameplayPlayerData{
+	FGameplayPlayerData PlayerData {
 		UniqueNetId,
 		ControllerId,
 		FinalPlayerName,
@@ -475,7 +481,9 @@ bool AAccelByteWarsGameState::AddPlayerToTeam(
 		KillCount,
 		Deaths,
 		OutLives
-	});
+	};
+	PlayerData.bIsBot = bIsBot;
+	TargetTeam->TeamMembers.Add(PlayerData);
 
 	if (HasAuthority())
 	{

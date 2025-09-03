@@ -4,11 +4,13 @@
 
 #include "Core/Actor/AccelByteWarsMissile.h"
 
+#include "AccelByteWarsCrateBase.h"
+#include "AccelByteWarsFxActor.h"
 #include "AccelByteWarsMissileTrail.h"
 #include "AccelByteWars/Core/Player/AccelByteWarsPlayerPawn.h"
+#include "Core/Player/AccelByteWarsPlayerController.h"
 #include "Core/GameModes/AccelByteWarsInGameGameMode.h"
 #include "Core/GameStates/AccelByteWarsInGameGameState.h"
-#include "Core/Player/AccelByteWarsPlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 
@@ -37,10 +39,10 @@ AAccelByteWarsMissile::AAccelByteWarsMissile()
 
 	// Setup Gameplay Object Component
 	AccelByteWarsGameplayObjectComponent = CreateDefaultSubobject<UAccelByteWarsGameplayObjectComponent>(TEXT("AccelByteWarsGameplayObjectComponent"));
+	AccelByteWarsGameplayObjectComponent->ObjectType = EGameplayObjectType::MISSILE;
 
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-
 }
 
 // Called when the game starts or when spawned
@@ -59,9 +61,16 @@ void AAccelByteWarsMissile::BeginPlay()
 	// Initialize Score and ScoreIncrement
 	Score = ABGameState->GameSetup.BaseScoreForKill;
 	ScoreIncrement = ABGameState->GameSetup.SkimInitialScore;
-	
-	// Setup event for OnOwnerDestroyed (in blueprint)
-	DestroyActorOnOwnerDestroyed();
+
+	OnDestroyed.AddDynamic(this, &ThisClass::OnMissileDestroyed);
+
+	// Register this missile with the game mode for collision detection
+	AAccelByteWarsInGameGameMode* ABGameMode = Cast<AAccelByteWarsInGameGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
+	if (ABGameMode == nullptr)
+	{
+		return;
+	}
+	ABGameMode->SetupGameplayObject(this);
 
 	SpawnMissileTrail();
 }
@@ -82,6 +91,12 @@ void AAccelByteWarsMissile::Destroyed()
 	}
 
 	PlayerPawn->UpdateShipGlow();
+}
+
+void AAccelByteWarsMissile::OnMissileDestroyed(AActor* DestroyedActor)
+{
+	AAccelByteWarsInGameGameMode* ABInGameMode = Cast<AAccelByteWarsInGameGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
+	TreatMissileAsExpired(ABInGameMode);
 }
 
 // Called every frame
@@ -118,9 +133,10 @@ bool AAccelByteWarsMissile::IsNearHitShip(UAccelByteWarsGameplayObjectComponent*
 	float NearHitDistance = 200.0f;
 	double distance = FVector::Distance(ABObjectComponent->GetOwner()->GetActorLocation(), GetActorLocation());
 
-	if (ABObjectComponent->ObjectType == EGameplayObjectType::SHIP &&
-		ABObjectComponent->GetOwner() != GetInstigator() &&
-		distance <= NearHitDistance)
+	// Get the instigator safely - it might be null in dedicated server scenarios
+	APawn* MissileInstigator = GetInstigator();
+
+	if (ABObjectComponent->ObjectType == EGameplayObjectType::SHIP && ABObjectComponent->GetOwner() != MissileInstigator && distance <= NearHitDistance)
 	{
 		return true;
 	}
@@ -136,10 +152,20 @@ bool AAccelByteWarsMissile::IsSkimmingPlanet(TArray<UAccelByteWarsGameplayObject
 	if (ABGameplayObject == nullptr)
 		return false;
 
-	for(int i = 0; i < ABObjectComponent.Num(); i++)
+	for (int i = 0; i < ABObjectComponent.Num(); i++)
 	{
 		if (ABObjectComponent[i] == nullptr)
 			continue;
+
+		if (ABObjectComponent[i] == AccelByteWarsGameplayObjectComponent)
+		{
+			continue;
+		}
+
+		if (ABObjectComponent[i]->ObjectType == EGameplayObjectType::PICKUP)
+		{
+			continue;
+		}
 
 		float distance = GetSurfanceDistanceBetweenObjects(ABObjectComponent[i], ABGameplayObject);
 		if (distance < 100.0f)
@@ -164,7 +190,77 @@ float AAccelByteWarsMissile::GetSurfanceDistanceBetweenObjects(UAccelByteWarsGam
 	return (distance - ((OtherObject->Radius + ThisObject->Radius) * 100.0f));
 }
 
-void AAccelByteWarsMissile::OnMissileHitObject(AAccelByteWarsInGameGameMode* InGameGameMode, AAccelByteWarsPlayerController* ABPlayerController)
+bool AAccelByteWarsMissile::CheckMissileToMissileCollision(UAccelByteWarsGameplayObjectComponent* OtherMissile)
+{
+	if (OtherMissile == nullptr || AccelByteWarsGameplayObjectComponent == nullptr)
+	{
+		return false;
+	}
+
+	if (OtherMissile->ObjectType != EGameplayObjectType::MISSILE || OtherMissile->GetOwner() == nullptr)
+	{
+		return false;
+	}
+
+	// Avoid powerup split missile to instantly destroyed. This also means, missile with the same owner will not colliding
+	if (OtherMissile->GetOwner()->GetOwner() == GetOwner())
+	{
+		return false;
+	}
+
+	// Calculate distance between missiles
+	double Distance = FVector::Distance(OtherMissile->GetOwner()->GetActorLocation(), GetActorLocation());
+	float CombinedRadius = (AccelByteWarsGameplayObjectComponent->Radius + OtherMissile->Radius) * 100.0f;
+
+	// Check if missiles are overlapping
+	if (Distance < CombinedRadius)
+	{
+		// Destroy both missiles
+		HitObject = OtherMissile;
+		KillActorThisFrame = true;
+
+		// Destroy the other missile too
+		AAccelByteWarsMissile* OtherMissileActor = Cast<AAccelByteWarsMissile>(OtherMissile->GetOwner());
+		if (OtherMissileActor && OtherMissileActor->HasAuthority())
+		{
+			OtherMissileActor->HitObject = AccelByteWarsGameplayObjectComponent;
+			OtherMissileActor->KillActorThisFrame = true;
+		}
+		return true;
+	}
+
+	return false;
+}
+
+bool AAccelByteWarsMissile::CheckMissileToCrateCollision(UAccelByteWarsGameplayObjectComponent* Crate)
+{
+	if (Crate == nullptr || AccelByteWarsGameplayObjectComponent == nullptr)
+		return false;
+
+	if (Crate->ObjectType != EGameplayObjectType::PICKUP)
+		return false;
+
+	AAccelByteWarsCrateBase* CrateActor = Cast<AAccelByteWarsCrateBase>(Crate->GetOwner());
+	if (CrateActor == nullptr)
+		return false;
+
+	double Distance = FVector::Distance(Crate->GetOwner()->GetActorLocation(), GetActorLocation());
+	float CombinedRadius = (AccelByteWarsGameplayObjectComponent->Radius + Crate->Radius) * 100.0f;
+
+	// Crate can be picked only if this missile have controller
+	// Safely get the owner and controller - they might be null in dedicated server scenarios
+	AActor* MissileOwner = GetOwner();
+	AController* Controller = MissileOwner ? MissileOwner->GetInstigatorController() : nullptr;
+	if (Controller && Distance < CombinedRadius)
+	{
+		CrateActor->OnPicked(Controller);
+		return true;
+	}
+
+	return false;
+}
+
+void AAccelByteWarsMissile::OnMissileHitObject(AAccelByteWarsInGameGameMode* InGameGameMode, AController* ABPlayerController)
 {
 	if (HitObject->ObjectType == EGameplayObjectType::SHIP)
 	{
@@ -178,6 +274,21 @@ void AAccelByteWarsMissile::OnMissileHitObject(AAccelByteWarsInGameGameMode* InG
 
 		HitObject = nullptr;
 	}
+	else if (HitObject->ObjectType == EGameplayObjectType::MISSILE)
+	{
+		// Missile hit another missile, broadcast entity destroyed event for both missiles.
+		if (AAccelByteWarsInGameGameMode::OnEntityDestroyedDelegates.IsBound())
+		{
+			// Broadcast for this missile
+			AAccelByteWarsInGameGameMode::OnEntityDestroyedDelegates.Broadcast(
+				ENTITY_TYPE_MISSILE,
+				nullptr,
+				GetName(),
+				GetActorLocation(),
+				ENTITY_DESTROYED_TYPE_HIT_MISSILE,
+				AccelByteWarsUtility::FormatEntityDeathSource(ENTITY_TYPE_MISSILE, AccelByteWarsUtility::GenerateActorEntityId(HitObject->GetOwner())));
+		}
+	}
 	else
 	{
 		// Missile hit planet, broadcast entity destroyed event for the missile.
@@ -189,8 +300,7 @@ void AAccelByteWarsMissile::OnMissileHitObject(AAccelByteWarsInGameGameMode* InG
 				GetName(),
 				GetActorLocation(),
 				ENTITY_DESTROYED_TYPE_HIT_PLANET,
-				AccelByteWarsUtility::FormatEntityDeathSource(ENTITY_TYPE_PLANET, AccelByteWarsUtility::GenerateActorEntityId(HitObject->GetOwner()))
-			);
+				AccelByteWarsUtility::FormatEntityDeathSource(ENTITY_TYPE_PLANET, AccelByteWarsUtility::GenerateActorEntityId(HitObject->GetOwner())));
 		}
 	}
 }
@@ -252,7 +362,6 @@ void AAccelByteWarsMissile::OnRepNotify_Color()
 
 void AAccelByteWarsMissile::OnRepNotify_Velocity()
 {
-
 }
 
 void AAccelByteWarsMissile::SetVelocity()
@@ -280,6 +389,22 @@ void AAccelByteWarsMissile::ApplyGravityToThisGameObjects()
 		if (GameObject == nullptr)
 			continue;
 
+		if (AccelByteWarsGameplayObjectComponent == GameObject)
+		{
+			continue;
+		}
+
+		// Check for missile-to-missile collision
+		if (GameObject->ObjectType == EGameplayObjectType::MISSILE)
+		{
+			CheckMissileToMissileCollision(GameObject);
+			continue;
+		}
+		if (GameObject->ObjectType == EGameplayObjectType::PICKUP)
+		{
+			CheckMissileToCrateCollision(GameObject);
+			continue;
+		}
 		if (IsNearHitShip(GameObject))
 		{
 #if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 4
@@ -297,7 +422,7 @@ void AAccelByteWarsMissile::ApplyGravityToThisGameObjects()
 				if (Pawn == nullptr)
 					continue;
 
-				APlayerController* PlayerController = Cast<APlayerController>(Pawn->GetController());
+				AController* PlayerController = Pawn->GetController();
 				if (PlayerController == nullptr)
 					return;
 
@@ -379,13 +504,12 @@ void AAccelByteWarsMissile::DestroyOnTimeout()
 
 void AAccelByteWarsMissile::DestroyOnOutOfBounds()
 {
-	if (HasAuthority() == false)
+	if (HasAuthority() == false || !bAutoDestroyOnOutOfBounds)
 		return;
 
 	// Destroy when missile reaches out of bounds logic here
 	const AAccelByteWarsInGameGameState* GameState = Cast<AAccelByteWarsInGameGameState>(GetWorld()->GetGameState());
-	if (this->GetActorLocation().X <= GameState->MinGameBoundExtend.X || this->GetActorLocation().X >= GameState->MaxGameBoundExtend.X || 
-		this->GetActorLocation().Y <= GameState->MinGameBoundExtend.Y || this->GetActorLocation().Y >= GameState->MaxGameBoundExtend.Y)
+	if (this->GetActorLocation().X <= GameState->MinGameBoundExtend.X || this->GetActorLocation().X >= GameState->MaxGameBoundExtend.X || this->GetActorLocation().Y <= GameState->MinGameBoundExtend.Y || this->GetActorLocation().Y >= GameState->MaxGameBoundExtend.Y)
 	{
 		// should add activating state to prevent overlaps
 		if (ThrustSparks != nullptr)
@@ -450,7 +574,7 @@ void AAccelByteWarsMissile::SkimmingAndScoreUpdate(float DeltaTime)
 	float fa = TimeAlive + DeltaTime;
 	float fb = fa / ABGameState->GameSetup.TimeScoreDeltaTime;
 	float fc = TimeAlive / ABGameState->GameSetup.TimeScoreDeltaTime;
-	
+
 	int ia = UKismetMathLibrary::FFloor(fb);
 	int ib = UKismetMathLibrary::FFloor(fc);
 	int ic = ia - ib;
@@ -475,12 +599,8 @@ void AAccelByteWarsMissile::OnDestroyObject()
 	if (GetOwner() == nullptr)
 		return;
 
-	if (GetOwner()->GetInstigatorController() == nullptr)
-		return;
-
+	// The owner not always controller (e.g. asteroid). Leave it nullptr to mark it as non player actor
 	AAccelByteWarsPlayerController* ABPlayerController = Cast<AAccelByteWarsPlayerController>(GetOwner()->GetInstigatorController());
-	if (ABPlayerController == nullptr)
-		return;
 
 	DecrementPlayerMissileCount();
 
@@ -502,16 +622,35 @@ void AAccelByteWarsMissile::OnDestroyObject()
 		if (AAccelByteWarsInGameGameMode::OnEntityDestroyedDelegates.IsBound())
 		{
 			AAccelByteWarsInGameGameMode::OnEntityDestroyedDelegates.Broadcast(
-			   ENTITY_TYPE_MISSILE,
-			   nullptr,
-			   GetName(),
-			   GetActorLocation(),
-			   ENTITY_DESTROYED_TYPE_HIT_LIFETIME,
-			   ENTITY_TYPE_UNKNOWN
-		   );
+				ENTITY_TYPE_MISSILE,
+				nullptr,
+				GetName(),
+				GetActorLocation(),
+				ENTITY_DESTROYED_TYPE_HIT_LIFETIME,
+				ENTITY_TYPE_UNKNOWN);
 		}
 
-		TreatMissileAsExpired(ABInGameMode);
+		Destroy();
+	}
+}
+
+void AAccelByteWarsMissile::TreatMissileAsExpired_Implementation(AAccelByteWarsGameMode* ABGameMode)
+{
+	if (!bIsMissileExpired && IsValid(ExpiredFxActor))
+	{
+		FActorSpawnParameters Parameters;
+		Parameters.Owner = GetOwner();
+		AAccelByteWarsFxActor* FxActor = GetWorld()->SpawnActor<AAccelByteWarsFxActor>(ExpiredFxActor, GetActorLocation(), FRotator::ZeroRotator, Parameters);
+		if (FxActor)
+		{
+			FxActor->SetNiagaraFxColor(AccelByteWarsProceduralMesh->GetColor());
+		}
+		bIsMissileExpired = true;
+	}
+
+	if (!IsPendingKillPending())
+	{
+		Destroy();
 	}
 }
 
@@ -523,7 +662,7 @@ void AAccelByteWarsMissile::DecrementPlayerMissileCount()
 	if (GetOwner() == nullptr)
 		return;
 
-	AAccelByteWarsPlayerController* ABPlayerController = Cast<AAccelByteWarsPlayerController>(GetOwner()->GetInstigatorController());
+	AController* ABPlayerController = Cast<AController>(GetOwner()->GetInstigatorController());
 	if (ABPlayerController == nullptr)
 		return;
 
@@ -540,13 +679,13 @@ void AAccelByteWarsMissile::DecrementPlayerMissileCount()
 void AAccelByteWarsMissile::NotifyShipHitByMissile() const
 {
 	// Abort if missile owner is invalid.
-	if (!GetOwner()) 
+	if (!GetOwner())
 	{
 		return;
 	}
 
-	const APlayerController* OwnerPC = Cast<APlayerController>(GetOwner()->GetInstigatorController());
-	if (!OwnerPC) 
+	const AController* OwnerPC = Cast<AController>(GetOwner()->GetInstigatorController());
+	if (!OwnerPC)
 	{
 		return;
 	}
@@ -564,7 +703,7 @@ void AAccelByteWarsMissile::NotifyShipHitByMissile() const
 		return;
 	}
 
-	const APlayerController* ShipPC = Cast<APlayerController>(ShipOwner->Controller);
+	const AController* ShipPC = Cast<AController>(ShipOwner->Controller);
 	if (!ShipPC)
 	{
 		return;
@@ -580,19 +719,18 @@ void AAccelByteWarsMissile::NotifyShipHitByMissile() const
 	if (AAccelByteWarsInGameGameMode::OnEntityDestroyedDelegates.IsBound())
 	{
 		AAccelByteWarsInGameGameMode::OnEntityDestroyedDelegates.Broadcast(
-		   ENTITY_TYPE_PLAYER,
-		   ShipPlayerState->GetUniqueId().GetUniqueNetId(),
-		   ShipActor->GetName(),
-		   ShipActor->GetActorLocation(),
-		   ENTITY_DESTROYED_TYPE_HIT_SHIP,
-		   AccelByteWarsUtility::FormatEntityDeathSource(ENTITY_TYPE_MISSILE, AccelByteWarsUtility::GenerateActorEntityId(OwnerPC))
-	   );
+			ENTITY_TYPE_PLAYER,
+			ShipPlayerState->GetUniqueId().GetUniqueNetId(),
+			ShipActor->GetName(),
+			ShipActor->GetActorLocation(),
+			ENTITY_DESTROYED_TYPE_HIT_SHIP,
+			AccelByteWarsUtility::FormatEntityDeathSource(ENTITY_TYPE_MISSILE, AccelByteWarsUtility::GenerateActorEntityId(OwnerPC)));
 	}
 }
 
 void AAccelByteWarsMissile::SpawnMissileTrail()
 {
-	if (!HasAuthority())
+	if (!HasAuthority() || !IsValid(MissileTrailActor))
 	{
 		return;
 	}
@@ -601,15 +739,28 @@ void AAccelByteWarsMissile::SpawnMissileTrail()
 	SpawnParameters.Owner = this;
 	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	MissileTrail = Owner->GetWorld()->SpawnActor<AAccelByteWarsMissileTrail>(
+	// Spawn the trail at the missile's transform so clients without an Owner reference yet still get correct start position.
+	FTransform TrailTransform{ GetActorRotation(), GetActorLocation() };
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	// Normal spawn to avoid pre-init replication warnings.
+	MissileTrail = World->SpawnActor<AAccelByteWarsMissileTrail>(
 		MissileTrailActor,
-		FTransform(GetActorRotation(), GetActorLocation()),
+		TrailTransform,
 		SpawnParameters);
 	if (!MissileTrail)
 	{
 		return;
 	}
 
-	MissileTrail->SetReplicates(true);
 	MissileTrail->AttachToActor(this, FAttachmentTransformRules::SnapToTargetIncludingScale);
+	MissileTrail->SetReplicateMovement(false);
+	MissileTrail->SetNetDormancy(DORM_Awake);
+	MissileTrail->ForceNetUpdate();
+	ForceNetUpdate();
 }

@@ -18,11 +18,18 @@
 #define TEXT_CURRENCY_CONFIG_COIN_DEFAULT TEXT("BC")
 #define TEXT_CURRENCY_CONFIG_GEM_DEFAULT TEXT("BG")
 
+// For native currency, prices are stored as integers in cents format.
+// Divide by 100 (or multiply by 0.01) to convert to dollars. Example: 25 = $0.25
+// Regional pricing follows the same conversion logic.
+#define FORMAT_NATIVE_CURRENCY(InAmount, InCurrencyCode)\
+	FText::FromString(FString::Printf(TEXT("%s %.2f"), *InCurrencyCode, InAmount * 0.01f))
+
 // @@@SNIPSTART StoreItemModel.h-CurrencyType
 UENUM(BlueprintType)
 enum class ECurrencyType : uint8
 {
 	NONE = 0,
+	NATIVE,
 	COIN,
 	GEM
 };
@@ -93,7 +100,7 @@ public:
 // @@@SNIPEND
 
 // @@@SNIPSTART StoreItemModel.h-StoreItemPriceDataObject
-// @@@MULTISNIP Data {"selectedLines": ["1-3", "22-31"]}
+// @@@MULTISNIP Data {"selectedLines": ["1-3", "33-41", "45"]}
 UCLASS(BlueprintType)
 class UStoreItemPriceDataObject : public UObject
 {
@@ -109,11 +116,22 @@ public:
 		RegularPrice = InRegularPrice;
 		FinalPrice = InFinalPrice;
 	}
+	
+	void Setup(
+		const ECurrencyType InCurrencyType,
+		const int64 InRegularPrice,
+		const int64 InFinalPrice,
+		const FString& InCurrencyCode)
+	{
+		Setup(InCurrencyType, InRegularPrice, InFinalPrice);
+		NativeCurrencyCode = InCurrencyCode;
+	}
 
 	ECurrencyType GetCurrencyType() const { return CurrencyType; }
 	int64 GetRegularPrice() const { return RegularPrice; }
 	int64 GetFinalPrice() const { return FinalPrice; }
 	bool IsDiscounted() const { return RegularPrice != FinalPrice; }
+	const FString& GetNativeCurrencyCode() const { return NativeCurrencyCode; }
 
 private:
 	UPROPERTY(EditAnywhere)
@@ -124,6 +142,9 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	int64 FinalPrice;
+
+	UPROPERTY(EditAnywhere)
+	FString NativeCurrencyCode;
 };
 // @@@SNIPEND
 

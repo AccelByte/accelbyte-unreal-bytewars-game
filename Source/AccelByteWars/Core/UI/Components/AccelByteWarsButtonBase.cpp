@@ -10,6 +10,7 @@
 void UAccelByteWarsButtonBase::NativePreConstruct()
 {
 	Super::NativePreConstruct();
+	Super::NativeOnPressed();
 
 	// If button click sound is not assigned, use the default button sound
 	const UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
@@ -66,6 +67,56 @@ void UAccelByteWarsButtonBase::NativeOnRemovedFromFocusPath(const FFocusEvent& I
 
 	SetSelectedInternal(false, false);
 	bSelectedByKeyboard = false;
+}
+
+void UAccelByteWarsButtonBase::NativeOnPressed()
+{
+	Super::NativeOnPressed();
+	OnButtonPressed();
+
+	// Start on-hold button event
+	if (UWorld* World = GetWorld())
+	{
+		OnButtonHold();
+		World->GetTimerManager().SetTimer(HoldTimerHandle, this, &ThisClass::OnButtonHold, HoldRepeatInterval, true);
+	}
+}
+
+void UAccelByteWarsButtonBase::NativeOnReleased()
+{
+	Super::NativeOnReleased();
+
+	// Release on-hold button event.
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(HoldTimerHandle);
+	}
+
+	OnButtonReleased();
+}
+
+void UAccelByteWarsButtonBase::OnButtonPressed_Implementation() 
+{
+	if (OnPressed.IsBound())
+	{
+		OnPressed.Broadcast();
+	}
+}
+
+void UAccelByteWarsButtonBase::OnButtonHold_Implementation()
+{
+	if (OnHold.IsBound())
+	{
+		OnHold.Broadcast();
+	}
+}
+
+void UAccelByteWarsButtonBase::OnButtonReleased_Implementation()
+{
+	if (OnReleased.IsBound())
+	{
+		OnReleased.Broadcast();
+	}
 }
 
 void UAccelByteWarsButtonBase::UpdateInputActionWidget()

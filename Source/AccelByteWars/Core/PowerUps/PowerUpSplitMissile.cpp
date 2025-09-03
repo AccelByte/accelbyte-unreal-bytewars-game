@@ -57,6 +57,7 @@ void APowerUpSplitMissile::OnUse()
 			return;
 		}
 
+		Pawn->FiredMissile->OnDestroyed.AddDynamic(this, &APowerUpSplitMissile::OnParentMissileDestroyed);
 		FireMissiles();
 		Pawn->FireMissileFx(ParentMissileTransform);
 	}
@@ -70,6 +71,12 @@ void APowerUpSplitMissile::OnEquip()
 void APowerUpSplitMissile::DestroyItem()
 {
 	Destroy();
+}
+
+void APowerUpSplitMissile::OnParentMissileDestroyed(AActor* DestroyedActor)
+{
+	DestroyedActor->OnDestroyed.RemoveAll(this);
+	DestroyItem();
 }
 
 void APowerUpSplitMissile::FireMissiles()
@@ -123,8 +130,6 @@ void APowerUpSplitMissile::FireMissiles()
 		return;
 
 	ABPlayerState->MissilesFired += 2;
-
-	DestroyItem();
 }
 
 AAccelByteWarsMissile* APowerUpSplitMissile::SpawnMissile(

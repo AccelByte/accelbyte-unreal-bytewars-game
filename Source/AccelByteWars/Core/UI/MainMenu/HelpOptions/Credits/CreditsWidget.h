@@ -41,7 +41,7 @@ private:
 	float AutoScrollOffset = 1.5f;
 
 	UPROPERTY(EditDefaultsOnly, Category = Credits)
-	TArray<FCreditsData> CreditsData;
+	UDataTable* CreditsDataTable;
 
 	UPROPERTY(EditDefaultsOnly, Category = Credits)
 	TSubclassOf<UCreditsRoleGroupWidget> CreditsRoleGroupClass;
