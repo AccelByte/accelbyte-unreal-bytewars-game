@@ -26,7 +26,7 @@ class ACCELBYTEWARS_API UAccelByteWarsSequentialSelectionWidget : public UCommon
 		const FNavigationReply& InDefaultReply) override;
 
 public:
-	void SetSelection(TArray<FText>& InSelections, int32 DefaultIndex = 0);
+	void SetSelection(const TArray<FText>& InSelections, int32 DefaultIndex = 0);
 	void ClearSelection();
 
 	void SetDisplayName(const FText InText) const;

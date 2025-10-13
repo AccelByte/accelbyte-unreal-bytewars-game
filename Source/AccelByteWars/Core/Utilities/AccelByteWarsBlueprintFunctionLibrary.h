@@ -6,6 +6,7 @@
 
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "Materials/MaterialParameterCollection.h"
 #include "AccelByteWarsBlueprintFunctionLibrary.generated.h"
 
 UENUM(BlueprintType)
@@ -18,16 +19,12 @@ enum class EBPNetMode : uint8
 	MAX,
 };
 
-/**
- * 
- */
 UCLASS()
 class ACCELBYTEWARS_API UAccelByteWarsBlueprintFunctionLibrary : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 
 public:
-
 	/**
 	 * @brief Get Actor's Net mode
 	 * @param Actor Target Actor
@@ -43,4 +40,14 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "AccelByteWars Utilities", BlueprintPure)
 	static bool IsUniqueNetIdValid(const FUniqueNetIdRepl UniqueNetId);
+
+	/**
+	 * @brief Get global material parameter collection
+	 * @return Global material parameter collection
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure)
+	static const UMaterialParameterCollection* GetGlobalMaterialParameterCollection();
+
+private:
+	static UMaterialParameterCollection* GlobalMaterialParameterCollection;
 };

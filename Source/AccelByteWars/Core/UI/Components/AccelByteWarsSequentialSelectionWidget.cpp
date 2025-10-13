@@ -53,7 +53,7 @@ FNavigationReply UAccelByteWarsSequentialSelectionWidget::NativeOnNavigation(
 	return Super::NativeOnNavigation(MyGeometry, InNavigationEvent, InDefaultReply);
 }
 
-void UAccelByteWarsSequentialSelectionWidget::SetSelection(TArray<FText>& InSelections, int32 DefaultIndex)
+void UAccelByteWarsSequentialSelectionWidget::SetSelection(const TArray<FText>& InSelections, int32 DefaultIndex)
 {
 	Selections = InSelections;
 	CurrentIndex = DefaultIndex < InSelections.Num() && DefaultIndex >= 0 ? DefaultIndex : INDEX_NONE;

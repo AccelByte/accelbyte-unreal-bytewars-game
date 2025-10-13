@@ -42,7 +42,7 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnPlayerEnteredMatch, const FUniqueNetIdPtr
  * Delegate for tracking when a match ended (just as the game over screen about to popped up).
  * @param Reason The reason why the match ends.
  */
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnMatchEnded, const FString& /*Reason*/)
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnMatchEnded, const FString& /*Reason*/, bool /*bIsExpected*/)
 
 /**
  * Delegate for tracking entity destruction. Entity can be player and missile.

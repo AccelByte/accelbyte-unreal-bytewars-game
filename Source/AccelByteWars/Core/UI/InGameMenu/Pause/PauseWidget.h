@@ -8,6 +8,7 @@
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
 #include "PauseWidget.generated.h"
 
+class UAccelByteWarsGameInstance;
 class UCommonButtonBase;
 class UVerticalBox;
 
@@ -56,5 +57,7 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UVerticalBox* Vb_OnlinePlayButtons;
+
+	UAccelByteWarsGameInstance* GameInstance;
 // @@@SNIPEND
 };

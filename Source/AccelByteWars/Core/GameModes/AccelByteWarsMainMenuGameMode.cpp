@@ -154,7 +154,7 @@ void AAccelByteWarsMainMenuGameMode::Tick(float DeltaSeconds)
 			// trigger server travel
 			if (!ABMainMenuGameState->bIsServerTravelling)
 			{
-				DelayedServerTravel("/Game/ByteWars/Maps/GalaxyWorld/GalaxyWorld");
+				GameInstance->GoToGalaxyWorld();
 			}
 			break;
 		case ELobbyStatus::NOT_ENOUGH_PLAYER:

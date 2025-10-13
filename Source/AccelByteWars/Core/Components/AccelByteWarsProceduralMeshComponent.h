@@ -59,6 +59,9 @@ public:
 	uint8 OutlineStrokes = 7;
 
 	UPROPERTY(EditAnywhere)
+	bool bOverrideGlow = false;
+
+	UPROPERTY(EditAnywhere, meta = (EditCondition = "bOverrideGlow", EditConditionHides))
 	float Glow = 50.0f;
 
 	const FLinearColor& GetColor() const { return Color; }

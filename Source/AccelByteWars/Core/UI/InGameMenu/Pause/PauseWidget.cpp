@@ -25,6 +25,9 @@ void UPauseWidget::NativeOnActivated()
 	Btn_HelpOptions->OnClicked().AddUObject(this, &UPauseWidget::OpenHelpOptions);
 	Btn_Quit->OnClicked().AddUObject(this, &UPauseWidget::QuitGame);
 
+	GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+	ensure(GameInstance);
+
 	const AAccelByteWarsInGameGameState* GameState = Cast<AAccelByteWarsInGameGameState>(GetWorld()->GetGameState());
 	if(GameState)
 	{
@@ -58,21 +61,12 @@ void UPauseWidget::ResumeGame()
 // @@@SNIPSTART PauseWidget.cpp-RestartGame
 void UPauseWidget::RestartGame()
 {
-	if (const AAccelByteWarsGameMode* GameMode = Cast<AAccelByteWarsGameMode>(GetWorld()->GetAuthGameMode()))
-	{
-		GameMode->DelayedServerTravel("/Game/ByteWars/Maps/GalaxyWorld/GalaxyWorld");
-	}
+	GameInstance->GoToGalaxyWorld();
 }
 // @@@SNIPEND
 
 void UPauseWidget::OpenHelpOptions()
 {
-	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
-	if(!ensure(GameInstance)) 
-	{
-		return;
-	}
-
 	UAccelByteWarsBaseUI* BaseUIWidget = Cast<UAccelByteWarsBaseUI>(GameInstance->GetBaseUIWidget());
 	if (!ensure(BaseUIWidget)) 
 	{
@@ -91,7 +85,6 @@ void UPauseWidget::QuitGame()
 	}
 	
 	OnExitLevel();
-
-	UGameplayStatics::OpenLevel(GetWorld(), TEXT("MainMenu"));
+	GameInstance->GoToMainMenu();
 }
 // @@@SNIPEND

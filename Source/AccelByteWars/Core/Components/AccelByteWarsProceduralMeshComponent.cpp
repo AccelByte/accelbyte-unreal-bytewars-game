@@ -4,7 +4,7 @@
 
 
 #include "Core/Components/AccelByteWarsProceduralMeshComponent.h"
-
+#include "Core/Utilities/AccelByteWarsBlueprintFunctionLibrary.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Net/UnrealNetwork.h"
 
@@ -30,7 +30,7 @@ void UAccelByteWarsProceduralMeshComponent::MeshSetup()
 		if (Material != nullptr && Material->IsValidLowLevel())
 		{
 			Material->SetVectorParameterValue(FName("EmissiveColour"), Color);
-			Material->SetScalarParameterValue(FName("Glow"), Glow);
+			Material->SetScalarParameterValue(FName("Glow"), bOverrideGlow ? Glow : INDEX_NONE);
 		}
 
 		ClearMeshSection(0);
@@ -88,8 +88,17 @@ void UAccelByteWarsProceduralMeshComponent::UpdateColor(const FLinearColor InCol
 
 void UAccelByteWarsProceduralMeshComponent::SetGlowBrightness(const float Brightness) const
 {
-	if (Material)
+	const UMaterialParameterCollection* MPC = UAccelByteWarsBlueprintFunctionLibrary::GetGlobalMaterialParameterCollection();
+	if (!Material || !MPC) 
 	{
-		Material->SetScalarParameterValue(FName("Glow"), Glow * Brightness);
+		return;
 	}
+	
+	const FCollectionScalarParameter* GlowParam = MPC->GetScalarParameterByName(FName("ObjectGlow"));
+	if (GlowParam) 
+	{
+		return;
+	}
+
+	Material->SetScalarParameterValue(FName("Glow"), (bOverrideGlow ? Glow : GlowParam->DefaultValue) * Brightness);
 }

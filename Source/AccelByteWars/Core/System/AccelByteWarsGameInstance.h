@@ -287,6 +287,12 @@ public:
 
 	void SaveGameSettings(const APlayerController* PlayerController);
 
+	UFUNCTION(BlueprintCallable, Category = Gameplay)
+	void GoToMainMenu();
+
+	UFUNCTION(BlueprintCallable, Category = Gameplay)
+	void GoToGalaxyWorld();
+
 	UFUNCTION(BlueprintCallable, BlueprintPure)
 	UAccelByteWarsBaseUI* GetBaseUIWidget(bool bAutoActivate = true);
 

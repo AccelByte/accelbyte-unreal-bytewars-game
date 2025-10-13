@@ -151,10 +151,7 @@ void UGameOverWidget::SetupLeaderboard()
 // @@@SNIPSTART GameOverWidget.cpp-PlayGameAgain
 void UGameOverWidget::PlayGameAgain()
 {
-	if (const AAccelByteWarsGameMode* GameMode = Cast<AAccelByteWarsGameMode>(GetWorld()->GetAuthGameMode()))
-	{
-		GameMode->DelayedServerTravel("/Game/ByteWars/Maps/GalaxyWorld/GalaxyWorld");
-	}
+	GameInstance->GoToGalaxyWorld();
 }
 // @@@SNIPEND
 
@@ -167,7 +164,7 @@ void UGameOverWidget::QuitGame()
 	}
 
 	OnExitLevel();
-	UGameplayStatics::OpenLevel(GetWorld(), TEXT("MainMenu"));
+	GameInstance->GoToMainMenu();
 }
 // @@@SNIPEND
 

@@ -46,7 +46,7 @@ void AAccelByteWarsCrateBase::UpdateMesh()
 		if (Material != nullptr && Material->IsValidLowLevel())
 		{
 			Material->SetVectorParameterValue(FName("EmissiveColour"), Color);
-			Material->SetScalarParameterValue(FName("Glow"), Glow);
+			Material->SetScalarParameterValue(FName("Glow"), bOverrideGlow ? Glow : INDEX_NONE);
 			Material->SetTextureParameterValue(FName("AlphaTexture"), AlphaTexture);
 		}
 	}
