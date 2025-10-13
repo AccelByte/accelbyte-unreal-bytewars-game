@@ -476,6 +476,7 @@ private:
 protected:
 	void LobbyConnect(int32 LocalUserNum);
 	void ChatConnect(int32 LocalUserNum, const FUniqueNetIdPtr UserId);
+	void CheckLobbyConnection();
 	void OnConnectLobbyComplete(int32 LocalUserNum, bool bSucceeded, const FUniqueNetId& UserId, const FString& Error);
 	void OnLobbyReconnecting(int32 LocalUserNum, const FUniqueNetId& UserId, int32 StatusCode, const FString& Reason, bool bWasClean);
 	void OnLobbyReconnected();

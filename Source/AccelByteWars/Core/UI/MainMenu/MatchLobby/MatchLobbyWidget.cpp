@@ -115,7 +115,7 @@ void UMatchLobbyWidget::LeaveMatch()
 		OnQuitLobbyDelegate.Broadcast(GetOwningPlayer());
 	}
 	
-	UGameplayStatics::OpenLevel(GetWorld(), TEXT("MainMenu"));
+	GameInstance->GoToMainMenu();
 }
 // @@@SNIPEND
 

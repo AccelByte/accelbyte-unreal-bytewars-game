@@ -28,7 +28,7 @@ void UAccelByteWarsServerSubsystemBase::Initialize(FSubsystemCollectionBase& Col
 	AAccelByteWarsGameSession::OnRegisterServerDelegates.AddUObject(this, &ThisClass::RegisterServer);
 	AAccelByteWarsGameSession::OnUnregisterServerDelegates.AddUObject(this, &ThisClass::UnregisterServer);
 	AAccelByteWarsGameMode::OnInitializeListenServerDelegates.AddUObject(this, &ThisClass::OnServerSessionReceived);
-	AAccelByteWarsInGameGameMode::OnGameEndsDelegate.AddWeakLambda(this, [this](const FString& Reason)
+	AAccelByteWarsInGameGameMode::OnGameEndsDelegate.AddWeakLambda(this, [this](const FString& Reason, bool bIsExpected)
 	{
 		CloseGameSession();
 	});

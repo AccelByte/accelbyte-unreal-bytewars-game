@@ -73,15 +73,22 @@ struct ACCELBYTEWARS_API FChallengeGoalRewardData
 #define EMPTY_CHALLENGE_MESSAGE NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "Empty Challenge", "No Challenge Found")
 #define EMPTY_CLAIMABLE_CHALLENGE_REWARD_MESSAGE NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "Empty Claimable Challenge Reward", "No Claimable Challenge Reward Found")
 #define CLAIMED_CHALLENGE_REWARD_LABEL NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "Claimed Challenge Reward Label", "Claimed")
+#define CLAIMING_CHALLENGE_REWARD_LABEL NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "Claiming Challenge Reward Label", "Claiming")
 #define CLAIMABLE_CHALLENGE_REWARD_LABEL NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "Claimable Challenge Reward Label", "Claim")
 #define ALLTIME_CHALLENGE_TITLE_LABEL NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "All Time Challenges", "All Time Challenges")
 #define PERIODIC_CHALLENGE_TITLE_LABEL NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "{0} Challenges", "{0} Challenges")
+#define CLAIMING_ALL_CHALLENGE_REWARDS_MESSAGE NSLOCTEXT(ACCELBYTEWARS_LOCTEXT_NAMESPACE, "Claim All Challenge Rewards", "Claiming All Rewards")
 // @@@SNIPEND
 
 // @@@SNIPSTART ChallengeEssentialsModels.h-delegatemacro
+DECLARE_DELEGATE_TwoParams(FOnEvaluateChallengeProgressComplete, bool bWasSuccessful, const FString& ErrorMessage);
 DECLARE_DELEGATE_ThreeParams(FOnGetChallengeCodeComplete, bool bWasSuccessful, const FString& ErrorMessage, const FAccelByteModelsChallenge& Result);
 DECLARE_DELEGATE_ThreeParams(FOnGetChallengeGoalsComplete, bool bWasSuccessful, const FString& ErrorMessage, const TArray<UChallengeGoalData*>& Result);
 DECLARE_DELEGATE_TwoParams(FOnQueryRewardItemsBySkusRecursivelyComplete, bool bWasSuccessful, const FString& ErrorMessage);
 DECLARE_DELEGATE_ThreeParams(FOnQueryRewardItemsInformationComplete, bool bWasSuccessful, const FString& ErrorMessage, const TArray<UChallengeGoalData*>& Result);
 DECLARE_DELEGATE_TwoParams(FOnClaimChallengeGoalRewardsComplete, bool bWasSuccessful, const FString& ErrorMessage);
+// @@@SNIPEND
+
+// @@@SNIPSTART ChallengeEssentialsModels.h-OnIndividualChallengeRewardsClaimed
+inline static FOnClaimChallengeGoalRewardsComplete OnIndividualChallengeRewardsClaimed;
 // @@@SNIPEND

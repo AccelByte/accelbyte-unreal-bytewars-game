@@ -15,9 +15,9 @@
 #include "Core/UI/MainMenu/Store/StoreItemModel.h"
 
 // @@@SNIPSTART ShopWidget.cpp-NativeOnActivated
-// @@@MULTISNIP Subsystem {"selectedLines": ["1-2", "8-9", "26"]}
-// @@@MULTISNIP Setup {"selectedLines": ["1-2", "11-15", "17-18", "25-26"], "highlightedLines": "{6-11}"}
-// @@@MULTISNIP Combine {"selectedLines": ["1-2", "17-23", "25-26"], "highlightedLines": "{7-10}"}
+// @@@MULTISNIP Subsystem {"selectedLines": ["1-2", "8-9", "27"]}
+// @@@MULTISNIP Setup {"selectedLines": ["1-2", "11-16", "18-19", "26-27"], "highlightedLines": "{6-11}"}
+// @@@MULTISNIP Combine {"selectedLines": ["1-2", "18-24", "26-27"], "highlightedLines": "{7-10}"}
 void UShopWidget::NativeOnActivated()
 {
 	// Widget will load the FTUE later after finished loading store items. 

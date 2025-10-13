@@ -10,10 +10,13 @@
 DECLARE_DELEGATE_OneParam(FOnGetOrQueryOffersByCategory, TArray<UStoreItemDataObject*> /*Offers*/)
 DECLARE_DELEGATE_OneParam(FOnGetOrQueryOfferById, UStoreItemDataObject* /*Offer*/)
 DECLARE_DELEGATE_OneParam(FOnGetOrQueryCategories, TArray<FOnlineStoreCategory> /*Category*/)
+// @@@SNIPEND
 
 class ACCELBYTEWARS_API FInGameStoreEssentialsUtils
 {
+// @@@SNIPSTART InGameStoreEssentialsModel.h-public
+// @@@MULTISNIP ConvertStoreData {"selectedLines": ["1-2"]}
 public:	
 	static UStoreItemDataObject* ConvertStoreData(const FOnlineStoreOffer& Offer);
-};
 // @@@SNIPEND
+};

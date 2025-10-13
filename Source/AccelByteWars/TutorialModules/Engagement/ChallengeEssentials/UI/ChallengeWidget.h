@@ -13,6 +13,7 @@ class UAccelByteWarsWidgetSwitcher;
 class UListView;
 class UTextBlock;
 class UCommonButtonBase;
+class UPromptSubsystem;
 
 UCLASS()
 class ACCELBYTEWARS_API UChallengeWidget : public UAccelByteWarsActivatableWidget
@@ -26,15 +27,24 @@ public:
 // @@@SNIPEND
 
 // @@@SNIPSTART ChallengeWidget.h-protected
-// @@@MULTISNIP ChallengeUI {"selectedLines": ["1", "12-19"]}
-// @@@MULTISNIP GetChallengeGoalList {"selectedLines": ["1", "7"]}
+// @@@MULTISNIP ChallengeUI {"selectedLines": ["1", "19-29"]}
+// @@@MULTISNIP UpdateClaimAllButton {"selectedLines": ["1", "7"]}
+// @@@MULTISNIP OnClaimAllButtonClicked {"selectedLines": ["1", "8"]}
+// @@@MULTISNIP GetChallengeGoalList {"selectedLines": ["1", "10"]}
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
 	virtual UWidget* NativeGetDesiredFocusTarget() const override;
 
+	void UpdateClaimAllButton();
+	void OnClaimAllButtonClicked();
+
 	void GetChallengeGoalList();
+
+	UPromptSubsystem* GetPromptSubystem();
+
+	TArray<FString> AllClaimableRewardIds;
 
 	UPROPERTY()
 	UChallengeEssentialsSubsystem* ChallengeEssentialsSubsystem;
@@ -47,6 +57,9 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Tb_Title;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
+	UCommonButtonBase* Btn_ClaimAll;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_Back;

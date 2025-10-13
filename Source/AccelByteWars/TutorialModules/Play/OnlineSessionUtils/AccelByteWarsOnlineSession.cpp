@@ -108,6 +108,14 @@ void UAccelByteWarsOnlineSession::RegisterOnlineDelegates()
 
 	// Lobby Connection
 	GetABIdentityInt()->OnConnectLobbyCompleteDelegates->AddUObject(this, &ThisClass::OnConnectLobbyComplete);
+	FWorldDelegates::OnPostWorldInitialization.AddWeakLambda(this, [this](UWorld* World, const UWorld::InitializationValues IVS)
+	{
+		if (World)
+		{
+			World->OnWorldBeginPlay.RemoveAll(this);
+			World->OnWorldBeginPlay.AddUObject(this, &ThisClass::CheckLobbyConnection);
+		}
+	});
 
 	InitializePartyGeneratedWidgets();
 }
@@ -174,6 +182,11 @@ void UAccelByteWarsOnlineSession::ClearOnlineDelegates()
 
 	// Lobby Connection
 	GetABIdentityInt()->OnConnectLobbyCompleteDelegates->RemoveAll(this);
+	FWorldDelegates::OnPostWorldInitialization.RemoveAll(this);
+	if (GetWorld())
+	{
+		GetWorld()->OnWorldBeginPlay.RemoveAll(this);
+	}
 
 	DeinitializePartyGeneratedWidgets();
 }
@@ -2765,10 +2778,47 @@ void UAccelByteWarsOnlineSession::ChatConnect(int32 LocalUserNum, const FUniqueN
 	return;
 }
 
+void UAccelByteWarsOnlineSession::CheckLobbyConnection()
+{
+	const int32 LocalUserNum = 0;
+	const FOnlineIdentityAccelBytePtr ABIdentityInt = GetABIdentityInt();
+	if (!ABIdentityInt)
+	{
+		UE_LOG_SESSIONCHAT(Warning, TEXT("Failed to check lobby connection. Identity interface is invalid."));
+		return;
+	}
+
+	const FUniqueNetIdPtr UserId = GetIdentityInt()->GetUniquePlayerId(LocalUserNum);
+	if (!UserId)
+	{
+		UE_LOG_SESSIONCHAT(Warning, TEXT("Failed to check lobby connection. User ID invalid."));
+		return;
+	}
+
+	const AccelByte::FApiClientPtr ApiClient = ABIdentityInt->GetApiClient(LocalUserNum);
+	if (!ApiClient)
+	{
+		UE_LOG_SESSIONCHAT(Warning, TEXT("Failed to check lobby connection. API Client is invalid."));
+		return;
+	}
+
+	const AccelByte::Api::LobbyPtr LobbyApi = ApiClient->GetLobbyApi().Pin();
+	if (!LobbyApi)
+	{
+		UE_LOG_SESSIONCHAT(Warning, TEXT("Failed to check lobby connection. Lobby API is invalid."));
+		return;
+	}
+
+	if (!LobbyApi->IsConnected())
+	{
+		OnConnectLobbyComplete(LocalUserNum, false, UserId.ToSharedRef().Get(), LOBBY_FAILED_CONNECT_MESSAGE.ToString());
+	}
+}
+
 // @@@SNIPSTART AccelByteWarsOnlineSession.cpp-OnConnectLobbyComplete
-// @@@MULTISNIP AccelByteOnLobbyReconnectingDelegates {"selectedLines": ["1-2", "11-15", "130", "134", "137"]}
-// @@@MULTISNIP AccelByteOnLobbyConnectionClosedDelegates {"selectedLines": ["1-2", "11-15", "132", "136-137"]}
-// @@@MULTISNIP FailedConnect {"selectedLines": ["1-2", "11-15", "23-70", "137"]}
+// @@@MULTISNIP AccelByteOnLobbyReconnectingDelegates {"selectedLines": ["1-2", "11-15", "149", "153", "156"]}
+// @@@MULTISNIP AccelByteOnLobbyConnectionClosedDelegates {"selectedLines": ["1-2", "11-15", "151", "155-156"]}
+// @@@MULTISNIP FailedConnect {"selectedLines": ["1-2", "11-27", "35-85", "156"]}
 void UAccelByteWarsOnlineSession::OnConnectLobbyComplete(int32 LocalUserNum, bool bSucceeded, const FUniqueNetId& UserId, const FString& Error)
 {
 	GetPromptSubystem()->HideLoading();
@@ -2785,72 +2835,87 @@ void UAccelByteWarsOnlineSession::OnConnectLobbyComplete(int32 LocalUserNum, boo
 		return;
 	}
 
+	const AccelByte::FApiClientPtr ApiClient = ABIdentityInt->GetApiClient(LocalUserNum);
+	if (!ensureMsgf(ApiClient, TEXT("AB Api Client is nullptr.")))
+	{
+		return;
+	}
+
+	const AccelByte::Api::LobbyPtr LobbyApi = ApiClient->GetLobbyApi().Pin();
+	if (!ensureMsgf(LobbyApi, TEXT("AB Lobby Api is nullptr.")))
+	{
+		return;
+	}
+	
 	FOnlineSessionV2AccelBytePtr ABSessionInt = GetABSessionInt();
 	if (!ensureMsgf(ABSessionInt, TEXT("AB OnlineSession interface is null.")))
 	{
 		return;
 	}
 
-	if (!bSucceeded)
+	if (!bSucceeded && !LobbyApi->IsConnected())
 	{
 		// Lobby Connect and Reconnect failed
-		FText message = GameInstance->bIsReconnecting ? LOBBY_FAILED_RECONNECT_MESSAGE : LOBBY_FAILED_CONNECT_MESSAGE;
-		GetPromptSubystem()->ShowDialoguePopUp(ERROR_PROMPT_TEXT, message, EPopUpType::ConfirmationYesNo,
+		const FText Message = GameInstance->bIsReconnecting ? LOBBY_FAILED_RECONNECT_MESSAGE : LOBBY_FAILED_CONNECT_MESSAGE;
+		GameInstance->bIsReconnecting = false;
+		
+		GetPromptSubystem()->ShowDialoguePopUp(ERROR_PROMPT_TEXT, Message, EPopUpType::ConfirmationYesNo,
 			FPopUpResultDelegate::CreateWeakLambda(this, [this, LocalUserNum](EPopUpResult Result)
+			{
+				UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+
+				switch (Result)
 				{
-					switch (Result)
+				// Accept manual reconnect attempt
+				case Confirmed:
 					{
-					// Accept manual reconnect attempt
-					case Confirmed:
+						GameInstance->bIsReconnecting = true;
+						//GetPromptSubystem()->ShowLoading(LOBBY_RECONNECTING_MESSAGE);
+						LobbyConnect(LocalUserNum);
+					}
+					break;
+				// Deny reconnect and logout
+				case Declined:
+					{
+						GameInstance->GoToMainMenu();
+
+						// Pending Perform Logout after Main Menu level opened
+#if (ENGINE_MAJOR_VERSION==5 && ENGINE_MINOR_VERSION>=3)
+						GetWorld()->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateLambda([this, LocalUserNum]()
+#else
+						GetWorld()->GetTimerManager().SetTimerForNextTick(FVoidHandler::CreateLambda([this, LocalUserNum]()
+#endif
 						{
-							GetPromptSubystem()->ShowLoading(LOBBY_RECONNECTING_MESSAGE);
-							LobbyConnect(LocalUserNum);
+							// Open Login Menu
+							UTutorialModuleDataAsset* AuthEssentialsDataAsset =
+								UTutorialModuleUtility::GetTutorialModuleDataAsset(FPrimaryAssetId("TutorialModule:AUTHESSENTIALS"), this);
+							TSubclassOf<UAccelByteWarsActivatableWidget> LoginWidgetClass = AuthEssentialsDataAsset->GetTutorialModuleUIClass();
 
 							UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
-							GameInstance->bIsReconnecting = true;
-						}
-						break;
-					// Deny reconnect and logout
-					case Declined:
-						{
-							UGameplayStatics::OpenLevel(GetWorld(), TEXT("MainMenu"));
+							GameInstance->bIsReconnecting = false;
+							GameInstance->GetBaseUIWidget()->PushWidgetToStack(EBaseUIStackType::Menu, LoginWidgetClass.Get());
 
-							// Pending Perform Logout after Main Menu level opened
-#if (ENGINE_MAJOR_VERSION==5 && ENGINE_MINOR_VERSION>=3)
-							GetWorld()->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateLambda([this, LocalUserNum]()
-#else
-							GetWorld()->GetTimerManager().SetTimerForNextTick(FVoidHandler::CreateLambda([this, LocalUserNum]()
-#endif
-								{
-									// Open Login Menu
-									UTutorialModuleDataAsset* AuthEssentialsDataAsset =
-										UTutorialModuleUtility::GetTutorialModuleDataAsset(FPrimaryAssetId("TutorialModule:AUTHESSENTIALS"), this);
-									TSubclassOf<UAccelByteWarsActivatableWidget> LoginWidgetClass = AuthEssentialsDataAsset->GetTutorialModuleUIClass();
-
-									UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
-									GameInstance->GetBaseUIWidget()->PushWidgetToStack(EBaseUIStackType::Menu, LoginWidgetClass.Get());
-
-									GetPromptSubystem()->ShowLoading();
-									GetABIdentityInt()->Logout(LocalUserNum);
-
-									GameInstance->bIsReconnecting = false;
-								}));
-						}
-						break;
+							GetPromptSubystem()->ShowLoading();
+							GetABIdentityInt()->Logout(LocalUserNum);
+						}));
 					}
-				}));
-
-		GameInstance->bIsReconnecting = false;
+					break;
+				}
+			}));
 		return;
 	}
 
 	if (GameInstance->bIsReconnecting)
 	{
+		GameInstance->bIsReconnecting = false;
+		
 		// Trigger chat reconnect 
-		ChatConnect(LocalUserNum, UserId.AsShared());
+		if (StaticCastSharedPtr<FUserOnlineAccountAccelByte>(GetABIdentityInt()->GetUserAccount(UserId))) 
+		{
+			ChatConnect(LocalUserNum, UserId.AsShared());
+		}
 
 		// Show success to reconnect to AGS pop-up message.
-		GameInstance->bIsReconnecting = false;
 		GetPromptSubystem()->ShowMessagePopUp(MESSAGE_PROMPT_TEXT, LOBBY_SUCCESS_RECONNECT_MESSAGE);
 	}
 
@@ -2967,13 +3032,21 @@ void UAccelByteWarsOnlineSession::OnLobbyConnectionClosed(int32 LocalUserNum, co
 	GameInstance->bIsReconnecting = false;
 	GetPromptSubystem()->HideLoading();
 
+	/* If running as a P2P host, when disconnected from lobby, the backend is automatically mark the game session as soft delete.
+	 * OSS will also remove the online session. Hence, it is not possible to continue the game session. Therefore, simply close the P2P host. */
+	const UWorld* World = GameInstance->GetWorld();
+	if (World && World->GetNetMode() == ENetMode::NM_ListenServer)
+	{
+		GameInstance->GoToMainMenu();
+		return;
+	}
+
 	if (StatusCode == static_cast<int32>(AccelByte::EWebsocketErrorTypes::DisconnectFromExternalReconnect))
 	{
 		// Do some manual handle to reconnect lobby
-		LobbyConnect(LocalUserNum);
-		
 		GameInstance->bIsReconnecting = true;
 		GetPromptSubystem()->ShowLoading(LOBBY_RECONNECTING_MESSAGE);
+		LobbyConnect(LocalUserNum);
 	}
 }
 // @@@SNIPEND

@@ -88,8 +88,8 @@ void UItemPurchaseWidget::NativeOnDeactivated()
 // @@@SNIPEND
 
 // @@@SNIPSTART ItemPurchaseWidget.cpp-OnClickPurchase
-// @@@MULTISNIP Setup {"selectedLines": ["1-3", "31"]}
-// @@@MULTISNIP Finishing {"selectedLines": ["1-3", "25-31"]}
+// @@@MULTISNIP Setup {"selectedLines": ["1-3", "32"]}
+// @@@MULTISNIP Finishing {"selectedLines": ["1-3", "26-32"]}
 void UItemPurchaseWidget::OnClickPurchase(const int32 PriceIndex) const
 {
 	Ws_Root->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Loading);

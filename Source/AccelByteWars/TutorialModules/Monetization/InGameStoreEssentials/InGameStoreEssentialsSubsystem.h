@@ -42,7 +42,6 @@ public:
 // @@@SNIPSTART InGameStoreEssentialsSubsystem.h-private
 // @@@MULTISNIP StoreInterface {"selectedLines": ["1-2"]}
 // @@@MULTISNIP GetUniqueNetIdFromPlayerController {"selectedLines": ["1", "22"]}
-// @@@MULTISNIP ConvertStoreData {"selectedLines": ["1", "23-24"]}
 // @@@MULTISNIP CategoriesDelegate {"selectedLines": ["1", "6"]}
 // @@@MULTISNIP CategoriesIndication {"selectedLines": ["1", "17"]}
 // @@@MULTISNIP CategoriesFunction {"selectedLines": ["1", "15", "18-19"]}

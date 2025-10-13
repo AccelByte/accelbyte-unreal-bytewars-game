@@ -45,12 +45,19 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AccelByteWars)
 	FLinearColor Color;
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AccelByteWars)
-	float Glow{ 10 };
+	bool bOverrideGlow = false;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AccelByteWars, meta = (EditCondition = "bOverrideGlow", EditConditionHides))
+	float Glow = 10;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AccelByteWars)
 	UTexture2D* AlphaTexture;
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AccelByteWars)
-	float CrateLifetimeInSeconds{ 30 };
+	float CrateLifetimeInSeconds = 30;
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AccelByteWars)
 	USoundBase* PickedUpSound;
 

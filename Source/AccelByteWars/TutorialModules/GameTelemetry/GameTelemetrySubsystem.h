@@ -22,6 +22,8 @@ public:
 
 private:
 	FOnlineGameStandardEventAccelBytePtr GameStandardEventInterface = nullptr;
+
+	TSharedPtr<FNamedOnlineSession> CurrentOnlineSession = nullptr;
 	FMatchInfoId CurrentMatchInfoId = {};
 
 	const FUniqueNetIdAccelByteUserPtr DummyAbId = FUniqueNetIdAccelByteUser::Create(TEXT("00000000000000000000000000000000"));
@@ -30,7 +32,7 @@ private:
 	const int32 LocalUserNum = 0;
 
 	void OnGameStarted();
-	void OnGameEnded(const FString& Reason);
+	void OnGameEnded(const FString& Reason, bool bIsExpected);
 	void OnPlayerEnteredMatch(const FUniqueNetIdPtr PlayerNetId) const;
 	void OnEntityDestroyed(
 		const FString& DestroyedEntityType,

@@ -276,8 +276,14 @@ bool UStatsEssentialsSubsystem::UpdateConnectedPlayersStats(
 // @@@SNIPEND
 
 // @@@SNIPSTART StatsEssentialsSubsystem.cpp-UpdateConnectedPlayersStatsOnGameEnds
-void UStatsEssentialsSubsystem::UpdateConnectedPlayersStatsOnGameEnds(const FString& Reason)
+void UStatsEssentialsSubsystem::UpdateConnectedPlayersStatsOnGameEnds(const FString& Reason, bool bIsExpected)
 {
+	if (!bIsExpected)
+	{
+		UE_LOG_STATSESSENTIALS(Warning, TEXT("Game ends unexpectedly. Aborting update of connected player statistics."));
+		return;
+	}
+
 	const bool bStarted = UpdateConnectedPlayersStats(0, false);
 	if (bStarted)
 	{

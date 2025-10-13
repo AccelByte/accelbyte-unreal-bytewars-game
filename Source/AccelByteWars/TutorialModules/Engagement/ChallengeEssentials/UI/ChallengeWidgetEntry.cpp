@@ -114,6 +114,7 @@ void UChallengeWidgetEntry::OnClaimButtonClicked()
 
 	// Claim rewards.
 	Btn_Claim->SetIsEnabled(false);
+	Btn_Claim->SetButtonText(CLAIMING_CHALLENGE_REWARD_LABEL);
 	ChallengeEssentialsSubsystem->ClaimChallengeGoalRewards(
 		ClaimableRewardIds,
 		FOnClaimChallengeGoalRewardsComplete::CreateWeakLambda(this, [this](bool bWasSuccessful, const FString& ErrorMessage)
@@ -131,6 +132,8 @@ void UChallengeWidgetEntry::OnClaimButtonClicked()
 			{
 				GoalData->Progress.ToClaimRewards.Empty();
 			}
+
+			OnIndividualChallengeRewardsClaimed.ExecuteIfBound(bWasSuccessful, ErrorMessage);
 		}));
 }
 // @@@SNIPEND

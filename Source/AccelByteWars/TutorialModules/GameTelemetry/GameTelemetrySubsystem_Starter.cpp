@@ -63,7 +63,7 @@ void UGameTelemetrySubsystem_Starter::OnGameStarted()
 	// put your code here
 }
 
-void UGameTelemetrySubsystem_Starter::OnGameEnded(const FString& Reason)
+void UGameTelemetrySubsystem_Starter::OnGameEnded(const FString& Reason, bool bIsExpected)
 {
 	// put your code here
 }

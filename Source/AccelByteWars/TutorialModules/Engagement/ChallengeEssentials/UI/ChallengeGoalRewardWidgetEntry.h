@@ -24,7 +24,7 @@ public:
 // @@@SNIPEND
 
 // @@@SNIPSTART ChallengeGoalRewardWidgetEntry.h-protected
-// @@@MULTISNIP ChallengeGoalRewardEntryUI {"selectedLines": ["1", "4-8"]}
+// @@@MULTISNIP ChallengeGoalRewardEntryUI {"selectedLines": ["1-6"]}
 protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Tb_RewardValue;

@@ -3,7 +3,9 @@
 // and restrictions contact your company contract manager.
 
 #include "ChallengeWidget.h"
+#include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
+#include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "Components/ListView.h"
 #include "Components/TextBlock.h"
 #include "CommonButtonBase.h"
@@ -24,6 +26,7 @@ void UChallengeWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
+	// Set widget title based on the challenge type.
 	FString PeriodStr = FAccelByteUtilities::GetUEnumValueAsString(Period).ToLower();
 	if (!PeriodStr.IsEmpty()) 
 	{
@@ -33,8 +36,21 @@ void UChallengeWidget::NativeOnActivated()
 		Period == EAccelByteModelsChallengeRotation::NONE ? 
 		ALLTIME_CHALLENGE_TITLE_LABEL : 
 		FText::Format(PERIODIC_CHALLENGE_TITLE_LABEL, FText::FromString(PeriodStr)));
-	
+
+	// Bind button events.
+	Btn_ClaimAll->SetIsEnabled(false);
+	Btn_ClaimAll->OnClicked().AddUObject(this, &ThisClass::OnClaimAllButtonClicked);
 	Btn_Back->OnClicked().AddUObject(this, &ThisClass::DeactivateWidget);
+
+	// Bind the event to update the claim all button state when an individual challenge reward is claimed.
+	OnIndividualChallengeRewardsClaimed.BindWeakLambda(this, 
+	[this](bool bWasSuccessful, const FString& ErrorMessage)
+	{
+		if (bWasSuccessful) 
+		{
+			UpdateClaimAllButton();	
+		}
+	});
 
 	// Reset list.
 	Ws_Challenge->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Empty, true);
@@ -46,7 +62,10 @@ void UChallengeWidget::NativeOnActivated()
 
 void UChallengeWidget::NativeOnDeactivated()
 {
+	Btn_ClaimAll->OnClicked().Clear();
 	Btn_Back->OnClicked().Clear();
+
+	OnIndividualChallengeRewardsClaimed.Unbind();
 
 	Super::NativeOnDeactivated();
 }
@@ -57,7 +76,7 @@ UWidget* UChallengeWidget::NativeGetDesiredFocusTarget() const
 }
 
 // @@@SNIPSTART ChallengeWidget.cpp-GetChallengeGoalList
-// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "23-24", "62"]}
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "23-24", "64"]}
 void UChallengeWidget::GetChallengeGoalList()
 {
 	if (!GetOwningPlayer()) 
@@ -117,7 +136,73 @@ void UChallengeWidget::GetChallengeGoalList()
 
 					Lv_Challenge->SetListItems(Goals);
 					Ws_Challenge->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Not_Empty);
+
+					UpdateClaimAllButton();
 				}));
 		}));
 }
 // @@@SNIPEND
+
+// @@@SNIPSTART ChallengeWidget.cpp-UpdateClaimAllButton
+void UChallengeWidget::UpdateClaimAllButton()
+{
+	// Collect all claimable reward IDs.
+	AllClaimableRewardIds.Empty();
+	for (const UObject* Item : Lv_Challenge->GetListItems())
+	{
+		if (const UChallengeGoalData* GoalData = Cast<UChallengeGoalData>(Item))
+		{
+			TArray<FString> GoalRewardIds;
+			Algo::Transform(GoalData->Progress.ToClaimRewards, GoalRewardIds,
+				[](const FAccelByteModelsChallengeClaimableUserReward& Reward) { return Reward.Id; });
+			AllClaimableRewardIds.Append(GoalRewardIds);
+		}
+	}
+
+	// Toggle claim all button based on claimable reward availability.
+	Btn_ClaimAll->SetIsEnabled(!AllClaimableRewardIds.IsEmpty());
+}
+// @@@SNIPEND
+
+// @@@SNIPSTART ChallengeWidget.cpp-OnClaimAllButtonClicked
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-7", "29"]}
+void UChallengeWidget::OnClaimAllButtonClicked()
+{
+	Btn_ClaimAll->SetIsEnabled(false);
+	if (AllClaimableRewardIds.IsEmpty()) 
+	{
+		return;
+	}
+
+	GetPromptSubystem()->ShowLoading(CLAIMING_ALL_CHALLENGE_REWARDS_MESSAGE);
+
+	ChallengeEssentialsSubsystem->ClaimChallengeGoalRewards(
+		AllClaimableRewardIds,
+		FOnClaimChallengeGoalRewardsComplete::CreateWeakLambda(this, [this](bool bWasSuccessful, const FString& ErrorMessage)
+		{
+			Btn_ClaimAll->SetIsEnabled(!bWasSuccessful);
+			GetPromptSubystem()->HideLoading();
+
+			// If failed, display a push notification to show the error message.
+			if (!bWasSuccessful)
+			{
+				GetPromptSubystem()->ShowMessagePopUp(ERROR_PROMPT_TEXT, FText::FromString(ErrorMessage));
+			}
+			// If success, refresh the challenge list.
+			else
+			{
+				GetChallengeGoalList();
+			}
+		}));
+}
+// @@@SNIPEND
+
+UPromptSubsystem* UChallengeWidget::GetPromptSubystem()
+{
+	if (UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance()))
+	{
+		return GameInstance->GetSubsystem<UPromptSubsystem>();
+	}
+
+	return nullptr;
+}

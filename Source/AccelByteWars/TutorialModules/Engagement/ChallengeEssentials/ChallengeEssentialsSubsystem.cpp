@@ -76,45 +76,81 @@ void UChallengeEssentialsSubsystem::GetChallengeGoalList(
     }
 
     // Request to evaluate to update challenge goals progresses.
-    ChallengeApi->EvaluateChallengeProgress(AccelByte::FVoidHandler::CreateWeakLambda(this, [this, ChallengeApi, Challenge, UserId, OnComplete]()
+    FAccelByteModelsChallengeEvaluateProgressOptionalParameter Param
     {
-        // Get the goal list and their progress.
-        ChallengeApi->GetChallengeProgress(
-            Challenge.Code,
-            AccelByte::THandler<FAccelByteModelsChallengeProgressResponse>::CreateWeakLambda(this, [this, Challenge, UserId, OnComplete](const FAccelByteModelsChallengeProgressResponse& Result)
-            {
-                // Construct new goal object and add it to the list.
-                TArray<UChallengeGoalData*> GoalDataList{};
-                for (const FAccelByteModelsChallengeGoalProgress& Progress : Result.Data)
-                {
-                    if (UChallengeGoalData* GoalData = NewObject<UChallengeGoalData>()) 
-                    {
-                        GoalData->Goal = Progress.Goal;
-                        GoalData->Progress = Progress;
-                        GoalData->EndDateTime = (Challenge.Rotation == EAccelByteModelsChallengeRotation::NONE) ? TEXT("") : Result.Meta.Period.EndTime.ToIso8601();
-                        GoalDataList.Add(GoalData);
-                    }
-                }
-
-                // Query reward item information for all goals.
-                QueryRewardItemsInformation(
-                    UserId, 
-                    GoalDataList, 
-                    FOnQueryRewardItemsInformationComplete::CreateWeakLambda(this, [this, OnComplete](bool bWasSuccessful, const FString& ErrorMessage, const TArray<UChallengeGoalData*>& Result)
-                    {
-                        // Operation is complete, return the result.
-                        OnGetChallengeGoalListComplete(bWasSuccessful, ErrorMessage, Result, OnComplete);
-                    }));
-            }),
-            AccelByte::FErrorHandler::CreateWeakLambda(this, [this, OnComplete](int32 ErrorCode, const FString& ErrorMessage)
+        TArray<FString>{ Challenge.Code }
+    };
+    EvaluateChallengeProgress(
+        Param,
+        FOnEvaluateChallengeProgressComplete::CreateWeakLambda(this, [this, ChallengeApi, Challenge, UserId, OnComplete](bool bWasSuccessful, const FString& ErrorMessage)
+        {
+            if (!bWasSuccessful) 
             {
                 OnGetChallengeGoalListComplete(false, ErrorMessage, {}, OnComplete);
-            }));
-    }),
-    AccelByte::FErrorHandler::CreateWeakLambda(this, [this, OnComplete](int32 ErrorCode, const FString& ErrorMessage)
+                return;
+            }
+
+            // Get the goal list and their progress.
+            ChallengeApi->GetChallengeProgress(
+                Challenge.Code,
+                AccelByte::THandler<FAccelByteModelsChallengeProgressResponse>::CreateWeakLambda(this, [this, Challenge, UserId, OnComplete](const FAccelByteModelsChallengeProgressResponse& Result)
+                {
+                    // Construct new goal object and add it to the list.
+                    TArray<UChallengeGoalData*> GoalDataList{};
+                    for (const FAccelByteModelsChallengeGoalProgress& Progress : Result.Data)
+                    {
+                        if (UChallengeGoalData* GoalData = NewObject<UChallengeGoalData>())
+                        {
+                            GoalData->Goal = Progress.Goal;
+                            GoalData->Progress = Progress;
+                            GoalData->EndDateTime = (Challenge.Rotation == EAccelByteModelsChallengeRotation::NONE) ? TEXT("") : Result.Meta.Period.EndTime.ToIso8601();
+                            GoalDataList.Add(GoalData);
+                        }
+                    }
+
+                    // Query reward item information for all goals.
+                    QueryRewardItemsInformation(
+                        UserId,
+                        GoalDataList,
+                        FOnQueryRewardItemsInformationComplete::CreateWeakLambda(this, [this, OnComplete](bool bWasSuccessful, const FString& ErrorMessage, const TArray<UChallengeGoalData*>& Result)
+                        {
+                            // Operation is complete, return the result.
+                            OnGetChallengeGoalListComplete(bWasSuccessful, ErrorMessage, Result, OnComplete);
+                        }));
+                }),
+                AccelByte::FErrorHandler::CreateWeakLambda(this, [this, OnComplete](int32 ErrorCode, const FString& ErrorMessage)
+                {
+                    OnGetChallengeGoalListComplete(false, ErrorMessage, {}, OnComplete);
+                }));
+        }));
+}
+// @@@SNIPEND
+
+// @@@SNIPSTART ChallengeEssentialsSubsystem.cpp-EvaluateChallengeProgress
+void UChallengeEssentialsSubsystem::EvaluateChallengeProgress(
+    const FAccelByteModelsChallengeEvaluateProgressOptionalParameter& Param,
+    const FOnEvaluateChallengeProgressComplete& OnComplete) const
+{
+    const AccelByte::Api::ChallengePtr ChallengeApi = GetChallengeApi();
+    if (!ChallengeApi)
     {
-        OnGetChallengeGoalListComplete(false, ErrorMessage, {}, OnComplete);
-    }));
+        UE_LOG_CHALLENGE_ESSENTIALS(Warning, TEXT("Failed to evaluate challenge progress. Challenge API Client is invalid."));
+        OnComplete.ExecuteIfBound(false, INVALID_CHALLENGE_INTERFACE_MESSAGE.ToString());
+        return;
+    }
+
+    ChallengeApi->EvaluateChallengeProgress(
+        Param,
+        AccelByte::FVoidHandler::CreateWeakLambda(this, [this, OnComplete]()
+        {
+            UE_LOG_CHALLENGE_ESSENTIALS(Log, TEXT("Success to evaluate challenge progress."));
+            OnComplete.ExecuteIfBound(true, TEXT(""));
+        }),
+        AccelByte::FErrorHandler::CreateWeakLambda(this, [this, OnComplete](int32 ErrorCode, const FString& ErrorMessage)
+        {
+            UE_LOG_CHALLENGE_ESSENTIALS(Warning, TEXT("Failed to evaluate challenge progress. Error %d: %s"), ErrorCode, *ErrorMessage);
+            OnComplete.ExecuteIfBound(false, ErrorMessage);
+        }));
 }
 // @@@SNIPEND
 
@@ -361,3 +397,31 @@ FOnlineStoreV2AccelBytePtr UChallengeEssentialsSubsystem::GetStoreInterface() co
     return StaticCastSharedPtr<FOnlineStoreV2AccelByte>(Subsystem->GetStoreV2Interface());
 }
 // @@@SNIPEND
+
+TArray<UTutorialModuleSubsystem::FCheatCommandEntry> UChallengeEssentialsSubsystem::GetCheatCommandEntries()
+{
+    TArray<FCheatCommandEntry> OutArray = {};
+
+    // Evaluate challenge progress by challenge code.
+    OutArray.Add(FCheatCommandEntry(
+        *CommandEvaluateChallengeProgress,
+        TEXT("Evaluet challenge progress by challenge code. Optional param: challenge codes"),
+        FConsoleCommandWithArgsDelegate::CreateUObject(this, &ThisClass::EvaluateChallengeProgress)));
+
+    return OutArray;
+}
+
+void UChallengeEssentialsSubsystem::EvaluateChallengeProgress(const TArray<FString>& Args) const
+{
+    /* Request to evaluate to update challenge goals progresses by challenge code.
+     * If no challenge codes provided, it will evaluate all challenges.*/
+    FAccelByteModelsChallengeEvaluateProgressOptionalParameter Param;
+    if (!Args.IsEmpty())
+    {
+        for (const FString& ChallengeCode : Args) 
+        {
+            Param.ChallengeCodesToEvaluate.Add(ChallengeCode);
+        }
+    }
+    EvaluateChallengeProgress(Param, FOnEvaluateChallengeProgressComplete());
+}

@@ -152,7 +152,12 @@ void UCustomMatchWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTi
 
 void UCustomMatchWidget::OnGameModeTypeSelectionChanged(int32 Index) const
 {
-	W_MaxTeamSelection->SetVisibility(static_cast<EGameModeType>(Index) == EGameModeType::TDM ?
+	const EGameModeType GameMode = static_cast<EGameModeType>(Index);
+	W_MaxTotalPlayerSelection->SetSelection(
+		GameMode == EGameModeType::FFA ? 
+		EliminationMaxPlayerSelection : TeamDeathmatchMaxPlayerSelection, 0);
+	W_MaxTeamSelection->SetVisibility(
+		GameMode == EGameModeType::TDM ?
 		ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 }
 

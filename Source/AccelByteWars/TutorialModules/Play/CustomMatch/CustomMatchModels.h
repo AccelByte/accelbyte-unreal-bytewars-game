@@ -11,3 +11,19 @@
 
 #define TEXT_REQUESTING_SESSION_CREATION NSLOCTEXT("AccelByteWars", "requesting_session_creation", "Requesting Session Creation")
 #define TEXT_FAILED_TO_REQUEST_SESSION_CREATION NSLOCTEXT("AccelByteWars", "failed_to_request_session_creation", "Failed to Request Session Creation")
+
+inline static const TArray<FText>& EliminationMaxPlayerSelection = {
+    FText::FromString(TEXT("2")),
+    FText::FromString(TEXT("4")),
+    FText::FromString(TEXT("6"))
+};
+
+inline static const TArray<FText>& TeamDeathmatchMaxPlayerSelection = {
+    FText::FromString(TEXT("2")),
+    FText::FromString(TEXT("4")),
+    FText::FromString(TEXT("6")),
+    FText::FromString(TEXT("8")),
+    FText::FromString(TEXT("10")),
+    FText::FromString(TEXT("12")),
+    FText::FromString(TEXT("16"))
+};

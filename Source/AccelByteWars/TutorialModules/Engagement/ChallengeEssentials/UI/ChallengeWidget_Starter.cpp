@@ -3,7 +3,9 @@
 // and restrictions contact your company contract manager.
 
 #include "ChallengeWidget_Starter.h"
+#include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
+#include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "Components/ListView.h"
 #include "Components/TextBlock.h"
 #include "CommonButtonBase.h"
@@ -28,6 +30,7 @@ void UChallengeWidget_Starter::NativeOnActivated()
 
 void UChallengeWidget_Starter::NativeOnDeactivated()
 {
+	Btn_ClaimAll->OnClicked().Clear();
 	Btn_Back->OnClicked().Clear();
 
 	Super::NativeOnDeactivated();
@@ -36,4 +39,14 @@ void UChallengeWidget_Starter::NativeOnDeactivated()
 UWidget* UChallengeWidget_Starter::NativeGetDesiredFocusTarget() const
 {
 	return Lv_Challenge->GetListItems().IsEmpty() ? Cast<UWidget>(Btn_Back) : Cast<UWidget>(Lv_Challenge);
+}
+
+UPromptSubsystem* UChallengeWidget_Starter::GetPromptSubystem()
+{
+	if (UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance()))
+	{
+		return GameInstance->GetSubsystem<UPromptSubsystem>();
+	}
+
+	return nullptr;
 }

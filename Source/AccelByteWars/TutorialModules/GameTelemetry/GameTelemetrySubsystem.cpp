@@ -60,35 +60,46 @@ void UGameTelemetrySubsystem::Deinitialize()
 
 void UGameTelemetrySubsystem::OnGameStarted()
 {
-	// Generate info id.
-	CurrentMatchInfoId = FMatchInfoId(FGuid::NewGuid().ToString());
-
 	// Get Online Session.
-	const TSharedPtr<FNamedOnlineSession> NamedOnlineSession = GetGameOnlineSession();
-	if (!NamedOnlineSession)
+	CurrentOnlineSession = GetGameOnlineSession();
+	if (!CurrentOnlineSession)
 	{
+		// Abort if the online session is invalid and the game is not in offline mode.
+		if (GetWorld()->GetNetMode() != ENetMode::NM_Standalone)
+		{
+			UE_LOG_GAME_TELEMETRY(Warning, "Online session is invalid. Event canceled.")
+			return;
+		}
+
 		UE_LOG_GAME_TELEMETRY(Log, "Online session is invalid. Sending event as offline game.")
 	}
 
 	// Construct game mode name.
-	const FString FormattedGameModeString = GetFormattedGameMode(NamedOnlineSession);
+	const FString FormattedGameModeString = GetFormattedGameMode(CurrentOnlineSession);
 	if (FormattedGameModeString.IsEmpty())
 	{
 		UE_LOG_GAME_TELEMETRY(Warning, "Can't retrieve game mode. Please check log prior to this. Canceled.")
 		return;
 	}
+	
+	// Generate info id.
+	CurrentMatchInfoId = FMatchInfoId(FGuid::NewGuid().ToString());
+
 	const FMatchGameMode MatchGameMode = FMatchGameMode(FormattedGameModeString);
 
 	// Send event.
 	const bool bResult = GameStandardEventInterface->SendMatchInfoEvent(
 		LocalUserNum,
 		CurrentMatchInfoId,
-		NamedOnlineSession,
+		CurrentOnlineSession,
 		MatchGameMode);
-	UE_LOG_GAME_TELEMETRY(Log, "Sent succeeded: %s. Match Info ID: %s", *FString(bResult ? TEXT("TRUE") : TEXT("FALSE")), *CurrentMatchInfoId.ToString())
+	UE_LOG_GAME_TELEMETRY(Log, "Sent succeeded: %s. Match ID: %s. Match Info ID: %s", 
+		*FString(bResult ? TEXT("TRUE") : TEXT("FALSE")), 
+		CurrentOnlineSession ? *CurrentOnlineSession->GetSessionIdStr() : TEXT("Offline"),
+		*CurrentMatchInfoId.ToString())
 }
 
-void UGameTelemetrySubsystem::OnGameEnded(const FString& Reason)
+void UGameTelemetrySubsystem::OnGameEnded(const FString& Reason, bool bIsExpected)
 {
 	// Only run if OnGameStarted has been executed.
 	if (CurrentMatchInfoId.IsEmpty())
@@ -107,9 +118,15 @@ void UGameTelemetrySubsystem::OnGameEnded(const FString& Reason)
 	}
 
 	// Get Online Session.
-	const TSharedPtr<FNamedOnlineSession> NamedOnlineSession = GetGameOnlineSession();
-	if (!NamedOnlineSession)
+	if (!CurrentOnlineSession)
 	{
+		// Abort if the online session is invalid and the game is not in offline mode.
+		if (GetWorld()->GetNetMode() != ENetMode::NM_Standalone)
+		{
+			UE_LOG_GAME_TELEMETRY(Warning, "Online session is invalid. Event canceled.")
+			return;
+		}
+
 		UE_LOG_GAME_TELEMETRY(Log, "Online session is invalid. Sending event as offline game.")
 	}
 
@@ -121,6 +138,8 @@ void UGameTelemetrySubsystem::OnGameEnded(const FString& Reason)
 		UE_LOG_GAME_TELEMETRY(Warning, "Current GameState is not AAccelByteWarsGameState, canceled.")
 		return;
 	}
+
+	const FMatchInfoId MatchInfoId = CurrentMatchInfoId;
 	const int32 WinnerTeamId = ByteWarsGameState->GetWinnerTeamId();
 	const FMatchWinner MatchWinner(FString::FromInt(WinnerTeamId));
 
@@ -129,11 +148,15 @@ void UGameTelemetrySubsystem::OnGameEnded(const FString& Reason)
 		LocalUserNum,
 		CurrentMatchInfoId,
 		FMatchEndReason(Reason),
-		NamedOnlineSession,
+		CurrentOnlineSession,
 		MatchWinner);
-	UE_LOG_GAME_TELEMETRY(Log, "Sent succeeded: %s. Match Info ID: %s", *FString(bResult ? TEXT("TRUE") : TEXT("FALSE")), *CurrentMatchInfoId.ToString())
+	UE_LOG_GAME_TELEMETRY(Log, "Sent succeeded: %s. Match ID: %s. Match Info ID: %s", 
+		*FString(bResult ? TEXT("TRUE") : TEXT("FALSE")), 
+		CurrentOnlineSession ? *CurrentOnlineSession->GetSessionIdStr() : TEXT("Offline"),
+		*CurrentMatchInfoId.ToString())
 
-	// Reset stored MatchInfoId.
+	// Reset cache.
+	CurrentOnlineSession = nullptr;
 	CurrentMatchInfoId = FMatchInfoId();
 }
 
@@ -147,15 +170,21 @@ void UGameTelemetrySubsystem::OnPlayerEnteredMatch(const FUniqueNetIdPtr PlayerN
 	}
 
 	// Get Online Session.
-	const TSharedPtr<FNamedOnlineSession> NamedOnlineSession = GetGameOnlineSession();
-	if (!NamedOnlineSession)
+	if (!CurrentOnlineSession)
 	{
+		// Abort if the online session is invalid and the game is not in offline mode.
+		if (GetWorld()->GetNetMode() != ENetMode::NM_Standalone)
+		{
+			UE_LOG_GAME_TELEMETRY(Warning, "Online session is invalid. Event canceled.")
+			return;
+		}
+
 		UE_LOG_GAME_TELEMETRY(Log, "Online session is invalid. Sending event as offline game.")
 	}
 
 	// Get player team.
 	const int32 PlayerTeamId = GetPlayerTeamId(PlayerNetId);
-	if (PlayerTeamId < 0)
+	if (PlayerTeamId <= INDEX_NONE)
 	{
 		UE_LOG_GAME_TELEMETRY(Warning, "Player team ID is invalid. Check log prior to this. Canceled.")
 		return;
@@ -181,9 +210,12 @@ void UGameTelemetrySubsystem::OnPlayerEnteredMatch(const FUniqueNetIdPtr PlayerN
 		LocalUserNum,
 		PlayerAbNetId,
 		CurrentMatchInfoId,
-		NamedOnlineSession,
+		CurrentOnlineSession,
 		MatchTeam);
-	UE_LOG_GAME_TELEMETRY(Log, "Sent succeeded: %s. Match Info ID: %s", *FString(bResult ? TEXT("TRUE") : TEXT("FALSE")), *CurrentMatchInfoId.ToString())
+	UE_LOG_GAME_TELEMETRY(Log, "Sent succeeded: %s. Match ID: %s. Match Info ID: %s", 
+		*FString(bResult ? TEXT("TRUE") : TEXT("FALSE")), 
+		CurrentOnlineSession ? *CurrentOnlineSession->GetSessionIdStr() : TEXT("Offline"),
+		*CurrentMatchInfoId.ToString())
 }
 
 void UGameTelemetrySubsystem::OnEntityDestroyed(

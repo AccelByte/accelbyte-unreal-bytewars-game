@@ -8,13 +8,14 @@
 #include "Core/AssetManager/AccelByteWarsAssetManager.h"
 #include "Core/AssetManager/InGameItems/InGameItemDataAsset.h"
 #include "Core/GameStates/AccelByteWarsInGameGameState.h"
-#include "Core/UI/GameUIManagerSubsystem.h"
+#include "Core/GameModes/AccelByteWarsGameMode.h"
 #include "Core/Player/CommonLocalPlayer.h"
+#include "Core/UI/GameUIManagerSubsystem.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
-#include "GameFramework/OnlineSession.h"
-
 #include "Core/UI/Components/Prompt/FTUE/FTUEDialogueWidget.h"
 #include "Core/UI/AccelByteWarsActivatableWidget.h"
+#include "GameFramework/OnlineSession.h"
+#include "Kismet/GameplayStatics.h"
 
 #pragma region "Lobby Connect/Disconnect using PS Controller"
 #ifdef AGS_LOBBY_CHEAT_ENABLED
@@ -202,6 +203,19 @@ void UAccelByteWarsGameInstance::SaveGameSettings(const APlayerController* Playe
 	const int32 LocalUserNum = LocalPlayer->GetControllerId();
 
 	SaveGameSettings(LocalUserNum);
+}
+
+void UAccelByteWarsGameInstance::GoToMainMenu()
+{
+	UGameplayStatics::OpenLevel(GetWorld(), TEXT("MainMenu"));
+}
+
+void UAccelByteWarsGameInstance::GoToGalaxyWorld()
+{
+	if (const AAccelByteWarsGameMode* GameMode = Cast<AAccelByteWarsGameMode>(GetWorld()->GetAuthGameMode()))
+	{
+		GameMode->DelayedServerTravel("/Game/ByteWars/Maps/GalaxyWorld/GalaxyWorld");
+	}
 }
 
 UAccelByteWarsBaseUI* UAccelByteWarsGameInstance::GetBaseUIWidget(bool bAutoActivate)

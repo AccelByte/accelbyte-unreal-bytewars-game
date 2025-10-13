@@ -5,11 +5,11 @@
 #include "SDKConfigWidget.h"
 
 #include "AccelByteUe4SdkModule.h"
+#include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/Components/AccelByteWarsWidgetSwitcher.h"
 
 #include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
 
-#include "Kismet/GameplayStatics.h"
 #include "Components/EditableText.h"
 #include "CommonButtonBase.h"
 
@@ -142,5 +142,8 @@ void USDKConfigWidget::SaveSdkConfig()
 	UTutorialModuleOnlineUtility::OverrideSDKConfig(ClientSDKConfigs, ServerSDKConfigs);
 
 	// Reload the game.
-	UGameplayStatics::OpenLevel(GetWorld(), TEXT("MainMenu"));
+	if (UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance()))
+	{
+		GameInstance->GoToMainMenu();
+	}
 }

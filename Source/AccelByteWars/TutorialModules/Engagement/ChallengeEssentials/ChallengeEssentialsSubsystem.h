@@ -24,6 +24,7 @@ class ACCELBYTEWARS_API UChallengeEssentialsSubsystem : public UTutorialModuleSu
 // @@@MULTISNIP GetChallengeByPeriod {"selectedLines": ["1-4"]}
 // @@@MULTISNIP GetChallengeGoalList {"selectedLines": ["1", "5-8"]}
 // @@@MULTISNIP ClaimChallengeGoalRewards {"selectedLines": ["1", "9-11"]}
+// @@@MULTISNIP EvaluateChallengeProgress {"selectedLines": ["1", "12-14"]}
 public:
 	void GetChallengeByPeriod(
 		const EAccelByteModelsChallengeRotation Period, 
@@ -35,6 +36,9 @@ public:
 	void ClaimChallengeGoalRewards(
 		const TArray<FString>& RewardIDs, 
 		const FOnClaimChallengeGoalRewardsComplete& OnComplete = FOnClaimChallengeGoalRewardsComplete());
+	void EvaluateChallengeProgress(
+		const FAccelByteModelsChallengeEvaluateProgressOptionalParameter& Param,
+		const FOnEvaluateChallengeProgressComplete& OnComplete = FOnEvaluateChallengeProgressComplete()) const;
 // @@@SNIPEND
 
 // @@@SNIPSTART ChallengeEssentialsSubsystem.h-protected
@@ -71,4 +75,17 @@ private:
 		const TArray<UChallengeGoalData*> Goals,
 		const FOnQueryRewardItemsInformationComplete OnComplete);
 // @@@SNIPEND
+
+#pragma region "CLI Cheat"
+protected:
+	virtual TArray<FCheatCommandEntry> GetCheatCommandEntries() override;
+
+private:
+	const FString CommandEvaluateChallengeProgress = TEXT("ab.challenge.EvaluateChallengeProgress");
+
+	/* @brief Evaluate challenge progress by challenge codes. Can be used via cheat CLI.
+	 * @param Args List of challenge codes. If empty, it will evaluate all challenges. */
+	UFUNCTION()
+	void EvaluateChallengeProgress(const TArray<FString>& Args) const;
+#pragma endregion 
 };

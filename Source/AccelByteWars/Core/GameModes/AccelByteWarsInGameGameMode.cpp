@@ -96,7 +96,7 @@ void AAccelByteWarsInGameGameMode::EndPlay(const EEndPlayReason::Type EndPlayRea
 	// Game ends unexpectedly. Notify game ends here.
 	if (OnGameEndsDelegate.IsBound())
 	{
-		OnGameEndsDelegate.Broadcast(GAME_END_REASON_TERMINATED);
+		OnGameEndsDelegate.Broadcast(GAME_END_REASON_TERMINATED, false);
 	}
 	GAMEMODE_LOG(
 		Log,
@@ -396,7 +396,7 @@ void AAccelByteWarsInGameGameMode::EndGame(const FString Reason)
 
 	if (OnGameEndsDelegate.IsBound())
 	{
-		OnGameEndsDelegate.Broadcast(Reason);
+		OnGameEndsDelegate.Broadcast(Reason, true);
 	}
 
 	GAMEMODE_LOG(Log, TEXT("Game ends with reason: %s."), *Reason);

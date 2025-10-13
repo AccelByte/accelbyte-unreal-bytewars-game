@@ -13,6 +13,7 @@ class UAccelByteWarsWidgetSwitcher;
 class UListView;
 class UTextBlock;
 class UCommonButtonBase;
+class UPromptSubsystem;
 
 UCLASS()
 class ACCELBYTEWARS_API UChallengeWidget_Starter : public UAccelByteWarsActivatableWidget
@@ -32,6 +33,10 @@ protected:
 	// TODO: Add your protected function declarations here.
 #pragma endregion
 
+	UPromptSubsystem* GetPromptSubystem();
+
+	TArray<FString> AllClaimableRewardIds;
+
 	UPROPERTY()
 	UChallengeEssentialsSubsystem_Starter* ChallengeEssentialsSubsystem;
 
@@ -43,6 +48,9 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Tb_Title;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
+	UCommonButtonBase* Btn_ClaimAll;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidgetOptional, BlueprintProtected = true, AllowPrivateAccess = true))
 	UCommonButtonBase* Btn_Back;
