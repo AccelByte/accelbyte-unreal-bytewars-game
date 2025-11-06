@@ -42,6 +42,18 @@ public:
 	static inline FString RegionalCurrencyCode;
 };
 
+UCLASS(Config = Engine, DefaultConfig) // reads/writes from DefaultEngine.ini
+class ACCELBYTEWARS_API UEpicGamesStoreItemConfig : public UObject
+{
+	GENERATED_BODY()
+
+public:
+	// AGS required Audience Item ID, while Game Client can only fetch the OfferId.
+	// Key = AudienceId, Value = OfferId
+	UPROPERTY(Config, EditAnywhere, Category = "Offers")
+	TMap<FString, FString> AudienceOffers;
+};
+
 static inline TArray<TSharedRef<FAccelByteModelsItemMapping>> GooglePlayItemMapping =
 {
 	MakeShared<FAccelByteModelsItemMapping>(FAccelByteModelsItemMapping{

@@ -52,8 +52,14 @@ protected:
 #pragma endregion
 
 #pragma region Module Sync Native Friend List Function Declarations
-	void OnSyncNativePlatformFriendListComplete(int32 LocalUserNum, const FOnlineError& ErrorInfo, const TArray<FAccelByteModelsSyncThirdPartyFriendsResponse>& Response, const FOnSyncNativePlatformFriendListComplete OnComplete);
+	void OnSyncNativePlatformFriendListV2Complete(int32 LocalUserNum, const FOnlineError& ErrorInfo, const TArray<FAccelByteModelsSyncThirdPartyFriendsResponse>& Response, const FOnSyncNativePlatformFriendListComplete OnComplete);
 
 	FDelegateHandle OnSyncThirdPartyPlatformFriendsV2CompleteDelegateHandle;
+
+#if PLATFORM_EOS
+	void OnSyncNativePlatformFriendListV1Complete(int32 LocalUserNum, const FOnlineError& ErrorInfo, const FOnSyncNativePlatformFriendListComplete OnComplete);
+
+	FDelegateHandle OnSyncThirdPartyPlatformFriendsV1CompleteDelegateHandle;
+#endif
 #pragma endregion
 };

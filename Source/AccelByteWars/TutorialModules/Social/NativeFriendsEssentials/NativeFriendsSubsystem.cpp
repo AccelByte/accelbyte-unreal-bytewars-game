@@ -124,7 +124,7 @@ void UNativeFriendsSubsystem::GetNativeFriendList(const APlayerController* PC, c
 
 	const int32 LocalUserNum = GetLocalUserNumFromPlayerController(PC);
 	TArray<TSharedRef<FOnlineFriend>> CachedFriendList;
-	if(NativeFriendsInterface->GetFriendsList(LocalUserNum, TEXT(""), CachedFriendList))
+	if(NativeFriendsInterface->GetFriendsList(LocalUserNum, TEXT("default"), CachedFriendList))
 	{
 		if (CachedFriendList.Num() > 0)
 		{
@@ -140,7 +140,7 @@ void UNativeFriendsSubsystem::GetNativeFriendList(const APlayerController* PC, c
 	{
 		NativeFriendsInterface->ReadFriendsList(
 			LocalUserNum,
-			TEXT(""),
+			TEXT("default"),
 			FOnReadFriendsListComplete::CreateWeakLambda(this, [this, NativeFriendsInterface, OnComplete](int32 LocalUserNum, bool bWasSuccessful, const FString& ListName, const FString& Error)
 			{
 				TArray<TSharedRef<FOnlineFriend>> CachedFriendList;
@@ -171,7 +171,24 @@ void UNativeFriendsSubsystem::QueryUsersByPlatformIds(const int32 LocalUserNum, 
 	TArray<FString> FriendIds;
 	for (const TSharedRef<FOnlineFriend>& Friend : FriendList)
 	{
+#if PLATFORM_EOS
+		FString EpicAccountId, EpicPUID;
+		Friend->GetUserId()->ToString().Split(TEXT("|"), &EpicAccountId, &EpicPUID);
+		if (!EpicAccountId.IsEmpty())
+		{
+			FriendIds.Add(EpicAccountId);
+		}
+		else if (!EpicPUID.IsEmpty())
+		{
+			FriendIds.Add(EpicPUID);
+		}
+		else
+		{
+			FriendIds.Add(Friend->GetUserId()->ToString());
+		}
+#else
 		FriendIds.Add(Friend->GetUserId()->ToString());
+#endif
 	}
 
 	const EAccelBytePlatformType PlatformType = FOnlineSubsystemAccelByteUtils::GetAccelBytePlatformTypeFromAuthType(ABSubsystem->GetNativePlatformNameString());
@@ -190,7 +207,14 @@ void UNativeFriendsSubsystem::OnQueryUsersComplete(bool bIsSuccessful, TArray<FA
 		{
 			FAccelByteLinkedUserInfo* NativeLinkedPlatformInfo = User->LinkedPlatformInfo.FindByPredicate([&NativePlatformName](const FAccelByteLinkedUserInfo& LinkedPlatformInfo)
 			{
-				return LinkedPlatformInfo.Id->GetPlatformType() == NativePlatformName;
+				bool bFound = LinkedPlatformInfo.Id->GetPlatformType() == NativePlatformName;
+#if PLATFORM_EOS
+				if (!bFound)
+				{
+					bFound = LinkedPlatformInfo.Id->GetPlatformType() == TEXT("epicgames");
+				}
+#endif
+				return bFound;
 			});
 
 			if (!NativeLinkedPlatformInfo)
@@ -263,10 +287,18 @@ void UNativeFriendsSubsystem::SyncNativePlatformFriendList(const APlayerControll
 	}
 
 	const int32 LocalUserNum = GetLocalUserNumFromPlayerController(PC);
+#if PLATFORM_EOS
+	FriendsInterface->ClearOnSyncThirdPartyPlatformFriendsCompleteDelegate_Handle(LocalUserNum, OnSyncThirdPartyPlatformFriendsV1CompleteDelegateHandle);
+	OnSyncThirdPartyPlatformFriendsV1CompleteDelegateHandle = FriendsInterface->AddOnSyncThirdPartyPlatformFriendsCompleteDelegate_Handle(
+		LocalUserNum,
+		FOnSyncThirdPartyPlatformFriendsCompleteDelegate::CreateUObject(this, &ThisClass::OnSyncNativePlatformFriendListV1Complete, OnComplete)
+	);
+	FriendsInterface->SyncThirdPartyPlatformFriend(LocalUserNum, TEXT("default"));
+#else
 	FriendsInterface->ClearOnSyncThirdPartyPlatformFriendsV2CompleteDelegate_Handle(LocalUserNum, OnSyncThirdPartyPlatformFriendsV2CompleteDelegateHandle);
 	OnSyncThirdPartyPlatformFriendsV2CompleteDelegateHandle = FriendsInterface->AddOnSyncThirdPartyPlatformFriendsV2CompleteDelegate_Handle(
 		LocalUserNum,
-		FOnSyncThirdPartyPlatformFriendsV2CompleteDelegate::CreateUObject(this, &ThisClass::OnSyncNativePlatformFriendListComplete, OnComplete)
+		FOnSyncThirdPartyPlatformFriendsV2CompleteDelegate::CreateUObject(this, &ThisClass::OnSyncNativePlatformFriendListV2Complete, OnComplete)
 	);
 
 	FAccelByteModelsSyncThirdPartyFriendsRequest Request;
@@ -275,9 +307,10 @@ void UNativeFriendsSubsystem::SyncNativePlatformFriendList(const APlayerControll
 	SyncThirdPartyFriendInfo.PlatformId = ABSubsystem->GetNativePlatformNameString();
 	Request.FriendSyncDetails.Add(SyncThirdPartyFriendInfo);
 	FriendsInterface->SyncThirdPartyPlatformFriendV2(LocalUserNum, Request);
+#endif
 }
 
-void UNativeFriendsSubsystem::OnSyncNativePlatformFriendListComplete(int32 LocalUserNum, const FOnlineError& ErrorInfo, const TArray<FAccelByteModelsSyncThirdPartyFriendsResponse>& Response, const FOnSyncNativePlatformFriendListComplete OnComplete)
+void UNativeFriendsSubsystem::OnSyncNativePlatformFriendListV2Complete(int32 LocalUserNum, const FOnlineError& ErrorInfo, const TArray<FAccelByteModelsSyncThirdPartyFriendsResponse>& Response, const FOnSyncNativePlatformFriendListComplete OnComplete)
 {
 	FriendsInterface->ClearOnSyncThirdPartyPlatformFriendsV2CompleteDelegate_Handle(LocalUserNum, OnSyncThirdPartyPlatformFriendsV2CompleteDelegateHandle);
 
@@ -334,5 +367,45 @@ void UNativeFriendsSubsystem::OnSyncNativePlatformFriendListComplete(int32 Local
 		})
 	);
 }
+
+#if PLATFORM_EOS
+void UNativeFriendsSubsystem::OnSyncNativePlatformFriendListV1Complete(int32 LocalUserNum, const FOnlineError& ErrorInfo, const FOnSyncNativePlatformFriendListComplete OnComplete)
+{
+	FriendsInterface->ClearOnSyncThirdPartyPlatformFriendsCompleteDelegate_Handle(LocalUserNum, OnSyncThirdPartyPlatformFriendsV1CompleteDelegateHandle);
+
+	if (!ErrorInfo.bSucceeded)
+	{
+		UE_LOG_NATIVE_FRIENDS_ESSENTIALS(Warning, TEXT("Failed to sync third party platform friends. ErrorCode: %s. ErrorMessage: %s."), *ErrorInfo.ErrorCode, *ErrorInfo.ErrorMessage.ToString());
+		OnComplete.ExecuteIfBound(false, ErrorInfo.ErrorMessage.ToString());
+		return;
+	}
+
+	const FString NativePlatformName = ABSubsystem->GetNativePlatformNameString();
+	if (NativePlatformName.IsEmpty())
+	{
+		const FString ErrorMessage = TEXT("The native platform name is empty.");
+		UE_LOG_NATIVE_FRIENDS_ESSENTIALS(Warning, TEXT("Failed to sync native friend list. %s"), *ErrorMessage);
+		OnComplete.ExecuteIfBound(false, ErrorMessage);
+		return;
+	}
+
+	FriendsInterface->ReadFriendsList(
+		LocalUserNum,
+		TEXT(""),
+		FOnReadFriendsListComplete::CreateWeakLambda(this, [this, OnComplete](int32 LocalUserNum, bool bWasSuccessful, const FString& ListName, const FString& Error)
+		{
+			if (bWasSuccessful)
+			{
+				OnComplete.ExecuteIfBound(true, TEXT(""));
+			}
+			else
+			{
+				UE_LOG_NATIVE_FRIENDS_ESSENTIALS(Warning, TEXT("Failed to read AccelByte friend list. %s"), *Error);
+				OnComplete.ExecuteIfBound(false, Error);
+			}
+		})
+	);
+}
+#endif
 
 #pragma endregion

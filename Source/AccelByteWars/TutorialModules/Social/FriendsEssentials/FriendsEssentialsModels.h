@@ -14,6 +14,7 @@
 #include "Interfaces/OnlinePresenceInterface.h"
 #include "FriendsEssentialsModels.generated.h"
 
+#define INVALID_SEARCH_FRIEND_KEYWORD_LENGTH_MESSAGE NSLOCTEXT("AccelByteWars", "Invalid search friend keyword length", "Keyword must be between {0} and {1} characters long.")
 #define ALREADY_FRIEND_REASON_MESSAGE NSLOCTEXT("AccelByteWars", "Already friend", "Already friend")
 #define BEEN_INVITED_REASON_MESSAGE NSLOCTEXT("AccelByteWars", "You've been invited", "You've been invited")
 #define ALREADY_INVITED_REASON_MESSAGE NSLOCTEXT("AccelByteWars", "Already invited", "Already invited")

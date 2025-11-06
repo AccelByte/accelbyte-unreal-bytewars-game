@@ -1066,6 +1066,13 @@ void UTutorialModuleOnlineUtility::CacheGeneralInformation(const APlayerControll
 		return;
 	}
 
+	AccelByte::Api::UserPtr UserApi = ApiClient->GetUserApi().Pin();
+	if (!UserApi)
+	{
+		UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Cannot cache general information. User API is invalid."));
+		return;
+	}
+
 	AccelByte::Api::ItemPtr ItemApi = ApiClient->GetItemApi().Pin();
 	if (!ItemApi) 
 	{
@@ -1094,6 +1101,19 @@ void UTutorialModuleOnlineUtility::CacheGeneralInformation(const APlayerControll
 	{
 		CurrentPlayerDisplayName = GetUserDefaultDisplayName(CurrentPlayerUserIdStr);
 	}
+
+	// Cache public system config.
+	UserApi->GetPublicSystemConfigValue(
+		THandler<FIAMPublicSystemConfigResponse>::CreateWeakLambda(this, [this](const FIAMPublicSystemConfigResponse& Result) 
+		{
+			PublicSystemConfig = Result;
+			UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Log, TEXT("Success to cache public system config."));
+		}),
+		FErrorHandler::CreateWeakLambda(this, [](int32 ErrorCode, const FString& ErrorMessage)
+		{
+			UE_LOG_TUTORIAL_MODULE_ONLINE_UTILITY(Warning, TEXT("Failed to cache public system config, use the default value instead. Error %d: %s"), ErrorCode, *ErrorMessage);
+		})
+	);
 
 	// Cache current published store id.
 	ItemApi->GetListAllStores(

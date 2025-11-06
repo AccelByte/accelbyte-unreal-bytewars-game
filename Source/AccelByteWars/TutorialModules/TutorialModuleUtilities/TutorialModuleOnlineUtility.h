@@ -94,6 +94,8 @@ public:
 	static FString GetMatchPoolDSOverride() { return MatchPoolDSOverride; }
 	static FString GetMatchPoolP2POverride() { return MatchPoolP2POverride; }
 
+	static const FIAMPublicSystemConfigResponse& GetPublicSystemConfig() { return PublicSystemConfig; }
+
 private:
 	static void CheckForDedicatedServerVersionOverride();
 
@@ -141,4 +143,6 @@ private:
 	inline static bool bUseAGSStarter = false;
 	inline static bool bUseVersionChecker = true;
 	inline static FString StudioNameAGSStarter = TEXT("");
+
+	inline static FIAMPublicSystemConfigResponse PublicSystemConfig{};
 };

@@ -7,6 +7,7 @@
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "OnlineSubsystemUtils.h"
 #include "TutorialModuleUtilities/StartupSubsystem.h"
+#include "TutorialModuleUtilities/TutorialModuleOnlineUtility.h"
 
 #define LOCTEXT_NAMESPACE "AccelByteWars"
 
@@ -217,6 +218,15 @@ void UFriendsSubsystem::GetSelfFriendCode(const APlayerController* PC, const FOn
 // @@@SNIPSTART FriendsSubsystem.cpp-FindFriend
 void UFriendsSubsystem::FindFriend(const APlayerController* PC, const FString& InKeyword, const FOnFindFriendComplete& OnComplete)
 {
+	const FIAMPublicSystemConfigResponse& PublicSystemConfig = UTutorialModuleOnlineUtility::GetPublicSystemConfig();
+	const int32 MinLen = PublicSystemConfig.SearchQueryMinLength, MaxLen = PublicSystemConfig.SearchQueryMaxLength;
+	if (InKeyword.Len() < MinLen || InKeyword.Len() > MaxLen)
+	{
+		UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Cannot find a friend. Keyword must be between %d and %d characters long."), MinLen, MaxLen);
+		OnComplete.ExecuteIfBound(false, nullptr, FText::Format(INVALID_SEARCH_FRIEND_KEYWORD_LENGTH_MESSAGE, FText::AsNumber(MinLen), FText::AsNumber(MaxLen)).ToString());
+		return;
+	}
+
 	if (!ensure(FriendsInterface) || !ensure(UserInterface))
 	{
 		UE_LOG_FRIENDS_ESSENTIALS(Warning, TEXT("Cannot find a friend. Friends Interface or User Interface is not valid."));

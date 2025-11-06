@@ -5,9 +5,12 @@
 #include "NativePlatformPurchaseSubsystem.h"
 
 #include "Algo/Transform.h"
+#include "Interfaces/OnlineStoreInterfaceV2.h"
+#include "Interfaces/OnlineIdentityInterface.h"
 #include "OnlineStoreInterfaceV2AccelByte.h"
 #include "OnlineEntitlementsInterfaceAccelByte.h"
 #include "OnlinePurchaseInterfaceAccelByte.h"
+#include "OnlineIdentityInterfaceAccelByte.h"
 #include "Monetization/InGameStoreEssentials/UI/ShopWidget.h"
 #include "Monetization/InGameStoreEssentials/InGameStoreEssentialsModel.h"
 
@@ -19,6 +22,12 @@ void UNativePlatformPurchaseSubsystem::Initialize(FSubsystemCollectionBase& Coll
 
 	const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
 	ensure(Subsystem);
+
+	const IOnlineIdentityPtr IdentityPtr = Subsystem->GetIdentityInterface();
+	ensure(IdentityPtr);
+	IdentityInterface = StaticCastSharedPtr<FOnlineIdentityAccelByte>(IdentityPtr);
+	ensure(IdentityInterface);
+
 	const IOnlineStoreV2Ptr StorePtr = Subsystem->GetStoreV2Interface();
 	ensure(StorePtr);
 	StoreInterface = StaticCastSharedPtr<FOnlineStoreV2AccelByte>(StorePtr);
@@ -149,6 +158,9 @@ void UNativePlatformPurchaseSubsystem::CheckoutItem(const APlayerController* Own
 	 * This is necessary because the AccelByte OSS does not natively support this setup.*/
 	CheckoutItemWithGooglePlay(OwningPlayer, CheckoutRequest, StoreItemData->GetIsConsumable());
 	return;
+#elif PLATFORM_EOS
+	CheckoutItemWithEpic(OwningPlayer, CheckoutRequest);
+	return;
 #endif
 
 	const FAccelByteModelsEntitlementSyncBase EntitlementSyncBase = { *NativeProductId };
@@ -212,6 +224,15 @@ void UNativePlatformPurchaseSubsystem::OnQueryItemMappingComplete(
 
 #if PLATFORM_STEAM
 	OnQueryItemMappingCompleted.ExecuteIfBound(GetSteamItemPricing(ItemMappings));
+#elif PLATFORM_EOS
+	if (!GetItemPrices().IsEmpty())
+	{
+		OnQueryItemMappingCompleted.ExecuteIfBound(GetItemPrices());
+	}
+	else
+	{
+		QueryEpicItems(UserId, ItemMappings);
+	}
 #elif PLATFORM_ANDROID
 	// Query native item information from Google Play Games Services (GPGS) if not yet.
 	if (!GetItemPrices().IsEmpty()) 
@@ -432,6 +453,179 @@ void UNativePlatformPurchaseSubsystem::HandleSteamPurchaseOverlay(GameOverlayAct
 			);
 		});
 	}
+}
+#endif
+#pragma endregion
+
+#pragma region "Epic Games Store"
+#if PLATFORM_EOS
+void UNativePlatformPurchaseSubsystem::QueryEpicItems(const FUniqueNetIdPtr UserId, const TArray<TSharedRef<FAccelByteModelsItemMapping>>& ItemMappings)
+{
+	const IOnlineSubsystem* PlatformSubsystem = IOnlineSubsystem::GetByPlatform();
+	if (!PlatformSubsystem)
+	{
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to query native pricing. The native platform subsystem is invalid."));
+		return;
+	}
+
+	IOnlineStoreV2Ptr PlatformStore = PlatformSubsystem->GetStoreV2Interface();
+	if (!PlatformStore)
+	{
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to query native pricing. The native store v2 interface is invalid."));
+		return;
+	}
+
+	IOnlineIdentityPtr PlatformIdentity = PlatformSubsystem->GetIdentityInterface();
+	if (!PlatformIdentity)
+	{
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to query native pricing. The native identity interface is invalid."));
+		return;
+	}
+
+	TArray<FString> OfferIds;
+	const UEpicGamesStoreItemConfig* ItemConfigs = GetDefault<UEpicGamesStoreItemConfig>();
+	if (!ItemConfigs)
+	{
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to query native pricing. Unable to load UEpicGamesStoreItemConfig."));
+		return;
+	}
+
+	for (const TSharedRef<FAccelByteModelsItemMapping>& OfferId : ItemMappings)
+	{
+		if (OfferId->Platform == EAccelBytePlatformMapping::EPIC_GAMES)
+		{
+			OfferIds.Add(ItemConfigs->AudienceOffers[OfferId->PlatformProductId]);
+		}
+	}
+
+	FPlatformUserId PlatformUserId = IdentityInterface->GetPlatformUserIdFromUniqueNetId(UserId.ToSharedRef().Get());
+	ensure(PlatformUserId.IsValid());
+	const int32 LocalUserNum = IdentityInterface->GetLocalUserNumFromPlatformUserId(PlatformUserId);
+
+	FUniqueNetIdPtr PlatformUniqueId = PlatformIdentity->GetUniquePlayerId(LocalUserNum);
+	ensure(PlatformUniqueId.IsValid());
+
+	PlatformStore->QueryOffersById(*PlatformUniqueId, OfferIds, FOnQueryOnlineStoreOffersComplete::CreateUObject(this, &ThisClass::OnEpicQueryOfferCompleted));
+}
+
+void UNativePlatformPurchaseSubsystem::OnEpicQueryOfferCompleted(bool bWasSuccessful, const TArray<FUniqueOfferId>& OfferIds, const FString& Error)
+{
+	if (!bWasSuccessful)
+	{
+		OnQueryItemMappingCompleted.ExecuteIfBound({});
+		return;
+	}
+
+	const IOnlineSubsystem* PlatformSubsystem = IOnlineSubsystem::GetByPlatform();
+	if (!PlatformSubsystem)
+	{
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to query native pricing. The native platform subsystem is invalid."));
+		return;
+	}
+
+	IOnlineStoreV2Ptr PlatformStore = PlatformSubsystem->GetStoreV2Interface();
+	if (!PlatformStore)
+	{
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to query native pricing. The native store v2 interface is invalid."));
+		return;
+	}
+
+	const UEpicGamesStoreItemConfig* ItemConfigs = GetDefault<UEpicGamesStoreItemConfig>();
+	if (!ItemConfigs)
+	{
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to query native pricing. Unable to load UEpicGamesStoreItemConfig."));
+		return;
+	}
+
+	TArray<FOnlineStoreOfferRef> Offers;
+	PlatformStore->GetOffers(Offers);
+
+	TMap<FString, FString> AbItemMapping;
+	for (const TSharedRef<FAccelByteModelsItemMapping>& OfferId : GetItemMapping())
+	{
+		if (OfferId->Platform == EAccelBytePlatformMapping::EPIC_GAMES)
+		{
+			if (const FString* EpicOfferId = ItemConfigs->AudienceOffers.Find(OfferId->PlatformProductId))
+			{
+				AbItemMapping.Add(**EpicOfferId, OfferId->ItemIdentity);
+			}
+		}
+	}
+
+	ItemPriceMap.Empty();
+	for (const FOnlineStoreOfferRef& Offer : Offers)
+	{
+		const FString& PlatformProductId = Offer->OfferId;
+		if (!PlatformProductId.IsEmpty() && AbItemMapping.Contains(PlatformProductId))
+		{
+			ItemPriceMap.Add(AbItemMapping[PlatformProductId], {PlatformProductId, (uint64)Offer->NumericPrice});
+			FNativePlatformPurchaseUtils::RegionalCurrencyCode = Offer->CurrencyCode;
+		}
+	}
+
+	OnQueryItemMappingCompleted.ExecuteIfBound(ItemPriceMap);
+}
+
+void UNativePlatformPurchaseSubsystem::CheckoutItemWithEpic(const APlayerController* OwningPlayer, const FPurchaseCheckoutRequest CheckoutRequest)
+{
+	FString ErrorMessage = TEXT("");
+
+	const IOnlineSubsystem* PlatformSubsystem = IOnlineSubsystem::GetByPlatform();
+	if (!PlatformSubsystem)
+	{
+		ErrorMessage = TEXT("Failed to checkout item using Epic Online Service. Identity interface is invalid.");
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("%s"), *ErrorMessage);
+		OnSyncPurchaseCompleteDelegates.ExecuteIfBound(false, ErrorMessage);
+		return;
+	}
+
+	IOnlinePurchasePtr PlatformPurchase = PlatformSubsystem->GetPurchaseInterface();
+	if (!PlatformPurchase)
+	{
+		ErrorMessage = TEXT("Failed to checkout item using Epic Online Service. Purchase interface is invalid.");
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("%s"), *ErrorMessage);
+		OnSyncPurchaseCompleteDelegates.ExecuteIfBound(false, ErrorMessage);
+		return;
+	}
+
+	const ULocalPlayer* LocalPlayer = OwningPlayer->GetLocalPlayer();
+	if (!LocalPlayer)
+	{
+		ErrorMessage = TEXT("Failed to checkout item using Epic Online Services. Local Player is invalid.");
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("%s"), *ErrorMessage);
+		OnSyncPurchaseCompleteDelegates.ExecuteIfBound(false, ErrorMessage);
+		return;
+	}
+
+	const int32 LocalUserNum = LocalPlayer->GetControllerId();
+	IOnlineIdentityPtr PlatformIdentity = PlatformSubsystem->GetIdentityInterface();
+	const FUniqueNetIdPtr UserId = PlatformIdentity->GetUniquePlayerId(LocalUserNum);
+	if (!UserId)
+	{
+		ErrorMessage = TEXT("Failed to checkout item using Epic Online Services. User ID is invalid.");
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("%s"), *ErrorMessage);
+		OnSyncPurchaseCompleteDelegates.ExecuteIfBound(false, ErrorMessage);
+		return;
+	}
+
+	PlatformPurchase->Checkout(*UserId, CheckoutRequest,
+		FOnPurchaseCheckoutComplete::CreateWeakLambda(this,
+			[this, LocalUserNum, PlatformIdentity]
+			(const FOnlineError& Result, const TSharedRef<FPurchaseReceipt>& Receipt)
+			{
+				if (!Result.bSucceeded)
+				{
+					UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to purchase item using Epic Online Services. Error: %s"), *Result.ErrorMessage.ToString());
+					OnSyncPurchaseCompleteDelegates.ExecuteIfBound(false, Result.ErrorMessage.ToString());
+					return;
+				}
+
+				// Sync Epic Online Services purchase with AccelByte.
+				UE_LOG_NATIVE_PLATFORM_PURCHASE(Log, TEXT("Success to purchase item using Epic Online Services. Synching purchase to AccelByte"));
+				PurchaseSyncState = EPurchaseState::SyncInProgress;
+				EntitlementInterface->SyncPlatformPurchase(LocalUserNum, FAccelByteModelsEntitlementSyncBase{}, OnSyncPurchaseCompleteDelegates);
+			})
+	);
 }
 #endif
 #pragma endregion

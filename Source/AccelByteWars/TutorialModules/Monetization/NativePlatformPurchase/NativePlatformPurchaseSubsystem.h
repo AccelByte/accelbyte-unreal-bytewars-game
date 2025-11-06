@@ -59,6 +59,7 @@ public:
 	FOnQueryItemMappingCompleted OnQueryItemMappingCompleted;
 
 private:
+	FOnlineIdentityAccelBytePtr IdentityInterface;
 	FOnlineStoreV2AccelBytePtr StoreInterface;
 	FOnlineEntitlementsAccelBytePtr EntitlementInterface;
 	FOnlinePurchaseAccelBytePtr PurchaseInterface;
@@ -104,7 +105,17 @@ private:
 	TMap<int32, uint64> SteamItemPrices;
 #endif
 #pragma endregion
-	
+
+#pragma region "Epic Games Store"
+#if PLATFORM_EOS
+	void QueryEpicItems(const FUniqueNetIdPtr UserId, const TArray<TSharedRef<FAccelByteModelsItemMapping>>& ItemMappings);
+	void OnEpicQueryOfferCompleted(bool bWasSuccessful, const TArray<FUniqueOfferId>& OfferIds, const FString& Error);
+	void CheckoutItemWithEpic(
+		const APlayerController* OwningPlayer,
+		const FPurchaseCheckoutRequest CheckoutRequest);
+#endif
+#pragma endregion
+
 #pragma region "Google Play"
 #if PLATFORM_ANDROID
 	void CheckoutItemWithGooglePlay(
@@ -139,6 +150,7 @@ private:
 		{ EAccelBytePlatformType::Steam, EAccelBytePlatformMapping::STEAM },
 		{ EAccelBytePlatformType::Google, EAccelBytePlatformMapping::GOOGLE },
 		{ EAccelBytePlatformType::GooglePlayGames, EAccelBytePlatformMapping::GOOGLE },
+		{ EAccelBytePlatformType::EpicGames, EAccelBytePlatformMapping::EPIC_GAMES },
 	};
 
 	const TArray<EAccelByteItemType> SupportedNativePlatformItem = { EAccelByteItemType::COINS };
