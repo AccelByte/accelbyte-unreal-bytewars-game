@@ -40,7 +40,6 @@ void UMatchmakingP2POnlineSession::RegisterOnlineDelegates()
 	// Matchmaking delegates
 	GetSessionInt()->OnMatchmakingCompleteDelegates.AddUObject(this, &ThisClass::OnMatchmakingComplete);
 	GetSessionInt()->OnCancelMatchmakingCompleteDelegates.AddUObject(this, &ThisClass::OnCancelMatchmakingComplete);
-	GetABSessionInt()->OnBackfillProposalReceivedDelegates.AddUObject(this, &ThisClass::OnBackfillProposalReceived);
 }
 // @@@SNIPEND
 
@@ -63,7 +62,6 @@ void UMatchmakingP2POnlineSession::ClearOnlineDelegates()
 
 	GetSessionInt()->OnMatchmakingCompleteDelegates.RemoveAll(this);
 	GetSessionInt()->OnCancelMatchmakingCompleteDelegates.RemoveAll(this);
-	GetABSessionInt()->OnBackfillProposalReceivedDelegates.RemoveAll(this);
 }
 // @@@SNIPEND
 
@@ -384,32 +382,6 @@ void UMatchmakingP2POnlineSession::OnMatchmakingComplete(FName SessionName, bool
 	}
 
 	OnMatchmakingCompleteDelegates.Broadcast(SessionName, bSucceeded);
-}
-// @@@SNIPEND
-
-// @@@SNIPSTART MatchmakingP2POnlineSession.cpp-OnBackfillProposalReceived
-void UMatchmakingP2POnlineSession::OnBackfillProposalReceived(
-	FAccelByteModelsV2MatchmakingBackfillProposalNotif Proposal)
-{
-	UE_LOG_MATCHMAKINGP2P(Verbose, TEXT("called"))
-
-	// Abort if the session interface is invalid.
-	if (!ensure(GetABSessionInt().IsValid()))
-	{
-		UE_LOG_MATCHMAKINGP2P(Warning, TEXT("Session Interface is not valid."));
-		return;
-	}
-
-	// Accept backfill proposal.
-	GetABSessionInt()->AcceptBackfillProposal(
-		GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession),
-		Proposal,
-		false,
-		FOnAcceptBackfillProposalComplete::CreateWeakLambda(this, [this](bool bSucceeded)
-	{
-		UE_LOG_MATCHMAKINGP2P(Log, TEXT("succeeded: %s To accept backfill."), *FString(bSucceeded ? "TRUE": "FALSE"));
-		OnAcceptBackfillProposalCompleteDelegates.Broadcast(bSucceeded);
-	}));
 }
 // @@@SNIPEND
 

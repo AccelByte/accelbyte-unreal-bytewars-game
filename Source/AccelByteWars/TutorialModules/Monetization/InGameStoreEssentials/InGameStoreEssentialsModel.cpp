@@ -6,6 +6,7 @@
 #include "OnlineStoreInterfaceV2AccelByte.h"
 #include "Core/AssetManager/InGameItems/InGameItemUtility.h"
 #include "Monetization/NativePlatformPurchase/NativePlatformPurchaseModels.h"
+#include "Misc/DateTime.h"
 
 UStoreItemDataObject* FInGameStoreEssentialsUtils::ConvertStoreData(const FOnlineStoreOffer& Offer)
 {
@@ -73,11 +74,16 @@ UStoreItemDataObject* FInGameStoreEssentialsUtils::ConvertStoreData(const FOnlin
 		{
 			for (const FAccelByteModelsItemRegionDataItem& RegionData : OfferAccelByte->RegionData)
 			{
+				const bool bHasDiscount = RegionData.DiscountedPrice > 0;
+				const bool bHasExpireAt = RegionData.DiscountExpireAt.GetTicks() > 0;
+				const bool bDiscountNotExpired = !bHasExpireAt || FDateTime::UtcNow() <= RegionData.DiscountExpireAt;
+				const int64 FinalPrice = (bHasDiscount && bDiscountNotExpired) ? RegionData.DiscountedPrice : RegionData.Price;
+
 				UStoreItemPriceDataObject* PriceData = NewObject<UStoreItemPriceDataObject>();
 				PriceData->Setup(
 					FPreConfigCurrency::GetTypeFromCode(RegionData.CurrencyCode),
 					RegionData.Price,
-					RegionData.DiscountedPrice);
+					FinalPrice);
 
 				Prices.Add(PriceData);
 			}

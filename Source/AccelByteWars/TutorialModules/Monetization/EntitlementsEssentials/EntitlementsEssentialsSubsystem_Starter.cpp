@@ -5,13 +5,12 @@
 
 #include "EntitlementsEssentialsSubsystem_Starter.h"
 
-#include "EntitlementsEssentialsLog.h"
 #include "OnlineSubsystemUtils.h"
+#include "Monetization/InGameStoreEssentials/UI/ShopWidget.h"
+#include "Monetization/InGameStoreEssentials/InGameStoreEssentialsSubsystem_Starter.h"
 #include "Core/AssetManager/InGameItems/InGameItemDataAsset.h"
-#include "TutorialModules/Monetization/InGameStoreEssentials/UI/ShopWidget.h"
 #include "Core/Player/AccelByteWarsPlayerPawn.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
-#include "Monetization/InGameStoreEssentials/InGameStoreEssentialsSubsystem_Starter.h"
 
 #define STORE_SUBSYSTEM_CLASS UInGameStoreEssentialsSubsystem_Starter
 
@@ -19,34 +18,32 @@ void UEntitlementsEssentialsSubsystem_Starter::Initialize(FSubsystemCollectionBa
 {
 	Super::Initialize(Collection);
 
-	const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+	const FOnlineSubsystemAccelByte* Subsystem = static_cast<const FOnlineSubsystemAccelByte*>(Online::GetSubsystem(GetWorld()));
 	if (!ensure(Subsystem))
 	{
 		return;
 	}
 
+	IdentityInterface = StaticCastSharedPtr<FOnlineIdentityAccelByte>(Subsystem->GetIdentityInterface());
+	CloudSaveInterface = StaticCastSharedPtr<FOnlineCloudSaveAccelByte>(Subsystem->GetCloudSaveInterface());
 	EntitlementsInterface = StaticCastSharedPtr<FOnlineEntitlementsAccelByte>(Subsystem->GetEntitlementsInterface());
-	if (!ensure(EntitlementsInterface)) 
+	if (!ensure(IdentityInterface) || !ensure(CloudSaveInterface) || !ensure(EntitlementsInterface))
 	{
 		return;
 	}
 
-#pragma region "Tutorial"
-	// Put your code here.
-#pragma endregion 
+	// TODO: Add your code here.
 }
 
 void UEntitlementsEssentialsSubsystem_Starter::Deinitialize()
 {
 	Super::Deinitialize();
 
-#pragma region "Tutorial"
-	// Put your code here.
-#pragma endregion 
+	// TODO: Add your code here.
 }
 
-#pragma region "Tutorial"
-// Put your code here.
+#pragma region Module Entitlement Essentials Function Definitions
+// TODO: Add your function definitions here.
 #pragma endregion
 
 #pragma region "Utilities"
@@ -68,7 +65,7 @@ UStoreItemDataObject* UEntitlementsEssentialsSubsystem_Starter::EntitlementToDat
 	Item->Setup(Entitlement.Get());
 
 	// Byte Wars specifics, used to hide the prices on the UI
-	Item->SetShouldShowPrices(false);
+	Item->SetIsShowPrices(false);
 
 	for (const UStoreItemDataObject* Offer : StoreOffers)
 	{
@@ -80,23 +77,6 @@ UStoreItemDataObject* UEntitlementsEssentialsSubsystem_Starter::EntitlementToDat
 	}
 
 	return Item;
-}
-
-FUniqueNetIdPtr UEntitlementsEssentialsSubsystem_Starter::GetLocalPlayerUniqueNetId(
-	const APlayerController* PlayerController) const
-{
-	if (!PlayerController) 
-	{
-		return nullptr;
-	}
-
-	const ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer();
-	if (!LocalPlayer)
-	{
-		return nullptr;
-	}
-
-	return LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId();
 }
 #pragma endregion 
 

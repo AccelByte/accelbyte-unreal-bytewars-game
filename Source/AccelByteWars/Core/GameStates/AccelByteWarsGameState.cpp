@@ -446,13 +446,9 @@ bool AAccelByteWarsGameState::AddPlayerToTeam(
 		// Set default player name based on the player index in the teams.
 		if (GetNetMode() == ENetMode::NM_Standalone) 
 		{
-			int32 PlayerIndex = TargetTeam->TeamMembers.Num();
+			int32 PlayerIndex = 0;
 			for (const FGameplayTeamData& Team : Teams)
 			{
-				if (Team.TeamId == TeamId)
-				{
-					break;
-				}
 				PlayerIndex += Team.TeamMembers.Num();
 			}
 

@@ -6,7 +6,6 @@
 
 #include <algorithm>
 
-#include "Core/Actor/AccelByteWarsFxActor.h"
 #include "Core/Player/AccelByteWarsPlayerPawn.h"
 #include "Core/Components/AccelByteWarsGameplayObjectComponent.h"
 #include "Core/Player/AccelByteWarsBotController.h"
@@ -548,12 +547,9 @@ void AAccelByteWarsInGameGameMode::OnShipDestroyed(
 void AAccelByteWarsInGameGameMode::OnMissileDestroyed_Implementation(FVector Location,
 	UAccelByteWarsGameplayObjectComponent* HitObject, FLinearColor MissileColour, AActor* MissileOwner)
 {
-	FActorSpawnParameters Parameters;
-	Parameters.Owner = MissileOwner;
-	AAccelByteWarsFxActor* FxActor = GetWorld()->SpawnActor<AAccelByteWarsFxActor>(DestroyedFxActor, Location, FRotator::ZeroRotator, Parameters);
-	if (FxActor)
+	if (ABInGameGameState) 
 	{
-		FxActor->SetNiagaraFxColor(MissileColour);
+		ABInGameGameState->MulticastSpawnExplosionFx(Location, MissileColour, MissileOwner);
 	}
 }
 
@@ -617,13 +613,11 @@ void AAccelByteWarsInGameGameMode::RemoveFromActiveGameObjects(AActor* Destroyed
 void AAccelByteWarsInGameGameMode::OnShipDestroyedFX_Implementation(AController* SourcePlayerController,
 	const FTransform ShipTransform, AAccelByteWarsPlayerState* ShipPlayerState)
 {
-	FActorSpawnParameters SpawnParameters;
-	SpawnParameters.Owner = ShipPlayerState->GetOwningController();
-	AAccelByteWarsFxActor* DestroyFx = GetWorld()->SpawnActor<AAccelByteWarsFxActor>(ShipDestroyFxClass, ShipTransform, SpawnParameters);
-	if (DestroyFx)
+	if (ABInGameGameState)
 	{
-		DestroyFx->SetNiagaraFxColor(ShipPlayerState->TeamColor);
+		ABInGameGameState->MulticastSpawnExplosionFx(ShipTransform.GetLocation(), ShipPlayerState->TeamColor, ShipPlayerState->GetOwningController());
 	}
+
 	if (AAccelByteWarsPlayerPawn* DestroyedPawn = Cast<AAccelByteWarsPlayerPawn>(ShipPlayerState->GetOwner()))
 	{
 		DestroyedPawn->PulseCameraBackground();
@@ -802,11 +796,6 @@ AAccelByteWarsPlayerPawn* AAccelByteWarsInGameGameMode::CreateShipPawn(const FVe
 	if (ABGameInstance == nullptr)
 		return nullptr;
 
-	// Can be bot
-	// AAccelByteWarsPlayerController* ABPlayerController = Cast<AAccelByteWarsPlayerController>(PlayerController);
-	// if (ABPlayerController == nullptr)
-	// 	return nullptr;
-
 	APlayerState* PlayerState = Controller->PlayerState;
 	if (PlayerState == nullptr)
 		return nullptr;
@@ -828,13 +817,18 @@ void AAccelByteWarsInGameGameMode::FillEmptySlotWithBot()
 	if (CurrentPlayers < MaxPlayers)
 	{
 		const int32 BotsNeeded = MaxPlayers - CurrentPlayers;
-
-		for (int32 i = 0; i < BotsNeeded; ++i)
+		for (int32 Index = 0; Index < BotsNeeded; ++Index)
 		{
-			// Create bot controller
 			AAccelByteWarsBotController* BotController = GetWorld()->SpawnActor<AAccelByteWarsBotController>(AAccelByteWarsBotController::StaticClass());
-			BotController->InitPlayerState();
-			ABInGameGameState->AddPlayerState(BotController->PlayerState);
+			if (!BotController) 
+			{
+				continue;
+			}
+			
+			const FString BotId = FString::Printf(TEXT("BOT %d"), Index);
+			const FUniqueNetIdRef UniqueIdRef = FUniqueNetIdString::Create(BotId, FName(TEXT("BOT")));
+			BotController->PlayerState->SetUniqueId(FUniqueNetIdRepl(UniqueIdRef));
+
 			PlayerTeamSetup(BotController);
 		}
 	}
@@ -990,41 +984,115 @@ FVector AAccelByteWarsInGameGameMode::FindGoodPlayerPosition(APlayerState* Playe
 		return Position;
 	}
 
-	// Quadrant based spawning, play area divided into 4 quadrants, and quadrant can only occupied by one ship
-	const float HalfWidth = FMath::Abs(ABInGameGameState->MaxGameBound.X - ABInGameGameState->MinGameBound.X) / 2.0f;
-	const float HalfHeight = FMath::Abs(ABInGameGameState->MaxGameBound.Y - ABInGameGameState->MinGameBound.Y) / 2.0f;
+	// Quadrant based spawning for the first four teams, with additional center slots for teams five to eight.
+	const FVector2D& MinGameBound = ABInGameGameState->MinGameBound;
+	const FVector2D& MaxGameBound = ABInGameGameState->MaxGameBound;
+	const float HalfWidth = FMath::Abs(MaxGameBound.X - MinGameBound.X) / 2.0f;
+	const float HalfHeight = FMath::Abs(MaxGameBound.Y - MinGameBound.Y) / 2.0f;
+	const float CenterX = MinGameBound.X + HalfWidth;
+	const float CenterY = MinGameBound.Y + HalfHeight;
+	const float QuarterWidth = HalfWidth / 2.0f;
+	const float QuarterHeight = HalfHeight / 2.0f;
 
-	// Quadrant balancing, make sure that the second player will be spawned diagonal to the first one
-	constexpr int QuadrantIndices[4] = { 0, 3, 2, 1 };
+	// Balanced spawn ordering keeps early teams spread diagonally while allowing up to eight slots.
+	constexpr int32 SpawnIndices[] = { 0, 3, 2, 1, 4, 6, 5, 7 };
+	constexpr int32 MaxSupportedTeams = UE_ARRAY_COUNT(SpawnIndices);
+	if (ABPlayerState->TeamId < 0)
+	{
+		GAMEMODE_LOG(Warning, TEXT("TeamId is negative (%d), returning 0,0 as spawn location."), ABPlayerState->TeamId);
+		return Position;
+	}
 
-	switch (QuadrantIndices[ABPlayerState->TeamId])
+	const int32 TeamSlot = SpawnIndices[ABPlayerState->TeamId % MaxSupportedTeams];
+	if (ABPlayerState->TeamId >= MaxSupportedTeams)
+	{
+		GAMEMODE_LOG(
+			Warning,
+			TEXT("TeamId %d exceeds supported team count %d. Using slot %d."),
+			ABPlayerState->TeamId,
+			MaxSupportedTeams,
+			TeamSlot);
+	}
+
+	switch (TeamSlot)
 	{
 		case 0: // Top-Left Quadrant
-			MinBound.X = ABInGameGameState->MinGameBound.X;
-			MinBound.Y = ABInGameGameState->MinGameBound.Y + HalfHeight + SafeZone;
-			MaxBound.X = ABInGameGameState->MaxGameBound.X - HalfWidth - SafeZone;
-			MaxBound.Y = ABInGameGameState->MaxGameBound.Y;
+			MinBound.X = MinGameBound.X;
+			MinBound.Y = MinGameBound.Y + HalfHeight + SafeZone;
+			MaxBound.X = MaxGameBound.X - HalfWidth - SafeZone;
+			MaxBound.Y = MaxGameBound.Y;
 			break;
 		case 1: // Top-Right Quadrant
-			MinBound.X = ABInGameGameState->MinGameBound.X + HalfWidth + SafeZone;
-			MinBound.Y = ABInGameGameState->MinGameBound.Y + HalfHeight + SafeZone;
-			MaxBound.X = ABInGameGameState->MaxGameBound.X;
-			MaxBound.Y = ABInGameGameState->MaxGameBound.Y;
+			MinBound.X = MinGameBound.X + HalfWidth + SafeZone;
+			MinBound.Y = MinGameBound.Y + HalfHeight + SafeZone;
+			MaxBound.X = MaxGameBound.X;
+			MaxBound.Y = MaxGameBound.Y;
 			break;
 		case 2: // Bottom-Left Quadrant
-			MinBound.X = ABInGameGameState->MinGameBound.X;
-			MinBound.Y = ABInGameGameState->MinGameBound.Y;
-			MaxBound.X = ABInGameGameState->MaxGameBound.X - HalfWidth - SafeZone;
-			MaxBound.Y = ABInGameGameState->MaxGameBound.Y - HalfHeight - SafeZone;
+			MinBound.X = MinGameBound.X;
+			MinBound.Y = MinGameBound.Y;
+			MaxBound.X = MaxGameBound.X - HalfWidth - SafeZone;
+			MaxBound.Y = MaxGameBound.Y - HalfHeight - SafeZone;
 			break;
 		case 3: // Bottom-Right Quadrant
-			MinBound.X = ABInGameGameState->MinGameBound.X + HalfWidth + SafeZone;
-			MinBound.Y = ABInGameGameState->MinGameBound.Y;
-			MaxBound.X = ABInGameGameState->MaxGameBound.X;
-			MaxBound.Y = ABInGameGameState->MaxGameBound.Y - HalfHeight - SafeZone;
+			MinBound.X = MinGameBound.X + HalfWidth + SafeZone;
+			MinBound.Y = MinGameBound.Y;
+			MaxBound.X = MaxGameBound.X;
+			MaxBound.Y = MaxGameBound.Y - HalfHeight - SafeZone;
+			break;
+		case 4: // Top-Center
+			MinBound.X = FMath::Max(MinGameBound.X + SafeZone, CenterX - QuarterWidth);
+			MinBound.Y = CenterY + SafeZone;
+			MaxBound.X = FMath::Min(MaxGameBound.X - SafeZone, CenterX + QuarterWidth);
+			MaxBound.Y = MaxGameBound.Y;
+			break;
+		case 5: // Right-Center
+			MinBound.X = CenterX + SafeZone;
+			MinBound.Y = FMath::Max(MinGameBound.Y + SafeZone, CenterY - QuarterHeight);
+			MaxBound.X = MaxGameBound.X;
+			MaxBound.Y = FMath::Min(MaxGameBound.Y - SafeZone, CenterY + QuarterHeight);
+			break;
+		case 6: // Bottom-Center
+			MinBound.X = FMath::Max(MinGameBound.X + SafeZone, CenterX - QuarterWidth);
+			MinBound.Y = MinGameBound.Y;
+			MaxBound.X = FMath::Min(MaxGameBound.X - SafeZone, CenterX + QuarterWidth);
+			MaxBound.Y = CenterY - SafeZone;
+			break;
+		case 7: // Left-Center
+			MinBound.X = MinGameBound.X;
+			MinBound.Y = FMath::Max(MinGameBound.Y + SafeZone, CenterY - QuarterHeight);
+			MaxBound.X = CenterX - SafeZone;
+			MaxBound.Y = FMath::Min(MaxGameBound.Y - SafeZone, CenterY + QuarterHeight);
 			break;
 		default:;
 	}
+
+	// Ensure bounds remain valid even if SafeZone or play area sizes become restrictive.
+	const float LocalSafeZone = SafeZone;
+	const auto AdjustBounds = [LocalSafeZone](double& MinValue, double& MaxValue, double GlobalMin, double GlobalMax)
+	{
+		MinValue = FMath::Clamp(MinValue, GlobalMin, GlobalMax);
+		MaxValue = FMath::Clamp(MaxValue, GlobalMin, GlobalMax);
+
+		if (MinValue >= MaxValue)
+		{
+			const double AdjustedMin = GlobalMin + LocalSafeZone;
+			const double AdjustedMax = GlobalMax - LocalSafeZone;
+			if (AdjustedMin < AdjustedMax)
+			{
+				MinValue = AdjustedMin;
+				MaxValue = AdjustedMax;
+			}
+			else
+			{
+				MinValue = GlobalMin;
+				MaxValue = GlobalMax;
+			}
+		}
+	};
+
+	AdjustBounds(MinBound.X, MaxBound.X, MinGameBound.X, MaxGameBound.X);
+	AdjustBounds(MinBound.Y, MaxBound.Y, MinGameBound.Y, MaxGameBound.Y);
 
 	// pseudo-randomizer
 	const TArray<FVector> ActiveGameObjectsCoords = GetActiveGameObjectsPosition();

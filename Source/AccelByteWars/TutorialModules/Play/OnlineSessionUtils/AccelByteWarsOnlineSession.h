@@ -224,10 +224,6 @@ public:
 	{
 		return &OnCancelMatchmakingCompleteDelegates;
 	}
-	virtual FOnMatchmakingAcceptBackfillProposalComplete* GetOnAcceptBackfillProposalCompleteDelegates() override
-	{
-		return &OnAcceptBackfillProposalCompleteDelegates;
-	}
 
 protected:
 	virtual void OnStartMatchmakingComplete(
@@ -237,7 +233,6 @@ protected:
 	virtual void OnCancelMatchmakingComplete(FName SessionName, bool bSucceeded) override;
 
 	virtual void OnMatchmakingComplete(FName SessionName, bool bSucceeded) override;
-	virtual void OnBackfillProposalReceived(FAccelByteModelsV2MatchmakingBackfillProposalNotif Proposal) override;
 
 private:
 	TMap<TTuple<EGameModeNetworkType, EGameModeType, EGameStyle>, FString> MatchmakingPoolIdMap = {
@@ -254,7 +249,6 @@ private:
 	FOnMatchmakingResponse OnStartMatchmakingCompleteDelegates;
 	FOnMatchmakingResponse OnMatchmakingCompleteDelegates;
 	FOnMatchmakingResponse OnCancelMatchmakingCompleteDelegates;
-	FOnMatchmakingAcceptBackfillProposalComplete OnAcceptBackfillProposalCompleteDelegates;
 
 	void OnLeaveSessionForReMatchmakingComplete(
 		FName SessionName,

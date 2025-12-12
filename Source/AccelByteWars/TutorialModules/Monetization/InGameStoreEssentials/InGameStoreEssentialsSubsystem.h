@@ -24,16 +24,16 @@ class ACCELBYTEWARS_API UInGameStoreEssentialsSubsystem : public UTutorialModule
 // @@@MULTISNIP QueryStoreItems {"selectedLines": ["1-10"]}
 public:
 	void GetOrQueryOffersByCategory(
-		const APlayerController* PlayerController,
+		const FUniqueNetIdPtr UserId,
 		const FString& Category,
 		FOnGetOrQueryOffersByCategory OnComplete,
 		bool bForceRefresh = false);
 	void GetOrQueryOfferById(
-		const APlayerController* PlayerController,
+		const FUniqueNetIdPtr UserId,
 		const FUniqueOfferId& OfferId,
 		FOnGetOrQueryOfferById OnComplete);
 	void GetOrQueryCategoriesByRootPath(
-		const APlayerController* PlayerController,
+		const FUniqueNetIdPtr UserId,
 		const FString& RootPath,
 		FOnGetOrQueryCategories OnComplete,
 		bool bForceRefresh = false);
@@ -41,7 +41,6 @@ public:
 
 // @@@SNIPSTART InGameStoreEssentialsSubsystem.h-private
 // @@@MULTISNIP StoreInterface {"selectedLines": ["1-2"]}
-// @@@MULTISNIP GetUniqueNetIdFromPlayerController {"selectedLines": ["1", "22"]}
 // @@@MULTISNIP CategoriesDelegate {"selectedLines": ["1", "6"]}
 // @@@MULTISNIP CategoriesIndication {"selectedLines": ["1", "17"]}
 // @@@MULTISNIP CategoriesFunction {"selectedLines": ["1", "15", "18-19"]}
@@ -67,9 +66,5 @@ private:
 	bool bIsQueryCategoriesRunning = false;
 	void QueryCategories(const FUniqueNetIdPtr UserId);
 	void OnQueryCategoriesComplete(bool bWasSuccessful, const FString& Error);
-
-#pragma region "Utilities"
-	FUniqueNetIdPtr GetUniqueNetIdFromPlayerController(const APlayerController* PlayerController) const;
-#pragma endregion
 // @@@SNIPEND
 };

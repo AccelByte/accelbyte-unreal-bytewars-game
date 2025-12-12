@@ -9,6 +9,8 @@
 #include "AccelByteWarsInGameGameState.generated.h"
 
 class UAccelByteWarsGameplayObjectComponent;
+class AAccelByteWarsFxActor;
+class UInGameItemDataAsset;
 
 #pragma region "Structs, Enums, and Delegates declaration"
 DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnPlayerDieDelegate, const AAccelByteWarsPlayerState* /*DeathPlayer*/, const FVector /*DeathLocation*/, const AAccelByteWarsPlayerState* /*Killer*/);
@@ -41,6 +43,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	bool HasGameEnded() const;
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastSpawnExplosionFx(const FVector Location, const FLinearColor Color, AActor* OwnerActor);
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastOnPlayerDie(const AAccelByteWarsPlayerState* DeathPlayer, const FVector DeathLocation, const AAccelByteWarsPlayerState* Killer);
@@ -95,6 +100,14 @@ public:
 	static inline FOnPlayerDieDelegate OnPlayerDieDelegate;
 
 protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TSubclassOf<AAccelByteWarsFxActor> ExplosionFxActorClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<UInGameItemDataAsset> DefaultExplosionFxAsset;
+
+	TObjectPtr<UInGameItemDataAsset> ExplosionFxAsset;
+
 	/**
 	 * @brief The maximum "play area". In which object can still exist. If exceeds, object needs to destroy itself.
 	 */

@@ -27,6 +27,17 @@ void UAccelByteWarsAsyncImageWidget::LoadImage(const FString& ImageUrl)
 		SetImageTint(FLinearColor::White);
 		Ws_Root->SetActiveWidget(B_Loaded);
 	}
+	// Try to get avatar from absolute file path.
+	else if (UTexture2D* LocalAsset = LoadObject<UTexture2D>(GetTransientPackage(), *ImageUrl))
+	{
+		FSlateBrush Brush;
+		Brush.SetResourceObject(LocalAsset);
+		Brush.ImageSize = FVector2D(LocalAsset->GetSizeX(), LocalAsset->GetSizeY());
+
+		B_Loaded->SetBrush(Brush);
+		SetImageTint(FLinearColor::White);
+		Ws_Root->SetActiveWidget(B_Loaded);
+	}
 	// Set avatar image from URL if it is not exists in cache.
 	else if (!ImageUrl.IsEmpty())
 	{

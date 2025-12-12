@@ -30,8 +30,4 @@ private:
 #pragma region "Tutorial"
 	// Put your code here.
 #pragma endregion 
-
-#pragma region "Utilities"
-	FUniqueNetIdPtr GetUniqueNetIdFromPlayerController(const APlayerController* PlayerController) const;
-#pragma endregion
 };

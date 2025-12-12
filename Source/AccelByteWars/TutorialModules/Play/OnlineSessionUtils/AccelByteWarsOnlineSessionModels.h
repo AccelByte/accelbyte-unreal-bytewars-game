@@ -25,7 +25,6 @@ DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnServerSessionUpdateReceived, const FNa
 
 #pragma region "Matchmaking Session Essentials"
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnMatchmakingResponse, FName /*SessionName*/, bool /*bSucceeded*/);
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnMatchmakingAcceptBackfillProposalComplete, bool /*bWasSuccessful*/);
 #pragma endregion
 
 #pragma region "Match Session Essentials"

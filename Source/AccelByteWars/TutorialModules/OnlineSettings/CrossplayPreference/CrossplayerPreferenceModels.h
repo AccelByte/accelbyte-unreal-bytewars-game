@@ -10,3 +10,5 @@ DECLARE_DELEGATE_OneParam(FOnUpdateCrossplayPreferenceCompleted, bool /*bSucceed
 #define TEXT_LOADING NSLOCTEXT("AccelByteWars", "Loading", "Loading")
 #define TEXT_SAVING NSLOCTEXT("AccelByteWars", "Saving", "Saving")
 #define TEXT_CROSSPLAY_CHECKBOX_NAME NSLOCTEXT("AccelByteWars", "Crossplay enabled", "Enable crossplay matchmaking")
+
+#define CROSSPLAY_PREF_KEY TEXT("CrossplayPreference")

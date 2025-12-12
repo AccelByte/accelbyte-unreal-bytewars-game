@@ -9,13 +9,13 @@
 #include "Monetization/EntitlementsEssentials/EntitlementsEssentialsSubsystem_Starter.h"
 #include "Core/UI/MainMenu/Store/Components/StoreItemListEntry.h"
 
-#include "Monetization/EntitlementsEssentials/UI/InventoryWidget_Starter.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "Monetization/StoreItemPurchase/UI/ItemPurchaseWidget.h"
 #include "Monetization/StoreItemPurchase/UI/ItemPurchaseWidget_Starter.h"
+#include "Monetization/EntitlementsEssentials/UI/EquipmentInventoryWidget.h"
 
-#define PARENT_WIDGET_CLASS UInventoryWidget_Starter
+#define PARENT_WIDGET_CLASS UEquipmentInventoryWidget
 
 void UOwnedCountWidgetEntry_Starter::NativeOnActivated()
 {
@@ -36,44 +36,6 @@ void UOwnedCountWidgetEntry_Starter::NativeOnDeactivated()
 #pragma region "Tutorial"
 	// Put your code here.
 #pragma endregion 
-}
-
-void UOwnedCountWidgetEntry_Starter::CheckItemEquipped()
-{
-	// Only if currently on inventory menu
-	if (!GetFirstOccurenceOuter<PARENT_WIDGET_CLASS>())
-	{
-		return;
-	}
-
-	const UStoreItemListEntry* ParentWidget = GetFirstOccurenceOuter<UStoreItemListEntry>();
-	if (!ParentWidget)
-	{
-		return;
-	}
-
-	const UStoreItemDataObject* Item = ParentWidget->GetItemData();
-	if (!Item)
-	{
-		return;
-	}
-
-	// Highlight the entitlement item if it is equipped and inside the inventory menu
-	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
-	if (!GameInstance)
-	{
-		return;
-	}
-
-	bool bEquipped = false;
-	if (!Item->GetSkuMap().IsEmpty() && Item->GetSkuMap().Find(EItemSkuPlatform::AccelByte))
-	{
-		bEquipped = GameInstance->IsItemEquippedBySku(
-			GetOwningPlayer()->GetLocalPlayer()->GetControllerId(),
-			EItemSkuPlatform::AccelByte,
-			Item->GetSkuMap()[EItemSkuPlatform::AccelByte]);
-	}
-	W_Parent->Execute_ToggleHighlight(W_Parent, bEquipped);
 }
 
 #pragma region "Tutorial"

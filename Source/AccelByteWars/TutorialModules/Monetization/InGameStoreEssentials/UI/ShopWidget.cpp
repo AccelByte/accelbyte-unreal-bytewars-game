@@ -15,9 +15,9 @@
 #include "Core/UI/MainMenu/Store/StoreItemModel.h"
 
 // @@@SNIPSTART ShopWidget.cpp-NativeOnActivated
-// @@@MULTISNIP Subsystem {"selectedLines": ["1-2", "8-9", "27"]}
-// @@@MULTISNIP Setup {"selectedLines": ["1-2", "11-16", "18-19", "26-27"], "highlightedLines": "{6-11}"}
-// @@@MULTISNIP Combine {"selectedLines": ["1-2", "18-24", "26-27"], "highlightedLines": "{7-10}"}
+// @@@MULTISNIP Subsystem {"selectedLines": ["1-2", "8-9", "30"]}
+// @@@MULTISNIP Setup {"selectedLines": ["1-2", "11-16", "18-19", "29-30"], "highlightedLines": "{6-11}"}
+// @@@MULTISNIP Combine {"selectedLines": ["1-2", "18-27", "29-30"], "highlightedLines": "{7-10}"}
 void UShopWidget::NativeOnActivated()
 {
 	// Widget will load the FTUE later after finished loading store items. 
@@ -38,10 +38,13 @@ void UShopWidget::NativeOnActivated()
 	// Reset UI.
 	SwitchContent(EAccelByteWarsWidgetSwitcherState::Loading);
 
-	StoreSubsystem->GetOrQueryCategoriesByRootPath(
-		GetOwningPlayer(),
-		RootPath,
-		FOnGetOrQueryCategories::CreateUObject(this, &ThisClass::OnGetOrQueryCategoriesComplete));
+	if (const ULocalPlayer* LocalPlayer = GetOwningPlayer()->GetLocalPlayer())
+	{
+		StoreSubsystem->GetOrQueryCategoriesByRootPath(
+			LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId(),
+			RootPath,
+			FOnGetOrQueryCategories::CreateUObject(this, &ThisClass::OnGetOrQueryCategoriesComplete));
+	}
 
 	OnActivatedMulticastDelegate.Broadcast(GetOwningPlayer());
 }
@@ -89,9 +92,15 @@ void UShopWidget::OnGetOrQueryCategoriesComplete(TArray<FOnlineStoreCategory> Ca
 // @@@SNIPEND
 
 // @@@SNIPSTART ShopWidget.cpp-OnRefreshCategoriesComplete
-// @@@MULTISNIP Setup {"selectedLines": ["1-16", "24-29"]}
+// @@@MULTISNIP Setup {"selectedLines": ["1-22", "30-35"]}
 void UShopWidget::OnRefreshCategoriesComplete(TArray<FOnlineStoreCategory> Categories)
 {
+	const ULocalPlayer* LocalPlayer = GetOwningPlayer()->GetLocalPlayer();
+	if (!LocalPlayer)
+	{
+		return;
+	}
+
 	FName LastSelectedTab = Tl_ItemCategory->GetSelectedTabId();
 	Tl_ItemCategory->SetVisibility(ESlateVisibility::Visible);
 	
@@ -108,7 +117,7 @@ void UShopWidget::OnRefreshCategoriesComplete(TArray<FOnlineStoreCategory> Categ
 	const FName TabSelectionTarget = bLastSelectedTabExist ? LastSelectedTab : FName(RootPath);
 	Tl_ItemCategory->SelectTabByID(TabSelectionTarget);
 	StoreSubsystem->GetOrQueryOffersByCategory(
-		GetOwningPlayer(),
+		LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId(),
 		TabSelectionTarget.ToString(),
 		FOnGetOrQueryOffersByCategory::CreateUObject(this, &ThisClass::OnGetOrQueryOffersComplete),
 		true);
@@ -164,9 +173,15 @@ void UShopWidget::OnStoreItemClicked(UObject* Item) const
 // @@@SNIPEND
 
 // @@@SNIPSTART ShopWidget.cpp-OnRefreshButtonClicked
-// @@@MULTISNIP Setup {"selectedLines": ["1-8", "17-24"]}
+// @@@MULTISNIP Setup {"selectedLines": ["1-14", "23-30"]}
 void UShopWidget::OnRefreshButtonClicked()
 {
+	const ULocalPlayer* LocalPlayer = GetOwningPlayer()->GetLocalPlayer();
+	if (!LocalPlayer)
+	{
+		return;
+	}
+
 	OnRefreshButtonClickedDelegates.Broadcast();
 
 	SwitchContent(EAccelByteWarsWidgetSwitcherState::Loading);
@@ -176,7 +191,7 @@ void UShopWidget::OnRefreshButtonClicked()
 
 	// Refresh store item.
 	StoreSubsystem->GetOrQueryCategoriesByRootPath(
-		GetOwningPlayer(),
+		LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId(),
 		RootPath,
 		FOnGetOrQueryCategories::CreateUObject(this, &ThisClass::OnRefreshCategoriesComplete),
 		true);
@@ -192,14 +207,17 @@ void UShopWidget::OnRefreshButtonClicked()
 // @@@SNIPEND
 
 // @@@SNIPSTART ShopWidget.cpp-SwitchCategory
-// @@@MULTISNIP Setup {"selectedLines": ["1-3", "8"]}
+// @@@MULTISNIP Setup {"selectedLines": ["1-5", "10-11"]}
 void UShopWidget::SwitchCategory(FName Id)
 {
-	Tv_ContentOuter->ClearListItems();
-	StoreSubsystem->GetOrQueryOffersByCategory(
-		GetOwningPlayer(),
-		Id.ToString(),
-		FOnGetOrQueryOffersByCategory::CreateUObject(this, &ThisClass::OnGetOrQueryOffersComplete));
+	if (const ULocalPlayer* LocalPlayer = GetOwningPlayer()->GetLocalPlayer())
+	{
+		Tv_ContentOuter->ClearListItems();
+		StoreSubsystem->GetOrQueryOffersByCategory(
+			LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId(),
+			Id.ToString(),
+			FOnGetOrQueryOffersByCategory::CreateUObject(this, &ThisClass::OnGetOrQueryOffersComplete));
+	}
 }
 // @@@SNIPEND
 

@@ -204,12 +204,6 @@ protected:
 		const FTransform ShipTransform,
 		AAccelByteWarsPlayerState* ShipPlayerState);
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TSubclassOf<AAccelByteWarsFxActor> ShipDestroyFxClass;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TSubclassOf<AAccelByteWarsFxActor> DestroyedFxActor;
-
 #pragma region "Gameplay logic"
 public:
 	void SetupGameplayObject(AActor* Object) const;

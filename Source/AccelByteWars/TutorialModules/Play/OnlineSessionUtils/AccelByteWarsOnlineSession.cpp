@@ -78,11 +78,15 @@ void UAccelByteWarsOnlineSession::RegisterOnlineDelegates()
 	UPauseWidget::OnQuitGameDelegate.Add(LeaveSessionDelegate);
 	UMatchLobbyWidget::OnQuitLobbyDelegate.Add(LeaveSessionDelegate);
 	UGameOverWidget::OnQuitGameDelegate.Add(LeaveSessionDelegate);
+	UMatchLobbyWidget::OnMatchStartedDelegate.Add(FSimpleDelegate::CreateWeakLambda(this, [this]()
+		{
+			UpdateSessionJoinability(NAME_GameSession, EAccelByteV2SessionJoinability::CLOSED);
+		})
+	);
 
 	// Matchmaking Essentials
 	SessionInt->OnMatchmakingCompleteDelegates.AddUObject(this, &ThisClass::OnMatchmakingComplete);
 	SessionInt->OnCancelMatchmakingCompleteDelegates.AddUObject(this, &ThisClass::OnCancelMatchmakingComplete);
-	ABSessionInt->OnBackfillProposalReceivedDelegates.AddUObject(this, &ThisClass::OnBackfillProposalReceived);
 
 	// Match Session Essentials
 	SessionInt->OnFindSessionsCompleteDelegates.AddUObject(this, &ThisClass::OnFindSessionsComplete);
@@ -157,7 +161,6 @@ void UAccelByteWarsOnlineSession::ClearOnlineDelegates()
 	// Matchmaking Essentials
 	SessionInt->OnMatchmakingCompleteDelegates.RemoveAll(this);
 	SessionInt->OnCancelMatchmakingCompleteDelegates.RemoveAll(this);
-	ABSessionInt->OnBackfillProposalReceivedDelegates.RemoveAll(this);
 
 	// Match Session Essentials
 	SessionInt->OnFindSessionsCompleteDelegates.RemoveAll(this);
@@ -1083,30 +1086,6 @@ void UAccelByteWarsOnlineSession::OnMatchmakingComplete(FName SessionName, bool 
 	}
 
 	OnMatchmakingCompleteDelegates.Broadcast(SessionName, bSucceeded);
-}
-
-void UAccelByteWarsOnlineSession::OnBackfillProposalReceived(
-	FAccelByteModelsV2MatchmakingBackfillProposalNotif Proposal)
-{
-	UE_LOG_ONLINESESSION(Verbose, TEXT("Called"))
-
-	// Abort if the session interface is invalid.
-	if (!ensure(GetABSessionInt().IsValid()))
-	{
-		UE_LOG_ONLINESESSION(Warning, TEXT("Session Interface is not valid."));
-		return;
-	}
-
-	// Accept backfill proposal.
-	GetABSessionInt()->AcceptBackfillProposal(
-		NAME_GameSession,
-		Proposal,
-		false,
-		FOnAcceptBackfillProposalComplete::CreateWeakLambda(this, [this](bool bSucceeded)
-	{
-		UE_LOG_ONLINESESSION(Log, TEXT("Succeeded: %s To accept backfill."), *FString(bSucceeded ? "TRUE": "FALSE"));
-		OnAcceptBackfillProposalCompleteDelegates.Broadcast(bSucceeded);
-	}));
 }
 
 void UAccelByteWarsOnlineSession::OnLeaveSessionForReMatchmakingComplete(

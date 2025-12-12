@@ -25,8 +25,6 @@ public:
 	void Initialize(FSubsystemCollectionBase& Collection) override;
 	void Deinitialize() override;
 
-	FOnLoadPlayerEquipmentComplete OnLoadPlayerEquipmentCompleteDelegates;
-
 #pragma region Module.5 Function Declarations
 // @@@SNIPSTART CloudSaveSubsystem.h-public
 // @@@MULTISNIP PlayerRecordDeclaration {"selectedLines": ["1-14"]}
@@ -75,9 +73,6 @@ private:
 
 	void OnLoadGameSoundOptions(const APlayerController* PlayerController, TDelegate<void()> OnComplete);
 	void OnSaveGameSoundOptions(const APlayerController* PlayerController, TDelegate<void()> OnComplete);
-
-	void LoadPlayerEquipment(const APlayerController* PlayerController);
-	void SavePlayersEquipment();
 
 #pragma region "Utilities"
 	

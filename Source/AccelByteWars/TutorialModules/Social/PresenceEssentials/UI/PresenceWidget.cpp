@@ -255,19 +255,21 @@ void UPresenceWidget::OnSetupPresenceComplete()
 // @@@MULTISNIP ReadyUI {"selectedLines": ["1-2", "74"]}
 void UPresenceWidget::RefreshPresence(bool bForceQueryPresence)
 {
-	if (!PresenceUserId) 
+	const FUniqueNetIdAccelByteUserPtr PresenceUserABId = StaticCastSharedPtr<const FUniqueNetIdAccelByteUser>(PresenceUserId);
+	if (!PresenceUserABId)
 	{
 		UE_LOG_PRESENCEESSENTIALS(Warning, TEXT("Unable to get presence to be displayed on the widget. User Id is not valid."));
 		return;
 	}
 
+	const FString UserABId = PresenceUserABId->GetAccelByteId();
 	Tb_Presence->SetVisibility(ESlateVisibility::Collapsed);
 	Th_Loader->SetVisibility(ESlateVisibility::Visible);
 	
 	PresenceEssentialsSubsystem->GetPresence(
-		PresenceUserId,
+		PresenceUserABId,
 		bForceQueryPresence,
-		FOnPresenceTaskComplete::CreateWeakLambda(this, [this](const bool bWasSuccessful, const TSharedPtr<FOnlineUserPresenceAccelByte> Presence)
+		FOnPresenceTaskComplete::CreateWeakLambda(this, [this, UserABId](const bool bWasSuccessful, const TSharedPtr<FOnlineUserPresenceAccelByte> Presence)
 		{
 			// Abort if the widget is being destroyed.
 			if (!IsValid(this) || IsUnreachable()) 
@@ -318,12 +320,7 @@ void UPresenceWidget::RefreshPresence(bool bForceQueryPresence)
 				ParentListView->RequestRefresh();
 			}
 
-			const FUniqueNetIdAccelByteUserPtr PresenceUserABId = StaticCastSharedPtr<const FUniqueNetIdAccelByteUser>(PresenceUserId);
-			if (!PresenceUserABId)
-			{
-				UE_LOG_PRESENCEESSENTIALS(Log, TEXT("Presence widget is updated for user: %s"), *PresenceUserABId->GetAccelByteId());
-				return;
-			}
+			UE_LOG_PRESENCEESSENTIALS(Log, TEXT("Presence widget is updated for user: %s"), *UserABId);
 		}
 	));
 }

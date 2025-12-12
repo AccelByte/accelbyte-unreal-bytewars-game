@@ -4,10 +4,9 @@
 
 #pragma once
 
-#include "AccelByteWars/Core/Components/AccelByteWarsProceduralMeshComponent.h"
 #include "CoreMinimal.h"
-#include "Core/AssetManager/InGameItems/InGameItemUtility.h"
 #include "GameFramework/Actor.h"
+#include "Core/AssetManager/InGameItems/InGameItemUtility.h"
 #include "PlayerShipBase.generated.h"
 
 UCLASS(Abstract)
@@ -15,35 +14,72 @@ class ACCELBYTEWARS_API APlayerShipBase : public AActor, public IInGameItemInter
 {
 	GENERATED_BODY()
 
+public:
+	APlayerShipBase();
+
+	virtual void OnConstruction(const FTransform& Transform) override;
+
+	UFUNCTION(BlueprintPure, Category = AccelByteWars)
+	UStaticMeshComponent* GetShipMesh() { return ShipMesh; }
+
+	UFUNCTION(BlueprintPure, Category = AccelByteWars)
+	const FLinearColor& GetColor() { return Color; }
+
+	UFUNCTION(BlueprintPure, Category = AccelByteWars)
+	const UTexture2D* GetAlphaTexture() { return AlphaTexture; }
+
+	UFUNCTION(BlueprintPure, Category = AccelByteWars)
+	const UTexture2D* GetColorTexture() { return ColorTexture; }
+
+	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
+	void SetColor(const FLinearColor InColor);
+
+	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
+	void SetAlphaTexture(UTexture2D* Texture);
+
+	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
+	void SetColorTexture(UTexture2D* Texture);
+
+	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
+	void SetGlowModifier(const float Modifier);
+
 	virtual void OnEquip() override;
 	virtual void OnUse() override;
 
-public:
-	// Sets default values for this actor's properties
-	APlayerShipBase();
-
 protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
-
-	UPROPERTY(ReplicatedUsing = OnRepNotifyGlowModifier)
-	float GlowModifier = 1.0f;
+	UFUNCTION()
+	void OnRepNotify_Color();
 
 	UFUNCTION()
-	void OnRepNotifyGlowModifier();
+	void OnRepNotify_GlowModifier();
 
-public:
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	UFUNCTION()
+	void OnRepNotify_AlphaTexture();
 
-	/**
-	 * @brief Visible mesh of player ship
-	 */
+	UFUNCTION()
+	void OnRepNotify_ColorTexture();
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AccelByteWars)
-		UAccelByteWarsProceduralMeshComponent* AccelByteWarsProceduralMesh = nullptr;
+	UMaterialInterface* SourceMaterial;
 
-	virtual void SetShipColor(FLinearColor InColor) {}
+	UPROPERTY(EditDefaultsOnly, Category = AccelByteWars, ReplicatedUsing = OnRepNotify_AlphaTexture)
+	UTexture2D* AlphaTexture;
 
-	/** @brief Set and update glow modifier to all connected client */
-	void SetGlowModifier(const float Modifier);
+	UPROPERTY(EditDefaultsOnly, Category = AccelByteWars, ReplicatedUsing = OnRepNotify_ColorTexture)
+	UTexture2D* ColorTexture;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AccelByteWars, ReplicatedUsing = OnRepNotify_Color)
+	FLinearColor Color = FLinearColor::White;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AccelByteWars)
+	float Size = 1.25f;
+
+	UPROPERTY(BlueprintReadWrite, Category = AccelByteWars)
+	UStaticMeshComponent* ShipMesh = nullptr;
+
+	UPROPERTY()
+	UMaterialInstanceDynamic* ShipMaterial;
+
+	UPROPERTY(ReplicatedUsing = OnRepNotify_GlowModifier)
+	float GlowModifier = 1.0f;
 };

@@ -1,55 +1,96 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright (c) 2023 AccelByte Inc. All Rights Reserved.
+// This is licensed software from AccelByte Inc, for limitations
+// and restrictions contact your company contract manager.
 
 #include "Core/Ships/PlayerShipBase.h"
-
 #include "Core/Utilities/AccelByteWarsUtilityLog.h"
 #include "Net/UnrealNetwork.h"
 
-void APlayerShipBase::OnEquip()
+APlayerShipBase::APlayerShipBase()
 {
-	IInGameItemInterface::OnEquip();
+	PrimaryActorTick.bCanEverTick = false;
+
+	ShipMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ShipMesh"));
+	ShipMesh->SetWorldScale3D(FVector::One() * Size);
+	RootComponent = ShipMesh;
 }
 
-void APlayerShipBase::OnUse()
+void APlayerShipBase::OnConstruction(const FTransform& Transform)
 {
-	IInGameItemInterface::OnUse();
+	Super::OnConstruction(Transform);
+
+	if (SourceMaterial)
+	{
+		if (!ShipMaterial)
+		{
+			ShipMaterial = ShipMesh->CreateDynamicMaterialInstance(0, SourceMaterial);
+		}
+
+		if (ShipMaterial && ShipMaterial->IsValidLowLevel())
+		{
+			ShipMesh->SetMaterial(0, ShipMaterial);
+
+			OnRepNotify_AlphaTexture();
+			OnRepNotify_ColorTexture();
+			OnRepNotify_Color();
+			OnRepNotify_GlowModifier();
+		}
+	}
 }
 
 void APlayerShipBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
+	DOREPLIFETIME(ThisClass, AlphaTexture);
+	DOREPLIFETIME(ThisClass, ColorTexture);
+	DOREPLIFETIME(ThisClass, Color);
 	DOREPLIFETIME(ThisClass, GlowModifier);
 }
 
-// Sets default values
-APlayerShipBase::APlayerShipBase()
+void APlayerShipBase::SetColor(const FLinearColor InColor)
 {
-	AccelByteWarsProceduralMesh = CreateDefaultSubobject<UAccelByteWarsProceduralMeshComponent>(TEXT("AccelByteWarsProceduralMesh"));
-	RootComponent = AccelByteWarsProceduralMesh;
+	if (!HasAuthority())
+	{
+		return;
+	}
 
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	Color = InColor;
+
+	if (!IsRunningDedicatedServer())
+	{
+		OnRepNotify_Color();
+	}
 }
 
-// Called when the game starts or when spawned
-void APlayerShipBase::BeginPlay()
+void APlayerShipBase::SetAlphaTexture(UTexture2D* Texture)
 {
-	Super::BeginPlay();
+	if (!HasAuthority())
+	{
+		return;
+	}
 
-	AccelByteWarsProceduralMesh->MeshSetup();
+	AlphaTexture = Texture;
+
+	if (!IsRunningDedicatedServer())
+	{
+		OnRepNotify_AlphaTexture();
+	}
 }
 
-void APlayerShipBase::OnRepNotifyGlowModifier()
+void APlayerShipBase::SetColorTexture(UTexture2D* Texture)
 {
-	AccelByteWarsProceduralMesh->SetGlowBrightness(GlowModifier);
-}
+	if (!HasAuthority())
+	{
+		return;
+	}
 
-// Called every frame
-void APlayerShipBase::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
+	ColorTexture = Texture;
 
+	if (!IsRunningDedicatedServer())
+	{
+		OnRepNotify_ColorTexture();
+	}
 }
 
 void APlayerShipBase::SetGlowModifier(const float Modifier)
@@ -63,6 +104,48 @@ void APlayerShipBase::SetGlowModifier(const float Modifier)
 
 	if (!IsRunningDedicatedServer())
 	{
-		OnRepNotifyGlowModifier();
+		OnRepNotify_GlowModifier();
 	}
+}
+
+void APlayerShipBase::OnRepNotify_AlphaTexture()
+{
+	if (ShipMaterial && AlphaTexture)
+	{
+		ShipMaterial->SetTextureParameterValue(FName("AlphaTexture"), AlphaTexture);
+	}
+}
+
+void APlayerShipBase::OnRepNotify_ColorTexture()
+{
+	if (ShipMaterial && ColorTexture)
+	{
+		ShipMaterial->SetTextureParameterValue(FName("ColorTexture"), ColorTexture);
+	}
+}
+
+void APlayerShipBase::OnRepNotify_Color()
+{
+	if (ShipMaterial)
+	{
+		ShipMaterial->SetVectorParameterValue(FName("EmissiveColour"), Color);
+	}
+}
+
+void APlayerShipBase::OnRepNotify_GlowModifier()
+{
+	if (ShipMaterial)
+	{
+		ShipMaterial->SetScalarParameterValue(FName("Glow"), GlowModifier);
+	}
+}
+
+void APlayerShipBase::OnEquip()
+{
+	IInGameItemInterface::OnEquip();
+}
+
+void APlayerShipBase::OnUse()
+{
+	IInGameItemInterface::OnUse();
 }

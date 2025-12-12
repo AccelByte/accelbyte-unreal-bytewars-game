@@ -40,16 +40,16 @@ public:
 	void Multicast_InitiateWormHoleGenerator(AActor* ActorToMove, FVector NewPawnLocation);
 
 	/**
-	 * @brief Sets the worm hole color
-	 */
-	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = AccelByteWars)
-	void SetWormHoleColor(FLinearColor InColor);
-
-	/**
 	 * @brief Handles end of life for the worm hole
 	 */
 	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
 	void WormHoleExpired();
+
+	/**
+	 * @brief Generic on-replicate notify for detecting if the color is changed
+	 */
+	UFUNCTION()
+	void OnRepNotify_Color();
 
 	/**
 	 * @brief A do-nothing sphere component used for positioning
@@ -68,6 +68,18 @@ public:
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AccelByteWars)
 	UAudioComponent* WormHoleAudioComponent = nullptr;
+
+	/**
+	 * @brief Worm hole color
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AccelByteWars, ReplicatedUsing = OnRepNotify_Color)
+	FLinearColor Color = FLinearColor::White;
+
+	/**
+	 * @brief Worm hole color variable name
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FString NiagaraVariableColorName;
 
 	/**
 	 * @brief Maximum lifetime of the wormhole

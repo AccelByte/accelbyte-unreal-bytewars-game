@@ -6,15 +6,12 @@
 #include "Access/AuthEssentials/AuthEssentialsModels.h"
 #include "OnlineSubsystemAccelByte.h"
 #include "OnlineSubsystemUtils.h"
-#include "Core/AssetManager/InGameItems/InGameItemDataAsset.h"
 
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/Player/AccelByteWarsPlayerState.h"
 #include "Core/Player/AccelByteWarsPlayerPawn.h"
 #include "Core/UI/Components/Prompt/PromptSubsystem.h"
 #include "Core/UI/MainMenu/HelpOptions/Options/OptionsWidget.h"
-
-#include "TutorialModules/Monetization/EntitlementsEssentials/UI/InventoryWidget.h"
 
 #define LOCTEXT_NAMESPACE "AccelByteWars"
 
@@ -198,16 +195,14 @@ void UCloudSaveSubsystem::OnDeletePlayerRecordComplete(
 
 #pragma region Module.5 General Function Definitions
 // @@@SNIPSTART CloudSaveSubsystem.cpp-BindDelegates
-// @@@MULTISNIP BindPlayerRecordDelegate {"selectedLines": ["1-2", "10-13"]}
-// @@@MULTISNIP PutItAllTogether {"selectedLines": ["1-3", "6-7", "13"]}
+// @@@MULTISNIP BindPlayerRecordDelegate {"selectedLines": ["1-2", "8-11"]}
+// @@@MULTISNIP PutItAllTogether {"selectedLines": ["1-6", "11"]}
 void UCloudSaveSubsystem::BindDelegates()
 {
 	UAuthEssentialsModels::OnLoginSuccessDelegate.AddUObject(this, &ThisClass::OnLoadGameSoundOptions, TDelegate<void()>());
-	UAuthEssentialsModels::OnLoginSuccessDelegate.AddUObject(this, &ThisClass::LoadPlayerEquipment);
 
 	UOptionsWidget::OnOptionsWidgetActivated.AddUObject(this, &ThisClass::OnLoadGameSoundOptions);
 	UOptionsWidget::OnOptionsWidgetDeactivated.AddUObject(this, &ThisClass::OnSaveGameSoundOptions);
-	UInventoryWidget::OnInventoryMenuDeactivated.AddUObject(this, &ThisClass::SavePlayersEquipment);
 
 	CloudSaveInterface->OnReplaceUserRecordCompletedDelegates->AddUObject(this, &ThisClass::OnSetPlayerRecordComplete);
 	CloudSaveInterface->OnGetUserRecordCompletedDelegates->AddUObject(this, &ThisClass::OnGetPlayerRecordComplete);
@@ -216,15 +211,14 @@ void UCloudSaveSubsystem::BindDelegates()
 // @@@SNIPEND
 
 // @@@SNIPSTART CloudSaveSubsystem.cpp-UnbindDelegates
-// @@@MULTISNIP UnbindPlayerRecordDelegate {"selectedLines": ["1-2", "9-12"]}
-// @@@MULTISNIP PutItAllTogether {"selectedLines": ["1-6", "12"]}
+// @@@MULTISNIP UnbindPlayerRecordDelegate {"selectedLines": ["1-2", "8-11"]}
+// @@@MULTISNIP PutItAllTogether {"selectedLines": ["1-6", "11"]}
 void UCloudSaveSubsystem::UnbindDelegates()
 {
 	UAuthEssentialsModels::OnLoginSuccessDelegate.RemoveAll(this);
 
 	UOptionsWidget::OnOptionsWidgetActivated.RemoveAll(this);
 	UOptionsWidget::OnOptionsWidgetDeactivated.RemoveAll(this);
-	UInventoryWidget::OnInventoryMenuDeactivated.RemoveAll(this);
 
 	CloudSaveInterface->OnReplaceUserRecordCompletedDelegates->RemoveAll(this);
 	CloudSaveInterface->OnGetUserRecordCompletedDelegates->RemoveAll(this);
@@ -315,89 +309,6 @@ void UCloudSaveSubsystem::OnSaveGameSoundOptions(const APlayerController* Player
 	));
 }
 // @@@SNIPEND
-
-void UCloudSaveSubsystem::LoadPlayerEquipment(const APlayerController* PlayerController)
-{
-	if (IsRunningDedicatedServer())
-	{
-		return;
-	}
-
-	GetPlayerRecord(
-		PlayerController,
-		PLAYER_EQUIPMENT_KEY,
-		FOnGetCloudSaveRecordComplete::CreateWeakLambda(this, [PlayerController, this](bool bWasSuccessful, FJsonObject& Result)
-		{
-			if (bWasSuccessful)
-			{
-				// get local player num
-				const int32 LocalPlayerNum = PlayerController->GetLocalPlayer()->GetControllerId();
-				UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetWorld()->GetGameInstance());
-				ensure(GameInstance);
-
-				if (OnLoadPlayerEquipmentCompleteDelegates.IsBound())
-				{
-					// If bound, let entitlement update the equipped item.
-					TArray<FString> EquippedItems;
-					for (const TTuple<FString, TSharedPtr<FJsonValue>>& JsonData : Result.Values)
-					{
-						EquippedItems.Add(JsonData.Value->AsString());
-					}
-					OnLoadPlayerEquipmentCompleteDelegates.Broadcast(PlayerController, EquippedItems);
-				}
-				else
-				{
-					// If not bound, equip item with the assumption quantity of 1
-					TMap<FString, int32> InItems;
-					for (const TTuple<FString, TSharedPtr<FJsonValue>>& JsonData : Result.Values)
-					{
-						InItems.Add(JsonData.Value->AsString(), 1);
-					}
-					GameInstance->UpdateEquippedItemsByInGameItemId(LocalPlayerNum, InItems);
-				}
-			}
-		}));
-}
-
-void UCloudSaveSubsystem::SavePlayersEquipment()
-{
-	if (IsRunningDedicatedServer())
-	{
-		return;
-	}
-
-	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetWorld()->GetGameInstance());
-	ensure(GameInstance);
-
-	for (FConstPlayerControllerIterator Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator)
-	{
-		const APlayerController* PlayerController = Iterator->Get();
-
-		// get local player num
-		const int32 LocalPlayerNum = PlayerController->GetLocalPlayer()->GetControllerId();
-
-		// Construct game options to save.
-		FJsonObject GameOptionsData;
-		bool bNeedUpdate = false;
-		if (TArray<FEquippedItem>* EquippedItems = GameInstance->GetEquippedItems(LocalPlayerNum))
-		{
-			for (uint8 i = 0; i < EquippedItems->Num(); i++)
-			{
-				GameOptionsData.SetStringField(FString::Printf(TEXT("%d"), i), (*EquippedItems)[i].ItemId);
-				bNeedUpdate = true;
-			}
-		}
-
-		if (bNeedUpdate)
-		{
-			SetPlayerRecord(
-				PlayerController,
-				PLAYER_EQUIPMENT_KEY,
-				GameOptionsData,
-				{});  
-		}
-	}
-}
 #pragma endregion
 
 #pragma region "Utilities"

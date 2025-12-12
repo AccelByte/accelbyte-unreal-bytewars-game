@@ -22,7 +22,6 @@ class ACCELBYTEWARS_API UMatchmakingP2POnlineSession : public USessionEssentials
 // @@@MULTISNIP OnStartMatchmakingCompleteDelegate {"selectedLines": ["1", "29-32"]}
 // @@@MULTISNIP OnMatchmakingCompleteDelegate {"selectedLines": ["1", "33-36"]}
 // @@@MULTISNIP OnCancelMatchmakingCompleteDelegate {"selectedLines": ["1", "37-40"]}
-// @@@MULTISNIP OnAcceptBackfillProposalCompleteDelegates {"selectedLines": ["1", "41-44"]}
 // @@@MULTISNIP OnSessionServerUpdateReceivedDelegate {"selectedLines": ["1", "8-11"]}
 public:
 	virtual void RegisterOnlineDelegates() override;
@@ -64,10 +63,6 @@ public:
 	{
 		return &OnCancelMatchmakingCompleteDelegates;
 	}
-	virtual FOnMatchmakingAcceptBackfillProposalComplete* GetOnAcceptBackfillProposalCompleteDelegates() override
-	{
-		return &OnAcceptBackfillProposalCompleteDelegates;
-	}
 #pragma endregion
 // @@@SNIPEND
 
@@ -79,7 +74,6 @@ public:
 // @@@MULTISNIP OnSessionServerErrorReceived {"selectedLines": ["1", "4"]}
 // @@@MULTISNIP OnJoinSessionComplete {"selectedLines": ["1", "6"]}
 // @@@MULTISNIP OnLeaveSessionComplete {"selectedLines": ["1", "7"]}
-// @@@MULTISNIP OnBackfillProposalReceived {"selectedLines": ["1", "20"]}
 protected:
 #pragma region "Game Session Essentials"
 	virtual void OnSessionServerUpdateReceived(FName SessionName) override;
@@ -98,18 +92,15 @@ protected:
 		const FSessionMatchmakingResults& Results) override;
 	virtual void OnCancelMatchmakingComplete(FName SessionName, bool bSucceeded) override;
 	virtual void OnMatchmakingComplete(FName SessionName, bool bSucceeded) override;
-
-	virtual void OnBackfillProposalReceived(FAccelByteModelsV2MatchmakingBackfillProposalNotif Proposal) override;
 #pragma endregion 
 // @@@SNIPEND
 
 // @@@SNIPSTART MatchmakingP2POnlineSession.h-private
 // @@@MULTISNIP MatchPoolIdMap {"selectedLines": ["1", "9-14"]}
-// @@@MULTISNIP OnLeaveSessionForReMatchmakingComplete {"selectedLines": ["1", "21-26"]}
+// @@@MULTISNIP OnLeaveSessionForReMatchmakingComplete {"selectedLines": ["1", "20-25"]}
 // @@@MULTISNIP OnStartMatchmakingCompleteDelegate {"selectedLines": ["1", "16"]}
 // @@@MULTISNIP OnMatchmakingCompleteDelegate {"selectedLines": ["1", "17"]}
 // @@@MULTISNIP OnCancelMatchmakingCompleteDelegate {"selectedLines": ["1", "18"]}
-// @@@MULTISNIP OnAcceptBackfillProposalCompleteDelegates {"selectedLines": ["1", "19"]}
 // @@@MULTISNIP OnSessionServerUpdateReceivedDelegate {"selectedLines": ["1", "5"]}
 private:
 #pragma region "Game Session Essentials"
@@ -129,7 +120,6 @@ private:
 	FOnMatchmakingResponse OnStartMatchmakingCompleteDelegates;
 	FOnMatchmakingResponse OnMatchmakingCompleteDelegates;
 	FOnMatchmakingResponse OnCancelMatchmakingCompleteDelegates;
-	FOnMatchmakingAcceptBackfillProposalComplete OnAcceptBackfillProposalCompleteDelegates;
 
 	void OnLeaveSessionForReMatchmakingComplete(
 		FName SessionName,

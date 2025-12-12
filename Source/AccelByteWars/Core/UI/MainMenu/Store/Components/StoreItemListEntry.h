@@ -12,7 +12,6 @@
 class UTextBlock;
 class UListView;
 class UBorder;
-class UWidgetSwitcher;
 class UAccelByteWarsAsyncImageWidget;
 
 UCLASS(Abstract)
@@ -25,14 +24,10 @@ class ACCELBYTEWARS_API UStoreItemListEntry final : public UAccelByteWarsWidgetE
 
 public:
 	void Setup(const UStoreItemDataObject* Object);
-	void SetOwned(const bool bOwned) const;
 	const UStoreItemDataObject* GetItemData() const { return ItemData; }
 
 private:
-	void ResetUI() const;
-
-	const FLinearColor NormalColor = {1.0f, 1.0f, 1.0f, 1.0f};
-	const FLinearColor OwnedColor = {0.5f, 0.5f, 0.5f, 1.0f};
+	void ResetUI();
 
 	UPROPERTY()
 	const UStoreItemDataObject* ItemData;
@@ -51,12 +46,6 @@ private:
 	
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UTextBlock* Tb_Category;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UWidgetSwitcher* Ws_Price;
-
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
-	UTextBlock* Tb_Owned;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, BlueprintProtected = true, AllowPrivateAccess = true))
 	UListView* Lv_Prices;

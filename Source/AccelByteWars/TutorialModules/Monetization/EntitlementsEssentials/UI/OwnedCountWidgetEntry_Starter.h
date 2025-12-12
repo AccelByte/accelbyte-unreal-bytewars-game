@@ -27,9 +27,6 @@ private:
 	UPROPERTY()
 	UEntitlementsEssentialsSubsystem_Starter* EntitlementsSubsystem;
 
-	UFUNCTION()
-	void CheckItemEquipped();
-
 #pragma region "Tutorial"
 	// Put your code here.
 #pragma endregion 

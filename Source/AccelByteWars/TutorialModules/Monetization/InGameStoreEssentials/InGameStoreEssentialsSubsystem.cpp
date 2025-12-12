@@ -25,7 +25,7 @@ void UInGameStoreEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Colle
 
 // @@@SNIPSTART InGameStoreEssentialsSubsystem.cpp-GetOrQueryOffersByCategory
 void UInGameStoreEssentialsSubsystem::GetOrQueryOffersByCategory(
-	const APlayerController* PlayerController,
+	const FUniqueNetIdPtr UserId,
 	const FString& Category,
 	FOnGetOrQueryOffersByCategory OnComplete,
 	bool bForceRefresh)
@@ -37,8 +37,7 @@ void UInGameStoreEssentialsSubsystem::GetOrQueryOffersByCategory(
 	// If empty or forced to refresh, call query.
 	if (Offers.IsEmpty() || bForceRefresh)
 	{
-		const FUniqueNetIdPtr LocalUserNetId = GetUniqueNetIdFromPlayerController(PlayerController);
-		if (!LocalUserNetId.IsValid())
+		if (!UserId)
 		{
 			ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [OnComplete]()
 			{
@@ -48,7 +47,7 @@ void UInGameStoreEssentialsSubsystem::GetOrQueryOffersByCategory(
 		}
 
 		OffersByCategoryDelegates.Add(Category, OnComplete);
-		QueryOffers(LocalUserNetId);
+		QueryOffers(UserId);
 	}
 	// Else, call get.
 	else
@@ -64,7 +63,7 @@ void UInGameStoreEssentialsSubsystem::GetOrQueryOffersByCategory(
 
 // @@@SNIPSTART InGameStoreEssentialsSubsystem.cpp-GetOrQueryOfferById
 void UInGameStoreEssentialsSubsystem::GetOrQueryOfferById(
-	const APlayerController* PlayerController,
+	const FUniqueNetIdPtr UserId,
 	const FUniqueOfferId& OfferId,
 	FOnGetOrQueryOfferById OnComplete)
 {
@@ -75,8 +74,7 @@ void UInGameStoreEssentialsSubsystem::GetOrQueryOfferById(
 	// If empty, call query.
 	if (Offers.IsEmpty())
 	{
-		const FUniqueNetIdPtr LocalUserNetId = GetUniqueNetIdFromPlayerController(PlayerController);
-		if (!LocalUserNetId.IsValid())
+		if (!UserId)
 		{
 			ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [OnComplete]()
 			{
@@ -86,7 +84,7 @@ void UInGameStoreEssentialsSubsystem::GetOrQueryOfferById(
 		}
 
 		OfferByIdDelegates.Add(OfferId, OnComplete);
-		QueryOffers(LocalUserNetId);
+		QueryOffers(UserId);
 	}
 	// Else, call get.
 	else
@@ -102,7 +100,7 @@ void UInGameStoreEssentialsSubsystem::GetOrQueryOfferById(
 
 // @@@SNIPSTART InGameStoreEssentialsSubsystem.cpp-GetOrQueryCategoriesByRootPath
 void UInGameStoreEssentialsSubsystem::GetOrQueryCategoriesByRootPath(
-	const APlayerController* PlayerController,
+	const FUniqueNetIdPtr UserId,
 	const FString& RootPath,
 	FOnGetOrQueryCategories OnComplete,
 	bool bForceRefresh)
@@ -114,8 +112,7 @@ void UInGameStoreEssentialsSubsystem::GetOrQueryCategoriesByRootPath(
 	// If empty or forced to refresh, query.
 	if (Categories.IsEmpty() || bForceRefresh)
 	{
-		const FUniqueNetIdPtr LocalUserNetId = GetUniqueNetIdFromPlayerController(PlayerController);
-		if (!LocalUserNetId.IsValid())
+		if (!UserId)
 		{
 			ExecuteNextTick(FTimerDelegate::CreateWeakLambda(this, [OnComplete]()
 			{
@@ -125,7 +122,7 @@ void UInGameStoreEssentialsSubsystem::GetOrQueryCategoriesByRootPath(
 		}
 
 		CategoriesByRootPathDelegates.Add(RootPath, OnComplete);
-		QueryCategories(LocalUserNetId);
+		QueryCategories(UserId);
 	}
 	// Else, execute immediately.
 	else
@@ -299,26 +296,3 @@ void UInGameStoreEssentialsSubsystem::OnQueryCategoriesComplete(bool bWasSuccess
 	}
 }
 // @@@SNIPEND
-
-#pragma region "Utilities"
-FUniqueNetIdPtr UInGameStoreEssentialsSubsystem::GetUniqueNetIdFromPlayerController(const APlayerController* PlayerController) const
-{
-	if (!PlayerController)
-	{
-		return nullptr;
-	}
-
-	const ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer();
-	if (!LocalPlayer)
-	{
-		return nullptr;
-	}
-
-	const int LocalUserNum = LocalPlayer->GetControllerId();
-
-	const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
-	ensure(Subsystem);
-	return Subsystem->GetIdentityInterface()->GetUniquePlayerId(LocalUserNum);
-}
-
-#pragma endregion 

@@ -146,7 +146,6 @@ public:
 	virtual FOnMatchmakingResponse* GetOnStartMatchmakingCompleteDelegates(){ return nullptr; }
 	virtual FOnMatchmakingResponse* GetOnMatchmakingCompleteDelegates(){ return nullptr; }
 	virtual FOnMatchmakingResponse* GetOnCancelMatchmakingCompleteDelegates(){ return nullptr; }
-	virtual FOnMatchmakingAcceptBackfillProposalComplete* GetOnAcceptBackfillProposalCompleteDelegates(){ return nullptr; }
 
 protected:
 	virtual void OnStartMatchmakingComplete(
@@ -156,7 +155,6 @@ protected:
 	virtual void OnCancelMatchmakingComplete(FName SessionName, bool bSucceeded){}
 
 	virtual void OnMatchmakingComplete(FName SessionName, bool bSucceeded){}
-	virtual void OnBackfillProposalReceived(FAccelByteModelsV2MatchmakingBackfillProposalNotif Proposal){}
 
 #pragma region "Utilities"
 	TArray<FMatchSessionEssentialInfo> SimplifySessionSearchResult(

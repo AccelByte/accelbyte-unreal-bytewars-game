@@ -22,25 +22,3 @@ void UInGameStoreEssentialsSubsystem_Starter::Initialize(FSubsystemCollectionBas
 #pragma region "Tutorial"
 // Put your code here.
 #pragma endregion 
-
-#pragma region "Utilities"
-FUniqueNetIdPtr UInGameStoreEssentialsSubsystem_Starter::GetUniqueNetIdFromPlayerController(const APlayerController* PlayerController) const
-{
-	if (!PlayerController)
-	{
-		return nullptr;
-	}
-
-	const ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer();
-	if (!LocalPlayer)
-	{
-		return nullptr;
-	}
-
-	const int LocalUserNum = LocalPlayer->GetControllerId();
-
-	const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
-	ensure(Subsystem);
-	return Subsystem->GetIdentityInterface()->GetUniquePlayerId(LocalUserNum);
-}
-#pragma endregion 

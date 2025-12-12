@@ -26,6 +26,7 @@ class ACCELBYTEWARS_API AAccelByteWarsFxActor : public AActor
 	//~End of AActor overridden functions
 
 public:
+	void SetNiagaraFx(const TObjectPtr<UNiagaraSystem> NewFx);
 	void SetNiagaraFxColor(const FLinearColor& InColor);
 	const bool ShouldTrackForCameraZoom() const { return bShouldTrackForCameraZoom; }
 

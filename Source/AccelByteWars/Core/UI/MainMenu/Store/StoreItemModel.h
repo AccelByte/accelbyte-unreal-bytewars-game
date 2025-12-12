@@ -169,8 +169,11 @@ private:
 	int32 Count;
 	bool bConsumable;
 
-	// Byte Wars specifics, used for the core UI to determine whether to show the prices or not
-	bool bShouldShowPrices = true;
+	// Used by the UI to determine whether to show prices.
+	bool bIsShowPrices = true;
+
+	// Used by the UI to determine whether to show the owned item count.
+	bool bIsShowItemCount = true;
 
 public:
 
@@ -210,13 +213,11 @@ public:
 		Prices = Other->GetPrices();
 		Count = Other->GetCount();
 		bConsumable = Other->GetIsConsumable();
-		bShouldShowPrices = Other->GetShouldShowPrices();
+		bIsShowPrices = Other->GetIsShowPrices();
 	}
 
-	void SetShouldShowPrices(const bool bValue)
-	{
-		bShouldShowPrices = bValue;
-	}
+	void SetIsShowPrices(const bool bValue) { bIsShowPrices = bValue; }
+	void SetIsShowItemCount(const bool bValue) { bIsShowItemCount = bValue; }
 
 	const FText& GetTitle() const { return Title; }
 	const FText& GetCategory() const { return Category; }
@@ -228,7 +229,8 @@ public:
 	const TArray<UStoreItemPriceDataObject*>& GetPrices() const { return Prices; }
 	int32 GetCount() const { return Count; }
 	bool GetIsConsumable() const { return bConsumable; }
-	bool GetShouldShowPrices() const { return bShouldShowPrices; }
+	bool GetIsShowPrices() const { return bIsShowPrices; }
+	bool GetIsShowItemCount() const { return bIsShowItemCount; }
 
 	/** @brief Set variables with FOnlineEntitlement's variables */
 	void Setup(const FOnlineEntitlement& Entitlement)

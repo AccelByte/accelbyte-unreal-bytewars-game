@@ -13,10 +13,12 @@
 #include "Core/Components/AccelByteWarsGameplayObjectComponent.h"
 #include "Core/GameStates/AccelByteWarsInGameGameState.h"
 #include "Core/Ships/PlayerShipBase.h"
+#include "Core/UI/InGameMenu/HUD/HUDShipLabelWidget.h"
 #include "Core/Utilities/AccelByteWarsUtilityLog.h"
 #include "AbilitySystemComponent.h"
 #include "AccelByteWarsAttributeSet.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Blueprint/WidgetLayoutLibrary.h"
 
 // Sets default values
 AAccelByteWarsPlayerPawn::AAccelByteWarsPlayerPawn()
@@ -48,6 +50,35 @@ void AAccelByteWarsPlayerPawn::BeginPlay()
 	CurrentYaw = GetActorRotation().Yaw;
 }
 
+void AAccelByteWarsPlayerPawn::InitDataAssets()
+{
+	if (AAccelByteWarsPlayerState* PS = GetPlayerState<AAccelByteWarsPlayerState>())
+	{
+		// Initialize ability system component
+		if (UAbilitySystemComponent* ASC = PS->GetAbilitySystemComponent())
+		{
+			ASC->InitAbilityActorInfo(PS, this);
+		}
+
+		// Update equipped items if any.
+		SkinAsset = DefaultSkinAsset;
+		if (UInGameItemDataAsset* CustomSkinAsset = UInGameItemUtility::GetItemDataAsset(PS->GetEquippedItemId(EItemType::Skin)))
+		{
+			SkinAsset = CustomSkinAsset;
+		}
+		ColorAsset = DefaultColorAsset;
+		if (UInGameItemDataAsset* CustomColorAsset = UInGameItemUtility::GetItemDataAsset(PS->GetEquippedItemId(EItemType::Color)))
+		{
+			ColorAsset = CustomColorAsset;
+		}
+		MissileTrailFxAsset = DefaultMissileTrailFxAsset;
+		if (UInGameItemDataAsset* CustomMissileTrailFxAsset = UInGameItemUtility::GetItemDataAsset(PS->GetEquippedItemId(EItemType::MissileTrailFx)))
+		{
+			MissileTrailFxAsset = CustomMissileTrailFxAsset;
+		}
+	}
+}
+
 // Called every frame
 void AAccelByteWarsPlayerPawn::Tick(float DeltaTime)
 {
@@ -55,8 +86,8 @@ void AAccelByteWarsPlayerPawn::Tick(float DeltaTime)
 
 	if (GetWorld()->IsNetMode(NM_DedicatedServer) == false)
 	{
+		UpdateShipLabel();
 		UpdatePowerBarUI(DeltaTime);
-		UpdateShipLabelUI(DeltaTime);
 	}
 
 	if (HasAuthority())
@@ -82,15 +113,7 @@ void AAccelByteWarsPlayerPawn::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 
-	// Initialize GAS on the server when possessed
-	if (AAccelByteWarsPlayerState* PS = GetPlayerState<AAccelByteWarsPlayerState>())
-	{
-		if (UAbilitySystemComponent* ASC = PS->GetAbilitySystemComponent())
-		{
-			ASC->InitAbilityActorInfo(PS, this);
-		}
-	}
-
+	InitDataAssets();
 	UpdateSkin();
 }
 
@@ -98,14 +121,7 @@ void AAccelByteWarsPlayerPawn::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
 
-	// Initialize GAS on the client when PlayerState replicates
-	if (AAccelByteWarsPlayerState* PS = GetPlayerState<AAccelByteWarsPlayerState>())
-	{
-		if (UAbilitySystemComponent* ASC = PS->GetAbilitySystemComponent())
-		{
-			ASC->InitAbilityActorInfo(PS, this);
-		}
-	}
+	InitDataAssets();
 }
 
 UAbilitySystemComponent* AAccelByteWarsPlayerPawn::GetAbilitySystemComponent() const
@@ -133,7 +149,8 @@ T* AAccelByteWarsPlayerPawn::SpawnActorInWorld(
 	const FVector Location,
 	const FRotator Rotation,
 	TSubclassOf<AActor> ActorClass,
-	bool ShouldReplicate)
+	bool ShouldReplicate,
+	TFunction<void(AActor*)> PreSpawnInitialization)
 {
 	if (Owner == nullptr)
 		return nullptr;
@@ -141,6 +158,7 @@ T* AAccelByteWarsPlayerPawn::SpawnActorInWorld(
 	FActorSpawnParameters SpawnParameters;
 	SpawnParameters.Owner = Owner;
 	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	SpawnParameters.CustomPreSpawnInitalization = PreSpawnInitialization;
 
 	T* NewActor = Owner->GetWorld()->SpawnActor<T>(ActorClass, FTransform(Rotation, Location), SpawnParameters);
 	if (NewActor == nullptr)
@@ -160,44 +178,33 @@ T* AAccelByteWarsPlayerPawn::SpawnActorInWorld(
 
 void AAccelByteWarsPlayerPawn::UpdateSkin()
 {
-	if (!HasAuthority())
+	if (!HasAuthority() || !SkinAsset)
 	{
 		return;
 	}
 
-	// TODO: Can be bot
-	// const APlayerController* PlayerController = Cast<APlayerController>(Controller);
-	// if (!PlayerController)
-	// {
-	// 	return;
-	// }
-	AAccelByteWarsPlayerState* AbPlayerState = Cast<AAccelByteWarsPlayerState>(Controller->PlayerState);
-	if (!AbPlayerState)
-	{
-		return;
-	}
-
-	// get skin item
-	const UInGameItemDataAsset* ItemDataAsset = UInGameItemUtility::GetItemDataAsset(AbPlayerState->GetEquippedItemId(EItemType::Skin));
-	if (!ItemDataAsset)
-	{
-		// none set, use default
-		ItemDataAsset = DefaultSkin;
-	}
-
+	// Spawn default ship.
 	PlayerShip = SpawnActorInWorld<APlayerShipBase>(
 		this,
 		GetActorLocation(),
 		GetActorRotation(),
-		ItemDataAsset->Actor,
+		SkinAsset->Actor,
 		true);
+
 	if (PlayerShip)
 	{
-		PlayerShip->AttachToActor(this, FAttachmentTransformRules::SnapToTargetIncludingScale);
-	}
-	if (PlayerShip->AccelByteWarsProceduralMesh)
-	{
-		PlayerShip->AccelByteWarsProceduralMesh->SetupAttachment(SphereComponent);
+		// Update skin and color from based on equipped items.
+		if (AAccelByteWarsPlayerState* PS = GetPlayerState<AAccelByteWarsPlayerState>()) 
+		{
+			PlayerShip->SetAlphaTexture(SkinAsset->Icon);
+			PlayerShip->SetColorTexture(ColorAsset->Icon);
+		}
+
+		PlayerShip->AttachToActor(this, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+		if (UStaticMeshComponent* ShipMesh = PlayerShip->GetShipMesh())
+		{
+			ShipMesh->SetupAttachment(SphereComponent);
+		}
 	}
 }
 
@@ -319,7 +326,7 @@ void AAccelByteWarsPlayerPawn::ServerActivatePowerUp_Implementation()
 
 void AAccelByteWarsPlayerPawn::Server_FireMissile_Implementation()
 {
-	if (!HasAuthority() || !ShouldFire())
+	if (!HasAuthority() || !ShouldFire() || !MissileTrailFxAsset)
 	{
 		return;
 	}
@@ -331,10 +338,18 @@ void AAccelByteWarsPlayerPawn::Server_FireMissile_Implementation()
 	float ClampedInitialSpeed = UKismetMathLibrary::MapRangeClamped(FirePowerLevel, 0.0f, 1.0f, MinMissileSpeed, MaxMissileSpeed);
 
 	// Spawn missile actor
-	FiredMissile = SpawnActorInWorld<AAccelByteWarsMissile>(this, SpawnTransform.GetLocation(), SpawnTransform.Rotator(), MissileActor, true);
-	if (FiredMissile == nullptr)
+	FiredMissile = SpawnActorInWorld<AAccelByteWarsMissile>(
+		this, 
+		SpawnTransform.GetLocation(), 
+		SpawnTransform.Rotator(), 
+		MissileActor, 
+		true);
+	if (!FiredMissile) 
+	{
 		return;
+	}
 
+	FiredMissile->SetNiagaraFx(MissileTrailFxAsset->FxAsset);
 	FiredMissile->Server_SetColor(PawnColor);
 	FiredMissile->InitialSpeed = ClampedInitialSpeed;
 	FiredMissile->SetVelocity();
@@ -370,6 +385,12 @@ void AAccelByteWarsPlayerPawn::Server_FireMissile_Implementation()
 void AAccelByteWarsPlayerPawn::Destroyed()
 {
 	Super::Destroyed();
+
+	// Remove ship label.
+	if (ShipLabelWidget)
+	{
+		ShipLabelWidget->RemoveFromParent();
+	}
 
 	// Server-side: expire all missiles owned by this pawn when the pawn is destroyed
 	if (HasAuthority())
@@ -460,6 +481,68 @@ void AAccelByteWarsPlayerPawn::AdjustFirePower(int Rate)
 	FirePowerLevel += FMath::Clamp(Rate, -1, 1);
 }
 
+void AAccelByteWarsPlayerPawn::UpdateShipLabel()
+{
+	// The ship label is owned by the local owner of the base UI widget.
+	if (!ShipLabelPC)
+	{
+		if (UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
+			UAccelByteWarsBaseUI* BaseUIWidget = GameInstance->GetBaseUIWidget())
+		{
+			ShipLabelPC = BaseUIWidget->GetOwningPlayer();
+		}
+		else 
+		{
+			return;
+		}
+	}
+
+	// Initialize ship label if not yet created.
+	if (!ShipLabelWidget)
+	{
+		AAccelByteWarsPlayerState* PS = GetPlayerState<AAccelByteWarsPlayerState>();
+		if (!PS) 
+		{
+			return;
+		}
+
+		FGameplayPlayerData* PlayerData = nullptr;
+		if (AAccelByteWarsGameState* GameState = GetWorld()->GetGameState<AAccelByteWarsGameState>())
+		{
+			PlayerData = GameState->GetPlayerDataById(PS->GetUniqueId(), AccelByteWarsUtility::GetControllerId(PS));
+		}
+
+		if (PlayerData) 
+		{
+			ShipLabelWidget = CreateWidget<UHUDShipLabelWidget>(ShipLabelPC, ShipLabelWidgetClass);
+			ShipLabelWidget->AddToViewport();
+			ShipLabelWidget->Setup(*PlayerData);
+		}
+	}
+
+	// Update ship label position on screen.
+	if (ShipLabelWidget) 
+	{
+		FVector2D ScreenPos;
+		const float ViewportScale = UWidgetLayoutLibrary::GetViewportScale(this);
+		if (ShipLabelPC->ProjectWorldLocationToScreen(GetActorLocation(), ScreenPos))
+		{
+			ScreenPos += (ShipLabelPositionOffset * ViewportScale);
+			ShipLabelWidget->SetAlignmentInViewport(FVector2D(0.5f, 0.0f));
+			ShipLabelWidget->SetPositionInViewport(ScreenPos);
+		}
+	}
+}
+
+void AAccelByteWarsPlayerPawn::ToggleShipLabel()
+{
+	if (ShipLabelWidget)
+	{
+		const bool bIsVisible = ShipLabelWidget->GetVisibility() == ESlateVisibility::Visible;
+		ShipLabelWidget->SetVisibility(bIsVisible ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
+	}
+}
+
 void AAccelByteWarsPlayerPawn::OnPlayerInputThisFrame()
 {
 	if (IsDestroyed == false)
@@ -474,17 +557,6 @@ void AAccelByteWarsPlayerPawn::Server_RotatePawn_Implementation(int Rate)
 	}
 
 	Client_RotatePawn_Implementation(Rate);
-}
-
-UAccelByteWarsProceduralMeshComponent* AAccelByteWarsPlayerPawn::GetPlayerShipMesh()
-{
-	if (PlayerShip == nullptr)
-		return nullptr;
-
-	if (PlayerShip->AccelByteWarsProceduralMesh == nullptr)
-		return nullptr;
-
-	return PlayerShip->AccelByteWarsProceduralMesh;
 }
 
 void AAccelByteWarsPlayerPawn::UpdateShipGlow()
@@ -537,19 +609,19 @@ void AAccelByteWarsPlayerPawn::Client_AdjustFirePower_Implementation(FVector Pla
 
 void AAccelByteWarsPlayerPawn::SetColor(FLinearColor InColor)
 {
-	if (!HasAuthority())
+	if (!HasAuthority() || !PlayerShip)
 	{
 		return;
 	}
 
 	PawnColor = InColor;
 
-	if (PlayerShip != nullptr)
+	const bool bIsUseDefaultColor = ColorAsset && DefaultColorAsset ? ColorAsset->Id == DefaultColorAsset->Id : true;
+	if (bIsUseDefaultColor && PlayerShip)
 	{
-		PlayerShip->SetShipColor(PawnColor);
+		PlayerShip->SetColor(PawnColor);
 	}
 
-	// Trigger RepNotify manually on P2P host for itself
 	if (!IsRunningDedicatedServer())
 	{
 		OnRepNotify_Color();
@@ -578,22 +650,18 @@ IInGameItemInterface* AAccelByteWarsPlayerPawn::GetActivePowerUp() const
 void AAccelByteWarsPlayerPawn::Client_OnDestroyed_Implementation()
 {
 	IsDestroyed = true;
-
 	ShowPowerLevelUITimer = 0.0f;
-	ShowShipLabelUITimer = 0.0f;
 
 	// Reset missile cooldown when player is destroyed
 	ResetMissileCooldown();
 
 	UpdatePowerBarUI(0.01f);
-	UpdateShipLabelUI(0.01f);
 	UpdateShipGlow();
 }
 
 void AAccelByteWarsPlayerPawn::OnRepNotify_Color()
 {
-	if (PlayerShip != nullptr)
-		PlayerShip->SetShipColor(PawnColor);
+	// Nothing needed
 }
 
 void AAccelByteWarsPlayerPawn::OnRepNotify_FirePowerLevel()

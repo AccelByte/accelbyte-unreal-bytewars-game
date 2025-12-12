@@ -22,7 +22,6 @@
 // @@@MULTISNIP BindMatchmakingDelegate {"selectedLines": ["1-2", "19", "22"], "highlightedLines": "{4}"}
 // @@@MULTISNIP BindCancelMatchmakingDelegate {"selectedLines": ["1-2", "20", "22"], "highlightedLines": "{4}"}
 // @@@MULTISNIP BindSessionServerDelegate {"selectedLines": ["1-2", "6-7", "22"], "highlightedLines": "{4-5}"}
-// @@@MULTISNIP BindBackfillDelegate {"selectedLines": ["1-2", "21", "22"], "highlightedLines": "{4}"}
 // @@@MULTISNIP BindLeaveSessionDelegate {"selectedLines": ["1-2", "9-16", "22"], "highlightedLines": "{4-11}"}
 void UMatchmakingDSOnlineSession::RegisterOnlineDelegates()
 {
@@ -44,7 +43,6 @@ void UMatchmakingDSOnlineSession::RegisterOnlineDelegates()
 	// Matchmaking delegates
 	GetSessionInt()->OnMatchmakingCompleteDelegates.AddUObject(this, &ThisClass::OnMatchmakingComplete);
 	GetSessionInt()->OnCancelMatchmakingCompleteDelegates.AddUObject(this, &ThisClass::OnCancelMatchmakingComplete);
-	GetABSessionInt()->OnBackfillProposalReceivedDelegates.AddUObject(this, &ThisClass::OnBackfillProposalReceived);
 }
 // @@@SNIPEND
 
@@ -52,7 +50,6 @@ void UMatchmakingDSOnlineSession::RegisterOnlineDelegates()
 // @@@MULTISNIP UnbindMatchmakingDelegate {"selectedLines": ["1-2", "12", "15"], "highlightedLines": "{4}"}
 // @@@MULTISNIP UnbindCancelMatchmakingDelegate {"selectedLines": ["1-2", "13", "15"], "highlightedLines": "{4}"}
 // @@@MULTISNIP UnbindSessionServerDelegate {"selectedLines": ["1-2", "5-6", "15"], "highlightedLines": "{4-5}"}
-// @@@MULTISNIP UnbindBackfillDelegate {"selectedLines": ["1-2", "14", "15"], "highlightedLines": "{4}"}
 // @@@MULTISNIP UnbindLeaveSessionDelegate {"selectedLines": ["1-2", "8-10", "15"], "highlightedLines": "{4-6}"}
 void UMatchmakingDSOnlineSession::ClearOnlineDelegates()
 {
@@ -67,7 +64,6 @@ void UMatchmakingDSOnlineSession::ClearOnlineDelegates()
 
 	GetSessionInt()->OnMatchmakingCompleteDelegates.RemoveAll(this);
 	GetSessionInt()->OnCancelMatchmakingCompleteDelegates.RemoveAll(this);
-	GetABSessionInt()->OnBackfillProposalReceivedDelegates.RemoveAll(this);
 }
 // @@@SNIPEND
 
@@ -508,32 +504,6 @@ void UMatchmakingDSOnlineSession::OnMatchmakingComplete(FName SessionName, bool 
 	}
 
 	OnMatchmakingCompleteDelegates.Broadcast(SessionName, bSucceeded);
-}
-// @@@SNIPEND
-
-// @@@SNIPSTART MatchmakingDSOnlineSession.cpp-OnBackfillProposalReceived
-void UMatchmakingDSOnlineSession::OnBackfillProposalReceived(
-	FAccelByteModelsV2MatchmakingBackfillProposalNotif Proposal)
-{
-	UE_LOG_MATCHMAKINGDS(Verbose, TEXT("called"))
-
-	// Abort if the session interface is invalid.
-	if (!ensure(GetABSessionInt().IsValid()))
-	{
-		UE_LOG_MATCHMAKINGDS(Warning, TEXT("Session Interface is not valid."));
-		return;
-	}
-
-	// Accept backfill proposal.
-	GetABSessionInt()->AcceptBackfillProposal(
-		GetPredefinedSessionNameFromType(EAccelByteV2SessionType::GameSession),
-		Proposal,
-		false,
-		FOnAcceptBackfillProposalComplete::CreateWeakLambda(this, [this](bool bSucceeded)
-	{
-		UE_LOG_MATCHMAKINGDS(Log, TEXT("succeeded: %s To accept backfill."), *FString(bSucceeded ? "TRUE": "FALSE"));
-		OnAcceptBackfillProposalCompleteDelegates.Broadcast(bSucceeded);
-	}));
 }
 // @@@SNIPEND
 

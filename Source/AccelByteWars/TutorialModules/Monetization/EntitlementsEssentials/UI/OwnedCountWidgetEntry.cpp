@@ -9,13 +9,13 @@
 #include "Monetization/EntitlementsEssentials/EntitlementsEssentialsSubsystem.h"
 #include "Core/UI/MainMenu/Store/Components/StoreItemListEntry.h"
 
-#include "Monetization/EntitlementsEssentials/UI/InventoryWidget.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
 #include "Core/UI/AccelByteWarsBaseUI.h"
 #include "Monetization/StoreItemPurchase/UI/ItemPurchaseWidget.h"
 #include "Monetization/StoreItemPurchase/UI/ItemPurchaseWidget_Starter.h"
+#include "Monetization/EntitlementsEssentials/UI/EquipmentInventoryWidget.h"
 
-#define PARENT_WIDGET_CLASS UInventoryWidget
+#define PARENT_WIDGET_CLASS UEquipmentInventoryWidget
 
 // @@@SNIPSTART OwnedCountWidgetEntry.cpp-NativeOnActivated
 // @@@MULTISNIP Subsystem {"selectedLines": ["1-2", "5-6", "18"]}
@@ -46,63 +46,18 @@ void UOwnedCountWidgetEntry::NativeOnDeactivated()
 
 	UItemPurchaseWidget::OnPurchaseCompleteMulticastDelegate.RemoveAll(this);
 	UItemPurchaseWidget_Starter::OnPurchaseCompleteMulticastDelegate.RemoveAll(this);
-
-	if (PARENT_WIDGET_CLASS* ParentWidget = GetFirstOccurenceOuter<PARENT_WIDGET_CLASS>())
-	{
-		ParentWidget->OnEquipped.RemoveAll(this);
-		ParentWidget->OnUnequipped.RemoveAll(this);
-	}
-}
-// @@@SNIPEND
-
-// @@@SNIPSTART OwnedCountWidgetEntry.cpp-CheckItemEquipped
-void UOwnedCountWidgetEntry::CheckItemEquipped()
-{
-	// Only if currently on inventory menu
-	if (!GetFirstOccurenceOuter<PARENT_WIDGET_CLASS>())
-	{
-		return;
-	}
-
-	const UStoreItemListEntry* ParentWidget = GetFirstOccurenceOuter<UStoreItemListEntry>();
-	if (!ParentWidget)
-	{
-		return;
-	}
-
-	const UStoreItemDataObject* Item = ParentWidget->GetItemData();
-	if (!Item)
-	{
-		return;
-	}
-
-	// Highlight the entitlement item if it is equipped and inside the inventory menu
-	UAccelByteWarsGameInstance* GameInstance = Cast<UAccelByteWarsGameInstance>(GetGameInstance());
-	if (!GameInstance)
-	{
-		return;
-	}
-
-	bool bEquipped = false;
-	if (!Item->GetSkuMap().IsEmpty() && Item->GetSkuMap().Find(EItemSkuPlatform::AccelByte))
-	{
-		bEquipped = GameInstance->IsItemEquippedBySku(
-			GetOwningPlayer()->GetLocalPlayer()->GetControllerId(),
-			EItemSkuPlatform::AccelByte,
-			Item->GetSkuMap()[EItemSkuPlatform::AccelByte]);
-	}
-	W_Parent->Execute_ToggleHighlight(W_Parent, bEquipped);
 }
 // @@@SNIPEND
 
 // @@@SNIPSTART OwnedCountWidgetEntry.cpp-RetrieveEntitlementWithForceRequest
-// @@@MULTISNIP Setup {"selectedLines": ["1-13", "20-21"]}
+// @@@MULTISNIP Setup {"selectedLines": ["1-13", "21-22"]}
 void UOwnedCountWidgetEntry::RetrieveEntitlementWithForceRequest(const bool bForceRequest)
 {
 	SetVisibility(ESlateVisibility::Collapsed);
 
+	const ULocalPlayer* LocalPlayer = GetOwningPlayer()->GetLocalPlayer();
 	W_Parent = GetFirstOccurenceOuter<UStoreItemListEntry>();
-	if (W_Parent)
+	if (W_Parent && LocalPlayer)
 	{
 		// Get item.
 		const UStoreItemDataObject* ItemData = W_Parent->GetItemData();
@@ -112,7 +67,7 @@ void UOwnedCountWidgetEntry::RetrieveEntitlementWithForceRequest(const bool bFor
 		}
 
 		EntitlementsSubsystem->GetOrQueryUserItemEntitlement(
-			GetOwningPlayer(),
+			LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId(),
 			ItemData->GetStoreItemId(),
 			FOnGetOrQueryUserItemEntitlementComplete::CreateUObject(this, &ThisClass::ShowOwnedCount),
 			bForceRequest);
@@ -139,14 +94,6 @@ void UOwnedCountWidgetEntry::ShowOwnedCount(const FOnlineError& Error, const USt
 
 	// Show the owned count if not empty.
 	SetVisibility(Tb_OwnedCount->GetText().IsEmpty() ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
-
-	// Check if this item is equipped or not.
-	if (PARENT_WIDGET_CLASS* ParentWidget = GetFirstOccurenceOuter<PARENT_WIDGET_CLASS>())
-	{
-		CheckItemEquipped();
-		ParentWidget->OnEquipped.AddUObject(this, &ThisClass::CheckItemEquipped);
-		ParentWidget->OnUnequipped.AddUObject(this, &ThisClass::CheckItemEquipped);
-	}
 }
 // @@@SNIPEND
 

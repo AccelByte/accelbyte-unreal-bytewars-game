@@ -103,6 +103,7 @@ void UMatchLobbyWidget::StartMatch()
 	if (AAccelByteWarsPlayerController* PC = Cast<AAccelByteWarsPlayerController>(GetOwningPlayer())) 
 	{
 		PC->TriggerLobbyStart();
+		OnMatchStartedDelegate.Broadcast();
 	}
 }
 // @@@SNIPEND

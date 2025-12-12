@@ -26,13 +26,10 @@ class ACCELBYTEWARS_API UOwnedCountWidgetEntry : public UAccelByteWarsActivatabl
 // @@@SNIPSTART OwnedCountWidgetEntry.h-private
 // @@@MULTISNIP Subsystem {"selectedLines": ["1-3"]}
 // @@@MULTISNIP CheckItemEquipped {"selectedLines": ["1", "5-6"]}
-// @@@MULTISNIP Setup {"selectedLines": ["1", "8-9"]}
+// @@@MULTISNIP Setup {"selectedLines": ["1", "5-6"]}
 private:
 	UPROPERTY()
 	UEntitlementsEssentialsSubsystem* EntitlementsSubsystem;
-
-	UFUNCTION()
-	void CheckItemEquipped();
 
 	void RetrieveEntitlementWithForceRequest(const bool bForceRequest);
 	void ShowOwnedCount(const FOnlineError& Error, const UStoreItemDataObject* Entitlement);

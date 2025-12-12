@@ -41,7 +41,7 @@ void UStoreItemDetailWidget::Setup(const UStoreItemDataObject* Object)
 	// Copy the object since we don't want the ShouldShowPrices to be set on the original data.
 	StoreItemDataObject = NewObject<UStoreItemDataObject>();
 	StoreItemDataObject->Setup(Object);
-	StoreItemDataObject->SetShouldShowPrices(false);
+	StoreItemDataObject->SetIsShowPrices(false);
 
 	W_ItemDetail->Setup(StoreItemDataObject);
 }
