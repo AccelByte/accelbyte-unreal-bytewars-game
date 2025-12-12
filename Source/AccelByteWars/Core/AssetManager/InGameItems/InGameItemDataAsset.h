@@ -10,6 +10,8 @@
 #include "InGameItemDataAsset.generated.h"
 
 class UMediaSource;
+class UNiagaraSystem;
+class UMaterial;
 
 UCLASS()
 class ACCELBYTEWARS_API UInGameItemDataAsset : public UAccelByteWarsDataAsset
@@ -57,4 +59,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true, MustImplement = "/Script/AccelByteWars.InGameItemInterface"))
 	TSubclassOf<AActor> Actor;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
+	TObjectPtr<UNiagaraSystem> FxAsset;
 };

@@ -23,8 +23,9 @@ class ACCELBYTEWARS_API AAccelByteWarsMissileTrail : public AActor
 	virtual void Destroyed() override;
 
 public:
-	// Sets default values for this actor's properties
 	AAccelByteWarsMissileTrail();
+	virtual void OnConstruction(const FTransform& Transform) override;
+	void SetNiagaraFx(UNiagaraSystem* NewFx);
 
 protected:
 	//~UObject overridden functions
@@ -89,13 +90,19 @@ protected:
 	 * @brief Current missile trail color
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AccelByteWars, ReplicatedUsing = OnRepNotify_Color)
-	FLinearColor TrailColor = FLinearColor::Yellow;
+	FLinearColor TrailColor = FLinearColor::White;
 
 	/**
 	 * @brief Generic on rep notify for the missile trail color
 	 */
 	UFUNCTION()
 	void OnRepNotify_Color();
+
+	/**
+	 * @brief Generic on rep notify for the missile trail fx
+	 */
+	UFUNCTION()
+	void OnRepNotify_TrailFx();
 
 	/**
 	 * @brief Returns true if the missile trail is faded out
@@ -107,6 +114,18 @@ protected:
 	 * @brief Set the alpha value of the trail.
 	 */
 	void SetRibbonAlpha(const float Alpha) const;
+
+	UPROPERTY(ReplicatedUsing = OnRepNotify_TrailFx)
+	UNiagaraSystem* TrailFx;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FString NiagaraVariableRateName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FString NiagaraVariableColorName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FString NiagaraVariableAlphaName;
 
 private:
 	// Ensures we only bind once to the owner's OnDestroyed delegate when Owner becomes available on clients.

@@ -39,13 +39,19 @@ public:
 	 * @brief Kills the shield and the missile hitting the shield
 	 */
 	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
-	void ShieldHitByMissile(AAccelByteWarsMissile* ABMissile);
+	void ShieldHitByMissile(AAccelByteWarsMissile* Missile);
 
 	/**
-	 * @brief Sets the shield color
+	 * @brief Handles end of life for the shield
 	 */
-	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent, Category = AccelByteWars)
-	void SetShieldColor(FLinearColor InColor);
+	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
+	void ShieldExpired();
+
+	/**
+	 * @brief Generic on-replicate notify for detecting if the color is changed
+	 */
+	UFUNCTION()
+	void OnRepNotify_Color();
 
 	/**
 	 * @brief A do-nothing sphere component used for positioning
@@ -68,8 +74,8 @@ public:
 	/**
 	 * @brief Maximum lifetime of the shield
 	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AccelByteWars, ReplicatedUsing = OnRepNotify_IsShieldActive)
-	float IsShieldActive = true;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AccelByteWars)
+	float IsActive = true;
 
 	/**
 	 * @brief Collision detection radius for the shield
@@ -102,14 +108,14 @@ public:
 	float CurrentCollisionTickRate = 0.0f;
 
 	/**
-	 * @brief Handles end of life for the shield
+	 * @brief Shield color variable name
 	 */
-	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
-	void ShieldExpired();
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FString NiagaraVariableColorName;
 
 	/**
-	 * @brief Generic OnRep notify for detecting if the shield is active
+	 * @brief Shield color
 	 */
-	UFUNCTION()
-	void OnRepNotify_IsShieldActive() { /* Do Nothing */ };
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AccelByteWars, ReplicatedUsing = OnRepNotify_Color)
+	FLinearColor Color = FLinearColor::White;
 };

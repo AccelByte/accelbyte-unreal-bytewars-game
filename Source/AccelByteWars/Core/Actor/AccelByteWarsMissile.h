@@ -23,8 +23,8 @@ class ACCELBYTEWARS_API AAccelByteWarsMissile : public AActor
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this actor's properties
 	AAccelByteWarsMissile();
+	virtual void OnConstruction(const FTransform& Transform) override;
 
 	UPROPERTY(BlueprintReadOnly, Category = AccelByteWars, EditAnywhere)
 	TSubclassOf<AAccelByteWarsMissileTrail> MissileTrailActor;
@@ -62,13 +62,13 @@ public:
 	 * @brief FX for missile trail
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AccelByteWars)
-	UNiagaraComponent* ThrustSparks = nullptr;
+	UNiagaraComponent* MissileThrustFx = nullptr;
 
 	/**
 	 * @brief FX for missile trail
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AccelByteWars)
-	UNiagaraComponent* ExpiringSparks = nullptr;
+	UNiagaraComponent* MissileExpiredFx = nullptr;
 
 	/**
 	 * @brief FX for missile body
@@ -304,12 +304,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
 	void DestroyOnOutOfBounds();
 
+	void SetNiagaraFx(UNiagaraSystem* NewTrailFx);
+
 protected:
 	/**
 	 * @brief Current color of the missile body
 	 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AccelByteWars, ReplicatedUsing = OnRepNotify_Color)
-	FLinearColor Color;
+	FLinearColor Color = FLinearColor::White;
 
 	/**
 	 * @brief Generic on rep notify for the missile color
@@ -337,6 +339,9 @@ protected:
 
 	bool CheckMissileToCrateCollision(UAccelByteWarsGameplayObjectComponent* Crate);
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FString NiagaraVariableColorName;
+
 private:
 	void OnMissileHitObject(AAccelByteWarsInGameGameMode* InGameGameMode, AController* ABPlayerController);
 	void NotifyShipHitByMissile() const;
@@ -344,7 +349,7 @@ private:
 	UPROPERTY()
 	AAccelByteWarsMissileTrail* MissileTrail = nullptr;
 
-	void SpawnMissileTrail();
+	void SpawnMissileTrail(const TObjectPtr<UNiagaraSystem> TrailFx = nullptr);
 
 	bool bIsMissileExpired{ false };
 };

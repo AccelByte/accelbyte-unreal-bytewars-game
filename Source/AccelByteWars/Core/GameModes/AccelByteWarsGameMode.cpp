@@ -248,7 +248,7 @@ void AAccelByteWarsGameMode::PlayerTeamSetup(AController* Controller) const
 				AbPlayerState->TeamId = TeamId;
 				AbPlayerState->TeamColor = GameInstance->GetTeamColor(TeamId);
 				AbPlayerState->SetScore(0.0f);
-				AbPlayerState->NumLivesLeft = INDEX_NONE;
+				AbPlayerState->NumLivesLeft = ABGameState->GameSetup.StartingLives;
 				AbPlayerState->KillCount = 0;
 				AbPlayerState->Deaths = 0;
 
@@ -268,7 +268,6 @@ void AAccelByteWarsGameMode::PlayerTeamSetup(AController* Controller) const
 				if (AbBotPlayerController)
 				{
 					AbPlayerState->SetPlayerName(TEXT("BOT"));
-					AbPlayerState->NumLivesLeft = ABGameState->GameSetup.StartingLives;
 					ABGameState->AddPlayerToTeam(
 						TeamId,
 						PlayerUniqueId,
@@ -279,7 +278,7 @@ void AAccelByteWarsGameMode::PlayerTeamSetup(AController* Controller) const
 						AbPlayerState->Deaths,
 						AbPlayerState->GetPlayerName(),
 						TEXT(""),
-						true,
+						false,
 						true);
 				
 					ABGameState->OnNotify_Teams();

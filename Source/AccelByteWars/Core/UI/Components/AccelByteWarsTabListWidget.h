@@ -27,16 +27,16 @@ struct FAccelByteWarsTabDescriptor
 
 public:
 	UPROPERTY(EditAnywhere)
-	FName TabId;
+	FName TabId = NAME_None;
 
 	UPROPERTY(EditAnywhere)
-	FText ButtonText;
+	FText ButtonText = FText::GetEmpty();
 
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<UCommonButtonBase> ButtonClass;
+	TSubclassOf<UCommonButtonBase> ButtonClass = nullptr;
 
-	UPROPERTY(EditAnywhere)
-	UWidget* TabContent;
+	UPROPERTY()
+	UWidget* TabContent = nullptr;
 
 	UPROPERTY(EditAnywhere)
 	int32 TabIndex = INDEX_NONE;

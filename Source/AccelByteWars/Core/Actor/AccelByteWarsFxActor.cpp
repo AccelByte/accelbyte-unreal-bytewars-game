@@ -57,6 +57,16 @@ void AAccelByteWarsFxActor::BeginPlay()
 	}
 }
 
+void AAccelByteWarsFxActor::SetNiagaraFx(const TObjectPtr<UNiagaraSystem> NewFx)
+{
+	if (NewFx)
+	{
+		ParticleSystem->DeactivateImmediate();
+		ParticleSystem->SetAsset(NewFx);
+		ParticleSystem->Activate();
+	}
+}
+
 void AAccelByteWarsFxActor::SetNiagaraFxColor(const FLinearColor& InColor)
 {
 	NiagaraFxColor = InColor;

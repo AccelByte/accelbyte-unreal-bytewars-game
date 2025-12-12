@@ -15,6 +15,7 @@ DEFINE_LOG_CATEGORY(LogAccelByteWarsBotController);
 AAccelByteWarsBotController::AAccelByteWarsBotController()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	bWantsPlayerState = true;
 }
 
 void AAccelByteWarsBotController::BeginPlay()

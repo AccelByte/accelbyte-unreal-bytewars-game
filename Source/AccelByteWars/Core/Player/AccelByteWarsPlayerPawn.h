@@ -13,6 +13,7 @@
 #include "AccelByteWarsPlayerPawn.generated.h"
 
 class APlayerShipBase;
+class UHUDShipLabelWidget;
 class UAccelByteWarsGameplayObjectComponent;
 class AAccelByteWarsMissile;
 class UAccelByteWarsGameplayObjectComponent;
@@ -30,12 +31,6 @@ public:
 	// Sets default values for this pawn's properties
 	AAccelByteWarsPlayerPawn();
 
-protected:
-	//~UObject overridden functions
-	virtual void BeginPlay() override;
-	//~End of UObject overridden functions
-
-public:
 	//~UObject overridden functions
 	virtual void Tick(float DeltaTime) override;
 	virtual void PossessedBy(AController* NewController) override;
@@ -77,9 +72,6 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = AccelByteWars, EditAnywhere)
 	TSubclassOf<AActor> MissileActor;
 
-	UPROPERTY(BlueprintReadOnly, Category = AccelByteWars, EditAnywhere)
-	UInGameItemDataAsset* DefaultSkin;
-
 	/**
 	 * @brief Current power level of the missile about to be fired
 	 */
@@ -109,12 +101,6 @@ public:
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AccelByteWars)
 	float ShowPowerLevelUITimer = 0.0f;
-
-	/**
-	 * @brief How long the ship label indicator should be shown on screen
-	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AccelByteWars)
-	float ShowShipLabelUITimer = 5.0f;
 
 	/**
 	 * @brief Minimum allowed missile speed
@@ -177,10 +163,16 @@ public:
 	void UpdatePowerBarUI(float DeltaTime);
 
 	/**
-	 * @brief Visually updates the ship label UI
+	 * @brief Visually updates the player label.
 	 */
-	UFUNCTION(BlueprintImplementableEvent, Category = AccelByteWars)
-	void UpdateShipLabelUI(float DeltaTime);
+	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
+	void UpdateShipLabel();
+
+	/**
+	 * @brief Toggles the visibility of the player label.
+	 */
+	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
+	void ToggleShipLabel();
 
 	/**
 	 * @brief Updated when the player sends some input
@@ -195,16 +187,10 @@ public:
 	void PulseCameraBackground();
 
 	/**
-	 * @brief Fires off the Game Camera Pulse Background Event
+	 * @brief Pause the Game Camera Pulse Background Event
 	 */
 	UFUNCTION(BlueprintImplementableEvent, Category = AccelByteWars)
 	void PauseCameraBackgroud();
-
-	/**
-	 * @brief Fires off the Game Camera Pulse Background Event
-	 */
-	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
-	UAccelByteWarsProceduralMeshComponent* GetPlayerShipMesh();
 
 	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
 	void UpdateSkin();
@@ -267,7 +253,16 @@ public:
 	// ***************** //
 
 	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
-	FLinearColor GetPawnColor() const { return PawnColor; }
+	const FLinearColor GetPawnColor() const { return PawnColor; }
+
+	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
+	const UInGameItemDataAsset* GetSkinAsset() const { return SkinAsset; }
+
+	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
+	const UInGameItemDataAsset* GetColorAsset() const { return ColorAsset; }
+
+	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
+	const UInGameItemDataAsset* GetMissileTrailFxAsset() const { return MissileTrailFxAsset; }
 
 	/**
 	 * @brief Lets other players know when a player ship is changing their ship color on spawn
@@ -281,15 +276,21 @@ public:
 	IInGameItemInterface* GetActivePowerUp() const;
 
 protected:
-	/**
-	 * @brief Current ship color, set only on spawn
-	 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AccelByteWars, ReplicatedUsing = OnRepNotify_Color)
-	FLinearColor PawnColor = FLinearColor::Yellow;
+	//~UObject overridden functions
+	virtual void BeginPlay() override;
+	//~End of UObject overridden functions
+
+	void InitDataAssets();
 
 	template <class T>
 	UFUNCTION(BlueprintCallable, Category = AccelByteWars)
-	T* SpawnActorInWorld(AActor* Owner, const FVector Location, const FRotator Rotation, TSubclassOf<AActor> ActorClass, bool ShouldReplicate);
+	T* SpawnActorInWorld(
+		AActor* Owner,
+		const FVector Location,
+		const FRotator Rotation,
+		TSubclassOf<AActor> ActorClass,
+		bool ShouldReplicate,
+		TFunction<void(AActor*)> PreSpawnInitialization = TFunction<void(AActor*)>());
 
 	/**
 	 * @brief Determines if the player's ship is able to fire a missile
@@ -337,10 +338,37 @@ protected:
 	UFUNCTION()
 	void OnTrackedMissileDestroyed(AActor* DestroyedActor);
 
-protected:
+	/**
+	 * @brief Current ship color, set only on spawn
+	 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = AccelByteWars, ReplicatedUsing = OnRepNotify_Color)
+	FLinearColor PawnColor = FLinearColor::White;
+
 	/**
 	 * @brief Missiles fired by this pawn that are currently alive (server-side tracking)
 	 */
 	UPROPERTY()
 	TSet<TWeakObjectPtr<AAccelByteWarsMissile>> TrackedMissiles;
+
+	UPROPERTY()
+	UHUDShipLabelWidget* ShipLabelWidget;
+	APlayerController* ShipLabelPC = nullptr;
+
+	UPROPERTY(BlueprintReadOnly, Category = AccelByteWars, EditAnywhere)
+	FVector2D ShipLabelPositionOffset{0.0f, 40.0f};
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = AccelByteWars)
+	TSubclassOf<UHUDShipLabelWidget> ShipLabelWidgetClass;
+
+	UPROPERTY(BlueprintReadOnly, Category = AccelByteWars, EditAnywhere)
+	UInGameItemDataAsset* DefaultSkinAsset;
+	UInGameItemDataAsset* SkinAsset;
+
+	UPROPERTY(BlueprintReadOnly, Category = AccelByteWars, EditAnywhere)
+	UInGameItemDataAsset* DefaultColorAsset;
+	UInGameItemDataAsset* ColorAsset;
+
+	UPROPERTY(BlueprintReadOnly, Category = AccelByteWars, EditAnywhere)
+	UInGameItemDataAsset* DefaultMissileTrailFxAsset;
+	UInGameItemDataAsset* MissileTrailFxAsset;
 };

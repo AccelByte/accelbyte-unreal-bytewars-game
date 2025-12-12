@@ -52,10 +52,11 @@ void APowerUpWormHole::OnUse()
 		return;
 	}
 
-	// set color
+	// Set color
 	if (const AAccelByteWarsPlayerPawn* Pawn = Cast<AAccelByteWarsPlayerPawn>(GetOwner()))
 	{
-		SetWormHoleColor(Pawn->GetPawnColor());
+		Color = Pawn->GetPawnColor();
+		OnRepNotify_Color();
 	}
 	Server_InitiateWormHoleGenerator();
 }
@@ -70,55 +71,81 @@ void APowerUpWormHole::DestroyItem()
 	WormHoleExpired();
 }
 
+void APowerUpWormHole::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(APowerUpWormHole, Color);
+}
+
 void APowerUpWormHole::Server_InitiateWormHoleGenerator_Implementation()
 {
-	if (GetOwner() == nullptr)
+	if (!GetOwner()) 
+	{
 		return;
+	}
 
-	AAccelByteWarsPlayerPawn* ABPawn = Cast<AAccelByteWarsPlayerPawn>(GetOwner());
-	if (ABPawn == nullptr)
+	AAccelByteWarsPlayerPawn* Pawn = Cast<AAccelByteWarsPlayerPawn>(GetOwner());
+	if (!Pawn) 
+	{
 		return;
+	}
 
-	// find new location
 	AGameModeBase* GameModeBase = GetWorld()->GetAuthGameMode();
 	if (!GameModeBase)
 	{
 		return;
 	}
+
 	AAccelByteWarsInGameGameMode* InGameGameMode = Cast<AAccelByteWarsInGameGameMode>(GameModeBase);
 	if (!InGameGameMode)
 	{
 		return;
 	}
+
+	// Find new location
 	FVector2D Position2D;
 	if (!InGameGameMode->FindGoodSpawnLocation(Position2D))
 	{
 		return;
 	}
+
 	const FVector NewPawnLocation = {Position2D.X, Position2D.Y, 0.0f};;
-
-	Multicast_InitiateWormHoleGenerator(ABPawn, NewPawnLocation);
-
-	ABPawn->SetActorLocation(NewPawnLocation);
+	Multicast_InitiateWormHoleGenerator(Pawn, NewPawnLocation);
+	Pawn->SetActorLocation(NewPawnLocation);
 
 	MarkAsExpired = true;
 }
 
 void APowerUpWormHole::Multicast_InitiateWormHoleGenerator_Implementation(AActor* ActorToMove, FVector NewPawnLocation)
 {
-	if (WormHoleFx != nullptr)
+	if (WormHoleFx) 
+	{
 		WormHoleFx->Activate(true);
+	}
 
 	ActorToMove->SetActorLocation(NewPawnLocation);
 }
 
 void APowerUpWormHole::WormHoleExpired()
 {
-	if (WormHoleFx != nullptr)
+	if (WormHoleFx) 
+	{
 		WormHoleFx->Deactivate();
+	}
 
-	if (WormHoleAudioComponent != nullptr)
+	if (WormHoleAudioComponent) 
+	{
 		WormHoleAudioComponent->Stop();
+	}
 
 	Destroy();
+}
+
+void APowerUpWormHole::OnRepNotify_Color()
+{
+	if (WormHoleFx)
+	{
+		WormHoleFx->SetVariableLinearColor(FName(NiagaraVariableColorName), Color);
+	}
 }

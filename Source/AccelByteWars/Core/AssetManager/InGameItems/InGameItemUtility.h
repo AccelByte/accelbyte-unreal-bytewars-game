@@ -26,7 +26,10 @@ enum class EItemType : uint8
 {
 	None,
 	Skin,
-	PowerUp
+	Color,
+	PowerUp,
+	ExplosionFx,
+	MissileTrailFx
 };
 
 UINTERFACE(BlueprintType)

@@ -4,6 +4,7 @@
 
 #include "Core/PowerUps/PowerUpSplitMissile.h"
 
+#include "Core/AssetManager/InGameItems/InGameItemDataAsset.h"
 #include "Core/GameStates/AccelByteWarsInGameGameState.h"
 #include "Core/Player/AccelByteWarsPlayerPawn.h"
 #include "Core/Utilities/AccelByteWarsUtilityLog.h"
@@ -86,6 +87,7 @@ void APowerUpSplitMissile::FireMissiles()
 	{
 		return;
 	}
+
 	AAccelByteWarsMissile* Missile = Pawn->FiredMissile;
 	if (!Missile)
 	{
@@ -104,32 +106,28 @@ void APowerUpSplitMissile::FireMissiles()
 		Pawn->MaxMissileSpeed);
 
 	// Spawn left missile actor
-	AAccelByteWarsMissile* LeftFiredMissile = SpawnMissile(
-		Pawn,
-		SpawnTransform,
-		ClampedInitialSpeed,
-		Pawn->GetPawnColor(),
-		Pawn->MissileActor);
-	if (LeftFiredMissile == nullptr)
-		return;
-
-	// Rotate left missile 90 degrees
-	LeftFiredMissile->Velocity = LeftFiredMissile->InitialSpeed * -GetActorTransform().GetRotation().GetForwardVector();
+	AAccelByteWarsMissile* LeftFiredMissile = 
+		SpawnMissile(Pawn, SpawnTransform, ClampedInitialSpeed, Pawn->GetPawnColor(), Pawn->MissileActor);
+	if (LeftFiredMissile) 
+	{
+		// Rotate left missile 90 degrees
+		LeftFiredMissile->Velocity = LeftFiredMissile->InitialSpeed * -GetActorTransform().GetRotation().GetForwardVector();
+	}
 
 	// Spawn right missile actor
-	AAccelByteWarsMissile* RightFiredMissile = SpawnMissile(Pawn, SpawnTransform, ClampedInitialSpeed, Pawn->GetPawnColor(), Pawn->MissileActor);
-	if (RightFiredMissile == nullptr)
-		return;
-
-	// Rotate right missile 90 degrees
-	RightFiredMissile->Velocity = RightFiredMissile->InitialSpeed * GetActorTransform().GetRotation().GetForwardVector();
+	AAccelByteWarsMissile* RightFiredMissile = 
+		SpawnMissile(Pawn, SpawnTransform, ClampedInitialSpeed, Pawn->GetPawnColor(), Pawn->MissileActor);
+	if (RightFiredMissile) 
+	{
+		// Rotate right missile 90 degrees
+		RightFiredMissile->Velocity = RightFiredMissile->InitialSpeed * GetActorTransform().GetRotation().GetForwardVector();
+	}
 
 	// Increment missiles fired
-	AAccelByteWarsPlayerState* ABPlayerState = Cast<AAccelByteWarsPlayerState>(Pawn->GetPlayerState());
-	if (ABPlayerState == nullptr)
-		return;
-
-	ABPlayerState->MissilesFired += 2;
+	if (AAccelByteWarsPlayerState* ABPlayerState = Cast<AAccelByteWarsPlayerState>(Pawn->GetPlayerState()))
+	{
+		ABPlayerState->MissilesFired += 2;
+	}
 }
 
 AAccelByteWarsMissile* APowerUpSplitMissile::SpawnMissile(
@@ -140,9 +138,18 @@ AAccelByteWarsMissile* APowerUpSplitMissile::SpawnMissile(
 	TSubclassOf<AActor> InFiredMissileActor)
 {
 	// Spawn right missile actor
-	AAccelByteWarsMissile* FiredMissile = SpawnBPActorInWorld<AAccelByteWarsMissile>(SplitMissileOwner, SpawnTransform.GetLocation(), SpawnTransform.Rotator(), InFiredMissileActor, true);
-	if (FiredMissile == nullptr)
+	AAccelByteWarsMissile* FiredMissile = 
+		SpawnBPActorInWorld<AAccelByteWarsMissile>(SplitMissileOwner, SpawnTransform.GetLocation(), SpawnTransform.Rotator(), InFiredMissileActor, true);
+	if (!FiredMissile) 
+	{
 		return nullptr;
+	}
+
+	if (const AAccelByteWarsPlayerPawn* Pawn = Cast<AAccelByteWarsPlayerPawn>(Owner);
+		const UInGameItemDataAsset* MissileTrailFxAsset = Pawn->GetMissileTrailFxAsset())
+	{
+		FiredMissile->SetNiagaraFx(MissileTrailFxAsset->FxAsset);
+	}
 
 	FiredMissile->Server_SetColor(InColor);
 	FiredMissile->InitialSpeed = InClampedInitialSpeed;

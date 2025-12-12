@@ -43,7 +43,7 @@ APowerUpByteShield::APowerUpByteShield()
 
 void APowerUpByteShield::Tick(float DeltaTime)
 {
-	if (IsShieldActive && HasAuthority())
+	if (IsActive && HasAuthority())
 	{
 		CurrentCollisionTickRate += DeltaTime;
 		CurrentShieldLifetime += DeltaTime;
@@ -51,7 +51,7 @@ void APowerUpByteShield::Tick(float DeltaTime)
 		if (CurrentShieldLifetime > MaxShieldLifetime)
 		{
 			ShieldExpired();
-			IsShieldActive = false;
+			IsActive = false;
 		}
 
 		CheckCollision();
@@ -70,8 +70,9 @@ void APowerUpByteShield::OnUse()
 
 	if (AAccelByteWarsPlayerPawn* Pawn = Cast<AAccelByteWarsPlayerPawn>(GetOwner()))
 	{
+		Color = Pawn->GetPawnColor();
 		AttachToActor(Pawn, FAttachmentTransformRules::SnapToTargetIncludingScale);
-		SetShieldColor(Pawn->GetPawnColor());
+		OnRepNotify_Color();
 	}
 }
 
@@ -89,49 +90,68 @@ void APowerUpByteShield::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(APowerUpByteShield, IsShieldActive);
+	DOREPLIFETIME(APowerUpByteShield, Color);
 }
 
 void APowerUpByteShield::CheckCollision()
 {
-	if (Owner == nullptr)
+	if (!Owner)
+	{
 		return;
+	}
 
 	TArray<AActor*> FoundMissiles;
 	UGameplayStatics::GetAllActorsOfClass(Owner->GetWorld(), AAccelByteWarsMissile::StaticClass(), FoundMissiles);
 
-	for (int i = 0; i < FoundMissiles.Num(); i++)
+	for (int32 Index = 0; Index < FoundMissiles.Num(); Index++)
 	{
-		AAccelByteWarsMissile* ABMissile = Cast<AAccelByteWarsMissile>(FoundMissiles[i]);
-		if (ABMissile == nullptr)
+		AAccelByteWarsMissile* Missile = Cast<AAccelByteWarsMissile>(FoundMissiles[Index]);
+		if (!Missile) 
+		{
 			return;
+		}
 
-		float Distance = UKismetMathLibrary::Vector_Distance(this->GetActorLocation(), ABMissile->GetActorLocation());
-		if (Distance > ShieldRadius)
+		float Distance = UKismetMathLibrary::Vector_Distance(this->GetActorLocation(), Missile->GetActorLocation());
+		if (Distance > ShieldRadius) 
+		{
 			continue;
+		}
 
-		if (HasAuthority())
-			ShieldHitByMissile(ABMissile);
+		if (HasAuthority()) 
+		{
+			ShieldHitByMissile(Missile);
+		}
 	}
 }
 
-void APowerUpByteShield::ShieldHitByMissile(AAccelByteWarsMissile* ABMissile)
+void APowerUpByteShield::ShieldHitByMissile(AAccelByteWarsMissile* Missile)
 {
 	// Destroy the missile and the shield
-	ABMissile->DestroyByPowerUp();
+	Missile->DestroyByPowerUp();
 	ShieldExpired();
 
-	IsShieldActive = false;
-	OnRepNotify_IsShieldActive();
+	IsActive = false;
 }
 
 void APowerUpByteShield::ShieldExpired()
 {
-	if (ShieldFx != nullptr)
+	if (ShieldFx) 
+	{
 		ShieldFx->Deactivate();
+	}
 
-	if (ShieldAudioComponent != nullptr)
+	if (ShieldAudioComponent) 
+	{
 		ShieldAudioComponent->Stop();
+	}
 
 	Destroy();
+}
+
+void APowerUpByteShield::OnRepNotify_Color()
+{
+	if (ShieldFx) 
+	{
+		ShieldFx->SetVariableLinearColor(FName(NiagaraVariableColorName), Color);
+	}
 }

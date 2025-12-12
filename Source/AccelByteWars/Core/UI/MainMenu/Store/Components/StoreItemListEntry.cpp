@@ -9,7 +9,6 @@
 #include "Core/UI/MainMenu/Store/StoreItemModel.h"
 #include "Components/ListView.h"
 #include "Components/TextBlock.h"
-#include "Components/WidgetSwitcher.h"
 #include "Core/AssetManager/InGameItems/InGameItemDataAsset.h"
 #include "Core/UI/Components/AccelByteWarsAsyncImageWidget.h"
 
@@ -40,7 +39,8 @@ void UStoreItemListEntry::Setup(const UStoreItemDataObject* Object)
 	// Set UI
 	Tb_Name->SetText(ItemData->GetTitle());
 	W_Image->LoadImage(ItemData->GetIconUrl());
-	if (ItemData->GetShouldShowPrices())
+	Lv_Prices->SetVisibility(ItemData->GetIsShowPrices() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	if (ItemData->GetIsShowPrices())
 	{
 		Lv_Prices->SetListItems(Object->GetPrices());
 	}
@@ -50,8 +50,10 @@ void UStoreItemListEntry::Setup(const UStoreItemDataObject* Object)
 	Category = Category.RightChop(Category.Find(TEXT("/"), ESearchCase::IgnoreCase, ESearchDir::FromEnd) + 1);
 	Tb_Category->SetText(FText::FromString(Category));
 
-	if (W_EntitlementOuter->HasAnyChildren())
+	// Determine whether to show entitlement item count or not.
+	if (ItemData->GetIsShowItemCount() && W_EntitlementOuter->HasAnyChildren())
 	{
+		W_EntitlementOuter->SetVisibility(ESlateVisibility::Visible);
 		if (UCommonActivatableWidget* Widget = Cast<UCommonActivatableWidget>(W_EntitlementOuter->GetChildAt(0)))
 		{
 			// Activate or reactivate widget.
@@ -62,23 +64,13 @@ void UStoreItemListEntry::Setup(const UStoreItemDataObject* Object)
 			Widget->ActivateWidget();
 		}
 	}
-}
-
-void UStoreItemListEntry::SetOwned(const bool bOwned) const
-{
-	if (bOwned)
-	{
-		Ws_Price->SetActiveWidget(Tb_Owned);
-	}
 	else
 	{
-		Ws_Price->SetActiveWidget(Lv_Prices);
+		W_EntitlementOuter->SetVisibility(ESlateVisibility::Collapsed);
 	}
-
-	B_Root->SetContentColorAndOpacity(bOwned ? OwnedColor : NormalColor);
 }
 
-void UStoreItemListEntry::ResetUI() const
+void UStoreItemListEntry::ResetUI()
 {
 	if (W_EntitlementOuter->HasAnyChildren())
 	{
@@ -88,4 +80,6 @@ void UStoreItemListEntry::ResetUI() const
 		}
 	}
 	Lv_Prices->ClearListItems();
+
+	Execute_ToggleHighlight(this, false);
 }

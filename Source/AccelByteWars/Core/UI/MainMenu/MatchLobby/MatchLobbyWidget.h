@@ -34,6 +34,8 @@ DECLARE_MULTICAST_DELEGATE_ThreeParams(
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnQuitLobby, APlayerController* /*PlayerController*/);
 
+DECLARE_MULTICAST_DELEGATE(FOnMatchStarted);
+
 UCLASS()
 class ACCELBYTEWARS_API UMatchLobbyWidget : public UAccelByteWarsActivatableWidget
 {
@@ -48,6 +50,7 @@ public:
 
 	inline static FOnQueryTeamMembersInfo OnQueryTeamMembersInfoDelegate;
 	inline static FOnQuitLobby OnQuitLobbyDelegate;
+	inline static FOnMatchStarted OnMatchStartedDelegate;
 
 protected:
 	void NativeConstruct() override;

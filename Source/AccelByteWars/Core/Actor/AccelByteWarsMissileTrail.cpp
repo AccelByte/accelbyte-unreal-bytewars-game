@@ -8,12 +8,12 @@
 
 DEFINE_LOG_CATEGORY(LogMissileTrail);
 
-// Sets default values
 AAccelByteWarsMissileTrail::AAccelByteWarsMissileTrail()
 {
 	// Attach component in the BeginPlay to make sure the starting position is in the correct position.
 	MissileTrail = CreateDefaultSubobject<UNiagaraComponent>(TEXT("ParticleSystem"));
 	MissileTrail->SetAutoActivate(false);
+	TrailFx = MissileTrail->GetAsset();
 	RootComponent = MissileTrail;
 
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
@@ -23,7 +23,12 @@ AAccelByteWarsMissileTrail::AAccelByteWarsMissileTrail()
 	bReplicates = true;
 }
 
-// Called when the game starts or when spawned
+void AAccelByteWarsMissileTrail::OnConstruction(const FTransform& Transform)
+{
+	Super::OnConstruction(Transform);
+	OnRepNotify_Color();
+}
+
 void AAccelByteWarsMissileTrail::BeginPlay()
 {
 	Super::BeginPlay();
@@ -73,9 +78,11 @@ void AAccelByteWarsMissileTrail::BeginPlay()
 void AAccelByteWarsMissileTrail::OnOwnerDestroyed(AActor* InActor)
 {
 	bFadeOutDelayStarted = true;
+
+	// Stop emitting.
+	MissileTrail->SetVariableFloat(FName(NiagaraVariableRateName), 0.0f);
 }
 
-// Called every frame
 void AAccelByteWarsMissileTrail::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -177,18 +184,39 @@ void AAccelByteWarsMissileTrail::OnRepNotify_Color()
 		return;
 	}
 
-#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 3
-	MissileTrail->SetVariableLinearColor("RibbonColour", TrailColor);
-#else
-	MissileTrail->SetNiagaraVariableLinearColor("RibbonColour", TrailColor);
-#endif
+	MissileTrail->SetVariableLinearColor(FName(NiagaraVariableColorName), TrailColor);
 }
 
 void AAccelByteWarsMissileTrail::SetRibbonAlpha(const float Alpha) const
 {
-#if ENGINE_MAJOR_VERSION >= 5 && ENGINE_MINOR_VERSION >= 3
-	MissileTrail->SetVariableFloat("RibbonAlphaScale", Alpha);
-#else
-	MissileTrail->SetNiagaraVariableFloat("RibbonAlphaScale", Alpha);
-#endif
+	MissileTrail->SetVariableFloat(FName(NiagaraVariableAlphaName), Alpha);
+}
+
+void AAccelByteWarsMissileTrail::SetNiagaraFx(UNiagaraSystem* NewFx)
+{
+	if (!HasAuthority())
+	{
+		return;
+	}
+
+	TrailFx = NewFx;
+
+	if (!IsRunningDedicatedServer())
+	{
+		OnRepNotify_TrailFx();
+	}
+}
+
+void AAccelByteWarsMissileTrail::OnRepNotify_TrailFx()
+{
+	if (!MissileTrail || !MissileTrail->IsRegistered() || !TrailFx)
+	{
+		return;
+	}
+
+	MissileTrail->DeactivateImmediate();
+	MissileTrail->SetAsset(TrailFx);
+	MissileTrail->Activate();
+
+	SetRibbonAlpha(CurrentAlpha);
 }

@@ -7,14 +7,15 @@
 #include "AccelByteWarsCrateBase.h"
 #include "AccelByteWarsFxActor.h"
 #include "AccelByteWarsMissileTrail.h"
-#include "AccelByteWars/Core/Player/AccelByteWarsPlayerPawn.h"
+#include "Core/Player/AccelByteWarsPlayerPawn.h"
 #include "Core/Player/AccelByteWarsPlayerController.h"
+#include "Core/Player/AccelByteWarsBotController.h"
 #include "Core/GameModes/AccelByteWarsInGameGameMode.h"
 #include "Core/GameStates/AccelByteWarsInGameGameState.h"
+#include "Core/AssetManager/InGameItems/InGameItemDataAsset.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 
-// Sets default values
 AAccelByteWarsMissile::AAccelByteWarsMissile()
 {
 	// Setup missile mesh component
@@ -26,12 +27,12 @@ AAccelByteWarsMissile::AAccelByteWarsMissile()
 	MissileAudioComponent->SetupAttachment(RootComponent);
 
 	// Setup thrust sparks
-	ThrustSparks = CreateDefaultSubobject<UNiagaraComponent>(TEXT("ThrustSparks"));
-	ThrustSparks->SetupAttachment(RootComponent);
+	MissileThrustFx = CreateDefaultSubobject<UNiagaraComponent>(TEXT("MissileThrustFx"));
+	MissileThrustFx->SetupAttachment(RootComponent);
 
 	// Setup expiring sparks
-	ExpiringSparks = CreateDefaultSubobject<UNiagaraComponent>(TEXT("ExpiringSparks"));
-	ExpiringSparks->SetupAttachment(RootComponent);
+	MissileExpiredFx = CreateDefaultSubobject<UNiagaraComponent>(TEXT("MissileExpiredFx"));
+	MissileExpiredFx->SetupAttachment(RootComponent);
 
 	// Setup procedural mesh component
 	AccelByteWarsProceduralMesh = CreateDefaultSubobject<UAccelByteWarsProceduralMeshComponent>(TEXT("AccelByteWarsProceduralMesh"));
@@ -45,7 +46,14 @@ AAccelByteWarsMissile::AAccelByteWarsMissile()
 	PrimaryActorTick.bCanEverTick = true;
 }
 
-// Called when the game starts or when spawned
+void AAccelByteWarsMissile::OnConstruction(const FTransform& Transform)
+{
+	Super::OnConstruction(Transform);
+
+	AccelByteWarsProceduralMesh->MeshSetup();
+	AccelByteWarsProceduralMesh->UpdateColor(Color);
+}
+
 void AAccelByteWarsMissile::BeginPlay()
 {
 	Super::BeginPlay();
@@ -91,6 +99,10 @@ void AAccelByteWarsMissile::Destroyed()
 	}
 
 	PlayerPawn->UpdateShipGlow();
+	if (PlayerPawn->FiredMissile == this)
+	{
+		PlayerPawn->FiredMissile = nullptr;
+	}
 }
 
 void AAccelByteWarsMissile::OnMissileDestroyed(AActor* DestroyedActor)
@@ -99,7 +111,6 @@ void AAccelByteWarsMissile::OnMissileDestroyed(AActor* DestroyedActor)
 	TreatMissileAsExpired(ABInGameMode);
 }
 
-// Called every frame
 void AAccelByteWarsMissile::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -264,8 +275,7 @@ void AAccelByteWarsMissile::OnMissileHitObject(AAccelByteWarsInGameGameMode* InG
 {
 	if (HitObject->ObjectType == EGameplayObjectType::SHIP)
 	{
-		float a = UKismetMathLibrary::FTrunc(Score);
-		SpawnScorePopupHud(a);
+		SpawnScorePopupHud(UKismetMathLibrary::FTrunc(Score));
 
 		// Hit object is a ship, notify entity destroyed for the ship.
 		NotifyShipHitByMissile();
@@ -354,6 +364,9 @@ void AAccelByteWarsMissile::OnRepNotify_Color()
 		return;
 
 	AccelByteWarsProceduralMesh->UpdateColor(Color);
+	MissileThrustFx->SetVariableLinearColor(FName(NiagaraVariableColorName), Color);
+	MissileExpiredFx->SetVariableLinearColor(FName(NiagaraVariableColorName), Color);
+
 	if (HasAuthority())
 	{
 		MissileTrail->Server_SetColor(Color);
@@ -476,16 +489,20 @@ void AAccelByteWarsMissile::Server_SetMissileForwardVector_Implementation(FVecto
 
 void AAccelByteWarsMissile::ExpiryWindowBeforeTimeoutDestruction()
 {
-	float a = GetGameTimeSinceCreation();
-	float b = MaxTimeAlive - ExpiryTime;
+	float CurrentLifetime = GetGameTimeSinceCreation();
+	float ExpiryStartTime = MaxTimeAlive - ExpiryTime;
 
-	if (a > b && Expiring == false)
+	if (CurrentLifetime > ExpiryStartTime && Expiring == false)
 	{
-		if (ThrustSparks != nullptr)
-			ThrustSparks->Deactivate();
+		if (MissileThrustFx) 
+		{
+			MissileThrustFx->Deactivate();
+		}
 
-		if (ExpiringSparks != nullptr)
-			ExpiringSparks->Activate();
+		if (MissileExpiredFx) 
+		{
+			MissileExpiredFx->Activate();
+		}
 
 		Expiring = true;
 	}
@@ -511,15 +528,27 @@ void AAccelByteWarsMissile::DestroyOnOutOfBounds()
 	const AAccelByteWarsInGameGameState* GameState = Cast<AAccelByteWarsInGameGameState>(GetWorld()->GetGameState());
 	if (this->GetActorLocation().X <= GameState->MinGameBoundExtend.X || this->GetActorLocation().X >= GameState->MaxGameBoundExtend.X || this->GetActorLocation().Y <= GameState->MinGameBoundExtend.Y || this->GetActorLocation().Y >= GameState->MaxGameBoundExtend.Y)
 	{
-		// should add activating state to prevent overlaps
-		if (ThrustSparks != nullptr)
-			ThrustSparks->Deactivate();
+		// Should add activating state to prevent overlaps
+		if (MissileThrustFx) 
+		{
+			MissileThrustFx->Deactivate();
+		}
 
-		// should add activating state to prevent overlaps
-		if (ExpiringSparks != nullptr)
-			ExpiringSparks->Activate();
+		// Should add activating state to prevent overlaps
+		if (MissileExpiredFx) 
+		{
+			MissileExpiredFx->Activate();
+		}
 
 		KillActorThisFrame = true;
+	}
+}
+
+void AAccelByteWarsMissile::SetNiagaraFx(UNiagaraSystem* NewTrailFx)
+{
+	if (NewTrailFx)
+	{
+		MissileTrail->SetNiagaraFx(NewTrailFx);
 	}
 }
 
@@ -590,29 +619,48 @@ void AAccelByteWarsMissile::SkimmingAndScoreUpdate(float DeltaTime)
 
 void AAccelByteWarsMissile::OnDestroyObject()
 {
-	if (HasAuthority() == false)
+	if (!HasAuthority()) 
+	{
 		return;
+	}
 
-	if (KillActorThisFrame == false)
+	if (!KillActorThisFrame) 
+	{
 		return;
+	}
 
-	if (GetOwner() == nullptr)
+	if (!GetOwner()) 
+	{
 		return;
+	}
 
-	// The owner not always controller (e.g. asteroid). Leave it nullptr to mark it as non player actor
-	AAccelByteWarsPlayerController* ABPlayerController = Cast<AAccelByteWarsPlayerController>(GetOwner()->GetInstigatorController());
+	// The owner can be null, as it is not always a controller (e.g. asteroid).
+	AController* Controller = GetOwner()->GetInstigatorController();
+	if (AAccelByteWarsPlayerController* PC = Cast<AAccelByteWarsPlayerController>(Controller))
+	{
+		Controller = PC;
+	}
+	else if (AAccelByteWarsBotController* BotPC = Cast<AAccelByteWarsBotController>(Controller))
+	{
+		Controller = BotPC;
+	}
+	else
+	{
+		Controller = nullptr;
+	}
 
 	DecrementPlayerMissileCount();
 
 	AAccelByteWarsInGameGameMode* ABInGameMode = Cast<AAccelByteWarsInGameGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
-	if (ABInGameMode == nullptr)
+	if (ABInGameMode == nullptr) 
+	{
 		return;
+	}
 
 	if (HitObject != nullptr)
 	{
 		ABInGameMode->OnMissileDestroyed(GetActorLocation(), HitObject, Color, GetOwner());
-
-		OnMissileHitObject(ABInGameMode, ABPlayerController);
+		OnMissileHitObject(ABInGameMode, Controller);
 		NearHitShips.Empty();
 		Destroy();
 	}
@@ -636,16 +684,11 @@ void AAccelByteWarsMissile::OnDestroyObject()
 
 void AAccelByteWarsMissile::TreatMissileAsExpired_Implementation(AAccelByteWarsGameMode* ABGameMode)
 {
-	if (!bIsMissileExpired && IsValid(ExpiredFxActor))
+	AAccelByteWarsInGameGameState* GameState = Cast<AAccelByteWarsInGameGameState>(UGameplayStatics::GetGameState(GetWorld()));
+	if (!bIsMissileExpired && GameState)
 	{
-		FActorSpawnParameters Parameters;
-		Parameters.Owner = GetOwner();
-		AAccelByteWarsFxActor* FxActor = GetWorld()->SpawnActor<AAccelByteWarsFxActor>(ExpiredFxActor, GetActorLocation(), FRotator::ZeroRotator, Parameters);
-		if (FxActor)
-		{
-			FxActor->SetNiagaraFxColor(AccelByteWarsProceduralMesh->GetColor());
-		}
 		bIsMissileExpired = true;
+		GameState->MulticastSpawnExplosionFx(GetActorLocation(), AccelByteWarsProceduralMesh->GetColor(), GetOwner());
 	}
 
 	if (!IsPendingKillPending())
@@ -728,7 +771,7 @@ void AAccelByteWarsMissile::NotifyShipHitByMissile() const
 	}
 }
 
-void AAccelByteWarsMissile::SpawnMissileTrail()
+void AAccelByteWarsMissile::SpawnMissileTrail(const TObjectPtr<UNiagaraSystem> TrailFx)
 {
 	if (!HasAuthority() || !IsValid(MissileTrailActor))
 	{
@@ -738,6 +781,15 @@ void AAccelByteWarsMissile::SpawnMissileTrail()
 	FActorSpawnParameters SpawnParameters;
 	SpawnParameters.Owner = this;
 	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	SpawnParameters.CustomPreSpawnInitalization = [TrailFx](AActor* SpawnedActor)
+	{
+		// Set the trail effect if any.
+		AAccelByteWarsMissileTrail* PreMissileTrail = Cast<AAccelByteWarsMissileTrail>(SpawnedActor);
+		if (TrailFx && PreMissileTrail)
+		{
+			PreMissileTrail->SetNiagaraFx(TrailFx);
+		}
+	};
 
 	// Spawn the trail at the missile's transform so clients without an Owner reference yet still get correct start position.
 	FTransform TrailTransform{ GetActorRotation(), GetActorLocation() };
@@ -753,6 +805,7 @@ void AAccelByteWarsMissile::SpawnMissileTrail()
 		MissileTrailActor,
 		TrailTransform,
 		SpawnParameters);
+
 	if (!MissileTrail)
 	{
 		return;
