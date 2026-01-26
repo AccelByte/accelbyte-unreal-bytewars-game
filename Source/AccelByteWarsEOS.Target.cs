@@ -5,20 +5,11 @@
 using UnrealBuildTool;
 using System.Collections.Generic;
 
-public class AccelByteWarsEOSTarget : TargetRules
+public class AccelByteWarsEOSTarget : AccelByteWarsTarget
 {
-    public AccelByteWarsEOSTarget(TargetInfo Target) : base(Target)
-    {
-        CustomConfig = "EOS";
-
-        Type = TargetType.Game;
-        DefaultBuildSettings = BuildSettingsVersion.V2;
-        ExtraModuleNames.AddRange(new string[] { "AccelByteWars", "AccelByteUe4Sdk", "OnlineSubsystemAccelByte", "AccelByteNetworkUtilities" });
-
-        // Enable logging in shipping builds
-        if (Configuration == UnrealTargetConfiguration.Shipping)
-        {
-            bUseLoggingInShipping = true;
-        }
-    }
+	public AccelByteWarsEOSTarget(TargetInfo Target) : base(Target)
+	{
+		CustomConfig = "EOS";
+		ProjectDefinitions.Add("PLATFORM_EOS");
+	}
 }

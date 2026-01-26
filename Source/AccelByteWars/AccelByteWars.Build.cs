@@ -76,6 +76,15 @@ public class AccelByteWars : ModuleRules
 			PublicDefinitions.Add("PLATFORM_STEAM=0");
 		}
 
+		if (Target.ProjectDefinitions.Contains("PLATFORM_EOS"))
+		{
+			PublicDefinitions.Add("PLATFORM_EOS=1");
+		}
+		else
+		{
+			PublicDefinitions.Add("PLATFORM_EOS=0");
+		}
+
 		// Use Google services for Android
 		if (Target.Platform == UnrealTargetPlatform.Android)
 		{

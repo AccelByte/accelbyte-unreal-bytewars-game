@@ -7,12 +7,9 @@
 
 #include "OnlineSubsystemUtils.h"
 #include "Monetization/InGameStoreEssentials/UI/ShopWidget.h"
-#include "Monetization/InGameStoreEssentials/InGameStoreEssentialsSubsystem_Starter.h"
 #include "Core/AssetManager/InGameItems/InGameItemDataAsset.h"
 #include "Core/Player/AccelByteWarsPlayerPawn.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
-
-#define STORE_SUBSYSTEM_CLASS UInGameStoreEssentialsSubsystem_Starter
 
 void UEntitlementsEssentialsSubsystem_Starter::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -61,23 +58,18 @@ TArray<UStoreItemDataObject*> UEntitlementsEssentialsSubsystem_Starter::Entitlem
 UStoreItemDataObject* UEntitlementsEssentialsSubsystem_Starter::EntitlementToDataObject(
 	TSharedRef<FOnlineEntitlement> Entitlement) const
 {
-	UStoreItemDataObject* Item = NewObject<UStoreItemDataObject>();
-	Item->Setup(Entitlement.Get());
+	UStoreItemDataObject* EntitlementItem = NewObject<UStoreItemDataObject>();
+	EntitlementItem->Setup(Entitlement.Get());
+	EntitlementItem->SetIsShowPrices(false);
 
-	// Byte Wars specifics, used to hide the prices on the UI
-	Item->SetIsShowPrices(false);
-
-	for (const UStoreItemDataObject* Offer : StoreOffers)
+	if (TSharedPtr<FOnlineStoreOffer> StoreOffer = StoreInterface->GetOffer(Entitlement->ItemId))
 	{
-		if (Offer->GetStoreItemId().Equals(Item->GetStoreItemId()))
+		if (UStoreItemDataObject* StoreItem = FInGameStoreEssentialsUtils::ConvertStoreData(StoreOffer.ToSharedRef().Get()))
 		{
-			Item->UpdateVariables(Offer);
-			break;
+			EntitlementItem->UpdateVariables(StoreItem);
 		}
 	}
 
-	return Item;
+	return EntitlementItem;
 }
 #pragma endregion 
-
-#undef STORE_SUBSYSTEM_CLASS

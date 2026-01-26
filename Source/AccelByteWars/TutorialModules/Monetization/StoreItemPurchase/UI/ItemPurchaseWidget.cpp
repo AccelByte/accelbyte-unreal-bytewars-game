@@ -88,10 +88,22 @@ void UItemPurchaseWidget::NativeOnDeactivated()
 // @@@SNIPEND
 
 // @@@SNIPSTART ItemPurchaseWidget.cpp-OnClickPurchase
-// @@@MULTISNIP Setup {"selectedLines": ["1-3", "32"]}
-// @@@MULTISNIP Finishing {"selectedLines": ["1-3", "26-32"]}
+// @@@MULTISNIP Setup {"selectedLines": ["1-2", "15", "44"]}
+// @@@MULTISNIP Finishing {"selectedLines": ["1-2", "15", "38-44"]}
 void UItemPurchaseWidget::OnClickPurchase(const int32 PriceIndex) const
 {
+	const ULocalPlayer* LocalPlayer = GetOwningPlayer()->GetLocalPlayer();
+	if (!LocalPlayer)
+	{
+		return;
+	}
+
+	const FUniqueNetIdPtr UserId = LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId();
+	if (!UserId.IsValid())
+	{
+		return;
+	}
+
 	Ws_Root->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Loading);
 
 	bool bIsNativeItem = false;
@@ -108,10 +120,10 @@ void UItemPurchaseWidget::OnClickPurchase(const int32 PriceIndex) const
 
 	// Open the native platform store if the native platform is valid and the item type is supported.
 	if (NativePlatformPurchaseSubsystem &&
-		NativePlatformPurchaseSubsystem->IsNativePlatformSupported() &&
+		NativePlatformPurchaseSubsystem->IsNativePlatformSupported(UserId) &&
 		bIsNativeItem)
 	{
-		NativePlatformPurchaseSubsystem->CheckoutItem(GetOwningPlayer(), StoreItemDataObject);
+		NativePlatformPurchaseSubsystem->CheckoutItem(UserId, StoreItemDataObject);
 		return;
 	}
 

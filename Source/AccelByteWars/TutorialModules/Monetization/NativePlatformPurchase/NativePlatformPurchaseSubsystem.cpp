@@ -53,26 +53,100 @@ void UNativePlatformPurchaseSubsystem::Initialize(FSubsystemCollectionBase& Coll
 		FNativePlatformPurchaseUtils::OnGetItemPrices.BindUObject(this, &UNativePlatformPurchaseSubsystem::GetItemPrices);
 	}
 
+	if (IdentityInterface) 
+	{
+		// Sync all platform items when connected to lobby
+		IdentityInterface->AddOnConnectLobbyCompleteDelegate_Handle(0, FOnConnectLobbyCompleteDelegate::CreateWeakLambda(this, [this](int32 LocalUserNum, bool bWasSuccessful, const FUniqueNetId& UserId, const FString& Error)
+		{
+			if (bWasSuccessful) 
+			{
+				SyncAllEntitlements(UserId.AsShared());
+			}
+		}));
+	}
+
 #if PLATFORM_STEAM
 	QuerySteamItemDefinition();
 #endif
 
 #if PLATFORM_ANDROID
-	IOnlineSubsystem* GooglePlaySubsystem = IOnlineSubsystem::Get(GOOGLEPLAY_SUBSYSTEM);
+	GooglePlaySubsystem = IOnlineSubsystem::Get(GOOGLEPLAY_SUBSYSTEM);
 	ensure(GooglePlaySubsystem);
-
-	GooglePlayIdentityInterface = GooglePlaySubsystem->GetIdentityInterface();
-	ensure(GooglePlayIdentityInterface);
-
-	GooglePlayPurchaseInterface = GooglePlaySubsystem->GetPurchaseInterface();
-	ensure(GooglePlayPurchaseInterface);
-
-	GooglePlayStoreInterface = GooglePlaySubsystem->GetStoreV2Interface();
-	ensure(GooglePlayStoreInterface);
 #endif
 }
 
-void UNativePlatformPurchaseSubsystem::QueryItemMapping(FUniqueNetIdPtr UserId, FOnQueryItemMappingCompleted OnQueryCompleted)
+void UNativePlatformPurchaseSubsystem::Deinitialize()
+{
+	OnSyncPurchaseCompleteDelegates.Unbind();
+	FNativePlatformPurchaseUtils::OnQueryItemMapping.Unbind();
+	FNativePlatformPurchaseUtils::OnGetItemPrices.Unbind();
+
+	if (IdentityInterface) 
+	{
+		IdentityInterface->ClearOnConnectLobbyCompleteDelegates(0, this);
+	}
+}
+
+void UNativePlatformPurchaseSubsystem::SyncAllEntitlements(
+	const FUniqueNetIdPtr UserId, 
+	const FOnRequestCompleted& OnComplete,
+	const FAccelByteModelsEntitlementSyncBase& EntitlementSyncBase)
+{
+	FString ErrorMessage = TEXT("");
+
+	if (!UserId) 
+	{
+		ErrorMessage = TEXT("Failed to sync all platform items. User ID is invalid.");
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("%s"), *ErrorMessage);
+		OnComplete.ExecuteIfBound(false, ErrorMessage);
+		return;
+	}
+
+	int32 LocalUserNum = 0;
+	if (!IdentityInterface->GetLocalUserNum(UserId.ToSharedRef().Get(), LocalUserNum)) 
+	{
+		ErrorMessage = TEXT("Failed to sync all platform items. LocalUserNum is invalid.");
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("%s"), *ErrorMessage);
+		OnComplete.ExecuteIfBound(false, ErrorMessage);
+		return;
+	}
+
+	// Sycn DLCs and purchases from the native platform.
+	EntitlementInterface->SyncDLC(
+		UserId.ToSharedRef().Get(), 
+		FOnRequestCompleted::CreateWeakLambda(this, [this, LocalUserNum, EntitlementSyncBase, OnComplete](bool bIsSycnDLCSuccess, const FString& Error)
+		{
+			if (bIsSycnDLCSuccess)
+			{
+				UE_LOG_NATIVE_PLATFORM_PURCHASE(Log, TEXT("Success to sync all platform DLCs."));
+			}
+			else 
+			{
+				UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to sync platform DLCs. Error: %s"), *Error);
+			}
+
+			EntitlementInterface->SyncPlatformPurchase(
+				LocalUserNum,
+				EntitlementSyncBase,
+				FOnRequestCompleted::CreateWeakLambda(this, [bIsSycnDLCSuccess, OnComplete](bool bIsSyncPurchaseSuccess, const FString& Error)
+				{
+					if (bIsSyncPurchaseSuccess)
+					{
+						UE_LOG_NATIVE_PLATFORM_PURCHASE(Log, TEXT("Success to sync all platform purchases."));
+					}
+					else
+					{
+						UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to sync platform purchases. Error: %s"), *Error);
+					}
+
+					OnComplete.ExecuteIfBound(bIsSycnDLCSuccess && bIsSyncPurchaseSuccess, Error);
+				}));
+		}));
+}
+
+void UNativePlatformPurchaseSubsystem::QueryItemMapping(
+	const FUniqueNetIdPtr UserId, 
+	const FOnQueryItemMappingCompleted OnQueryCompleted)
 {	
 	if (bIsQueryItemMappingRunning)
 	{
@@ -82,6 +156,14 @@ void UNativePlatformPurchaseSubsystem::QueryItemMapping(FUniqueNetIdPtr UserId, 
 
 	bIsQueryItemMappingRunning = true;
 	OnQueryItemMappingCompleted = OnQueryCompleted;
+
+	if (!UserId)
+	{
+		const FString ErrorMessage = TEXT("Failed to query item mapping. User ID is invalid.");
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("%s"), *ErrorMessage);
+		OnQueryItemMappingComplete(false, {}, {}, {}, {}, ErrorMessage, UserId);
+		return;
+	}
 
 	const EAccelBytePlatformType PlatformType = FOnlineSubsystemAccelByteUtils::GetAccelBytePlatformTypeFromAuthType(GetNativePlatformName());
 	if (!SupportedNativePlatform.Contains(PlatformType))
@@ -102,12 +184,162 @@ void UNativePlatformPurchaseSubsystem::QueryItemMapping(FUniqueNetIdPtr UserId, 
 	const EAccelBytePlatformMapping PlatformMapping = SupportedNativePlatform[PlatformType];
 	const FString StoreId = TEXT(""), ViewId = TEXT(""), Region = TEXT("");
 	StoreInterface->QueryStorefront(
-		*UserId,
+		UserId.ToSharedRef().Get(),
 		StoreId,
 		ViewId,
 		Region,
 		PlatformMapping,
 		FOnQueryStorefrontComplete::CreateUObject(this, &ThisClass::OnQueryItemMappingComplete, UserId));
+}
+
+void UNativePlatformPurchaseSubsystem::QueryItemsWithNativePlatform(
+	const FUniqueNetIdPtr UserId,
+	const TArray<TSharedRef<FAccelByteModelsItemMapping>>& ItemMappings)
+{
+	IOnlineSubsystem* PlatformSubsystem = IOnlineSubsystem::GetByPlatform();
+#if PLATFORM_ANDROID
+	PlatformSubsystem = GooglePlaySubsystem;
+#endif
+	if (!PlatformSubsystem)
+	{
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to query items using native platform. Subsystem is invalid."));
+		OnQueryItemMappingCompleted.ExecuteIfBound(FNativeItemPricingMap());
+		return;
+	}
+
+	// Check whether the native platform is supported by the game or not.
+	const FString PlatformName = GetNativePlatformName();
+	const EAccelBytePlatformType PlatformType = FOnlineSubsystemAccelByteUtils::GetAccelBytePlatformTypeFromAuthType(PlatformName);
+	if (!SupportedNativePlatform.Contains(PlatformType))
+	{
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to query items using %s. Platform is not supported."), *PlatformName);
+		OnQueryItemMappingCompleted.ExecuteIfBound(FNativeItemPricingMap());
+		return;
+	}
+
+	// Select the item mapping type based on the native platform.
+	const EAccelBytePlatformMapping PlatformMappingType = SupportedNativePlatform[PlatformType];
+
+	// Get the native platform interfaces.
+	const IOnlineStoreV2Ptr PlatformStore = PlatformSubsystem->GetStoreV2Interface();
+	if (!PlatformStore)
+	{
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to query items using %s. Store interface is invalid."), *PlatformName);
+		OnQueryItemMappingCompleted.ExecuteIfBound(FNativeItemPricingMap());
+		return;
+	}
+
+	const IOnlineIdentityPtr PlatformIdentity = PlatformSubsystem->GetIdentityInterface();
+	if (!PlatformIdentity)
+	{
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to query items using %s. Identity interface is invalid."), *PlatformName);
+		OnQueryItemMappingCompleted.ExecuteIfBound(FNativeItemPricingMap());
+		return;
+	}
+
+	// Get the native platform user.
+	int32 LocalUserNum = 0;
+	if (!IdentityInterface->GetLocalUserNum(UserId.ToSharedRef().Get(), LocalUserNum))
+	{
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to query items using %s. LocalUserNum is invalid."), *PlatformName);
+		OnQueryItemMappingCompleted.ExecuteIfBound(FNativeItemPricingMap());
+		return;
+	}
+
+	const FUniqueNetIdPtr PlatformUniqueId = PlatformIdentity->GetUniquePlayerId(LocalUserNum);
+	if (!PlatformUniqueId)
+	{
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to query items using %s. Platform unique ID is invalid."), *PlatformName);
+		OnQueryItemMappingCompleted.ExecuteIfBound(FNativeItemPricingMap());
+		return;
+	}
+
+#if PLATFORM_EOS
+	const UEpicGamesStoreItemConfig* EpicItemConfigs = GetDefault<UEpicGamesStoreItemConfig>();
+	if (!EpicItemConfigs)
+	{
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to query items using %s. Unable to load UEpicGamesStoreItemConfig."), *PlatformName);
+		OnQueryItemMappingCompleted.ExecuteIfBound(FNativeItemPricingMap());
+		return;
+	}
+#endif
+
+	// Collect the native platform item IDs to query.
+	TArray<FString> OfferIds;
+	for (const TSharedRef<FAccelByteModelsItemMapping>& ItemMapping : ItemMappings)
+	{
+		if (ItemMapping->Platform == PlatformMappingType)
+		{
+#if PLATFORM_EOS
+			if (const FString* EpicOfferId = EpicItemConfigs->AudienceOffers.Find(ItemMapping->PlatformProductId))
+			{
+				OfferIds.Add(*EpicOfferId);
+			}
+#else
+			OfferIds.Add(ItemMapping->PlatformProductId);
+#endif
+		}
+	}
+
+	// Query the native platform items.
+	PlatformStore->QueryOffersById(
+		PlatformUniqueId.ToSharedRef().Get(),
+		OfferIds,
+		FOnQueryOnlineStoreOffersComplete::CreateWeakLambda(this, [this, ItemMappings, PlatformName, PlatformStore]
+		(bool bWasSuccessful, const TArray<FUniqueOfferId>& OfferIds, const FString& Error)
+		{
+			if (!bWasSuccessful)
+			{
+				UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to query items using %s. Error: %s"), *PlatformName, *Error);
+				OnQueryItemMappingCompleted.ExecuteIfBound(FNativeItemPricingMap());
+				return;
+			}
+
+			if (!PlatformStore)
+			{
+				UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to query items using %s. Store interface is invalid."), *PlatformName);
+				OnQueryItemMappingCompleted.ExecuteIfBound(FNativeItemPricingMap());
+			}
+
+#if PLATFORM_EOS
+			const UEpicGamesStoreItemConfig* EpicItemConfigs = GetDefault<UEpicGamesStoreItemConfig>();
+			if (!EpicItemConfigs)
+			{
+				UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to query items using %s. Unable to load UEpicGamesStoreItemConfig."), *PlatformName);
+				OnQueryItemMappingCompleted.ExecuteIfBound(FNativeItemPricingMap());
+				return;
+			}
+#endif
+
+			ItemPriceMap.Empty();
+			for (const TSharedRef<FAccelByteModelsItemMapping>& ItemMapping : ItemMappings)
+			{
+				FString PlatformProductId = ItemMapping->PlatformProductId;
+#if PLATFORM_EOS
+				const FString* EpicOfferId = EpicItemConfigs->AudienceOffers.Find(PlatformProductId);
+				if (!EpicOfferId)
+				{
+					continue;
+				}
+				PlatformProductId = *EpicOfferId;
+#endif
+
+				if (TSharedPtr<FOnlineStoreOffer> Item = PlatformStore->GetOffer(PlatformProductId))
+				{
+					FNativePlatformPurchaseUtils::RegionalCurrencyCode = Item->CurrencyCode;
+					ItemPriceMap.Add(ItemMapping->ItemIdentity, { PlatformProductId, (uint64)Item->NumericPrice });
+					UE_LOG_NATIVE_PLATFORM_PURCHASE(Log,
+						TEXT("Found item pricing from %s for item: %s. Price: %d. Currency: %s"),
+						*PlatformName,
+						*PlatformProductId,
+						Item->NumericPrice,
+						*FNativePlatformPurchaseUtils::RegionalCurrencyCode);
+				}
+			}
+
+			UE_LOG_NATIVE_PLATFORM_PURCHASE(Log, TEXT("Success to query items using %s"), *PlatformName);
+			OnQueryItemMappingCompleted.ExecuteIfBound(ItemPriceMap);
+		}));
 }
 
 TArray<TSharedRef<FAccelByteModelsItemMapping>> UNativePlatformPurchaseSubsystem::GetItemMapping()
@@ -123,9 +355,27 @@ TArray<TSharedRef<FAccelByteModelsItemMapping>> UNativePlatformPurchaseSubsystem
 	return Mapping;
 }
 
-void UNativePlatformPurchaseSubsystem::CheckoutItem(const APlayerController* OwningPlayer, const TWeakObjectPtr<UStoreItemDataObject> StoreItemData)
+void UNativePlatformPurchaseSubsystem::CheckoutItem(
+	const FUniqueNetIdPtr UserId, 
+	const TWeakObjectPtr<UStoreItemDataObject> StoreItemData)
 {
 	FString ErrorMessage = TEXT("");
+
+	if (!UserId)
+	{
+		ErrorMessage = TEXT("Failed to checkout item using native platform. User ID is invalid.");
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("%s"), *ErrorMessage);
+		OnSyncPurchaseCompleteDelegates.ExecuteIfBound(false, ErrorMessage);
+		return;
+	}
+
+	if (!StoreItemData.IsValid()) 
+	{
+		ErrorMessage = TEXT("Failed to checkout item using native platform. Store item data is invalid.");
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("%s"), *ErrorMessage);
+		OnSyncPurchaseCompleteDelegates.ExecuteIfBound(false, ErrorMessage);
+		return;
+	}
 
 	const FString* NativeProductId = StoreItemData->GetSkuMap().Find(EItemSkuPlatform::Native);
 	if (!NativeProductId)
@@ -136,70 +386,157 @@ void UNativePlatformPurchaseSubsystem::CheckoutItem(const APlayerController* Own
 		return;
 	}
 	
-	const ULocalPlayer* LocalPlayer = OwningPlayer->GetLocalPlayer();
-	if (!LocalPlayer)
-	{
-		ErrorMessage = TEXT("Failed to checkout item using native platform. Local player is invalid.");
-		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("%s"), *ErrorMessage);
-		OnSyncPurchaseCompleteDelegates.ExecuteIfBound(false, ErrorMessage);
-		return;
-	}
-
-	const int32 LocalUserNum = LocalPlayer->GetControllerId();
-	
 	FPurchaseCheckoutRequest CheckoutRequest;
 	CheckoutRequest.AddPurchaseOffer(TEXT(""), *NativeProductId, 1);
 
 	PurchaseSyncState = EPurchaseState::Purchasing;
 
-#if PLATFORM_ANDROID
-	/* Use a dedicated function to handle purchases via Google Play Games Services (GPGS).
-	 * GPGS has a unique purchase flow that relies on two subsystems: Google and GPGS.
-	 * This is necessary because the AccelByte OSS does not natively support this setup.*/
-	CheckoutItemWithGooglePlay(OwningPlayer, CheckoutRequest, StoreItemData->GetIsConsumable());
+#if PLATFORM_EOS || PLATFORM_ANDROID || \
+    (defined(PLATFORM_PS4) && PLATFORM_PS4) || \
+    (defined(PLATFORM_PS5) && PLATFORM_PS5) || \
+    (defined(PLATFORM_WINGDK) && PLATFORM_WINGDK) || \
+    (defined(PLATFORM_XBOXCOMMON) && PLATFORM_XBOXCOMMON) || \
+    (defined(PLATFORM_XB1) && PLATFORM_XB1) || \
+    (defined(PLATFORM_XBOXONE) && PLATFORM_XBOXONE) || \
+    (defined(PLATFORM_XSX) && PLATFORM_XSX)
+	// Purchase with native platform.
+	CheckoutWithNativePlatform(UserId, CheckoutRequest, StoreItemData->GetIsConsumable());
 	return;
-#elif PLATFORM_EOS
-	CheckoutItemWithEpic(OwningPlayer, CheckoutRequest);
-	return;
-#endif
-
+#else
+	// Purchase with native platform that supported by AccelByte OSS.
 	const FAccelByteModelsEntitlementSyncBase EntitlementSyncBase = { *NativeProductId };
-	PurchaseInterface->PlatformCheckout(*GetUniqueNetIdFromPlayerController(OwningPlayer), CheckoutRequest,
-		FOnPurchaseCheckoutComplete::CreateWeakLambda(this, [this, EntitlementSyncBase, LocalUserNum](const FOnlineError& Result, const TSharedRef<FPurchaseReceipt>& /*Receipt*/)
-	{
-		PurchaseSyncState = EPurchaseState::SyncInProgress;
-		EntitlementInterface->SyncPlatformPurchase(LocalUserNum, EntitlementSyncBase, OnSyncPurchaseCompleteDelegates);
-
-		if(SyncPurchaseTimerHandle.IsValid())
+	PurchaseInterface->PlatformCheckout(
+		UserId.ToSharedRef().Get(), 
+		CheckoutRequest,
+		FOnPurchaseCheckoutComplete::CreateWeakLambda(this, [this, UserId, EntitlementSyncBase]
+		(const FOnlineError& Result, const TSharedRef<FPurchaseReceipt>& Receipt)
 		{
-			GetWorld()->GetTimerManager().ClearTimer(SyncPurchaseTimerHandle);
-		}
-	}));
+			PurchaseSyncState = EPurchaseState::SyncInProgress;
+			SyncAllEntitlements(UserId, OnSyncPurchaseCompleteDelegates, EntitlementSyncBase);
+
+			if(SyncPurchaseTimerHandle.IsValid())
+			{
+				GetWorld()->GetTimerManager().ClearTimer(SyncPurchaseTimerHandle);
+			}
+		}));
+#endif
 }
 
-bool UNativePlatformPurchaseSubsystem::OpenPlatformStore(
-	const APlayerController* OwningPlayer,
-	const TWeakObjectPtr<UStoreItemDataObject> StoreItemData,
-	const int32 SelectedPriceIndex,
-	const TArray<TSharedRef<FAccelByteModelsItemMapping>> ItemMapping) const
+void UNativePlatformPurchaseSubsystem::CheckoutWithNativePlatform(
+	const FUniqueNetIdPtr UserId,
+	const FPurchaseCheckoutRequest CheckoutRequest,
+	const bool bIsConsumeable)
 {
-	const IOnlineSubsystem* PlatformSubsystem = IOnlineSubsystem::GetByPlatform();
+	FString ErrorMessage = TEXT("");
+
+	IOnlineSubsystem* PlatformSubsystem = IOnlineSubsystem::GetByPlatform();
+#if PLATFORM_ANDROID
+	PlatformSubsystem = GooglePlaySubsystem;
+#endif
 	if (!PlatformSubsystem)
 	{
-		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to open platform store. The native platform subsystem is invalid."));
-		return false;
+		ErrorMessage = TEXT("Failed to checkout item using native platform. Platform subsystem is invalid.");
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("%s"), *ErrorMessage);
+		OnSyncPurchaseCompleteDelegates.ExecuteIfBound(false, ErrorMessage);
+		return;
 	}
 
-	// Open the platform store based on the supported platform type.
-	EAccelBytePlatformType PlatformType = FOnlineSubsystemAccelByteUtils::GetAccelBytePlatformTypeFromAuthType(GetNativePlatformName());
-	switch (PlatformType)
+	// Check whether the native platform is supported by the game or not.
+	const FString PlatformName = GetNativePlatformName();
+	const EAccelBytePlatformType PlatformType = FOnlineSubsystemAccelByteUtils::GetAccelBytePlatformTypeFromAuthType(PlatformName);
+	if (!SupportedNativePlatform.Contains(PlatformType))
 	{
-	case EAccelBytePlatformType::Steam:
-		return OpenSteamStore(OwningPlayer, StoreItemData, SelectedPriceIndex, ItemMapping, PlatformSubsystem);
-	default:
-		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to open platform store. The native store for %s platform is not yet implemented."), *GetNativePlatformName());
-		return false;
+		ErrorMessage = FString::Printf(TEXT("Failed to checkout item using %s. Platform is not supported."), *PlatformName);
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("%s"), *ErrorMessage);
+		OnSyncPurchaseCompleteDelegates.ExecuteIfBound(false, ErrorMessage);
+		return;
 	}
+
+	// Get the native platform interfaces.
+	const IOnlineIdentityPtr PlatformIdentity = PlatformSubsystem->GetIdentityInterface();
+	if (!PlatformIdentity)
+	{
+		ErrorMessage = FString::Printf(TEXT("Failed to checkout item using %s. Identity interface is invalid."), *PlatformName);
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("%s"), *ErrorMessage);
+		OnSyncPurchaseCompleteDelegates.ExecuteIfBound(false, ErrorMessage);
+		return;
+	}
+
+	const IOnlinePurchasePtr PlatformPurchase = PlatformSubsystem->GetPurchaseInterface();
+	if (!PlatformPurchase)
+	{
+		ErrorMessage = FString::Printf(TEXT("Failed to checkout item using %s. Purchase interface is invalid."), *PlatformName);
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("%s"), *ErrorMessage);
+		OnSyncPurchaseCompleteDelegates.ExecuteIfBound(false, ErrorMessage);
+		return;
+	}
+
+	// Get the native platform user.
+	if (!UserId)
+	{
+		ErrorMessage = FString::Printf(TEXT("Failed to checkout item using %s. User ID is invalid."), *PlatformName);
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("%s"), *ErrorMessage);
+		OnSyncPurchaseCompleteDelegates.ExecuteIfBound(false, ErrorMessage);
+		return;
+	}
+	
+	int32 LocalUserNum = 0;
+	if (!IdentityInterface->GetLocalUserNum(UserId.ToSharedRef().Get(), LocalUserNum))
+	{
+		ErrorMessage = FString::Printf(TEXT("Failed to checkout item using %s. LocalUserNum is invalid."), *PlatformName);
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("%s"), *ErrorMessage);
+		OnSyncPurchaseCompleteDelegates.ExecuteIfBound(false, ErrorMessage);
+		return;
+	}
+
+	const FUniqueNetIdPtr PlatformUniqueId = PlatformIdentity->GetUniquePlayerId(LocalUserNum);
+	if (!PlatformUniqueId)
+	{
+		ErrorMessage = FString::Printf(TEXT("Failed to checkout item using %s. Platform unique ID is invalid."), *PlatformName);
+		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("%s"), *ErrorMessage);
+		OnSyncPurchaseCompleteDelegates.ExecuteIfBound(false, ErrorMessage);
+		return;
+	}
+
+	// Checkout using the native platform.
+	PlatformPurchase->Checkout(
+		PlatformUniqueId.ToSharedRef().Get(),
+		CheckoutRequest,
+		FOnPurchaseCheckoutComplete::CreateWeakLambda(this, [this, LocalUserNum, UserId, PlatformName, bIsConsumeable]
+		(const FOnlineError& Result, const TSharedRef<FPurchaseReceipt>& Receipt)
+		{
+			if (!Result.bSucceeded)
+			{
+				UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to purchase item using %s. Error: %s"), *PlatformName, *Result.ErrorMessage.ToString());
+				OnSyncPurchaseCompleteDelegates.ExecuteIfBound(false, Result.ErrorMessage.ToString());
+				return;
+			}
+
+#if PLATFORM_ANDROID
+			FAccelByteModelsPlatformSyncMobileGoogle SyncRequest;
+			if (!ParseGooglePlayReceiptToSyncRequest(Receipt, SyncRequest))
+			{
+				const FString ErrorMessage = TEXT("Failed to purchase item using Google Play Games Services. Failed to parse receipt into sync purchase request.");
+				UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("%s"), *ErrorMessage);
+				OnSyncPurchaseCompleteDelegates.ExecuteIfBound(false, ErrorMessage);
+				return;
+			}
+
+			// Request to auto consume for consumables, otherwise request to ack for durable items.
+			SyncRequest.AutoConsume = bIsConsumeable;
+			SyncRequest.AutoAck = !bIsConsumeable;
+
+			// Sync Google Play Games Services purchase with AccelByte.
+			UE_LOG_NATIVE_PLATFORM_PURCHASE(Log, TEXT("Success to purchase item using %s."), *PlatformName);
+			PurchaseSyncState = EPurchaseState::SyncInProgress;
+			EntitlementInterface->SyncPlatformPurchase(LocalUserNum, SyncRequest, OnSyncPurchaseCompleteDelegates);
+#else
+			// Sync checkouts to AccelByte.
+			UE_LOG_NATIVE_PLATFORM_PURCHASE(Log, TEXT("Success to purchase item using %s."), *PlatformName);
+			PurchaseSyncState = EPurchaseState::SyncInProgress;
+			SyncAllEntitlements(UserId, OnSyncPurchaseCompleteDelegates);
+#endif
+		}));
 }
 
 void UNativePlatformPurchaseSubsystem::OnQueryItemMappingComplete(
@@ -222,147 +559,34 @@ void UNativePlatformPurchaseSubsystem::OnQueryItemMappingComplete(
 	TArray<TSharedRef<FAccelByteModelsItemMapping>> ItemMappings = GetItemMapping();
 	UE_LOG_NATIVE_PLATFORM_PURCHASE(Log, TEXT("Success to query item mapping for: %s. Mapped items: %d"), *GetNativePlatformName(), ItemMappings.Num());
 
-#if PLATFORM_STEAM
-	OnQueryItemMappingCompleted.ExecuteIfBound(GetSteamItemPricing(ItemMappings));
-#elif PLATFORM_EOS
+	// Use cached item prices if available.
 	if (!GetItemPrices().IsEmpty())
 	{
 		OnQueryItemMappingCompleted.ExecuteIfBound(GetItemPrices());
+		return;
 	}
-	else
-	{
-		QueryEpicItems(UserId, ItemMappings);
-	}
-#elif PLATFORM_ANDROID
-	// Query native item information from Google Play Games Services (GPGS) if not yet.
-	if (!GetItemPrices().IsEmpty()) 
-	{
-		OnQueryItemMappingCompleted.ExecuteIfBound(GetItemPrices());
-	}
-	else 
-	{
-		TArray<FString> GooglePlayItemIds;
-		Algo::Transform(ItemMappings, GooglePlayItemIds, [](const TSharedRef<FAccelByteModelsItemMapping>& Item) { return Item->PlatformProductId; });
-		QueryGooglePlayItems(
-			UserId,
-			GooglePlayItemIds,
-			FOnQueryOnlineStoreOffersComplete::CreateWeakLambda(this, [this, ItemMappings](
-				bool bWasSuccessful,
-				const TArray<FUniqueOfferId>& OfferIds,
-				const FString& ErrorMessage)
-			{
-				if (!bWasSuccessful) 
-				{
-					UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to query items using Google Play Games Services. Error: %s"), *ErrorMessage);
-					OnQueryItemMappingCompleted.ExecuteIfBound(FNativeItemPricingMap());
-					return;
-				}
 
-				UE_LOG_NATIVE_PLATFORM_PURCHASE(Log, TEXT("Success to query items using Google Play Games Services"));
-				OnQueryItemMappingCompleted.ExecuteIfBound(GetGooglePlayItemPricing(ItemMappings));
-			}));
-	}
+#if PLATFORM_STEAM
+	OnQueryItemMappingCompleted.ExecuteIfBound(GetSteamItemPricing(ItemMappings));
 #else
-	OnQueryItemMappingCompleted.ExecuteIfBound(FNativeItemPricingMap());
+	QueryItemsWithNativePlatform(UserId, ItemMappings);
 #endif
 }
 
-#pragma region "Steam"
-void UNativePlatformPurchaseSubsystem::OnSyncPurchaseCompleted(bool bWasSuccess, const FString& ErrorMessage)
+void UNativePlatformPurchaseSubsystem::OnSyncPurchaseCompleted(
+	bool bWasSuccessful, 
+	const FString& ErrorMessage)
 {
-	UE_LOG_NATIVE_PLATFORM_PURCHASE(Log, TEXT("Sync purchase succeed: %s. Error: %s"), bWasSuccess ? TEXT("TRUE") : TEXT("FALSE"), *ErrorMessage);
+	UE_LOG_NATIVE_PLATFORM_PURCHASE(Log, TEXT("Sync purchase succeed: %s. Error: %s"), bWasSuccessful ? TEXT("TRUE") : TEXT("FALSE"), *ErrorMessage);
 
-	if(SyncPurchaseTimerHandle.IsValid())
+	if (SyncPurchaseTimerHandle.IsValid())
 	{
 		GetWorld()->GetTimerManager().ClearTimer(SyncPurchaseTimerHandle);
 	}
-    PurchaseSyncState = bWasSuccess ? EPurchaseState::Completed : EPurchaseState::Failed;
+	PurchaseSyncState = bWasSuccessful ? EPurchaseState::Completed : EPurchaseState::Failed;
 }
 
-bool UNativePlatformPurchaseSubsystem::OpenSteamStore(
-	const APlayerController* OwningPlayer,
-	const TWeakObjectPtr<UStoreItemDataObject> StoreItemData,
-	const int32 SelectedPriceIndex,
-	const TArray<TSharedRef<FAccelByteModelsItemMapping>> ItemMapping,
-	const IOnlineSubsystem* PlatformSubsystem) const
-{
-	FString StoreUrl = TEXT(""); 
-	if (!TryGetSteamStoreUrl(StoreItemData, ItemMapping, StoreUrl))
-	{
-		UE_LOG_NATIVE_PLATFORM_PURCHASE(Error, TEXT("Error OpenSteamStore: Error when trying to get Steam Store Url"));
-		return false;
-	}
-
-	const FAccelByteModelsEntitlementSyncBase EntitlementSyncBase = GetItemToSync(StoreItemData, SelectedPriceIndex, ItemMapping);
-	if (EntitlementSyncBase.ProductId.IsEmpty())
-	{
-		UE_LOG_NATIVE_PLATFORM_PURCHASE(Error, TEXT("Error OpenSteamStore: Item is not mapped in AGS Admin Portal"));
-		return false;
-	}
-
-	const ULocalPlayer* LocalPlayer = OwningPlayer->GetLocalPlayer();
-	if (!LocalPlayer) 
-	{
-		UE_LOG_NATIVE_PLATFORM_PURCHASE(Error, TEXT("Error OpenSteamStore: Local Player is invalid."));
-		return false;
-	}
-
-	const int32 LocalUserNum = LocalPlayer->GetControllerId();
-	PlatformSubsystem->GetExternalUIInterface()->ShowWebURL(
-		StoreUrl,
-		FShowWebUrlParams(),
-		FOnShowWebUrlClosedDelegate::CreateWeakLambda(this, [this, LocalUserNum, EntitlementSyncBase](const FString& FinalUrl)
-		{
-			EntitlementInterface->SyncPlatformPurchase(LocalUserNum, EntitlementSyncBase, OnSyncPurchaseCompleteDelegates);
-		}));
-	return true;
-}
-
-bool UNativePlatformPurchaseSubsystem::TryGetSteamStoreUrl(
-	const TWeakObjectPtr<UStoreItemDataObject> StoreItemData,
-	const TArray<TSharedRef<FAccelByteModelsItemMapping>> ItemMapping,
-	FString& OutSteamStoreUrl) const
-{
-	bool isSuccess = false;
-	int32 SteamAppId = 0;
-
-	FString ItemDefId = GetItemsMappingId(StoreItemData->GetStoreItemId(), ItemMapping);
-	if (ItemDefId.IsEmpty())
-	{
-		UE_LOG_NATIVE_PLATFORM_PURCHASE(Error, TEXT("Error TryGetSteamStoreUrl: Item Definition ID is empty"));
-		return isSuccess;
-	}
-
-	GConfig->GetInt(TEXT("OnlineSubsystemSteam"), TEXT("SteamDevAppId"), SteamAppId, GEngineIni);
-	if (SteamAppId == 0)
-	{
-		UE_LOG_NATIVE_PLATFORM_PURCHASE(Error, TEXT("Error TryGetSteamStoreUrl: SteamAppId is not configured in defaultengine.ini"));
-		return isSuccess;
-	}
-
-	OutSteamStoreUrl = FString::Printf(TEXT("https://store.steampowered.com/itemstore/%d/detail/%s/?beta=1"), SteamAppId, *ItemDefId);
-
-	isSuccess = true;
-	return isSuccess;
-}
-
-FAccelByteModelsEntitlementSyncBase UNativePlatformPurchaseSubsystem::GetItemToSync(
-	const TWeakObjectPtr<UStoreItemDataObject> StoreItemData,
-	const int32 SelectedPriceIndex,
-	const TArray<TSharedRef<FAccelByteModelsItemMapping>> ItemMapping)const
-{
-	FAccelByteModelsEntitlementSyncBase EntitlementSyncBase = {};
-	
-	FString ItemDefId = GetItemsMappingId(StoreItemData->GetStoreItemId(), ItemMapping);
-	const UStoreItemPriceDataObject* SelectedPrice = StoreItemData->GetPrices()[SelectedPriceIndex];
-
-	EntitlementSyncBase.ProductId = ItemDefId;
-	EntitlementSyncBase.Price = static_cast<int32>(SelectedPrice->GetRegularPrice());
-	EntitlementSyncBase.CurrencyCode = FPreConfigCurrency::GetCodeFromType(SelectedPrice->GetCurrencyType());
-
-	return EntitlementSyncBase;
-}
-
+#pragma region "Steam"
 #if PLATFORM_STEAM
 void UNativePlatformPurchaseSubsystem::QuerySteamItemDefinition()
 {
@@ -399,7 +623,8 @@ const TMap<FString, FNativeItemPrice>& UNativePlatformPurchaseSubsystem::GetStea
 }
 
 void UNativePlatformPurchaseSubsystem::OnSteamRequestPricesCompleted(
-	SteamInventoryRequestPricesResult_t* ResultCallback, bool bIoFailure)
+	SteamInventoryRequestPricesResult_t* ResultCallback, 
+	bool bIoFailure)
 {
 	if (ResultCallback->m_result == k_EResultOK)
 	{
@@ -457,315 +682,8 @@ void UNativePlatformPurchaseSubsystem::HandleSteamPurchaseOverlay(GameOverlayAct
 #endif
 #pragma endregion
 
-#pragma region "Epic Games Store"
-#if PLATFORM_EOS
-void UNativePlatformPurchaseSubsystem::QueryEpicItems(const FUniqueNetIdPtr UserId, const TArray<TSharedRef<FAccelByteModelsItemMapping>>& ItemMappings)
-{
-	const IOnlineSubsystem* PlatformSubsystem = IOnlineSubsystem::GetByPlatform();
-	if (!PlatformSubsystem)
-	{
-		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to query native pricing. The native platform subsystem is invalid."));
-		return;
-	}
-
-	IOnlineStoreV2Ptr PlatformStore = PlatformSubsystem->GetStoreV2Interface();
-	if (!PlatformStore)
-	{
-		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to query native pricing. The native store v2 interface is invalid."));
-		return;
-	}
-
-	IOnlineIdentityPtr PlatformIdentity = PlatformSubsystem->GetIdentityInterface();
-	if (!PlatformIdentity)
-	{
-		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to query native pricing. The native identity interface is invalid."));
-		return;
-	}
-
-	TArray<FString> OfferIds;
-	const UEpicGamesStoreItemConfig* ItemConfigs = GetDefault<UEpicGamesStoreItemConfig>();
-	if (!ItemConfigs)
-	{
-		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to query native pricing. Unable to load UEpicGamesStoreItemConfig."));
-		return;
-	}
-
-	for (const TSharedRef<FAccelByteModelsItemMapping>& OfferId : ItemMappings)
-	{
-		if (OfferId->Platform == EAccelBytePlatformMapping::EPIC_GAMES)
-		{
-			OfferIds.Add(ItemConfigs->AudienceOffers[OfferId->PlatformProductId]);
-		}
-	}
-
-	FPlatformUserId PlatformUserId = IdentityInterface->GetPlatformUserIdFromUniqueNetId(UserId.ToSharedRef().Get());
-	ensure(PlatformUserId.IsValid());
-	const int32 LocalUserNum = IdentityInterface->GetLocalUserNumFromPlatformUserId(PlatformUserId);
-
-	FUniqueNetIdPtr PlatformUniqueId = PlatformIdentity->GetUniquePlayerId(LocalUserNum);
-	ensure(PlatformUniqueId.IsValid());
-
-	PlatformStore->QueryOffersById(*PlatformUniqueId, OfferIds, FOnQueryOnlineStoreOffersComplete::CreateUObject(this, &ThisClass::OnEpicQueryOfferCompleted));
-}
-
-void UNativePlatformPurchaseSubsystem::OnEpicQueryOfferCompleted(bool bWasSuccessful, const TArray<FUniqueOfferId>& OfferIds, const FString& Error)
-{
-	if (!bWasSuccessful)
-	{
-		OnQueryItemMappingCompleted.ExecuteIfBound({});
-		return;
-	}
-
-	const IOnlineSubsystem* PlatformSubsystem = IOnlineSubsystem::GetByPlatform();
-	if (!PlatformSubsystem)
-	{
-		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to query native pricing. The native platform subsystem is invalid."));
-		return;
-	}
-
-	IOnlineStoreV2Ptr PlatformStore = PlatformSubsystem->GetStoreV2Interface();
-	if (!PlatformStore)
-	{
-		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to query native pricing. The native store v2 interface is invalid."));
-		return;
-	}
-
-	const UEpicGamesStoreItemConfig* ItemConfigs = GetDefault<UEpicGamesStoreItemConfig>();
-	if (!ItemConfigs)
-	{
-		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to query native pricing. Unable to load UEpicGamesStoreItemConfig."));
-		return;
-	}
-
-	TArray<FOnlineStoreOfferRef> Offers;
-	PlatformStore->GetOffers(Offers);
-
-	TMap<FString, FString> AbItemMapping;
-	for (const TSharedRef<FAccelByteModelsItemMapping>& OfferId : GetItemMapping())
-	{
-		if (OfferId->Platform == EAccelBytePlatformMapping::EPIC_GAMES)
-		{
-			if (const FString* EpicOfferId = ItemConfigs->AudienceOffers.Find(OfferId->PlatformProductId))
-			{
-				AbItemMapping.Add(**EpicOfferId, OfferId->ItemIdentity);
-			}
-		}
-	}
-
-	ItemPriceMap.Empty();
-	for (const FOnlineStoreOfferRef& Offer : Offers)
-	{
-		const FString& PlatformProductId = Offer->OfferId;
-		if (!PlatformProductId.IsEmpty() && AbItemMapping.Contains(PlatformProductId))
-		{
-			ItemPriceMap.Add(AbItemMapping[PlatformProductId], {PlatformProductId, (uint64)Offer->NumericPrice});
-			FNativePlatformPurchaseUtils::RegionalCurrencyCode = Offer->CurrencyCode;
-		}
-	}
-
-	OnQueryItemMappingCompleted.ExecuteIfBound(ItemPriceMap);
-}
-
-void UNativePlatformPurchaseSubsystem::CheckoutItemWithEpic(const APlayerController* OwningPlayer, const FPurchaseCheckoutRequest CheckoutRequest)
-{
-	FString ErrorMessage = TEXT("");
-
-	const IOnlineSubsystem* PlatformSubsystem = IOnlineSubsystem::GetByPlatform();
-	if (!PlatformSubsystem)
-	{
-		ErrorMessage = TEXT("Failed to checkout item using Epic Online Service. Identity interface is invalid.");
-		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("%s"), *ErrorMessage);
-		OnSyncPurchaseCompleteDelegates.ExecuteIfBound(false, ErrorMessage);
-		return;
-	}
-
-	IOnlinePurchasePtr PlatformPurchase = PlatformSubsystem->GetPurchaseInterface();
-	if (!PlatformPurchase)
-	{
-		ErrorMessage = TEXT("Failed to checkout item using Epic Online Service. Purchase interface is invalid.");
-		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("%s"), *ErrorMessage);
-		OnSyncPurchaseCompleteDelegates.ExecuteIfBound(false, ErrorMessage);
-		return;
-	}
-
-	const ULocalPlayer* LocalPlayer = OwningPlayer->GetLocalPlayer();
-	if (!LocalPlayer)
-	{
-		ErrorMessage = TEXT("Failed to checkout item using Epic Online Services. Local Player is invalid.");
-		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("%s"), *ErrorMessage);
-		OnSyncPurchaseCompleteDelegates.ExecuteIfBound(false, ErrorMessage);
-		return;
-	}
-
-	const int32 LocalUserNum = LocalPlayer->GetControllerId();
-	IOnlineIdentityPtr PlatformIdentity = PlatformSubsystem->GetIdentityInterface();
-	const FUniqueNetIdPtr UserId = PlatformIdentity->GetUniquePlayerId(LocalUserNum);
-	if (!UserId)
-	{
-		ErrorMessage = TEXT("Failed to checkout item using Epic Online Services. User ID is invalid.");
-		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("%s"), *ErrorMessage);
-		OnSyncPurchaseCompleteDelegates.ExecuteIfBound(false, ErrorMessage);
-		return;
-	}
-
-	PlatformPurchase->Checkout(*UserId, CheckoutRequest,
-		FOnPurchaseCheckoutComplete::CreateWeakLambda(this,
-			[this, LocalUserNum, PlatformIdentity]
-			(const FOnlineError& Result, const TSharedRef<FPurchaseReceipt>& Receipt)
-			{
-				if (!Result.bSucceeded)
-				{
-					UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to purchase item using Epic Online Services. Error: %s"), *Result.ErrorMessage.ToString());
-					OnSyncPurchaseCompleteDelegates.ExecuteIfBound(false, Result.ErrorMessage.ToString());
-					return;
-				}
-
-				// Sync Epic Online Services purchase with AccelByte.
-				UE_LOG_NATIVE_PLATFORM_PURCHASE(Log, TEXT("Success to purchase item using Epic Online Services. Synching purchase to AccelByte"));
-				PurchaseSyncState = EPurchaseState::SyncInProgress;
-				EntitlementInterface->SyncPlatformPurchase(LocalUserNum, FAccelByteModelsEntitlementSyncBase{}, OnSyncPurchaseCompleteDelegates);
-			})
-	);
-}
-#endif
-#pragma endregion
-
 #pragma region "Google Play"
 #if PLATFORM_ANDROID
-void UNativePlatformPurchaseSubsystem::CheckoutItemWithGooglePlay(
-	const APlayerController* OwningPlayer,
-	const FPurchaseCheckoutRequest CheckoutRequest,
-	const bool bIsConsumeable)
-{
-	FString ErrorMessage = TEXT("");
-
-	if (!GooglePlayIdentityInterface)
-	{
-		ErrorMessage = TEXT("Failed to checkout item using Google Play Games Services. Identity interface is invalid.");
-		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("%s"), *ErrorMessage);
-		OnSyncPurchaseCompleteDelegates.ExecuteIfBound(false, ErrorMessage);
-		return;
-	}
-
-	if (!GooglePlayPurchaseInterface)
-	{
-		ErrorMessage = TEXT("Failed to checkout item using Google Play Games Services. Purchase interface is invalid.");
-		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("%s"), *ErrorMessage);
-		OnSyncPurchaseCompleteDelegates.ExecuteIfBound(false, ErrorMessage);
-		return;
-	}
-
-	const ULocalPlayer* LocalPlayer = OwningPlayer->GetLocalPlayer();
-	if (!LocalPlayer)
-	{
-		ErrorMessage = TEXT("Failed to checkout item using Google Play Games Services. Local Player is invalid.");
-		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("%s"), *ErrorMessage);
-		OnSyncPurchaseCompleteDelegates.ExecuteIfBound(false, ErrorMessage);
-		return;
-	}
-
-	const int32 LocalUserNum = LocalPlayer->GetControllerId();
-	const FUniqueNetIdPtr UserId = GooglePlayIdentityInterface->GetUniquePlayerId(LocalUserNum);
-	if (!UserId)
-	{
-		ErrorMessage = TEXT("Failed to checkout item using Google Play Games Services. User ID is invalid.");
-		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("%s"), *ErrorMessage);
-		OnSyncPurchaseCompleteDelegates.ExecuteIfBound(false, ErrorMessage);
-		return;
-	}
-
-	// Purchase item using Google Play Games Services.
-	GooglePlayPurchaseInterface->Checkout(
-		UserId.ToSharedRef().Get(),
-		CheckoutRequest,
-		FOnPurchaseCheckoutComplete::CreateWeakLambda(this,
-			[this, LocalUserNum, bIsConsumeable]
-			(const FOnlineError& Result, const TSharedRef<FPurchaseReceipt>& Receipt)
-			{
-				if (!Result.bSucceeded)
-				{
-					UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to purchase item using Google Play Games Services. Error: %s"), *Result.ErrorMessage.ToString());
-					OnSyncPurchaseCompleteDelegates.ExecuteIfBound(false, Result.ErrorMessage.ToString());
-					return;
-				}
-				
-				FAccelByteModelsPlatformSyncMobileGoogle SyncRequest;
-				if (!ParseGooglePlayReceiptToSyncRequest(Receipt, SyncRequest))
-				{
-					const FString ErrorMessage = TEXT("Failed to purchase item using Google Play Games Services. Failed to parse receipt into sync purchase request.");
-					UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("%s"), *ErrorMessage);
-					OnSyncPurchaseCompleteDelegates.ExecuteIfBound(false, ErrorMessage);
-					return;
-				}
-
-				// Request to auto consume for consumables, otherwise request to ack for durable items.
-				SyncRequest.AutoConsume = bIsConsumeable;
-				SyncRequest.AutoAck = !bIsConsumeable;
-
-				// Sync Google Play Games Services purchase with AccelByte.
-				UE_LOG_NATIVE_PLATFORM_PURCHASE(Log, TEXT("Success to purchase item using Google Play Games Services. Synching purchase to AccelByte"));
-				PurchaseSyncState = EPurchaseState::SyncInProgress;
-				EntitlementInterface->SyncPlatformPurchase(LocalUserNum, SyncRequest, OnSyncPurchaseCompleteDelegates);
-			})
-	);
-}
-
-const TMap<FString, FNativeItemPrice>& UNativePlatformPurchaseSubsystem::GetGooglePlayItemPricing(
-	const TArray<TSharedRef<FAccelByteModelsItemMapping>>& ItemMappings)
-{
-	ItemPriceMap.Empty();
-
-	if (!GooglePlayStoreInterface)
-	{
-		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("Failed to get item pricing using Google Play Games Services. Store interface is invalid."));
-		return ItemPriceMap;
-	}
-
-	for (const TSharedRef<FAccelByteModelsItemMapping>& ItemMapping : ItemMappings)
-	{
-		TSharedPtr<FOnlineStoreOffer> GooglePlayItem = GooglePlayStoreInterface->GetOffer(ItemMapping->PlatformProductId);
-		if (GooglePlayItem)
-		{
-			FNativePlatformPurchaseUtils::RegionalCurrencyCode = GooglePlayItem->CurrencyCode;
-			ItemPriceMap.Add(ItemMapping->ItemIdentity, { ItemMapping->PlatformProductId, (uint64)GooglePlayItem->NumericPrice });
-			UE_LOG_NATIVE_PLATFORM_PURCHASE(Log,
-				TEXT("Found item pricing from Google Play Games Services for item: %s. Price: %d. Currency: %s"),
-				*ItemMapping->PlatformProductId,
-				GooglePlayItem->NumericPrice,
-				*FNativePlatformPurchaseUtils::RegionalCurrencyCode);
-		}
-	}
-
-	return ItemPriceMap;
-}
-
-void UNativePlatformPurchaseSubsystem::QueryGooglePlayItems(
-	const FUniqueNetIdPtr UserId,
-	const TArray<FUniqueOfferId>& ItemIds,
-	const FOnQueryOnlineStoreOffersComplete& OnComplete)
-{
-	FString ErrorMessage = TEXT("");
-
-	if (!UserId)
-	{
-		ErrorMessage = TEXT("Failed to query items using Google Play Games Services. User ID is invalid.");
-		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("%s"), *ErrorMessage);
-		OnComplete.ExecuteIfBound(false, {}, ErrorMessage);
-		return;
-	}
-
-	if (!GooglePlayStoreInterface) 
-	{
-		ErrorMessage = TEXT("Failed to query items using Google Play Games Services. Store interface is invalid.");
-		UE_LOG_NATIVE_PLATFORM_PURCHASE(Warning, TEXT("%s"), *ErrorMessage);
-		OnComplete.ExecuteIfBound(false, {}, ErrorMessage);
-		return;
-	}
-
-	UE_LOG_NATIVE_PLATFORM_PURCHASE(Log, TEXT("Query items using Google Play Games Services"));
-	GooglePlayStoreInterface->QueryOffersById(UserId.ToSharedRef().Get(), ItemIds, OnComplete);
-}
-
 bool UNativePlatformPurchaseSubsystem::ParseGooglePlayReceiptToSyncRequest(
 	const TSharedRef<FPurchaseReceipt>& Receipt,
 	FAccelByteModelsPlatformSyncMobileGoogle& OutRequest)
@@ -816,43 +734,6 @@ bool UNativePlatformPurchaseSubsystem::ParseGooglePlayReceiptToSyncRequest(
 #pragma endregion
 
 #pragma region "Utilities"
-FUniqueNetIdPtr UNativePlatformPurchaseSubsystem::GetUniqueNetIdFromPlayerController(
-	const APlayerController* PlayerController) const
-{
-	if (!PlayerController)
-	{
-		return nullptr;
-	}
-
-	const ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer();
-	if (!LocalPlayer)
-	{
-		return nullptr;
-	}
-
-	const int LocalUserNum = LocalPlayer->GetControllerId();
-
-	const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
-	ensure(Subsystem);
-	return Subsystem->GetIdentityInterface()->GetUniquePlayerId(LocalUserNum);
-}
-
-FString UNativePlatformPurchaseSubsystem::GetItemsMappingId(const FString ProductId, const TArray<TSharedRef<FAccelByteModelsItemMapping>> ItemMapping) const
-{
-	FString PlatformProductId = TEXT("");
-
-	for (size_t i = 0; i < ItemMapping.Num(); i++)
-	{
-		if (ItemMapping[i].Get().ItemIdentity == ProductId)
-		{
-			PlatformProductId = ItemMapping[i].Get().PlatformProductId;
-			break;
-		}
-	}
-
-	return PlatformProductId;
-}
-
 FString UNativePlatformPurchaseSubsystem::GetNativePlatformName() const
 {
 	FOnlineSubsystemAccelByte* ABSubsystem = static_cast<FOnlineSubsystemAccelByte*>(Online::GetSubsystem(GetWorld()));
@@ -864,27 +745,33 @@ FString UNativePlatformPurchaseSubsystem::GetNativePlatformName() const
 	return ABSubsystem->GetNativePlatformNameString();
 }
 
-bool UNativePlatformPurchaseSubsystem::IsNativePlatformSupported() const
+FString UNativePlatformPurchaseSubsystem::GetItemsMappingId(
+	const FString ProductId, 
+	const TArray<TSharedRef<FAccelByteModelsItemMapping>> ItemMapping) const
 {
-	if (!GetWorld()) 
+	FString PlatformProductId = TEXT("");
+
+	for (size_t Index = 0; Index < ItemMapping.Num(); Index++)
+	{
+		if (ItemMapping[Index].Get().ItemIdentity == ProductId)
+		{
+			PlatformProductId = ItemMapping[Index].Get().PlatformProductId;
+			break;
+		}
+	}
+
+	return PlatformProductId;
+}
+
+bool UNativePlatformPurchaseSubsystem::IsNativePlatformSupported(const FUniqueNetIdPtr UserId) const
+{
+	if (!GetWorld())
 	{
 		return false;
 	}
 
-	const APlayerController* PC = GetWorld()->GetFirstPlayerController();
-	if (!PC) 
-	{
-		return false;
-	}
-
-	const ULocalPlayer* LocalPlayer = PC->GetLocalPlayer();
-	if (!LocalPlayer) 
-	{
-		return false;
-	}
-	
-	const FUniqueNetIdAccelByteUserPtr UserABId = StaticCastSharedPtr<const FUniqueNetIdAccelByteUser>(LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId());
-	if (!UserABId) 
+	const FUniqueNetIdAccelByteUserPtr UserABId = StaticCastSharedPtr<const FUniqueNetIdAccelByteUser>(UserId);
+	if (!UserABId)
 	{
 		return false;
 	}
@@ -892,12 +779,7 @@ bool UNativePlatformPurchaseSubsystem::IsNativePlatformSupported() const
 	// Check if the native platform is valid and if the user's native platform matches the active native platform.
 	const EAccelBytePlatformType UserPlatformType = FOnlineSubsystemAccelByteUtils::GetAccelBytePlatformTypeFromAuthType(UserABId->GetPlatformType());
 	const EAccelBytePlatformType NativePlatformType = FOnlineSubsystemAccelByteUtils::GetAccelBytePlatformTypeFromAuthType(GetNativePlatformName());
-	const bool IsNativePlatformSupported = SupportedNativePlatform.Contains(NativePlatformType);
-	return IsNativePlatformSupported && UserPlatformType == NativePlatformType;
-}
-
-bool UNativePlatformPurchaseSubsystem::IsItemSupportedByNativePlatform(const FString& Item) const
-{
-	return SupportedNativePlatformItem.Contains(FAccelByteUtilities::GetUEnumValueFromString<EAccelByteItemType>(Item));
+	const bool bIsNativePlatformSupported = SupportedNativePlatform.Contains(NativePlatformType);
+	return bIsNativePlatformSupported && UserPlatformType == NativePlatformType;
 }
 #pragma endregion 

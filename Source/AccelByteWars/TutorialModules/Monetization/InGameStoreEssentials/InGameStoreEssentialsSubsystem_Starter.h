@@ -9,7 +9,7 @@
 #include "OnlineSubsystem.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "Core/UI/MainMenu/Store/StoreItemModel.h"
-#include "Interfaces/OnlineStoreInterfaceV2.h"
+#include "OnlineStoreInterfaceV2AccelByte.h"
 #include "InGameStoreEssentialsSubsystem_Starter.generated.h"
 
 UCLASS()
@@ -25,7 +25,7 @@ public:
 #pragma endregion 
 
 private:
-	IOnlineStoreV2Ptr StoreInterface;
+	FOnlineStoreV2AccelBytePtr StoreInterface;
 
 #pragma region "Tutorial"
 	// Put your code here.

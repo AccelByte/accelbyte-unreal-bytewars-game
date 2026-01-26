@@ -12,20 +12,14 @@
 #include "Monetization/InGameStoreEssentials/UI/ShopWidget_Starter.h"
 
 // @@@SNIPSTART SectionedShopWidget.cpp-NativeOnActivated
-// @@@MULTISNIP InGameStoreDisplaysSubsystem {"selectedLines": ["1-2", "5-6", "23"]}
-// @@@MULTISNIP Setup {"selectedLines": ["1-8", "14-23"]}
+// @@@MULTISNIP InGameStoreDisplaysSubsystem {"selectedLines": ["1-2", "5-6", "18"]}
+// @@@MULTISNIP Setup {"selectedLines": ["1-16", "18"]}
 void USectionedShopWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
 	InGameStoreDisplaysSubsystem = GetGameInstance()->GetSubsystem<UInGameStoreDisplaysSubsystem>();
 	ensure(InGameStoreDisplaysSubsystem);
-
-	Ws_Root->SetWidgetState(EAccelByteWarsWidgetSwitcherState::Loading);
-	InGameStoreDisplaysSubsystem->QueryOrGetDisplays(
-		GetOwningPlayer(),
-		FOnQueryOrGetDisplaysComplete::CreateUObject(this, &ThisClass::OnQueryOrGetDisplaysCompleted),
-		bRefreshing);
 
 	// Bind parent's (store essentials) refresh function with this refresh function
 	if (UShopWidget* ShopWidget = GetFirstOccurenceOuter<UShopWidget>())
@@ -36,6 +30,7 @@ void USectionedShopWidget::NativeOnActivated()
 	{
 		ShopWidget_Starter->OnRefreshButtonClickedDelegates.AddUObject(this, &ThisClass::OnParentRefreshButtonClicked);
 	}
+	OnParentRefreshButtonClicked();
 }
 // @@@SNIPEND
 

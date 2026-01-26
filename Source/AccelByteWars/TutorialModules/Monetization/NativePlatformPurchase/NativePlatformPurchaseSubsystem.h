@@ -33,38 +33,42 @@ class ACCELBYTEWARS_API UNativePlatformPurchaseSubsystem : public UTutorialModul
 	GENERATED_BODY()
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	virtual void Deinitialize() override;
 
 public:
+	void SyncAllEntitlements(
+		const FUniqueNetIdPtr UserId, 
+		const FOnRequestCompleted& OnComplete = FOnRequestCompleted(),
+		const FAccelByteModelsEntitlementSyncBase& EntitlementSyncBase = FAccelByteModelsEntitlementSyncBase());
+	
+	void CheckoutItem(
+		const FUniqueNetIdPtr UserId,
+		const TWeakObjectPtr<UStoreItemDataObject> StoreItemData);
+
 	void QueryItemMapping(
-		FUniqueNetIdPtr UserId, FOnQueryItemMappingCompleted OnQueryCompleted);
+		const FUniqueNetIdPtr UserId,
+		const FOnQueryItemMappingCompleted OnQueryCompleted);
+
+	bool IsNativePlatformSupported(const FUniqueNetIdPtr UserId) const;
 
 	TArray<TSharedRef<FAccelByteModelsItemMapping>> GetItemMapping();
 	const FNativeItemPricingMap& GetItemPrices() const { return ItemPriceMap; }
 
-	void CheckoutItem(const APlayerController* OwningPlayer, const TWeakObjectPtr<UStoreItemDataObject> StoreItemData);
-
-	bool OpenPlatformStore(
-		const APlayerController* OwningPlayer,
-		const TWeakObjectPtr<UStoreItemDataObject> StoreItemData,
-		const int32 SelectedPriceIndex,
-		const TArray<TSharedRef<FAccelByteModelsItemMapping>> ItemMapping) const;
+	FOnQueryItemMappingCompleted OnQueryItemMappingCompleted;
 	FOnRequestCompleted OnSyncPurchaseCompleteDelegates;
 
-	EPurchaseState PurchaseSyncState {NotStarted};
-
-	FString GetNativePlatformName() const;
-	bool IsNativePlatformSupported() const;
-	bool IsItemSupportedByNativePlatform(const FString& Item) const;
-	
-	FOnQueryItemMappingCompleted OnQueryItemMappingCompleted;
+	EPurchaseState PurchaseSyncState{ NotStarted };
 
 private:
-	FOnlineIdentityAccelBytePtr IdentityInterface;
-	FOnlineStoreV2AccelBytePtr StoreInterface;
-	FOnlineEntitlementsAccelBytePtr EntitlementInterface;
-	FOnlinePurchaseAccelBytePtr PurchaseInterface;
+	void CheckoutWithNativePlatform(
+		const FUniqueNetIdPtr UserId,
+		const FPurchaseCheckoutRequest CheckoutRequest,
+		const bool bIsConsumeable);
 
-	bool bIsQueryItemMappingRunning = false;
+	void QueryItemsWithNativePlatform(
+		const FUniqueNetIdPtr UserId,
+		const TArray<TSharedRef<FAccelByteModelsItemMapping>>& ItemMappings);
+
 	void OnQueryItemMappingComplete(
 		bool bWasSuccessful,
 		const TArray<FString>& ViewIds,
@@ -73,77 +77,55 @@ private:
 		const TArray<FString>& ItemMappingIds,
 		const FString& Error,
 		const FUniqueNetIdPtr UserId);
-	
+
+	void OnSyncPurchaseCompleted(
+		bool bWasSuccessful, 
+		const FString& ErrorMessage);
+
+	FOnlineIdentityAccelBytePtr IdentityInterface;
+	FOnlineStoreV2AccelBytePtr StoreInterface;
+	FOnlineEntitlementsAccelBytePtr EntitlementInterface;
+	FOnlinePurchaseAccelBytePtr PurchaseInterface;
+
+	bool bIsQueryItemMappingRunning = false;
+
 	FNativeItemPricingMap ItemPriceMap;
 	
-	void OnSyncPurchaseCompleted(bool bWasSuccess, const FString& ErrorMessage);
 	FTimerHandle SyncPurchaseTimerHandle;
 
 #pragma region "Steam"
-	bool OpenSteamStore(const APlayerController* OwningPlayer,
-		const TWeakObjectPtr<UStoreItemDataObject> StoreItemData,
-		const int32 SelectedPriceIndex,
-		const TArray<TSharedRef<FAccelByteModelsItemMapping>> ItemMapping,
-		const IOnlineSubsystem* PlatformSubsystem) const;
-
-	bool TryGetSteamStoreUrl(
-		const TWeakObjectPtr<UStoreItemDataObject> StoreItemData,
-		const TArray<TSharedRef<FAccelByteModelsItemMapping>> ItemMapping,
-		FString& OutSteamStoreUrl) const;
-
-	FAccelByteModelsEntitlementSyncBase GetItemToSync(
-		const TWeakObjectPtr<UStoreItemDataObject> StoreItemData,
-		const int32 SelectedPriceIndex,
-		const TArray<TSharedRef<FAccelByteModelsItemMapping>> ItemMapping)const;
-
 #if PLATFORM_STEAM
 	void QuerySteamItemDefinition();
-	const TMap<FString, FNativeItemPrice>& GetSteamItemPricing(const TArray<TSharedRef<FAccelByteModelsItemMapping>>& ItemMappings);
+	
+	const TMap<FString, FNativeItemPrice>& GetSteamItemPricing(
+		const TArray<TSharedRef<FAccelByteModelsItemMapping>>& ItemMappings);
+	
+	void OnSteamRequestPricesCompleted(
+		SteamInventoryRequestPricesResult_t* ResultCallback, 
+		bool bIoFailure);
+	
 	CCallResult<UNativePlatformPurchaseSubsystem, SteamInventoryRequestPricesResult_t> InventoryRequestPricesResult{};
-	void OnSteamRequestPricesCompleted(SteamInventoryRequestPricesResult_t* ResultCallback, bool bIoFailure);
 	STEAM_CALLBACK(UNativePlatformPurchaseSubsystem, HandleSteamPurchaseOverlay, GameOverlayActivated_t);
 	TMap<int32, uint64> SteamItemPrices;
 #endif
 #pragma endregion
 
-#pragma region "Epic Games Store"
-#if PLATFORM_EOS
-	void QueryEpicItems(const FUniqueNetIdPtr UserId, const TArray<TSharedRef<FAccelByteModelsItemMapping>>& ItemMappings);
-	void OnEpicQueryOfferCompleted(bool bWasSuccessful, const TArray<FUniqueOfferId>& OfferIds, const FString& Error);
-	void CheckoutItemWithEpic(
-		const APlayerController* OwningPlayer,
-		const FPurchaseCheckoutRequest CheckoutRequest);
-#endif
-#pragma endregion
-
 #pragma region "Google Play"
 #if PLATFORM_ANDROID
-	void CheckoutItemWithGooglePlay(
-		const APlayerController* OwningPlayer,
-		const FPurchaseCheckoutRequest CheckoutRequest,
-		const bool bIsConsumeable);
-
-	const TMap<FString, FNativeItemPrice>& GetGooglePlayItemPricing(
-		const TArray<TSharedRef<FAccelByteModelsItemMapping>>& ItemMappings);
-
-	void QueryGooglePlayItems(
-		const FUniqueNetIdPtr UserId,
-		const TArray<FUniqueOfferId>& ItemIds,
-		const FOnQueryOnlineStoreOffersComplete& OnComplete);
-
 	bool ParseGooglePlayReceiptToSyncRequest(
 		const TSharedRef<FPurchaseReceipt>& Receipt, 
 		FAccelByteModelsPlatformSyncMobileGoogle& OutRequest);
 
-	IOnlineIdentityPtr GooglePlayIdentityInterface;
-	IOnlinePurchasePtr GooglePlayPurchaseInterface;
-	IOnlineStoreV2Ptr GooglePlayStoreInterface;
+	IOnlineSubsystem* GooglePlaySubsystem;
 #endif
 #pragma endregion
 
 #pragma region "Utilities"
-	FUniqueNetIdPtr GetUniqueNetIdFromPlayerController(const APlayerController* PlayerController) const;
-	FString GetItemsMappingId(const FString ProductId, const TArray<TSharedRef<FAccelByteModelsItemMapping>> ItemMapping) const;
+	FString GetNativePlatformName() const;
+
+	FString GetItemsMappingId(
+		const FString ProductId, 
+		const TArray<TSharedRef<FAccelByteModelsItemMapping>> ItemMapping) const;
 
 	const TMap<EAccelBytePlatformType, EAccelBytePlatformMapping> SupportedNativePlatform =
 	{
@@ -151,6 +133,10 @@ private:
 		{ EAccelBytePlatformType::Google, EAccelBytePlatformMapping::GOOGLE },
 		{ EAccelBytePlatformType::GooglePlayGames, EAccelBytePlatformMapping::GOOGLE },
 		{ EAccelBytePlatformType::EpicGames, EAccelBytePlatformMapping::EPIC_GAMES },
+		{ EAccelBytePlatformType::PS4, EAccelBytePlatformMapping::PLAYSTATION },
+		{ EAccelBytePlatformType::PS4CrossGen, EAccelBytePlatformMapping::PLAYSTATION },
+		{ EAccelBytePlatformType::PS5, EAccelBytePlatformMapping::PLAYSTATION },
+		{ EAccelBytePlatformType::Live, EAccelBytePlatformMapping::XBOX }
 	};
 
 	const TArray<EAccelByteItemType> SupportedNativePlatformItem = { EAccelByteItemType::COINS };

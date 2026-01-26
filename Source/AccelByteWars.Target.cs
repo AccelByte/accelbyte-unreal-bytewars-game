@@ -7,6 +7,11 @@ public class AccelByteWarsTarget : TargetRules
 {
 	public AccelByteWarsTarget( TargetInfo Target) : base(Target)
 	{
+		// Setup IWYU and Unity Build
+		bEnforceIWYU = false;
+		bUseUnityBuild = true;
+		bUseAdaptiveUnityBuild = true;
+		
 		Type = TargetType.Game;
 		IncludeOrderVersion = EngineIncludeOrderVersion.Latest;
 		CppStandard = CppStandardVersion.Default;

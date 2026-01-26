@@ -4,11 +4,12 @@
 
 #pragma once
 
-#include "EntitlementsEssentialsModel.h"
+#include "EntitlementsEssentialsLog.h"
 #include "EntitlementsEssentialsModel.h"
 #include "OnlineIdentityInterfaceAccelByte.h"
 #include "OnlineCloudSaveInterfaceAccelByte.h"
 #include "OnlineEntitlementsInterfaceAccelByte.h"
+#include "OnlineStoreInterfaceV2AccelByte.h"
 #include "Monetization/InGameStoreEssentials/InGameStoreEssentialsModel.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "EntitlementsEssentialsSubsystem_Starter.generated.h"
@@ -34,9 +35,7 @@ private:
 	FOnlineIdentityAccelBytePtr IdentityInterface;
 	FOnlineCloudSaveAccelBytePtr CloudSaveInterface;
 	FOnlineEntitlementsAccelBytePtr EntitlementsInterface;
-
-	UPROPERTY()
-	TArray<UStoreItemDataObject*> StoreOffers;
+	FOnlineStoreV2AccelBytePtr StoreInterface;
 
 	UPROPERTY()
 	FPlayerEquipments CurrentEquipments;

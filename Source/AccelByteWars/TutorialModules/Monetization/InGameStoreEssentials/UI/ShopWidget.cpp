@@ -15,9 +15,9 @@
 #include "Core/UI/MainMenu/Store/StoreItemModel.h"
 
 // @@@SNIPSTART ShopWidget.cpp-NativeOnActivated
-// @@@MULTISNIP Subsystem {"selectedLines": ["1-2", "8-9", "30"]}
-// @@@MULTISNIP Setup {"selectedLines": ["1-2", "11-16", "18-19", "29-30"], "highlightedLines": "{6-11}"}
-// @@@MULTISNIP Combine {"selectedLines": ["1-2", "18-27", "29-30"], "highlightedLines": "{7-10}"}
+// @@@MULTISNIP Subsystem {"selectedLines": ["1-2", "8-9", "20"]}
+// @@@MULTISNIP Setup {"selectedLines": ["1-2", "11-16", "18-19", "19-20"]}
+// @@@MULTISNIP Combine {"selectedLines": ["1-2", "18-20"], "highlightedLines": "{4}"}
 void UShopWidget::NativeOnActivated()
 {
 	// Widget will load the FTUE later after finished loading store items. 
@@ -35,17 +35,7 @@ void UShopWidget::NativeOnActivated()
 	Tv_ContentOuter->OnItemClicked().AddUObject(this, &ThisClass::OnStoreItemClicked);
 	Tv_ContentOuter->ClearListItems();
 
-	// Reset UI.
-	SwitchContent(EAccelByteWarsWidgetSwitcherState::Loading);
-
-	if (const ULocalPlayer* LocalPlayer = GetOwningPlayer()->GetLocalPlayer())
-	{
-		StoreSubsystem->GetOrQueryCategoriesByRootPath(
-			LocalPlayer->GetPreferredUniqueNetId().GetUniqueNetId(),
-			RootPath,
-			FOnGetOrQueryCategories::CreateUObject(this, &ThisClass::OnGetOrQueryCategoriesComplete));
-	}
-
+	OnRefreshButtonClicked();
 	OnActivatedMulticastDelegate.Broadcast(GetOwningPlayer());
 }
 // @@@SNIPEND

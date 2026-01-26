@@ -139,7 +139,10 @@ TArray<UStoreItemDataObject*> UInGameStoreDisplaysSubsystem::GetOffersForSection
 	TArray<UStoreItemDataObject*> OfferObjects;
 	for (const FOnlineStoreOfferAccelByteRef& Offer : Offers)
 	{
-		OfferObjects.Add(ConvertStoreData(Offer));
+		if (Offer->IsPurchaseable() && Offer->Listable) 
+		{
+			OfferObjects.Add(ConvertStoreData(Offer));
+		}
 	}
 	return OfferObjects;
 }

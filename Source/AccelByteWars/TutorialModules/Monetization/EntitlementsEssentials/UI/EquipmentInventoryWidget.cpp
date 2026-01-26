@@ -26,7 +26,7 @@ void UEquipmentInventoryWidget::NativeOnActivated()
 	W_Inventory->OnItemClicked.AddUObject(this, &ThisClass::OnEquipmentItemClicked);
 	W_Inventory->OnItemEquipClicked.AddUObject(this, &ThisClass::OnEquipmentItemEquipped);
 	W_Inventory->OnItemUnequipClicked.AddUObject(this, &ThisClass::OnEquipmentItemUnequipped);
-	Btn_Back->OnClicked().AddUObject(this, &ThisClass::SaveEquipments);
+	Btn_Back->OnClicked().AddUObject(this, &ThisClass::DeactivateWidget);
 
 	SpawnPreviewActor();
 
@@ -43,7 +43,7 @@ void UEquipmentInventoryWidget::NativeOnDeactivated()
 	W_Inventory->OnItemUnequipClicked.Clear();
 	Btn_Back->OnClicked().Clear();
 
-	Super::NativeOnDeactivated();
+	SaveEquipments();
 }
 // @@@SNIPEND
 
@@ -353,13 +353,19 @@ void UEquipmentInventoryWidget::OnEquipmentItemUnequipped(UObject* Item, FInvent
 // @@@SNIPEND
 
 // @@@SNIPSTART EquipmentInventoryWidget.cpp-SaveEquipments
-// @@@MULTISNIP ReadyUI {"selectedLines": ["1-26", "41"]}
+// @@@MULTISNIP ReadyUI {"selectedLines": ["1-34", "49"]}
 void UEquipmentInventoryWidget::SaveEquipments()
 {
+	if (!GetWorld() || GetWorld()->bIsTearingDown || !GetOwningPlayer())
+	{
+		return;
+	}
+
 	const ULocalPlayer* LocalPlayer = GetOwningPlayer()->GetLocalPlayer();
 	if (!LocalPlayer)
 	{
 		UE_LOG_ENTITLEMENTS_ESSENTIALS(Warning, "Failed to save customization. Local player is invalid.");
+		Super::NativeOnDeactivated();
 		return;
 	}
 
@@ -369,6 +375,7 @@ void UEquipmentInventoryWidget::SaveEquipments()
 	if (!GameInstance)
 	{
 		UE_LOG_ENTITLEMENTS_ESSENTIALS(Warning, "Failed to save customization. Game instance is invalid.");
+		Super::NativeOnDeactivated();
 		return;
 	}
 
@@ -376,6 +383,7 @@ void UEquipmentInventoryWidget::SaveEquipments()
 	if (!PromptSubsystem)
 	{
 		UE_LOG_ENTITLEMENTS_ESSENTIALS(Warning, "Failed to save customization. Prompt subsystem is invalid.");
+		Super::NativeOnDeactivated();
 		return;
 	}
 
@@ -392,7 +400,7 @@ void UEquipmentInventoryWidget::SaveEquipments()
 			{
 				PromptSubsystem->ShowMessagePopUp(ERROR_PROMPT_TEXT, Error.ErrorMessage);
 			}
-			DeactivateWidget();
+			Super::NativeOnDeactivated();
 		}));
 }
 // @@@SNIPEND

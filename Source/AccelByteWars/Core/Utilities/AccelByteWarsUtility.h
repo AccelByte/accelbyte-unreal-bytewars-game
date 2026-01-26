@@ -10,7 +10,7 @@
 
 #define UNREAL_ENGINE_VERSION_OLDER_THAN_5_2 (ENGINE_MAJOR_VERSION <= 4 || (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION <= 1))
 
-typedef TSharedPtr<const FSlateBrush> FCacheBrush;
+typedef TSharedPtr<FSlateBrush> FCacheBrush;
 DECLARE_DELEGATE_OneParam(FOnImageReceived, FCacheBrush);
 
 // All possible Reason to be used for the FOnMatchEnded delegate.

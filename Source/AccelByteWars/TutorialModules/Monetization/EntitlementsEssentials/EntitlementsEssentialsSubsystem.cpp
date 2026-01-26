@@ -7,18 +7,15 @@
 
 #include "OnlineSubsystemUtils.h"
 #include "Monetization/InGameStoreEssentials/UI/ShopWidget.h"
-#include "Monetization/InGameStoreEssentials/InGameStoreEssentialsSubsystem.h"
 #include "Core/AssetManager/InGameItems/InGameItemDataAsset.h"
 #include "Core/Player/AccelByteWarsPlayerPawn.h"
 #include "Core/System/AccelByteWarsGameInstance.h"
 
-#define STORE_SUBSYSTEM_CLASS UInGameStoreEssentialsSubsystem
-
 // @@@SNIPSTART EntitlementsEssentialsSubsystem.cpp-Initialize
-// @@@MULTISNIP Interfaces {"selectedLines": ["1-17", "46"]}
-// @@@MULTISNIP Query {"selectedLines": ["1-2", "19", "31-37", "46"]}
-// @@@MULTISNIP Consume {"selectedLines": ["1-2", "20", "39-46"]}
-// @@@MULTISNIP GetUserEquipments {"selectedLines": ["1-2", "22-29", "46"]}
+// @@@MULTISNIP Interfaces {"selectedLines": ["1-18", "47"]}
+// @@@MULTISNIP Query {"selectedLines": ["1-2", "20", "32-38", "47"]}
+// @@@MULTISNIP Consume {"selectedLines": ["1-2", "21", "40-47"]}
+// @@@MULTISNIP GetUserEquipments {"selectedLines": ["1-2", "23-30", "47"]}
 void UEntitlementsEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
@@ -32,6 +29,7 @@ void UEntitlementsEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Coll
 	IdentityInterface = StaticCastSharedPtr<FOnlineIdentityAccelByte>(Subsystem->GetIdentityInterface());
 	CloudSaveInterface = StaticCastSharedPtr<FOnlineCloudSaveAccelByte>(Subsystem->GetCloudSaveInterface());
 	EntitlementsInterface = StaticCastSharedPtr<FOnlineEntitlementsAccelByte>(Subsystem->GetEntitlementsInterface());
+	StoreInterface = StaticCastSharedPtr<FOnlineStoreV2AccelByte>(Subsystem->GetStoreV2Interface());
 	if (!ensure(IdentityInterface) || !ensure(CloudSaveInterface) || !ensure(EntitlementsInterface))
 	{
 		return;
@@ -198,40 +196,25 @@ void UEntitlementsEssentialsSubsystem::ConsumeItemEntitlementByInGameId(
 		});
 
 	// Construct delegate to get store Item ID by SKU, then get entitlement ID.
-	const FOnGetOrQueryOffersByCategory OnStoreOfferComplete = FOnGetOrQueryOffersByCategory::CreateWeakLambda(
-		this, [UserId, this, OnItemEntitlementComplete, ItemSku](TArray<UStoreItemDataObject*> Offers)
+	const FOnQueryOnlineStoreOffersComplete OnStoreOfferComplete = 
+		FOnQueryOnlineStoreOffersComplete::CreateWeakLambda(this, [UserId, this, OnItemEntitlementComplete, ItemSku]
+		(bool bWasSuccessful, const TArray<FUniqueOfferId>& OfferIds, const FString& Error)
 		{
-			for (const UStoreItemDataObject* Offer : Offers)
+			if (TSharedPtr<FOnlineStoreOffer> Offer = StoreInterface->GetOfferBySku(ItemSku))
 			{
-				if (Offer->GetSkuMap()[EItemSkuPlatform::AccelByte].Equals(ItemSku))
-				{
-					GetOrQueryUserItemEntitlement(UserId, Offer->GetStoreItemId(), OnItemEntitlementComplete);
-					break;
-				}
+				GetOrQueryUserItemEntitlement(UserId, Offer->OfferId, OnItemEntitlementComplete);
 			}
 		});
 
-	// Trigger query store item.
-	UTutorialModuleDataAsset* StoreDataAsset = UTutorialModuleUtility::GetTutorialModuleDataAsset(
-		FPrimaryAssetId{ "TutorialModule:INGAMESTOREESSENTIALS" },
-		this,
-		true);
-	if (StoreDataAsset && !StoreDataAsset->IsStarterModeActive())
+	// If not yet cached, query the offer information.
+	TSharedPtr<FOnlineStoreOffer> Offer = StoreInterface->GetOfferBySku(ItemSku);
+	if (Offer)
 	{
-		STORE_SUBSYSTEM_CLASS* StoreSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<STORE_SUBSYSTEM_CLASS>();
-		if (!ensure(StoreSubsystem))
-		{
-			return;
-		}
-
-		StoreSubsystem->GetOrQueryOffersByCategory(UserId, TEXT("/ingamestore/item"), OnStoreOfferComplete);
+		OnStoreOfferComplete.ExecuteIfBound(true, { Offer->OfferId }, TEXT(""));
 	}
-	else
+	else 
 	{
-		UE_LOG_ENTITLEMENTS_ESSENTIALS(Warning, "INGAMESTOREESSENTIALS module is inactive or not in the same starter mode as this module. Treating as failed.")
-
-		// Store Essential module is inactive or not in the same starter mode as this module. Treat as failed.
-		OnStoreOfferComplete.ExecuteIfBound({});
+		StoreInterface->QueryOffersById(UserId.ToSharedRef().Get(), {Offer->OfferId}, OnStoreOfferComplete);
 	}
 }
 // @@@SNIPEND
@@ -272,33 +255,6 @@ void UEntitlementsEssentialsSubsystem::QueryUserEntitlement(const FUniqueNetIdPt
 
 	// Trigger query entitlements.
 	EntitlementsInterface->QueryEntitlements(UserId.ToSharedRef().Get(), TEXT(""), FPagedQuery());
-
-	// Trigger query offers.
-	const UTutorialModuleDataAsset* StoreDataAsset = UTutorialModuleUtility::GetTutorialModuleDataAsset(
-		FPrimaryAssetId{ "TutorialModule:INGAMESTOREESSENTIALS" },
-		this,
-		true);
-	if (StoreDataAsset)
-	{
-		STORE_SUBSYSTEM_CLASS* StoreSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<STORE_SUBSYSTEM_CLASS>();
-		if (!ensure(StoreSubsystem))
-		{
-			UE_LOG_ENTITLEMENTS_ESSENTIALS(Warning, "INGAMESTOREESSENTIALS module is inactive or its starter mode doesn't match entitlement module's starter mode. Treating as failed.")
-			OnQueryStoreOfferComplete({});
-			return;
-		}
-
-		QueryProcess++;
-		StoreSubsystem->GetOrQueryOffersByCategory(
-			UserId,
-			TEXT("/ingamestore/item"),
-			FOnGetOrQueryOffersByCategory::CreateUObject(this, &ThisClass::OnQueryStoreOfferComplete));
-	}
-	else
-	{
-		UE_LOG_ENTITLEMENTS_ESSENTIALS(Warning, "INGAMESTOREESSENTIALS module is inactive or its starter mode doesn't match entitlement module's starter mode. Treating as failed.")
-		OnQueryStoreOfferComplete({});
-	}
 }
 // @@@SNIPEND
 
@@ -309,27 +265,50 @@ void UEntitlementsEssentialsSubsystem::OnQueryEntitlementComplete(
 	const FString& Namespace,
 	const FString& ErrorMessage)
 {
-	QueryProcess--;
-
 	FOnlineError Error;
 	Error.bSucceeded = bWasSuccessful;
 	Error.ErrorRaw = ErrorMessage;
 
 	QueryResultUserId = UserId.AsShared();
 	QueryResultError = Error;
-	
-	if (QueryProcess <= 0)
+
+	TArray<TSharedRef<FOnlineEntitlement>> Entitlements;
+	EntitlementsInterface->GetAllEntitlements(UserId, Namespace, Entitlements);
+
+	TArray<FOnlineStoreOfferAccelByteRef> Offers;
+	StoreInterface->GetOffers(Offers);
+
+	TArray<FString> OfferIds;
+	Algo::Transform(Offers, OfferIds, [](const FOnlineStoreOfferAccelByteRef Item) { return Item->OfferId; });
+
+	TSet<FString> OfferIdsToQuery;
+	for (const TSharedRef<FOnlineEntitlement>& Entitlement : Entitlements)
 	{
-		CompleteQuery();
+		if (!OfferIds.Contains(Entitlement->ItemId))
+		{
+			OfferIdsToQuery.Add(Entitlement->ItemId);
+		}
+	}
+
+	// If not yet cached, query the offer information.
+	if (OfferIdsToQuery.IsEmpty()) 
+	{
+		OnQueryStoreOfferComplete(true, OfferIds, TEXT(""));
+	}
+	else 
+	{
+		StoreInterface->QueryOffersById(UserId, OfferIdsToQuery.Array(), FOnQueryOnlineStoreOffersComplete::CreateUObject(this, &ThisClass::OnQueryStoreOfferComplete));
 	}
 }
 // @@@SNIPEND
 
 // @@@SNIPSTART EntitlementsEssentialsSubsystem.cpp-OnQueryStoreOfferComplete
-void UEntitlementsEssentialsSubsystem::OnQueryStoreOfferComplete(TArray<UStoreItemDataObject*> Offers)
+void UEntitlementsEssentialsSubsystem::OnQueryStoreOfferComplete(
+	bool bWasSuccessful, 
+	const TArray<FUniqueOfferId>& OfferIds, 
+	const FString& Error)
 {
 	QueryProcess--;
-	StoreOffers = Offers;
 
 	if (QueryProcess <= 0)
 	{
@@ -648,6 +627,7 @@ void UEntitlementsEssentialsSubsystem::OnSetUserEquipmentsComplete(
 // @@@SNIPEND
 
 #pragma region "Utilities"
+// @@@SNIPSTART EntitlementsEssentialsSubsystem.cpp-EntitlementsToDataObjects
 TArray<UStoreItemDataObject*> UEntitlementsEssentialsSubsystem::EntitlementsToDataObjects(
 	TArray<TSharedRef<FOnlineEntitlement>> Entitlements) const
 {
@@ -658,27 +638,25 @@ TArray<UStoreItemDataObject*> UEntitlementsEssentialsSubsystem::EntitlementsToDa
 	}
 	return Items;
 }
+// @@@SNIPEND
 
+// @@@SNIPSTART EntitlementsEssentialsSubsystem.cpp-EntitlementToDataObject
 UStoreItemDataObject* UEntitlementsEssentialsSubsystem::EntitlementToDataObject(
 	TSharedRef<FOnlineEntitlement> Entitlement) const
 {
-	UStoreItemDataObject* Item = NewObject<UStoreItemDataObject>();
-	Item->Setup(Entitlement.Get());
+	UStoreItemDataObject* EntitlementItem = NewObject<UStoreItemDataObject>();
+	EntitlementItem->Setup(Entitlement.Get());
+	EntitlementItem->SetIsShowPrices(false);
 
-	// Byte Wars specifics, used to hide the prices on the UI.
-	Item->SetIsShowPrices(false);
-
-	for (const UStoreItemDataObject* Offer : StoreOffers)
+	if (TSharedPtr<FOnlineStoreOffer> StoreOffer = StoreInterface->GetOffer(Entitlement->ItemId))
 	{
-		if (Offer->GetStoreItemId().Equals(Item->GetStoreItemId()))
+		if (UStoreItemDataObject* StoreItem = FInGameStoreEssentialsUtils::ConvertStoreData(StoreOffer.ToSharedRef().Get()))
 		{
-			Item->UpdateVariables(Offer);
-			break;
+			EntitlementItem->UpdateVariables(StoreItem);
 		}
 	}
 
-	return Item;
+	return EntitlementItem;
 }
+// @@@SNIPEND
 #pragma endregion 
-
-#undef STORE_SUBSYSTEM_CLASS

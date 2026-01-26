@@ -9,6 +9,7 @@
 #include "OnlineIdentityInterfaceAccelByte.h"
 #include "OnlineCloudSaveInterfaceAccelByte.h"
 #include "OnlineEntitlementsInterfaceAccelByte.h"
+#include "OnlineStoreInterfaceV2AccelByte.h"
 #include "Monetization/InGameStoreEssentials/InGameStoreEssentialsModel.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "EntitlementsEssentialsSubsystem.generated.h"
@@ -22,8 +23,10 @@ class ACCELBYTEWARS_API UEntitlementsEssentialsSubsystem : public UTutorialModul
 	virtual void Deinitialize() override;
 
 // @@@SNIPSTART EntitlementsEssentialsSubsystem.h-public
-// @@@MULTISNIP Query {"selectedLines": ["1-10"]}
-// @@@MULTISNIP Consume {"selectedLines": ["1", "11-20"]}
+// @@@MULTISNIP GetOrQueryUserEntitlements {"selectedLines": ["1-5"]}
+// @@@MULTISNIP GetOrQueryUserItemEntitlement {"selectedLines": ["1", "6-10"]}
+// @@@MULTISNIP ConsumeItemEntitlementByInGameId {"selectedLines": ["1", "11-15"]}
+// @@@MULTISNIP ConsumeEntitlementByEntitlementId {"selectedLines": ["1", "16-20"]}
 // @@@MULTISNIP GetUserEquipments {"selectedLines": ["1", "22-25"]}
 // @@@MULTISNIP SetUserEquipments {"selectedLines": ["1", "26-30"]}
 public:
@@ -59,22 +62,24 @@ public:
 // @@@SNIPEND
 
 // @@@SNIPSTART EntitlementsEssentialsSubsystem.h-private
-// @@@MULTISNIP Interfaces {"selectedLines": ["1-4"]}
-// @@@MULTISNIP StoreOffers {"selectedLines": ["1", "6-7"]}
-// @@@MULTISNIP ObjectConversion {"selectedLines": ["1", "61-62"]}
-// @@@MULTISNIP DelegatesQuery {"selectedLines": ["1", "12-13"]}
-// @@@MULTISNIP DelegatesConsume {"selectedLines": ["1", "14"]}
-// @@@MULTISNIP Query {"selectedLines": ["1", "16-28"]}
-// @@@MULTISNIP OnConsumeEntitlementComplete {"selectedLines": ["1", "30-34"]}
-// @@@MULTISNIP UpdateUserEquipments {"selectedLines": ["1", "30-34"]}
-// @@@MULTISNIP OnGetSetUserEquipmentsComplete {"selectedLines": ["1", "42-58"]}
+// @@@MULTISNIP Interfaces {"selectedLines": ["1-5"]}
+// @@@MULTISNIP QueryEntitlementDelegates {"selectedLines": ["1", "10-11"]}
+// @@@MULTISNIP QueryEntitlementHelpers {"selectedLines": ["1", "14-16"]}
+// @@@MULTISNIP QueryUserEntitlement {"selectedLines": ["1", "18"]}
+// @@@MULTISNIP OnQueryEntitlementComplete {"selectedLines": ["1", "19-23"]}
+// @@@MULTISNIP OnQueryStoreOfferComplete {"selectedLines": ["1", "24-27"]}
+// @@@MULTISNIP GetItemEntitlement {"selectedLines": ["1", "28"]}
+// @@@MULTISNIP CompleteQuery {"selectedLines": ["1", "29"]}
+// @@@MULTISNIP ConsumeEntitlementDelegates {"selectedLines": ["1", "12"]}
+// @@@MULTISNIP OnConsumeEntitlementComplete {"selectedLines": ["1", "31-35"]}
+// @@@MULTISNIP UpdateUserEquipments {"selectedLines": ["1", "37-41"]}
+// @@@MULTISNIP OnGetSetUserEquipmentsComplete {"selectedLines": ["1", "43-59"]}
+// @@@MULTISNIP ObjectConversion {"selectedLines": ["1", "62-63"]}
 private:
 	FOnlineIdentityAccelBytePtr IdentityInterface;
 	FOnlineCloudSaveAccelBytePtr CloudSaveInterface;
 	FOnlineEntitlementsAccelBytePtr EntitlementsInterface;
-
-	UPROPERTY()
-	TArray<UStoreItemDataObject*> StoreOffers;
+	FOnlineStoreV2AccelBytePtr StoreInterface;
 
 	UPROPERTY()
 	FPlayerEquipments CurrentEquipments;
@@ -93,7 +98,10 @@ private:
 		const FUniqueNetId& UserId,
 		const FString& Namespace,
 		const FString& ErrorMessage);
-	void OnQueryStoreOfferComplete(TArray<UStoreItemDataObject*> Offers);
+	void OnQueryStoreOfferComplete(
+		bool bWasSuccessful,
+		const TArray<FUniqueOfferId>& OfferIds,
+		const FString& Error);
 	UStoreItemDataObject* GetItemEntitlement(const FUniqueNetIdPtr UserId, const FUniqueOfferId OfferId) const;
 	void CompleteQuery();
 

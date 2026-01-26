@@ -22,8 +22,8 @@ class ACCELBYTEWARS_API UChallengeWidgetEntry : public UAccelByteWarsWidgetEntry
 {
 	GENERATED_BODY()
 	
-// @@@SNIPSTART ChallengePeriodWidget.h-protected
-// @@@MULTISNIP ChallengePeriodUI {"selectedLines": ["1", "13-35"]}
+// @@@SNIPSTART ChallengeWidgetEntry.h-protected
+// @@@MULTISNIP ChallengeEntryUI {"selectedLines": ["1", "13-35"]}
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;

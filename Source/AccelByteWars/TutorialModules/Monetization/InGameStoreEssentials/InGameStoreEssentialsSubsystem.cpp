@@ -5,7 +5,6 @@
 
 #include "InGameStoreEssentialsSubsystem.h"
 
-#include "OnlineStoreInterfaceV2AccelByte.h"
 #include "OnlineSubsystemUtils.h"
 #include "Core/AssetManager/InGameItems/InGameItemUtility.h"
 #include "Monetization/NativePlatformPurchase/NativePlatformPurchaseModels.h"
@@ -16,9 +15,9 @@ void UInGameStoreEssentialsSubsystem::Initialize(FSubsystemCollectionBase& Colle
 {
 	Super::Initialize(Collection);
 
-	const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+	const FOnlineSubsystemAccelByte* Subsystem = static_cast<const FOnlineSubsystemAccelByte*>(Online::GetSubsystem(GetWorld()));
 	ensure(Subsystem);
-	StoreInterface = Subsystem->GetStoreV2Interface();
+	StoreInterface = StaticCastSharedPtr<FOnlineStoreV2AccelByte>(Subsystem->GetStoreV2Interface());
 	ensure(StoreInterface);
 }
 // @@@SNIPEND
@@ -139,20 +138,22 @@ void UInGameStoreEssentialsSubsystem::GetOrQueryCategoriesByRootPath(
 // @@@SNIPSTART InGameStoreEssentialsSubsystem.cpp-GetOffersByCategory
 TArray<UStoreItemDataObject*> UInGameStoreEssentialsSubsystem::GetOffersByCategory(const FString Category) const
 {
-	TArray<FOnlineStoreOfferRef> FilteredOffers;
+	TArray<FOnlineStoreOfferAccelByteRef> FilteredOffers;
 	TArray<UStoreItemDataObject*> StoreItems;
 
-	TArray<FOnlineStoreOfferRef> Offers;
+	TArray<FOnlineStoreOfferAccelByteRef> Offers;
 	StoreInterface->GetOffers(Offers);
-	for (const FOnlineStoreOfferRef& Offer : Offers)
+	for (const FOnlineStoreOfferAccelByteRef& Offer : Offers)
 	{
-		if (Offer->DynamicFields.Find(TEXT("Category"))->Find(Category) == 0)
+		if (Offer->DynamicFields.Find(TEXT("Category"))->Find(Category) == 0 && 
+			Offer->IsPurchaseable() && 
+			Offer->Listable)
 		{
 			FilteredOffers.Add(Offer);
 		}
 	}
 
-	for (const TSharedRef<FOnlineStoreOffer>& Offer : FilteredOffers)
+	for (const FOnlineStoreOfferAccelByteRef& Offer : FilteredOffers)
 	{
 		StoreItems.Add(FInGameStoreEssentialsUtils::ConvertStoreData(Offer.Get()));
 	}

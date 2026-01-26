@@ -5,7 +5,6 @@
 
 #include "InGameStoreEssentialsSubsystem_Starter.h"
 
-#include "OnlineStoreInterfaceV2AccelByte.h"
 #include "OnlineSubsystemUtils.h"
 #include "Core/AssetManager/InGameItems/InGameItemUtility.h"
 
@@ -13,9 +12,9 @@ void UInGameStoreEssentialsSubsystem_Starter::Initialize(FSubsystemCollectionBas
 {
 	Super::Initialize(Collection);
 
-	const IOnlineSubsystem* Subsystem = Online::GetSubsystem(GetWorld());
+	const FOnlineSubsystemAccelByte* Subsystem = static_cast<const FOnlineSubsystemAccelByte*>(Online::GetSubsystem(GetWorld()));
 	ensure(Subsystem);
-	StoreInterface = Subsystem->GetStoreV2Interface();
+	StoreInterface = StaticCastSharedPtr<FOnlineStoreV2AccelByte>(Subsystem->GetStoreV2Interface());
 	ensure(StoreInterface);
 }
 

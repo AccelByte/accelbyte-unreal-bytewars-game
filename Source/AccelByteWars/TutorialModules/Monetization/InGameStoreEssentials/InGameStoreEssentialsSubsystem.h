@@ -9,7 +9,7 @@
 #include "OnlineSubsystem.h"
 #include "Core/AssetManager/TutorialModules/TutorialModuleSubsystem.h"
 #include "Core/UI/MainMenu/Store/StoreItemModel.h"
-#include "Interfaces/OnlineStoreInterfaceV2.h"
+#include "OnlineStoreInterfaceV2AccelByte.h"
 #include "InGameStoreEssentialsSubsystem.generated.h"
 
 UCLASS()
@@ -48,7 +48,7 @@ public:
 // @@@MULTISNIP StoreItemsIndication {"selectedLines": ["1", "11"]}
 // @@@MULTISNIP StoreItemsFunctions {"selectedLines": ["1", "8-9", "12-13"]}
 private:
-	IOnlineStoreV2Ptr StoreInterface;
+	FOnlineStoreV2AccelBytePtr StoreInterface;
 
 	TMultiMap<const FString /*Category*/, FOnGetOrQueryOffersByCategory> OffersByCategoryDelegates;
 	TMultiMap<const FUniqueOfferId /*OfferId*/, FOnGetOrQueryOfferById> OfferByIdDelegates;

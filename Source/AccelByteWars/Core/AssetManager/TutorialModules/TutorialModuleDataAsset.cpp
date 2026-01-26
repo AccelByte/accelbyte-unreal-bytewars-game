@@ -126,7 +126,13 @@ void UTutorialModuleDataAsset::ResetOverrides()
 
 FString UTutorialModuleDataAsset::GetAttributesLocalFilePath(const FString& TutorialModuleCodeName)
 {
-	return FPaths::Combine(FPaths::ProjectSavedDir(), FString::Printf(TEXT("TutorialModuleCache/%s.json"), *TutorialModuleCodeName));
+	FString CachePath = TEXT("");
+#if (defined(PLATFORM_PS4) && PLATFORM_PS4) || (defined(PLATFORM_PS5) && PLATFORM_PS5)
+	CachePath = FPaths::ProjectPersistentDownloadDir();
+#else
+	CachePath = FPaths::ProjectSavedDir();
+#endif
+	return FPaths::Combine(CachePath, FString::Printf(TEXT("TutorialModuleCache/%s.json"), *TutorialModuleCodeName));
 }
 
 bool UTutorialModuleDataAsset::SaveAttributesToLocal()
