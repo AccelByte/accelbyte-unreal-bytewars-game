@@ -33,88 +33,130 @@ FString AccelByteWarsUtility::FormatEntityDeathSource(const FString& SourceType,
 	return FString::Printf(TEXT("%s:%s"), *SourceType, *SourceEntityId);
 }
 
-void AccelByteWarsUtility::GetImageFromURL(const FString& Url, const FString& ImageId, const FOnImageReceived& OnReceived)
+void AccelByteWarsUtility::GetImageFromURL(
+	const FString& Url,
+	const FString& ImageId,
+	const FOnImageReceived& OnReceived)
 {
-	const FHttpRequestPtr ImageRequest = FHttpModule::Get().CreateRequest();
+	const FHttpRequestPtr Request = FHttpModule::Get().CreateRequest();
+	Request->SetVerb("GET");
+	Request->SetURL(Url);
 
-	ImageRequest->SetVerb("GET");
-	ImageRequest->SetURL(Url);
-
-	ImageRequest->OnProcessRequestComplete().BindLambda([OnReceived, ImageId](FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
-	{
-		if (bWasSuccessful && Response.IsValid())
+	Request->OnProcessRequestComplete().BindLambda(
+		[OnReceived, ImageId](FHttpRequestPtr Req, FHttpResponsePtr Response, bool bSuccess)
 		{
-			const FString ContentType = Response->GetHeader("Content-Type");
-
-			if (ImageFormatMap.Contains(ContentType))
+			if (!bSuccess || !Response.IsValid())
 			{
-				const FString ResourceName = FPaths::ProjectSavedDir() / TEXT("Caches") / ImageId;
-				TArray<uint8> ImageData = Response->GetContent();
-				IImageWrapperModule& ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(FName("ImageWrapper"));
-				FCacheBrush ImageBrush;
-
-				const TSharedPtr<IImageWrapper> ImageWrapper = ImageWrapperModule.CreateImageWrapper(ImageFormatMap[ContentType]);
-				if (ImageWrapper.IsValid() && ImageWrapper->SetCompressed(ImageData.GetData(), ImageData.Num()))
-				{
-					constexpr ERGBFormat RGBFormat = ERGBFormat::BGRA;
-					constexpr uint8 BitDepth = 8;
-
-					TArray<uint8> DecodedImage;
-					if (ImageWrapper->GetRaw(RGBFormat, BitDepth, DecodedImage))
-					{
-						if (FSlateApplication::Get().GetRenderer()->GenerateDynamicImageResource(FName(*ResourceName), ImageWrapper->GetWidth(), ImageWrapper->GetHeight(), DecodedImage))
-						{
-							ImageBrush = MakeShareable(new FSlateDynamicImageBrush(FName(*ResourceName), FVector2D(ImageWrapper->GetWidth(), ImageWrapper->GetHeight())));
-							FFileHelper::SaveArrayToFile(ImageData, *ResourceName);
-						}
-					}
-				}
-
-				OnReceived.ExecuteIfBound(ImageBrush);
+				OnReceived.ExecuteIfBound(nullptr);
+				return;
 			}
-		}
-		else
-		{
-			OnReceived.ExecuteIfBound(FCacheBrush());
-		}
-	});
 
-	ImageRequest->ProcessRequest();
+			const FString ContentType = Response->GetHeader("Content-Type");
+			if (!ImageFormatMap.Contains(ContentType))
+			{
+				OnReceived.ExecuteIfBound(nullptr);
+				return;
+			}
+
+			// Decode data.
+			TArray<uint8> RawBGRA;
+			const TArray<uint8> Compressed = Response->GetContent();
+			IImageWrapperModule& Module = FModuleManager::LoadModuleChecked<IImageWrapperModule>("ImageWrapper");
+			TSharedPtr<IImageWrapper> Wrapper = Module.CreateImageWrapper(ImageFormatMap[ContentType]);
+			if (!Wrapper.IsValid() || !Wrapper->SetCompressed(Compressed.GetData(), Compressed.Num()) || !Wrapper->GetRaw(ERGBFormat::BGRA, 8, RawBGRA))
+			{
+				OnReceived.ExecuteIfBound(nullptr);
+				return;
+			}
+
+			// Create texture from raw data.
+			const int32 Width = Wrapper->GetWidth();
+			const int32 Height = Wrapper->GetHeight();
+			UTexture2D* Texture = UTexture2D::CreateTransient(Width, Height, PF_B8G8R8A8);
+			if (!Texture)
+			{
+				OnReceived.ExecuteIfBound(nullptr);
+				return;
+			}
+
+			// Write texture data.
+			void* TexData = Texture->GetPlatformData()->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
+			FMemory::Memcpy(TexData, RawBGRA.GetData(), RawBGRA.Num());
+			Texture->GetPlatformData()->Mips[0].BulkData.Unlock();
+			Texture->UpdateResource();
+
+			// Create brush from texture.
+			FCacheBrush Brush = MakeShared<FSlateBrush>();
+			Brush->SetResourceObject(Texture);
+			Brush->ImageSize = FVector2D(Width, Height);
+
+			// Try to save to disk for future use.
+			FString CachePath = TEXT("");
+#if (defined(PLATFORM_PS4) && PLATFORM_PS4) || (defined(PLATFORM_PS5) && PLATFORM_PS5)
+			CachePath = FPaths::ProjectPersistentDownloadDir();
+#else
+			CachePath = FPaths::ProjectSavedDir();
+#endif
+			CachePath = CachePath / TEXT("Caches") / ImageId;
+			FFileHelper::SaveArrayToFile(Compressed, *CachePath);
+
+			OnReceived.ExecuteIfBound(Brush);
+		});
+
+	Request->ProcessRequest();
 }
 
 FCacheBrush AccelByteWarsUtility::GetImageFromCache(const FString& ImageId)
 {
-	FCacheBrush ImageBrush = nullptr;
 	if (ImageId.IsEmpty()) 
 	{
-		return ImageBrush;
+		return nullptr;
 	}
 
-	TArray<uint8> ImageData;
-	const FString ResourceName = FPaths::ProjectSavedDir() / TEXT("Caches") / ImageId;
-	if (FFileHelper::LoadFileToArray(ImageData, *ResourceName))
+	// Load from disk.
+	TArray<uint8> Compressed;
+	FString CachePath = TEXT("");
+#if (defined(PLATFORM_PS4) && PLATFORM_PS4) || (defined(PLATFORM_PS5) && PLATFORM_PS5)
+	CachePath = FPaths::ProjectPersistentDownloadDir();
+#else
+	CachePath = FPaths::ProjectSavedDir();
+#endif
+	CachePath = CachePath / TEXT("Caches") / ImageId;
+	if (!FFileHelper::LoadFileToArray(Compressed, *CachePath))
 	{
-		IImageWrapperModule& ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(FName("ImageWrapper"));
-
-		constexpr EImageFormat ImageFormat = EImageFormat::PNG;
-		const TSharedPtr<IImageWrapper> ImageWrapper = ImageWrapperModule.CreateImageWrapper(ImageFormat);
-		if (ImageWrapper.IsValid() && ImageWrapper->SetCompressed(ImageData.GetData(), ImageData.Num()))
-		{
-			constexpr ERGBFormat RGBFormat = ERGBFormat::BGRA;
-			constexpr uint8 BitDepth = 8;
-			TArray<uint8> DecodedImage;
-
-			if (ImageWrapper->GetRaw(RGBFormat, BitDepth, DecodedImage))
-			{
-				if (FSlateApplication::Get().GetRenderer()->GenerateDynamicImageResource(FName(*ResourceName), ImageWrapper->GetWidth(), ImageWrapper->GetHeight(), DecodedImage))
-				{
-					ImageBrush = MakeShareable(new FSlateDynamicImageBrush(FName(*ResourceName), FVector2D(ImageWrapper->GetWidth(), ImageWrapper->GetHeight())));
-				}
-			}
-		}
+		return nullptr;
 	}
 
-	return ImageBrush;
+	// Decode data.
+	TArray<uint8> RawBGRA;
+	IImageWrapperModule& Module = FModuleManager::LoadModuleChecked<IImageWrapperModule>("ImageWrapper");
+	TSharedPtr<IImageWrapper> Wrapper = Module.CreateImageWrapper(EImageFormat::PNG);
+	if (!Wrapper.IsValid() || !Wrapper->SetCompressed(Compressed.GetData(), Compressed.Num()) || !Wrapper->GetRaw(ERGBFormat::BGRA, 8, RawBGRA))
+	{
+		return nullptr;
+	}
+
+	// Create texture from raw data.
+	const int32 Width = Wrapper->GetWidth();
+	const int32 Height = Wrapper->GetHeight();
+	UTexture2D* Texture = UTexture2D::CreateTransient(Width, Height, PF_B8G8R8A8);
+	if (!Texture) 
+	{
+		return nullptr;
+	}
+
+	// Write texture data.
+	void* TexData = Texture->GetPlatformData()->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
+	FMemory::Memcpy(TexData, RawBGRA.GetData(), RawBGRA.Num());
+	Texture->GetPlatformData()->Mips[0].BulkData.Unlock();
+	Texture->UpdateResource();
+
+	// Create brush from texture
+	FCacheBrush Brush = MakeShared<FSlateBrush>();
+	Brush->SetResourceObject(Texture);
+	Brush->ImageSize = FVector2D(Width, Height);
+
+	return Brush;
 }
 
 int32 AccelByteWarsUtility::PositiveModulo(const int32 Dividend, const int32 Modulus)

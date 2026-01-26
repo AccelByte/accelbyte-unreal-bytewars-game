@@ -56,7 +56,7 @@ struct FInventoryCategory
 };
 
 UCLASS()
-class ACCELBYTEWARS_API UInventoryWidget : public UAccelByteWarsActivatableWidget
+class ACCELBYTEWARS_API UInventoryWidget : public UCommonUserWidget
 {
 	GENERATED_BODY()
 

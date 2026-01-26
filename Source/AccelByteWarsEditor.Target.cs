@@ -7,6 +7,11 @@ public class AccelByteWarsEditorTarget : TargetRules
 {
 	public AccelByteWarsEditorTarget( TargetInfo Target) : base(Target)
 	{
+		// Setup IWYU and Unity Build
+		bEnforceIWYU = false;
+		bUseUnityBuild = true;
+		bUseAdaptiveUnityBuild = true;
+		
 		Type = TargetType.Editor;
 		DefaultBuildSettings = BuildSettingsVersion.Latest;
 		IncludeOrderVersion = EngineIncludeOrderVersion.Latest;
