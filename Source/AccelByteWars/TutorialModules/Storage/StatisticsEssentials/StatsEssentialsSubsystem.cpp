@@ -167,6 +167,12 @@ bool UStatsEssentialsSubsystem::UpdateConnectedPlayersStats(
 			UE_LOG_STATSESSENTIALS(Warning, TEXT("Failed to update player's statistics. Player state is invalid."));
 			continue;
 		}
+		if (ABPlayerState->IsABot())
+		{
+			// Bot player have a valid ID with the format of `BOT <index>`. Use this flag to skip bot, instead.
+			UE_LOG_STATSESSENTIALS(Verbose, TEXT("Player %s skipped. It is a bot."), *ABPlayerState->GetName());
+			continue;
+		}
 
 		const FUniqueNetIdRepl& PlayerUniqueId = PlayerState->GetUniqueId();
 		if (!PlayerUniqueId.IsValid())
