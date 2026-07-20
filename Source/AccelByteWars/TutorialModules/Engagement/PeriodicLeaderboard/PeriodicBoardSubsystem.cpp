@@ -141,7 +141,7 @@ void UPeriodicBoardSubsystem::GetPlayerPeriodicRanking(const APlayerController* 
 
 	// Get the player's periodic leaderboard ranking.
 	OnLeaderboardReadCompleteDelegateHandle = LeaderboardInterface->AddOnLeaderboardReadCompleteDelegate_Handle(FOnLeaderboardReadCompleteDelegate::CreateUObject(this, &ThisClass::OnGetPeriodicRankingsComplete, LocalUserNum, LeaderboardObj, OnComplete));
-	LeaderboardInterface->ReadLeaderboardsCycle(TPartyMemberArray{ PlayerNetId->AsShared() }, LeaderboardObj, CycleId);
+	LeaderboardInterface->ReadLeaderboardsCycle(TArray<FUniqueNetIdRef>{ PlayerNetId->AsShared() }, LeaderboardObj, CycleId);
 }
 // @@@SNIPEND
 
@@ -222,7 +222,7 @@ void UPeriodicBoardSubsystem::OnGetPeriodicRankingsComplete(
 	}
 
 	// Collect periodic leaderboard members' player id.
-	TPartyMemberArray LeaderboardMembers;
+	TArray<FUniqueNetIdRef> LeaderboardMembers;
 	for (const FOnlineStatsRow& Row : LeaderboardObj->Rows)
 	{
 		if (Row.PlayerId.IsValid())

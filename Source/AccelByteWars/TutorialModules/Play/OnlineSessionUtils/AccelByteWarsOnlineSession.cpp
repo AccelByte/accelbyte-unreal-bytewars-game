@@ -1724,7 +1724,7 @@ bool UAccelByteWarsOnlineSession::IsInParty(const FUniqueNetIdPtr UserId)
 		return false;
 	}
 
-	const TPartyMemberArray Members = GetPartyMembers();
+	const TArray<FUniqueNetIdRef> Members = GetPartyMembers();
 	for (const auto& Member : Members)
 	{
 		if (!Member.Get().IsValid())
@@ -2217,7 +2217,7 @@ void UAccelByteWarsOnlineSession::OnPartyInviteRejected(FName SessionName, const
 	{
 		StartupSubsystem->QueryUserInfo(
 			0,
-			TPartyMemberArray{ RejecterABId },
+			TArray<FUniqueNetIdRef>{ RejecterABId },
 			FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [RejecterABId, this](
 				const FOnlineError& Error,
 				const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
@@ -2270,7 +2270,7 @@ void UAccelByteWarsOnlineSession::OnPartyInviteReceived(const FUniqueNetId& User
 	{
 		StartupSubsystem->QueryUserInfo(
 			0,
-			TPartyMemberArray{SenderABId},
+			TArray<FUniqueNetIdRef>{SenderABId},
 			FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [this, SenderABId, PartyInvite, LocalUserNum](
 				const FOnlineError& Error,
 				const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
@@ -2422,7 +2422,7 @@ void UAccelByteWarsOnlineSession::DisplayCurrentPartyLeader()
 	{
 		StartupSubsystem->QueryUserInfo(
 			0,
-			TPartyMemberArray{ LeaderABId.ToSharedRef() },
+			TArray<FUniqueNetIdRef>{ LeaderABId.ToSharedRef() },
 			FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [this, LeaderABId](
 				const FOnlineError& Error,
 				const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
@@ -2495,7 +2495,7 @@ void UAccelByteWarsOnlineSession::OnPartyMembersChange(FName SessionName, const 
 		{
 			StartupSubsystem->QueryUserInfo(
 				0,
-				TPartyMemberArray{ MemberABId },
+				TArray<FUniqueNetIdRef>{ MemberABId },
 				FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [this, MemberABId, bJoined](
 					const FOnlineError& Error,
 					const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
@@ -2574,7 +2574,7 @@ void UAccelByteWarsOnlineSession::OnPartyMemberJoined(FName SessionName, const F
 		{
 			StartupSubsystem->QueryUserInfo(
 				0,
-				TPartyMemberArray{ MemberABId },
+				TArray<FUniqueNetIdRef>{ MemberABId },
 				FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [this, MemberABId](
 					const FOnlineError& Error,
 					const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
@@ -2652,7 +2652,7 @@ void UAccelByteWarsOnlineSession::OnPartyMemberLeft(FName SessionName, const FUn
 		{
 			StartupSubsystem->QueryUserInfo(
 				0,
-				TPartyMemberArray{ MemberABId },
+				TArray<FUniqueNetIdRef>{ MemberABId },
 				FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [this, MemberABId](
 					const FOnlineError& Error,
 					const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)

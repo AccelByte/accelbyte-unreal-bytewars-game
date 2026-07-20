@@ -480,7 +480,7 @@ void UManagingFriendsSubsystem::GetBlockedPlayerList(const APlayerController* PC
 		if(bQueryUserInfo)
 		{
 			// Then, update the cached blocked players' information by querying their user information.
-			TPartyMemberArray BlockedPlayerIds;
+			TArray<FUniqueNetIdRef> BlockedPlayerIds;
 			for (const TSharedRef<FOnlineBlockedPlayer>& CachedBlockedPlayer : CachedBlockedPlayerList)
 			{
 				BlockedPlayerIds.Add(CachedBlockedPlayer.Get().GetUserId());

@@ -246,7 +246,6 @@ void USessionChatWidget::GetLastChatMessages()
 		FText ChatRoomNotFoundMessage = INVALID_CHAT_ROOM_MESSAGE;
 		switch (CurrentChatRoomType) 
 		{
-		case EAccelByteChatRoomType::PARTY_V1:
 		case EAccelByteChatRoomType::PARTY_V2:
 			ChatRoomNotFoundMessage = INVALID_PARTY_CHAT_ROOM_MESSAGE;
 			break;

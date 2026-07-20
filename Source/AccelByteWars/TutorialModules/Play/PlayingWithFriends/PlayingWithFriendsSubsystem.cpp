@@ -466,7 +466,7 @@ void UPlayingWithFriendsSubsystem::OnGameSessionInviteReceived(
 	{
 		StartupSubsystem->QueryUserInfo(
 			0,
-			TPartyMemberArray{FromABId},
+			TArray<FUniqueNetIdRef>{FromABId},
 			FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [this, Invite, LocalUserNum](
 				const FOnlineError& Error,
 				const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)

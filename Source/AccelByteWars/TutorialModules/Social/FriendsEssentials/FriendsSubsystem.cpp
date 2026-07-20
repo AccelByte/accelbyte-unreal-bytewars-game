@@ -112,7 +112,7 @@ void UFriendsSubsystem::GetCacheFriendList(const int32 LocalUserNum, bool bQuery
 	if (FriendsInterface->GetFriendsList(LocalUserNum, TEXT(""), CachedFriendList))
 	{
 		// Then, update the cached friends' information by querying their user information.
-		TPartyMemberArray FriendIds;
+		TArray<FUniqueNetIdRef> FriendIds;
 		for (const TSharedRef<FOnlineFriend>& CachedFriend : CachedFriendList)
 		{
 			FriendIds.Add(CachedFriend.Get().GetUserId());
@@ -194,7 +194,7 @@ void UFriendsSubsystem::GetSelfFriendCode(const APlayerController* PC, const FOn
 	{
 		StartupSubsystem->QueryUserInfo(
 			LocalUserNum,
-			TPartyMemberArray{ LocalPlayerId.ToSharedRef() },
+			TArray<FUniqueNetIdRef>{ LocalPlayerId.ToSharedRef() },
 			FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [this, OnComplete](
 				const FOnlineError& Error,
 				const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
@@ -283,7 +283,7 @@ void UFriendsSubsystem::OnFindFriendComplete(bool bWasSuccessful, const FUniqueN
 		{
 			StartupSubsystem->QueryUserInfo(
 				LocalUserNum,
-				TPartyMemberArray{ FoundUserId.AsShared() },
+				TArray<FUniqueNetIdRef>{ FoundUserId.AsShared() },
 				FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [this, OnComplete](
 					const FOnlineError& Error,
 					const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)

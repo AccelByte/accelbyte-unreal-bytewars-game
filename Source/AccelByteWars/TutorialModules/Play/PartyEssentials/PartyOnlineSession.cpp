@@ -503,7 +503,7 @@ bool UPartyOnlineSession::IsInParty(const FUniqueNetIdPtr UserId)
 		return false;
 	}
 
-	const TPartyMemberArray Members = GetPartyMembers();
+	const TArray<FUniqueNetIdRef> Members = GetPartyMembers();
 	for (const auto& Member : Members)
 	{
 		if (!Member.Get().IsValid())
@@ -1028,7 +1028,7 @@ void UPartyOnlineSession::OnPartyInviteRejected(FName SessionName, const FUnique
 	{
 		StartupSubsystem->QueryUserInfo(
 			0,
-			TPartyMemberArray{ RejecterABId },
+			TArray<FUniqueNetIdRef>{ RejecterABId },
 			FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [this, RejecterABId](
 				const FOnlineError& Error, const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
 			{
@@ -1082,7 +1082,7 @@ void UPartyOnlineSession::OnPartyInviteReceived(const FUniqueNetId& UserId, cons
 	{
 		StartupSubsystem->QueryUserInfo(
 			0,
-			TPartyMemberArray{ SenderABId },
+			TArray<FUniqueNetIdRef>{ SenderABId },
 			FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [this, SenderABId, PartyInvite, LocalUserNum](
 				const FOnlineError& Error, const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
 			{
@@ -1243,7 +1243,7 @@ void UPartyOnlineSession::DisplayCurrentPartyLeader()
 	{
 		StartupSubsystem->QueryUserInfo(
 			0,
-			TPartyMemberArray{ LeaderABId.ToSharedRef() },
+			TArray<FUniqueNetIdRef>{ LeaderABId.ToSharedRef() },
 			FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [this, LeaderABId](
 				const FOnlineError& Error, const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
 			{
@@ -1317,7 +1317,7 @@ void UPartyOnlineSession::OnPartyMembersChange(FName SessionName, const FUniqueN
 		{
 			StartupSubsystem->QueryUserInfo(
 				0,
-				TPartyMemberArray{ MemberABId },
+				TArray<FUniqueNetIdRef>{ MemberABId },
 				FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [this, MemberABId, bJoined](
 					const FOnlineError& Error,
 					const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
@@ -1398,7 +1398,7 @@ void UPartyOnlineSession::OnPartyMemberJoined(FName SessionName, const FUniqueNe
 		{
 			StartupSubsystem->QueryUserInfo(
 				0,
-				TPartyMemberArray{ MemberABId },
+				TArray<FUniqueNetIdRef>{ MemberABId },
 				FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [this, MemberABId](
 					const FOnlineError& Error,
 					const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
@@ -1478,7 +1478,7 @@ void UPartyOnlineSession::OnPartyMemberLeft(FName SessionName, const FUniqueNetI
 		{
 			StartupSubsystem->QueryUserInfo(
 				0,
-				TPartyMemberArray{ MemberABId },
+				TArray<FUniqueNetIdRef>{ MemberABId },
 				FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [this, MemberABId](
 					const FOnlineError& Error,
 					const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)

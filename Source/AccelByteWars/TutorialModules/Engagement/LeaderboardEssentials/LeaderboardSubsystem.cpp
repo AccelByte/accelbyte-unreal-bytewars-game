@@ -137,7 +137,7 @@ void ULeaderboardSubsystem::GetPlayerRanking(const APlayerController* PC, const 
 
 	// Get the player's leaderboard ranking.
 	OnLeaderboardReadCompleteDelegateHandle = LeaderboardInterface->AddOnLeaderboardReadCompleteDelegate_Handle(FOnLeaderboardReadCompleteDelegate::CreateUObject(this, &ThisClass::OnGetRankingsComplete, LocalUserNum, LeaderboardObj, OnComplete));
-	LeaderboardInterface->ReadLeaderboards(TPartyMemberArray{ PlayerNetId->AsShared() }, LeaderboardObj);
+	LeaderboardInterface->ReadLeaderboards(TArray<FUniqueNetIdRef>{ PlayerNetId->AsShared() }, LeaderboardObj);
 }
 // @@@SNIPEND
 
@@ -161,7 +161,7 @@ void ULeaderboardSubsystem::OnGetRankingsComplete(bool bWasSuccessful, const int
 	}
 
 	// Collect leaderboard members' player id.
-	TPartyMemberArray LeaderboardMembers;
+	TArray<FUniqueNetIdRef> LeaderboardMembers;
 	for (const FOnlineStatsRow& Row : LeaderboardObj->Rows)
 	{
 		if (Row.PlayerId.IsValid()) 

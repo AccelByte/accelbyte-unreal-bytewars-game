@@ -204,7 +204,7 @@ void URegisterUserInGameSubsystem::OnUpgradeAndVerifyAccountSuccess(
 	// Query new user info to update account user cache on OSS.
 	StartupSubsystem->QueryUserInfo(
 		LocalUserNum,
-		TPartyMemberArray{ UserId },
+		TArray<FUniqueNetIdRef>{ UserId },
 		FOnQueryUsersInfoCompleteDelegate::CreateWeakLambda(this, [this, ApiClient, LocalUserNum, UserId, NewFullAccount, OnComplete](
 			const FOnlineError& Error,
 			const TArray<TSharedPtr<FUserOnlineAccountAccelByte>>& UsersInfo)
